@@ -11,7 +11,7 @@ export default defineConfig({
   test: {
     name: "downstream-repros",
     root: import.meta.dirname,
-    include: ["*/repros/**/*.test.ts"],
+    include: ["*/repros/**/*.test.ts"], // base-ui/repros, radix/repros, …
     environment: "node",
   },
 });

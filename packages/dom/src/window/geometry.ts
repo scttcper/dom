@@ -12,6 +12,8 @@ export interface DOMPointInit {
   w?: number;
 }
 
+import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
+
 export class DOMPointReadOnly {
   _x: number;
   _y: number;
@@ -23,6 +25,7 @@ export class DOMPointReadOnly {
     this._y = Number(y);
     this._z = Number(z);
     this._w = Number(w);
+    hideInternals(this);
   }
 
   static fromPoint(other: DOMPointInit = {}): DOMPointReadOnly {
@@ -106,6 +109,7 @@ export class DOMRectReadOnly {
     this._y = Number(y);
     this._width = Number(width);
     this._height = Number(height);
+    hideInternals(this);
   }
 
   static fromRect(other: DOMRectInit = {}): DOMRectReadOnly {
@@ -180,6 +184,7 @@ export class DOMRectList {
   constructor(rects: DOMRect[] = []) {
     this._rects = rects;
     for (let i = 0; i < rects.length; i++) Object.defineProperty(this, i, { value: rects[i], enumerable: true });
+    hideInternals(this);
   }
   get length(): number {
     return this._rects.length;
@@ -234,6 +239,7 @@ export class DOMMatrixReadOnly {
       this._m = [a[0], a[1], 0, 0, a[2], a[3], 0, 0, 0, 0, 1, 0, a[4], a[5], 0, 1];
       this._is2D = true;
     }
+    hideInternals(this);
   }
 
   static fromMatrix(other: Partial<Record<string, number>> = {}): DOMMatrixReadOnly {
@@ -429,3 +435,5 @@ export class DOMMatrix extends DOMMatrixReadOnly {
     this._m[13] = Number(v);
   }
 }
+
+exposeMembers(DOMPointReadOnly, DOMPoint, DOMRectReadOnly, DOMRect, DOMRectList, DOMMatrixReadOnly, DOMMatrix);

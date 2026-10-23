@@ -6,6 +6,7 @@
 // reportValidity/setCustomValidity members, installed onto each prototype like the DOM
 // interface mixins (see nodes/mixins.ts).
 
+import { exposeMembers, hideInternals } from "../../webidl-runtime.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { fireEvent, normalizeNewlines } from "./common.ts";
 
@@ -39,6 +40,7 @@ export class ValidityState {
   /** @internal */
   constructor(el: Validatable) {
     this._el = el;
+    hideInternals(this);
   }
 
   get valueMissing(): boolean {
@@ -79,6 +81,7 @@ export class ValidityState {
     return "ValidityState";
   }
 }
+exposeMembers(ValidityState);
 
 /** The element is a candidate for constraint validation and does not satisfy its constraints. */
 export function isInvalidCandidate(el: Validatable): boolean {

@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/radix-ui/primitives.git",
+  "branch": "main",
+  "commit": "eb3a2b7091293e27df8f9ba906632d8daa3d81a3",
+  "project": "unit",
+  "note": "Pinned 2026-10-23 (upstream main, committed 2026-10-14). Vitest 4.1.7 + jsdom 29.1.1 + stock @testing-library/{react,dom,user-event,jest-dom}."
+}
