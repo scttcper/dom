@@ -6,12 +6,14 @@
  *   CSSOM View scrolling — https://drafts.csswg.org/cssom-view/#dom-element-scrolltop
  *   CSSOM View scrollingElement — https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement
  *   HTML rendering, popover — https://html.spec.whatwg.org/#flow-content-3
+ *   CSSOM View offsetParent — https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent
+ *   WebIDL namespaces (CSS) — https://webidl.spec.whatwg.org/#es-namespaces
  *
  * Deviation pinned here (docs/deviations.md): without layout, assigned scroll offsets are
  * stored (clamped at 0, no maximum) and read back, matching jsdom.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Window, type Document } from "@rtd/dom";
+import { createWindow, CSS, type Window, type Document } from "@rtd/dom";
 import { hasAuthorStyles } from "@rtd/dom/internal";
 
 let window: Window;
@@ -112,5 +114,41 @@ describe("hasAuthorStyles", () => {
     expect(hasAuthorStyles(document)).toBe(true);
     $("span").setAttribute("style", "");
     expect(hasAuthorStyles(document)).toBe(false);
+  });
+});
+
+describe("offsetParent — https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent", () => {
+  const op = (sel: string) => (document.querySelector(sel) as unknown as { offsetParent: unknown }).offsetParent;
+
+  test("step 3: nearest positioned ancestor, else body", () => {
+    document.body!.innerHTML = `<div id=rel style="position:relative"><p><i id=a></i></p></div><span id=b></span>`;
+    expect(op("#a")).toBe(document.getElementById("rel"));
+    expect(op("#b")).toBe(document.body);
+    expect(op("#rel")).toBe(document.body);
+  });
+
+  test("step 3: td/th/table only for static elements", () => {
+    document.body!.innerHTML = `<table id=t><tr><td id=td><b id=s></b><b id=r style="position:relative"></b></td></tr></table>`;
+    expect(op("#s")).toBe(document.getElementById("td"));
+    expect(op("#r")).toBe(document.body);
+  });
+
+  test("step 1: null for body, html, position:fixed, display:none (self or ancestor), disconnected", () => {
+    document.body!.innerHTML = `<div id=f style="position:fixed"></div><div style="display:none"><i id=h></i></div><style>.abs{position:absolute}</style><div class=abs><u id=u></u></div>`;
+    expect(op("body")).toBe(null);
+    expect((document.documentElement as unknown as { offsetParent: unknown }).offsetParent).toBe(null);
+    expect(op("#f")).toBe(null);
+    expect(op("#h")).toBe(null);
+    expect(op("#u")).toBe(document.querySelector(".abs"));
+    expect((document.createElement("div") as unknown as { offsetParent: unknown }).offsetParent).toBe(null);
+  });
+});
+
+describe("CSS namespace object — https://webidl.spec.whatwg.org/#es-namespaces", () => {
+  test("operations are writable/configurable data properties; the object is not frozen", () => {
+    expect(Object.getOwnPropertyDescriptor(CSS, "supports")).toMatchObject({ writable: true, enumerable: true, configurable: true });
+    expect(Object.isFrozen(CSS)).toBe(false);
+    expect(Object.prototype.toString.call(CSS)).toBe("[object CSS]");
+    expect((window as unknown as { CSS: unknown }).CSS).toBe(CSS);
   });
 });

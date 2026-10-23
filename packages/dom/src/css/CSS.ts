@@ -48,10 +48,14 @@ export function registerProperty(definition: { name: string; syntax?: string; in
   registered.add(definition.name);
 }
 
-/** The `CSS` namespace object. */
-export const CSS = Object.freeze({
+/**
+ * The `CSS` namespace object (https://webidl.spec.whatwg.org/#es-namespaces): an ordinary,
+ * extensible object whose operations are writable/enumerable/configurable data properties, so
+ * tests can stub them (`CSS.supports = vi.fn()`).
+ */
+export const CSS: { escape: typeof escape; supports: typeof supports; registerProperty: typeof registerProperty } = {
   escape,
   supports,
   registerProperty,
-  [Symbol.toStringTag]: "CSS",
-});
+};
+Object.defineProperty(CSS, Symbol.toStringTag, { value: "CSS", writable: false, enumerable: false, configurable: true });

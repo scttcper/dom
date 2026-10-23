@@ -12,7 +12,8 @@ import { windowHooks } from "../window/hooks.ts";
 import { createLinkSheet, createOwnerSheet, removeOwnerSheet, styleSheetsOf, adoptedStyleSheetsOf, setAdoptedStyleSheets } from "./stylesheets.ts";
 import { getComputedStyle } from "./computed.ts";
 import { matchMediaText } from "./media.ts";
-import { installElementView } from "./view.ts";
+import { installElementView, installHTMLElementView } from "./view.ts";
+import { HTMLElement as HTMLElementClass } from "../html/HTMLElement.ts";
 import { Element as ElementClass } from "../nodes/Element.ts";
 import { setComputedColorMode } from "./cascade.ts";
 
@@ -54,6 +55,7 @@ windowHooks.evaluateMediaQuery = (query, env) => matchMediaText(query, env);
 windowHooks.setComputedColorMode = setComputedColorMode;
 
 installElementView(ElementClass);
+installHTMLElementView(HTMLElementClass);
 
 /** https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement */
 if (!Object.hasOwn(Document.prototype, "scrollingElement")) {

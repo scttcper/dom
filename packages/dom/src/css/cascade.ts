@@ -1015,6 +1015,12 @@ function plain(el: NodeImpl): boolean {
   return (el.flags & F_HAS_STYLE_ATTR) === 0 && !sheetsApply(el);
 }
 
+/** Computed `position` (no record allocation for elements without author styles: the UA sheet sets none). */
+export function computedPosition(el: NodeImpl): string {
+  if (plain(el)) return "static";
+  return computedValueOf(styleRecord(el), "position");
+}
+
 /** Computed `display` of the element (own value, not ancestors). */
 export function computedDisplay(el: NodeImpl): string {
   if (plain(el)) return uaDisplay(el);
