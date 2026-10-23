@@ -3,6 +3,7 @@
 //
 //   node --expose-gc bench/worker.ts <workload-id> <config> [iterations] [warmup]
 
+import { GCProfiler, getHeapStatistics } from "node:v8";
 import { isConfig, prepare, installDom, loadEnv, domSpecifier, dynamicImport, type ConfigName } from "./lib/configs.ts";
 import { findWorkload } from "./workloads/index.ts";
 import type { Workload, StartupWorkload } from "./workloads/types.ts";
@@ -92,20 +93,64 @@ async function runStartup(w: StartupWorkload, config: ConfigName): Promise<Omit<
   };
 }
 
+interface GCStat {
+  gcType: string;
+  /** Microseconds. */
+  cost: number;
+  beforeGC: { heapStatistics: { usedHeapSize: number } };
+  afterGC: { heapStatistics: { usedHeapSize: number } };
+}
+
+/**
+ * Allocation and GC during one timed `run()`: bytes allocated are estimated from the used heap
+ * size between collections (V8 exposes no cumulative allocation counter): the growth from the
+ * start (or the previous GC's result) up to each GC, plus the growth after the last one.
+ */
+function gcCosts(stats: GCStat[], usedStart: number, usedEnd: number) {
+  let alloc = 0;
+  let prev = usedStart;
+  let gcUs = 0;
+  let scavenges = 0;
+  let majors = 0;
+  for (const s of stats) {
+    alloc += Math.max(0, s.beforeGC.heapStatistics.usedHeapSize - prev);
+    prev = s.afterGC.heapStatistics.usedHeapSize;
+    gcUs += s.cost;
+    if (s.gcType === "Scavenge" || s.gcType === "MinorMarkSweep") scavenges++;
+    else if (s.gcType === "MarkSweepCompact") majors++;
+  }
+  alloc += Math.max(0, usedEnd - prev);
+  return { allocMB: alloc / MB, gcMs: gcUs / 1000, scavenges, majorGCs: majors };
+}
+
 async function runWorkload(w: Workload, config: ConfigName, iterations: number, warmup: number) {
   const env = await loadEnv(config);
   const inst = await w.setup(env);
   const times: number[] = [];
+  const costs: ReturnType<typeof gcCosts>[] = [];
   for (let i = 0; i < warmup + iterations; i++) {
     await inst.beforeEach?.();
+    const profiler = new GCProfiler();
+    const usedStart = getHeapStatistics().used_heap_size;
+    profiler.start();
     const t0 = performance.now();
     const result = await inst.run();
     const dt = performance.now() - t0;
+    const profile = profiler.stop() as { statistics: GCStat[] } | undefined;
+    const usedEnd = getHeapStatistics().used_heap_size;
     await inst.verify(result);
     await inst.afterEach?.();
-    if (i >= warmup) times.push(dt);
+    if (i >= warmup) {
+      times.push(dt);
+      costs.push(gcCosts(profile?.statistics ?? [], usedStart, usedEnd));
+    }
   }
-  const extra = (await inst.extra?.()) ?? {};
+  const extra: Record<string, number> = { ...((await inst.extra?.()) ?? {}) };
+  // Medians per timed iteration (see gcCosts).
+  extra.allocMB = median(costs.map((c) => c.allocMB));
+  extra.gcMs = median(costs.map((c) => c.gcMs));
+  extra.scavenges = median(costs.map((c) => c.scavenges));
+  extra.majorGCs = median(costs.map((c) => c.majorGCs));
   // Memory is read with the workload's fixture still alive, then the fixture is closed.
   const mem = memory();
   await inst.close?.();
