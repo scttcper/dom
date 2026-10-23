@@ -11,7 +11,7 @@
 
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { SelectorParser } from "./parser.ts";
-import { serializeSelectorList } from "./serialize.ts";
+import { serializeSelectorList, withNamespaceContext, type NamespaceContext } from "./serialize.ts";
 import {
   type CComplex,
   CompileInfo,
@@ -27,6 +27,7 @@ import {
   KEY_ID,
   KEY_CLASS,
   KEY_TAG,
+  matchFeaturelessHost,
 } from "./compile.ts";
 import { $cx, $info } from "../keys.ts";
 
@@ -109,10 +110,27 @@ export function compileSelectorList(text: string, options?: CompileOptions): Com
   return { text, serialized: serializeSelectorList(ast), selectors };
 }
 
-/** CSSOM serialization of a selector list, or null if it is invalid. */
-export function serializeSelector(text: string): string | null {
+/**
+ * `@supports selector(<complex-selector>)` / `CSS.supports("selector(...)")`
+ * (https://drafts.csswg.org/css-conditional-4/#support-definition-ext): the selector parses
+ * and compiles without relying on forgiving parsing (no :is()/:where() item was dropped).
+ */
+export function isSupportedSelector(text: string): boolean {
   const ast = new SelectorParser(text).parseSelectorList();
-  return ast === null ? null : serializeSelectorList(ast);
+  if (ast === null) return false;
+  for (let i = 0; i < ast.items.length; i++) {
+    const info = new CompileInfo();
+    compileComplex(ast.items[i], info);
+    if (info.error !== "" || info.forgivingDropped) return false;
+  }
+  return true;
+}
+
+/** CSSOM serialization of a selector list, or null if it is invalid. */
+export function serializeSelector(text: string, namespaces?: NamespaceContext): string | null {
+  const ast = new SelectorParser(text).parseSelectorList();
+  if (ast === null) return null;
+  return namespaces === undefined ? serializeSelectorList(ast) : withNamespaceContext(namespaces, () => serializeSelectorList(ast));
 }
 
 export interface MatchOptions {
@@ -139,6 +157,8 @@ export function matchesSelector(sel: CompiledSelector, el: NodeImpl, pseudoEleme
   const prevScope = setScope(options?.scope ?? null);
   const prevHost = options?.shadowHost !== undefined ? setHostContext(options.shadowHost) : null;
   try {
+    // The host itself is featureless for its shadow tree's rules.
+    if (options?.shadowHost !== undefined && options.shadowHost === el) return matchFeaturelessHost(sel[$cx], el);
     return matchComplex(sel[$cx], el);
   } finally {
     setScope(prevScope);

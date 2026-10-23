@@ -70,16 +70,51 @@ export function serializeAnPlusB(a: number, b: number): string {
   return out;
 }
 
+/** @namespace context of the style sheet whose selector is being serialized (null: none declared). */
+export interface NamespaceContext {
+  namespaces?: ReadonlyMap<string, string | null>;
+  defaultNamespace?: string | null;
+}
+
+let nsContext: NamespaceContext | null = null;
+
+/** Run `fn` with a style sheet's @namespace context for type/universal selector serialization. */
+export function withNamespaceContext<T>(ctx: NamespaceContext | null | undefined, fn: () => T): T {
+  const saved = nsContext;
+  nsContext = ctx ?? null;
+  try {
+    return fn();
+  } finally {
+    nsContext = saved;
+  }
+}
+
+function hasDefaultNamespace(): boolean {
+  return nsContext !== null && nsContext.defaultNamespace !== undefined;
+}
+
+/**
+ * https://drafts.csswg.org/cssom/#serialize-a-simple-selector (type / universal selector):
+ * `*|` is only significant when a default namespace is declared, and a prefix that maps to
+ * the default namespace is omitted.
+ */
 function serializeNamespace(s: Simple): string {
   switch (s.nsKind) {
     case NS_ANY:
-      return "";
+      return hasDefaultNamespace() ? "*|" : "";
     case NS_NONE:
       return "|";
     case NS_PREFIX:
+      if (prefixIsDefault(s.nsPrefix)) return "";
       return serializeIdentifier(s.nsPrefix) + "|";
   }
   return "";
+}
+
+function prefixIsDefault(prefix: string): boolean {
+  if (!hasDefaultNamespace() || nsContext!.namespaces === undefined) return false;
+  const uri = nsContext!.namespaces.get(prefix);
+  return uri !== undefined && uri === nsContext!.defaultNamespace;
 }
 
 function attrOp(op: number): string {
@@ -170,7 +205,7 @@ export function serializeCompound(c: Compound): string {
   const n = c.simples.length;
   for (let i = 0; i < n; i++) {
     const s = c.simples[i];
-    if (i === 0 && n > 1 && s.kind === S_UNIVERSAL && (s.nsKind === NS_ANY || s.nsKind === 0)) continue;
+    if (i === 0 && n > 1 && s.kind === S_UNIVERSAL && ((s.nsKind === NS_ANY && !hasDefaultNamespace()) || s.nsKind === 0 || (s.nsKind === NS_PREFIX && prefixIsDefault(s.nsPrefix)))) continue;
     out += serializeSimple(s);
   }
   return out;

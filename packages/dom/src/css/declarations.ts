@@ -13,11 +13,14 @@ export class DeclBlock {
   /** Specified values, already normalized. */
   values: string[];
   important: boolean[];
+  /** Set by put()/removeOne() when they change the block (setProperty's "updated" flag). */
+  dirty: boolean;
 
   constructor() {
     this.names = [];
     this.values = [];
     this.important = [];
+    this.dirty = false;
   }
 
   get length(): number {
@@ -43,9 +46,11 @@ export class DeclBlock {
       this.names.push(name);
       this.values.push(value);
       this.important.push(important);
-    } else {
+      this.dirty = true;
+    } else if (this.values[i] !== value || this.important[i] !== important) {
       this.values[i] = value;
       this.important[i] = important;
+      this.dirty = true;
     }
   }
 
@@ -70,6 +75,7 @@ export class DeclBlock {
     this.names.splice(i, 1);
     this.values.splice(i, 1);
     this.important.splice(i, 1);
+    this.dirty = true;
     return true;
   }
 

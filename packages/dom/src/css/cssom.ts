@@ -119,6 +119,7 @@ export class MediaList {
 
   /** https://drafts.csswg.org/cssom/#dom-medialist-deletemedium */
   deleteMedium(medium: string): void {
+    if (arguments.length === 0) throw new TypeError("Failed to execute 'deleteMedium' on 'MediaList': 1 argument required, but only 0 present.");
     const q = parseMediaQueryList(String(medium));
     if (q.length !== 1) return;
     const before = this[$queries].length;
@@ -213,8 +214,15 @@ export class StyleSheet {
     return null;
   }
 
+  /**
+   * https://drafts.csswg.org/cssom/#dom-stylesheet-title — the owner's non-empty title
+   * attribute (an empty title is null). Read live: changing `title` on a <style>/<link>
+   * re-creates the sheet with the new title in browsers.
+   */
   get title(): string | null {
-    return this[$title];
+    const owner = this[$ownerNode] as { getAttribute(n: string): string | null } | null;
+    const t = owner !== null ? owner.getAttribute("title") : this[$title];
+    return t === "" ? null : t;
   }
 
   get media(): MediaList {
@@ -302,6 +310,9 @@ export class CSSStyleSheet extends StyleSheet {
 
   /** Replaces all rules from stylesheet text (no @import fetching). */
   _setText(text: string): void {
+    // https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet: the
+    // old rules are detached (their parentStyleSheet becomes null).
+    for (const old of this[$rules]) old[$sheet] = null;
     this[$rules] = [];
     this[$namespaces] = null;
     this[$defaultNamespace] = undefined;
@@ -616,12 +627,12 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
   /** https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext */
   get selectorText(): string {
     if (containsNesting(this[$selector])) return this[$selector];
-    return serializeSelector(this[$selector]) ?? this[$selector];
+    return serializeSelector(this[$selector], namespaceOptions(this.parentStyleSheet)) ?? this[$selector];
   }
 
   set selectorText(value: string) {
     const text = String(value).trim();
-    if (!isValidSelectorFor(text, this._nestedContextForSelf())) return;
+    if (!isValidSelectorFor(text, this._nestedContextForSelf(), this.parentStyleSheet)) return;
     this[$selector] = text;
     this[$compiled] = null;
     this._changed();
@@ -667,12 +678,7 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
   _compile(): CompiledSelectorList | null {
     const resolved = this._resolvedSelectors().join(", ");
     if (this[$compiled] !== null && this[$compiledFor] === resolved) return this[$compiled];
-    const sheet = this.parentStyleSheet;
-    const options =
-      sheet !== null && (sheet[$namespaces] !== null || sheet[$defaultNamespace] !== undefined)
-        ? { namespaces: sheet[$namespaces] ?? undefined, defaultNamespace: sheet[$defaultNamespace] }
-        : undefined;
-    this[$compiled] = compileSelectorList(resolved, options);
+    this[$compiled] = compileSelectorList(resolved, namespaceOptions(this.parentStyleSheet));
     this[$compiledFor] = resolved;
     return this[$compiled];
   }
@@ -1111,7 +1117,8 @@ export class CSSKeyframesRule extends CSSRule {
   deleteRule(select: string): void {
     const i = this._findIndex(String(select));
     if (i === -1) return;
-    this[$rules].splice(i, 1);
+    const [removed] = this[$rules].splice(i, 1);
+    removed[$parent] = null;
     this[$list]?._sync();
     this._changed();
   }
@@ -1135,11 +1142,24 @@ export class CSSKeyframesRule extends CSSRule {
 
 // --- rule creation -----------------------------------------------------------------------------
 
-function isValidSelectorFor(text: string, nested: boolean): boolean {
+/** The sheet's @namespace declarations as selector compile options (undefined when none). */
+function namespaceOptions(sheet: CSSStyleSheet | null): { namespaces?: Map<string, string | null>; defaultNamespace?: string | null } | undefined {
+  return sheet !== null && (sheet[$namespaces] !== null || sheet[$defaultNamespace] !== undefined)
+    ? { namespaces: sheet[$namespaces] ?? undefined, defaultNamespace: sheet[$defaultNamespace] }
+    : undefined;
+}
+
+/**
+ * Whether a style rule prelude parses. Namespace prefixes resolve against the sheet's
+ * @namespace rules (https://drafts.csswg.org/css-namespaces-3/#prefixes): a selector with an
+ * undeclared prefix is invalid, a declared one is not.
+ */
+function isValidSelectorFor(text: string, nested: boolean, sheet: CSSStyleSheet | null): boolean {
   if (text === "") return false;
-  if (nested) return compileSelectorList(resolveNested(text, ["*"]).join(", ")) !== null;
-  if (containsNesting(text)) return compileSelectorList(resolveNested(text, [":scope"]).join(", ")) !== null;
-  return compileSelectorList(text) !== null;
+  const options = namespaceOptions(sheet);
+  if (nested) return compileSelectorList(resolveNested(text, ["*"]).join(", "), options) !== null;
+  if (containsNesting(text)) return compileSelectorList(resolveNested(text, [":scope"]).join(", "), options) !== null;
+  return compileSelectorList(text, options) !== null;
 }
 
 /** https://drafts.csswg.org/css-animations-1/#typedef-keyframe-selector */
@@ -1228,12 +1248,11 @@ function parseImportPrelude(prelude: string): { href: string; layer: string | nu
 
 /** https://drafts.csswg.org/cssom/#parse-a-css-rule + CSSOM rule construction. */
 export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyleSheet | null, nested: boolean, inKeyframes: boolean): CSSRule | null {
-  void sheet;
   let rule: CSSRule | null = null;
   if (raw.kind === RULE_QUALIFIED) {
     if (inKeyframes) return createKeyframe(raw);
     if (!raw.hasBlock) return null;
-    if (!isValidSelectorFor(raw.prelude, nested)) return null;
+    if (!isValidSelectorFor(raw.prelude, nested, sheet)) return null;
     const block = new DeclBlock();
     block.addRaw(raw.decls);
     const sr = new CSSStyleRule(raw.prelude, block);

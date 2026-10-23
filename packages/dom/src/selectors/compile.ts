@@ -20,7 +20,7 @@
 import { DOCUMENT_NODE, ELEMENT_NODE, F_HTML, F_SHADOW_ROOT, TEXT_NODE, CDATA_SECTION_NODE } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Document } from "../nodes/Document.ts";
-import { classTokens, asciiLowercase } from "../nodes/attributes.ts";
+import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
 import { tagId } from "../nodes/tags.ts";
 import {
   type Complex,
@@ -39,7 +39,7 @@ import {
   P_READ_WRITE, P_DEFAULT, P_OPEN, P_HEADING,
 } from "./parser.ts";
 import { predicates, type Predicate, matchesLang, directionality, customState, parentOrHost, shadowHost } from "./state.ts";
-import { $mode, $version } from "../keys.ts";
+import { $impl, $mode, $shadowRoot, $version } from "../keys.ts";
 
 // --- test opcodes ------------------------------------------------------------------------
 
@@ -211,6 +211,12 @@ export class CompileInfo {
   defaultNs: string | null | undefined;
   /** First compile error ("" when none). */
   error: string;
+  /**
+   * A forgiving list (:is/:where) dropped an item: the selector only parses because of
+   * forgiving parsing, so `@supports selector()` reports it unsupported
+   * (https://drafts.csswg.org/css-conditional-4/#support-definition-ext).
+   */
+  forgivingDropped: boolean;
 
   constructor() {
     this.volatile = false;
@@ -219,6 +225,7 @@ export class CompileInfo {
     this.resolve = null;
     this.defaultNs = undefined;
     this.error = "";
+    this.forgivingDropped = false;
   }
 }
 
@@ -330,11 +337,16 @@ function compileForgivingList(list: SelectorList, info: CompileInfo): CList {
   const out = new CList();
   for (let i = 0; i < list.items.length; i++) {
     const cx = list.items[i];
-    if (cx.invalid) continue;
+    if (cx.invalid) {
+      info.forgivingDropped = true;
+      continue;
+    }
     const saved = info.error;
     const compiled = compileComplex(cx, info);
-    if (info.error !== saved) info.error = saved;
-    else out.items.push(compiled);
+    if (info.error !== saved) {
+      info.error = saved;
+      info.forgivingDropped = true;
+    } else out.items.push(compiled);
   }
   return out;
 }
@@ -389,7 +401,27 @@ function compileCompound(c: Compound, info: CompileInfo, owner: CComplex, isSubj
     const t = compileSimple(s, info);
     if (t !== null) tests.push(t);
   }
+  // https://drafts.csswg.org/css-namespaces-3/#css-qnames: with a default namespace, a compound
+  // without a type selector has an implied `*` in that namespace — except a compound of only
+  // :host-family pseudo-classes, which targets the featureless host
+  // (https://drafts.csswg.org/selectors-4/#featureless).
+  if (info.defaultNs !== undefined && needsImpliedNamespace(c, end)) {
+    const t = new Test(O_UNIVERSAL_NS);
+    t.nsCheck = true;
+    t.ns = info.defaultNs;
+    tests.push(t);
+  }
   return tests;
+}
+
+function needsImpliedNamespace(c: Compound, end: number): boolean {
+  let onlyHost = end > 0;
+  for (let i = 0; i < end; i++) {
+    const s = c.simples[i];
+    if (s.kind === S_TYPE || s.kind === S_UNIVERSAL) return false;
+    if (!(s.kind === S_PSEUDO_CLASS && (s.pseudo === P_HOST || s.pseudo === P_HOST_FN || s.pseudo === P_HOST_CONTEXT))) onlyHost = false;
+  }
+  return !onlyHost;
 }
 
 function compileSimple(s: Simple, info: CompileInfo): Test | null {
@@ -870,13 +902,85 @@ function matchCompound(tests: Test[], el: NodeImpl): boolean {
 
 /** A featureless host matches only :host / :host() / :host-context() (and logical combinations of them). */
 function matchFeatureless(tests: Test[], el: NodeImpl): boolean {
-  if (tests.length === 0) return false;
+  return featurelessCompound(tests, el) === 1;
+}
+
+/**
+ * Matches the shadow host itself against a selector from its shadow tree's style sheets
+ * (https://drafts.csswg.org/selectors-4/#featureless, https://drafts.csswg.org/css-scoping-1/#host-selector):
+ * only a lone compound can reach it, and only through :host / :host() / :host-context().
+ */
+export function matchFeaturelessHost(cx: CComplex, el: NodeImpl): boolean {
+  const saved = hostEl;
+  hostEl = el;
+  const r = featurelessComplex(cx, el) === 1;
+  hostEl = saved;
+  return r;
+}
+
+const F_DISALLOWED = -1;
+
+/** 1 = matches, 0 = does not match, F_DISALLOWED = the selector may not match a featureless element at all. */
+function featurelessComplex(cx: CComplex, el: NodeImpl): number {
+  if (cx.last !== 0 || cx.leading !== C_NONE) return F_DISALLOWED;
+  return featurelessCompound(cx.comps[0], el);
+}
+
+/** :is()/:where() over a featureless element: disallowed items are skipped; all disallowed → disallowed. */
+function featurelessList(list: CList, el: NodeImpl): number {
+  let r = F_DISALLOWED;
+  for (let i = 0; i < list.items.length; i++) {
+    const v = featurelessComplex(list.items[i], el);
+    if (v === 1) return 1;
+    if (v === 0) r = 0;
+  }
+  return r;
+}
+
+/**
+ * A compound matches a featureless element only when it is anchored by a :host-family
+ * pseudo-class (directly or through a logical combination) and contains nothing else a
+ * featureless element cannot match (type/class/id/attribute/structural selectors, the
+ * default-namespace test); :has() may accompany the anchor. Negating a disallowed
+ * argument stays disallowed (`:not(div)` does not match the host).
+ */
+function featurelessCompound(tests: Test[], el: NodeImpl): number {
+  let anchored = false;
+  let r = 1;
   for (let i = 0; i < tests.length; i++) {
     const t = tests[i];
-    if (t.op !== O_HOST && t.op !== O_HOST_FN && t.op !== O_HOST_CONTEXT && t.op !== O_IS && t.op !== O_NOT) return false;
-    if (!matchTest(t, el)) return false;
+    switch (t.op) {
+      case O_HOST:
+      case O_HOST_FN:
+      case O_HOST_CONTEXT:
+        anchored = true;
+        if (r === 1 && !matchTest(t, el)) r = 0;
+        break;
+      case O_HAS: {
+        // :host:has(...) looks into the host's shadow tree (its descendants in that context).
+        const sr = (el.node as unknown as { [$shadowRoot]?: { [$impl]: NodeImpl } | null })[$shadowRoot];
+        if (r === 1 && !matchHas(t.list!, sr ? sr[$impl] : el)) r = 0;
+        break;
+      }
+      case O_IS: {
+        const v = featurelessList(t.list!, el);
+        if (v === F_DISALLOWED) return F_DISALLOWED;
+        anchored = true;
+        if (v === 0) r = 0;
+        break;
+      }
+      case O_NOT: {
+        const v = featurelessList(t.list!, el);
+        if (v === F_DISALLOWED) return F_DISALLOWED;
+        anchored = true;
+        if (v === 1) r = 0;
+        break;
+      }
+      default:
+        return F_DISALLOWED;
+    }
   }
-  return true;
+  return anchored ? r : F_DISALLOWED;
 }
 
 function isQuirks(doc: Document): boolean {
@@ -970,10 +1074,45 @@ function matchTest(t: Test, el: NodeImpl): boolean {
   return false;
 }
 
+/** https://html.spec.whatwg.org/#heading-levels-and-offsets — min(9, digit + heading offset). */
 function headingLevel(el: NodeImpl): number {
   if (el.tag === 0 || el.name.length !== 2 || el.name.charCodeAt(0) !== 0x68) return 0;
   const d = el.name.charCodeAt(1) - 0x30;
-  return d >= 1 && d <= 6 ? d : 0;
+  if (d < 1 || d > 6) return 0;
+  const level = d + headingOffset(el);
+  return level > 9 ? 9 : level;
+}
+
+/**
+ * https://html.spec.whatwg.org/#heading-offset — sum of `headingoffset` (non-negative
+ * integers) over flat-tree inclusive ancestors, stopping after one with `headingreset`.
+ */
+function headingOffset(el: NodeImpl): number {
+  let offset = 0;
+  for (let n: NodeImpl | null = el; n !== null; n = parentOrHost(n)) {
+    if (n.type !== ELEMENT_NODE || n.tag === 0 || n.attrs === null) continue;
+    const v = attr(n, "headingoffset");
+    if (v !== null) {
+      const parsed = parseNonNegativeInteger(v);
+      if (parsed > 0) offset += parsed;
+    }
+    if (attr(n, "headingreset") !== null) break;
+  }
+  return offset;
+}
+
+/** https://html.spec.whatwg.org/#rules-for-parsing-non-negative-integers (-1 on error). */
+function parseNonNegativeInteger(s: string): number {
+  let i = 0;
+  while (i < s.length && isWs(s.charCodeAt(i))) i++;
+  if (i < s.length && s.charCodeAt(i) === 0x2b) i++;
+  let n = -1;
+  for (; i < s.length; i++) {
+    const c = s.charCodeAt(i) - 0x30;
+    if (c < 0 || c > 9) break;
+    n = (n === -1 ? 0 : n * 10) + c;
+  }
+  return n;
 }
 
 function matchAttribute(t: Test, el: NodeImpl): boolean {
@@ -988,7 +1127,9 @@ function matchAttribute(t: Test, el: NodeImpl): boolean {
       if (t.ns !== "*" && a.ns !== t.ns) continue;
     } else if (a.ns !== null) continue;
     if (t.attrOp === OP_EXISTS) return true;
-    const ci = t.valueCase === VC_INSENSITIVE || (t.valueCase === VC_HTML && html);
+    // https://html.spec.whatwg.org/#case-sensitivity-of-selectors: the HTML list only covers
+    // attributes in no namespace (`[*|lang=a]` against xml:lang stays case-sensitive).
+    const ci = t.valueCase === VC_INSENSITIVE || (t.valueCase === VC_HTML && html && a.ns === null);
     if (attrValueMatches(t, ci ? asciiLowercase(a.value) : a.value, ci ? t.valueLower : t.value)) return true;
     if (!t.nsCheck) return false; // at most one no-namespace attribute with this name
   }

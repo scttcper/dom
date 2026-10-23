@@ -19,6 +19,7 @@ import {
   TK_FUNCTION,
   TK_IDENT,
   TK_NUMBER,
+  TK_STRING,
   TK_URL,
   formatNumber,
   serializeUrl,
@@ -469,6 +470,154 @@ export function expandShorthand(name: string, value: string): string[] | null {
       return expandFont(value);
   }
   return null;
+}
+
+// --- cascade-only shorthands ----------------------------------------------------------------
+
+/**
+ * Shorthands that declaration blocks keep as one declaration (jsdom-compatible `cssText` /
+ * `style.overflow` behavior, see the module comment) but that the cascade expands so computed
+ * longhands are right (`outline: solid green` → `outline-color: rgb(0, 128, 0)`,
+ * `overflow: hidden` → `overflow-x: hidden`). https://drafts.csswg.org/css-cascade-5/#shorthand
+ */
+const CASCADE_SHORTHANDS = new Map<string, string[]>([
+  ["outline", ["outline-color", "outline-style", "outline-width"]],
+  ["overflow", ["overflow-x", "overflow-y"]],
+  ["gap", ["row-gap", "column-gap"]],
+  ["inset", ["top", "right", "bottom", "left"]],
+  ["list-style", ["list-style-position", "list-style-image", "list-style-type"]],
+  ["flex-flow", ["flex-direction", "flex-wrap"]],
+]);
+
+/** One map of every shorthand the cascade records per longhand (expanded and cascade-only). */
+export function pendingLonghandsMap(): Map<string, string[]> {
+  return new Map([...SHORTHANDS, ...CASCADE_SHORTHANDS]);
+}
+
+/** Longhands the cascade records for a declaration of `name` (expanded or cascade-only shorthand), else undefined. */
+export function cascadeLonghandsOf(name: string): string[] | undefined {
+  return SHORTHANDS.get(name) ?? CASCADE_SHORTHANDS.get(name);
+}
+
+export function isCascadeOnlyShorthand(name: string): boolean {
+  return CASCADE_SHORTHANDS.has(name);
+}
+
+const OVERFLOW_KEYWORDS = new Set(["visible", "hidden", "clip", "scroll", "auto", "overlay"]);
+const FLEX_DIRECTIONS = new Set(["row", "row-reverse", "column", "column-reverse"]);
+const FLEX_WRAPS = new Set(["nowrap", "wrap", "wrap-reverse"]);
+
+/** Expands a cascade-only shorthand into values aligned with `cascadeLonghandsOf(name)`, or null if invalid. */
+export function expandCascadeShorthand(name: string, value: string): string[] | null {
+  switch (name) {
+    case "outline": {
+      // https://drafts.csswg.org/css-ui-4/#outline: <outline-color> || <outline-line-style> || <outline-line-width>
+      const parts = items(value);
+      if (parts === null || parts.length < 1 || parts.length > 3) return null;
+      let width = "";
+      let style = "";
+      let color = "";
+      const gw = grammarFor("outline-width");
+      for (const p of parts) {
+        if (p.type === TK_IDENT && (STYLE_KEYWORDS.has(p.lower) || p.lower === "auto") && p.lower !== "hidden") {
+          if (style !== "") return null;
+          style = p.lower;
+          continue;
+        }
+        const w = normalizeComponent(p, gw);
+        if (w !== null) {
+          if (width !== "") return null;
+          width = w;
+          continue;
+        }
+        const c = normalizeColor(p.text);
+        if (c !== null && p.type !== TK_NUMBER) {
+          if (color !== "") return null;
+          color = c;
+          continue;
+        }
+        return null;
+      }
+      return [color || "currentcolor", style || "none", width || "medium"];
+    }
+    case "overflow":
+    case "flex-flow": {
+      // https://drafts.csswg.org/css-overflow-3/#propdef-overflow: <'overflow-block'>{1,2}
+      // https://drafts.csswg.org/css-flexbox-1/#flex-flow-property: <'flex-direction'> || <'flex-wrap'>
+      const parts = items(value);
+      if (parts === null || parts.length < 1 || parts.length > 2) return null;
+      for (const p of parts) if (p.type !== TK_IDENT) return null;
+      if (name === "overflow") {
+        for (const p of parts) if (!OVERFLOW_KEYWORDS.has(p.lower)) return null;
+        return [parts[0].lower, (parts[1] ?? parts[0]).lower];
+      }
+      let dir = "";
+      let wrap = "";
+      for (const p of parts) {
+        if (FLEX_DIRECTIONS.has(p.lower) && dir === "") dir = p.lower;
+        else if (FLEX_WRAPS.has(p.lower) && wrap === "") wrap = p.lower;
+        else return null;
+      }
+      return [dir || "row", wrap || "nowrap"];
+    }
+    case "gap": {
+      // https://drafts.csswg.org/css-align-3/#gap-shorthand: <'row-gap'> <'column-gap'>?
+      const parts = items(value);
+      if (parts === null || parts.length < 1 || parts.length > 2) return null;
+      const g = grammarFor("row-gap");
+      const vals: string[] = [];
+      for (const p of parts) {
+        const v = normalizeComponent(p, g);
+        if (v === null) return null;
+        vals.push(v);
+      }
+      return [vals[0], vals[1] ?? vals[0]];
+    }
+    case "inset":
+      // https://drafts.csswg.org/css-position-3/#inset-shorthands: <'top'>{1,4}
+      return expandBox(CASCADE_SHORTHANDS.get("inset")!, value);
+    case "list-style": {
+      // https://drafts.csswg.org/css-lists-3/#list-style-property:
+      // <'list-style-position'> || <'list-style-image'> || <'list-style-type'>; `none` sets
+      // whichever of image/type is otherwise unset.
+      const parts = items(value);
+      if (parts === null || parts.length < 1 || parts.length > 3) return null;
+      let position = "";
+      let image = "";
+      let type = "";
+      let nones = 0;
+      for (const p of parts) {
+        if (p.type === TK_IDENT && (p.lower === "inside" || p.lower === "outside") && position === "") position = p.lower;
+        else if (p.type === TK_IDENT && p.lower === "none") nones++;
+        else if ((p.type === TK_URL || (p.type === TK_FUNCTION && IMAGE_FUNCTIONS.has(p.lower))) && image === "") image = p.type === TK_URL ? serializeUrl(p.value) : p.text;
+        else if ((p.type === TK_IDENT || p.type === TK_STRING || (p.type === TK_FUNCTION && p.lower === "symbols")) && type === "") type = p.type === TK_IDENT ? p.lower : p.text;
+        else return null;
+      }
+      if (nones > (image === "" ? 1 : 0) + (type === "" ? 1 : 0)) return null;
+      if (nones !== 0) {
+        if (image === "") image = "none";
+        if (type === "") type = "none";
+      }
+      return [position || "outside", image || "none", type || "disc"];
+    }
+  }
+  return null;
+}
+
+/** Computed-value serialization of a cascade-only shorthand from its computed longhands (Blink's order). */
+export function serializeCascadeShorthand(name: string, v: string[]): string {
+  switch (name) {
+    case "overflow":
+    case "gap":
+      return v[0] === v[1] ? v[0] : v[0] + " " + v[1];
+    case "inset":
+      return serializeBox(v);
+    case "outline":
+    case "list-style":
+    case "flex-flow":
+      return v.join(" ");
+  }
+  return "";
 }
 
 /** Sentinel: a valid value that is stored unexpanded (multi-layer backgrounds). */

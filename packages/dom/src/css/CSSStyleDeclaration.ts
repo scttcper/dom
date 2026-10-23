@@ -128,18 +128,24 @@ export class CSSStyleDeclaration {
     this._checkWritable();
     let p = String(property);
     if (!isCustomPropertyName(p)) p = p.toLowerCase();
-    const v = value === null || value === undefined ? "" : String(value);
+    // WebIDL: `[LegacyNullToEmptyString] CSSOMString value` (undefined → "undefined", which is
+    // then an invalid value and ignored) and `[LegacyNullToEmptyString] optional priority = ""`.
+    const v = value === null ? "" : idlString(value);
     if (v === "") {
       this.removeProperty(p);
       return;
     }
-    const prio = String(priority);
+    const prio = priority === null ? "" : idlString(priority);
     let important = false;
     if (prio !== "") {
       if (prio.toLowerCase() !== "important") return;
       important = true;
     }
-    if (this[$block].setValue(p, v, important, false)) this._changed();
+    // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty step 9: only an
+    // actual change updates the style attribute (no mutation record for the same value).
+    const block = this[$block];
+    block.dirty = false;
+    if (block.setValue(p, v, important, false) && block.dirty) this._changed();
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty */
@@ -170,7 +176,8 @@ export class CSSStyleDeclaration {
   _setNamed(property: string, value: unknown): void {
     // Computed declarations ignore named assignments (jsdom-compatible; browsers throw).
     if (this[$readonly]) return;
-    this.setProperty(property, value === null || value === undefined ? "" : String(value));
+    // `[LegacyNullToEmptyString] attribute CSSOMString` (https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-camel-cased-attribute).
+    this.setProperty(property, value === null ? "" : idlString(value));
   }
 
   *[Symbol.iterator](): IterableIterator<string> {
@@ -224,4 +231,10 @@ export interface CSSStyleDeclaration {
   // oxlint-disable-next-line no-explicit-any
   [property: string]: any;
   [index: number]: string;
+}
+
+/** WebIDL DOMString conversion (https://webidl.spec.whatwg.org/#js-DOMString): symbols throw. */
+function idlString(v: unknown): string {
+  if (typeof v === "symbol") throw new TypeError("Cannot convert a Symbol value to a string");
+  return String(v);
 }

@@ -17,7 +17,7 @@ import {
 } from "./tokenizer.ts";
 import { DeclBlock } from "./declarations.ts";
 import { isCustomPropertyName } from "./properties.ts";
-import { compileSelectorList } from "../selectors/internal.ts";
+import { isSupportedSelector } from "../selectors/internal.ts";
 
 /** https://drafts.csswg.org/css-conditional-3/#dom-css-supports — property/value form. */
 export function supportsDeclaration(property: string, value: string): boolean {
@@ -87,7 +87,7 @@ function inParens(c: Cursor): number {
     const name = c.t.value.toLowerCase();
     const inner = c.block();
     if (inner === null) return -1;
-    if (name === "selector") return compileSelectorList(inner.trim()) !== null ? 1 : 0;
+    if (name === "selector") return isSupportedSelector(inner.trim()) ? 1 : 0;
     if (name === "font-tech" || name === "font-format") return 0;
     return 0; // <general-enclosed>
   }

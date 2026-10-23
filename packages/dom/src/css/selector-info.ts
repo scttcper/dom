@@ -3,7 +3,7 @@
 // CSS Nesting resolution (the engine does not parse `&`).
 // https://drafts.csswg.org/css-nesting-1/#nest-selector
 
-import { CSSTokenizer, TK_COMMA, TK_DELIM, TK_EOF, TK_FUNCTION, TK_LBRACKET, TK_LPAREN, TK_RBRACKET, TK_RPAREN } from "./tokenizer.ts";
+import { CSSTokenizer, TK_COMMA, TK_DELIM, TK_EOF, TK_FUNCTION, TK_LBRACKET, TK_LPAREN, TK_RBRACKET, TK_RPAREN, TK_WHITESPACE } from "./tokenizer.ts";
 
 /** Splits a selector list on top-level commas (trimmed parts). */
 export function splitSelectorList(text: string): string[] {
@@ -38,26 +38,38 @@ export function containsNesting(text: string): boolean {
 
 /**
  * Resolves a nested style rule's selector list against its parent's resolved selector list
- * (https://drafts.csswg.org/css-nesting-1/#nest-selector). `&` is replaced by the parent
- * selector (as `:is(...)` when the parent list has more than one selector); selectors without
- * `&` are relative to the parent (`& ` prepended, keeping a leading combinator).
+ * (https://drafts.csswg.org/css-nesting-1/#nest-selector): `&` represents the elements the
+ * parent list matches, with the specificity of `:is(<parent list>)`, so it is replaced by
+ * `:is(...)` — textually only when the parent is one compound selector that cannot change
+ * meaning when glued to its neighbours (no combinator, no leading type selector). Selectors
+ * without `&` are relative to the parent (`& ` prepended, keeping a leading combinator).
  */
 export function resolveNested(child: string, parents: string[]): string[] {
   const out: string[] = [];
-  const parentText = parents.length === 1 ? parents[0] : ":is(" + parents.join(", ") + ")";
+  const parentText = parents.length === 1 && isGluableCompound(parents[0]) ? parents[0] : ":is(" + parents.join(", ") + ")";
   for (const raw of splitSelectorList(child)) {
     if (raw === "") continue;
     let sel = raw;
     // A relative selector (optionally starting with a combinator) is relative to the parent.
     if (!containsNesting(sel)) sel = "& " + sel;
-    if (parents.length === 1 || parentText.length === 0) {
-      out.push(replaceNesting(sel, parentText));
-    } else {
-      // Expand into one selector per parent so engines without :is() still match.
-      for (const p of parents) out.push(replaceNesting(sel, p));
-    }
+    out.push(replaceNesting(sel, parentText));
   }
   return out;
+}
+
+/** A single compound selector starting with `.`, `#`, `[` or `:` (no combinators at top level). */
+function isGluableCompound(sel: string): boolean {
+  const c = sel.charCodeAt(0);
+  if (c !== 0x2e && c !== 0x23 && c !== 0x5b && c !== 0x3a) return false;
+  const t = new CSSTokenizer(sel);
+  let depth = 0;
+  while (true) {
+    const type = t.next();
+    if (type === TK_EOF) return true;
+    if (type === TK_FUNCTION || type === TK_LPAREN || type === TK_LBRACKET) depth++;
+    else if (type === TK_RPAREN || type === TK_RBRACKET) depth--;
+    else if (depth === 0 && (type === TK_WHITESPACE || type === TK_COMMA || (type === TK_DELIM && (t.value === ">" || t.value === "+" || t.value === "~" || t.value === "|")))) return false;
+  }
 }
 
 function replaceNesting(sel: string, parent: string): string {

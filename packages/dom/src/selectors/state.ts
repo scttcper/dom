@@ -12,10 +12,10 @@
 // State no other area models (:hover/:active pointer state, links, :target, media, :lang/:dir)
 // is implemented here.
 
-import { DOCUMENT_NODE, ELEMENT_NODE, F_HTML, F_SHADOW_ROOT, TEXT_NODE, XML_NS } from "../nodes/constants.ts";
+import { DOCUMENT_NODE, ELEMENT_NODE, F_HTML, F_SHADOW_ROOT, SVG_NS, TEXT_NODE, XLINK_NS, XML_NS } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
-import { attr, asciiLowercase } from "../nodes/attributes.ts";
+import { attr, asciiLowercase, findAttributeByNamespace } from "../nodes/attributes.ts";
 import { nextInTree, nextSkippingChildren } from "../nodes/traverse.ts";
 import { clearSelectorCaches } from "./index.ts";
 import { $host, $impl, $url } from "../keys.ts";
@@ -79,9 +79,14 @@ function active(el: NodeImpl): boolean {
 
 // --- links / target -----------------------------------------------------------------------
 
-/** https://html.spec.whatwg.org/#selector-link — a/area elements with an href attribute. */
+/**
+ * https://html.spec.whatwg.org/#selector-link — a/area elements with an href attribute; SVG
+ * `<a>` with `href` or `xlink:href` (https://svgwg.org/svg2-draft/linking.html#AElement) is a
+ * hyperlink too (https://drafts.csswg.org/selectors-4/#the-any-link-pseudo).
+ */
 function anyLink(el: NodeImpl): boolean {
-  return (el.tag === T.a || el.tag === T.area) && attr(el, "href") !== null;
+  if (el.tag === T.a || el.tag === T.area) return attr(el, "href") !== null;
+  return el.ns === SVG_NS && el.name === "a" && el.attrs !== null && (attr(el, "href") !== null || findAttributeByNamespace(el, XLINK_NS, "href") !== null);
 }
 
 function never(_el: NodeImpl): boolean {
@@ -181,9 +186,14 @@ function muted(el: NodeImpl): boolean {
 
 /** :state(x) — https://html.spec.whatwg.org/#selector-custom (ElementInternals.states). */
 export function customState(el: NodeImpl, name: string): boolean {
-  const internals = wrapperProp(el, "_internals") as { states?: { has(v: string): boolean } } | null | undefined;
-  return internals !== undefined && internals !== null && internals.states !== undefined && internals.states.has(name);
+  const states = customStates.of(el);
+  return states !== null && states.has(name);
 }
+
+/** https://html.spec.whatwg.org/#custom-state-pseudo-class — the element's CustomStateSet (installed by ./html-predicates.ts). */
+export const customStates = {
+  of: (_el: NodeImpl): Set<string> | null => null,
+};
 
 // --- :lang() / :dir() ---------------------------------------------------------------------
 
@@ -273,10 +283,13 @@ function hasValidDir(n: NodeImpl): boolean {
 
 /** https://html.spec.whatwg.org/#contained-text-auto-directionality */
 function autoDirectionality(el: NodeImpl): number {
-  if (el.tag === T.input || el.tag === T.textarea) {
+  // https://html.spec.whatwg.org/#auto-directionality-form-associated-elements: textarea and
+  // text-like inputs use their value; other input types (checkbox, date, ...) have no text.
+  if (el.tag === T.textarea || (el.tag === T.input && usesValueForDirectionality(inputTypeName(el)))) {
     const d = textDirection(controlValue(el));
     return d === 0 ? 1 : d;
   }
+  if (el.tag === T.input) return 0;
   for (let n = el.first; n !== null; ) {
     if (n.type === ELEMENT_NODE) {
       if (n.tag === T.bdi || n.tag === T.script || n.tag === T.style || n.tag === T.textarea || hasValidDir(n)) {
@@ -321,6 +334,15 @@ export function directionality(el: NodeImpl): number {
     n = p;
   }
   return 1;
+}
+
+function usesValueForDirectionality(type: string): boolean {
+  switch (type) {
+    case "hidden": case "text": case "search": case "tel": case "url": case "email": case "password":
+    case "submit": case "reset": case "button":
+      return true;
+  }
+  return false;
 }
 
 // --- registry -----------------------------------------------------------------------------

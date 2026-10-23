@@ -24,7 +24,9 @@ import {
 import { matchesFocus, matchesFocusVisible, matchesFocusWithin } from "../html/focus.ts";
 import { matchesModal, matchesPopoverOpen } from "../html/top-layer.ts";
 import { isDefined } from "../html/custom-elements.ts";
-import { predicates } from "./state.ts";
+import { customStatesOf } from "../html/HTMLElement.ts";
+import type { Element } from "../nodes/Element.ts";
+import { customStates, predicates } from "./state.ts";
 import { clearSelectorCaches } from "./index.ts";
 
 Object.assign(predicates, {
@@ -51,4 +53,5 @@ Object.assign(predicates, {
   "popover-open": matchesPopoverOpen,
   modal: matchesModal,
 });
+customStates.of = (el) => customStatesOf(el.node as Element);
 clearSelectorCaches();

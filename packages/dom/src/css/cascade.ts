@@ -22,7 +22,7 @@ import { T } from "../nodes/tags.ts";
 import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { KEY_CLASS, KEY_ID, KEY_TAG, matchesSelector, type CompiledSelector } from "../selectors/internal.ts";
-import { predicates } from "../selectors/state.ts";
+import { directionality, inputTypeName, predicates } from "../selectors/state.ts";
 import {
   CSSGroupingRule,
   CSSLayerBlockRule,
@@ -38,13 +38,13 @@ import { DeclBlock, parseDeclBlock } from "./declarations.ts";
 import { evaluateMediaQueryList, type MediaEnvironment, DEFAULT_MEDIA_ENV } from "./media.ts";
 import { mediaEnvironment } from "../window/media.ts";
 import { isCustomPropertyName, propertyInfo } from "./properties.ts";
-import { expandShorthand, isExpandedShorthand, longhandsOf, serializeShorthand, MULTI_LAYER } from "./shorthands.ts";
+import { cascadeLonghandsOf, expandCascadeShorthand, expandShorthand, isCascadeOnlyShorthand, isExpandedShorthand, longhandsOf, pendingLonghandsMap, serializeCascadeShorthand, serializeShorthand, MULTI_LAYER } from "./shorthands.ts";
 import { computeColor } from "./colors.ts";
 import { containsVar, formatNumber, grammarFor, G_COLOR, isCSSWideKeyword, splitComponents, TK_DIMENSION, TK_IDENT, TK_PERCENTAGE, TK_STRING, TK_FUNCTION, TK_DELIM, COMP_SPACE } from "./values.ts";
 import { CSSTokenizer, TK_EOF, TK_FUNCTION as TOK_FUNCTION, TK_LPAREN, TK_RPAREN, TK_COMMA, TK_LBRACKET, TK_RBRACKET } from "./tokenizer.ts";
 import { inlineStyleCount } from "./inline-count.ts";
 import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor, validateAdopted } from "./stylesheets.ts";
-import { $block, $css, $disabled, $doc, $host, $impl, $matches, $media, $name, $names, $queries, $rules, $shadowRoot, $style, $styleVersion, $version, $window } from "../keys.ts";
+import { $block, $css, $disabled, $doc, $host, $impl, $matches, $media, $mode, $name, $names, $queries, $rules, $shadowRoot, $style, $styleVersion, $version, $window } from "../keys.ts";
 
 // --- rule index --------------------------------------------------------------------------------
 
@@ -75,19 +75,25 @@ export class RuleBuckets {
   tags: Map<string, IndexedRule[]>;
   universal: IndexedRule[];
   size: number;
+  /**
+   * Quirks-mode document: id and class keys are ASCII-lowercased on both sides
+   * (https://html.spec.whatwg.org/#case-sensitivity-of-selectors).
+   */
+  quirks: boolean;
 
-  constructor() {
+  constructor(quirks: boolean) {
     this.ids = new Map();
     this.classes = new Map();
     this.tags = new Map();
     this.universal = [];
     this.size = 0;
+    this.quirks = quirks;
   }
 
   add(r: IndexedRule): void {
     this.size++;
     const kind = r.sel.keyKind;
-    const key = r.sel.key;
+    const key = this.quirks && (kind === KEY_ID || kind === KEY_CLASS) ? asciiLowercase(r.sel.key) : r.sel.key;
     let map: Map<string, IndexedRule[]> | null = null;
     if (kind === KEY_ID) map = this.ids;
     else if (kind === KEY_CLASS) map = this.classes;
@@ -120,10 +126,10 @@ export class RuleIndex {
   /** Any rule depends on state outside Document._version (:hover, :focus, :checked, ...). */
   volatile: boolean;
   styleVersion: number;
-  constructor(styleVersion: number) {
-    this.main = new RuleBuckets();
-    this.before = new RuleBuckets();
-    this.after = new RuleBuckets();
+  constructor(styleVersion: number, quirks = false) {
+    this.main = new RuleBuckets(quirks);
+    this.before = new RuleBuckets(quirks);
+    this.after = new RuleBuckets(quirks);
     this.volatile = false;
     this.styleVersion = styleVersion;
   }
@@ -253,8 +259,9 @@ function sheetsHaveRules(rs: RootStyles): boolean {
 export function ruleIndexFor(rs: RootStyles, doc: Document, styleVersion: number): RuleIndex | null {
   if (!rs.hasSheets()) return null;
   let idx = rs.index;
-  if (idx !== null && idx.styleVersion === styleVersion) return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
-  idx = new RuleIndex(styleVersion);
+  const quirks = doc[$mode] === "quirks";
+  if (idx !== null && idx.styleVersion === styleVersion && idx.main.quirks === quirks) return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
+  idx = new RuleIndex(styleVersion, quirks);
   const b = new IndexBuilder(idx, windowEnv(doc));
   for (const s of rs.owners) b.sheet(s);
   for (const s of rs.adopted) if (s instanceof CSSStyleSheet) b.sheet(s);
@@ -286,7 +293,8 @@ export function uaDisplay(el: NodeImpl): string {
     case T.noembed: case T.noframes: case T.param: case T.rp: case T.script: case T.style: case T.template: case T.title:
       return "none";
     case T.dialog:
-      return attr(el, "open") === null ? "none" : "block";
+      // dialog:not([open]) { display: none } / dialog:popover-open { display: block } — https://html.spec.whatwg.org/#flow-content-3
+      return attr(el, "open") === null && !predicates["popover-open"](el) ? "none" : "block";
     case T.html: case T.body: case T.address: case T.blockquote: case T.center: case T.div: case T.figure:
     case T.figcaption: case T.footer: case T.form: case T.header: case T.hr: case T.legend: case T.listing:
     case T.main: case T.p: case T.plaintext: case T.pre: case T.search: case T.xmp: case T.details: case T.summary:
@@ -338,6 +346,9 @@ function uaDisplayImportant(el: NodeImpl): boolean {
 /**
  * UA style sheet subset for properties other than display
  * (https://html.spec.whatwg.org/#rendering — phrasing content, links, headings, tables).
+ * Rules tested against every element must not use volatile pseudo-classes (:dir(),
+ * :focus-visible, ...): testing one marks the style record volatile and disables its cache.
+ * The bidi rules are applied on read instead (uaDirection).
  */
 const UA_CSS = `
 a[href], area[href] { color: rgb(0, 0, 238); text-decoration: underline; cursor: pointer; }
@@ -382,6 +393,9 @@ export const PSEUDO_BEFORE = 1;
 export const PSEUDO_AFTER = 2;
 
 const PENDING = "\0";
+
+/** Expanded + cascade-only shorthands → longhands, merged so applyBlock does one lookup per declaration. */
+const PENDING_LONGHANDS = pendingLonghandsMap();
 
 /** Cascade result + memoized computed values for one element (or pseudo-element). */
 export class StyleRecord {
@@ -501,10 +515,11 @@ function collect(buckets: RuleBuckets, el: NodeImpl, pseudo: string, host: NodeI
       if (matchesSelector(r.sel, el, pseudo, opts)) out.push(new Matched(r, context));
     }
   };
-  if (el.id !== "" && buckets.ids.size !== 0) test(buckets.ids.get(el.id));
+  const quirks = buckets.quirks;
+  if (el.id !== "" && buckets.ids.size !== 0) test(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id));
   if (buckets.classes.size !== 0 && el.attrs !== null) {
     const cls = classTokens(el);
-    for (let i = 0; i < cls.length; i++) test(buckets.classes.get(cls[i]));
+    for (let i = 0; i < cls.length; i++) test(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]));
   }
   if (buckets.tags.size !== 0) test(buckets.tags.get(asciiLowercase(el.name)));
   test(buckets.universal);
@@ -521,10 +536,12 @@ function applyBlock(map: Map<string, string>, block: DeclBlock, important: boole
   for (let i = 0; i < names.length; i++) {
     if (imp[i] !== important) continue;
     const name = names[i];
-    if (isExpandedShorthand(name)) {
-      // Unexpanded shorthand (var() or multi-layer): record it under each longhand.
+    const longhands = PENDING_LONGHANDS.get(name);
+    if (longhands !== undefined) {
+      // Unexpanded shorthand (var(), multi-layer, or a cascade-only shorthand such as
+      // `outline`): record it under each longhand, resolved on read (resolvePending).
       const pending = PENDING + name + PENDING + values[i];
-      for (const l of longhandsOf(name)!) map.set(l, pending);
+      for (let j = 0; j < longhands.length; j++) map.set(longhands[j], pending);
       map.set(name, values[i]);
       continue;
     }
@@ -582,12 +599,11 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
     const idx = ruleIndexFor(rs, doc, styleVersion);
     if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), 1, matched, rec);
   }
-  if (pseudo === PSEUDO_NONE) {
-    const srs = shadowStylesOf(el);
-    if (srs !== null) {
-      const idx = ruleIndexFor(srs, doc, styleVersion);
-      if (idx !== null) collect(idx.main, el, "", el, 0, matched, rec);
-    }
+  // The host's own shadow tree styles it (and its ::before/::after) through :host rules.
+  const srs = shadowStylesOf(el);
+  if (srs !== null) {
+    const idx = ruleIndexFor(srs, doc, styleVersion);
+    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, el, 0, matched, rec);
   }
   const uaMatched: Matched[] = [];
   if (pseudo === PSEUDO_NONE && el.ns === HTML_NS) collect(uaRuleIndex().main, el, "", null, 0, uaMatched, rec);
@@ -872,9 +888,10 @@ function resolvePending(rec: StyleRecord, prop: string, pending: string): string
   if (raw === null) return null;
   const lower = raw.trim().toLowerCase();
   if (isCSSWideKeyword(lower)) return lower;
-  const vals = expandShorthand(shorthand, raw);
+  const cascadeOnly = isCascadeOnlyShorthand(shorthand);
+  const vals = cascadeOnly ? expandCascadeShorthand(shorthand, raw) : expandShorthand(shorthand, raw);
   if (vals === null || vals === MULTI_LAYER) return null;
-  const i = longhandsOf(shorthand)!.indexOf(prop);
+  const i = cascadeLonghandsOf(shorthand)!.indexOf(prop);
   return i === -1 ? null : vals[i];
 }
 
@@ -887,11 +904,11 @@ export function computedValueOf(rec: StyleRecord, prop: string): string {
     if (m !== undefined) return m;
   }
   let result: string;
-  if (isExpandedShorthand(prop)) {
-    const longhands = longhandsOf(prop)!;
+  const longhands = PENDING_LONGHANDS.get(prop);
+  if (longhands !== undefined) {
     const vals: string[] = [];
     for (const l of longhands) vals.push(computedValueOf(rec, l));
-    result = vals.indexOf("") !== -1 ? "" : serializeShorthand(prop, vals, true);
+    result = vals.indexOf("") !== -1 ? "" : isCascadeOnlyShorthand(prop) ? serializeCascadeShorthand(prop, vals) : serializeShorthand(prop, vals, true);
   } else if (prop === "display") {
     result = computeDisplay(rec);
   } else {
@@ -912,7 +929,13 @@ function cascadedToComputed(rec: StyleRecord, prop: string, v: string | undefine
     const r = substitute(v, (n) => customProps(rec)?.get(n) ?? null);
     v = r === null ? "unset" : r.trim();
   }
-  if (v === undefined) return inherited ? inheritedValue(rec, prop) : initialValue(rec, prop);
+  if (v === undefined) {
+    if (prop === "direction" && rec.pseudo === PSEUDO_NONE) {
+      const ua = uaDirection(rec.el);
+      if (ua !== "") return ua;
+    }
+    return inherited ? inheritedValue(rec, prop) : initialValue(rec, prop);
+  }
   switch (v) {
     case "inherit":
       return inheritedValue(rec, prop);
@@ -928,6 +951,19 @@ function cascadedToComputed(rec: StyleRecord, prop: string, v: string | undefine
     }
   }
   return computeSpecified(rec, prop, v);
+}
+
+/**
+ * https://html.spec.whatwg.org/#bidi-rendering — `[dir]:dir(ltr), bdi:dir(ltr),
+ * input[type=tel i]:dir(ltr) { direction: ltr }` and `[dir]:dir(rtl), bdi:dir(rtl) { direction:
+ * rtl }`, evaluated when `direction` is read (no per-element rule matching); "" when no UA rule applies.
+ */
+function uaDirection(el: NodeImpl): string {
+  if (el.ns !== HTML_NS) return "";
+  if (attr(el, "dir") === null && el.tag !== T.bdi && !(el.tag === T.input && inputTypeName(el) === "tel")) return "";
+  const d = directionality(el);
+  if (d === 2) return el.tag === T.input && attr(el, "dir") === null ? "ltr" : "rtl";
+  return "ltr";
 }
 
 function computeDisplay(rec: StyleRecord): string {
