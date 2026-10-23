@@ -12,6 +12,9 @@ const path = require('node:path');
 const out = process.env.RTD_SENTRY_OUT;
 const checkout = process.env.RTD_SENTRY_CHECKOUT;
 const gc = process.env.RTD_SENTRY_GC === '1' ? globalThis.gc : undefined;
+// RTD_SENTRY_SNAPSHOTS=10,38: write a heap snapshot after those file indexes (after the GC) to
+// $RTD_SENTRY_OUT/snapshots/<pid>-<index>.heapsnapshot, for retention diffs.
+const snapshotAt = new Set((process.env.RTD_SENTRY_SNAPSHOTS ?? '').split(',').filter(Boolean).map(Number));
 let fileIndex = 0;
 
 function record(entry) {
@@ -43,6 +46,10 @@ function instrument(Base) {
       await super.teardown();
       const tornDown = performance.now();
       if (gc) gc();
+      if (out && snapshotAt.has(fileIndex)) {
+        fs.mkdirSync(path.join(out, 'snapshots'), {recursive: true});
+        require('node:v8').writeHeapSnapshot(path.join(out, 'snapshots', `${process.pid}-${fileIndex}.heapsnapshot`));
+      }
       const mem = process.memoryUsage();
       record({
         pid: process.pid,
