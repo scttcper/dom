@@ -4,19 +4,22 @@
 // Specs: https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings,
 //        https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion
 
-import { ELEMENT_NODE, attr, type NodeImpl } from "@rtd/dom/internal";
+import { ELEMENT_NODE, attr, getComputedStyleOverride, type NodeImpl } from "@rtd/dom/internal";
 import type { Element } from "@rtd/dom";
 import { implicitRole } from "./role.ts";
-import { isInaccessibleImpl } from "./hidden.ts";
-import { computeAccessibleNameImpl, computeAccessibleDescriptionImpl } from "./accname.ts";
+import { isInaccessibleImpl, isInaccessibleWithStyle } from "./hidden.ts";
+import { computeAccessibleNameImpl, computeAccessibleDescriptionImpl, type GetComputedStyle } from "./accname.ts";
 import { implOf } from "./tree.ts";
 
 /** Role → elements (tree order), keyed in order of first appearance. Implicit role "" elements are skipped. */
 export function getRolesImpl(container: NodeImpl, hidden: boolean): Map<string, NodeImpl[]> {
   const out = new Map<string, NodeImpl[]>();
+  // A user-replaced window.getComputedStyle is what role-helpers.js reads (checked once per call).
+  const gcs = hidden ? null : (getComputedStyleOverride(container) as unknown as GetComputedStyle | null);
+  const memo = gcs !== null ? new Map<NodeImpl, boolean>() : null;
   // flattenDOM: the container followed by its element descendants, preorder.
   for (let n: NodeImpl | null = container; n !== null; ) {
-    if (n.type === ELEMENT_NODE && (hidden || !isInaccessibleImpl(n))) {
+    if (n.type === ELEMENT_NODE && (hidden || !(gcs === null ? isInaccessibleImpl(n) : isInaccessibleWithStyle(n, gcs, memo)))) {
       const roleAttr = attr(n, "role");
       let role: string;
       if (roleAttr !== null) {
@@ -76,8 +79,11 @@ export interface PrettyRolesOptions {
  * `el.cloneNode(false)` (it lives in @rtd/testing-library, which passes its own).
  */
 export function prettyRoles(dom: Element, options: PrettyRolesOptions, prettyDOM: (node: Element) => string): string {
-  const map = getRolesImpl(implOf(dom), options.hidden ?? false);
-  const nameOptions = { computedStyleSupportsPseudoElements: options.computedStyleSupportsPseudoElements ?? false };
+  const root = implOf(dom);
+  const map = getRolesImpl(root, options.hidden ?? false);
+  const gcs = getComputedStyleOverride(root) as unknown as GetComputedStyle | null;
+  const pseudo = options.computedStyleSupportsPseudoElements ?? false;
+  const nameOptions = gcs === null ? { computedStyleSupportsPseudoElements: pseudo } : { computedStyleSupportsPseudoElements: pseudo, getComputedStyle: gcs };
   const delimiterBar = "-".repeat(50);
   const parts: string[] = [];
   for (const [role, elements] of map) {

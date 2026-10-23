@@ -24,8 +24,9 @@ export {
   computeAccessibleNameImpl,
   computeAccessibleDescriptionImpl,
   computeTextAlternativeImpl,
+  withStyleOverride,
 } from "./accname.ts";
-export { isInaccessibleImpl, isSubtreeInaccessibleImpl } from "./hidden.ts";
+export { isInaccessibleImpl, isSubtreeInaccessibleImpl, isInaccessibleWithStyle } from "./hidden.ts";
 export { getRolesImpl } from "./roles-list.ts";
 export {
   computeAriaSelected,

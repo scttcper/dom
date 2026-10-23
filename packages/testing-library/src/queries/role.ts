@@ -9,7 +9,7 @@
 // candidates. Filters are pure, so the reordering does not change results.
 
 import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@rtd/dom/internal";
-import { aria } from "../aria.ts";
+import { aria, styleOverride } from "../aria.ts";
 import {
   computeAriaSelected,
   computeAriaBusy,
@@ -97,14 +97,18 @@ function queryAllByRole(
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
   const root = implOf(container);
   const out: any[] = [];
+  // Upstream reads styles through `window.getComputedStyle`; a user-replaced one (checked once
+  // per query) takes the slow path with upstream's per-query `subtreeIsInaccessibleCache`.
+  const gcs = styleOverride(root);
+  const memo = gcs !== null && hidden === false ? new Map<NodeImpl, boolean>() : null;
 
   for (let el = root.first; el !== null; el = nextInTree(el, root)) {
     if (el.type !== ELEMENT_NODE) continue;
     if (!aria.roleMatches(el, role, queryFallbacks)) continue;
     if (!matchesState(el)) continue;
-    if (hidden === false && isInaccessibleImpl(el)) continue;
-    if (name !== undefined && !matches(aria.computeAccessibleName(el, pseudo), el.node, name as Matcher, identity)) continue;
-    if (description !== undefined && !matches(aria.computeAccessibleDescription(el, pseudo), el.node, description as Matcher, identity)) continue;
+    if (hidden === false && (gcs === null ? isInaccessibleImpl(el) : aria.isInaccessibleWithStyle(el, gcs, memo))) continue;
+    if (name !== undefined && !matches(aria.computeAccessibleName(el, pseudo, gcs), el.node, name as Matcher, identity)) continue;
+    if (description !== undefined && !matches(aria.computeAccessibleDescription(el, pseudo, gcs), el.node, description as Matcher, identity)) continue;
     out.push(el.node);
   }
   return out;

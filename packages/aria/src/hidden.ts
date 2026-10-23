@@ -11,7 +11,7 @@ import type { Element } from "@rtd/dom";
 import { isDisplayNone, isVisibilityHidden } from "./style.ts";
 import type { GetComputedStyle } from "./accname.ts";
 import { implOf } from "./tree.ts";
-import { $styleVersion, $version, $window } from "@rtd/dom/internal";
+import { $styleVersion, $version, $window, getComputedStyleOverride } from "@rtd/dom/internal";
 
 /**
  * Subtree exclusion for one element: `element.hidden === true` (HTMLElement only),
@@ -56,6 +56,35 @@ export function isInaccessibleImpl(impl: NodeImpl): boolean {
   return chainInaccessible(impl, doc[$version], doc[$styleVersion]);
 }
 
+/**
+ * Testing Library's `isInaccessible(element, { isSubtreeInaccessible: cachedIsSubtreeInaccessible })`
+ * while the window's `getComputedStyle` is user-replaced (`getComputedStyleOverride`): every
+ * style read goes through `gcs` exactly where role-helpers.js calls
+ * `window.getComputedStyle(element)` — `visibility` of the element, then `display` per
+ * ancestor. `memo` plays upstream's per-query `subtreeIsInaccessibleCache` (pass null for a
+ * one-off call). Nothing is cached on the nodes: the replacement's answers are not versioned.
+ */
+export function isInaccessibleWithStyle(impl: NodeImpl, gcs: GetComputedStyle, memo: Map<NodeImpl, boolean> | null): boolean {
+  // since visibility is inherited we can exit early
+  if (gcs(impl.node as unknown as Element).visibility === "hidden") return true;
+  for (let cur: NodeImpl | null = impl; cur !== null && cur.type === ELEMENT_NODE; cur = cur.parent) {
+    let hidden = memo !== null ? memo.get(cur) : undefined;
+    if (hidden === undefined) {
+      hidden = isSubtreeInaccessibleWithStyle(cur, gcs);
+      if (memo !== null) memo.set(cur, hidden);
+    }
+    if (hidden) return true;
+  }
+  return false;
+}
+
+/** role-helpers.js `isSubtreeInaccessible` reading `display` through `gcs`. */
+function isSubtreeInaccessibleWithStyle(impl: NodeImpl, gcs: GetComputedStyle): boolean {
+  if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
+  if (attr(impl, "aria-hidden") === "true") return true;
+  return gcs(impl.node as unknown as Element).display === "none";
+}
+
 // --- public, dom-accessibility-api / Testing Library compatible ---------------------------
 
 export interface IsSubtreeInaccessibleOptions {
@@ -77,7 +106,9 @@ function checkGetComputedStyle(impl: NodeImpl, options: IsSubtreeInaccessibleOpt
     return gcs;
   }
   if ((impl.doc as unknown as { [$window]: unknown })[$window] === null) throw new TypeError(NO_WINDOW);
-  return null;
+  // Default: `element.ownerDocument.defaultView.getComputedStyle`; only a user-replaced one
+  // leaves the fast path.
+  return getComputedStyleOverride(impl);
 }
 
 /**

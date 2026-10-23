@@ -5,9 +5,9 @@ import { attr } from "@rtd/dom/internal";
 import { getDefaultNormalizer } from "./matches.ts";
 import { getNodeTextImpl } from "./get-node-text.ts";
 import { getConfig } from "./config.ts";
-import { getImplicitAriaRolesImpl, isInaccessibleImpl } from "./role-helpers.ts";
+import { getImplicitAriaRolesImpl, isInaccessibleChecked } from "./role-helpers.ts";
 import { getLabelsImpl, LabelContext } from "./label-helpers.ts";
-import { aria } from "./aria.ts";
+import { aria, styleOverride } from "./aria.ts";
 import { getDocument, implOf } from "./helpers.ts";
 import { matchesSelector } from "./selectors.ts";
 
@@ -58,7 +58,7 @@ function makeSuggestion(queryName: string, element: any, content: string, { vari
     queryOptions.name = getRegExpMatcher(name);
   }
 
-  if (queryName === "Role" && isInaccessibleImpl(implOf(element))) {
+  if (queryName === "Role" && isInaccessibleChecked(implOf(element))) {
     queryOptions.hidden = true;
     warning = `Element is inaccessible. This means that the element and all its children are invisible to screen readers.
     If you are using the aria-hidden prop, make sure this is the right choice for your case.
@@ -111,7 +111,7 @@ export function getSuggestedQuery(element: any, variant: Variant = "get", method
   if (role !== "generic" && canSuggest("Role", method, role)) {
     return makeSuggestion("Role", element, role, {
       variant,
-      name: aria.computeAccessibleName(impl, getConfig().computedStyleSupportsPseudoElements),
+      name: aria.computeAccessibleName(impl, getConfig().computedStyleSupportsPseudoElements, styleOverride(impl)),
     });
   }
 

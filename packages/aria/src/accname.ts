@@ -27,7 +27,7 @@ import { daaGetRole, anyTag, type Flavor } from "./role.ts";
 import { controlValue, inputType, labelsOf, selectedOptions } from "./forms.ts";
 import { queryIdRefs, textContent } from "./tree.ts";
 import { isDisplayInline, isDisplayNone, isVisibilityHidden, pseudoText } from "./style.ts";
-import { $impl, $styleVersion, $version } from "@rtd/dom/internal";
+import { $impl, $styleVersion, $version, getComputedStyleOverride } from "@rtd/dom/internal";
 
 /** Minimal CSSStyleDeclaration shape read from a user-supplied `getComputedStyle`. */
 export interface StyleLike {
@@ -543,6 +543,24 @@ function prohibitsNaming(role: string | null, flavor: Flavor): boolean {
     default:
       return false;
   }
+}
+
+/**
+ * dom-accessibility-api defaults `getComputedStyle` to `window.getComputedStyle.bind(window)`,
+ * so a user-replaced one (`getComputedStyleOverride`) is what it reads when the caller passes
+ * none. Returns `options` unchanged (no allocation) unless a replacement is installed; then
+ * the replacement is passed explicitly, keeping upstream's `computedStyleSupportsPseudoElements`
+ * default (`false` when the caller did not pass `getComputedStyle`).
+ */
+export function withStyleOverride(root: NodeImpl, options: ComputeTextAlternativeOptions | undefined): ComputeTextAlternativeOptions | undefined {
+  if (options !== undefined && options.getComputedStyle !== undefined) return options;
+  const gcs = getComputedStyleOverride(root);
+  if (gcs === null) return options;
+  return {
+    ...options,
+    getComputedStyle: gcs as unknown as GetComputedStyle,
+    computedStyleSupportsPseudoElements: options?.computedStyleSupportsPseudoElements ?? false,
+  };
 }
 
 function isDefaultOptions(options: ComputeTextAlternativeOptions | undefined): boolean {

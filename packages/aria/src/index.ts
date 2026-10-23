@@ -19,6 +19,7 @@ import type { Element, Node } from "@rtd/dom";
 import {
   computeAccessibleNameImpl,
   computeAccessibleDescriptionImpl,
+  withStyleOverride,
   type ComputeTextAlternativeOptions,
 } from "./accname.ts";
 import { daaGetRole, getImplicitRoles, implicitRole, implicitRoleJestDom } from "./role.ts";
@@ -49,12 +50,14 @@ export {
 
 /** https://w3c.github.io/accname/#mapping_additional_nd_name */
 export function computeAccessibleName(root: Element, options?: ComputeTextAlternativeOptions): string {
-  return computeAccessibleNameImpl(implOf(root), options, 5);
+  const impl = implOf(root);
+  return computeAccessibleNameImpl(impl, withStyleOverride(impl, options), 5);
 }
 
 /** https://w3c.github.io/accname/#mapping_additional_nd_description */
 export function computeAccessibleDescription(root: Element, options?: ComputeTextAlternativeOptions): string {
-  return computeAccessibleDescriptionImpl(implOf(root), options, 5);
+  const impl = implOf(root);
+  return computeAccessibleDescriptionImpl(impl, withStyleOverride(impl, options), 5);
 }
 
 /** dom-accessibility-api `getRole`: explicit role (first token) or the html-aria implicit role, or null. */
@@ -70,10 +73,12 @@ export function isDisabled(element: Element): boolean {
 /** dom-accessibility-api@0.6.3 behavior (aria-description, role="none" ≡ presentation), as used by jest-dom@7. */
 export const daa06 = {
   computeAccessibleName(root: Element, options?: ComputeTextAlternativeOptions): string {
-    return computeAccessibleNameImpl(implOf(root), options, 6);
+    const impl = implOf(root);
+  return computeAccessibleNameImpl(impl, withStyleOverride(impl, options), 6);
   },
   computeAccessibleDescription(root: Element, options?: ComputeTextAlternativeOptions): string {
-    return computeAccessibleDescriptionImpl(implOf(root), options, 6);
+    const impl = implOf(root);
+  return computeAccessibleDescriptionImpl(impl, withStyleOverride(impl, options), 6);
   },
   getRole(element: Element): string | null {
     return daaGetRole(implOf(element), 6);

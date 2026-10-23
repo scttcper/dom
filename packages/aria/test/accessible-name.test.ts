@@ -555,11 +555,16 @@ describe("options.getComputedStyle — https://w3c.github.io/accname/#step2A", (
 		vi.restoreAllMocks();
 	});
 
-	test("does not call window.getComputedStyle by default (fast path; upstream: called once)", () => {
+	test("is called by default", () => {
+		// Upstream: `window.getComputedStyle` is the default style source. Our default reads the
+		// cascade directly while the window's own getComputedStyle is in place; a spy (or any
+		// replacement) on it is honored like upstream and, calling through, changes nothing.
 		const container = renderIntoDocument("<button>test</button>");
-		const spy = typeof window.getComputedStyle === "function" ? vi.spyOn(window as never, "getComputedStyle") : null;
-		expect(computeAccessibleName(container.querySelector("button") as Element)).toBe("test");
-		if (spy !== null) expect(spy).not.toHaveBeenCalled();
+		const button = container.querySelector("button") as Element;
+		const view = (button as any).ownerDocument.defaultView;
+		const spy = vi.spyOn(view as never, "getComputedStyle");
+		expect(computeAccessibleName(button)).toBe("test");
+		expect(spy).toHaveBeenCalledTimes(1);
 	});
 
 	test("can be mocked with a fake", () => {

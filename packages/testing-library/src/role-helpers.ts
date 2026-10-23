@@ -6,7 +6,7 @@
 // testing-library's own semantics and are ported here over NodeImpl.
 
 import { attr, ELEMENT_NODE, HTML_NS, T, type NodeImpl } from "@rtd/dom/internal";
-import { aria, isVisibilityHidden } from "./aria.ts";
+import { aria, isVisibilityHidden, styleOverride } from "./aria.ts";
 import { prettyDOM } from "./pretty-dom.ts";
 import { getConfig } from "./config.ts";
 import { implOf } from "./helpers.ts";
@@ -37,16 +37,31 @@ export function isInaccessibleImpl(element: NodeImpl): boolean {
   return aria.isInaccessible(element);
 }
 
+/**
+ * `isInaccessible(element)` for one-off callers (suggestions): honors a user-replaced
+ * `window.getComputedStyle` like upstream, at the cost of one check per call.
+ */
+export function isInaccessibleChecked(element: NodeImpl): boolean {
+  const gcs = styleOverride(element);
+  return gcs === null ? aria.isInaccessible(element) : aria.isInaccessibleWithStyle(element, gcs, null);
+}
+
 export function isSubtreeInaccessible(element: any): boolean {
-  return isSubtreeInaccessibleImpl(implOf(element));
+  const impl = implOf(element);
+  const gcs = styleOverride(impl);
+  if (gcs === null) return isSubtreeInaccessibleImpl(impl);
+  if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
+  if (attr(impl, "aria-hidden") === "true") return true;
+  return gcs(element).display === "none";
 }
 
 export function isInaccessible(element: any, options: { isSubtreeInaccessible?: (element: any) => boolean } = {}): boolean {
   const impl = implOf(element);
   const custom = options.isSubtreeInaccessible;
-  if (custom === undefined) return isInaccessibleImpl(impl);
+  const gcs = styleOverride(impl);
+  if (custom === undefined) return gcs === null ? isInaccessibleImpl(impl) : aria.isInaccessibleWithStyle(impl, gcs, null);
   // since visibility is inherited we can exit early
-  if (isVisibilityHidden(impl)) return true;
+  if (gcs !== null ? gcs(element).visibility === "hidden" : isVisibilityHidden(impl)) return true;
   for (let current: NodeImpl | null = impl; current !== null; current = parentElement(current)) {
     if (custom(current.node)) return true;
   }
@@ -66,8 +81,10 @@ export function getImplicitAriaRoles(currentNode: any): string[] {
 export function getRoles(container: any, { hidden = false }: { hidden?: boolean } = {}): Record<string, any[]> {
   const root = implOf(container);
   const roles: Record<string, any[]> = {};
+  const gcs = hidden !== false ? null : styleOverride(root);
+  const memo = gcs !== null ? new Map<NodeImpl, boolean>() : null;
   const visit = (node: NodeImpl) => {
-    if (hidden !== false || isInaccessibleImpl(node) === false) {
+    if (hidden !== false || (gcs === null ? isInaccessibleImpl(node) : aria.isInaccessibleWithStyle(node, gcs, memo)) === false) {
       // TODO: This violates html-aria which does not allow any role on every element
       const explicit = attr(node, "role");
       const nodeRoles = explicit !== null ? explicit.split(" ").slice(0, 1) : getImplicitAriaRolesImpl(node);
@@ -88,6 +105,7 @@ export function getRoles(container: any, { hidden = false }: { hidden?: boolean 
 export function prettyRoles(dom: any, { hidden, includeDescription }: { hidden?: boolean; includeDescription?: boolean }): string {
   const roles = getRoles(dom, { hidden });
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
+  const gcs = styleOverride(implOf(dom));
   // We prefer to skip generic role, we don't recommend it
   return Object.entries(roles)
     .filter(([role]) => role !== "generic")
@@ -96,10 +114,10 @@ export function prettyRoles(dom: any, { hidden, includeDescription }: { hidden?:
       const elementsString = elements
         .map((el) => {
           const impl = implOf(el);
-          const nameString = `Name "${aria.computeAccessibleName(impl, pseudo)}":\n`;
+          const nameString = `Name "${aria.computeAccessibleName(impl, pseudo, gcs)}":\n`;
           const domString = prettyDOM(el.cloneNode(false));
           if (includeDescription) {
-            const descriptionString = `Description "${aria.computeAccessibleDescription(impl, pseudo)}":\n`;
+            const descriptionString = `Description "${aria.computeAccessibleDescription(impl, pseudo, gcs)}":\n`;
             return `${nameString}${descriptionString}${domString}`;
           }
           return `${nameString}${domString}`;
