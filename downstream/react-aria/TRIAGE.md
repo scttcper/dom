@@ -4,7 +4,7 @@ Pinned `adobe/react-spectrum@d5fb723a` (2026-10-23), Jest 30.4.2, React 19.3.0, 
 baseline `jest-environment-jsdom` 30.4.1 / jsdom **26.1.0**.
 
 **Current** (`results/2026-10-23-all.md`, 3006 tests): rtd-dom 2996 passed, **1 failed**; rtd-full
-2989 passed, **8 failed**. Started at rtd-dom 297 failed + 68 missing, rtd-full 266 + 92.
+2989 passed, **8 failed**, 7 of them from the user-event version pin (cluster 10). Started at rtd-dom 297 failed + 68 missing, rtd-full 266 + 92.
 
 What is left:
 
@@ -12,7 +12,7 @@ What is left:
 | --- | --: | --- | --- |
 | both | 1 | `useOverlayPosition` "at top": bottom 518 vs 350 | parked: jsdom 26 quirk (offsetParent and computed transform/filter match jsdom 30) |
 | rtd-full | 6 | Checkbox/Radio/Switch "press state with keyboard": `onPress` ×2 | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
-| rtd-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | open: only with @rtd/user-event (our RTL + DTL with stock user-event pass); React updates land in act's async microtask flush |
+| rtd-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
 
 Also seen once: `ariaHideOutside.test.js` failing to load in a full run ("Cannot read properties of
 undefined (reading 'doc')" in `inHTMLDocument`); passes alone and in later full runs.
@@ -35,7 +35,7 @@ jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 | 7 | `validationMessage` text differs from jsdom ("Constraints not satisfied") | html-forms | 19 | `repros/html-forms-validation-message-text.test.ts` | fixed (5a8c966) |
 | 8 | Teardown deletes `window` → late React work kills the Jest worker | jest-environment | 1 file + whatever the crashed worker had queued (5–29) | `repros/jest-environment-teardown-removes-window.test.ts` | fixed (cf0a3f9) |
 | 9 | iframe child window shares the parent's interface objects | window (+ html-elements) | 4 | `repros/window-iframe-shares-interface-objects.test.ts` | deviation (docs/deviations.md); the 4 tests pass since 87efa87 + 8c7dfa5 (clusters 15, 16) |
-| 10 | rtd-full: keyboard Space press fires onPress twice | user-event 14.6.5 vs 14.6.8 | 6 | `packages/user-event/test/react/press.test.tsx` | upstream version pin (not ours) |
+| 10 | rtd-full: keyboard Space press fires onPress twice; Autocomplete `act()` warning | user-event 14.6.5 vs 14.6.8 | 7 | `packages/user-event/test/react/press.test.tsx`, `packages/user-event/test/react/blur-change-act.test.tsx` | upstream version pin (not ours) |
 | 11 | Unattributed (focus/selection in collections, dnd, act warnings, …) | — | ~120 | — | resolved into 12-20 and the fixes above |
 | 12 | `inert` IDL attribute exposed: drag tests saw rows behind the drag (hide-outside used `inert`, jsdom has none) | html | Table/Tree/GridList DnD + masked failures | — | fixed (f5b3a69) |
 | 13 | `AbortSignal.timeout` on Node's real-time timer: fake timers never abort it (`runAfterKeyboard`) | window | 5 | — | fixed (12fda74) |
@@ -183,6 +183,21 @@ stock 14.6.8 double-presses exactly like ours; the rtd-dom baseline passes only 
 14.6.5. `packages/user-event/test/react/press.test.tsx` runs a usePress-style component under both
 our user-event and stock 14.6.8 and asserts the same event sequence and press count. We keep
 14.6.8's behavior rather than reintroduce the old string.
+
+Same pin, second symptom: RAC Autocomplete "async filtering performed outside the autocomplete
+should properly filter and autofocus the first item when typing forward" fails on React's
+"An update to ForwardRef(Input) inside a test was not wrapped in act(...)". During the test's
+`await act(async () => jest.advanceTimersToNextTimer())`, the async list resolves and the commit's
+passive effect (`useSelectableItem`) calls `dispatchVirtualBlur` on the input that `user.keyboard('F')`
+typed into. user-event's capture `blur` listener (`prepareDocument`) sees a changed value and
+dispatches `change`. In 14.6.8 that goes through `dispatchDOMEvent` → `wrapEvent` → RTL's
+`eventWrapper`, a synchronous `act()`. It runs at act scope depth 0 inside the outer async act's
+queue flush, so on exit it sets React's `actQueue` to null, and the updates the flush schedules
+afterwards (the `focusout` handlers' `setFocused`) warn. The 14.6.5 package react-spectrum pins
+ships mismatched builds: its ESM `prepareDocument` already uses `dispatchDOMEvent`, but the
+CommonJS one Jest loads calls `el.dispatchEvent(new Event('change'))` with no `act()`, so the
+queue survives. `packages/user-event/test/react/blur-change-act.test.tsx` reproduces it with a
+small component and shows stock 14.6.8 + stock RTL emitting the same warning as ours.
 
 Related (only with a `--shims` subset): substituting only `@testing-library/user-event` used to lose
 `act()` wrapping (stock RTL configures stock `@testing-library/dom`). Fixed in 83eab21: when a React
