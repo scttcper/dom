@@ -1,84 +1,87 @@
-# react-testing-dom
+# ctrl-dom
 
-The React Testing Library stack — `@testing-library/react`, `@testing-library/dom`,
-`@testing-library/user-event`, `@testing-library/jest-dom`, `aria-query`,
-`dom-accessibility-api` — reimplemented down to the DOM itself (replacing jsdom / happy-dom)
-as one cohesive codebase built for one job: testing React components fast.
+`@ctrl/dom` is the DOM for testing React components: a drop-in replacement for jsdom and
+happy-dom, several times faster with a fraction of the memory, with `@testing-library/react`,
+`@testing-library/dom`, `@testing-library/user-event`, `@testing-library/jest-dom`, `aria-query`
+and `dom-accessibility-api` reimplemented on top of it as one cohesive codebase.
 
 Everything is drop-in: same exports, same behavior, same error messages and `prettyDOM` output.
-You can swap only the environment (stock Testing Library on `@rtd/dom`) or the whole stack.
+Swap only the DOM (stock Testing Library on `@ctrl/dom`) or the whole stack.
 
 ## Use it
 
-Not published yet (`private: true`); `pnpm build` + `pnpm pack` produce installable tarballs,
-and `pnpm test:pack` installs them into a fresh project and runs every setup below.
+Not published yet. `pnpm build` assembles the publishable packages under `release/`, and
+`pnpm test:pack` installs their tarballs into a fresh project and runs every setup below.
 
-Vitest (>= 5) — swap only the environment; stock `@testing-library/*` keep working:
+Vitest (>= 5), whole stack: the environment plus your `@testing-library/*` imports routed to
+`@ctrl/dom`, with only `@ctrl/dom` installed:
 
 ```ts
 // vitest.config.ts
-export default defineConfig({
-  test: {
-    environment: "rtd", // vitest-environment-rtd
-  },
-});
+import { defineConfig } from "vitest/config";
+import { ctrlDom } from "@ctrl/dom/vitest";
+
+export default defineConfig({ plugins: [ctrlDom()], test: { pool: "vmThreads" } });
 ```
 
-Whole stack: import `@rtd/react`, `@rtd/user-event`, `@rtd/jest-dom/vitest` directly, or keep
-your imports and alias them (each `@rtd/*` package you alias to must be installed):
+Vitest, DOM only (`pnpm add -D @ctrl/dom vitest-environment-ctrl-dom`):
 
 ```ts
-resolve: {
-  alias: {
-    "@testing-library/react": "@rtd/react",
-    "@testing-library/dom": "@rtd/testing-library",
-    "@testing-library/user-event": "@rtd/user-event",
-    "@testing-library/jest-dom": "@rtd/jest-dom", // also maps @testing-library/jest-dom/vitest
-  },
-},
+export default defineConfig({ test: { environment: "ctrl-dom" } });
 ```
 
-Jest (>= 30):
+Jest (>= 30) (`pnpm add -D @ctrl/dom jest-environment-ctrl-dom`):
 
 ```js
 // jest.config.js
 module.exports = {
-  testEnvironment: "jest-environment-rtd", // environment only, stock @testing-library/*
-  // preset: "jest-environment-rtd",       // required when test code uses any @rtd/* package
+  preset: "@ctrl/dom", // whole stack: @testing-library/* routed to @ctrl/dom's CommonJS builds
+  setupFilesAfterEnv: ["@ctrl/dom/jest-dom"],
+  // testEnvironment: "ctrl-dom", // DOM only, stock @testing-library/*
 };
 ```
 
-The preset maps `@rtd/dom` to the environment's own instance so test modules share one DOM;
-`@rtd/react`, `@rtd/user-event`, `@rtd/testing-library`, `@rtd/jest-dom` and `@rtd/aria` ship
-CommonJS builds for Jest's module registry (Jest can only `require()` ES modules under
-`--experimental-vm-modules`). Packages need Node >= 26; TypeScript users need `lib: ["dom"]`
-as with upstream.
+Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom` (`/vitest`,
+`/jest-globals`), `@ctrl/dom/testing-library` and `@ctrl/dom/aria` directly. Packages need
+Node >= 26; TypeScript users need `lib: ["dom"]` as with upstream. The published README
+([publish/ctrl-dom/README.md](publish/ctrl-dom/README.md)) documents options and presets.
 
 ## Packages
 
-| Package | Replaces | |
-| --- | --- | --- |
-| `@rtd/dom` | jsdom / happy-dom | nodes, WHATWG HTML parser, selectors, CSS cascade + CSSOM, events, forms, window |
-| `@rtd/aria` | aria-query + dom-accessibility-api | roles, accessible name/description, states, hidden |
-| `@rtd/testing-library` | `@testing-library/dom` 10.4 | queries, `waitFor`, `fireEvent`, `prettyDOM`, suggestions |
-| `@rtd/react` | `@testing-library/react` 16.3 | `render`, `renderHook`, `act`, cleanup |
-| `@rtd/user-event` | `@testing-library/user-event` 14.6 | pointer/keyboard simulation |
-| `@rtd/jest-dom` | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
-| `vitest-environment-rtd` / `jest-environment-rtd` | jsdom environments | |
-| `@rtd/native` | — | scriptc-compiled accelerators and the scriptc compatibility gate |
+Published (assembled by [scripts/release.ts](scripts/release.ts) from the workspace builds):
+
+| Package | Replaces |
+| --- | --- |
+| `@ctrl/dom` | jsdom / happy-dom, plus the Testing Library stack under subpaths |
+| `jest-environment-ctrl-dom` | jest-environment-jsdom (`testEnvironment: "ctrl-dom"`) |
+| `vitest-environment-ctrl-dom` | `environment: "ctrl-dom"` (re-exports `@ctrl/dom/vitest-environment`) |
+
+Workspace packages (internal names; each is one subpath of `@ctrl/dom` or one environment):
+
+| Workspace package | Published as | Replaces | |
+| --- | --- | --- | --- |
+| `@rtd/dom` | `@ctrl/dom` | jsdom / happy-dom | nodes, WHATWG HTML parser, selectors, CSS cascade + CSSOM, events, forms, window |
+| `@rtd/aria` | `@ctrl/dom/aria` | aria-query + dom-accessibility-api | roles, accessible name/description, states, hidden |
+| `@rtd/testing-library` | `@ctrl/dom/testing-library` | `@testing-library/dom` 10.4 | queries, `waitFor`, `fireEvent`, `prettyDOM`, suggestions |
+| `@rtd/react` | `@ctrl/dom/react` | `@testing-library/react` 16.3 | `render`, `renderHook`, `act`, cleanup |
+| `@rtd/user-event` | `@ctrl/dom/user-event` | `@testing-library/user-event` 14.6 | pointer/keyboard simulation |
+| `@rtd/jest-dom` | `@ctrl/dom/jest-dom` | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
+| `vitest-environment-rtd` | `@ctrl/dom/vitest-environment` | Vitest's jsdom environment | |
+| `jest-environment-rtd` | `jest-environment-ctrl-dom` | jest-environment-jsdom | |
+| `@rtd/native` | — | — | scriptc-compiled accelerators and the scriptc compatibility gate |
 
 ## Compatibility
 
-- Upstream test suites ported and passing on `@rtd/dom`: Testing Library DOM (1163), RTL (248),
+- Upstream test suites ported and passing on `@ctrl/dom`: Testing Library DOM (1163), RTL (248),
   jest-dom (313), user-event (653 + 4 skipped), dom-accessibility-api + WPT accname (159/159).
 - Spec suites: html5lib tokenizer 7050/7050 and tree construction 1793/1793; WPT selectors
   1319/1319; ~54k WPT dom subtests; WPT reflection (~47k checks); CSS tokenizer 288/288.
 - Differential forms suite against jsdom (`tests/compat`): 701/701, with spec-pinned
   corrections where jsdom is wrong; React form scenarios pass in all three modes.
-- Stock jest-dom on `@rtd/dom` (environment swap only): every non-skipped test passes.
+- Stock jest-dom on `@ctrl/dom` (environment swap only): every non-skipped test passes.
 - Real-world corpus: the unmodified Base UI test suite (`downstream/base-ui`, mui/base-ui
   `205831c`), with only the environment swapped (`rtd-dom`) or the whole Testing Library stack
-  aliased to ours (`rtd-full`):
+  aliased to ours (`rtd-full`; the downstream runners' mode names use the workspace name):
 
   | mode | passed / 9,199 | wall | peak RSS |
   | --- | ---: | ---: | ---: |
@@ -99,7 +102,7 @@ Medians of fresh processes, Apple Silicon, vs jsdom 30 and happy-dom 21 (full ta
 Whole-suite number users feel — 100 small React test files, `vitest run`, bundled packages
 (`pnpm bench:suite`, `bench/results/2026-10-23-suite-quiet-dist.md`):
 
-| `vitest run`, 100 files | jsdom | happy-dom | rtd, DOM swap only | rtd, full stack |
+| `vitest run`, 100 files | jsdom | happy-dom | ctrl-dom, DOM swap only | ctrl-dom, full stack |
 | --- | ---: | ---: | ---: | ---: |
 | wall time | 8.48 s | 5.31 s | 4.90 s | **2.58 s** |
 | environment setup per file | 589 ms | 284 ms | 40 ms | **42 ms** |
@@ -107,7 +110,7 @@ Whole-suite number users feel — 100 small React test files, `vitest run`, bund
 
 Per-operation workloads:
 
-| Workload | jsdom | happy-dom | rtd (full stack) |
+| Workload | jsdom | happy-dom | ctrl-dom (full stack) |
 | --- | ---: | ---: | ---: |
 | Render form + 10 `getByRole` | 9.95 ms | 3.44 ms | **0.47 ms** |
 | Fill 10 fields with user-event + submit | 163 ms | 131 ms | **30 ms** |

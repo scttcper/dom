@@ -1,9 +1,9 @@
 // (e) type-level checks (never executed): our declarations are real types, not `any`.
-import { render, renderHook, screen, type RenderResult } from "@rtd/react";
-import userEvent, { type UserEvent } from "@rtd/user-event";
-import "@rtd/jest-dom/vitest";
+import { render, renderHook, screen, type RenderResult } from "@ctrl/dom/react";
+import userEvent, { type UserEvent } from "@ctrl/dom/user-event";
+import "@ctrl/dom/jest-dom/vitest";
 import { expect, expectTypeOf } from "vitest";
-import { createWindow, type Window } from "@rtd/dom";
+import { createWindow, type Window } from "@ctrl/dom";
 
 const result = render(null);
 expectTypeOf(result).toExtend<RenderResult>();

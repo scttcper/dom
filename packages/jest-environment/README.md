@@ -1,20 +1,24 @@
 # jest-environment-rtd
 
-Jest environment that installs an `@rtd/dom` window as the test globals.
+> Workspace package `jest-environment-rtd`, published as `jest-environment-ctrl-dom` (see the root README and scripts/release.ts).
+
+Jest environment that installs an `@ctrl/dom` window as the test globals.
 
 ```js
 // jest.config.js
 module.exports = {
   // Environment only (stock @testing-library/* packages):
-  testEnvironment: "jest-environment-rtd",
-  // or, to also use @rtd/react, @rtd/user-event, @rtd/jest-dom in test files:
-  preset: "jest-environment-rtd",
+  testEnvironment: "ctrl-dom",
+  // or, when test code imports @ctrl/dom (or its subpaths) directly:
+  preset: "jest-environment-ctrl-dom",
+  // or the whole stack, stock @testing-library/* imports routed to @ctrl/dom:
+  preset: "@ctrl/dom",
 };
 ```
 
-The preset maps `@rtd/dom` and `@rtd/dom/internal` to shims that return the environment's own
-instance, so every module in a test file shares one DOM. Use the preset whenever test code
-imports any `@rtd/*` package. Peer dependency: `jest` >= 30.
+The presets map `@ctrl/dom` and `@ctrl/dom/internal` to shims that return the environment's own
+instance, so every module in a test file shares one DOM (publish/*/jest-preset.cjs). Peer
+dependencies: `jest` >= 30, `@ctrl/dom`.
 
 Differences from jest-environment-jsdom you may notice (see `docs/deviations.md`):
 
@@ -39,6 +43,6 @@ immediates, no I/O), the clock jumps to it and `Date`/`performance.now()` advanc
 `findBy*`/`waitFor`, debounces, user-event delays and timeouts finish without spending wall
 time, in the same order and with the same app-visible elapsed time. A `findBy` that never
 matches fails after 1 s of virtual time instead of 1 s of real time. Set `testEnvironmentOptions.timeSkip` to `false` (or
-`RTD_TIME_SKIP=0`) for real-time timers.
+`CTRL_DOM_TIME_SKIP=0`) for real-time timers.
 
-Part of [react-testing-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.

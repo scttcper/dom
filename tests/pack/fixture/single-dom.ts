@@ -1,6 +1,6 @@
 // Asserts the test sees the DOM instance the environment installed: the globals are instances of
-// the classes exported by the one installed @rtd/dom (a second copy would fail instanceof).
-import * as dom from "@rtd/dom";
+// the classes exported by the one installed @ctrl/dom (a second copy would fail instanceof).
+import * as dom from "@ctrl/dom";
 import { expect } from "vitest";
 
 export function expectSingleDom(): void {

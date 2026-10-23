@@ -1,0 +1,8 @@
+{
+  "name": "@ctrl/dom",
+  "version": "0.0.0",
+  "description": "A fast DOM for testing React components: a drop-in replacement for jsdom and happy-dom, with Testing Library, user-event and jest-dom built in.",
+  "keywords": ["dom", "jsdom", "happy-dom", "testing", "react", "testing-library", "user-event", "jest-dom", "vitest", "jest"],
+  "type": "module",
+  "engines": { "node": ">=26" }
+}

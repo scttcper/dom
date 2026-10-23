@@ -32,7 +32,7 @@ import type { Window, WindowOptions } from "@rtd/dom";
 /** The vm-global key the shims read. */
 export const RTD_MODULES = Symbol.for("rtd.dom.modules");
 
-export interface RtdTestEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
+export interface CtrlDomTestEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
   customExportConditions?: string[];
   /**
    * Keep Node's `fetch`, `Request` and `Response` on the test global. Off by default:
@@ -45,8 +45,9 @@ export interface RtdTestEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * has nothing to do but wait for one (no pending immediates, no I/O), the clock jumps to it,
    * with Date and performance.now() advancing by the same amount. findBy/waitFor, user-event
    * delays, debounces and timeouts stop costing wall time; ordering and app-visible time are
-   * unchanged. `false` keeps real-time timers (waitFor polls in real time). The RTD_TIME_SKIP
-   * environment variable ("0"/"1") overrides it. See packages/dom/src/window/clock.ts.
+   * unchanged. `false` keeps real-time timers (waitFor polls in real time). The CTRL_DOM_TIME_SKIP
+   * environment variable ("0"/"1"; also RTD_TIME_SKIP) overrides it. See
+   * packages/dom/src/window/clock.ts.
    */
   timeSkip?: boolean;
   /**
@@ -195,7 +196,7 @@ function createDom(window: Window): RtdDom {
   };
 }
 
-export default class RtdEnvironment implements JestEnvironment<number> {
+export default class CtrlDomEnvironment implements JestEnvironment<number> {
   context: Context | null;
   global: Global.Global;
   fakeTimers: LegacyFakeTimers<number> | null;
@@ -205,12 +206,12 @@ export default class RtdEnvironment implements JestEnvironment<number> {
   rtdWindow: Window | null;
   /** jest-environment-jsdom's `dom`, reduced to what suites use (see RtdDom). */
   dom: RtdDom | null;
-  /** The file's timers (see RtdTestEnvironmentOptions.timeSkip). */
+  /** The file's timers (see CtrlDomTestEnvironmentOptions.timeSkip). */
   clock: InstanceType<typeof internal.VirtualClock> | null;
 
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const { projectConfig } = config;
-    const { customExportConditions, nodeFetch, timeSkip, pointerEvent, matchMedia, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, timeSkip, pointerEvent, matchMedia, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as CtrlDomTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
 
@@ -234,16 +235,16 @@ export default class RtdEnvironment implements JestEnvironment<number> {
     this.rtdWindow = window;
     this.dom = createDom(window);
     dom.installGlobals(window, global);
-    // jest-environment-jsdom 30 (jsdom 26) parity; see RtdTestEnvironmentOptions.pointerEvent.
+    // jest-environment-jsdom 30 (jsdom 26) parity; see CtrlDomTestEnvironmentOptions.pointerEvent.
     if (pointerEvent !== true) delete global.PointerEvent;
-    // jsdom parity; see RtdTestEnvironmentOptions.matchMedia.
+    // jsdom parity; see CtrlDomTestEnvironmentOptions.matchMedia.
     if (matchMedia !== true) delete global.matchMedia;
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
     // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):
     // window.setTimeout & co. delegate to these globals, and teardown disposes the clock, so a
     // long app timer (TanStack Query GC, polling) cannot keep this vm context alive.
-    const envSkip = process.env.RTD_TIME_SKIP;
+    const envSkip = process.env.CTRL_DOM_TIME_SKIP ?? process.env.RTD_TIME_SKIP;
     const skip = envSkip === "1" ? true : envSkip === "0" ? false : timeSkip !== false;
     this.clock = internal.installClock(new internal.VirtualClock({ skip }), global).clock;
 
@@ -299,4 +300,4 @@ export default class RtdEnvironment implements JestEnvironment<number> {
   }
 }
 
-export const TestEnvironment = RtdEnvironment;
+export const TestEnvironment = CtrlDomEnvironment;

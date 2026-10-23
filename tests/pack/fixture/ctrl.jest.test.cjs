@@ -1,17 +1,17 @@
-// (d2) `preset: "jest-environment-rtd"` with @rtd/react, @rtd/user-event and @rtd/jest-dom
-// required from a CommonJS test file (their CJS builds), sharing the environment's @rtd/dom.
+// (d3) `preset: "jest-environment-ctrl-dom"` with @ctrl/dom/react and @ctrl/dom/user-event
+// required from a CommonJS test file (their CJS builds), sharing the environment's @ctrl/dom.
 "use strict";
-const { render, screen } = require("@rtd/react");
-const userEvent = require("@rtd/user-event").default;
-const dom = require("@rtd/dom");
+const { render, screen } = require("@ctrl/dom/react");
+const userEvent = require("@ctrl/dom/user-event").default;
+const dom = require("@ctrl/dom");
 const { Signup, h } = require("./app.cjs");
 
 test("loads the CommonJS bundles", () => {
-  expect(require.resolve("@rtd/react")).toMatch(/[\\/]@rtd[\\/]react[\\/]dist[\\/]index\.cjs$/);
-  expect(require.resolve("@rtd/user-event")).toMatch(/[\\/]dist[\\/]index\.cjs$/);
+  expect(require.resolve("@ctrl/dom/react")).toMatch(/[\\/]@ctrl[\\/]dom[\\/]dist[\\/]react[\\/]index\.cjs$/);
+  expect(require.resolve("@ctrl/dom/user-event")).toMatch(/[\\/]dist[\\/]user-event[\\/]index\.cjs$/);
 });
 
-test("one @rtd/dom: the test's require is the environment's instance", () => {
+test("one @ctrl/dom: the test's require is the environment's instance", () => {
   expect(document.body).toBeInstanceOf(dom.HTMLElement);
   expect(globalThis.HTMLElement).toBe(dom.HTMLElement);
 });

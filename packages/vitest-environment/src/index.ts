@@ -1,14 +1,17 @@
-// Vitest environment for @rtd/dom: `environment: "rtd"` (resolves `vitest-environment-rtd`).
+// Vitest environment for @rtd/dom, published as `@ctrl/dom/vitest-environment` (and
+// `vitest-environment-ctrl-dom`, which Vitest resolves for `environment: "ctrl-dom"`).
 //
 //   // vitest.config.ts
 //   export default defineConfig({
 //     test: {
-//       environment: "rtd",
-//       environmentOptions: { rtd: { url: "http://localhost:3000/", width: 1280 } },
+//       environment: "ctrl-dom",
+//       environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/", width: 1280 } },
 //     },
 //   });
 //
-// or per file: `// @vitest-environment rtd`.
+// or per file: `// @vitest-environment ctrl-dom`. Vitest passes a docblock's
+// `@vitest-environment-options` under the environment's name, hence the "ctrl-dom" key; `ctrlDom`
+// and the workspace name `rtd` (this repository's own tests) are accepted too.
 //
 // Setup creates one window and makes it the worker's global (installGlobals); teardown closes
 // it (cancelling its pending animation frames, idle callbacks and tasks) and restores every
@@ -38,12 +41,13 @@ function reportToHost(error: unknown): void {
   process.emit("uncaughtException", error as Error, "uncaughtException");
 }
 
-export interface RtdEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
+export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
   /**
    * Skip idle time (default true): timers live on a virtual clock that jumps to the next timer
    * whenever the event loop has nothing else to do (no pending immediates, no I/O), with Date and
    * performance.now() advancing by the same amount. `false` keeps real-time timers. The
-   * RTD_TIME_SKIP environment variable ("0"/"1") overrides it. See @rtd/dom window/clock.ts.
+   * CTRL_DOM_TIME_SKIP environment variable ("0"/"1"; also RTD_TIME_SKIP) overrides it. See
+   * @rtd/dom window/clock.ts.
    */
   timeSkip?: boolean;
   /**
@@ -58,21 +62,26 @@ export interface RtdEnvironmentOptions extends Omit<WindowOptions, "shareStorage
 /** Same default URL as Vitest's jsdom and happy-dom environments. */
 const DEFAULT_URL = "http://localhost:3000/";
 
-function windowOptions(options: Record<string, unknown>): WindowOptions {
-  const { timeSkip: _timeSkip, matchMedia: _matchMedia, ...rtd } = (options?.rtd ?? {}) as RtdEnvironmentOptions;
-  return { ...rtd, url: rtd.url ?? DEFAULT_URL };
+/** This environment's options out of Vitest's `environmentOptions` (see the header). */
+function ownOptions(options: Record<string, unknown> | undefined): CtrlDomEnvironmentOptions {
+  return (options?.["ctrl-dom"] ?? options?.ctrlDom ?? options?.rtd ?? {}) as CtrlDomEnvironmentOptions;
 }
 
-/** Remove matchMedia from the installed global unless `rtd.matchMedia` (jsdom parity). */
+function windowOptions(options: Record<string, unknown>): WindowOptions {
+  const { timeSkip: _timeSkip, matchMedia: _matchMedia, ...rest } = ownOptions(options);
+  return { ...rest, url: rest.url ?? DEFAULT_URL };
+}
+
+/** Remove matchMedia from the installed global unless the `matchMedia` option is set (jsdom parity). */
 function hideMatchMedia(global: Record<PropertyKey, unknown>, options: Record<string, unknown>): void {
-  if (((options?.rtd ?? {}) as RtdEnvironmentOptions).matchMedia !== true) delete global.matchMedia;
+  if (ownOptions(options).matchMedia !== true) delete global.matchMedia;
 }
 
 function timeSkip(options: Record<string, unknown>): boolean {
-  const env = process.env.RTD_TIME_SKIP;
+  const env = process.env.CTRL_DOM_TIME_SKIP ?? process.env.RTD_TIME_SKIP;
   if (env === "1") return true;
   if (env === "0") return false;
-  return ((options?.rtd ?? {}) as RtdEnvironmentOptions).timeSkip !== false;
+  return ownOptions(options).timeSkip !== false;
 }
 
 // Host globals a fresh vm context needs (the window itself supplies the DOM).

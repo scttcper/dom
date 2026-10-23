@@ -1,0 +1,8 @@
+{
+  "name": "vitest-environment-ctrl-dom",
+  "version": "0.0.0",
+  "description": "Vitest environment for @ctrl/dom, the fast DOM for testing React components (environment: \"ctrl-dom\").",
+  "keywords": ["vitest", "vitest-environment", "dom", "jsdom", "happy-dom", "testing", "react"],
+  "type": "module",
+  "engines": { "node": ">=26" }
+}

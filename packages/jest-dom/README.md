@@ -1,13 +1,15 @@
 # @rtd/jest-dom
 
+> Workspace package `@rtd/jest-dom`, published as `@ctrl/dom/jest-dom` (see the root README and scripts/release.ts).
+
 Drop-in replacement for `@testing-library/jest-dom` 7.0: all matchers, same entry points and
 types.
 
 ```ts
-import "@rtd/jest-dom/vitest";        // Vitest setup file
-import "@rtd/jest-dom";               // Jest setup file (extends the global expect)
-import "@rtd/jest-dom/jest-globals";  // Jest with @jest/globals
-import * as matchers from "@rtd/jest-dom/matchers";
+import "@ctrl/dom/jest-dom/vitest";        // Vitest setup file
+import "@ctrl/dom/jest-dom";               // Jest setup file (extends the global expect)
+import "@ctrl/dom/jest-dom/jest-globals";  // Jest with @jest/globals
+import * as matchers from "@ctrl/dom/jest-dom/matchers";
 ```
 
-Part of [react-testing-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.

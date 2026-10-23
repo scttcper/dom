@@ -1,7 +1,7 @@
-// (b) the @rtd packages imported directly (also the file `tsc --noEmit` checks, (e)).
-import { render, screen } from "@rtd/react";
-import userEvent from "@rtd/user-event";
-import "@rtd/jest-dom/vitest";
+// (b) @ctrl/dom's Testing Library subpaths imported directly (also checked by `tsc --noEmit`, (e)).
+import { render, screen } from "@ctrl/dom/react";
+import userEvent from "@ctrl/dom/user-event";
+import "@ctrl/dom/jest-dom/vitest";
 import { expect, test } from "vitest";
 import { Signup } from "./app.tsx";
 import { expectSingleDom } from "./single-dom.ts";

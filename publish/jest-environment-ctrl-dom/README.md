@@ -1,0 +1,22 @@
+# jest-environment-ctrl-dom
+
+Jest environment for [@ctrl/dom](https://www.npmjs.com/package/@ctrl/dom), the DOM for testing
+React components: a faster, leaner drop-in for `jest-environment-jsdom`.
+
+```sh
+pnpm add -D @ctrl/dom jest-environment-ctrl-dom
+```
+
+```js
+// jest.config.js
+module.exports = {
+  testEnvironment: "ctrl-dom", // DOM only: stock @testing-library/* keep working
+  // preset: "@ctrl/dom",       // whole stack: @testing-library/* routed to @ctrl/dom
+};
+```
+
+Per file: `/** @jest-environment ctrl-dom */`. Options (`testEnvironmentOptions`) and the
+differences from jsdom are documented in @ctrl/dom's README. Requires Jest 30+ and Node 26+.
+
+`preset: "jest-environment-ctrl-dom"` is the environment plus a mapping that gives test code
+importing `@ctrl/dom` the environment's own instance (one DOM per test file).

@@ -1,20 +1,22 @@
 # vitest-environment-rtd
 
-Vitest environment that installs an `@rtd/dom` window as the test globals.
+> Workspace package `vitest-environment-rtd`, published as `@ctrl/dom/vitest-environment` (and `vitest-environment-ctrl-dom`) (see the root README and scripts/release.ts).
+
+Vitest environment that installs an `@ctrl/dom` window as the test globals.
 
 ```ts
 // vitest.config.ts
 export default defineConfig({
   test: {
-    environment: "rtd",
-    environmentOptions: { rtd: { url: "http://localhost:3000/" } },
+    environment: "ctrl-dom",
+    environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/" } },
   },
 });
 ```
 
-Or per file: `// @vitest-environment rtd`. Peer dependency: `vitest` >= 5.
+Or per file: `// @vitest-environment ctrl-dom`. Peer dependency: `vitest` >= 5.
 
-`environmentOptions.rtd` takes `createWindow` options (`url`, `width`, `height`, ...), `timeSkip`
+`environmentOptions["ctrl-dom"]` takes `createWindow` options (`url`, `width`, `height`, ...), `timeSkip`
 (below) and `matchMedia: true` to expose `window.matchMedia`. It is absent by default, as under
 jsdom: suites written for jsdom mock it, and helpers such as mock-match-media only install
 themselves when it is missing.
@@ -26,11 +28,11 @@ most of what a small test file costs. With `pool: "vmThreads"` (or `"vmForks"`) 
 and each file gets a fresh vm context instead. That is where this environment shines: its
 `setupVM` + teardown take ~1 ms per file (jsdom builds a whole new window, ~70 ms), and nothing
 is retained between files (0.03 MB/file after GC over 100 files; happy-dom 5.4 MB/file). The
-context is a plain (non-contextified) vm global, as in jest-environment-rtd, so global lookups
+context is a plain (non-contextified) vm global, as in jest-environment-ctrl-dom, so global lookups
 in test and app code are ordinary property loads.
 
 ```ts
-export default defineConfig({ test: { environment: "rtd", pool: "vmThreads" } });
+export default defineConfig({ test: { environment: "ctrl-dom", pool: "vmThreads" } });
 ```
 
 100 small React test files (`pnpm bench:suite --pool …`, full stack bundled):
@@ -50,7 +52,7 @@ Timers run on a virtual clock. Whenever the test is only waiting for a timer (no
 immediates, no I/O), the clock jumps to it and `Date`/`performance.now()` advance with it, so
 `findBy*`/`waitFor`, debounces, user-event delays and timeouts finish without spending wall
 time, in the same order and with the same app-visible elapsed time. A `findBy` that never
-matches fails after 1 s of virtual time instead of 1 s of real time. Set `environmentOptions.rtd.timeSkip` to `false` (or
-`RTD_TIME_SKIP=0`) for real-time timers.
+matches fails after 1 s of virtual time instead of 1 s of real time. Set `environmentOptions["ctrl-dom"].timeSkip` to `false` (or
+`CTRL_DOM_TIME_SKIP=0`) for real-time timers.
 
-Part of [react-testing-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.

@@ -1,4 +1,5 @@
-// (d1) `testEnvironment: "jest-environment-rtd"` with stock Testing Library (CommonJS, no transform).
+// (d1) `testEnvironment: "ctrl-dom"` with stock Testing Library (CommonJS, no transform); (d2) the
+// same file under `preset: "@ctrl/dom"`, which routes @testing-library/* to @ctrl/dom.
 "use strict";
 const { render, screen } = require("@testing-library/react");
 const userEvent = require("@testing-library/user-event").default;

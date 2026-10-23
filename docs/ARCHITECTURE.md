@@ -1,6 +1,7 @@
 # Architecture
 
-react-testing-dom is one cohesive stack for testing React components on Node.js:
+ctrl-dom (published as `@ctrl/dom`, developed under the workspace name react-testing-dom) is one
+cohesive stack for testing React components on Node.js:
 
 ```
 @rtd/react          (drop-in for @testing-library/react)      render, act, renderHook, cleanup
@@ -22,6 +23,26 @@ calling `querySelectorAll('*')` + `getComputedStyle()` per element through gener
 
 The DOM must ALSO be good enough that the stock `@testing-library/*` packages run on it
 unmodified (people will swap only the environment first). `bench/` runs both stacks.
+
+## Packaging
+
+The workspace packages above keep internal names (`@rtd/*`, `*-environment-rtd`); code, tests,
+bench and downstream runners use them. What ships is assembled by `pnpm build`
+(scripts/release.ts) into `release/`:
+
+- `@ctrl/dom`: `@rtd/dom` at the root and every other runtime package under a subpath
+  (`@ctrl/dom/aria`, `/testing-library`, `/react`, `/user-event`, `/jest-dom`,
+  `/vitest-environment`), plus the Jest preset and the Vitest plugin from publish/ctrl-dom/.
+- `jest-environment-ctrl-dom`: `jest-environment-rtd`, a package of its own so Vitest users do not
+  install Jest's dependencies.
+- `vitest-environment-ctrl-dom`: a re-export, so Vitest resolves `environment: "ctrl-dom"`.
+
+Each workspace bundle keeps cross-package imports as bare specifiers (scripts/build.ts), and the
+assembly rewrites them to published ones (`@rtd/aria` → `@ctrl/dom/aria`): inside `@ctrl/dom` they
+are self-references, so every internal package exists once and the environments still share
+one DOM instance with test code (Jest maps `@ctrl/dom` to the environment's instance).
+`pnpm test:pack` installs the three tarballs into a fresh project and runs every documented
+setup against them.
 
 ## Why not "everything native" (scriptc)?
 

@@ -1,13 +1,15 @@
 # @rtd/user-event
 
-Drop-in replacement for `@testing-library/user-event` 14.6, with fast paths for `@rtd/dom`.
+> Workspace package `@rtd/user-event`, published as `@ctrl/dom/user-event` (see the root README and scripts/release.ts).
+
+Drop-in replacement for `@testing-library/user-event` 14.6, with fast paths for `@ctrl/dom`.
 
 ```ts
-import userEvent from "@rtd/user-event";
+import userEvent from "@ctrl/dom/user-event";
 const user = userEvent.setup();
 await user.type(screen.getByRole("textbox"), "hello");
 ```
 
 ESM and CommonJS builds.
 
-Part of [react-testing-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.

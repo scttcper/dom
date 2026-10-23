@@ -1,7 +1,9 @@
 # @rtd/aria
 
-ARIA roles, accessible name/description and states on `@rtd/dom` — replaces `aria-query` and
-`dom-accessibility-api` inside the `@rtd/*` stack. Used by `@rtd/testing-library` and
-`@rtd/jest-dom`; you rarely need it directly.
+> Workspace package `@rtd/aria`, published as `@ctrl/dom/aria` (see the root README and scripts/release.ts).
 
-Part of [react-testing-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+ARIA roles, accessible name/description and states on `@ctrl/dom` — replaces `aria-query` and
+`dom-accessibility-api` inside the `@rtd/*` stack. Used by `@ctrl/dom/testing-library` and
+`@ctrl/dom/jest-dom`; you rarely need it directly.
+
+Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.

@@ -1,20 +1,22 @@
 // `pnpm test:pack`: end-to-end check of what users would install.
 //
-// 1. `pnpm build`, then `pnpm pack` every published package into a temp directory (publishConfig
-//    rewrites exports to dist/, workspace: ranges to versions).
+// 1. `pnpm build` (which assembles release/, scripts/release.ts), then `pnpm pack` the three
+//    published packages (@ctrl/dom, jest-environment-ctrl-dom, vitest-environment-ctrl-dom).
 // 2. A fresh project OUTSIDE the repository (os.tmpdir()) installs the tarballs (pnpm overrides
-//    pin every @rtd/* dependency to its tarball) plus react, react-dom, vitest, jest, typescript
-//    and the stock @testing-library/* packages from the registry, at the versions the repo uses.
+//    pin the environments' @ctrl/dom peer to its tarball) plus react, react-dom, vitest, jest,
+//    typescript and the stock @testing-library/* packages from the registry, at the versions the
+//    repo uses.
 // 3. Runs, from tests/pack/fixture:
-//    (a)  Vitest, environment "rtd", stock @testing-library/react + user-event + jest-dom/vitest
-//    (b)  Vitest, the same test importing @rtd/react, @rtd/user-event, @rtd/jest-dom/vitest
-//    (c)  Vitest, the stock test file with resolve.alias @testing-library/* → @rtd/* (README)
-//    (d1) Jest, testEnvironment "jest-environment-rtd", stock Testing Library
-//    (d2) Jest, preset "jest-environment-rtd", @rtd/react + @rtd/user-event + @rtd/jest-dom (CJS)
+//    (a)  Vitest, environment "ctrl-dom", stock @testing-library/react + user-event + jest-dom/vitest
+//    (b)  Vitest, the same test importing @ctrl/dom/react, /user-event, /jest-dom/vitest
+//    (c)  Vitest, the stock test file under the ctrlDom() plugin (README's whole-stack setup)
+//    (d1) Jest, testEnvironment "ctrl-dom", stock Testing Library
+//    (d2) Jest, preset "@ctrl/dom", the stock test file routed to @ctrl/dom's CJS builds (README)
+//    (d3) Jest, preset "jest-environment-ctrl-dom", @ctrl/dom/react + /user-event required directly
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
 //    Every run records the files it loads (Node loader hook, Vite transform hook, Jest
-//    transformer) and must load our packages only from dist/ (no .ts source, nothing from the
-//    repository) with a single @rtd/dom package instance.
+//    transformer) and must load our packages only from their published files (no .ts source,
+//    nothing from the repository) with a single @ctrl/dom DOM instance.
 //
 // Flags: --no-build, --keep (leave the temp directory), --dir <path> (reuse a project dir).
 
@@ -36,8 +38,8 @@ const { values: flags } = parseArgs({
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const fixtureDir = fileURLToPath(new URL("../fixture/", import.meta.url));
 
-/** Published package directories (packages/<dir>), in dependency order. */
-const PUBLISHED = ["dom", "aria", "testing-library", "react", "user-event", "jest-dom", "vitest-environment", "jest-environment"];
+/** Published package directories (release/<dir>, assembled by `pnpm build`). */
+const PUBLISHED = ["ctrl-dom", "vitest-environment-ctrl-dom", "jest-environment-ctrl-dom"];
 
 const readJson = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 
@@ -53,7 +55,7 @@ function run(cmd: string, args: string[], options: SpawnSyncOptions & { quiet?: 
 // ── 1. build + pack ───────────────────────────────────────────────────────────────────────────
 if (!flags["no-build"]) run("node", [join(repoRoot, "scripts/build.ts")]);
 
-const root = flags.dir ?? mkdtempSync(join(tmpdir(), "rtd-pack-"));
+const root = flags.dir ?? mkdtempSync(join(tmpdir(), "ctrl-dom-pack-"));
 const tarballs = join(root, "tarballs");
 const project = join(root, "project");
 rmSync(tarballs, { recursive: true, force: true });
@@ -61,7 +63,7 @@ mkdirSync(tarballs, { recursive: true });
 
 const packed = new Map<string, string>(); // package name → tarball path
 for (const dir of PUBLISHED) {
-  const pkgDir = join(repoRoot, "packages", dir);
+  const pkgDir = join(repoRoot, "release", dir);
   const { name } = readJson(join(pkgDir, "package.json"));
   const out = run("pnpm", ["pack", "--json", "--pack-destination", tarballs], { cwd: pkgDir, quiet: true });
   const info = JSON.parse(out.stdout as string) as { filename: string; files: { path: string }[] };
@@ -92,7 +94,7 @@ writeFileSync(
   join(project, "package.json"),
   JSON.stringify(
     {
-      name: "rtd-pack-smoke",
+      name: "ctrl-dom-pack-smoke",
       private: true,
       type: "module",
       dependencies: Object.fromEntries([
@@ -115,8 +117,8 @@ writeFileSync(
     2,
   ),
 );
-// Overrides pin the tarballs' own `@rtd/*: 0.0.0` dependencies to the local tarballs (otherwise
-// pnpm would look them up in the registry).
+// Overrides pin the environments' `@ctrl/dom: 0.0.0` peer to the local tarball (otherwise pnpm
+// would look it up in the registry).
 writeFileSync(
   join(project, "pnpm-workspace.yaml"),
   [
@@ -142,41 +144,61 @@ interface Check {
 const checks: Check[] = [
   {
     id: "a",
-    title: "Vitest + stock @testing-library/*",
+    title: 'Vitest, environment "ctrl-dom" + stock @testing-library/*',
     cmd: ["vitest", "run", "--config", "vitest.stock.config.ts"],
-    mustLoad: ["vitest-environment-rtd/dist/index.js", "@rtd/dom/dist/index.js", "@testing-library/react/"],
+    mustLoad: ["vitest-environment-ctrl-dom/index.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/dom/index.js", "@testing-library/react/"],
   },
   {
     id: "b",
-    title: "Vitest + @rtd/react, @rtd/user-event, @rtd/jest-dom/vitest",
-    cmd: ["vitest", "run", "--config", "vitest.rtd.config.ts"],
-    mustLoad: ["@rtd/react/dist/index.js", "@rtd/user-event/dist/index.js", "@rtd/jest-dom/dist/vitest.js", "@rtd/testing-library/dist/index.js", "@rtd/aria/dist/index.js"],
+    title: "Vitest + @ctrl/dom/react, /user-event, /jest-dom/vitest",
+    cmd: ["vitest", "run", "--config", "vitest.ctrl.config.ts"],
+    mustLoad: [
+      "@ctrl/dom/dist/react/index.js",
+      "@ctrl/dom/dist/user-event/index.js",
+      "@ctrl/dom/dist/jest-dom/vitest.js",
+      "@ctrl/dom/dist/testing-library/index.js",
+      "@ctrl/dom/dist/aria/index.js",
+    ],
     mustNotLoad: /\/node_modules\/@testing-library\//,
   },
   {
     id: "c",
-    title: "Vitest + resolve.alias @testing-library/* → @rtd/*",
-    cmd: ["vitest", "run", "--config", "vitest.alias.config.ts"],
-    mustLoad: ["@rtd/react/dist/index.js", "@rtd/user-event/dist/index.js", "@rtd/jest-dom/dist/vitest.js"],
-    mustNotLoad: /\/node_modules\/@testing-library\//,
+    title: "Vitest, ctrlDom() plugin + the stock test file",
+    cmd: ["vitest", "run", "--config", "vitest.plugin.config.ts"],
+    mustLoad: ["@ctrl/dom/vitest.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/react/index.js", "@ctrl/dom/dist/user-event/index.js", "@ctrl/dom/dist/jest-dom/vitest.js"],
+    mustNotLoad: /\/node_modules\/(@testing-library|vitest-environment-ctrl-dom)\//,
   },
   {
     id: "d1",
-    title: "Jest + testEnvironment jest-environment-rtd, stock Testing Library",
+    title: 'Jest, testEnvironment "ctrl-dom" + stock Testing Library',
     cmd: ["jest", "--config", "jest.env.config.cjs"],
-    mustLoad: ["jest-environment-rtd/dist/index.js", "@rtd/dom/dist/index.js", "@testing-library/react/"],
+    mustLoad: ["jest-environment-ctrl-dom/dist/index.js", "@ctrl/dom/dist/dom/index.js", "@testing-library/react/"],
   },
   {
     id: "d2",
-    title: "Jest + preset jest-environment-rtd, @rtd/* CommonJS builds",
+    title: 'Jest, preset "@ctrl/dom" + the stock test file',
     cmd: ["jest", "--config", "jest.preset.config.cjs"],
     mustLoad: [
-      "jest-environment-rtd/dist/index.js",
-      "jest-environment-rtd/src/shims/dom.cjs",
-      "@rtd/react/dist/index.cjs",
-      "@rtd/user-event/dist/index.cjs",
-      "@rtd/jest-dom/dist/index.cjs",
-      "@rtd/testing-library/dist/index.cjs",
+      "jest-environment-ctrl-dom/dist/index.js",
+      "@ctrl/dom/jest-preset.cjs",
+      "@ctrl/dom/jest/dom-internal.cjs",
+      "@ctrl/dom/dist/react/index.cjs",
+      "@ctrl/dom/dist/user-event/index.cjs",
+      "@ctrl/dom/dist/jest-dom/index.cjs",
+      "@ctrl/dom/dist/testing-library/index.cjs",
+    ],
+    mustNotLoad: /\/node_modules\/@testing-library\//,
+  },
+  {
+    id: "d3",
+    title: 'Jest, preset "jest-environment-ctrl-dom" + @ctrl/dom subpaths (CJS)',
+    cmd: ["jest", "--config", "jest.env-preset.config.cjs"],
+    mustLoad: [
+      "jest-environment-ctrl-dom/dist/index.js",
+      "jest-environment-ctrl-dom/shims/dom.cjs",
+      "@ctrl/dom/dist/react/index.cjs",
+      "@ctrl/dom/dist/user-event/index.cjs",
+      "@ctrl/dom/dist/jest-dom/index.cjs",
     ],
     mustNotLoad: /\/node_modules\/@testing-library\//,
   },
@@ -188,8 +210,8 @@ const checks: Check[] = [
   },
 ];
 
-const OURS = /\/node_modules\/((?:@rtd\/[^/]+)|vitest-environment-rtd|jest-environment-rtd)\/(.*)$/;
-const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|src\/shims\/[^/]+\.cjs|jest-preset\.cjs|package\.json)$/;
+const OURS = /\/node_modules\/(@ctrl\/dom|vitest-environment-ctrl-dom|jest-environment-ctrl-dom)\/(.*)$/;
+const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|(?:jest|shims)\/[^/]+\.cjs|jest-preset\.cjs|vitest\.js|index\.js|package\.json)$/;
 
 function verifyLoads(check: Check, log: string): string[] {
   const problems: string[] = [];
@@ -213,9 +235,9 @@ function verifyLoads(check: Check, log: string): string[] {
     if (m === null) continue;
     const [, name, rel] = m;
     if (!ALLOWED.test(rel)) problems.push(`${name}: loaded non-dist file ${rel}`);
-    if (name === "@rtd/dom") domRoots.add(path.slice(0, nm));
+    if (name === "@ctrl/dom" && rel.startsWith("dist/dom/")) domRoots.add(path.slice(0, nm));
   }
-  if (domRoots.size > 1) problems.push(`more than one @rtd/dom instance: ${[...domRoots].join(", ")}`);
+  if (domRoots.size > 1) problems.push(`more than one @ctrl/dom instance: ${[...domRoots].join(", ")}`);
   for (const file of check.mustLoad) {
     if (![...seen].some((s) => s.startsWith(file))) problems.push(`expected to load ${file}`);
   }

@@ -11,6 +11,9 @@
 //                          typings under types/ (their dev `exports` carry a `types` condition).
 //   dist/NOTICE            copy of the repository NOTICE (and LICENSE once there is one).
 //
+// Then release/: the published packages (@ctrl/dom, jest-environment-ctrl-dom,
+// vitest-environment-ctrl-dom) assembled from these builds by scripts/release.ts.
+//
 // Every bare specifier (other workspace packages, react, node builtins) stays external, so two
 // bundles never carry two copies of the DOM. Packages' development `exports` keep pointing at
 // src/*.ts; `publishConfig` (applied by `pnpm pack` / `pnpm publish`) points them at dist/.
@@ -189,4 +192,10 @@ for (const pkg of selected) {
   }
 }
 if (emitRoot) rmSync(dirname(emitRoot), { recursive: true, force: true });
+// The published packages (@ctrl/dom + its two environment packages) under release/, assembled
+// from the dist/ directories above (scripts/release.ts).
+if (!failed && !flags.filter) {
+  const { assembleRelease } = await import("./release.ts");
+  for (const dir of assembleRelease()) console.log(`${"release".padEnd(24)} ${relative(repoRoot, dir)}`);
+}
 if (failed) process.exitCode = 1;
