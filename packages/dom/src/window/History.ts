@@ -7,12 +7,24 @@
 
 import { eventInterface } from "./interfaces.ts";
 import type { Window } from "./Window.ts";
-import { $entries, $index, $scrollRestoration, $url, $window } from "../keys.ts";
+import { $closed, $entries, $index, $scrollRestoration, $url, $window } from "../keys.ts";
 
 interface SessionHistoryEntry {
   url: string;
   /** StructuredSerialize(data) result; we keep the structured clone itself. */
   state: unknown;
+}
+
+/**
+ * Every History member starts with "If this's relevant global object's associated Document is not
+ * fully active, then throw a SecurityError DOMException"
+ * (https://html.spec.whatwg.org/#fully-active). A closed window (an iframe that was removed,
+ * or a window after teardown) has no active document.
+ */
+function checkFullyActive(history: History, member: string): void {
+  if (history[$window][$closed]) {
+    throw new DOMException(`Failed to ${member} 'History': May not use a History object associated with a Document that is not fully active`, "SecurityError");
+  }
 }
 
 function withoutFragment(href: string): string {
@@ -35,24 +47,29 @@ export class History {
 
   /** https://html.spec.whatwg.org/#dom-history-length */
   get length(): number {
+    checkFullyActive(this, "read the 'length' property from");
     return this[$entries].length;
   }
 
   /** https://html.spec.whatwg.org/#dom-history-state */
   get state(): unknown {
+    checkFullyActive(this, "read the 'state' property from");
     return this[$entries][this[$index]].state;
   }
 
   get scrollRestoration(): "auto" | "manual" {
+    checkFullyActive(this, "read the 'scrollRestoration' property from");
     return this[$scrollRestoration];
   }
 
   set scrollRestoration(value: string) {
+    checkFullyActive(this, "set the 'scrollRestoration' property on");
     if (value === "auto" || value === "manual") this[$scrollRestoration] = value;
   }
 
   /** https://html.spec.whatwg.org/#dom-history-go */
   go(delta = 0): void {
+    checkFullyActive(this, "execute 'go' on");
     const d = Math.trunc(Number(delta)) || 0;
     // Step 4: a delta of 0 reloads; there is nothing to reload.
     if (d === 0) return;
@@ -65,11 +82,15 @@ export class History {
     }, 0);
   }
 
+  /** https://html.spec.whatwg.org/#dom-history-back */
   back(): void {
+    checkFullyActive(this, "execute 'back' on");
     this.go(-1);
   }
 
+  /** https://html.spec.whatwg.org/#dom-history-forward */
   forward(): void {
+    checkFullyActive(this, "execute 'forward' on");
     this.go(1);
   }
 
@@ -86,10 +107,14 @@ export class History {
   /** https://html.spec.whatwg.org/#shared-history-push/replace-state-steps */
   _sharedPushReplaceState(data: unknown, url: string | URL | null | undefined, replace: boolean, method: string): void {
     const window = this[$window];
+    // Step 2: the document must be fully active.
+    checkFullyActive(this, `execute '${method}' on`);
     // Step 4: serialize first (throws DataCloneError for functions, DOM nodes, ...).
     const state = data === undefined || data === null ? null : structuredClone(data);
     let newURL = window[$url];
-    if (url !== undefined && url !== null) {
+    // Step 6: "If url is not null or the empty string" — `pushState(s, "", "")` keeps the
+    // current URL, fragment included (https://github.com/whatwg/html/issues/9343).
+    if (url !== undefined && url !== null && url !== "") {
       // Step 6.1-6.2: parse relative to the document's URL.
       const parsed = URL.parse(String(url), window[$url].href);
       if (parsed === null) {

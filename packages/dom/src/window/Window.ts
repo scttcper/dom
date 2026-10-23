@@ -19,6 +19,7 @@ import { parseDocument } from "../parser/index.ts";
 import { setCurrentWindow, currentWindowOrNull } from "./current.ts";
 import { ensureInterfaces, eventInterface, domExport, type InterfaceMap } from "./interfaces.ts";
 import { CSS } from "./fallbacks.ts";
+import { DOMStringList } from "./DOMStringList.ts";
 import { windowHooks } from "./hooks.ts";
 import { Location } from "./Location.ts";
 import { History } from "./History.ts";
@@ -32,6 +33,7 @@ import { getCurrentEvent } from "../events/dispatch.ts";
 import { reportException } from "../events/report.ts";
 import "./document.ts";
 import { setNestedWindowFactory } from "./browsing-context.ts";
+import { windowOrigin } from "./origin.ts";
 import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
@@ -240,6 +242,10 @@ export class Window extends EventTarget {
       this[$frameElement] = nested.frameElement;
       this[$host] = nested.parent[$host];
       (nested.parent[$childWindows] ??= new Set()).add(this);
+      // Same storage shed as the parent (same user agent "tab"), joined eagerly so `storage`
+      // events reach frames that never touched storage themselves.
+      this[$shed] = nested.parent._storageShed;
+      this[$shed].windows.add(this);
       if (nested.srcdoc !== null) {
         parseDocument(nested.srcdoc, doc);
       } else {
@@ -297,7 +303,7 @@ export class Window extends EventTarget {
 
   /** https://html.spec.whatwg.org/#dom-origin */
   get origin(): string {
-    return this[$url].origin;
+    return windowOrigin(this);
   }
 
   /** https://html.spec.whatwg.org/#dom-issecurecontext (https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy) */
@@ -702,8 +708,19 @@ function visualViewportGetter(this: Window): VisualViewport {
 }
 
 /** https://html.spec.whatwg.org/#run-the-animation-frame-callbacks */
+/**
+ * Installed by src/html/focus.ts: the focus fixup step of "update the rendering"
+ * (https://html.spec.whatwg.org/#update-the-rendering) runs on each animation frame.
+ */
+let renderingUpdateHook: ((doc: unknown) => void) | null = null;
+
+export function setRenderingUpdateHook(fn: ((doc: unknown) => void) | null): void {
+  renderingUpdateHook = fn;
+}
+
 function runAnimationFrame(this: Window): void {
   this[$frameTask] = null;
+  if (renderingUpdateHook !== null) renderingUpdateHook(this.document);
   const callbacks = this[$frameCallbacks];
   if (callbacks === null) return;
   this[$frameCallbacks] = null;
@@ -771,6 +788,7 @@ export const HOST_DELEGATES = [
   "MessagePort",
   "WebSocket",
   "DOMException",
+  "QuotaExceededError",
   "Crypto",
   "CryptoKey",
   "SubtleCrypto",
@@ -797,7 +815,7 @@ for (const name of ["locationbar", "menubar", "personalbar", "scrollbars", "stat
 function preparePrototype(): void {
   prototypeReady = true;
   const proto = Window.prototype;
-  ensureInterfaces(proto, { CSS });
+  ensureInterfaces(proto, { CSS, DOMStringList });
   const descriptors: PropertyDescriptorMap = {};
   for (const name of HOST_DELEGATES) {
     if (name in proto) continue;
@@ -818,7 +836,7 @@ function preparePrototype(): void {
 /** The interface objects every window exposes (name → class). */
 export function windowInterfaces(): InterfaceMap {
   if (!prototypeReady) preparePrototype();
-  return ensureInterfaces(Window.prototype, { CSS });
+  return ensureInterfaces(Window.prototype, { CSS, DOMStringList });
 }
 
 export function createWindow(options?: WindowOptions): Window {
@@ -834,6 +852,8 @@ function createNestedWindow(frameElement: Element, parent: Window, src: string |
   let url = "about:blank";
   if (srcdoc !== null) url = "about:srcdoc";
   else if (src !== null && src !== "") url = URL.parse(src, parent.document.baseURI)?.href ?? "about:blank";
+  // TODO(window): set the new document's [$aboutBase] (keys.ts) to parent.document.baseURI for
+  // about:blank/about:srcdoc (https://html.spec.whatwg.org/#concept-document-about-base-url).
   return new Window(
     { url, width: parent[$innerWidth], height: parent[$innerHeight], devicePixelRatio: parent[$devicePixelRatio], userAgent: parent[$options].userAgent },
     { parent, frameElement, srcdoc },

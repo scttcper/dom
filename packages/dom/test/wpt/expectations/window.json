@@ -1,0 +1,18 @@
+{
+  "html/browsers/history/the-location-interface/location-protocol-setter.html": ["Equivalent tests for data URL and srcdoc <iframe>s"],
+  "html/browsers/history/the-location-interface/location-prototype-setting-same-origin.html": [
+    "Same-origin: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError",
+    "Same-origin: setting the prototype to an empty object via __proto__ should throw a TypeError",
+    "Same-origin: setting the prototype to an empty object via Reflect.setPrototypeOf should return false",
+    "Same-origin: the prototype must still be its original value"
+  ],
+  "html/browsers/history/the-location-interface/location-stringifier.html": ["(unnamed test) (#6)"],
+  "html/browsers/history/the-location-interface/location-valueof.html": ["(unnamed test)"],
+  "html/browsers/history/the-location-interface/location_hash.html": ["Setting location.hash on srcdoc iframe"],
+  "html/browsers/history/the-location-interface/location_search.html": ["location.search on about:blank"],
+  "html/webappapis/timers/settimeout-setinterval-handles.html": [
+    "setTimeout and setInterval should return numeric handles integer that is greater than zero",
+    "Timeouts and intervals share a set of unique active handles"
+  ],
+  "webstorage/event_initstorageevent.window.js": ["initStorageEvent with 0 arguments"]
+}

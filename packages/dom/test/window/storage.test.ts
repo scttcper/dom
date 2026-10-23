@@ -166,4 +166,71 @@ describe("storage events — https://html.spec.whatwg.org/#concept-storage-broad
     expect(spy).not.toHaveBeenCalled();
     tab.close();
   });
+
+  test("sessionStorage changes are not broadcast to other tabs", () => {
+    vi.useFakeTimers();
+    const tab = createWindow({ url: "http://localhost:3000/", shareStorageWith: window });
+    window.sessionStorage.setItem("x", "1");
+    expect(tab.sessionStorage.getItem("x")).toBeNull();
+    tab.close();
+  });
+});
+
+describe("Frames share storage — https://html.spec.whatwg.org/#concept-storage-broadcast", () => {
+  function frameOf(w: Window): Window {
+    const doc = w.document as unknown as { createElement(n: string): { contentWindow: Window }; body: { appendChild<T>(n: T): T } };
+    return doc.body.appendChild(doc.createElement("iframe")).contentWindow;
+  }
+
+  test("an about:blank iframe inherits the parent's origin and shares local and session storage", () => {
+    const frame = frameOf(window);
+    expect(frame.origin).toBe("http://localhost:3000");
+    expect(frame.location.origin).toBe("null");
+    window.localStorage.setItem("l", "1");
+    window.sessionStorage.setItem("s", "2");
+    expect(frame.localStorage.getItem("l")).toBe("1");
+    expect(frame.sessionStorage.getItem("s")).toBe("2");
+  });
+
+  test("local and session mutations fire storage events at the other frames, not the source", () => {
+    vi.useFakeTimers();
+    const frame = frameOf(window);
+    const inFrame: unknown[] = [];
+    const inParent: unknown[] = [];
+    frame.addEventListener("storage", (e) => inFrame.push((e as unknown as { storageArea: unknown }).storageArea));
+    window.addEventListener("storage", (e) => inParent.push(e));
+    window.localStorage.setItem("a", "1");
+    window.sessionStorage.setItem("b", "2");
+    vi.runAllTimers();
+    expect(inFrame).toEqual([frame.localStorage, frame.sessionStorage]);
+    expect(inParent).toHaveLength(0);
+  });
+});
+
+describe("Storage legacy platform object — https://webidl.spec.whatwg.org/#es-legacy-platform-objects", () => {
+  test("methods require their arguments (WebIDL overload resolution)", () => {
+    const s = window.localStorage as unknown as Record<string, (...a: unknown[]) => unknown>;
+    expect(() => s.getItem()).toThrow(TypeError);
+    expect(() => s.setItem("a")).toThrow("Failed to execute 'setItem' on 'Storage': 2 arguments required, but only 1 present.");
+  });
+
+  test("[[Set]] of a String always calls the named setter; prototype members stay visible", () => {
+    const s = window.localStorage as unknown as Record<string, unknown>;
+    s.key = "k";
+    expect(typeof s.key).toBe("function");
+    expect(window.localStorage.getItem("key")).toBe("k");
+    expect(Object.keys(window.localStorage)).toEqual([]);
+  });
+
+  test("QuotaExceededError is the host's QuotaExceededError (a DOMException)", () => {
+    let error: unknown;
+    try {
+      window.localStorage.setItem("big", "x".repeat(5_000_001));
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(DOMException);
+    expect((error as { constructor: unknown }).constructor).toBe((window as unknown as { QuotaExceededError: unknown }).QuotaExceededError);
+    expect((error as { quota: unknown }).quota).toBeNull();
+  });
 });
