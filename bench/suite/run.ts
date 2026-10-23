@@ -23,7 +23,7 @@ const scratch = join(benchDir, "results", ".suite-tmp");
 
 const { values: flags } = parseArgs({
   options: {
-    envs: { type: "string", default: "jsdom,happy-dom,rtd,rtd-full" },
+    envs: { type: "string", default: "jsdom,happy-dom,rtd,rtd-full,rtd-dist,rtd-full-dist" },
     samples: { type: "string", default: "3" },
     files: { type: "string", default: "100" },
     workers: { type: "string" },

@@ -79,6 +79,17 @@ Intentional differences from the specs are listed in [docs/deviations.md](docs/d
 Medians of fresh processes, Apple Silicon, vs jsdom 30 and happy-dom 21 (full tables in
 `bench/results/` and each package's `bench/`):
 
+Whole-suite number users feel — 100 small React test files, `vitest run`, bundled packages
+(`pnpm bench:suite`, `bench/results/2026-10-23-suite-quiet-dist.md`):
+
+| `vitest run`, 100 files | jsdom | happy-dom | rtd, DOM swap only | rtd, full stack |
+| --- | ---: | ---: | ---: | ---: |
+| wall time | 8.48 s | 5.31 s | 4.90 s | **2.58 s** |
+| environment setup per file | 589 ms | 284 ms | 40 ms | **42 ms** |
+| worker RSS | 218 MB | 128 MB | 140 MB | **127 MB** |
+
+Per-operation workloads:
+
 | Workload | jsdom | happy-dom | rtd (full stack) |
 | --- | ---: | ---: | ---: |
 | Render form + 10 `getByRole` | 9.95 ms | 3.44 ms | **0.47 ms** |
