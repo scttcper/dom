@@ -169,9 +169,21 @@ function handlerAccessor(type: string, resolve: ((self: EventTarget) => EventTar
   };
 }
 
-function addHandler(descriptors: PropertyDescriptorMap, type: string, resolve: ((self: EventTarget) => EventTarget | null) | null): void {
-  const { get, set } = handlerAccessor(type, resolve);
-  descriptors["on" + type] = { configurable: true, enumerable: true, get, set };
+/**
+ * Handlers whose event handler event type differs from the name after "on": the legacy prefixed
+ * animation/transition handlers listen for the camel-cased types
+ * (https://html.spec.whatwg.org/#event-handlers-on-elements,-document-objects,-and-window-objects).
+ */
+const HANDLER_EVENT_TYPES: Readonly<Record<string, string>> = {
+  webkitanimationend: "webkitAnimationEnd",
+  webkitanimationiteration: "webkitAnimationIteration",
+  webkitanimationstart: "webkitAnimationStart",
+  webkittransitionend: "webkitTransitionEnd",
+};
+
+function addHandler(descriptors: PropertyDescriptorMap, name: string, resolve: ((self: EventTarget) => EventTarget | null) | null): void {
+  const { get, set } = handlerAccessor(HANDLER_EVENT_TYPES[name] ?? name, resolve);
+  descriptors["on" + name] = { configurable: true, enumerable: true, get, set };
 }
 
 /** https://html.spec.whatwg.org/#determining-the-target-of-an-event-handler (body/frameset → Window). */

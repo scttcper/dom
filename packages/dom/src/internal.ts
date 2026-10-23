@@ -134,4 +134,7 @@ export {
 // --- css area (fast style queries; see src/css/internal.ts) ---
 export * from "./css/internal.ts";
 export { isFACE, faceState } from "./html/forms/face.ts";
+
+// --- html-dom area (ARIA element reflection: explicitly set aria-labelledby/... references) ---
+export { attrAssociatedElement, attrAssociatedElements, hasExplicitAttrElements } from "./html/aria-reflection.ts";
 export * from "./keys.ts";

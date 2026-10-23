@@ -17,6 +17,17 @@ import { $availableToElementInternals, $clonable, $declarative, $delegatesFocus,
 export type ShadowRootMode = "open" | "closed";
 export type SlotAssignmentMode = "manual" | "named";
 
+/**
+ * https://dom.spec.whatwg.org/#concept-attach-a-shadow-root step 11: "available to element
+ * internals" when the host's custom element state is "precustomized" or "custom"
+ * (html/custom-elements.ts installs the check).
+ */
+let customStateCheck: ((host: Element) => boolean) | null = null;
+
+export function setShadowHostCustomStateCheck(fn: (host: Element) => boolean): void {
+  customStateCheck = fn;
+}
+
 export class ShadowRoot extends DocumentFragment {
   /** https://dom.spec.whatwg.org/#shadowroot-mode */
   [$mode]: ShadowRootMode;
@@ -44,7 +55,7 @@ export class ShadowRoot extends DocumentFragment {
     this[$clonable] = clonable;
     this[$serializable] = serializable;
     this[$declarative] = false;
-    this[$availableToElementInternals] = false;
+    this[$availableToElementInternals] = customStateCheck !== null && customStateCheck(host);
   }
 
   get mode(): ShadowRootMode {

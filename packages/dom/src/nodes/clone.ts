@@ -16,15 +16,26 @@ import {
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
-import { appendDetached } from "./tree.ts";
-import { createElementImpl } from "./create.ts";
+import { appendDetached, connectDetachedChildren } from "./tree.ts";
+import { ceActive, ceReactionsPending, createCloneElementImpl, createElementImpl, flushCEReactions } from "./create.ts";
 import { $clonable, $declarative, $delegatesFocus, $impl, $mode, $serializable, $shadowRoot, $slotAssignment } from "../keys.ts";
 
 /** Clone `node` into `doc`. Deep clones build the copy detached and never fire hooks. */
 export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
+  const copy = cloneTree(node, doc, deep);
+  // Custom element upgrade reactions enqueued for the copies ([CEReactions] on cloneNode,
+  // importNode & co.; html/custom-elements.ts).
+  if (ceReactionsPending) flushCEReactions();
+  return copy;
+}
+
+function cloneTree(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
   const copy = cloneOne(node, doc, deep);
   if (deep) {
-    for (let c = node.first; c !== null; c = c.next) appendDetached(cloneNode(c, copy.type === DOCUMENT_NODE ? (copy.node as Document) : doc, true), copy);
+    for (let c = node.first; c !== null; c = c.next) appendDetached(cloneTree(c, copy.type === DOCUMENT_NODE ? (copy.node as Document) : doc, true), copy);
+    // A Document clone is connected: its copied descendants become connected too (id index,
+    // connected steps), as if appended with the insert algorithm.
+    if (copy.type === DOCUMENT_NODE && copy.first !== null) connectDetachedChildren(copy);
   }
   // Clonable shadow roots are cloned with their host, regardless of `deep`
   // (https://dom.spec.whatwg.org/#concept-node-clone step for shadow hosts).
@@ -39,7 +50,7 @@ export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImp
         slotAssignment: shadow[$slotAssignment],
       });
       copyShadow[$declarative] = shadow[$declarative];
-      for (let c = shadow[$impl].first; c !== null; c = c.next) appendDetached(cloneNode(c, doc, true), copyShadow[$impl]);
+      for (let c = shadow[$impl].first; c !== null; c = c.next) appendDetached(cloneTree(c, doc, true), copyShadow[$impl]);
     }
   }
   return copy;
@@ -48,7 +59,9 @@ export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImp
 function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
   switch (node.type) {
     case ELEMENT_NODE: {
-      const el = createElementImpl(doc, node.name, node.ns, node.prefix);
+      // With custom elements in use, the copy keeps the source's "is" value and a defined custom
+      // element gets an upgrade reaction (html/custom-elements.ts).
+      const el = ceActive ? createCloneElementImpl(doc, node) : createElementImpl(doc, node.name, node.ns, node.prefix);
       const attrs = node.attrs;
       if (attrs !== null) {
         const copied: AttrRecord[] = new Array(attrs.length);

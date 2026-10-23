@@ -501,6 +501,7 @@ export class Range extends AbstractRange {
 
   /** https://html.spec.whatwg.org/#dom-range-createcontextualfragment */
   createContextualFragment(fragment: string): DocumentFragment {
+    if (arguments.length === 0) throw new TypeError("Failed to execute 'createContextualFragment' on 'Range': 1 argument required, but only 0 present.");
     const node = this[$sc];
     let element: NodeImpl | null;
     switch (node.type) {

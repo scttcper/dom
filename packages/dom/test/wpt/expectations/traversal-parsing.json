@@ -1,0 +1,19 @@
+{
+  "dom/traversal/TreeWalker-realm.html": [],
+  "domparsing/DOMParser-parseFromString-xml-scripting-support-disabled.html": [
+    "parseFromString as XML, svg script, appendChild",
+    "parseFromString as XML, svg script, append importNode result",
+    "parseFromString as XML, svg script, append importNode result, but with namespace prefix",
+    "parseFromString as XML, svg script, append adoptNode result",
+    "parseFromString as XML, svg script, append cloneNode result"
+  ],
+  "domparsing/XMLSerializer-serializeToString.html": [
+    "Check if a prefix bound to an empty namespace URI (\"no namespace\") serialize"
+  ],
+  "domparsing/createContextualFragment.html": [
+    "<script>s should be run when appended to the document (but not before)"
+  ],
+  "domparsing/outerhtml-03.html": [
+    "Setting outerHTML on a <body> element should replace it but leave the element unchanged"
+  ]
+}

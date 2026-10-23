@@ -33,3 +33,14 @@ export function hideInternals(obj: object): void {
     if (typeof key === "symbol" || key.charCodeAt(0) === 95 /* _ */) Object.defineProperty(obj, key, { enumerable: false });
   }
 }
+
+/**
+ * Throw the TypeError WebIDL requires when an operation is called with fewer than its required
+ * arguments (https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm step 4), worded
+ * like jsdom/Chromium.
+ */
+export function argumentsRequired(method: string, iface: string, required: number, given: number): never {
+  throw new TypeError(
+    `Failed to execute '${method}' on '${iface}': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`,
+  );
+}

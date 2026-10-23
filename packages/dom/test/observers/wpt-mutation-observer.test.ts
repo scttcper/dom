@@ -6,9 +6,10 @@
  *   - queueing a mutation record: https://dom.spec.whatwg.org/#queueing-a-mutation-record
  *   - notify mutation observers: https://dom.spec.whatwg.org/#notify-mutation-observers
  *   - observe() option validation: https://dom.spec.whatwg.org/#dom-mutationobserver-observe
+ *   - transient registered observers: https://dom.spec.whatwg.org/#add-transient-registered-observers
  * Original tests: https://github.com/web-platform-tests/wpt/tree/master/dom/nodes
  */
-import { defineWPTDirectory } from "../wpt/harness.ts";
+import { defineWPT, defineWPTDirectory } from "../wpt/harness.ts";
 
 defineWPTDirectory(
   "dom/nodes",
@@ -19,3 +20,5 @@ defineWPTDirectory(
   { "MutationObserver-nested-crash.html": "crash test needs a navigable iframe" },
   (f) => f.includes("/MutationObserver-"),
 );
+defineWPT("dom/nodes/MutationObserver-callback-order.window.js");
+defineWPT("dom/nodes/MutationObserver-transient-registered-observers.window.js");

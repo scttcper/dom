@@ -60,6 +60,20 @@ export function getCurrentEvent(): Event | undefined {
   return currentEvent;
 }
 
+// --- post-dispatch hook (html top layer) ---------------------------------------------------
+
+let postDispatchHook: ((event: Event, target: EventTarget) => void) | null = null;
+
+/**
+ * Installed by src/html/top-layer.ts once a document has a dialog or popover: called after
+ * each dispatch with the original target, to run light dismiss for pointerdown/pointerup
+ * (https://html.spec.whatwg.org/#run-light-dismiss-activities) and close requests for Escape
+ * keydown (https://html.spec.whatwg.org/#close-requests). Null (no cost) until then.
+ */
+export function setPostDispatchHook(fn: ((event: Event, target: EventTarget) => void) | null): void {
+  postDispatchHook = fn;
+}
+
 // --- slots ----------------------------------------------------------------------------------
 
 let assignedSlotLookup: ((impl: NodeImpl) => EventTarget | null) | null = null;
@@ -199,6 +213,7 @@ function appendToEventPath(
  */
 export function dispatch(event: Event, target: EventTarget, legacyTargetOverride = false): boolean {
   const s = event._s;
+  const originalTarget = target;
   // Step 1.
   s.flags |= EF_DISPATCH;
   // Step 2.
@@ -337,6 +352,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
     if ((s.flags & EF_CANCELED) === 0) at._activationBehavior?.(event);
     else at._legacyCanceledActivationBehavior?.();
   }
+  if (postDispatchHook !== null) postDispatchHook(event, originalTarget);
   // Step 13.
   return (s.flags & EF_CANCELED) === 0;
 }

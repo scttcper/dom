@@ -25,6 +25,7 @@ import {
   setAttribute,
   appendAttribute,
   changeAttribute,
+  attr,
 } from "./attributes.ts";
 import { AttrRecord } from "./NodeImpl.ts";
 import { nextInTree, nextElementInTree } from "./traverse.ts";
@@ -172,12 +173,18 @@ export class Element extends Node {
     return (this[$attributes] ??= new NamedNodeMap(this[$impl]));
   }
 
+  /** https://dom.spec.whatwg.org/#dom-element-slot — reflects the null-namespace `slot` attribute. */
   get slot(): string {
-    return getAttribute(this[$impl], "slot") ?? "";
+    return attr(this[$impl], "slot") ?? "";
   }
 
   set slot(value: string) {
-    setAttribute(this[$impl], "slot", String(value));
+    // https://dom.spec.whatwg.org/#concept-element-attributes-set-value (namespace null).
+    const impl = this[$impl];
+    const v = String(value);
+    const existing = findAttributeByNamespace(impl, null, "slot");
+    if (existing === null) appendAttribute(impl, new AttrRecord("slot", v, null, null));
+    else changeAttribute(impl, existing, v);
   }
 
   override get textContent(): string {
@@ -502,6 +509,11 @@ export class Element extends Node {
   _childrenChangedSteps(): void {}
   /** https://dom.spec.whatwg.org/#concept-node-adopt-ext — only when F_ADOPT_HOOK is set. */
   _adoptingSteps(_oldDocument: Document): void {}
+  /**
+   * https://dom.spec.whatwg.org/#concept-node-move-ext (moveBefore) — only when F_CONNECT_HOOK is
+   * set. Moving runs neither the removing nor the insertion steps, so connected state is kept.
+   */
+  _movingSteps(_isSubtreeRoot: boolean, _oldParent: NodeImpl): void {}
   /** https://dom.spec.whatwg.org/#concept-node-clone-ext — always called on clone. */
   _cloningSteps(_copy: Element, _subtree?: boolean): void {}
 }

@@ -5,6 +5,7 @@
 import {
   CDATA_SECTION_NODE,
   COMMENT_NODE,
+  DOCUMENT_NODE,
   PROCESSING_INSTRUCTION_NODE,
   TEXT_NODE,
 } from "./constants.ts";
@@ -20,6 +21,16 @@ import { $impl, $shadowRoot } from "../keys.ts";
 
 function arity(method: string, required: number, given: number): never {
   throw new TypeError(`Failed to execute '${method}' on 'CharacterData': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`);
+}
+
+/**
+ * The node document for `new Text(data)` / `new Comment(data)`: the current global's document
+ * (https://dom.spec.whatwg.org/#dom-text-text step 1). Internal callers pass the document as a
+ * second argument; anything else in that position (the public constructors take ONE argument,
+ * and extra arguments must be ignored) falls back to the current document.
+ */
+function nodeDocumentFor(doc: unknown): Document {
+  return typeof doc === "object" && doc !== null && (doc as Document)[$impl]?.type === DOCUMENT_NODE ? (doc as Document) : currentDocument();
 }
 
 export abstract class CharacterData extends Node {
@@ -87,8 +98,8 @@ installChildNode(CharacterData);
 installNonDocumentTypeChildNode(CharacterData);
 
 export class Text extends CharacterData {
-  constructor(data = "", doc: Document = currentDocument()) {
-    super(TEXT_NODE, doc);
+  constructor(data = "", doc?: Document) {
+    super(TEXT_NODE, nodeDocumentFor(doc));
     this[$impl].data = String(data);
   }
 
@@ -134,8 +145,8 @@ export class CDATASection extends Text {
 }
 
 export class Comment extends CharacterData {
-  constructor(data = "", doc: Document = currentDocument()) {
-    super(COMMENT_NODE, doc);
+  constructor(data = "", doc?: Document) {
+    super(COMMENT_NODE, nodeDocumentFor(doc));
     this[$impl].data = String(data);
   }
 

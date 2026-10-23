@@ -1,6 +1,7 @@
 // https://dom.spec.whatwg.org/#interface-document
 // https://html.spec.whatwg.org/#the-document-object
 
+import { argumentsRequired } from "../webidl-runtime.ts";
 import { installEventHandlers } from "../events/handlers.ts";
 import {
   DOCUMENT_NODE,
@@ -19,7 +20,7 @@ import { Text, Comment, CDATASection, ProcessingInstruction } from "./CharacterD
 import { DocumentFragment } from "./DocumentFragment.ts";
 import { DocumentType } from "./DocumentType.ts";
 import { Attr } from "./Attr.ts";
-import { createElementImplSync } from "./create.ts";
+import { ceReactionsPending, createElementImplSync, flushCEReactions } from "./create.ts";
 import { asciiLowercase, attr, isValidAttributeLocalName } from "./attributes.ts";
 import { firstElementChild, nextElementInTree } from "./traverse.ts";
 import { cloneNode } from "./clone.ts";
@@ -33,11 +34,13 @@ import { Selection } from "../traversal/Selection.ts";
 import { withNamedProperties, type HTMLCollection } from "../collections/HTMLCollection.ts";
 import type { Window } from "../window/Window.ts";
 import { T } from "./tags.ts";
+import type { NodeList } from "../collections/NodeList.ts";
+import { NameNodeList } from "../html/forms/collections.ts";
 import type { ElementCreationOptions } from "../webidl.ts";
 import type { Event } from "../events/Event.ts";
 import { createEvent } from "../events/createEvent.ts";
 import { parseDocument } from "../parser/index.ts";
-import { $contentType, $css, $derived, $doc, $focused, $forms, $ids, $impl, $implementation, $isHTML, $mode, $ranges, $selection, $styleVersion, $url, $version, $window, $writeBuffer } from "../keys.ts";
+import { $aboutBase, $baseFor, $baseOverride, $baseURL, $baseVersion, $contentType, $css, $derived, $doc, $focused, $forms, $ids, $impl, $implementation, $isHTML, $mode, $ranges, $selection, $styleVersion, $url, $version, $window, $writeBuffer } from "../keys.ts";
 
 export class Document extends Node {
   /** Browsing context's window, or null for documents created via DOMImplementation / new Document(). */
@@ -71,6 +74,14 @@ export class Document extends Node {
   [$derived]: Map<object, unknown> | null;
   /** document.forms (named-properties proxy), created on first read. */
   [$forms]: HTMLCollection | null;
+  /** https://html.spec.whatwg.org/#concept-document-about-base-url (about:blank / about:srcdoc documents of nested browsing contexts). */
+  [$aboutBase]: string | null;
+  /** https://dom.spec.whatwg.org/#document-base-url-override (set when cloning a document). */
+  [$baseOverride]: string | null;
+  /** Cached document base URL, valid while `[$baseVersion] === [$version]` and `[$baseFor] === [$url]`. */
+  [$baseURL]: string;
+  [$baseVersion]: number;
+  [$baseFor]: string;
 
   constructor() {
     super(DOCUMENT_NODE, null);
@@ -92,6 +103,11 @@ export class Document extends Node {
     this[$forms] = null;
     this[$ranges] = null;
     this[$derived] = null;
+    this[$aboutBase] = null;
+    this[$baseOverride] = null;
+    this[$baseURL] = "";
+    this[$baseVersion] = -1;
+    this[$baseFor] = "";
   }
 
   /** @internal Create an HTML document (what a Window and DOMImplementation.createHTMLDocument use). */
@@ -162,9 +178,17 @@ export class Document extends Node {
     return this[$url];
   }
 
+  /**
+   * https://html.spec.whatwg.org/#document-base-url — version-stamped, so repeated reads (every
+   * `a.href`) cost one compare between mutations.
+   */
   override get baseURI(): string {
-    // TODO(window): honour <base href>.
-    return this[$url];
+    if (this[$baseVersion] === this[$version] && this[$baseFor] === this[$url]) return this[$baseURL];
+    const url = documentBaseURL(this);
+    this[$baseURL] = url;
+    this[$baseVersion] = this[$version];
+    this[$baseFor] = this[$url];
+    return url;
   }
 
   get compatMode(): string {
@@ -316,6 +340,8 @@ export class Document extends Node {
     if (node[$impl].type === DOCUMENT_NODE) throw new DOMException("Documents cannot be adopted.", "NotSupportedError");
     if ((node[$impl].flags & 0x20) !== 0) throw new DOMException("Shadow roots cannot be adopted.", "HierarchyRequestError");
     adopt(node[$impl], this);
+    // [CEReactions]: adoptedCallback reactions (html/custom-elements.ts).
+    if (ceReactionsPending) flushCEReactions();
     return node;
   }
 
@@ -329,6 +355,11 @@ export class Document extends Node {
 
   getElementsByClassName(classNames: string): HTMLCollection {
     return getElementsByClassName(this[$impl], String(classNames));
+  }
+
+  /** https://html.spec.whatwg.org/#dom-document-getelementsbyname */
+  getElementsByName(elementName: string): NodeList {
+    return new NameNodeList(this[$impl], String(elementName));
   }
 
   // --- HTML document collections (https://html.spec.whatwg.org/#dom-document-forms and following) ---
@@ -387,6 +418,8 @@ export class Document extends Node {
 
   /** https://w3c.github.io/selection-api/#dom-document-getselection */
   getSelection(): Selection | null {
+    // "the selection associated with this if this has an associated browsing context, and null otherwise"
+    if (this[$window] === null) return null;
     return (this[$selection] ??= new Selection(this));
   }
 
@@ -432,7 +465,10 @@ export class Document extends Node {
 
   /** @internal Clone steps for Document nodes (cloneNode on a document). */
   _cloneDocument(): Document {
-    const doc = new Document();
+    // https://dom.spec.whatwg.org/#concept-node-clone step 2.1: same interface (XMLDocument stays XMLDocument).
+    const doc = this instanceof XMLDocument ? new XMLDocument() : new Document();
+    // Step 2.1 (continued): copy's base URL override is node's base URL.
+    doc[$baseOverride] = this.baseURI;
     doc[$isHTML] = this[$isHTML];
     doc[$contentType] = this[$contentType];
     doc[$url] = this[$url];
@@ -457,6 +493,34 @@ export interface Document extends ParentNode, NonElementParentNode {}
 installParentNode(Document);
 installNonElementParentNode(Document);
 installEventHandlers(Document.prototype, "document"); // GlobalEventHandlers + onreadystatechange/onvisibilitychange
+
+/** https://html.spec.whatwg.org/#document-base-url */
+function documentBaseURL(doc: Document): string {
+  // https://html.spec.whatwg.org/#fallback-base-url
+  const url = doc[$url];
+  const fallback = doc[$aboutBase] !== null && (url === "about:blank" || url === "about:srcdoc") ? doc[$aboutBase] : url;
+  const root = doc[$impl];
+  // Step 1: the frozen base URL of the first base element with an href attribute, in tree order.
+  for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
+    if (n.tag !== T.base || n.ns !== HTML_NS) continue;
+    const href = attr(n, "href");
+    if (href === null) continue;
+    // https://html.spec.whatwg.org/#set-the-frozen-base-url steps 2-4.
+    const parsed = URL.parse(href, fallback);
+    if (parsed === null || parsed.protocol === "data:" || parsed.protocol === "javascript:") return fallback;
+    return parsed.href;
+  }
+  // Step 2-3.
+  return doc[$baseOverride] ?? fallback;
+}
+
+/**
+ * https://dom.spec.whatwg.org/#xmldocument — what DOMImplementation.createDocument() returns
+ * (https://dom.spec.whatwg.org/#dom-domimplementation-createdocument step 1). No members of its
+ * own (the HTML `load()` extension is not implemented: no network).
+ */
+export class XMLDocument extends Document {}
+Object.defineProperty(XMLDocument.prototype, Symbol.toStringTag, { value: "XMLDocument", configurable: true });
 
 /** https://dom.spec.whatwg.org/#interface-domimplementation */
 export class DOMImplementation {
@@ -490,8 +554,11 @@ export class DOMImplementation {
     return doc;
   }
 
-  createDocument(namespace: string | null, qualifiedName: string | null, doctype: DocumentType | null = null): Document {
-    const doc = new Document();
+  /** https://dom.spec.whatwg.org/#dom-domimplementation-createdocument */
+  createDocument(namespace: string | null, qualifiedName: string | null, doctype: DocumentType | null = null): XMLDocument {
+    if (arguments.length < 2) argumentsRequired("createDocument", "DOMImplementation", 2, arguments.length);
+    // Step 1: a new XMLDocument.
+    const doc = new XMLDocument();
     if (namespace === HTML_NS) doc[$contentType] = "application/xhtml+xml";
     else if (namespace === SVG_NS) doc[$contentType] = "image/svg+xml";
     if (doctype !== null) doc.appendChild(doctype);

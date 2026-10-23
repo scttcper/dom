@@ -14,7 +14,6 @@ defineWPTDirectory(
   {
     "TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html": "cross-realm filters need real iframes",
     "TreeWalker-acceptNode-filter-cross-realm.html": "cross-realm filters need real iframes",
-    "TreeWalker-realm.html": "nodes from another realm need real iframes",
   },
   {},
 );

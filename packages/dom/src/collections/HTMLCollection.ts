@@ -12,8 +12,10 @@
 // that need `coll.name` access (HTMLFormControlsCollection: `form.elements.username`) wrap
 // instances with `withNamedProperties()`.
 //
-// State is kept in ONE non-enumerable own property (`_s`) so that (a) `Object.keys(coll)` stays
-// clean for jest/pretty-format and (b) a named-properties Proxy can forward to it.
+// State is kept in ONE non-enumerable own symbol-keyed property (`[$coll]`, keys.ts) so that
+// (a) `Object.keys(coll)` / `Object.getOwnPropertyNames(coll)` stay clean for jest/pretty-format
+// and WebIDL (https://webidl.spec.whatwg.org/#legacy-platform-object-property-enumeration) and
+// (b) a named-properties Proxy can forward to it. `_s` is a prototype alias for subclasses.
 //
 // Subclasses (html agent: HTMLFormControlsCollection, HTMLOptionsCollection, document.forms,
 // table.rows, ...) either override `_collect(out)` (keeping the base class's version-stamped
@@ -29,7 +31,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { attr } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
-import { $impl, $items, $version } from "../keys.ts";
+import { $coll, $impl, $items, $version } from "../keys.ts";
 
 export type ElementFilter = (el: NodeImpl) => boolean;
 
@@ -61,20 +63,28 @@ export class CollectionState {
 }
 
 export class HTMLCollection {
-  declare _s: CollectionState;
+  declare [$coll]: CollectionState;
   /** Free for subclasses that override `_snapshot()` (not used by the base class). */
   declare [$items]: Element[] | null;
   declare [$version]: number;
 
   /** @internal Use the static factories or a subclass. */
   constructor(root: NodeImpl, childrenOnly = false, filter: ElementFilter | null = null) {
-    Object.defineProperty(this, "_s", { value: new CollectionState(root, childrenOnly, filter) });
+    Object.defineProperty(this, $coll, { value: new CollectionState(root, childrenOnly, filter) });
     if (table === null) table = indexGetterTable(HTMLCollection.prototype, tableItem, 256);
+  }
+
+  /**
+   * @internal Collection state (prototype accessor, so it is not an own property name).
+   * TODO(html): html/collection.ts and html/forms/collections.ts could read `this[$coll]`.
+   */
+  get _s(): CollectionState {
+    return this[$coll];
   }
 
   /** @internal The collection root. */
   get _rootImpl(): NodeImpl {
-    return this._s.root;
+    return this[$coll].root;
   }
 
   /** @internal Element children of `root` (ParentNode.children). */
@@ -92,7 +102,7 @@ export class HTMLCollection {
    * membership; it runs only when the document changed since the last snapshot.
    */
   _collect(out: Element[]): void {
-    const s = this._s;
+    const s = this[$coll];
     const root = s.root;
     if (s.childrenOnly) {
       for (let c = root.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) out.push(c.node as Element);
@@ -110,7 +120,7 @@ export class HTMLCollection {
 
   /** @internal Current members (shared array: do not mutate). */
   _snapshot(): Element[] {
-    const s = this._s;
+    const s = this[$coll];
     const doc = s.root.doc;
     if (s.version === doc[$version] && s.doc === doc) return s.items;
     const items: Element[] = [];

@@ -10,7 +10,7 @@
  * Known failures are the documented Proxy-free deviation: HTMLCollection / NamedNodeMap do not
  * expose named properties or own index properties (collections/indexed.ts explains why).
  */
-import { defineWPTDirectory } from "../wpt/harness.ts";
+import { defineWPT, defineWPTDirectory } from "../wpt/harness.ts";
 
 const PROXY_FREE = "Proxy-free collections: no named properties / own index properties (deviation)";
 defineWPTDirectory(
@@ -25,3 +25,4 @@ defineWPTDirectory(
   },
   { "childnodes-messagechannel-crash.html": "crash test needs MessageChannel + navigation" },
 );
+defineWPT("dom/collections/HTMLCollection-live-mutations.window.js", PROXY_FREE);

@@ -182,22 +182,40 @@ export function queueCharacterDataMutationRecord(target: NodeImpl, oldValue: str
 }
 
 /**
- * Removal step 16: for each inclusive ancestor of `parent` with subtree registrations, add a
- * transient registered observer to `node`. https://dom.spec.whatwg.org/#concept-node-remove
+ * https://dom.spec.whatwg.org/#add-transient-registered-observers (called from the remove
+ * algorithm, https://dom.spec.whatwg.org/#concept-node-remove, given node and parent).
  */
 export function addTransientObservers(parent: NodeImpl, node: NodeImpl): void {
+  // Step 1: for each inclusive ancestor of parent, for each registered observer of it.
   for (let ancestor: NodeImpl | null = parent; ancestor !== null; ancestor = ancestor.parent) {
     if ((ancestor.flags & F_MO_REGISTERED) === 0) continue;
     const list = registrations.get(ancestor);
     if (list === undefined) continue;
     for (let i = 0; i < list.length; i++) {
       const registered = list[i];
+      // Step 1.1.
       if (!registered.options.subtree) continue;
-      addRegistration(node, new RegisteredObserver(registered.observer, registered.options, registered));
-      registered.observer[$nodes].push(node);
-      registered.observer[$hasTransients] = true;
+      // Step 1.2-1.3: a transient's source is always a non-transient registered observer.
+      const observer = registered.observer;
+      const source = registered.source ?? registered;
+      // Step 1.4.
+      if (hasTransientWithSource(node, source)) continue;
+      // Steps 1.5-1.6.
+      addRegistration(node, new RegisteredObserver(observer, source.options, source));
+      observer[$nodes].push(node);
+      observer[$hasTransients] = true;
+      // Steps 1.7-1.8: notify (and so drop the transients) even if no record gets queued.
+      if (!pending.includes(observer)) pending.push(observer);
+      queueMutationObserverMicrotask();
     }
   }
+}
+
+function hasTransientWithSource(node: NodeImpl, source: RegisteredObserver): boolean {
+  const list = registeredObserverList(node);
+  if (list === null) return false;
+  for (let i = 0; i < list.length; i++) if (list[i].source === source) return true;
+  return false;
 }
 
 /** https://dom.spec.whatwg.org/#signal-a-slot-change */

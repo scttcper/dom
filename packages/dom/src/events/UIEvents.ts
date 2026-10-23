@@ -201,7 +201,7 @@ export class UIEvent extends Event {
     this.#detail = toLong(detail);
   }
 }
-setToStringTag(UIEvent);
+setToStringTag(UIEvent, 1);
 
 // --- FocusEvent -----------------------------------------------------------------------------
 
@@ -221,7 +221,7 @@ export class FocusEvent extends UIEvent {
     return this._s.relatedTarget;
   }
 }
-setToStringTag(FocusEvent);
+setToStringTag(FocusEvent, 1);
 
 // --- MouseEvent -----------------------------------------------------------------------------
 
@@ -379,7 +379,7 @@ export class MouseEvent extends UIEvent {
     this._s.relatedTarget = targetMember(relatedTarget);
   }
 }
-setToStringTag(MouseEvent);
+setToStringTag(MouseEvent, 1);
 
 // --- PointerEvent ---------------------------------------------------------------------------
 
@@ -558,7 +558,7 @@ export class PointerEvent extends MouseEvent {
     return this.#predicted.slice();
   }
 }
-setToStringTag(PointerEvent);
+setToStringTag(PointerEvent, 1);
 
 // --- WheelEvent -----------------------------------------------------------------------------
 
@@ -603,7 +603,7 @@ export class WheelEvent extends MouseEvent {
     return this.#deltaMode;
   }
 }
-setToStringTag(WheelEvent);
+setToStringTag(WheelEvent, 1);
 Object.defineProperties(WheelEvent.prototype, {
   DOM_DELTA_PIXEL: { value: 0, enumerable: true },
   DOM_DELTA_LINE: { value: 1, enumerable: true },
@@ -631,7 +631,7 @@ export class DragEvent extends MouseEvent {
     return this.#dataTransfer;
   }
 }
-setToStringTag(DragEvent);
+setToStringTag(DragEvent, 1);
 
 // --- KeyboardEvent --------------------------------------------------------------------------
 
@@ -735,7 +735,7 @@ export class KeyboardEvent extends UIEvent {
     this.#mods = legacyMods(ctrlKey, altKey, shiftKey, metaKey, this.#mods);
   }
 }
-setToStringTag(KeyboardEvent);
+setToStringTag(KeyboardEvent, 1);
 Object.defineProperties(KeyboardEvent.prototype, {
   DOM_KEY_LOCATION_STANDARD: { value: 0, enumerable: true },
   DOM_KEY_LOCATION_LEFT: { value: 1, enumerable: true },
@@ -790,7 +790,7 @@ export class InputEvent extends UIEvent {
     return this.#targetRanges.slice();
   }
 }
-setToStringTag(InputEvent);
+setToStringTag(InputEvent, 1);
 
 // --- CompositionEvent -----------------------------------------------------------------------
 
@@ -820,7 +820,7 @@ export class CompositionEvent extends UIEvent {
     this.#data = toDOMString(data);
   }
 }
-setToStringTag(CompositionEvent);
+setToStringTag(CompositionEvent, 1);
 
 // --- TextEvent (legacy, createEvent("textevent") only) ---------------------------------------
 
@@ -844,7 +844,7 @@ export class TextEvent extends UIEvent {
     this.#data = toDOMString(data);
   }
 }
-setToStringTag(TextEvent);
+setToStringTag(TextEvent, 1);
 
 // --- Touch / TouchList / TouchEvent ---------------------------------------------------------
 
@@ -957,7 +957,7 @@ export class Touch {
     return this.#touchType;
   }
 }
-setToStringTag(Touch);
+setToStringTag(Touch, 1);
 
 /** https://w3c.github.io/touch-events/#touchlist-interface (static list with own index properties). */
 export class TouchList {
@@ -1073,7 +1073,7 @@ export class TouchEvent extends UIEvent {
     return out;
   }
 }
-setToStringTag(TouchEvent);
+setToStringTag(TouchEvent, 1);
 
 // --- ClipboardEvent -------------------------------------------------------------------------
 
@@ -1096,7 +1096,7 @@ export class ClipboardEvent extends Event {
     return this.#clipboardData;
   }
 }
-setToStringTag(ClipboardEvent);
+setToStringTag(ClipboardEvent, 1);
 
 // WebIDL: attributes and operations are enumerable prototype members.
 exposeMembers(UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, DragEvent, KeyboardEvent, InputEvent, CompositionEvent, TextEvent, Touch, TouchList, TouchEvent, ClipboardEvent);

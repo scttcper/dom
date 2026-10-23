@@ -401,11 +401,22 @@ function serializeAttrValue(value: string | null, rwf: boolean): string {
     else if (c === 34) rep = "&quot;";
     else if (c === 60) rep = "&lt;";
     else if (c === 62) rep = "&gt;";
+    // Not in DOM-Parsing (https://github.com/w3c/DOM-Parsing/issues/59), but what browsers and
+    // w3c-xmlserializer (jsdom) do so that attribute values round-trip through an XML parser.
+    else if (c === 9) rep = "&#x9;";
+    else if (c === 10) rep = "&#xA;";
+    else if (c === 13) rep = "&#xD;";
     else continue;
     out += value.slice(last, i) + rep;
     last = i + 1;
   }
   return last === 0 ? value : out + value.slice(last);
+}
+
+/** Whether `prefix` is bound to any namespace in `map`. */
+function prefixBound(map: PrefixMap, prefix: string): boolean {
+  for (const list of map.values()) if (list.includes(prefix)) return true;
+  return false;
 }
 
 const XML_VOID = new Set([
@@ -457,6 +468,14 @@ function serializeAttributes(
       seen.add(key);
     }
     const attrNs = a.ns;
+    // A no-namespace attribute named "xmlns" (setAttribute("xmlns", ...)) is not a namespace
+    // declaration, and would contradict (or duplicate) the declaration the element's own
+    // namespace produces: browsers drop it (WPT "Drop inconsistent xmlns=... by matching on
+    // local name"; https://github.com/w3c/DOM-Parsing/issues/47).
+    if (attrNs === null && a.localName === "xmlns") {
+      if (rwf) invalid("invalid attribute name");
+      continue;
+    }
     let candidate: string | null = null;
     if (attrNs !== null) {
       candidate = preferredPrefix(map, a.prefix, attrNs);
@@ -472,7 +491,16 @@ function serializeAttributes(
         if (rwf && a.value === "") invalid("empty namespace declaration");
         if (a.prefix === "xmlns") candidate = "xmlns";
       } else if (candidate === null) {
-        candidate = generatePrefix(map, attrNs, index);
+        // Deviation from "generate a prefix", matching browsers (WPT "Check if no special handling
+        // for XLink namespace unlike HTML serializer"): an XLink attribute keeps its own prefix
+        // when that prefix is not bound yet; other namespaces get a generated prefix
+        // (https://github.com/w3c/DOM-Parsing/issues/29).
+        if (attrNs === XLINK_NS && a.prefix !== null && !localPrefixes.has(a.prefix) && !prefixBound(map, a.prefix)) {
+          candidate = a.prefix;
+          addPrefix(map, candidate, attrNs);
+        } else {
+          candidate = generatePrefix(map, attrNs, index);
+        }
         result += " xmlns:" + candidate + '="' + serializeAttrValue(attrNs, rwf) + '"';
       }
     }

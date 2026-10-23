@@ -163,9 +163,12 @@ export function slotsAfterInsert(parent: NodeImpl, node: NodeImpl | null, nodes:
   for (let i = 0; i < count; i++) {
     const n = nodes === null ? node! : nodes[i];
     if (n.parent !== parent) continue;
-    // 7.4: parent is a shadow host with named slot assignment and n is a slottable.
+    // 7.4: parent is a shadow host and n is a slottable. The spec limits this to "named" slot
+    // assignment; with "manual" assignment a node manually assigned while it was elsewhere is
+    // revealed when it becomes a child of the host (find a slot checks the manual assignment),
+    // which is what browsers and WPT shadow-dom/imperative-slot-api.html expect.
     const shadow = shadowOf(parent);
-    if (shadow !== null && shadow.slotAssignment === "named" && isSlottable(n)) assignASlot(n);
+    if (shadow !== null && isSlottable(n)) assignASlot(n);
     // 7.5
     if (isEmptyShadowSlot(parent)) signalSlotChange(parent);
     // 7.6: assign slottables for a tree with n's root (only slots inside shadow trees matter).
@@ -224,9 +227,12 @@ export function assignedElements(slot: NodeImpl, flatten: boolean): NodeImpl[] {
 
 /** https://html.spec.whatwg.org/#dom-slot-assign */
 export function assignManually(slot: NodeImpl, nodes: NodeImpl[]): void {
+  // 1.
   const previous = manuallyAssignedOf.get(slot) ?? EMPTY;
   for (const n of previous) manualSlotOf.delete(n);
+  // 2–3.
   const set: NodeImpl[] = [];
+  let otherSlots: NodeImpl[] | null = null;
   for (const n of nodes) {
     const prevSlot = manualSlotOf.get(n);
     if (prevSlot !== undefined && prevSlot !== slot) {
@@ -235,14 +241,22 @@ export function assignManually(slot: NodeImpl, nodes: NodeImpl[]): void {
         const i = list.indexOf(n);
         if (i !== -1) list.splice(i, 1);
       }
-      assignSlottables(prevSlot);
+      if (otherSlots === null) otherSlots = [];
+      if (!otherSlots.includes(prevSlot)) otherSlots.push(prevSlot);
     }
     if (!set.includes(n)) set.push(n);
     manualSlotOf.set(n, slot);
   }
+  // 4.
   manuallyAssignedOf.set(slot, set);
+  // 5. Assign slottables for a tree with this's root (signals slot changes in tree order).
   const root = treeRoot(slot);
   if ((root.flags & F_SHADOW_ROOT) !== 0) assignSlottablesForTree(root);
+  // Slots in other shadow trees that lost a node (the spec's step 5 only covers this's tree;
+  // browsers and WPT imperative-slot-api-cross-shadow-root.html update them too).
+  if (otherSlots !== null) {
+    for (const other of otherSlots) if (treeRoot(other) !== root) assignSlottables(other);
+  }
 }
 
 /** For `getTheParent`: a slottable's assigned slot (when its parent is a shadow host). */

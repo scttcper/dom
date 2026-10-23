@@ -10,12 +10,17 @@
 // slower (docs/deviations.md). Registered symbols (Symbol.for) keep two copies of @rtd/dom interoperable.
 
 export const $_proto__: unique symbol = Symbol.for("rtd._proto__");
+export const $aboutBase: unique symbol = Symbol.for("rtd.aboutBase");
 export const $active: unique symbol = Symbol.for("rtd.active");
 export const $assocGen: unique symbol = Symbol.for("rtd.assocGen");
 export const $attr: unique symbol = Symbol.for("rtd.attr");
 export const $attributes: unique symbol = Symbol.for("rtd.attributes");
 export const $availableToElementInternals: unique symbol = Symbol.for("rtd.availableToElementInternals");
 export const $badInput: unique symbol = Symbol.for("rtd.badInput");
+export const $baseFor: unique symbol = Symbol.for("rtd.baseFor");
+export const $baseOverride: unique symbol = Symbol.for("rtd.baseOverride");
+export const $baseURL: unique symbol = Symbol.for("rtd.baseURL");
+export const $baseVersion: unique symbol = Symbol.for("rtd.baseVersion");
 export const $block: unique symbol = Symbol.for("rtd.block");
 export const $byCtor: unique symbol = Symbol.for("rtd.byCtor");
 export const $byName: unique symbol = Symbol.for("rtd.byName");
@@ -38,6 +43,7 @@ export const $constructingEntryList: unique symbol = Symbol.for("rtd.constructin
 export const $contentType: unique symbol = Symbol.for("rtd.contentType");
 export const $controlsCache: unique symbol = Symbol.for("rtd.controlsCache");
 export const $controlsDoc: unique symbol = Symbol.for("rtd.controlsDoc");
+export const $coll: unique symbol = Symbol.for("rtd.coll");
 export const $controlsVersion: unique symbol = Symbol.for("rtd.controlsVersion");
 export const $cookieJar: unique symbol = Symbol.for("rtd.cookieJar");
 export const $cookies: unique symbol = Symbol.for("rtd.cookies");

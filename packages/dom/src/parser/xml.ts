@@ -205,8 +205,10 @@ class XMLParser {
       this.pos += 6;
       this.skipWs();
       publicId = this.quoted();
-      this.skipWs();
-      if (this.src.charCodeAt(this.pos) === 34 || this.src.charCodeAt(this.pos) === 39) systemId = this.quoted();
+      // https://www.w3.org/TR/xml/#NT-ExternalID: 'PUBLIC' S PubidLiteral S SystemLiteral — the
+      // system literal is required in a doctype (only NOTATION declarations may omit it).
+      if (!this.skipWs()) this.fail("expected whitespace and a system literal after the public identifier");
+      systemId = this.quoted();
     } else if (this.startsWith("SYSTEM")) {
       this.pos += 6;
       this.skipWs();
@@ -506,7 +508,9 @@ export function parseXML(text: string, doc: Document, contentType: string): void
   void contentType;
   const fragment = new DocumentFragment(doc)[$impl];
   try {
-    new XMLParser(String(text), doc).parseDocument(fragment);
+    // DOMParser input goes through UTF-8 (https://crbug.com/40814739; WPT
+    // DOMParser-parseFromString-xml-parsererror): lone surrogates become U+FFFD.
+    new XMLParser(String(text).toWellFormed(), doc).parseDocument(fragment);
   } catch (e) {
     if (!(e instanceof XMLParseError)) throw e;
     const error = createElementImpl(doc, "parsererror", PARSERERROR_NS, null);

@@ -19,11 +19,12 @@ import {
   nextElementSibling,
   previousElementSibling,
 } from "./traverse.ts";
-import { preInsert, remove, replace, replaceAll, ensureReplaceAllValidity } from "./tree.ts";
+import { move, preInsert, remove, replace, replaceAll, ensureReplaceAllValidity } from "./tree.ts";
 import { querySelector, querySelectorAll } from "../selectors/index.ts";
 import { HTMLCollection } from "../collections/HTMLCollection.ts";
 import type { NodeList } from "../collections/NodeList.ts";
 import { $children, $impl } from "../keys.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 
 export interface ParentNode {
   readonly children: HTMLCollection;
@@ -33,6 +34,7 @@ export interface ParentNode {
   prepend(...nodes: (Node | string)[]): void;
   append(...nodes: (Node | string)[]): void;
   replaceChildren(...nodes: (Node | string)[]): void;
+  moveBefore(node: Node, child: Node | null): void;
   querySelector<E extends Element = Element>(selectors: string): E | null;
   querySelectorAll<E extends Element = Element>(selectors: string): NodeList & Iterable<E>;
 }
@@ -75,6 +77,17 @@ function toNode(n: unknown, doc: Document): Node {
   return doc.createTextNode(String(n));
 }
 
+/** WebIDL `Node` argument conversion. */
+function nodeArg(value: unknown, method: string, position: number, self: NodeImpl): NodeImpl {
+  if (typeof value === "object" && value !== null && $impl in value) return (value as Node)[$impl];
+  throw new TypeError(`Failed to execute '${method}' on '${parentNodeInterface(self)}': parameter ${position} is not of type 'Node'.`);
+}
+
+/** The interface name used in ParentNode error messages. */
+function parentNodeInterface(impl: NodeImpl): string {
+  return impl.type === ELEMENT_NODE ? "Element" : impl.type === DOCUMENT_FRAGMENT_NODE ? "DocumentFragment" : "Document";
+}
+
 function wrap(n: NodeImpl | null): Element | null {
   return n === null ? null : (n.node as Element);
 }
@@ -109,10 +122,24 @@ const parentNode = {
     ensureReplaceAllValidity(node, impl);
     replaceAll(node, impl);
   },
+  // https://dom.spec.whatwg.org/#dom-parentnode-movebefore
+  moveBefore(this: Node, node: Node, child: Node | null): void {
+    if (arguments.length < 2) argumentsRequired("moveBefore", parentNodeInterface(this[$impl]), 2, arguments.length);
+    const n = nodeArg(node, "moveBefore", 1, this[$impl]);
+    // Steps 1-2: referenceChild.
+    let reference = child === null ? null : nodeArg(child, "moveBefore", 2, this[$impl]);
+    if (reference === n) reference = n.next;
+    // Step 3.
+    move(n, this[$impl], reference);
+  },
+  // https://dom.spec.whatwg.org/#dom-parentnode-queryselector
   querySelector(this: Node, selectors: string): Element | null {
+    if (arguments.length === 0) argumentsRequired("querySelector", parentNodeInterface(this[$impl]), 1, 0);
     return wrap(querySelector(this[$impl], String(selectors)));
   },
+  // https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall
   querySelectorAll(this: Node, selectors: string): NodeList {
+    if (arguments.length === 0) argumentsRequired("querySelectorAll", parentNodeInterface(this[$impl]), 1, 0);
     return querySelectorAll(this[$impl], String(selectors));
   },
 };

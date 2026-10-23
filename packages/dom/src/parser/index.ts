@@ -24,7 +24,7 @@ import {
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { createElementImpl } from "../nodes/create.ts";
+import { ceActive, ceParserCreated, createElementImpl } from "../nodes/create.ts";
 import { append, appendDetached, insertDetached, remove, adopt } from "../nodes/tree.ts";
 import { appendAttributeDetached, findAttributeByName, attr } from "../nodes/attributes.ts";
 import { Comment, ProcessingInstruction, Text } from "../nodes/CharacterData.ts";
@@ -131,6 +131,8 @@ class DomSink extends TreeSink {
     } else {
       for (let i = 0; i < count; i++) appendAttributeDetached(el, names[i], values[i], null, null);
     }
+    // Custom elements: "is" value and upgrade reaction (html/custom-elements.ts).
+    if (ceActive && ns === NS_HTML) ceParserCreated(el);
     if ((el.flags & F_CHILDREN_HOOK) !== 0) this.hooked.push(el);
     return this.register(el);
   }

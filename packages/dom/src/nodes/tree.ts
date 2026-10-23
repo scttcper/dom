@@ -18,6 +18,7 @@ import {
   F_CONNECT_HOOK,
   F_HAS_SHADOW,
   F_HTML,
+  F_SHADOW_ROOT,
   HTML_NS,
   TEXT_NODE,
   CDATA_SECTION_NODE,
@@ -27,7 +28,7 @@ import {
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
-import { indexOf, nextInTree } from "./traverse.ts";
+import { indexOf, nextInTree, treeRoot } from "./traverse.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
 import {
   activeObservers,
@@ -331,6 +332,18 @@ function connectSubtree(root: NodeImpl, doc: Document): void {
   }
 }
 
+/**
+ * Connect the children of a document whose tree was built detached (deep `cloneNode` of a
+ * Document: https://dom.spec.whatwg.org/#concept-node-clone step 6 appends the copied children
+ * with the insert algorithm, so they become connected, are id-indexed and run their connected
+ * steps). Not used on any hot path.
+ */
+export function connectDetachedChildren(docImpl: NodeImpl): void {
+  const doc = docImpl.node as Document;
+  for (let c = docImpl.first; c !== null; c = c.next) connectSubtree(c, doc);
+  doc[$version]++;
+}
+
 function disconnectSubtree(root: NodeImpl, doc: Document): void {
   for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
     n.flags &= ~F_CONNECTED;
@@ -372,7 +385,8 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   // Steps 11-13: slot assignment bookkeeping.
   if (slotAssignmentActive !== 0) slotsAfterRemove(node, parent);
   // Steps 14-15 (+ this implementation's connectedness/id/focus bookkeeping).
-  if ((node.flags & F_CONNECTED) !== 0) disconnectSubtree(node, doc);
+  const wasConnected = (node.flags & F_CONNECTED) !== 0;
+  if (wasConnected) disconnectSubtree(node, doc);
   if (activeObservers !== 0) {
     // Step 16: transient registered observers.
     addTransientObservers(parent, node);
@@ -386,6 +400,80 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   // instead of on their next (maybe never) lookup (nodes/derived.ts).
   if (doc[$derived] !== null) dropDerivedCaches(doc);
   // Custom element reactions queued by hooks above (html agent; see create.ts). Keep last.
+  // Only a connected removal can have queued any (disconnectedCallback); reactions queued
+  // earlier by the calling API (e.g. for the fragment children an insert detaches first) wait
+  // for that API's own flush point, as with [CEReactions].
+  if (ceReactionsPending && wasConnected) flushCEReactions();
+}
+
+/** https://dom.spec.whatwg.org/#concept-shadow-including-root */
+function shadowIncludingRoot(n: NodeImpl): NodeImpl {
+  let root = treeRoot(n);
+  while ((root.flags & F_SHADOW_ROOT) !== 0) {
+    const host = (root.node as unknown as { [$host]: { [$impl]: NodeImpl } | null })[$host];
+    if (host === null) break;
+    root = treeRoot(host[$impl]);
+  }
+  return root;
+}
+
+/**
+ * https://dom.spec.whatwg.org/#move (ParentNode.moveBefore). A separate primitive from remove +
+ * insert: the node keeps its connectedness, node document, focus and element state; no
+ * removing/insertion (connected/disconnected) steps run. Not on any hot path.
+ */
+export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null): void {
+  // Step 1 (also guarantees same connectedness and node document).
+  if (shadowIncludingRoot(newParent) !== shadowIncludingRoot(node)) {
+    throw hierarchyError("The new parent is not in the same shadow-including tree as the node to move.");
+  }
+  // Steps 2-6.
+  if (isHostIncludingInclusiveAncestor(node, newParent)) throw hierarchyError("The node to move is an ancestor of the new parent.");
+  if (child !== null && child.parent !== newParent) {
+    throw new DOMException("The reference child is not a child of this node.", "NotFoundError");
+  }
+  const nt = node.type;
+  if (nt !== ELEMENT_NODE && !isCharacterData(nt)) throw hierarchyError("Only elements and character data nodes can be moved.");
+  if (newParent.type === DOCUMENT_NODE) {
+    if (nt === TEXT_NODE) throw hierarchyError("Nodes of this type cannot be moved into a document.");
+    if (nt === ELEMENT_NODE && (hasElementChild(newParent) || (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child))))) {
+      throw hierarchyError("A document can have only one document element.");
+    }
+  }
+  // Step 7-8.
+  const oldParent = node.parent!;
+  const doc = newParent.doc;
+  // Steps 9-10: live range and NodeIterator pre-remove steps.
+  if (liveRangeCount !== 0) rangesBeforeRemove(node, oldParent, indexOf(node));
+  if (nodeIteratorCount !== 0) iteratorsBeforeRemove(node);
+  // Steps 11-13.
+  const oldPreviousSibling = node.prev;
+  const oldNextSibling = node.next;
+  unlink(node);
+  // Steps 14-16: slot assignment after the removal half.
+  if (slotAssignmentActive !== 0) slotsAfterRemove(node, oldParent);
+  // Step 17.
+  if (activeObservers !== 0) addTransientObservers(oldParent, node);
+  // Step 18: live ranges after the insertion point.
+  if (liveRangeCount !== 0 && child !== null) rangesAfterInsert(newParent, indexOf(child), 1);
+  // Steps 19-20.
+  const newPreviousSibling = child === null ? newParent.last : child.prev;
+  link(node, newParent, child);
+  // Steps 21-23: slot assignment after the insertion half.
+  if (slotAssignmentActive !== 0) slotsAfterInsert(newParent, node, null);
+  // Step 24: moving steps (custom element connectedMoveCallback is the html agent's hook).
+  for (let n: NodeImpl | null = node; n !== null; n = nextInTree(n, node)) {
+    if (n.type === ELEMENT_NODE && (n.flags & F_CONNECT_HOOK) !== 0) (n.node as Element)._movingSteps(n === node, oldParent);
+  }
+  // Steps 25-26.
+  if (activeObservers !== 0) {
+    queueTreeMutationRecord(oldParent, [], [node], oldPreviousSibling, oldNextSibling);
+    queueTreeMutationRecord(newParent, [node], [], newPreviousSibling, child);
+  }
+  // This implementation's state that depends on child lists (<option>, <style>, <title>, ...).
+  childrenChanged(oldParent);
+  if (newParent !== oldParent) childrenChanged(newParent);
+  doc[$version]++;
   if (ceReactionsPending) flushCEReactions();
 }
 
@@ -485,9 +573,15 @@ export function adopt(node: NodeImpl, doc: Document): void {
     if (liveRangeCount !== 0) rangesAdopt(node, oldDoc);
     // Step 3.2: adopting steps (template contents, custom element adoptedCallback via the html
     // agent's hook). Run after re-homing the whole subtree, in tree order.
-    for (let n: NodeImpl | null = node; n !== null; n = nextInTree(n, node)) {
-      if ((n.flags & F_ADOPT_HOOK) !== 0) (n.node as Element)._adoptingSteps(oldDoc);
-    }
+    runAdoptingSteps(node, oldDoc);
+  }
+}
+
+/** Adopting steps over the shadow-including inclusive descendants of `root`, in shadow-including tree order. */
+function runAdoptingSteps(root: NodeImpl, oldDoc: Document): void {
+  for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
+    if ((n.flags & F_ADOPT_HOOK) !== 0) (n.node as Element)._adoptingSteps(oldDoc);
+    if ((n.flags & F_HAS_SHADOW) !== 0) runAdoptingSteps((n.node as Element)[$shadowRoot]![$impl], oldDoc);
   }
 }
 

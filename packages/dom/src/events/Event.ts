@@ -327,9 +327,13 @@ export function setTrusted(event: Event, trusted = true): void {
 }
 
 /** Name used in subclass constructor errors. */
-export function setToStringTag(ctor: { prototype: object; name: string }): void {
+export function setToStringTag(ctor: { prototype: object; name: string }, requiredArgs?: number): void {
   Object.defineProperty(ctor.prototype, Symbol.toStringTag, { value: ctor.name, configurable: true });
+  // https://webidl.spec.whatwg.org/#es-interface-call step "length": the shortest constructor
+  // argument list (`constructor(type, optional init)` → 1; TS `init?` params would count as 2).
+  if (requiredArgs !== undefined) Object.defineProperty(ctor, "length", { value: requiredArgs, configurable: true });
 }
 
+setToStringTag(Event, 1);
 // WebIDL: attributes and operations are enumerable prototype members.
 exposeMembers(Event);

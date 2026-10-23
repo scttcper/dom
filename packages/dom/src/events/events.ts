@@ -73,7 +73,7 @@ export class CustomEvent<T = unknown> extends Event {
     this.#detail = detail;
   }
 }
-setToStringTag(CustomEvent);
+setToStringTag(CustomEvent, 1);
 
 // --- ErrorEvent -----------------------------------------------------------------------------
 
@@ -122,7 +122,7 @@ export class ErrorEvent extends Event {
     return this.#error;
   }
 }
-setToStringTag(ErrorEvent);
+setToStringTag(ErrorEvent, 1);
 
 // --- PromiseRejectionEvent ------------------------------------------------------------------
 
@@ -154,7 +154,7 @@ export class PromiseRejectionEvent extends Event {
     return this.#reason;
   }
 }
-setToStringTag(PromiseRejectionEvent);
+setToStringTag(PromiseRejectionEvent, 2);
 
 // --- MessageEvent ---------------------------------------------------------------------------
 
@@ -214,7 +214,7 @@ export class MessageEvent extends Event {
     this.#ports = Object.freeze(Array.from(ports));
   }
 }
-setToStringTag(MessageEvent);
+setToStringTag(MessageEvent, 1);
 
 // --- ProgressEvent --------------------------------------------------------------------------
 
@@ -248,7 +248,7 @@ export class ProgressEvent extends Event {
     return this.#total;
   }
 }
-setToStringTag(ProgressEvent);
+setToStringTag(ProgressEvent, 1);
 
 // --- AnimationEvent / TransitionEvent -------------------------------------------------------
 
@@ -282,7 +282,7 @@ export class AnimationEvent extends Event {
     return this.#pseudoElement;
   }
 }
-setToStringTag(AnimationEvent);
+setToStringTag(AnimationEvent, 1);
 
 export interface TransitionEventInit extends EventInit {
   propertyName?: string;
@@ -314,7 +314,7 @@ export class TransitionEvent extends Event {
     return this.#pseudoElement;
   }
 }
-setToStringTag(TransitionEvent);
+setToStringTag(TransitionEvent, 1);
 
 // --- History / navigation events -----------------------------------------------------------
 
@@ -343,7 +343,7 @@ export class PopStateEvent extends Event {
     return this.#hasUAVisualTransition;
   }
 }
-setToStringTag(PopStateEvent);
+setToStringTag(PopStateEvent, 1);
 
 export interface HashChangeEventInit extends EventInit {
   oldURL?: string;
@@ -369,7 +369,7 @@ export class HashChangeEvent extends Event {
     return this.#newURL;
   }
 }
-setToStringTag(HashChangeEvent);
+setToStringTag(HashChangeEvent, 1);
 
 export interface PageTransitionEventInit extends EventInit {
   persisted?: boolean;
@@ -389,7 +389,7 @@ export class PageTransitionEvent extends Event {
     return this.#persisted;
   }
 }
-setToStringTag(PageTransitionEvent);
+setToStringTag(PageTransitionEvent, 1);
 
 // --- StorageEvent ---------------------------------------------------------------------------
 
@@ -455,7 +455,7 @@ export class StorageEvent extends Event {
     this.#storageArea = storageArea;
   }
 }
-setToStringTag(StorageEvent);
+setToStringTag(StorageEvent, 1);
 
 // --- Form events ----------------------------------------------------------------------------
 
@@ -477,7 +477,7 @@ export class SubmitEvent extends Event {
     return this.#submitter;
   }
 }
-setToStringTag(SubmitEvent);
+setToStringTag(SubmitEvent, 1);
 
 export interface FormDataEventInit extends EventInit {
   formData: unknown;
@@ -498,7 +498,7 @@ export class FormDataEvent extends Event {
     return this.#formData;
   }
 }
-setToStringTag(FormDataEvent);
+setToStringTag(FormDataEvent, 2);
 
 export interface ToggleEventInit extends EventInit {
   oldState?: string;
@@ -530,7 +530,7 @@ export class ToggleEvent extends Event {
     return this.#source;
   }
 }
-setToStringTag(ToggleEvent);
+setToStringTag(ToggleEvent, 1);
 
 // --- BeforeUnloadEvent ----------------------------------------------------------------------
 
@@ -555,7 +555,7 @@ export class BeforeUnloadEvent extends Event {
     this.#returnValue = toDOMString(value);
   }
 }
-setToStringTag(BeforeUnloadEvent);
+setToStringTag(BeforeUnloadEvent, 1);
 
 // --- CloseEvent -----------------------------------------------------------------------------
 
@@ -590,7 +590,7 @@ export class CloseEvent extends Event {
     return this.#reason;
   }
 }
-setToStringTag(CloseEvent);
+setToStringTag(CloseEvent, 1);
 
 // WebIDL: attributes and operations are enumerable prototype members.
 exposeMembers(CustomEvent, ErrorEvent, PromiseRejectionEvent, MessageEvent, ProgressEvent, AnimationEvent, TransitionEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, StorageEvent, SubmitEvent, FormDataEvent, ToggleEvent, BeforeUnloadEvent, CloseEvent);

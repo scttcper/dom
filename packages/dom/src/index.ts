@@ -10,7 +10,7 @@ export { setCurrentWindow, currentWindow, currentDocument } from "./window/curre
 export { EventTarget } from "./events/EventTarget.ts";
 export { Node } from "./nodes/Node.ts";
 export { Element } from "./nodes/Element.ts";
-export { Document, DOMImplementation } from "./nodes/Document.ts";
+export { Document, DOMImplementation, XMLDocument } from "./nodes/Document.ts";
 export { DocumentFragment } from "./nodes/DocumentFragment.ts";
 export { DocumentType } from "./nodes/DocumentType.ts";
 export { CharacterData, Text, CDATASection, Comment, ProcessingInstruction } from "./nodes/CharacterData.ts";

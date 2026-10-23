@@ -68,3 +68,42 @@ export function createElementImplSync(doc: Document, localName: string, ns: stri
   }
   return createElementImpl(doc, localName, ns, prefix);
 }
+
+/**
+ * True once custom elements are in use in this process (a definition exists, or an element got
+ * an "is" value). Cloning and the HTML parser check it before calling the hooks below, so they
+ * cost one live-binding read when custom elements are unused.
+ */
+export let ceActive = false;
+
+export function setCEActive(): void {
+  ceActive = true;
+}
+
+type CloneCreate = (doc: Document, source: NodeImpl) => NodeImpl;
+type ParserCreated = (impl: NodeImpl) => void;
+let cloneCreate: CloneCreate | null = null;
+let parserCreated: ParserCreated | null = null;
+
+export function setCustomElementCloneHooks(clone: CloneCreate, parser: ParserCreated): void {
+  cloneCreate = clone;
+  parserCreated = parser;
+}
+
+/**
+ * https://dom.spec.whatwg.org/#concept-node-clone step 2.1: create an element with the source's
+ * "is" value and the synchronous custom elements flag unset (a defined custom element gets an
+ * upgrade reaction). Only call when `ceActive`.
+ */
+export function createCloneElementImpl(doc: Document, source: NodeImpl): NodeImpl {
+  return cloneCreate!(doc, source);
+}
+
+/**
+ * https://html.spec.whatwg.org/#create-an-element-for-the-token for an HTML element the parser
+ * created (attributes already appended): the "is" value and upgrade reaction. Only call when
+ * `ceActive`.
+ */
+export function ceParserCreated(impl: NodeImpl): void {
+  parserCreated!(impl);
+}
