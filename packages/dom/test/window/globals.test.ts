@@ -51,9 +51,11 @@ describe("interface objects — https://webidl.spec.whatwg.org/#es-interfaces", 
     const { target } = installOn();
     expect(target.Node).toBe(RtdNode);
     expect(target.EventTarget).toBe(RtdEventTarget);
-    for (const name of ["Element", "HTMLElement", "Document", "Text", "Event", "CustomEvent", "Storage", "Location", "History", "MediaQueryList", "DOMRect", "ResizeObserver", "IntersectionObserver", "FileReader", "FileList", "DOMParser", "XMLSerializer", "MessageEvent"]) {
+    for (const name of ["Element", "HTMLElement", "Document", "Text", "Event", "CustomEvent", "Storage", "Location", "History", "MediaQueryList", "DOMRect", "IntersectionObserver", "FileReader", "FileList", "DOMParser", "XMLSerializer", "MessageEvent"]) {
       expect(typeof target[name], name).toBe("function");
     }
+    // Not exposed, like jsdom: libraries feature-detect it (docs/deviations.md).
+    expect("ResizeObserver" in target).toBe(false);
     const d = Object.getOwnPropertyDescriptor(target, "Node")!;
     expect(d.enumerable).toBe(false);
     expect(d.writable).toBe(true);

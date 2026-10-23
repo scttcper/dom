@@ -32,12 +32,20 @@ function isInterfaceName(name: string): boolean {
  * (Window.prototype). `fallbacks` fill in interfaces no area exports (yet). Returns the map
  * that `installGlobals` exposes on the host global.
  */
+/**
+ * Exported from @rtd/dom but not exposed on the window. jsdom has no ResizeObserver, and
+ * libraries feature-detect it to pick their browser path: Base UI's ScrollArea then calls
+ * Web Animations' getAnimations(), which neither jsdom nor we implement. Suites written for
+ * jsdom install their own (Sentry's MockResizeObserver). docs/deviations.md.
+ */
+const NOT_ON_WINDOW = new Set(["ResizeObserver"]);
+
 export function ensureInterfaces(proto: object, fallbacks: InterfaceMap = {}): InterfaceMap {
   if (interfaces !== null) return interfaces;
   const map: InterfaceMap = Object.create(null);
   const ns = dom;
   for (const name of Object.keys(ns)) {
-    if (!isInterfaceName(name)) continue;
+    if (!isInterfaceName(name) || NOT_ON_WINDOW.has(name)) continue;
     const value = ns[name];
     // Interface objects (classes), namespace objects (CSS) and legacy callback interface
     // objects (NodeFilter, https://webidl.spec.whatwg.org/#legacy-callback-interface-object).
