@@ -49,6 +49,14 @@ export interface RtdTestEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * environment variable ("0"/"1") overrides it. See packages/dom/src/window/clock.ts.
    */
   timeSkip?: boolean;
+  /**
+   * Expose `PointerEvent` (default false). jest-environment-jsdom 30 ships jsdom 26, which has
+   * none, and libraries pick their pointer vs mouse/touch code paths by feature detection (React
+   * Aria caches the choice at import), so suites written against it break when it exists — and
+   * again when they `delete global.PointerEvent` after installing a fake. Set it when replacing an
+   * environment built on jsdom >= 27 (which has PointerEvent).
+   */
+  pointerEvent?: boolean;
 }
 
 /**
@@ -194,7 +202,7 @@ export default class RtdEnvironment implements JestEnvironment<number> {
 
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const { projectConfig } = config;
-    const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, timeSkip, pointerEvent, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
 
@@ -218,6 +226,8 @@ export default class RtdEnvironment implements JestEnvironment<number> {
     this.rtdWindow = window;
     this.dom = createDom(window);
     dom.installGlobals(window, global);
+    // jest-environment-jsdom 30 (jsdom 26) parity; see RtdTestEnvironmentOptions.pointerEvent.
+    if (pointerEvent !== true) delete global.PointerEvent;
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
     // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):

@@ -130,3 +130,18 @@ describe("timers belong to the window — https://html.spec.whatwg.org/#close-a-
     });
   });
 });
+
+describe("PointerEvent — https://w3c.github.io/pointerevents/#pointerevent-interface", () => {
+  test("absent by default, like jest-environment-jsdom 30 (jsdom 26)", async () => {
+    await withEnvironment({}, (_env, global) => {
+      expect(typeof global.PointerEvent).toBe("undefined");
+      expect(typeof global.MouseEvent).toBe("function");
+    });
+  });
+
+  test("testEnvironmentOptions.pointerEvent exposes it (environments built on jsdom >= 27)", async () => {
+    await withEnvironment({ pointerEvent: true }, (_env, global) => {
+      expect(new global.PointerEvent("pointerdown", { pointerType: "touch" }).pointerType).toBe("touch");
+    });
+  });
+});
