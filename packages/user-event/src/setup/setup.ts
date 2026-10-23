@@ -19,6 +19,7 @@ import {defaultAdvanceTimers, markTimers, yieldBetweenActions} from '../utils/mi
 import {System} from '../system/index.ts'
 import {userEventApi} from './api.ts'
 import {wrapAsync} from './wrapAsync.ts'
+import {resolveConfigSource} from './dtl.ts'
 import {type DirectOptions} from './directApi.ts'
 
 /**
@@ -143,15 +144,19 @@ function wrapAndBindImpl<
   function method(...args: Args) {
     setLevelRef(instance, ApiLevel.Call)
 
-    return wrapAsync(() => {
-      markTimers(instance.config)
-      return impl.apply(instance, args).then(async ret => {
-        // Upstream: `await wait(instance.config)`. Same semantics unless no timer was
-        // scheduled during the call (see utils/misc/wait.ts).
-        await yieldBetweenActions(instance.config)
-        return ret
+    const run = () =>
+      wrapAsync(() => {
+        markTimers(instance.config)
+        return impl.apply(instance, args).then(async ret => {
+          // Upstream: `await wait(instance.config)`. Same semantics unless no timer could run
+          // during that wait (see utils/misc/wait.ts).
+          await yieldBetweenActions(instance.config)
+          return ret
+        })
       })
-    })
+    // Mixed setups (stock RTL + this package) resolve the config source once (see dtl.ts).
+    const pending = resolveConfigSource()
+    return pending === undefined ? run() : pending.then(run)
   }
   Object.defineProperty(method, 'name', {get: () => impl.name})
 

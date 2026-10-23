@@ -46,11 +46,90 @@ const dtl: DTLModule | null = load(rtdTestingLibrary as unknown as Partial<DTLMo
 /** Which module provides `getConfig` ('default' when none could be loaded). */
 export const dtlSource: string = dtl ? '@rtd/testing-library' : 'default'
 
-const getConfigImpl: () => DTLConfig = dtl ? dtl.getConfig : () => defaultConfig
-
 /** The Testing Library DOM module user-event reads its config from, or null (built-in defaults). */
 export const dtlModule: DTLModule | null = dtl
 
+/**
+ * Mixed setups: stock `@testing-library/react` configures stock `@testing-library/dom`, not
+ * ours. When a React act environment is active (`IS_REACT_ACT_ENVIRONMENT`, which RTL sets),
+ * @rtd/testing-library's `asyncWrapper` is still its default (no @rtd adapter configured it)
+ * and a *different* `@testing-library/dom` instance is importable, user-event reads that
+ * one's config instead, so stock RTL's `act()` wrapping applies. The import is dynamic (no
+ * top-level await: the package must stay loadable with `require()`), triggered at the first
+ * API call; when `@testing-library/dom` is aliased to @rtd/testing-library it resolves to the
+ * same module and nothing changes. Plain DOM tests never load anything.
+ */
+let fallback: DTLModule | null = null
+let fallbackLoad: Promise<void> | null = null
+let fallbackSettled = false
+
+/** DTL's default `asyncWrapper` is `(cb) => cb()`; adapters replace it with an act() wrapper. */
+function isDefaultWrapper(fn: unknown): boolean {
+  return typeof fn === 'function' && /^\(?(\w+)\)?=>\1\(\)$/.test(String(fn).replace(/\s/g, ''))
+}
+
+function ownConfigured(): boolean {
+  return dtl === null || !isDefaultWrapper(dtl.getConfig().asyncWrapper)
+}
+
+function reactActEnvironment(): boolean {
+  return (globalThis as {IS_REACT_ACT_ENVIRONMENT?: unknown}).IS_REACT_ACT_ENVIRONMENT === true
+}
+
+/**
+ * The `@testing-library/dom` that the project's `@testing-library/react` uses (resolved from the
+ * working directory), not one next to this package: a different copy has a different config.
+ */
+function resolveFromProject(specifier: string): string {
+  try {
+    const cwd = typeof process === 'object' ? process.cwd() : '.'
+    let base = cwd
+    try {
+      const rtl = require.resolve('@testing-library/react', {paths: [cwd]})
+      base = rtl.slice(0, Math.max(rtl.lastIndexOf('/'), rtl.lastIndexOf('\\')))
+    } catch {
+      // no stock RTL in the project
+    }
+    return require.resolve(specifier, {paths: [base]})
+  } catch {
+    return specifier
+  }
+}
+
+function loadFallback(): Promise<void> {
+  // In CommonJS (Jest, our CJS bundle) use the module's own `require` so the module registry
+  // (and moduleNameMapper) hands out the same instance stock RTL configured; in ESM, import().
+  const specifier = '@testing-library/dom'
+  const mod: Promise<unknown> =
+    typeof require === 'function'
+      ? new Promise(resolve => resolve(require(resolveFromProject(specifier))))
+      : import(specifier)
+  return mod
+    .then(
+      m => {
+        const other = load(m as Partial<DTLModule> & {default?: Partial<DTLModule>})
+        if (other !== null && other.getConfig !== dtl?.getConfig) fallback = other
+      },
+      () => {},
+    )
+    .finally(() => {
+      fallbackSettled = true
+    })
+}
+
+/**
+ * A promise to await before the first API call of a mixed setup; undefined otherwise (and on
+ * every later call, so calls stay synchronous up to their first await, like upstream).
+ */
+export function resolveConfigSource(): Promise<void> | undefined {
+  if (fallbackSettled || ownConfigured() || !reactActEnvironment()) return undefined
+  fallbackLoad ??= loadFallback()
+  return fallbackLoad
+}
+
+const ownGetConfig: () => DTLConfig = dtl ? dtl.getConfig : () => defaultConfig
+
 export function getConfig(): DTLConfig {
-  return getConfigImpl()
+  if (fallback !== null && !ownConfigured()) return fallback.getConfig()
+  return ownGetConfig()
 }

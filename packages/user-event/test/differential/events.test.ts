@@ -227,6 +227,22 @@ const scenarios: Scenario[] = [
     },
   },
   {
+    // downstream/react-aria TRIAGE #10: keydown and keyup in separate calls, Space activation
+    // via keyup -> click (pointerType '' in 14.6.8), keydown handler calling preventDefault on a
+    // sibling button so the keyup there must not click.
+    name: 'Space press split across keyboard() calls on checkbox and button',
+    html: `<label id="lbl"><input id="c" type="checkbox"/> check</label><button id="b">b</button>`,
+    run: async (user, doc) => {
+      doc.getElementById('b')!.addEventListener('keydown', (e: Event) => e.preventDefault())
+      await user.tab()
+      await user.keyboard('[Space>]')
+      await user.keyboard('[/Space]')
+      await user.tab()
+      await user.keyboard('[Space>]')
+      await user.keyboard('[/Space]')
+    },
+  },
+  {
     name: 'radio group arrow keys',
     html: `<input id="r1" type="radio" name="g" checked/><input id="r2" type="radio" name="g"/><input id="r3" type="radio" name="g" disabled/><input id="r4" type="radio" name="g"/>`,
     run: async (user, doc) => {
