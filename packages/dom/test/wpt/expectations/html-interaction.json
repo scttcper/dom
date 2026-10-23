@@ -243,5 +243,20 @@
  ],
  "inert/inert-node-is-uneditable.html": [
   "Can edit non-inert contenteditable"
+ ],
+ "html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-inert.html": [
+  "dialog.show(): focusing steps should not change focus when dialog is inert",
+  "dialog.showModal(): focusing steps should apply focus fixup rule when dialog is inert"
+ ],
+ "inert/dynamic-inert-on-focused-element.html": [
+  "<input> that gets 'inert' attribute",
+  "<input> whose parent gets 'inert' attribute",
+  "<button> that gets 'inert' attribute",
+  "<div> that gets 'inert' attribute",
+  "<div> whose parent gets 'inert' attribute",
+  "<div> whose grandparent gets 'inert' attribute"
+ ],
+ "inert/nested-inert-unfocusable.html": [
+  "Input element focusable with both inerts removed"
  ]
 }

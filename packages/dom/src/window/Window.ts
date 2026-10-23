@@ -10,6 +10,7 @@
 // subsystem lazy. See installGlobals (globals.ts) for how a window becomes the test global.
 
 import { EventTarget } from "../events/EventTarget.ts";
+import { hideInternals } from "../webidl-runtime.ts";
 import { Event } from "../events/Event.ts";
 import { Document } from "../nodes/Document.ts";
 import { DocumentType } from "../nodes/DocumentType.ts";
@@ -293,6 +294,12 @@ export class Window extends EventTarget {
       html.appendChild(doc.createElement("body"));
       doc.appendChild(html);
     }
+    // One window per test file, so hiding its internals costs nothing: Jest's diff printer walks
+    // enumerable own keys (symbols included) of failing expectations' values, and a walk that
+    // reached the window would continue into the host global and crash on `process`
+    // (read-only `versions`) instead of printing the diff. Nodes reach the window through their
+    // document, which hides its internals the same way.
+    hideInternals(this);
   }
 
   // --- WindowProxy self references (https://html.spec.whatwg.org/#dom-window) ---------------

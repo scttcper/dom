@@ -451,7 +451,12 @@ function mergeWithPrevious(text: { previousSibling: { nodeType: number; data?: s
 
 // Reflected global attributes — https://html.spec.whatwg.org/#global-attributes
 str(HTMLElement, "title lang accessKey=accesskey");
-bool(HTMLElement, "inert");
+// No `inert` IDL attribute (https://html.spec.whatwg.org/#dom-inert), like jsdom: libraries
+// feature-detect `'inert' in HTMLElement.prototype` (React Aria's ariaHideOutside, Radix's
+// hideOthers) and then mark outside content `inert` instead of `aria-hidden="true"`, which
+// Testing Library's isInaccessible (dom-accessibility-api) does not honor — getByRole would
+// find elements behind an open modal or an active drag. The `inert` content attribute keeps its
+// effects (focus/hit testing, html/focus.ts). docs/deviations.md.
 enumerated(HTMLElement, "dir", { keywords: ["ltr", "rtl", "auto"] });
 defineAccessor(
   HTMLElement,

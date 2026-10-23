@@ -25,7 +25,7 @@ defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focus-p
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focus-shadow-double-nested.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focus-shadow.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-disconnected.html");
-defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-inert.html");
+defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-inert.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-prevent-autofocus.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-form-submission-unusual.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-no-throw-requested-state.html");

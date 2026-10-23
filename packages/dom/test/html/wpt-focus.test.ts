@@ -40,8 +40,8 @@ defineWPT("html/interaction/focus/the-autofocus-attribute/autofocus-not-processe
 defineWPT("html/interaction/focus/the-autofocus-attribute/no-sandboxed-automatic-features.html");
 defineWPT("html/interaction/focus/the-autofocus-attribute/not-on-first-task.html");
 defineWPT("html/interaction/focus/the-autofocus-attribute/skip-not-fully-active.html");
-defineWPT("inert/dynamic-inert-on-focused-element.html");
+defineWPT("inert/dynamic-inert-on-focused-element.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)");
 defineWPT("inert/inert-canvas-fallback-content.html");
 defineWPT("inert/inert-does-not-match-disabled-selector.html");
 defineWPT("inert/inert-in-shadow-dom.html");
-defineWPT("inert/nested-inert-unfocusable.html");
+defineWPT("inert/nested-inert-unfocusable.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)");

@@ -1,7 +1,7 @@
 // https://dom.spec.whatwg.org/#interface-document
 // https://html.spec.whatwg.org/#the-document-object
 
-import { argumentsRequired } from "../webidl-runtime.ts";
+import { argumentsRequired, hideInternals } from "../webidl-runtime.ts";
 import { installEventHandlers } from "../events/handlers.ts";
 import {
   DOCUMENT_NODE,
@@ -108,6 +108,9 @@ export class Document extends Node {
     this[$baseURL] = "";
     this[$baseVersion] = -1;
     this[$baseFor] = "";
+    // Documents are few: hide their internals so object walks (Jest's diff printer) stop here
+    // instead of following [$window] into the host global (see Window's constructor).
+    hideInternals(this);
   }
 
   /** @internal Create an HTML document (what a Window and DOMImplementation.createHTMLDocument use). */
