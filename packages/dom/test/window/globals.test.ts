@@ -46,6 +46,56 @@ describe("WindowProxy self references — https://html.spec.whatwg.org/#dom-wind
   });
 });
 
+describe("events at the window expose the WindowProxy — https://dom.spec.whatwg.org/#concept-event-dispatch", () => {
+  type Listen = (type: string, fn: (this: unknown, e: Event) => void, capture?: boolean) => void;
+
+  test("an event dispatched at the window has the host global as target, currentTarget, this and composedPath()", () => {
+    const { target } = installOn();
+    const seen: unknown[][] = [];
+    (target.addEventListener as Listen)("focus", function (this: unknown, e: Event) {
+      seen.push([e.target, e.currentTarget, this, e.composedPath()]);
+    });
+    (target.dispatchEvent as (e: Event) => boolean)(new (target.Event as typeof Event)("focus"));
+    expect(seen).toEqual([[target, target, target, [target]]]);
+  });
+
+  test("an event bubbling from the document reaches the window with currentTarget/this as the host global", () => {
+    const { target, window } = installOn();
+    const seen: unknown[][] = [];
+    (target.addEventListener as Listen)(
+      "click",
+      function (this: unknown, e: Event) {
+        seen.push([e.target, e.currentTarget, this, e.composedPath().at(-1)]);
+      },
+      true,
+    );
+    window.document.body.dispatchEvent(new (target.Event as typeof Event)("click", { bubbles: true }));
+    expect(seen).toEqual([[window.document.body, target, target, target]]);
+  });
+
+  test("once listeners and on* handlers still work on the window", () => {
+    const { target } = installOn();
+    const calls: unknown[] = [];
+    (target.addEventListener as (type: string, fn: () => void, o: object) => void)("resize", () => calls.push("once"), { once: true });
+    target.onresize = function (this: unknown) {
+      calls.push(this === target ? "handler" : "handler (wrong this)");
+    };
+    const fire = () => (target.dispatchEvent as (e: Event) => boolean)(new (target.Event as typeof Event)("resize"));
+    fire();
+    fire();
+    expect(calls).toEqual(["once", "handler", "handler"]);
+  });
+
+  test("without installGlobals the Window itself is the target", () => {
+    const window = createWindow();
+    let got: unknown = null;
+    window.addEventListener("focus", (e) => (got = e.target));
+    window.dispatchEvent(new (window as unknown as { Event: typeof Event }).Event("focus"));
+    expect(got).toBe(window);
+    window.close();
+  });
+});
+
 describe("interface objects — https://webidl.spec.whatwg.org/#es-interfaces", () => {
   test("DOM interfaces are installed as non-enumerable data properties", () => {
     const { target } = installOn();

@@ -16,6 +16,7 @@ import { exposeMembers } from "../webidl-runtime.ts";
 import type { EventInit } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { toDOMString } from "./convert.ts";
+import { $globalObject } from "../keys.ts";
 
 export const NONE = 0;
 export const CAPTURING_PHASE = 1;
@@ -84,6 +85,24 @@ export const PF_IN_SHADOW_TREE = 1;
 export const PF_ROOT_OF_CLOSED_TREE = 2;
 export const PF_SLOT_IN_CLOSED_TREE = 4;
 export const PF_HAS_SHADOW_ADJUSTED_TARGET = 8;
+/**
+ * The struct's item is a Window. Listeners live on the Window instance, but `currentTarget`, the
+ * listener's `this`, `composedPath()` and (for a window target) `target` expose the global it is
+ * installed on, so `event.target === window` holds under the test environments
+ * (docs/deviations.md, Window row).
+ */
+export const PF_WINDOW = 16;
+
+/** What a struct's item looks like from script: the installed global for a Window (PF_WINDOW). */
+export function exposedPathItem(o: number): EventTarget {
+  const item = PATH[o] as EventTarget;
+  return ((PATH[o + 4] as number) & PF_WINDOW) !== 0 ? exposedWindow(item) : item;
+}
+
+/** A Window's installed global (WindowProxy), or the Window itself when not installed. */
+export function exposedWindow(window: EventTarget): EventTarget {
+  return (window as unknown as { [$globalObject]: EventTarget | null })[$globalObject] ?? window;
+}
 
 export const PATH: unknown[] = [];
 export const pathStack = { top: 0 };
@@ -247,7 +266,7 @@ export class Event {
       const o = base + index * STRIDE;
       const f = PATH[o + 4] as number;
       if ((f & PF_ROOT_OF_CLOSED_TREE) !== 0) currentTargetHiddenSubtreeLevel++;
-      if (PATH[o] === currentTarget) {
+      if (exposedPathItem(o) === currentTarget) {
         currentTargetIndex = index;
         break;
       }
@@ -261,7 +280,7 @@ export class Event {
       const o = base + index * STRIDE;
       const f = PATH[o + 4] as number;
       if ((f & PF_ROOT_OF_CLOSED_TREE) !== 0) currentHiddenLevel++;
-      if (currentHiddenLevel <= maxHiddenLevel) before.push(PATH[o] as EventTarget);
+      if (currentHiddenLevel <= maxHiddenLevel) before.push(exposedPathItem(o));
       if ((f & PF_SLOT_IN_CLOSED_TREE) !== 0) {
         currentHiddenLevel--;
         if (currentHiddenLevel < maxHiddenLevel) maxHiddenLevel = currentHiddenLevel;
@@ -276,7 +295,7 @@ export class Event {
       const o = base + index * STRIDE;
       const f = PATH[o + 4] as number;
       if ((f & PF_SLOT_IN_CLOSED_TREE) !== 0) currentHiddenLevel++;
-      if (currentHiddenLevel <= maxHiddenLevel) composedPath.push(PATH[o] as EventTarget);
+      if (currentHiddenLevel <= maxHiddenLevel) composedPath.push(exposedPathItem(o));
       if ((f & PF_ROOT_OF_CLOSED_TREE) !== 0) {
         currentHiddenLevel--;
         if (currentHiddenLevel < maxHiddenLevel) maxHiddenLevel = currentHiddenLevel;
