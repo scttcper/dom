@@ -57,6 +57,14 @@ export interface RtdTestEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * environment built on jsdom >= 27 (which has PointerEvent).
    */
   pointerEvent?: boolean;
+  /**
+   * Expose `window.matchMedia` (default false). No jsdom version has it, and suites written for
+   * jsdom install their own: helpers such as mock-match-media only polyfill it when it is
+   * missing (React Aria's `setMedia({pointer: 'coarse'})` did nothing with ours present), and
+   * components feature-detect it. Set it to drive responsive components through @rtd/dom's
+   * matchMedia (createWindow({ mediaFeatures }), innerWidth assignment) without a mock.
+   */
+  matchMedia?: boolean;
 }
 
 /**
@@ -202,7 +210,7 @@ export default class RtdEnvironment implements JestEnvironment<number> {
 
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const { projectConfig } = config;
-    const { customExportConditions, nodeFetch, timeSkip, pointerEvent, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, timeSkip, pointerEvent, matchMedia, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
 
@@ -228,6 +236,8 @@ export default class RtdEnvironment implements JestEnvironment<number> {
     dom.installGlobals(window, global);
     // jest-environment-jsdom 30 (jsdom 26) parity; see RtdTestEnvironmentOptions.pointerEvent.
     if (pointerEvent !== true) delete global.PointerEvent;
+    // jsdom parity; see RtdTestEnvironmentOptions.matchMedia.
+    if (matchMedia !== true) delete global.matchMedia;
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
     // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):

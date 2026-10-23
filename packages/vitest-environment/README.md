@@ -14,6 +14,11 @@ export default defineConfig({
 
 Or per file: `// @vitest-environment rtd`. Peer dependency: `vitest` >= 5.
 
+`environmentOptions.rtd` takes `createWindow` options (`url`, `width`, `height`, ...), `timeSkip`
+(below) and `matchMedia: true` to expose `window.matchMedia`. It is absent by default, as under
+jsdom: suites written for jsdom mock it, and helpers such as mock-match-media only install
+themselves when it is missing.
+
 ## Fastest setup: a VM pool
 
 Vitest's default pool starts a fresh worker for every test file, and that spawn (~350 ms) is

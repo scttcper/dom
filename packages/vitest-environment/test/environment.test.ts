@@ -36,6 +36,17 @@ describe("setup(global, options) / teardown", () => {
     expect(global.setTimeout).toBe(setTimeout);
   });
 
+  test("matchMedia is absent unless environmentOptions.rtd.matchMedia (jsdom parity); teardown restores the global", async () => {
+    const global: Record<string, unknown> = {};
+    let env = await environment.setup(global, {});
+    expect("matchMedia" in global).toBe(false);
+    await env.teardown(global);
+    env = await environment.setup(global, { rtd: { matchMedia: true, width: 1200 } });
+    expect((global.matchMedia as (q: string) => { matches: boolean })("(min-width: 1000px)").matches).toBe(true);
+    await env.teardown(global);
+    expect("matchMedia" in global).toBe(false);
+  });
+
   test("defaults to Vitest's jsdom/happy-dom URL", async () => {
     const global: Record<string, unknown> = {};
     const env = await environment.setup(global, {});

@@ -145,3 +145,17 @@ describe("PointerEvent — https://w3c.github.io/pointerevents/#pointerevent-int
     });
   });
 });
+
+describe("matchMedia — https://drafts.csswg.org/cssom-view/#dom-window-matchmedia", () => {
+  test("absent by default, like every jsdom (mock-match-media and similar install theirs only when missing)", async () => {
+    await withEnvironment({}, (_env, global) => {
+      expect("matchMedia" in global).toBe(false);
+    });
+  });
+
+  test("testEnvironmentOptions.matchMedia exposes @rtd/dom's", async () => {
+    await withEnvironment({ matchMedia: true, width: 1200 }, (_env, global) => {
+      expect(global.matchMedia("(min-width: 1000px)").matches).toBe(true);
+    });
+  });
+});

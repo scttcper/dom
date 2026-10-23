@@ -46,14 +46,26 @@ export interface RtdEnvironmentOptions extends Omit<WindowOptions, "shareStorage
    * RTD_TIME_SKIP environment variable ("0"/"1") overrides it. See @rtd/dom window/clock.ts.
    */
   timeSkip?: boolean;
+  /**
+   * Expose `window.matchMedia` (default false). No jsdom version has it, and suites written for
+   * jsdom install their own: helpers such as mock-match-media only polyfill it when it is
+   * missing, and components feature-detect it. Set it to drive responsive components through
+   * @rtd/dom's matchMedia (createWindow({ mediaFeatures }), innerWidth assignment) without a mock.
+   */
+  matchMedia?: boolean;
 }
 
 /** Same default URL as Vitest's jsdom and happy-dom environments. */
 const DEFAULT_URL = "http://localhost:3000/";
 
 function windowOptions(options: Record<string, unknown>): WindowOptions {
-  const { timeSkip: _timeSkip, ...rtd } = (options?.rtd ?? {}) as RtdEnvironmentOptions;
+  const { timeSkip: _timeSkip, matchMedia: _matchMedia, ...rtd } = (options?.rtd ?? {}) as RtdEnvironmentOptions;
   return { ...rtd, url: rtd.url ?? DEFAULT_URL };
+}
+
+/** Remove matchMedia from the installed global unless `rtd.matchMedia` (jsdom parity). */
+function hideMatchMedia(global: Record<PropertyKey, unknown>, options: Record<string, unknown>): void {
+  if (((options?.rtd ?? {}) as RtdEnvironmentOptions).matchMedia !== true) delete global.matchMedia;
 }
 
 function timeSkip(options: Record<string, unknown>): boolean {
@@ -108,6 +120,7 @@ const environment: Environment = {
   setup(global, options) {
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
+    hideMatchMedia(global, options);
     // The worker's timers, Date and performance move onto the virtual clock until teardown
     // (Vitest's own runner keeps the timers it captured at startup).
     const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), global);
@@ -135,6 +148,7 @@ const environment: Environment = {
       }
     }
     const uninstall = installGlobals(window, context as Record<PropertyKey, unknown>);
+    hideMatchMedia(context as Record<PropertyKey, unknown>, options);
     // The file's timers live on its own virtual clock: disposing it at teardown drops pending
     // ones, so they cannot keep the discarded context alive in the long-lived worker.
     const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), context as Record<PropertyKey, unknown>);
