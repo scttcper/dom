@@ -64,31 +64,42 @@ export function matches(textToMatch: string | null, node: any, matcher: Matcher 
 }
 
 /**
- * Whether `s` contains any code unit matched by the RegExp `\s` class
- * (https://tc39.es/ecma262/#sec-compiletocharset — WhiteSpace and LineTerminator). When it
- * does not, trimming and collapsing whitespace are identities, so the default normalizer
- * returns its input without running two regex passes (the common case for ids, labels, ...).
+ * Whether code unit `c` is matched by the RegExp `\s` class, which is also the set
+ * `String.prototype.trim` removes (https://tc39.es/ecma262/#sec-compiletocharset — WhiteSpace
+ * and LineTerminator).
  */
-function hasRegExpWhitespace(s: string): boolean {
-  for (let i = 0; i < s.length; i++) {
+function isRegExpWhitespace(c: number): boolean {
+  if (c <= 0x20) return c === 0x20 || (c >= 0x09 && c <= 0x0d);
+  if (c < 0xa0) return false;
+  return (
+    c === 0xa0 ||
+    c === 0x1680 ||
+    (c >= 0x2000 && c <= 0x200a) ||
+    c === 0x2028 ||
+    c === 0x2029 ||
+    c === 0x202f ||
+    c === 0x205f ||
+    c === 0x3000 ||
+    c === 0xfeff
+  );
+}
+
+/**
+ * Whether `trim()` and/or `replace(/\s+/g, " ")` would change `s`. When not, the default
+ * normalizer returns its input as is: text like "Row 12 label" (single spaces, nothing to trim)
+ * is the common case, and the two passes would allocate two new strings per candidate node.
+ */
+function changedByNormalizing(s: string, trim: boolean, collapse: boolean): boolean {
+  const last = s.length - 1;
+  let prevWhitespace = false;
+  for (let i = 0; i <= last; i++) {
     const c = s.charCodeAt(i);
-    if (c <= 0x20) {
-      if (c === 0x20 || (c >= 0x09 && c <= 0x0d)) return true;
-    } else if (c >= 0xa0) {
-      if (
-        c === 0xa0 ||
-        c === 0x1680 ||
-        (c >= 0x2000 && c <= 0x200a) ||
-        c === 0x2028 ||
-        c === 0x2029 ||
-        c === 0x202f ||
-        c === 0x205f ||
-        c === 0x3000 ||
-        c === 0xfeff
-      ) {
-        return true;
-      }
+    const ws = isRegExpWhitespace(c);
+    if (ws) {
+      if (trim && (i === 0 || i === last)) return true;
+      if (collapse && (prevWhitespace || c !== 0x20)) return true;
     }
+    prevWhitespace = ws;
   }
   return false;
 }
@@ -97,7 +108,7 @@ const WHITESPACE_RUN = /\s+/g;
 
 export function getDefaultNormalizer({ trim = true, collapseWhitespace = true }: DefaultNormalizerOptions = {}): NormalizerFn {
   return (text) => {
-    if (!hasRegExpWhitespace(text)) return text;
+    if (!changedByNormalizing(text, trim, collapseWhitespace)) return text;
     let normalizedText = text;
     normalizedText = trim ? normalizedText.trim() : normalizedText;
     normalizedText = collapseWhitespace ? normalizedText.replace(WHITESPACE_RUN, " ") : normalizedText;
