@@ -11,7 +11,7 @@ import { installEventHandlers } from "../events/handlers.ts";
 import { Element } from "../nodes/Element.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { removeAttribute, setAttribute } from "../nodes/attributes.ts";
+import { asciiLowercase, removeAttribute, setAttribute } from "../nodes/attributes.ts";
 import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, F_CUSTOM, F_FACE, HTML_NS } from "../nodes/constants.ts";
 import {
   faceStateMaybeChanged,
@@ -29,23 +29,28 @@ import { T } from "../nodes/tags.ts";
 import { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
 import { bool, contentAttr, defineAccessor, enumerated, str } from "./reflect.ts";
 import {
+  ceAdopted,
   ceAttributeChanged,
   ceConnected,
   ceDisconnected,
+  ceMoved,
   definitionOf,
   htmlElementConstructorSteps,
   initNewCustomElement,
   isValueOf,
+  shadowDisabled,
 } from "./custom-elements.ts";
 import { activeElement, blurElement, defaultTabIndex, focusElement, tabIndexValue, documentHasFocus } from "./focus.ts";
 import { isEditable } from "./shared.ts";
 import { getInnerText, renderedTextFragment } from "./innerText.ts";
+import { ARIA_STRING_ATTRIBUTES } from "./aria-reflection.ts";
 import { fireSyntheticClick } from "./events.ts";
-import { clearParserAssociation, isActuallyDisabled, parserAssociateForm } from "./forms/form-associated.ts";
-import { hidePopover, isInTopLayer, isPopoverShowing, popoverAttributeChanged, showPopover, topLayerRemovingSteps } from "./top-layer.ts";
+import { clearParserAssociation, formOwner, isActuallyDisabled, parserAssociateForm } from "./forms/form-associated.ts";
+import { I_EMAIL, I_PASSWORD, I_URL, inputType } from "./forms/input-type.ts";
+import { checkPopoverValidity, hidePopover, isInTopLayer, isPopoverShowing, popoverAttributeChanged, showPopover, topLayerRemovingSteps } from "./top-layer.ts";
 import { ShadowRoot } from "../nodes/ShadowRoot.ts";
 import { Document as DocumentClass } from "../nodes/Document.ts";
-import { $impl, $shadowRoot, $states, $style, $target, $value } from "../keys.ts";
+import { $availableToElementInternals, $impl, $shadowRoot, $states, $style, $target, $value } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#click-in-progress-flag */
 const clickInProgress = new WeakSet<Element>();
@@ -66,7 +71,7 @@ export class HTMLElement extends Element {
     const r = htmlElementConstructorSteps(new.target);
     if (r.upgrade !== null) return r.upgrade as this;
     super(r.doc, r.localName, HTML_NS, null);
-    initNewCustomElement(this, r.def);
+    initNewCustomElement(this, r.def, r.active);
   }
 
   // --- hooks ------------------------------------------------------------------------------
@@ -84,6 +89,21 @@ export class HTMLElement extends Element {
     // The ancestor chain changed: a parser-made form association ends (html/forms).
     clearParserAssociation(impl);
     if ((impl.flags & F_FACE) !== 0) faceStateMaybeChanged(impl);
+  }
+
+  /** https://dom.spec.whatwg.org/#concept-node-adopt step 3.2.1 (F_ADOPT_HOOK, set for custom elements with adoptedCallback). */
+  override _adoptingSteps(oldDocument: Document): void {
+    ceAdopted(this, oldDocument, this[$impl].doc);
+  }
+
+  /** https://dom.spec.whatwg.org/#move step 24 (moveBefore): custom element connectedMoveCallback. */
+  override _movingSteps(_isSubtreeRoot: boolean, _oldParent: NodeImpl): void {
+    if (definitionOf(this) !== undefined) ceMoved(this);
+  }
+
+  /** attachShadow step 3 hook (nodes/Element.ts): the custom element definition disables shadow roots. */
+  _shadowDisabled(): boolean {
+    return shadowDisabled(this);
   }
 
   /**
@@ -117,7 +137,7 @@ export class HTMLElement extends Element {
     for (let n: NodeImpl | null = this[$impl]; n !== null && n.type === 1; n = n.parent) {
       const v = contentAttr(n, "translate");
       if (v === null) continue;
-      const k = v.toLowerCase();
+      const k = asciiLowercase(v);
       if (k === "" || k === "yes") return true;
       if (k === "no") return false;
     }
@@ -132,25 +152,35 @@ export class HTMLElement extends Element {
   get hidden(): boolean | string {
     const v = contentAttr(this[$impl], "hidden");
     if (v === null) return false;
-    return v.toLowerCase() === "until-found" ? "until-found" : true;
+    return asciiLowercase(v) === "until-found" ? "until-found" : true;
   }
 
   set hidden(value: boolean | string | number | null) {
-    if (typeof value === "string" && value.toLowerCase() === "until-found") setAttribute(this[$impl], "hidden", "until-found");
+    if (typeof value === "string" && asciiLowercase(value) === "until-found") setAttribute(this[$impl], "hidden", "until-found");
     else if (value === false || value === "" || value === null || value === undefined || value === 0 || Number.isNaN(value)) removeAttribute(this[$impl], "hidden");
     else setAttribute(this[$impl], "hidden", "");
   }
 
-  /** https://html.spec.whatwg.org/#dom-accesskeylabel — no key mapping here. */
+  /**
+   * https://html.spec.whatwg.org/#dom-accesskeylabel — the assigned access key
+   * (https://html.spec.whatwg.org/#assigned-access-key) as Firefox labels it on Linux/Windows
+   * ("Alt+Shift+B"). Like Chromium and WebKit (and WPT access-key-label.html), only a value that
+   * is exactly one code point (after trimming ASCII whitespace) is assigned; the spec would
+   * also pick the first one-code-point token of a list such as "s 0".
+   */
   get accessKeyLabel(): string {
-    return "";
+    const v = contentAttr(this[$impl], "accesskey");
+    if (v === null) return "";
+    const key = v.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "");
+    if (key === "" || key.length > 2 || (key.length === 2 && key.codePointAt(0)! <= 0xffff)) return "";
+    return "Alt+Shift+" + key.toUpperCase();
   }
 
   /** https://html.spec.whatwg.org/#dom-draggable */
   get draggable(): boolean {
     const v = contentAttr(this[$impl], "draggable");
     if (v !== null) {
-      const k = v.toLowerCase();
+      const k = asciiLowercase(v);
       if (k === "true") return true;
       if (k === "false") return false;
     }
@@ -167,7 +197,7 @@ export class HTMLElement extends Element {
     for (let n: NodeImpl | null = this[$impl]; n !== null && n.type === 1; n = n.parent) {
       const v = contentAttr(n, "spellcheck");
       if (v === null) continue;
-      const k = v.toLowerCase();
+      const k = asciiLowercase(v);
       if (k === "" || k === "true") return true;
       if (k === "false") return false;
     }
@@ -178,10 +208,9 @@ export class HTMLElement extends Element {
     setAttribute(this[$impl], "spellcheck", value ? "true" : "false");
   }
 
-  /** https://html.spec.whatwg.org/#dom-autocorrect */
+  /** https://html.spec.whatwg.org/#dom-autocorrect — true iff the used autocorrection state is on. */
   get autocorrect(): boolean {
-    const v = contentAttr(this[$impl], "autocorrect");
-    return v === null || v.toLowerCase() !== "off";
+    return usedAutocorrection(this[$impl]);
   }
 
   set autocorrect(value: boolean) {
@@ -194,7 +223,7 @@ export class HTMLElement extends Element {
   get contentEditable(): string {
     const v = contentAttr(this[$impl], "contenteditable");
     if (v === null) return "inherit";
-    const k = v.toLowerCase();
+    const k = asciiLowercase(v);
     if (k === "" || k === "true") return "true";
     if (k === "false") return "false";
     if (k === "plaintext-only") return "plaintext-only";
@@ -202,15 +231,19 @@ export class HTMLElement extends Element {
   }
 
   set contentEditable(value: string) {
-    const k = String(value).toLowerCase();
+    const k = asciiLowercase(String(value));
     if (k === "inherit") removeAttribute(this[$impl], "contenteditable");
     else if (k === "true" || k === "false" || k === "plaintext-only") setAttribute(this[$impl], "contenteditable", k);
     else throw new DOMException(`Failed to set the 'contentEditable' property on 'HTMLElement': The value provided ('${value}') is not one of 'true', 'false', 'plaintext-only', or 'inherit'.`, "SyntaxError");
   }
 
-  /** https://html.spec.whatwg.org/#dom-iscontenteditable */
+  /**
+   * https://html.spec.whatwg.org/#dom-iscontenteditable — editing host or editable. Not tied to
+   * being connected: browsers (and WPT user-interaction-editing-contenteditable.html) report
+   * `true` for a detached `<div contenteditable>`.
+   */
   get isContentEditable(): boolean {
-    return (this[$impl].flags & F_CONNECTED) !== 0 && isEditable(this[$impl]);
+    return isEditable(this[$impl]);
   }
 
   // --- innerText / outerText -------------------------------------------------------------
@@ -262,8 +295,9 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-showpopover */
   showPopover(options?: { source?: HTMLElement }): void {
-    showPopover(this[$impl], true, options?.source?.[$impl] ?? null);
-    this[$impl].flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
+    const impl = this[$impl];
+    impl.flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
+    showPopover(impl, true, popoverSource(options));
   }
 
   /** https://html.spec.whatwg.org/#dom-hidepopover */
@@ -273,25 +307,22 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-togglepopover */
   togglePopover(options?: boolean | { force?: boolean; source?: HTMLElement }): boolean {
-    let force: boolean | undefined;
-    let source: HTMLElement | null = null;
+    // 1-4.
+    let force: boolean | null = null;
+    let source: NodeImpl | null = null;
     if (typeof options === "boolean") force = options;
-    else if (options !== undefined && options !== null) {
-      force = options.force;
-      source = options.source ?? null;
-    }
+    else if (options !== undefined && options !== null && typeof options === "object") {
+      if (options.force !== undefined) force = Boolean(options.force);
+      source = popoverSource(options);
+    } else if (options !== undefined && options !== null) force = Boolean(options);
     const impl = this[$impl];
+    impl.flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
     const showingNow = isPopoverShowing(impl);
+    // 5-7.
     if (showingNow && force !== true) hidePopover(impl, true, true, true, null);
-    else if (!showingNow && force !== false) {
-      showPopover(impl, true, source?.[$impl] ?? null);
-      impl.flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
-    } else {
-      // Validity is still checked (throws NotSupportedError without a popover attribute).
-      if (contentAttr(impl, "popover") === null) {
-        throw new DOMException("Not supported on elements that do not have a valid value for the 'popover' attribute.", "NotSupportedError");
-      }
-    }
+    else if (force === null || force) showPopover(impl, true, source);
+    else checkPopoverValidity(impl, showingNow, null);
+    // 8.
     return isPopoverShowing(impl);
   }
 
@@ -328,6 +359,89 @@ export class HTMLElement extends Element {
   }
 }
 
+/** https://html.spec.whatwg.org/#autocapitalize-and-autocorrect-inheriting-elements */
+function inheritsAutocapitalizeAndAutocorrect(impl: NodeImpl): boolean {
+  if (impl.ns !== HTML_NS) return false;
+  const t = impl.tag;
+  return t === T.button || t === T.fieldset || t === T.input || t === T.output || t === T.select || t === T.textarea;
+}
+
+/** State of the autocapitalize content attribute ("" = default; invalid value default: sentences). */
+function autocapitalizeState(impl: NodeImpl): string {
+  const v = contentAttr(impl, "autocapitalize");
+  if (v === null) return "";
+  switch (asciiLowercase(v)) {
+    case "":
+      return "";
+    case "off":
+    case "none":
+      return "none";
+    case "on":
+    case "sentences":
+      return "sentences";
+    case "words":
+      return "words";
+    case "characters":
+      return "characters";
+  }
+  return "sentences";
+}
+
+/** https://html.spec.whatwg.org/#own-autocapitalization-hint */
+function ownAutocapitalizationHint(impl: NodeImpl): string {
+  // 1. The element's own state, unless default.
+  const state = autocapitalizeState(impl);
+  if (state !== "") return state;
+  // 2. An autocapitalize-and-autocorrect inheriting element uses its form owner's hint.
+  if (inheritsAutocapitalizeAndAutocorrect(impl)) {
+    const form = formOwner(impl);
+    if (form !== null) return ownAutocapitalizationHint(form);
+  }
+  // 3. Default.
+  return "";
+}
+
+/** State of the autocorrect content attribute: 1 on, 0 off, -1 default (missing). Invalid → on. */
+function autocorrectState(impl: NodeImpl): number {
+  const v = contentAttr(impl, "autocorrect");
+  if (v === null) return -1;
+  return asciiLowercase(v) === "off" ? 0 : 1;
+}
+
+/** https://html.spec.whatwg.org/#used-autocorrection-state */
+function usedAutocorrection(impl: NodeImpl): boolean {
+  // 1. Inputs whose type is URL, E-mail or Password never autocorrect.
+  if (impl.ns === HTML_NS && impl.tag === T.input) {
+    const type = inputType(impl);
+    if (type === I_URL || type === I_EMAIL || type === I_PASSWORD) return false;
+  }
+  // 2. The element's own state, unless default.
+  const state = autocorrectState(impl);
+  if (state !== -1) return state === 1;
+  // 3. An autocapitalize-and-autocorrect inheriting element uses its form owner's state.
+  if (inheritsAutocapitalizeAndAutocorrect(impl)) {
+    const form = formOwner(impl);
+    if (form !== null) return autocorrectState(form) !== 0;
+  }
+  // 4. On.
+  return true;
+}
+
+/**
+ * https://html.spec.whatwg.org/#computed-writing-suggestions-value — the nearest inclusive
+ * ancestor element with a writingsuggestions attribute decides ("false" → false; "true", "" and
+ * the invalid value default → true); a missing attribute inherits; true at the top.
+ */
+function computedWritingSuggestions(impl: NodeImpl): boolean {
+  for (let n: NodeImpl | null = impl; n !== null && n.type === 1; n = n.parent) {
+    const v = contentAttr(n, "writingsuggestions");
+    if (v === null) continue;
+    // Present: "false" is the false state; "", "true" and invalid values are the true state.
+    return asciiLowercase(v) !== "false";
+  }
+  return true;
+}
+
 function mergeWithPrevious(text: { previousSibling: { nodeType: number; data?: string } | null; data?: string; remove?: () => void }): void {
   const prev = text.previousSibling;
   if (prev === null || prev.nodeType !== 3) return;
@@ -339,15 +453,40 @@ function mergeWithPrevious(text: { previousSibling: { nodeType: number; data?: s
 str(HTMLElement, "title lang accessKey=accesskey");
 bool(HTMLElement, "inert");
 enumerated(HTMLElement, "dir", { keywords: ["ltr", "rtl", "auto"] });
-enumerated(HTMLElement, "autocapitalize", { keywords: ["off:none", "none", "on:sentences", "sentences", "words", "characters"], missing: "", invalid: "sentences", empty: "" });
+defineAccessor(
+  HTMLElement,
+  "autocapitalize",
+  /** https://html.spec.whatwg.org/#dom-autocapitalize — the own autocapitalization hint ("" for default). */
+  function () {
+    return ownAutocapitalizationHint(this[$impl]);
+  },
+  function (v) {
+    setAttribute(this[$impl], "autocapitalize", String(v));
+  },
+);
+defineAccessor(
+  HTMLElement,
+  "writingSuggestions",
+  /** https://html.spec.whatwg.org/#dom-writingsuggestions — "true"/"false" from the computed writing suggestions value. */
+  function () {
+    return computedWritingSuggestions(this[$impl]) ? "true" : "false";
+  },
+  function (v) {
+    setAttribute(this[$impl], "writingsuggestions", String(v));
+  },
+);
 enumerated(HTMLElement, "enterKeyHint=enterkeyhint", { keywords: ["enter", "done", "go", "next", "previous", "search", "send"] });
 enumerated(HTMLElement, "inputMode=inputmode", { keywords: ["none", "text", "tel", "url", "email", "numeric", "decimal", "search"] });
 enumerated(HTMLElement, "popover", { keywords: ["auto", "manual", "hint"], missing: null, invalid: "manual", empty: "auto" });
-enumerated(HTMLElement, "writingSuggestions=writingsuggestions", { keywords: ["true", "false"], missing: "true", invalid: "true", empty: "true" });
 
 // --- ElementInternals (minimal) -------------------------------------------------------------
 
 const attachedInternals = new WeakMap<Element, ElementInternals>();
+
+/** The custom state set of an element's attached ElementInternals, if any (for `:state()`, selectors/html-predicates.ts). */
+export function customStatesOf(el: Element): Set<string> | null {
+  return attachedInternals.get(el)?.[$states] ?? null;
+}
 
 /**
  * https://html.spec.whatwg.org/#elementinternals — ARIA reflection, custom states, the shadow
@@ -365,8 +504,10 @@ export class ElementInternals {
     this[$value] = null;
   }
 
+  /** https://html.spec.whatwg.org/#dom-elementinternals-shadowroot */
   get shadowRoot(): ShadowRoot | null {
-    return (this[$target] as unknown as { [$shadowRoot]: ShadowRoot | null })[$shadowRoot];
+    const shadow = (this[$target] as unknown as { [$shadowRoot]: ShadowRoot | null })[$shadowRoot];
+    return shadow === null || !shadow[$availableToElementInternals] ? null : shadow;
   }
 
   get states(): Set<string> {
@@ -411,55 +552,83 @@ export class ElementInternals {
   }
 }
 
-// ARIA reflection on ElementInternals (https://w3c.github.io/aria/#ARIAMixin).
-for (const name of [
-  "role",
-  "ariaAtomic",
-  "ariaAutoComplete",
-  "ariaBusy",
-  "ariaChecked",
-  "ariaColCount",
-  "ariaColIndex",
-  "ariaColSpan",
-  "ariaCurrent",
-  "ariaDescription",
-  "ariaDisabled",
-  "ariaExpanded",
-  "ariaHasPopup",
-  "ariaHidden",
-  "ariaInvalid",
-  "ariaKeyShortcuts",
-  "ariaLabel",
-  "ariaLevel",
-  "ariaLive",
-  "ariaModal",
-  "ariaMultiLine",
-  "ariaMultiSelectable",
-  "ariaOrientation",
-  "ariaPlaceholder",
-  "ariaPosInSet",
-  "ariaPressed",
-  "ariaReadOnly",
-  "ariaRequired",
-  "ariaRoleDescription",
-  "ariaRowCount",
-  "ariaRowIndex",
-  "ariaRowSpan",
-  "ariaSelected",
-  "ariaSetSize",
-  "ariaSort",
-  "ariaValueMax",
-  "ariaValueMin",
-  "ariaValueNow",
-  "ariaValueText",
-]) {
-  const key = "_" + name;
+// ARIA reflection on ElementInternals (https://w3c.github.io/aria/#ARIAMixin): the reflected
+// target is the internals' own "internal content attribute map", not the element's attributes
+// (https://html.spec.whatwg.org/#accessibility-semantics). Kept off the instance so the
+// internals object has no enumerable string-keyed state.
+const internalsAria = new WeakMap<ElementInternals, Map<string, string>>();
+for (const item of ARIA_STRING_ATTRIBUTES.split(" ")) {
+  const eq = item.indexOf("=");
+  const name = eq === -1 ? item : item.slice(0, eq);
+  const content = eq === -1 ? item : item.slice(eq + 1);
   Object.defineProperty(ElementInternals.prototype, name, {
-    get(this: Record<string, unknown>) {
-      return (this[key] as string | undefined) ?? null;
+    get(this: ElementInternals) {
+      return internalsAria.get(this)?.get(content) ?? null;
     },
-    set(this: Record<string, unknown>, v: unknown) {
-      this[key] = v === null ? null : String(v);
+    set(this: ElementInternals, v: unknown) {
+      let map = internalsAria.get(this);
+      if (v === null || v === undefined) {
+        map?.delete(content);
+        return;
+      }
+      if (map === undefined) internalsAria.set(this, (map = new Map()));
+      map.set(content, String(v));
+    },
+    configurable: true,
+    enumerable: true,
+  });
+}
+
+// ARIA element reflection on ElementInternals (`Element?` / `FrozenArray<Element>?`): the
+// explicitly set elements, held weakly; arrays keep their identity while the contents are equal
+// (https://html.spec.whatwg.org/#reflecting-content-attributes-in-idl-attributes, element and
+// FrozenArray<Element> cases). No in-scope filtering: internals have no content attribute.
+const internalsAriaElements = new WeakMap<ElementInternals, Map<string, { refs: WeakRef<Element>[]; cached: readonly Element[] | null }>>();
+for (const [name, many] of [
+  ["ariaActiveDescendantElement", false],
+  ["ariaControlsElements", true],
+  ["ariaDescribedByElements", true],
+  ["ariaDetailsElements", true],
+  ["ariaErrorMessageElements", true],
+  ["ariaFlowToElements", true],
+  ["ariaLabelledByElements", true],
+  ["ariaOwnsElements", true],
+] as const) {
+  const toElement = (v: unknown): Element => {
+    if (!(v instanceof Element)) throw new TypeError(`Failed to set the '${name}' property on 'ElementInternals': Failed to convert value to 'Element'.`);
+    return v;
+  };
+  Object.defineProperty(ElementInternals.prototype, name, {
+    get(this: ElementInternals) {
+      const entry = internalsAriaElements.get(this)?.get(name);
+      if (entry === undefined) return null;
+      if (!many) return entry.refs[0]?.deref() ?? null;
+      const live: Element[] = [];
+      for (const r of entry.refs) {
+        const e = r.deref();
+        if (e !== undefined) live.push(e);
+      }
+      const c = entry.cached;
+      if (c !== null && c.length === live.length && live.every((e, i) => c[i] === e)) return c;
+      return (entry.cached = Object.freeze(live));
+    },
+    set(this: ElementInternals, v: unknown) {
+      let map = internalsAriaElements.get(this);
+      if (v === null || v === undefined) {
+        map?.delete(name);
+        return;
+      }
+      let refs: WeakRef<Element>[];
+      if (!many) refs = [new WeakRef(toElement(v))];
+      else {
+        if (typeof v !== "object" || typeof (v as Iterable<unknown>)[Symbol.iterator] !== "function") {
+          throw new TypeError(`Failed to set the '${name}' property on 'ElementInternals': The provided value cannot be converted to a sequence.`);
+        }
+        refs = [];
+        for (const item of v as Iterable<unknown>) refs.push(new WeakRef(toElement(item)));
+      }
+      if (map === undefined) internalsAriaElements.set(this, (map = new Map()));
+      map.set(name, { refs, cached: null });
     },
     configurable: true,
     enumerable: true,
@@ -549,4 +718,13 @@ if (!Object.hasOwn(DocumentClass.prototype, "hasFocus")) {
     configurable: true,
     enumerable: true,
   });
+}
+
+/** ShowPopoverOptions / TogglePopoverOptions `source` (WebIDL `HTMLElement`: null and non-elements throw a TypeError). */
+function popoverSource(options: unknown): NodeImpl | null {
+  if (options === undefined || options === null || typeof options !== "object") return null;
+  const source = (options as { source?: unknown }).source;
+  if (source === undefined) return null;
+  if (!(source instanceof HTMLElement)) throw new TypeError("Failed to read the 'source' property from the options: The provided value is not of type 'HTMLElement'.");
+  return source[$impl];
 }

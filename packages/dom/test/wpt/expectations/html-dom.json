@@ -1,0 +1,70 @@
+{
+ "html/dom/documents/dom-tree-accessors/document.forms.html": [
+  "document.forms iteration"
+ ],
+ "html/dom/documents/dom-tree-accessors/document.images.html": [
+  "img with id",
+  "img with name",
+  "img with id and name",
+  "Two img elements with the same id",
+  "Two img elements with the same name"
+ ],
+ "html/dom/documents/resource-metadata-management/document-cookie.html": [
+  "A null char"
+ ],
+ "html/dom/elements/global-attributes/custom-attrs.html": [
+  "Setting an Element's dataset property should not interfere with namespaced attributes with same name"
+ ],
+ "html/dom/elements/global-attributes/dataset-delete.html": [
+  "Deleting element.dataset['-foo'] should not remove an attribute with name 'data--foo' should it exist."
+ ],
+ "html/dom/elements/global-attributes/dataset-prototype.html": [
+  "Properties on Object.prototype should shine through."
+ ],
+ "html/dom/elements/global-attributes/dataset.html": [
+  "Should not have a .dataset on random elements"
+ ],
+ "html/dom/elements/global-attributes/dir-assorted.window.js": [
+  "Element without direction has parent element direction",
+  "Non-HTML element without direction has parent element direction",
+  "Non-HTML element text contents influence dir=auto",
+  "directionality of bdi elements: dir=auto empty in rtl parent",
+  "directionality of bdi elements: dir=auto numbers in rtl parent"
+ ],
+ "html/dom/elements/global-attributes/dir-auto-dynamic-changes.window.js": [
+  "dynamic insertion of RTL text in a child element",
+  "dir=auto changes for slot reassignment",
+  "text changes affecting both slot and ancestor with dir=auto",
+  "slotted non-HTML elements",
+  "Removing slotted content resets direction on dir=auto slot",
+  "Removing child of slotted content changes direction on dir=auto slot",
+  "slot removal resets parent's dependency on host directionality",
+  "slot removal can impact multiple dir=auto nodes",
+  "slot insertion makes parent dependent on host directionality"
+ ],
+ "html/dom/elements/global-attributes/dir-slots-directionality.html": [
+  "Slots: Directionality: dir=rtl on slot",
+  "Slots: Directionality: dir=auto in shadow tree with Arabic shadow tree content",
+  "Slots: Directionality: dir=auto on slot with Arabic light tree content",
+  "slot provides its directionality (from host) to a dir=auto container",
+  "dir=auto slot ignores text in value of input element children",
+  "inner slot is given directionality from slotted content",
+  "Slot assigned node manual removal"
+ ],
+ "html/dom/elements/the-innertext-and-outertext-properties/getter.html": [
+  "::first-line styles applied (\"<div class='first-line-uppercase'>abc\")",
+  "::first-line styles applied (\"<div class='first-line-uppercase' style='width:0'>abc def\")",
+  "::first-letter styles applied (\"<div class='first-letter-uppercase' style='width:0'>abc def\")",
+  "Invisible <p> doesn't induce extra line breaks (\"<div style='visibility:hidden'><p><span style='visibility:visible'>abc</span></p>\\n<div style='visibility:visible'>def</div>\")",
+  "tfoot not reordered (\"<div><table><tfoot>x</tfoot><tbody>y</tbody></table>\")",
+  " (\"<table><tfoot><tr><td>footer</tfoot><thead><tr><td style='visibility:collapse'>thead</thead><tbody><tr><td>tbody</tbody></table>\")",
+  "display:block <noscript> is not rendered (it's not parsed!) (\"<div><noscript style='display:block'>abc\")"
+ ],
+ "html/dom/historical.html": [
+  "document.all cannot find applet"
+ ],
+ "html/editing/dnd/synthetic/001.html": [
+  "window.DragEvent should be exposed",
+  "DragEvent constructor with custom object as the dataTransfer parameter should throw TypeError"
+ ]
+}

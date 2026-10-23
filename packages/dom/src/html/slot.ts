@@ -26,7 +26,14 @@ export class HTMLSlotElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-slot-assign */
   assign(...nodes: (Element | Node)[]): void {
     const impls: NodeImpl[] = [];
-    for (const n of nodes) impls.push(n[$impl]);
+    for (const n of nodes) {
+      // WebIDL: `(Element or Text)... nodes`.
+      const impl = (n as { [$impl]?: NodeImpl } | null)?.[$impl];
+      if (impl === undefined || (impl.type !== 1 && impl.type !== 3)) {
+        throw new TypeError("Failed to execute 'assign' on 'HTMLSlotElement': parameter is not of type '(Element or Text)'.");
+      }
+      impls.push(impl);
+    }
     assignManually(this[$impl], impls);
   }
 }

@@ -11,7 +11,7 @@ import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { F_CONNECTED } from "../../nodes/constants.ts";
 import { T } from "../../nodes/tags.ts";
-import { attr } from "../../nodes/attributes.ts";
+import { asciiLowercase, attr } from "../../nodes/attributes.ts";
 import { Event } from "../../events/Event.ts";
 import { SubmitEvent } from "../../events/events.ts";
 import type { EnumSpec } from "../reflect.ts";
@@ -80,9 +80,14 @@ export function isSubmitButton(el: NodeImpl): boolean {
 /** The button element's type state: https://html.spec.whatwg.org/#attr-button-type */
 export function buttonType(el: NodeImpl): "submit" | "reset" | "button" {
   const v = attr(el, "type");
-  if (v === null) return "submit";
-  const lower = v.toLowerCase();
-  return lower === "reset" || lower === "button" ? lower : "submit";
+  if (v !== null) {
+    const lower = asciiLowercase(v);
+    if (lower === "reset" || lower === "button" || lower === "submit") return lower;
+  }
+  // The Auto state (missing / invalid value default): a button with a `command` or
+  // `commandfor` attribute is a plain button, otherwise a submit button.
+  // https://html.spec.whatwg.org/#attr-button-type-auto-state
+  return el.attrs !== null && (attr(el, "commandfor") !== null || attr(el, "command") !== null) ? "button" : "submit";
 }
 
 /** https://html.spec.whatwg.org/#default-button — first submit button in tree order whose form owner is form. */
@@ -149,7 +154,18 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
     // Step 7: form may have been disconnected by a listener.
     if ((form.flags & F_CONNECTED) === 0) return;
   }
-  // Steps 8+: construct the entry list and navigate. We never navigate.
+  // Steps 8-9: method "dialog" closes the form's dialog (html/interactive.ts).
+  if (dialogSubmission !== null && dialogSubmission(form, submitter)) return;
+  // Steps 10+: construct the entry list and navigate. We never navigate.
+}
+
+/**
+ * Steps 8–9 for method=dialog, registered by src/html/interactive.ts (a static import would be
+ * an import cycle: interactive.ts → HTMLElement → … → this module).
+ */
+let dialogSubmission: ((form: NodeImpl, submitter: NodeImpl) => boolean) | null = null;
+export function setDialogSubmission(fn: (form: NodeImpl, submitter: NodeImpl) => boolean): void {
+  dialogSubmission = fn;
 }
 
 /** https://html.spec.whatwg.org/#concept-form-reset */
@@ -244,6 +260,32 @@ interface InputLike {
 }
 
 /**
+ * https://html.spec.whatwg.org/#textarea-wrapping-transformation for the entry list: with
+ * wrap=hard, line breaks are inserted so no line exceeds `cols` characters. Without layout,
+ * lines break after the last space within the limit, else hard at the limit. (Newlines are
+ * already normalized to LF in the API value.)
+ */
+function textareaWrappingTransformation(textarea: NodeImpl, value: string): string {
+  const wrap = attr(textarea, "wrap");
+  if (wrap === null || asciiLowercase(wrap) !== "hard") return value;
+  const cols = (textarea.node as unknown as { cols: number }).cols;
+  const lines = value.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    if (line.length <= cols) continue;
+    let out = "";
+    while (line.length > cols) {
+      const space = line.lastIndexOf(" ", cols);
+      const cut = space > 0 ? space + 1 : cols;
+      out += line.slice(0, cut) + "\n";
+      line = line.slice(cut);
+    }
+    lines[i] = out + line;
+  }
+  return lines.join("\n");
+}
+
+/**
  * https://html.spec.whatwg.org/#constructing-the-form-data-set — returns null when the form is
  * already constructing its entry list.
  */
@@ -303,6 +345,8 @@ export function constructEntryList(
         }
       } else if (type === I_HIDDEN && name.toLowerCase() === "_charset_") {
         entries.push([name, "UTF-8"]);
+      } else if (tag === T.textarea) {
+        entries.push([name, textareaWrappingTransformation(field, w.value)]);
       } else {
         entries.push([name, w.value]);
       }

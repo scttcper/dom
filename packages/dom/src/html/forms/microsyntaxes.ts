@@ -27,9 +27,11 @@ export function parseFloatStrict(s: string): number {
  * min/max/step attributes, which accept leading whitespace-free prefixes like "1.5abc"). NaN on error.
  */
 export function parseFloatLenient(s: string): number {
-  const m = /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?/.exec(s);
+  // https://html.spec.whatwg.org/#rules-for-parsing-floating-point-number-values: leading ASCII
+  // whitespace is skipped and one leading "+" is allowed.
+  const m = /^[\t\n\f\r ]*([-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?)/.exec(s);
   if (m === null) return NaN;
-  const n = Number(m[0]);
+  const n = Number(m[1]);
   return Number.isFinite(n) ? (n === 0 ? 0 : n) : NaN;
 }
 

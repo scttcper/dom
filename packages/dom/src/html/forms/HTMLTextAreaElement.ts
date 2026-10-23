@@ -5,9 +5,10 @@
 // textareas work without hooks. The API value is the raw value with newlines normalized.
 
 import { HTMLElement } from "../HTMLElement.ts";
+import { installAutocomplete } from "./autofill.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
-import { TEXT_NODE, CDATA_SECTION_NODE } from "../../nodes/constants.ts";
+import { TEXT_NODE, CDATA_SECTION_NODE, F_CHILDREN_HOOK } from "../../nodes/constants.ts";
 import { contentAttr, bool, nonNegativeLong, str } from "../reflect.ts";
 import { normalizeNewlines, positiveWithFallback, readNonNegativeLong, toUnsignedLong } from "./common.ts";
 import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
@@ -44,6 +45,7 @@ export class HTMLTextAreaElement extends HTMLElement {
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
+    this[$impl].flags |= F_CHILDREN_HOOK;
     this[$rawValue] = "";
     this[$dirtyValue] = false;
     this[$selStart] = 0;
@@ -169,6 +171,7 @@ export class HTMLTextAreaElement extends HTMLElement {
   }
 
   setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
+    if (arguments.length === 0) throw new TypeError("Failed to execute 'setRangeText' on 'HTMLTextAreaElement': 1 argument required, but only 0 present.");
     const result = rangeText(this._apiValue(), this[$selStart], this[$selEnd], String(replacement), start, end, selectionMode, arguments.length);
     this[$impl].doc[$version]++;
     this[$rawValue] = result.value;
@@ -218,6 +221,19 @@ export class HTMLTextAreaElement extends HTMLElement {
     this[$rawValue] = "";
   }
 
+  /**
+   * Children changed: while the dirty value flag is unset the raw value is the child text
+   * content, so a shorter value clamps the selection for good (a later longer value does not
+   * bring the old offsets back). https://html.spec.whatwg.org/#concept-textarea-raw-value,
+   * https://html.spec.whatwg.org/#textFieldSelection ("the selection ... must be adjusted").
+   */
+  override _childrenChangedSteps(): void {
+    if (this[$dirtyValue]) return;
+    const len = this._selectionLength();
+    if (this[$selStart] > len) this[$selStart] = len;
+    if (this[$selEnd] > len) this[$selEnd] = len;
+  }
+
   /** https://html.spec.whatwg.org/#the-textarea-element:concept-node-clone-ext */
   override _cloningSteps(copy: Element): void {
     const c = copy as HTMLTextAreaElement;
@@ -229,8 +245,9 @@ export class HTMLTextAreaElement extends HTMLElement {
 export interface HTMLTextAreaElement extends ConstraintValidation {}
 installConstraintValidation(HTMLTextAreaElement);
 
-str(HTMLTextAreaElement, "autocomplete dirName=dirname name placeholder wrap");
+str(HTMLTextAreaElement, "dirName=dirname name placeholder wrap");
 bool(HTMLTextAreaElement, "disabled readOnly=readonly required");
 nonNegativeLong(HTMLTextAreaElement, "maxLength=maxlength minLength=minlength", -1);
 positiveWithFallback(HTMLTextAreaElement, "cols", "cols", 20);
 positiveWithFallback(HTMLTextAreaElement, "rows", "rows", 2);
+installAutocomplete(HTMLTextAreaElement);

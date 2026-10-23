@@ -66,6 +66,8 @@ export class HTMLTemplateElement extends HTMLElement {
     for (let c: NodeImpl | null = src[$impl].first; c !== null; c = c.next) appendDetached(cloneNode(c, destDoc, true), dest[$impl]);
   }
 
+  // TODO(html): the constructor never sets F_ADOPT_HOOK on this[$impl], so nodes/tree.ts adopt()
+  // never calls this (WPT dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js).
   /** @internal https://html.spec.whatwg.org/#the-template-element:concept-node-adopt-ext */
   _adoptingSteps(_oldDocument: Document): void {
     const c = (this as unknown as Record<symbol, DocumentFragment | undefined>)[CONTENT];
@@ -73,4 +75,6 @@ export class HTMLTemplateElement extends HTMLElement {
   }
 }
 enumerated(HTMLTemplateElement, "shadowRootMode=shadowrootmode", { keywords: ["open", "closed"] });
+// https://html.spec.whatwg.org/#dom-template-shadowrootslotassignment
+enumerated(HTMLTemplateElement, "shadowRootSlotAssignment=shadowrootslotassignment", { keywords: ["named", "manual"], missing: "named", invalid: "named" });
 bool(HTMLTemplateElement, "shadowRootDelegatesFocus=shadowrootdelegatesfocus shadowRootClonable=shadowrootclonable shadowRootSerializable=shadowrootserializable");

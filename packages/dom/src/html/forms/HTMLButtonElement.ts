@@ -3,6 +3,7 @@
 import { buttonInvokerActivation } from "../invokers.ts";
 import { HTMLElement } from "../HTMLElement.ts";
 import type { Document } from "../../nodes/Document.ts";
+import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { Event } from "../../events/Event.ts";
 import { F_CONNECTED } from "../../nodes/constants.ts";
@@ -98,7 +99,7 @@ export class HTMLButtonElement extends HTMLElement {
       }
     }
     // Steps 4–6: commandfor / popovertarget (html-elements, src/html/invokers.ts).
-    buttonInvokerActivation(impl);
+    buttonInvokerActivation(impl, (_event?.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null);
   }
 }
 

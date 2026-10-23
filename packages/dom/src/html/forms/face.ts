@@ -7,16 +7,17 @@
 // submittable, resettable) include it. Per-element state lives in a WeakMap here (FACEs are
 // rare), and ElementInternals (html/HTMLElement.ts) delegates to these functions.
 //
-// Deviation: the form callbacks (formAssociatedCallback, formResetCallback,
-// formDisabledCallback) are invoked synchronously instead of as queued custom element
-// reactions, and owner/disabled changes are detected when the element itself is connected,
-// disconnected or has its form/disabled attribute changed.
+// The form callbacks (formAssociatedCallback, formResetCallback, formDisabledCallback) are
+// enqueued as custom element callback reactions
+// (https://html.spec.whatwg.org/#enqueue-a-custom-element-callback-reaction); owner/disabled
+// changes are detected when the element itself is connected, disconnected, upgraded or has its
+// form/disabled attribute changed.
 
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
-import { F_FACE } from "../../nodes/constants.ts";
+import { F_FACE, HTML_NS } from "../../nodes/constants.ts";
 import { attr } from "../../nodes/attributes.ts";
-import { definitionOf, reportException } from "../custom-elements.ts";
+import { enqueueFormCallback, flushReactions, setFaceUpgradeHook } from "../custom-elements.ts";
 import { fireEvent } from "./common.ts";
 import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
@@ -177,10 +178,15 @@ export function internalsSetValidity(impl: NodeImpl, flags: Record<string, unkno
     throw new TypeError("Failed to execute 'setValidity' on 'ElementInternals': The second argument should not be empty if one or more flags in the first argument are true.");
   }
   if (anchor !== undefined && anchor !== null) {
-    // Step 3: the anchor must be a shadow-including descendant of the element.
+    // WebIDL: `optional HTMLElement anchor`.
+    const a = (anchor as { [$impl]?: NodeImpl })[$impl];
+    if (a === undefined || a.type !== 1 || a.ns !== HTML_NS) {
+      throw new TypeError("Failed to execute 'setValidity' on 'ElementInternals': parameter 3 is not of type 'HTMLElement'.");
+    }
+    // Step 3: the anchor must be a shadow-including inclusive descendant of the element.
     let inside = false;
-    for (let n: NodeImpl | null = anchor[$impl]; n !== null; n = n.parent ?? ((n.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host]?.[$impl] ?? null)) {
-      if (n === impl && n !== anchor[$impl]) {
+    for (let n: NodeImpl | null = a; n !== null; n = n.parent ?? ((n.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host]?.[$impl] ?? null)) {
+      if (n === impl) {
         inside = true;
         break;
       }
@@ -189,7 +195,8 @@ export function internalsSetValidity(impl: NodeImpl, flags: Record<string, unkno
   }
   const s = faceState(impl);
   s.flags = bits;
-  s.message = bits === 0 ? "" : String(message);
+  // Step 5: "normalize newlines" in the message.
+  s.message = bits === 0 ? "" : String(message).replace(/\r\n?/g, "\n");
   s.anchor = anchor ?? null;
 }
 
@@ -235,20 +242,17 @@ export function faceEntries(impl: NodeImpl, out: [string, string | File][]): voi
 }
 
 function invoke(impl: NodeImpl, name: "formResetCallback" | "formAssociatedCallback" | "formDisabledCallback", args: unknown[]): void {
-  const el = impl.node as Element;
-  const def = definitionOf(el);
-  const cb = def?.[name];
-  if (cb === null || cb === undefined) return;
-  try {
-    cb.apply(el, args);
-  } catch (e) {
-    reportException(e, el);
-  }
+  enqueueFormCallback(impl.node as Element, name, args);
 }
 
 /** Reset algorithm for a FACE: enqueue formResetCallback. */
 export function faceReset(impl: NodeImpl): void {
   invoke(impl, "formResetCallback", []);
+}
+
+/** End of a [CEReactions] API that enqueued FACE callbacks (form.reset()). */
+export function flushFaceReactions(): void {
+  flushReactions();
 }
 
 /**
@@ -268,3 +272,5 @@ export function faceStateMaybeChanged(impl: NodeImpl): void {
     invoke(impl, "formDisabledCallback", [disabled]);
   }
 }
+
+setFaceUpgradeHook(faceStateMaybeChanged);

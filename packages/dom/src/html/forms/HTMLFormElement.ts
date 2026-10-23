@@ -8,6 +8,7 @@
 
 import { holdSnapshot } from "../../nodes/derived.ts";
 import { HTMLElement } from "../HTMLElement.ts";
+import { flushFaceReactions } from "./face.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
@@ -96,7 +97,14 @@ export class HTMLFormElement extends HTMLElement {
       }
       return past.node;
     }
-    if (candidates.length > 1) return new RadioNodeList(form, name);
+    if (candidates.length > 1) {
+      // The same live RadioNodeList each time (browsers cache it; desc.value === form.d).
+      let lists = radioLists.get(form);
+      if (lists === undefined) radioLists.set(form, (lists = new Map()));
+      let list = lists.get(name);
+      if (list === undefined) lists.set(name, (list = new RadioNodeList(form, name)));
+      return list;
+    }
     (this[$pastNames] ??= new Map()).set(name, candidates[0]);
     return candidates[0].node;
   }
@@ -181,6 +189,8 @@ export class HTMLFormElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-form-reset */
   reset(): void {
     resetForm(this[$impl]);
+    // [CEReactions]: formResetCallback reactions run at the end of reset() (html/forms/face.ts).
+    flushFaceReactions();
   }
 
   /** https://html.spec.whatwg.org/#dom-form-checkvalidity */
@@ -200,6 +210,32 @@ enumerated(HTMLFormElement, "enctype", ENCTYPE);
 enumerated(HTMLFormElement, "method", METHOD);
 enumerated(HTMLFormElement, "autocomplete", AUTOCOMPLETE);
 tokenList(HTMLFormElement, "relList", "rel", ["noopener", "noreferrer", "opener"]);
+
+/** RadioNodeLists handed out by form named getters, per form and name (lazy, collectable with the form). */
+const radioLists = new WeakMap<NodeImpl, Map<string, RadioNodeList>>();
+
+/** Supported property names (https://html.spec.whatwg.org/#the-form-element:supported-property-names), tree order, deduplicated. */
+function supportedNames(form: HTMLFormElement): string[] {
+  const names: string[] = [];
+  const controls = form._controls();
+  for (let i = 0; i < controls.length; i++) {
+    const c = controls[i];
+    if (c.id !== "" && !names.includes(c.id)) names.push(c.id);
+    const name = contentAttr(c, "name");
+    if (name !== null && name !== "" && !names.includes(name)) names.push(name);
+  }
+  const past = form[$pastNames];
+  if (past !== null) for (const name of past.keys()) if (!names.includes(name) && form._namedProperty(name) !== undefined) names.push(name);
+  return names;
+}
+
+/** Whether `key` is a supported index or a visible named property ([LegacyOverrideBuiltIns]: not an own property). */
+function isIndexedOrNamed(target: HTMLFormElement, key: string): boolean {
+  if (Object.hasOwn(target, key)) return false;
+  const i = arrayIndex(key);
+  if (i !== -1) return i < target._controls().length;
+  return !(key in target) && target._namedProperty(key) !== undefined;
+}
 
 function arrayIndex(key: string): number {
   const c = key.charCodeAt(0);
@@ -237,4 +273,31 @@ const formHandler: ProxyHandler<HTMLFormElement> = {
     }
     return Reflect.getOwnPropertyDescriptor(target, key);
   },
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-set — no indexed/named setters: a
+  // supported index or visible name cannot be shadowed by an expando (TypeError in strict mode).
+  set(target, key, value, receiver) {
+    if (typeof key === "string" && !(key in target) && isIndexedOrNamed(target, key)) return false;
+    return Reflect.set(target, key, value, receiver);
+  },
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty
+  defineProperty(target, key, desc) {
+    if (typeof key === "string" && isIndexedOrNamed(target, key)) return false;
+    return Reflect.defineProperty(target, key, desc);
+  },
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-delete — no deleters.
+  deleteProperty(target, key) {
+    if (typeof key === "string" && isIndexedOrNamed(target, key)) return false;
+    return Reflect.deleteProperty(target, key);
+  },
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-ownpropertykeys — indices, visible
+  // names, then the object's own keys.
+  ownKeys(target) {
+    const keys: (string | symbol)[] = [];
+    const n = target._controls().length;
+    for (let i = 0; i < n; i++) keys.push(String(i));
+    for (const name of supportedNames(target)) if (!Object.hasOwn(target, name)) keys.push(name);
+    for (const k of Reflect.ownKeys(target)) keys.push(k);
+    return keys;
+  },
 };
+

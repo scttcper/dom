@@ -239,12 +239,25 @@ describe("upgrades — https://html.spec.whatwg.org/#concept-upgrade-an-element"
   test("disconnected undefined elements are upgraded when inserted into the document", () => {
     const ce = defineNew();
     const div = document.createElement("div");
-    div.innerHTML = `<${ce.name}></${ce.name}>`;
+    div.appendChild(document.createElement("x-later"));
     const el = div.firstChild;
-    expect(el).not.toBeInstanceOf(ce.class);
+    customElements.define("x-later", class extends HTMLElement {});
+    expect(el).not.toBeInstanceOf(customElements.get("x-later"));
     document.body.appendChild(div);
-    expect(el).toBeInstanceOf(ce.class);
-    expect(ce.types()).toEqual(["constructed", "connected"]);
+    expect(el).toBeInstanceOf(customElements.get("x-later"));
+    expect(ce.types()).toEqual([]);
+  });
+
+  // https://html.spec.whatwg.org/#create-an-element-for-the-token: fragment parsing creates a
+  // defined custom element with an upgrade reaction (synchronous custom elements flag unset).
+  test("innerHTML on a disconnected element upgrades defined custom elements at the end of the call", () => {
+    const ce = defineNew();
+    const div = document.createElement("div");
+    div.innerHTML = `<${ce.name}></${ce.name}>`;
+    expect(div.firstChild).toBeInstanceOf(ce.class);
+    expect(ce.types()).toEqual(["constructed"]);
+    document.body.appendChild(div);
+    expect(ce.types()).toEqual(["connected"]);
   });
 
   test("customElements.upgrade() upgrades disconnected trees", () => {

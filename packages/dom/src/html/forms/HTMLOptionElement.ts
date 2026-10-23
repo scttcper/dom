@@ -8,7 +8,8 @@ import { HTMLElement } from "../HTMLElement.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
-import { F_ATTR_HOOK, F_CHILDREN_HOOK, TEXT_NODE, CDATA_SECTION_NODE, SVG_NS } from "../../nodes/constants.ts";
+import { F_ATTR_HOOK, F_CHILDREN_HOOK, TEXT_NODE, CDATA_SECTION_NODE, SVG_NS, HTML_NS } from "../../nodes/constants.ts";
+import { listOfOptions } from "./collections.ts";
 import { T } from "../../nodes/tags.ts";
 import { nextInTree, nextSkippingChildren } from "../../nodes/traverse.ts";
 import { bool, contentAttr, str } from "../reflect.ts";
@@ -17,14 +18,21 @@ import { currentDocument } from "../../window/current.ts";
 import type { HTMLSelectElement } from "./HTMLSelectElement.ts";
 import { $dirtiness, $impl, $selSet, $selectedness, $settled, $version } from "../../keys.ts";
 
-/** The select element an option belongs to (parent, or grandparent through an optgroup). */
+/**
+ * The select element an option belongs to, its "nearest ancestor select":
+ * https://html.spec.whatwg.org/#option-element-nearest-ancestor-select
+ */
 export function optionSelect(option: NodeImpl): NodeImpl | null {
-  const p = option.parent;
-  if (p === null) return null;
-  if (p.tag === T.select) return p;
-  if (p.tag === T.optgroup) {
-    const gp = p.parent;
-    if (gp !== null && gp.tag === T.select) return gp;
+  let ancestorOptgroup = false;
+  for (let p = option.parent; p !== null; p = p.parent) {
+    if (p.type !== 1 || p.ns !== HTML_NS) continue;
+    const tag = p.tag;
+    if (tag === T.select) return p;
+    if (tag === T.datalist || tag === T.hr || tag === T.option) return null;
+    if (tag === T.optgroup) {
+      if (ancestorOptgroup) return null;
+      ancestorOptgroup = true;
+    }
   }
   return null;
 }
@@ -127,21 +135,8 @@ export class HTMLOptionElement extends HTMLElement {
   get index(): number {
     const select = optionSelect(this[$impl]);
     if (select === null) return 0;
-    let i = 0;
-    for (let c = select.first; c !== null; c = c.next) {
-      if (c.tag === T.option) {
-        if (c === this[$impl]) return i;
-        i++;
-      } else if (c.tag === T.optgroup) {
-        for (let o = c.first; o !== null; o = o.next) {
-          if (o.tag === T.option) {
-            if (o === this[$impl]) return i;
-            i++;
-          }
-        }
-      }
-    }
-    return 0;
+    const i = listOfOptions(select, []).indexOf(this[$impl]);
+    return i === -1 ? 0 : i;
   }
 
   /** https://html.spec.whatwg.org/#dom-option-form */
@@ -153,7 +148,14 @@ export class HTMLOptionElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#the-option-element:concept-element-attributes-change-ext */
   override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
-    if (namespace !== null || localName !== "selected") return;
+    if (namespace !== null) return;
+    if (localName === "disabled") {
+      // Enabling the only candidate option of a display-size-1 select must select it
+      // (selectedness setting algorithm; WPT select-attribute-change-reset.html).
+      if ((oldValue === null) !== (value === null)) resetOwnerSelect(this[$impl]);
+      return;
+    }
+    if (localName !== "selected") return;
     if (this[$dirtiness]) return;
     this._setSelectedness(value !== null);
     const select = optionSelect(this[$impl]);
@@ -192,12 +194,24 @@ export const Option = function Option(this: unknown, text?: string, value?: stri
 } as unknown as new (text?: string, value?: string, defaultSelected?: boolean, selected?: boolean) => HTMLOptionElement;
 (Option as unknown as { prototype: object }).prototype = HTMLOptionElement.prototype;
 
+/** Re-run the selectedness setting algorithm of the select `el` (an option or optgroup) belongs to. */
+function resetOwnerSelect(el: NodeImpl): void {
+  const select = optionSelect(el);
+  if (select !== null && (select.node as HTMLSelectElement)[$settled]) (select.node as HTMLSelectElement)._selectednessSettingAlgorithm();
+}
+
 /** https://html.spec.whatwg.org/#the-optgroup-element */
 export class HTMLOptGroupElement extends HTMLElement {
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this[$impl].flags |= F_CHILDREN_HOOK;
+    this[$impl].flags |= F_CHILDREN_HOOK | F_ATTR_HOOK;
+  }
+
+  /** An optgroup's disabled state is its options' disabled state: re-run the select's algorithm. */
+  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+    super._attributeChangedSteps(localName, oldValue, value, namespace);
+    if (namespace === null && localName === "disabled" && (oldValue === null) !== (value === null)) resetOwnerSelect(this[$impl]);
   }
 
   declare disabled: boolean;

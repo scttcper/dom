@@ -1,0 +1,134 @@
+{
+  "custom-elements/CustomElementRegistry-constructor-and-callbacks-are-held-strongly.html": [
+    "adoptedCallback"
+  ],
+  "custom-elements/CustomElementRegistry.html": [
+    "customElements.whenDefined must return a promise for a valid custom element name"
+  ],
+  "custom-elements/Document-createElement.html": [
+    "document.createElement must not report a NotSupportedError when the element is adopted back from a an HTML document fetched by XHR during construction",
+    "document.createElement must report a NotSupportedError when the element is adopted into a an HTML document fetched by XHR during construction",
+    "document.createElement must report a NotSupportedError when the element is inserted into a an HTML document fetched by XHR during construction"
+  ],
+  "custom-elements/adopted-callback.html": [
+    "Inserting a custom element into a detached shadow tree that belongs to an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Inserting a custom element into a shadow tree in an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Inserting a custom element into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Inserting an ancestor of custom element into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Inserting the shadow host of a custom element into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Moving a custom element from the owner document into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Moving an ancestor of custom element from the owner document into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Moving the <template>'s content of a custom element from the owner document into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Moving the shadow host of a custom element from the owner document into an HTML document fetched by XHR must enqueue and invoke adoptedCallback",
+    "Moving the shadow host's shadow of a custom element from the owner document into an HTML document fetched by XHR must enqueue and invoke adoptedCallback"
+  ],
+  "custom-elements/builtin-coverage.html": [
+    "body: document parser should instantiate a customized built-in element",
+    "form: Operator 'new' should instantiate a customized built-in element",
+    "html: document parser should instantiate a customized built-in element"
+  ],
+  "custom-elements/connected-callbacks-html-fragment-parsing.html": [
+    "Inserting a custom element into an HTML document fetched by XHR using HTML fragment parsing must enqueue a custom element upgrade reaction, not synchronously invoke its constructor"
+  ],
+  "custom-elements/connected-callbacks.html": [
+    "Inserting a custom element into a detached shadow tree that belongs to an HTML document fetched by XHR must not enqueue and invoke connectedCallback",
+    "Inserting a custom element into a shadow tree in an HTML document fetched by XHR must enqueue and invoke connectedCallback",
+    "Inserting a custom element into an HTML document fetched by XHR must enqueue and invoke connectedCallback",
+    "Inserting an ancestor of custom element into an HTML document fetched by XHR must enqueue and invoke connectedCallback",
+    "Inserting the shadow host of a custom element into an HTML document fetched by XHR must enqueue and invoke connectedCallback"
+  ],
+  "custom-elements/disconnected-callbacks.html": [
+    "Removing a custom element from a detached shadow tree that belongs to an HTML document fetched by XHR must not enqueue and invoke disconnectedCallback",
+    "Removing a custom element from a shadow tree in an HTML document fetched by XHR must enqueue and invoke disconnectedCallback",
+    "Removing a custom element from an HTML document fetched by XHR must enqueue and invoke disconnectedCallback",
+    "Removing an ancestor of custom element from an HTML document fetched by XHR must enqueue and invoke disconnectedCallback",
+    "Removing the shadow host of a custom element from aan HTML document fetched by XHR must enqueue and invoke disconnectedCallback"
+  ],
+  "custom-elements/element-internals-aria-element-reflection.html": [
+    "Setting aria-labelledby or ariaLabelledByElements on the custom element should supersede the value of ariaLabelledByElements on ElementInternals",
+    "Setting ariaLabelledByElements on ElementInternals should change the accessible name of the custom element"
+  ],
+  "custom-elements/form-associated/form-associated-callback.html": [
+    "Associate by parser, customized at element creation",
+    "Updating \"id\" attribute of form element"
+  ],
+  "custom-elements/form-associated/form-disabled-legend.html": [
+    "Changing the first legend updates the disabled state of a custom element",
+    "Custom element inside the first legend of a disabled fieldset is not disabled",
+    "Toggling disabled on the fieldset does not affect a custom element inside its first legend"
+  ],
+  "custom-elements/form-associated/form-reset-callback.html": [
+    "form.reset(): formResetCallback is called synchronously at the end of form reset, with custom element reaction timing, *after* built-in form control reset algorithms run."
+  ],
+  "custom-elements/microtasks-and-constructors.html": [
+    "Microtasks evaluate immediately when the stack is empty inside the parser",
+    "Microtasks evaluate immediately when the stack is empty inside the parser, causing the checks on no attributes to fail"
+  ],
+  "custom-elements/overwritten-customElements-global.html": [
+    "Custom elements can still be created after `window.customElements` is overwritten."
+  ],
+  "custom-elements/parser/parser-constructs-custom-element-in-document-write.html": [
+    "HTML parser should call connectedCallback before appending child nodes inside document.write"
+  ],
+  "custom-elements/parser/parser-uses-registry-of-owner-document.html": [
+    "(harness error)"
+  ],
+  "custom-elements/reactions/CSSStyleDeclaration.html": [
+    "A webkit prefixed camel case attribute (webkitFilter) on CSSStyleDeclaration must enqueue an attributeChanged reaction when it adds the observed style attribute",
+    "A webkit prefixed camel case attribute (webkitFilter) on CSSStyleDeclaration must enqueue an attributeChanged reaction when it mutates the observed style attribute",
+    "A webkit prefixed camel case attribute (webkitFilter) on CSSStyleDeclaration must not enqueue an attributeChanged reaction when it adds the style attribute but the style attribute is not observed",
+    "A webkit prefixed camel case attribute (webkitFilter) on CSSStyleDeclaration must not enqueue an attributeChanged reaction when it mutates the style attribute but the style attribute is not observed",
+    "A webkit prefixed dashed property (-webkit-filter) on CSSStyleDeclaration must enqueue an attributeChanged reaction when it adds the observed style attribute",
+    "A webkit prefixed dashed property (-webkit-filter) on CSSStyleDeclaration must enqueue an attributeChanged reaction when it mutates the observed style attribute",
+    "A webkit prefixed dashed property (-webkit-filter) on CSSStyleDeclaration must not enqueue an attributeChanged reaction when it adds the style attribute but the style attribute is not observed",
+    "A webkit prefixed dashed property (-webkit-filter) on CSSStyleDeclaration must not enqueue an attributeChanged reaction when it mutates the style attribute but the style attribute is not observed"
+  ],
+  "custom-elements/reactions/Document.html": [
+    "execCommand on Document must enqueue a disconnected reaction when deleting a custom element from a contenteditable element"
+  ],
+  "custom-elements/reactions/Range.html": [
+    "createContextualFragment on Range must construct a custom element"
+  ],
+  "custom-elements/state/ElementInternals-states.html": [
+    "CustomStateSet behavior of ElementInternals.states: Initial state"
+  ],
+  "custom-elements/state/state-pseudo-class.html": [
+    ":state(foo) and ::part()"
+  ],
+  "custom-elements/upgrading.html": [
+    "Creating an element in an HTML document fetched by XHR and adopting back to a document with browsing context must enqueue a custom element upgrade reaction",
+    "Creating an element in an HTML document fetched by XHR and inserting into the document must not enqueue a custom element upgrade reaction",
+    "Creating an element in an HTML document fetched by XHR must not enqueue a custom element upgrade reaction because the document does not have a browsing context"
+  ],
+  "shadow-dom/declarative/declarative-shadow-dom-basic.html": [
+    "Declarative Shadow DOM: Basic test",
+    "Declarative Shadow DOM: Fragment parser basic test",
+    "Declarative Shadow DOM: Multiple roots",
+    "Declarative Shadow DOM: template containing (deeply nested) declarative shadow root",
+    "Declarative Shadow DOM: template containing a template containing declarative shadow root",
+    "Declarative Shadow DOM: template containing declarative shadow root (with shadowrootclonable)",
+    "Declarative Shadow DOM: template containing declarative shadow root and UA shadow root"
+  ],
+  "shadow-dom/declarative/script-access.html": [
+    "Streaming Declarative Shadow DOM: template .content() should be null"
+  ],
+  "shadow-dom/focus/blur-on-shadow-host-delegatesFocus.html": [
+    "Calling blur() on shadow host with delegatesFocus when the focus is on a slotted element should not remove the focus."
+  ],
+  "shadow-dom/focus/focus-method-delegatesFocus.html": [
+    "focus() on host with delegatesFocus & tabindex=0, #outside with tabindex=0"
+  ],
+  "shadow-dom/imperative-slot-api-cross-shadow-root.html": [
+    "HTMLSlotElement.assign drops DidSlotChange for previous_slot in different shadow root"
+  ],
+  "shadow-dom/leaktests/html-collection.html": [
+    "document.all should not contain shadow nodes"
+  ],
+  "shadow-dom/shadow-root-clonable.html": [
+    "declarative shadow roots inside templates do *not* get cloned automatically"
+  ],
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/dom-tree-accessors-001.html": [
+    "Elements in a shadow tree should not be accessible from owner document's \"all\" attribute.",
+    "Elements in a shadow tree should not be accessible from owner document's getElementById() method."
+  ]
+}

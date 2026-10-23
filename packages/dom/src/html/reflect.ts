@@ -119,7 +119,8 @@ export function parseFloatingPoint(input: string): number {
   let i = 0;
   const len = input.length;
   while (i < len && isAsciiWhitespace(input.charCodeAt(i))) i++;
-  const m = /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?/.exec(input.slice(i).replace(/^\+/, ""));
+  // Steps 6–8: one optional "-" or "+" (not both: "+-5" is an error), then a digit or ".".
+  const m = /^[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?/.exec(i === 0 ? input : input.slice(i));
   if (m === null) return NaN;
   const v = Number(m[0]);
   if (!Number.isFinite(v)) return NaN;

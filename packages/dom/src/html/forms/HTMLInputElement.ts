@@ -12,6 +12,7 @@
 // `this.checked =`, so React's tracker sees the change and fires onChange.
 
 import { HTMLElement } from "../HTMLElement.ts";
+import { installAutocomplete } from "./autofill.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
@@ -88,6 +89,7 @@ import { elementByIdInTree, formOwner, hasDatalistAncestor, isActuallyDisabled }
 import { LabelsNodeList } from "./collections.ts";
 import { FileList, createFileList } from "../../window/FileList.ts";
 import { queueTask } from "../events.ts";
+import { popoverTargetAttributeActivation } from "../invokers.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
 import { $badInput, $checked, $checkedSet, $customValidity, $dirtyChecked, $dirtyValue, $files, $impl, $indeterminate, $labels, $preApplied, $preChecked, $preCheckedRadio, $preIndeterminate, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $validity, $value, $version } from "../../keys.ts";
 
@@ -318,6 +320,38 @@ function maximum(type: number, impl: NodeImpl): number {
     return max < min ? min : max;
   }
   return attrToNumber(type, attr(impl, "max"));
+}
+
+/**
+ * Whether `n` is `base` plus an integral multiple of `step` (https://html.spec.whatwg.org/#concept-input-step,
+ * "suffering from a step mismatch"). Browsers use decimal arithmetic: the three numbers are
+ * taken as their shortest decimal representations and compared exactly with BigInts, so a step
+ * of 3e-15 still mismatches 17 (a float quotient would round to an integer).
+ */
+function isStepAligned(n: number, base: number, step: number): boolean {
+  const k = (n - base) / step;
+  // Fast path: comfortably integral or comfortably not, as doubles.
+  if (Math.abs(k) < 1e6) return isIntegral(k);
+  const a = toDecimal(n);
+  const b = toDecimal(base);
+  const s = toDecimal(step);
+  if (a === null || b === null || s === null) return isIntegral(k);
+  const exp = Math.min(a.exp, b.exp, s.exp);
+  const scale = (d: { digits: bigint; exp: number }) => d.digits * 10n ** BigInt(d.exp - exp);
+  const sd = scale(s);
+  return sd === 0n || (scale(a) - scale(b)) % sd === 0n;
+}
+
+/** A finite double as digits × 10^exp, from its shortest round-trip string; null when absurdly scaled. */
+function toDecimal(x: number): { digits: bigint; exp: number } | null {
+  if (!Number.isFinite(x)) return null;
+  const m = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]\d+))?$/.exec(String(x));
+  if (m === null) return null;
+  const frac = m[3] ?? "";
+  const exp = (m[4] === undefined ? 0 : Number(m[4])) - frac.length;
+  if (exp < -400 || exp > 400) return null;
+  const digits = BigInt(m[2] + frac);
+  return { digits: m[1] === "-" ? -digits : digits, exp };
 }
 
 function isIntegral(k: number): boolean {
@@ -571,16 +605,23 @@ export class HTMLInputElement extends HTMLElement {
       this._setValueFromAPI(type, "");
       return;
     }
-    if (!(v instanceof Date)) {
+    // WebIDL `object?` + "if the given value is not a Date object, throw": a brand check
+    // (Date.prototype.getTime throws for non-Dates), so Dates from other realms work too.
+    let ms: number;
+    try {
+      ms = Date.prototype.getTime.call(v);
+    } catch {
       throw new TypeError("Failed to set the 'valueAsDate' property on 'HTMLInputElement': The provided value is not a Date.");
     }
-    const ms = v.getTime();
     if (Number.isNaN(ms)) {
       this._setValueFromAPI(type, "");
       return;
     }
     let n = ms;
-    if (type === I_MONTH) n = (v.getUTCFullYear() - 1970) * 12 + v.getUTCMonth();
+    if (type === I_MONTH) {
+      const d = new Date(ms);
+      n = (d.getUTCFullYear() - 1970) * 12 + d.getUTCMonth();
+    }
     this._setValueFromAPI(type, numberToString(type, n));
   }
 
@@ -619,7 +660,8 @@ export class HTMLInputElement extends HTMLElement {
     }
     // Step 5–6.
     let value = stringToNumber(type, this._currentValue(type));
-    if (Number.isNaN(value)) value = 0;
+    const hadValue = !Number.isNaN(value);
+    if (!hadValue) value = 0;
     const before = value;
     // Step 7.
     const k = (value - base) / step;
@@ -632,8 +674,9 @@ export class HTMLInputElement extends HTMLElement {
     // Step 8: clamp onto the range, staying on a step.
     if (!Number.isNaN(min) && value < min) value = roundForStep(base + Math.ceil((min - base) / step - 1e-9) * step, step, base);
     else if (!Number.isNaN(max) && value > max) value = roundForStep(base + Math.floor((max - base) / step + 1e-9) * step, step, base);
-    // Step 9.
-    if ((up && value < before) || (!up && value > before)) return;
+    // Step 9 — only guards a value that was there: stepDown() on an empty input with min=7
+    // yields "7" in browsers (WPT input-stepdown-02.html).
+    if (hadValue && ((up && value < before) || (!up && value > before))) return;
     // Step 10.
     this._setValueFromAPI(type, numberToString(type, value));
   }
@@ -702,6 +745,7 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-textarea/input-setrangetext */
   setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
+    if (arguments.length === 0) throw new TypeError("Failed to execute 'setRangeText' on 'HTMLInputElement': 1 argument required, but only 0 present.");
     this._assertSelectable("setRangeText()");
     const result = rangeText(this.value, this[$selStart], this[$selEnd], String(replacement), start, end, selectionMode, arguments.length);
     const type = inputType(this[$impl]);
@@ -723,17 +767,21 @@ export class HTMLInputElement extends HTMLElement {
   declare formMethod: string;
   declare formNoValidate: boolean;
   declare formTarget: string;
-  /** https://html.spec.whatwg.org/#dom-input-height — the rendered image height; 0 without layout. */
+  /**
+   * https://html.spec.whatwg.org/#dom-input-height — the rendered height when rendered (never,
+   * without layout), else the natural height of an available image (never fetched), else the
+   * attribute's value as a non-negative integer, else 0.
+   */
   get height(): number {
-    return 0;
+    return dimensionAttr(this[$impl], "height");
   }
   set height(v: number) {
     const n = toUnsignedLong(v);
     setAttribute(this[$impl], "height", String(n <= 2147483647 ? n : 0));
   }
-  /** https://html.spec.whatwg.org/#dom-input-width — the rendered image width; 0 without layout. */
+  /** https://html.spec.whatwg.org/#dom-input-width — see `height`. */
   get width(): number {
-    return 0;
+    return dimensionAttr(this[$impl], "width");
   }
   set width(v: number) {
     const n = toUnsignedLong(v);
@@ -807,6 +855,10 @@ export class HTMLInputElement extends HTMLElement {
     const impl = this[$impl];
     const type = inputType(impl);
     if (type === I_HIDDEN || type === I_RESET || type === I_BUTTON) return true;
+    // https://html.spec.whatwg.org/#the-readonly-attribute:barred-from-constraint-validation
+    // bars every input with a readonly attribute; like jsdom we only bar the types readonly
+    // applies to, so a controlled `<input type=checkbox readOnly required>` (React's suggested
+    // fix for a checked prop without onChange) still validates. docs/deviations.md.
     if (readonlyApplies(type) && attr(impl, "readonly") !== null) return true;
     return isActuallyDisabled(impl) || hasDatalistAncestor(impl);
   }
@@ -885,7 +937,7 @@ export class HTMLInputElement extends HTMLElement {
           if (!Number.isNaN(max) && n > max) flags |= V_RANGE_OVERFLOW;
         }
         const step = allowedStep(type, impl);
-        if (!Number.isNaN(step) && !isIntegral((n - stepBase(type, impl)) / step)) flags |= V_STEP_MISMATCH;
+        if (!Number.isNaN(step) && !isStepAligned(n, stepBase(type, impl), step)) flags |= V_STEP_MISMATCH;
       }
     }
     return flags;
@@ -957,6 +1009,11 @@ export class HTMLInputElement extends HTMLElement {
       case "form":
         if (inputType(this[$impl]) === I_RADIO && this._checkedness()) uncheckOtherRadios(this[$impl]);
         break;
+      case "multiple":
+        // https://html.spec.whatwg.org/#email-state-(type=email): "When the multiple attribute
+        // is set or removed, the user agent must run the value sanitization algorithm."
+        if (this[$dirtyValue] && inputType(this[$impl]) === I_EMAIL) this[$value] = sanitizeValue(I_EMAIL, this[$value], this[$impl]);
+        break;
       case "value": {
         // With the dirty value flag unset the value follows the attribute (derived on read);
         // keep the selection inside it.
@@ -1021,8 +1078,25 @@ export class HTMLInputElement extends HTMLElement {
   // TODO(events): dispatch must call _legacyPreActivationBehavior / _legacyCanceledActivationBehavior /
   // _activationBehavior on the activation target (https://dom.spec.whatwg.org/#concept-event-dispatch steps 11–13).
 
+  /**
+   * "An input element has activation behavior if its type attribute's state defines input
+   * activation behavior" (https://html.spec.whatwg.org/#the-input-element:activation-behaviour):
+   * checkbox, radio, the buttons, file and color. Others (hidden, text, ...) leave the click to an
+   * ancestor such as a <label> (WPT clicking-noninteractive-unlabelable-content.html).
+   */
   get _hasActivationBehavior(): boolean {
-    return true;
+    switch (inputType(this[$impl])) {
+      case I_CHECKBOX:
+      case I_RADIO:
+      case I_SUBMIT:
+      case I_IMAGE:
+      case I_RESET:
+      case I_BUTTON:
+      case I_FILE:
+      case I_COLOR:
+        return true;
+    }
+    return false;
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:legacy-pre-activation-behavior */
@@ -1089,19 +1163,27 @@ export class HTMLInputElement extends HTMLElement {
       const form = formOwner(impl);
       if (form !== null && (impl.flags & F_CONNECTED) !== 0) resetForm(form);
     }
+    // Step 3: https://html.spec.whatwg.org/#popover-target-attribute-activation-behavior (html/invokers.ts).
+    popoverTargetAttributeActivation(impl, (_event?.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null);
   }
 }
 
 export interface HTMLInputElement extends ConstraintValidation {}
 installConstraintValidation(HTMLInputElement);
 
-str(HTMLInputElement, "accept alt autocomplete dirName=dirname formTarget=formtarget max min name pattern placeholder step useMap=usemap align defaultValue=value");
+str(HTMLInputElement, "accept alt dirName=dirname formTarget=formtarget max min name pattern placeholder step useMap=usemap align defaultValue=value");
 bool(HTMLInputElement, "disabled formNoValidate=formnovalidate multiple readOnly=readonly required defaultChecked=checked");
 url(HTMLInputElement, "src");
 ulong(HTMLInputElement, "size", 20, true);
 nonNegativeLong(HTMLInputElement, "maxLength=maxlength minLength=minlength", -1);
 enumerated(HTMLInputElement, "formEnctype=formenctype", FORM_ENCTYPE);
 enumerated(HTMLInputElement, "formMethod=formmethod", FORM_METHOD);
+
+/** An image button's width/height content attribute parsed with the rules for non-negative integers (0 on error). */
+function dimensionAttr(impl: NodeImpl, name: string): number {
+  // Only an image button has an image (other types read 0, as in jsdom).
+  return inputType(impl) === I_IMAGE ? readNonNegativeLong(impl, name, 0) : 0;
+}
 
 /** select() applies: https://html.spec.whatwg.org/#do-not-apply */
 function selectApplies(type: number): boolean {
@@ -1115,6 +1197,9 @@ function compilePattern(pattern: string): RegExp | null {
   let re = patternCache.get(pattern);
   if (re !== undefined) return re;
   try {
+    // Step 1: the pattern must parse on its own, so "a)(b" cannot escape the wrapping group.
+    new RegExp(pattern, "v");
+    // Step 2.
     re = new RegExp("^(?:" + pattern + ")$", "v");
   } catch {
     re = null;
@@ -1264,6 +1349,11 @@ function checkedRadioInGroup(el: NodeImpl): NodeImpl | null {
 function radioGroupMissing(el: NodeImpl): boolean {
   const self = el.node as HTMLInputElement;
   if (self._checkedness()) return false;
+  // A radio without a (non-empty) name is in no radio button group
+  // (https://html.spec.whatwg.org/#radio-button-group), so nothing makes it missing (as in
+  // browsers; WPT form-validation-validity-valueMissing.html).
+  const name = attr(el, "name");
+  if (name === null || name === "") return false;
   let required = attr(el, "required") !== null;
   let checked = false;
   forEachInRadioGroup(el, (other) => {
@@ -1281,4 +1371,4 @@ function radioGroupMissing(el: NodeImpl): boolean {
 export function radioGroupHasNoChecked(el: NodeImpl): boolean {
   return checkedRadioInGroup(el) === null;
 }
-
+installAutocomplete(HTMLInputElement);

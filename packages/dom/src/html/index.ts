@@ -50,6 +50,7 @@ export {
 export { HTMLAnchorElement, HTMLAreaElement } from "./anchor.ts";
 export { HTMLMediaElement, HTMLAudioElement, HTMLVideoElement, Audio, TimeRanges, MediaError } from "./media.ts";
 export { HTMLDetailsElement, HTMLDialogElement } from "./interactive.ts";
+export { CommandEvent } from "./invokers.ts";
 export { HTMLTemplateElement } from "./template.ts";
 export { HTMLSlotElement } from "./slot.ts";
 export { HTMLStyleElement, HTMLLinkElement, HTMLScriptElement, HTMLTitleElement } from "./resources.ts";

@@ -17,6 +17,7 @@ import { HTMLCollection, withNamedProperties } from "../../collections/HTMLColle
 import { ensureIndexGetters, indexGetterTable } from "../../collections/indexed.ts";
 import { NodeList } from "../../collections/NodeList.ts";
 import { T } from "../../nodes/tags.ts";
+import { firstElementChild, nextElementInTree } from "../../nodes/traverse.ts";
 import { attr } from "../../nodes/attributes.ts";
 import { labelsFor } from "./form-associated.ts";
 import { I_RADIO, inputType } from "./input-type.ts";
@@ -99,6 +100,37 @@ export class LabelsNodeList extends ComputedNodeList {
     const impls = labelsFor(this[$el], []);
     const items: Node[] = new Array(impls.length);
     for (let i = 0; i < impls.length; i++) items[i] = impls[i].node;
+    return items;
+  }
+}
+
+/**
+ * The live NodeList returned by `document.getElementsByName(name)`
+ * (https://html.spec.whatwg.org/#dom-document-getelementsbyname): every HTML element in the
+ * document, in tree order, whose `name` attribute value is `name`.
+ */
+export class NameNodeList extends ComputedNodeList {
+  declare [$el]: NodeImpl;
+  declare [$name]: string;
+
+  /** @internal */
+  constructor(doc: NodeImpl, name: string) {
+    super();
+    Object.defineProperty(this, $el, { value: doc });
+    Object.defineProperty(this, $name, { value: name });
+  }
+
+  _ownerDocument(): { [$version]: number } {
+    return this[$el].doc;
+  }
+
+  _compute(): Node[] {
+    const root = this[$el];
+    const name = this[$name];
+    const items: Node[] = [];
+    for (let n = firstElementChild(root); n !== null; n = nextElementInTree(n, root)) {
+      if (n.ns === HTML_NS && n.attrs !== null && attr(n, "name") === name) items.push(n.node);
+    }
     return items;
   }
 }
@@ -200,14 +232,40 @@ export function createFormControlsCollection(form: NodeImpl): HTMLFormControlsCo
 
 // --- HTMLOptionsCollection ------------------------------------------------------------------
 
-/** The list of options of a select: https://html.spec.whatwg.org/#concept-select-option-list */
+/**
+ * The list of options of a select ("get the list of options"):
+ * https://html.spec.whatwg.org/#concept-select-option-list — option descendants in tree order,
+ * not looking inside select, hr, option and datalist elements or an optgroup nested in another
+ * optgroup (within the select). The common shapes (options and optgroups as children) stay a
+ * walk over children.
+ */
 export function listOfOptions(select: NodeImpl, out: NodeImpl[]): NodeImpl[] {
-  for (let c = select.first; c !== null; c = c.next) {
-    if (c.ns !== HTML_NS) continue;
-    if (c.tag === T.option) out.push(c);
-    else if (c.tag === T.optgroup) {
-      for (let o = c.first; o !== null; o = o.next) if (o.tag === T.option) out.push(o);
+  // Step 2.
+  let node = select.first;
+  let optgroupDepth = 0; // number of optgroup ancestors of `node` inside the select
+  // Step 3.
+  while (node !== null) {
+    let descend = false;
+    if (node.type === 1) {
+      const html = node.ns === HTML_NS;
+      const tag = html ? node.tag : 0;
+      if (tag === T.option) out.push(node); // Step 3.1.
+      else if (tag === T.optgroup) descend = optgroupDepth === 0;
+      else descend = tag !== T.select && tag !== T.hr && tag !== T.datalist;
     }
+    if (descend && node.first !== null) {
+      if (node.ns === HTML_NS && node.tag === T.optgroup) optgroupDepth++;
+      node = node.first;
+      continue;
+    }
+    // Next node skipping descendants, leaving finished ancestors (never above the select).
+    while (node !== null && node.next === null) {
+      node = node.parent;
+      if (node === select || node === null) return out;
+      if (node.ns === HTML_NS && node.tag === T.optgroup) optgroupDepth--;
+    }
+    if (node === null) return out;
+    node = node.next;
   }
   return out;
 }
@@ -220,13 +278,8 @@ export class HTMLOptionsCollection extends HTMLCollection {
   }
 
   override _collect(out: Element[]): void {
-    const select = this._s.root;
-    for (let c = select.first; c !== null; c = c.next) {
-      if (c.tag === T.option) out.push(c.node as Element);
-      else if (c.tag === T.optgroup) {
-        for (let o = c.first; o !== null; o = o.next) if (o.tag === T.option) out.push(o.node as Element);
-      }
-    }
+    const options = listOfOptions(this._s.root, []);
+    for (let i = 0; i < options.length; i++) out.push(options[i].node as Element);
     ensureOptionIndexAccessors(out.length + 1);
   }
 

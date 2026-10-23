@@ -29,6 +29,7 @@ import { isActuallyDisabled } from "./forms/form-associated.ts";
 import { isEditingHost, isRenderingHidden } from "./shared.ts";
 import { inertByModal, setTopLayerFocusHooks } from "./top-layer.ts";
 import { frameContentWindow } from "../window/browsing-context.ts";
+import { setRenderingUpdateHook } from "../window/Window.ts";
 import { $focused, $frameElement, $host, $impl, $shadowRoot, $window } from "../keys.ts";
 
 // --- predicates ---------------------------------------------------------------------------
@@ -163,26 +164,41 @@ function shadowRootOf(impl: NodeImpl): { [$impl]: NodeImpl; delegatesFocus?: boo
   return (impl.node as unknown as { [$shadowRoot]: { [$impl]: NodeImpl; delegatesFocus?: boolean } | null })[$shadowRoot] ?? null;
 }
 
+/**
+ * https://html.spec.whatwg.org/#get-the-focusable-area for an element that is not a focusable
+ * area. Only shadow hosts that delegate focus have one here (no image maps, scrollable regions
+ * or navigables as focus targets).
+ */
+export function getFocusableArea(target: NodeImpl): NodeImpl | null {
+  const shadow = shadowRootOf(target);
+  if (shadow === null || !shadow.delegatesFocus) return null;
+  // 1-2. Focus already inside the host stays where it is.
+  const focused = target.doc[$focused];
+  if (focused !== null && isShadowIncludingInclusiveAncestor(target, focused)) return focused;
+  // 3.
+  return focusDelegate(target);
+}
+
 /** https://html.spec.whatwg.org/#focus-delegate */
-export function focusDelegate(host: NodeImpl): NodeImpl | null {
-  const shadow = shadowRootOf(host);
-  const root = shadow !== null && shadow.delegatesFocus ? shadow[$impl] : host;
-  // Autofocus delegate first, then the first focusable area in tree order (shadow-including).
-  let first: NodeImpl | null = null;
-  for (let n = root.first; n !== null; n = nextInTree(n, root)) {
+export function focusDelegate(focusTarget: NodeImpl): NodeImpl | null {
+  // 1-3.
+  const shadow = shadowRootOf(focusTarget);
+  if (shadow !== null && !shadow.delegatesFocus) return null;
+  const whereToLook = shadow !== null ? shadow[$impl] : focusTarget;
+  // 4-5.
+  const autofocus = autofocusDelegate(whereToLook);
+  if (autofocus !== null) return autofocus;
+  // 6. Descendants (not shadow-including: nested hosts recurse through get the focusable area).
+  const isDialog = focusTarget.tag === T.dialog && focusTarget.ns === HTML_NS;
+  for (let n = whereToLook.first; n !== null; n = nextInTree(n, whereToLook)) {
     if (n.type !== ELEMENT_NODE) continue;
-    if (isFocusable(n)) {
-      if (contentAttr(n, "autofocus") !== null) return n;
-      if (first === null) first = n;
-    } else {
-      const inner = shadowRootOf(n);
-      if (inner !== null && inner.delegatesFocus) {
-        const d = focusDelegate(n);
-        if (d !== null && first === null) first = d;
-      }
-    }
+    let area: NodeImpl | null;
+    if (isDialog && isSequentiallyFocusable(n)) area = n;
+    else if (!isDialog && isFocusable(n)) area = n;
+    else area = getFocusableArea(n);
+    if (area !== null) return area;
   }
-  return first;
+  return null;
 }
 
 // --- focusing / unfocusing ----------------------------------------------------------------
@@ -202,11 +218,15 @@ let focusVisibleFlag = true;
  */
 export function focusElement(impl: NodeImpl, options?: FocusElementOptions): boolean {
   let target = impl;
-  // 1. Not a focusable area: shadow hosts with delegatesFocus forward to their delegate.
-  if (!isFocusable(target)) {
-    const shadow = shadowRootOf(target);
-    if (shadow === null || !shadow.delegatesFocus || (target.flags & F_CONNECTED) === 0) return false;
-    const d = focusDelegate(target);
+  // 1-2. Not a focusable area: get the focusable area (shadow hosts with delegatesFocus forward
+  // to their delegate). A rendered <dialog> can always be focused by the focusing steps
+  // (https://github.com/whatwg/html/pull/8199; browsers and WPT agree), though it is not
+  // sequentially focusable.
+  if (target.tag === T.dialog && target.ns === HTML_NS && !isFocusable(target)) {
+    if ((target.flags & F_CONNECTED) === 0 || isInert(target) || isRenderingHidden(target)) return false;
+  } else if (!isFocusable(target)) {
+    if ((target.flags & F_CONNECTED) === 0) return false;
+    const d = getFocusableArea(target);
     if (d === null) return false;
     target = d;
   } else {
@@ -424,13 +444,30 @@ function appendOne(n: NodeImpl, out: Element[]): void {
   if (Number.isNaN(t) || t >= 0) appendScope(shadow[$impl], out);
 }
 
-/** https://html.spec.whatwg.org/#autofocus-delegate — first focusable descendant with `autofocus`. */
+/** https://html.spec.whatwg.org/#autofocus-delegate (focus trigger "other"). */
 export function autofocusDelegate(root: NodeImpl): NodeImpl | null {
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
-    if (n.type === ELEMENT_NODE && contentAttr(n, "autofocus") !== null && isFocusable(n)) return n;
+    if (n.type !== ELEMENT_NODE || contentAttr(n, "autofocus") === null) continue;
+    const area = isFocusable(n) ? n : getFocusableArea(n);
+    if (area !== null) return area;
   }
   return null;
 }
+
+/**
+ * The focus fixup step of https://html.spec.whatwg.org/#update-the-rendering: a focused element
+ * that stopped being a focusable area (inert, disabled, hidden) loses focus to the viewport,
+ * with blur/focusout, on the next animation frame. (Removal is handled synchronously by the
+ * node layer, without events.)
+ */
+function focusFixup(doc: Document): void {
+  const focused = doc[$focused];
+  if (focused === null || isFocusable(focused)) return;
+  if (focused.tag === T.dialog && focused.ns === HTML_NS && (focused.flags & F_CONNECTED) !== 0 && !isInert(focused) && !isRenderingHidden(focused)) return;
+  runFocusUpdate(doc, focused, null);
+}
+
+setRenderingUpdateHook(focusFixup as (doc: unknown) => void);
 
 setTopLayerFocusHooks((el) => {
   focusElement(el);

@@ -3,6 +3,7 @@
 import { ELEMENT_NODE, HTML_NS } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { contentAttr } from "./reflect.ts";
+import { asciiLowercase } from "../nodes/attributes.ts";
 import { isDisplayNone, isDisplayNoneInclusive } from "../css/internal.ts";
 
 // --- rendering ----------------------------------------------------------------------------
@@ -32,7 +33,7 @@ const CE_PLAINTEXT = 2;
 export function contentEditableState(impl: NodeImpl): number {
   const v = contentAttr(impl, "contenteditable");
   if (v === null) return CE_INHERIT;
-  switch (v.toLowerCase()) {
+  switch (asciiLowercase(v)) {
     case "":
     case "true":
       return CE_TRUE;

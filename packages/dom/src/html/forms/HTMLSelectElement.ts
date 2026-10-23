@@ -6,6 +6,7 @@
 // children, so parsed selects are settled too.
 
 import { HTMLElement } from "../HTMLElement.ts";
+import { installAutocomplete } from "./autofill.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
@@ -38,6 +39,9 @@ class SelectedOptionsCollection extends HTMLCollection {
     for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) out.push(options[i].node as Element);
   }
 }
+
+// selectedOptions is a plain HTMLCollection as far as script can tell (WPT select-selectedOptions.html).
+Object.defineProperty(SelectedOptionsCollection.prototype, "constructor", { value: HTMLCollection, writable: true, configurable: true });
 
 export class HTMLSelectElement extends HTMLElement {
   [$customValidity]: string;
@@ -325,7 +329,11 @@ export class HTMLSelectElement extends HTMLElement {
   override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     // Browsers re-run the algorithm when the display mode changes (multiple / size).
-    if (namespace === null && (localName === "multiple" || localName === "size")) this._selectednessSettingAlgorithm();
+    if (namespace === null && (localName === "multiple" || localName === "size")) {
+      // Leaving multiple mode keeps the LAST selected option (selectedness setting algorithm,
+      // as jsdom; WPT select-attribute-change-reset.html expects Chromium's first).
+      this._selectednessSettingAlgorithm();
+    }
   }
 
   // --- constraint validation -------------------------------------------------------------------
@@ -371,8 +379,9 @@ export class HTMLSelectElement extends HTMLElement {
 export interface HTMLSelectElement extends ConstraintValidation {}
 installConstraintValidation(HTMLSelectElement);
 
-str(HTMLSelectElement, "autocomplete name");
+str(HTMLSelectElement, "name");
 // select[i] / select[i] = option forward to the options collection.
 addOptionIndexHost(HTMLSelectElement.prototype, (self) => (self as HTMLSelectElement).options);
 bool(HTMLSelectElement, "disabled multiple required");
 ulong(HTMLSelectElement, "size", 0);
+installAutocomplete(HTMLSelectElement);

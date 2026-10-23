@@ -5,7 +5,7 @@
 // allocation-free for the common already-lowercase keywords.
 
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
-import { attr } from "../../nodes/attributes.ts";
+import { asciiLowercase, attr } from "../../nodes/attributes.ts";
 
 export const I_HIDDEN = 0;
 export const I_TEXT = 1;
@@ -45,7 +45,9 @@ export function inputTypeFromAttr(value: string | null): number {
   if (value === null) return I_TEXT;
   const id = TYPE_IDS.get(value);
   if (id !== undefined) return id;
-  return TYPE_IDS.get(value.toLowerCase()) ?? I_TEXT;
+  // Keywords match ASCII case-insensitively (https://infra.spec.whatwg.org/#ascii-case-insensitive):
+  // "weeK" with U+212A KELVIN SIGN is not "week" (String#toLowerCase would fold it to "k").
+  return TYPE_IDS.get(asciiLowercase(value)) ?? I_TEXT;
 }
 
 /** The input element's current type state. */
