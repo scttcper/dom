@@ -242,7 +242,8 @@ export function focusElement(impl: NodeImpl, options?: FocusElementOptions): boo
   const doc = target.doc;
   // Nested documents: the focus chain includes the container <iframe> in each ancestor
   // document, so those become the focused areas of their documents first (outermost first,
-  // as the focus update steps fire focus events in reverse new-chain order).
+  // as the focus update steps fire focus events in reverse new-chain order). Like jsdom, the
+  // container gets no focus/focusin events (docs/deviations.md).
   focusContainerChain(doc);
   const old = doc[$focused];
   // 2. Already focused.
@@ -272,7 +273,7 @@ function focusContainerChain(doc: Document): void {
   if (frame === null || (frame.flags & F_CONNECTED) === 0) return;
   const parentDoc = frame.doc;
   focusContainerChain(parentDoc);
-  if (parentDoc[$focused] !== frame) runFocusUpdate(parentDoc, parentDoc[$focused], frame);
+  if (parentDoc[$focused] !== frame) runFocusUpdate(parentDoc, parentDoc[$focused], frame, false);
 }
 
 /** https://html.spec.whatwg.org/#unfocusing-steps */
@@ -285,8 +286,11 @@ export function blurElement(impl: NodeImpl): void {
   runFocusUpdate(doc, focused, null);
 }
 
-/** https://html.spec.whatwg.org/#focus-update-steps (single document). */
-function runFocusUpdate(doc: Document, old: NodeImpl | null, next: NodeImpl | null): void {
+/**
+ * https://html.spec.whatwg.org/#focus-update-steps (single document). `fireFocus` false skips
+ * the focus/focusin events at `next` (a container entering the focus chain, as in jsdom).
+ */
+function runFocusUpdate(doc: Document, old: NodeImpl | null, next: NodeImpl | null, fireFocus = true): void {
   const view = doc[$window];
   if (old !== null) {
     // Leaving a container: the focused element of its nested document is unfocused first
@@ -304,6 +308,7 @@ function runFocusUpdate(doc: Document, old: NodeImpl | null, next: NodeImpl | nu
   if (next === null) return;
   if ((next.flags & F_CONNECTED) === 0) return;
   doc[$focused] = next;
+  if (!fireFocus) return;
   const nextNode = next.node as Element;
   const related = old === null ? null : (old.node as Element);
   fireFocusEvent(nextNode, "focus", related, false, view);

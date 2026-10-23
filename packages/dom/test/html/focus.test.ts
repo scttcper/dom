@@ -308,18 +308,22 @@ describe("focus in nested documents — https://html.spec.whatwg.org/#focus-chai
     return { frame, inner, outer: doc.getElementById("outer") };
   }
 
-  test("focusing an element in an iframe makes the iframe the parent document's active element", () => {
+  // Deviation (docs/deviations.md): the container gets no focus/focusin events, like jsdom (26 and
+  // later); React Aria's useFocusVisible treats an unannounced focus as virtual modality.
+  test("focusing an element in an iframe makes the iframe the parent document's active element (no focus events at the iframe)", () => {
     const { frame, inner, outer } = setup();
     outer.focus();
     const log: string[] = [];
     outer.addEventListener("blur", () => log.push("outer blur"));
     frame.addEventListener("focus", () => log.push("iframe focus"));
+    frame.addEventListener("focusin", () => log.push("iframe focusin"));
+    doc.addEventListener("focus", (e: Event) => log.push(`parent capture focus ${(e.target as Element).id}`), true);
     inner.getElementById("a").addEventListener("focus", () => log.push("a focus"));
     inner.getElementById("a").focus();
     expect(inner.activeElement.id).toBe("a");
     expect(doc.activeElement).toBe(frame);
     expect(inner.defaultView.frameElement).toBe(frame);
-    expect(log).toEqual(["outer blur", "iframe focus", "a focus"]);
+    expect(log).toEqual(["outer blur", "a focus"]);
   });
 
   test("moving focus back to the parent document unfocuses the nested document first", () => {
