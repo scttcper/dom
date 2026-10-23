@@ -133,16 +133,34 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#concept-form-
     expect(() => $("f").requestSubmit($("o"))).toThrow(expect.objectContaining({ name: "NotFoundError" }));
   });
 
-  test("an invalid form fires invalid events and no submit; novalidate skips validation", () => {
+  // Deviation (docs/deviations.md): "report the problems" moves no focus, like jsdom/happy-dom.
+  test("an invalid form fires invalid events and no submit (focus stays put); novalidate skips validation", () => {
     document.body!.innerHTML = "<form id=f><input id=i required></form>";
     const events: string[] = [];
     $("i").addEventListener("invalid", () => events.push("invalid"));
     $("f").addEventListener("submit", () => events.push("submit"));
     $("f").requestSubmit();
     expect(events).toEqual(["invalid"]);
+    expect($("i").matches(":focus")).toBe(false);
     $("f").noValidate = true;
     $("f").requestSubmit();
     expect(events).toEqual(["invalid", "submit"]);
+  });
+
+  // https://html.spec.whatwg.org/#statically-validate-the-constraints steps 3-6: the result is
+  // negative whenever an invalid control exists; canceling `invalid` only keeps it out of the
+  // "unhandled" list (no problem report). React Aria's useFormValidation cancels it.
+  test("canceling every invalid event still blocks submission and checkValidity() stays false", () => {
+    document.body!.innerHTML = "<form id=f><input id=i required></form>";
+    const events: string[] = [];
+    $("i").addEventListener("invalid", (e: Event) => (e.preventDefault(), events.push("invalid")));
+    $("f").addEventListener("submit", () => events.push("submit"));
+    $("f").requestSubmit();
+    expect(events).toEqual(["invalid"]);
+    expect($("i").matches(":focus")).toBe(false);
+    expect($("f").checkValidity()).toBe(false);
+    expect($("f").reportValidity()).toBe(false);
+    expect(events).toEqual(["invalid", "invalid", "invalid"]);
   });
 
   test("submit() fires no events; disconnected forms never submit", () => {

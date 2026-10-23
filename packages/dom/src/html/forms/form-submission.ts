@@ -97,15 +97,23 @@ export function defaultButton(form: NodeImpl): NodeImpl | null {
   return null;
 }
 
-/** Static constraint validation: returns the invalid controls (after firing `invalid` on each). */
-export function staticallyValidate(form: NodeImpl): NodeImpl[] {
+/**
+ * https://html.spec.whatwg.org/#statically-validate-the-constraints — null for a positive result;
+ * otherwise (negative) the unhandled invalid controls, those whose `invalid` event was not
+ * canceled. Canceling every `invalid` event still makes the result negative.
+ */
+export function staticallyValidate(form: NodeImpl): NodeImpl[] | null {
   const controls = (form.node as unknown as FormLike)._controls();
+  // Steps 1-2: the invalid controls.
   const invalid: NodeImpl[] = [];
   for (let i = 0; i < controls.length; i++) {
     const c = controls[i];
     if (!isSubmittable(c)) continue;
     if (isInvalidCandidate(validatableOf(c))) invalid.push(c);
   }
+  // Step 3.
+  if (invalid.length === 0) return null;
+  // Steps 4-6.
   const unhandled: NodeImpl[] = [];
   for (let i = 0; i < invalid.length; i++) {
     if (fireEvent(invalid[i].node, "invalid", false, true)) unhandled.push(invalid[i]);
@@ -115,7 +123,7 @@ export function staticallyValidate(form: NodeImpl): NodeImpl[] {
 
 /** https://html.spec.whatwg.org/#dom-form-checkvalidity */
 export function formCheckValidity(form: NodeImpl): boolean {
-  return staticallyValidate(form).length === 0;
+  return staticallyValidate(form) === null;
 }
 
 /**
@@ -137,13 +145,10 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
       const noValidate =
         submitter !== form && attr(submitter, "formnovalidate") !== null ? true : attr(form, "novalidate") !== null;
       if (!noValidate) {
-        const unhandled = staticallyValidate(form);
-        if (unhandled.length !== 0) {
-          // "Report the problems": focus the first invalid control.
-          const first = unhandled[0].node as unknown as { focus?: () => void };
-          first.focus?.();
-          return;
-        }
+        // https://html.spec.whatwg.org/#interactively-validate-the-constraints — step 3 ("report
+        // the problems", where browsers focus the first unhandled invalid control) does nothing,
+        // like jsdom and happy-dom: focus stays on the submitter (docs/deviations.md).
+        if (staticallyValidate(form) !== null) return;
       }
       // 6.5–6.7: fire submit (SubmitEvent) with submitter (null when the form submits itself).
       const event = new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitter === form ? null : submitter.node });
