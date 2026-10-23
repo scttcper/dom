@@ -47,22 +47,6 @@ export abstract class CharacterData extends Node {
     return this[$impl].data.length;
   }
 
-  override get nodeValue(): string {
-    return this[$impl].data;
-  }
-
-  override set nodeValue(value: string | null) {
-    this.data = value ?? "";
-  }
-
-  override get textContent(): string {
-    return this[$impl].data;
-  }
-
-  override set textContent(value: string | null) {
-    this.data = value ?? "";
-  }
-
   substringData(offset: number, count: number): string {
     if (arguments.length < 2) arity("substringData", 2, arguments.length);
     const data = this[$impl].data;
@@ -103,10 +87,6 @@ export class Text extends CharacterData {
     this[$impl].data = String(data);
   }
 
-  override get nodeName(): string {
-    return "#text";
-  }
-
   /** https://dom.spec.whatwg.org/#dom-text-splittext */
   splitText(offset: number): Text {
     return splitText(this[$impl], Number(offset) >>> 0).node as Text;
@@ -138,20 +118,12 @@ export class CDATASection extends Text {
     super(data, doc);
     this[$impl].type = CDATA_SECTION_NODE;
   }
-
-  override get nodeName(): string {
-    return "#cdata-section";
-  }
 }
 
 export class Comment extends CharacterData {
   constructor(data = "", doc?: Document) {
     super(COMMENT_NODE, nodeDocumentFor(doc));
     this[$impl].data = String(data);
-  }
-
-  override get nodeName(): string {
-    return "#comment";
   }
 }
 
@@ -163,10 +135,6 @@ export class ProcessingInstruction extends CharacterData {
   }
 
   get target(): string {
-    return this[$impl].name;
-  }
-
-  override get nodeName(): string {
     return this[$impl].name;
   }
 }

@@ -20,6 +20,7 @@ import {
   ENTITY_NODE,
   ENTITY_REFERENCE_NODE,
   F_CONNECTED,
+  F_HTML,
   F_SHADOW_ROOT,
   NOTATION_NODE,
   PROCESSING_INSTRUCTION_NODE,
@@ -41,7 +42,9 @@ import { liveRangeCount, rangesNormalizeMerge } from "../traversal/live.ts";
 import { nodeGetTheParent } from "../events/dispatch.ts";
 import { inspectNode } from "./inspect.ts";
 import { XML_NS, XMLNS_NS } from "./constants.ts";
-import { $childNodes, $host, $impl } from "../keys.ts";
+import { $childNodes, $host, $impl, $owner, $record } from "../keys.ts";
+import { changeAttribute } from "./attributes.ts";
+import type { AttrRecord } from "./NodeImpl.ts";
 
 export abstract class Node extends EventTarget {
   static readonly ELEMENT_NODE = ELEMENT_NODE;
@@ -97,7 +100,35 @@ export abstract class Node extends EventTarget {
     return this[$impl].type;
   }
 
-  abstract get nodeName(): string;
+  /**
+   * https://dom.spec.whatwg.org/#dom-node-nodename
+   *
+   * One accessor on Node.prototype for every node type, as WebIDL puts it
+   * (https://webidl.spec.whatwg.org/#es-attributes): libraries such as DOMPurify capture
+   * `Object.getOwnPropertyDescriptor(Node.prototype, "nodeName").get` and call it on any node.
+   */
+  get nodeName(): string {
+    const impl = this[$impl];
+    switch (impl.type) {
+      case ELEMENT_NODE:
+        return htmlUppercasedQualifiedName(impl);
+      case TEXT_NODE:
+        return "#text";
+      case COMMENT_NODE:
+        return "#comment";
+      case ATTRIBUTE_NODE:
+        return impl.prefix === null ? impl.name : impl.prefix + ":" + impl.name;
+      case CDATA_SECTION_NODE:
+        return "#cdata-section";
+      case DOCUMENT_NODE:
+        return "#document";
+      case DOCUMENT_FRAGMENT_NODE:
+        return "#document-fragment";
+      default:
+        // ProcessingInstruction: its target; DocumentType: its name.
+        return impl.name;
+    }
+  }
 
   get baseURI(): string {
     return this[$impl].doc.baseURI;
@@ -165,17 +196,76 @@ export abstract class Node extends EventTarget {
 
   /** https://dom.spec.whatwg.org/#dom-node-nodevalue */
   get nodeValue(): string | null {
-    return null;
+    const impl = this[$impl];
+    switch (impl.type) {
+      case ATTRIBUTE_NODE:
+        return attrValue(this);
+      case TEXT_NODE:
+      case CDATA_SECTION_NODE:
+      case PROCESSING_INSTRUCTION_NODE:
+      case COMMENT_NODE:
+        return impl.data;
+      default:
+        return null;
+    }
   }
 
-  set nodeValue(_value: string | null) {}
+  /** https://dom.spec.whatwg.org/#dom-node-nodevalue (setter: null is treated as "") */
+  set nodeValue(value: string | null) {
+    const impl = this[$impl];
+    switch (impl.type) {
+      case ATTRIBUTE_NODE:
+        setAttrValue(this, value === null || value === undefined ? "" : String(value));
+        return;
+      case TEXT_NODE:
+      case CDATA_SECTION_NODE:
+      case PROCESSING_INSTRUCTION_NODE:
+      case COMMENT_NODE:
+        replaceData(impl, 0, impl.data.length, value === null || value === undefined ? "" : String(value));
+        return;
+    }
+  }
 
-  /** https://dom.spec.whatwg.org/#dom-node-textcontent */
+  /** https://dom.spec.whatwg.org/#dom-node-textcontent (get text content) */
   get textContent(): string | null {
-    return null;
+    const impl = this[$impl];
+    switch (impl.type) {
+      case ELEMENT_NODE:
+      case DOCUMENT_FRAGMENT_NODE:
+        return descendantTextContent(impl);
+      case TEXT_NODE:
+      case CDATA_SECTION_NODE:
+      case PROCESSING_INSTRUCTION_NODE:
+      case COMMENT_NODE:
+        return impl.data;
+      case ATTRIBUTE_NODE:
+        return attrValue(this);
+      default:
+        return null;
+    }
   }
 
-  set textContent(_value: string | null) {}
+  /** https://dom.spec.whatwg.org/#dom-node-textcontent (set text content; null is treated as "") */
+  set textContent(value: string | null) {
+    const impl = this[$impl];
+    const v = value === null || value === undefined ? "" : String(value);
+    switch (impl.type) {
+      case ELEMENT_NODE:
+      case DOCUMENT_FRAGMENT_NODE:
+        // https://dom.spec.whatwg.org/#string-replace-all
+        replaceAll(v === "" ? null : impl.doc.createTextNode(v)[$impl], impl);
+        return;
+      case TEXT_NODE:
+      case CDATA_SECTION_NODE:
+      case PROCESSING_INSTRUCTION_NODE:
+      case COMMENT_NODE:
+        replaceData(impl, 0, impl.data.length, v);
+        return;
+      case ATTRIBUTE_NODE:
+        setAttrValue(this, v);
+        return;
+    }
+  }
 
   /** https://dom.spec.whatwg.org/#dom-node-normalize */
   normalize(): void {
@@ -335,7 +425,6 @@ export abstract class Node extends EventTarget {
   }
 }
 
-/** Next node in tree order within root after `n` and its subtree. */
 // https://webidl.spec.whatwg.org/#es-constants — constants live on the interface object AND its prototype.
 for (const key of Object.getOwnPropertyNames(Node)) {
   if (/^[A-Z_]+$/.test(key)) {
@@ -343,6 +432,7 @@ for (const key of Object.getOwnPropertyNames(Node)) {
   }
 }
 
+/** Next node in tree order within root after `n` and its subtree. */
 function nextSkippingSelf(n: NodeImpl, root: NodeImpl): NodeImpl | null {
   let cur: NodeImpl | null = n;
   while (cur !== null && cur !== root) {
@@ -451,4 +541,63 @@ function stableOrder(a: NodeImpl, b: NodeImpl): boolean {
   let ob = order.get(b);
   if (ob === undefined) order.set(b, (ob = nextOrder++));
   return oa < ob;
+}
+
+/** Concatenation of the data of all Text descendants, in tree order (https://dom.spec.whatwg.org/#concept-descendant-text-content). */
+export function descendantTextContent(root: NodeImpl): string {
+  let s = "";
+  for (let n = root.first; n !== null; n = nextInTree(n, root)) {
+    if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
+  }
+  return s;
+}
+
+type AttrWrapper = { [$record]: AttrRecord | null; [$owner]: Element | null };
+
+/** An Attr's value: its record's value while attached, else its own (https://dom.spec.whatwg.org/#concept-attribute-value). */
+export function attrValue(attr: Node): string {
+  const r = (attr as unknown as AttrWrapper)[$record];
+  return r === null ? attr[$impl].data : r.value;
+}
+
+/** https://dom.spec.whatwg.org/#set-an-existing-attribute-value */
+export function setAttrValue(attr: Node, value: string): void {
+  const r = (attr as unknown as AttrWrapper)[$record];
+  const owner = (attr as unknown as AttrWrapper)[$owner];
+  if (r === null || owner === null) attr[$impl].data = value;
+  else changeAttribute(owner[$impl], r, value);
+}
+
+const upperNames = new Map<string, string>();
+
+/** https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name (Element.tagName / nodeName) */
+export function htmlUppercasedQualifiedName(impl: NodeImpl): string {
+  if (impl.prefix === null) {
+    if ((impl.flags & F_HTML) === 0) return impl.name;
+    let upper = upperNames.get(impl.name);
+    if (upper === undefined) {
+      // Bounded: generated custom element names would otherwise grow it for the whole process.
+      if (upperNames.size >= 1024) upperNames.clear();
+      upperNames.set(impl.name, (upper = asciiUppercase(impl.name)));
+    }
+    return upper;
+  }
+  const qualified = impl.prefix + ":" + impl.name;
+  return (impl.flags & F_HTML) !== 0 ? asciiUppercase(qualified) : qualified;
+}
+
+/** https://infra.spec.whatwg.org/#ascii-uppercase */
+function asciiUppercase(s: string): string {
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c >= 0x80) {
+      for (let j = 0; j < s.length; j++) {
+        const d = s.charCodeAt(j);
+        out += d >= 97 && d <= 122 ? String.fromCharCode(d - 32) : s[j];
+      }
+      return out;
+    }
+  }
+  return s.toUpperCase();
 }

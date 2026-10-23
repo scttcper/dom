@@ -1,5 +1,5 @@
 /**
- * document.open / write / writeln / close and getAnimations().
+ * document.open / write / writeln / close, and the absence of getAnimations().
  *
  * Specs:
  *   - HTML §8.4 Dynamic markup insertion: https://html.spec.whatwg.org/#dynamic-markup-insertion
@@ -7,6 +7,7 @@
  *      document.write: https://html.spec.whatwg.org/#dom-document-write,
  *      document.close: https://html.spec.whatwg.org/#dom-document-close)
  *   - Web Animations: https://drafts.csswg.org/web-animations-1/#dom-animatable-getanimations
+ *     (deliberately not implemented, like jsdom: docs/deviations.md "Animations")
  *
  * There is no script-inserted parser here (scripts never run), so write() re-parses the markup
  * written since open() synchronously; see docs/deviations.md. Libraries and tests use this to
@@ -68,9 +69,14 @@ describe("document.write — https://html.spec.whatwg.org/#dom-document-write", 
 });
 
 describe("getAnimations — https://drafts.csswg.org/web-animations-1/#dom-animatable-getanimations", () => {
-  test("elements and documents report no running animations (no animation engine)", () => {
-    document.body!.innerHTML = "<div><span></span></div>";
-    expect(document.body!.getAnimations({ subtree: true })).toEqual([]);
-    expect(document.getAnimations()).toEqual([]);
+  // jsdom has no Web Animations either. Libraries feature-probe `typeof el.getAnimations`
+  // (React Aria's useDisclosure hides a collapsing panel synchronously only when it is absent),
+  // so a stub returning [] changes their timing (downstream/sentry TRIAGE.md cluster 8).
+  test("Element, Document and ShadowRoot do not expose getAnimations (no animation engine, jsdom parity)", () => {
+    const el = document.createElement("div") as unknown as Record<string, unknown>;
+    expect(typeof el.getAnimations).toBe("undefined");
+    expect("getAnimations" in document).toBe(false);
+    const root = (document.createElement("div") as unknown as { attachShadow(init: { mode: string }): object }).attachShadow({ mode: "open" });
+    expect("getAnimations" in root).toBe(false);
   });
 });

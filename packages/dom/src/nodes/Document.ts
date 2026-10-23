@@ -120,16 +120,6 @@ export class Document extends Node {
     return doc;
   }
 
-  override get nodeName(): string {
-    return "#document";
-  }
-
-  override get textContent(): null {
-    return null;
-  }
-
-  override set textContent(_value: string | null) {}
-
   // --- id index ---------------------------------------------------------------------------
 
   /** @internal */
@@ -456,11 +446,6 @@ export class Document extends Node {
   close(): void {
     if (!this[$isHTML]) throw new DOMException("Only HTML documents can be closed.", "InvalidStateError");
     this[$writeBuffer] = null;
-  }
-
-  /** https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations — no animation engine, so none run. */
-  getAnimations(): unknown[] {
-    return [];
   }
 
   /** @internal Clone steps for Document nodes (cloneNode on a document). */

@@ -750,8 +750,7 @@
   "baseline-shift: .1em",
   "border-spacing: .1em",
   "content: counter(par-num, decimal)",
-  "font-family: 'Lucida Grande'",
-  "list-style-image: url(http://localhost/)"
+  "font-family: 'Lucida Grande'"
  ],
  "css/cssom/shorthand-values.html": [
   "The serialization of overflow-x: scroll; overflow-y: hidden; should be canonical.",

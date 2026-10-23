@@ -127,10 +127,6 @@ export class ShadowRoot extends DocumentFragment {
   elementsFromPoint(_x: number, _y: number): Element[] {
     return [];
   }
-
-  getAnimations(): unknown[] {
-    return [];
-  }
 }
 
 Object.defineProperty(ShadowRoot.prototype, Symbol.toStringTag, { value: "ShadowRoot", configurable: true });

@@ -7,11 +7,9 @@ import {
   F_HAS_SHADOW,
   F_HTML,
   HTML_NS,
-  TEXT_NODE,
-  CDATA_SECTION_NODE,
 } from "./constants.ts";
 import type { Document } from "./Document.ts";
-import { Node } from "./Node.ts";
+import { htmlUppercasedQualifiedName, Node } from "./Node.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import { tagId } from "./tags.ts";
 import {
@@ -28,7 +26,6 @@ import {
   attr,
 } from "./attributes.ts";
 import { AttrRecord } from "./NodeImpl.ts";
-import { nextInTree, nextElementInTree } from "./traverse.ts";
 import {
   installChildNode,
   installNonDocumentTypeChildNode,
@@ -94,10 +91,6 @@ export class Element extends Node {
     this[$attributes] = null;
   }
 
-  override get nodeName(): string {
-    return this.tagName;
-  }
-
   get namespaceURI(): string | null {
     return this[$impl].ns;
   }
@@ -111,20 +104,9 @@ export class Element extends Node {
   }
 
   /** https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name */
+  /** https://dom.spec.whatwg.org/#dom-element-tagname */
   get tagName(): string {
-    const impl = this[$impl];
-    if (impl.prefix === null) {
-      if ((impl.flags & F_HTML) === 0) return impl.name;
-      let upper = upperNames.get(impl.name);
-      if (upper === undefined) {
-        // Bounded: generated custom element names would otherwise grow it for the whole process.
-        if (upperNames.size >= 1024) upperNames.clear();
-        upperNames.set(impl.name, (upper = asciiUppercase(impl.name)));
-      }
-      return upper;
-    }
-    const qualified = impl.prefix + ":" + impl.name;
-    return (impl.flags & F_HTML) !== 0 ? asciiUppercase(qualified) : qualified;
+    return htmlUppercasedQualifiedName(this[$impl]);
   }
 
   get id(): string {
@@ -185,21 +167,6 @@ export class Element extends Node {
     const existing = findAttributeByNamespace(impl, null, "slot");
     if (existing === null) appendAttribute(impl, new AttrRecord("slot", v, null, null));
     else changeAttribute(impl, existing, v);
-  }
-
-  override get textContent(): string {
-    // Concatenation of the data of all Text descendants, in tree order.
-    const root = this[$impl];
-    let s = "";
-    for (let n = root.first; n !== null; n = nextInTree(n, root)) {
-      if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
-    }
-    return s;
-  }
-
-  override set textContent(value: string | null) {
-    const v = value === null || value === undefined ? "" : String(value);
-    this._replaceAll(v === "" ? null : this[$impl].doc.createTextNode(v));
   }
 
   // --- attributes -------------------------------------------------------------------------
@@ -420,11 +387,6 @@ export class Element extends Node {
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-attachshadow */
-  /** https://drafts.csswg.org/web-animations-1/#dom-animatable-getanimations — no animation engine, so none run. */
-  getAnimations(_options?: { subtree?: boolean }): unknown[] {
-    return [];
-  }
-
   attachShadow(init: ShadowRootInit): ShadowRoot {
     if (init === null || typeof init !== "object") {
       throw new TypeError("Failed to execute 'attachShadow' on 'Element': 1 argument required, but only 0 present.");
@@ -541,23 +503,6 @@ function insertAdjacent(element: Element, where: string, node: Node): Node | nul
   throw new DOMException(`"${where}" is not a valid position.`, "SyntaxError");
 }
 
-const upperNames = new Map<string, string>();
-
-/** https://infra.spec.whatwg.org/#ascii-uppercase */
-function asciiUppercase(s: string): string {
-  let out = "";
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c >= 0x80) {
-      for (let j = 0; j < s.length; j++) {
-        const d = s.charCodeAt(j);
-        out += d >= 97 && d <= 122 ? String.fromCharCode(d - 32) : s[j];
-      }
-      return out;
-    }
-  }
-  return s.toUpperCase();
-}
 const partLists = new WeakMap<Element, DOMTokenList>();
 
 /** Shadow host names: https://dom.spec.whatwg.org/#valid-shadow-host-name */

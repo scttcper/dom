@@ -6,9 +6,8 @@
 import { ATTRIBUTE_NODE } from "./constants.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
-import { Node } from "./Node.ts";
+import { attrValue, Node, setAttrValue } from "./Node.ts";
 import type { AttrRecord } from "./NodeImpl.ts";
-import { changeAttribute } from "./attributes.ts";
 import { $impl, $owner, $record } from "../keys.ts";
 
 export class Attr extends Node {
@@ -45,36 +44,13 @@ export class Attr extends Node {
     return impl.prefix === null ? impl.name : impl.prefix + ":" + impl.name;
   }
 
-  override get nodeName(): string {
-    return this.name;
-  }
-
+  /** https://dom.spec.whatwg.org/#dom-attr-value */
   get value(): string {
-    const r = this[$record];
-    return r === null ? this[$impl].data : r.value;
+    return attrValue(this);
   }
 
   set value(value: string) {
-    const v = String(value);
-    const r = this[$record];
-    if (r === null || this[$owner] === null) this[$impl].data = v;
-    else changeAttribute(this[$owner][$impl], r, v);
-  }
-
-  override get nodeValue(): string {
-    return this.value;
-  }
-
-  override set nodeValue(value: string | null) {
-    this.value = value ?? "";
-  }
-
-  override get textContent(): string {
-    return this.value;
-  }
-
-  override set textContent(value: string | null) {
-    this.value = value ?? "";
+    setAttrValue(this, String(value));
   }
 
   get ownerElement(): Element | null {

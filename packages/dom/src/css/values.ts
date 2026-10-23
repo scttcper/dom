@@ -388,11 +388,112 @@ export function normalizeComponent(c: Comp, g: Grammar): string | null {
         const color = normalizeColor(c.text);
         if (color !== null) return color;
       }
-      if (g.fns.has(name)) return c.text;
+      if (g.fns.has(name)) return GRADIENT_FUNCTIONS.has(name) ? normalizeGradient(c) : c.text;
       return null;
     }
   }
   return null;
+}
+
+// --- gradients ----------------------------------------------------------------------------
+
+const GRADIENT_FUNCTIONS = new Set([
+  "linear-gradient", "radial-gradient", "conic-gradient", "repeating-linear-gradient", "repeating-radial-gradient", "repeating-conic-gradient",
+]);
+
+/**
+ * Specified-value serialization of a <gradient> (https://drafts.csswg.org/css-images-4/#gradients,
+ * https://drafts.csswg.org/cssom/#serialize-a-css-component-value): function name, keywords and
+ * units lower-cased, color stops serialized as colors, arguments joined with ", ", and the
+ * default line / shape / position omitted (`to bottom`, `ellipse`, `farthest-corner`,
+ * `at center`) like jsdom. Returns null when the gradient has an empty argument or fewer than
+ * two color stops; other unrecognized arguments are kept as written.
+ */
+export function normalizeGradient(c: Comp): string | null {
+  const open = c.text.indexOf("(");
+  const comps = splitComponents(c.text.slice(open + 1, -1));
+  if (comps === null) return null;
+  const name = c.lower;
+  const linear = name.endsWith("linear-gradient");
+  const radial = name.endsWith("radial-gradient");
+  const conic = name.endsWith("conic-gradient");
+  const args: string[] = [];
+  let colorStops = 0;
+  let arg: string[] = [];
+  let argHasColor = false;
+  for (let i = 0; i <= comps.length; i++) {
+    const comp = i < comps.length ? comps[i] : null;
+    if (comp === null || comp.type === TK_COMMA) {
+      if (arg.length === 0) return null;
+      if (argHasColor) colorStops++;
+      // The gradient line / ending shape argument (the first one, when it has no color).
+      if (args.length === 0 && !argHasColor) {
+        const text = arg.join(" ");
+        if (linear && text === "to bottom") arg = [];
+        else if (radial || conic) {
+          if (arg.length >= 2 && arg[arg.length - 2] === "at" && arg[arg.length - 1] === "center") arg.length -= 2;
+          if (radial) arg = arg.filter((w) => w !== "ellipse" && w !== "farthest-corner");
+        }
+        if (arg.length !== 0) args.push(arg.join(" "));
+      } else args.push(arg.join(" "));
+      arg = [];
+      argHasColor = false;
+      continue;
+    }
+    if (comp.type === COMP_SPACE) continue;
+    let text: string | null = null;
+    if (comp.type === TK_HASH || comp.type === TK_IDENT || comp.type === TK_FUNCTION) {
+      text = normalizeColor(comp.text);
+      if (text !== null) argHasColor = true;
+    }
+    if (text === null) {
+      if (comp.type === TK_IDENT) text = comp.lower;
+      else if (comp.type === TK_DIMENSION) text = comp.text.toLowerCase();
+      else if (comp.type === TK_FUNCTION) text = comp.lower + comp.text.slice(comp.lower.length);
+      else text = comp.text;
+    }
+    arg.push(text);
+  }
+  if (colorStops < 2) return null;
+  return name + "(" + args.join(", ") + ")";
+}
+
+/** <paint> (fill, stroke; https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint): single values normalized like jsdom, the rest kept. */
+function normalizePaint(comps: Comp[]): string | null {
+  const sig = significant(comps);
+  if (sig.length !== 1) return verbatimComps(comps);
+  const c = sig[0];
+  switch (c.type) {
+    case TK_IDENT:
+      if (c.lower === "none" || c.lower === "context-fill" || c.lower === "context-stroke") return c.lower;
+      return normalizeColor(c.text);
+    case TK_URL:
+      return serializeUrl(c.value);
+    case TK_HASH:
+      return normalizeColor(c.text);
+    case TK_FUNCTION:
+      if (c.lower === "url") return normalizeComponent(c, URL_GRAMMAR);
+      return normalizeColor(c.text) ?? c.text;
+  }
+  return verbatimComps(comps);
+}
+
+/** <image> longhands without a validating grammar: a single url / gradient is normalized, the rest kept. */
+function normalizeImageLoose(comps: Comp[]): string | null {
+  const sig = significant(comps);
+  if (sig.length === 1) {
+    const c = sig[0];
+    if (c.type === TK_URL) return serializeUrl(c.value);
+    if (c.type === TK_IDENT) return c.lower === "none" ? "none" : c.text;
+    if (c.type === TK_FUNCTION && GRADIENT_FUNCTIONS.has(c.lower)) return normalizeGradient(c) ?? c.text;
+  }
+  return verbatimComps(comps);
+}
+
+function verbatimComps(comps: Comp[]): string {
+  let out = "";
+  for (const c of comps) out += c.text;
+  return out;
 }
 
 /** https://drafts.csswg.org/cssom/#serialize-a-string */
@@ -497,9 +598,17 @@ function normalizeContent(comps: Comp[]): string | null {
   return out === "" ? null : out;
 }
 
+const URL_GRAMMAR = new Grammar(G_URL, new Set(), new Set(), 1);
+
 const SPECIAL: Record<string, Special> = {
   display: normalizeDisplay,
   content: normalizeContent,
+  fill: normalizePaint,
+  stroke: normalizePaint,
+  "list-style-image": normalizeImageLoose,
+  "border-image-source": normalizeImageLoose,
+  "mask-image": normalizeImageLoose,
+  "-webkit-mask-image": normalizeImageLoose,
 };
 
 /**

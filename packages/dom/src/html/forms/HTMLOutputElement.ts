@@ -7,6 +7,7 @@ import { HTMLElement } from "../HTMLElement.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { HTMLCollection } from "../../collections/HTMLCollection.ts";
+import { descendantTextContent } from "../../nodes/Node.ts";
 import { T } from "../../nodes/tags.ts";
 import { contentAttr, parseFloatingPoint, str, tokenList } from "../reflect.ts";
 import { formOwner } from "./form-associated.ts";
@@ -49,7 +50,7 @@ export class HTMLOutputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-output-defaultvalue */
   get defaultValue(): string {
-    return this[$defaultValueOverride] ?? this.textContent;
+    return this[$defaultValueOverride] ?? descendantTextContent(this[$impl]);
   }
 
   set defaultValue(value: string) {
@@ -59,7 +60,7 @@ export class HTMLOutputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-output-value */
   get value(): string {
-    return this.textContent;
+    return descendantTextContent(this[$impl]);
   }
 
   set value(value: string) {

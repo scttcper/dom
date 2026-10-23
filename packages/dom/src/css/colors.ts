@@ -4,8 +4,13 @@
 //
 // Named / hex / rgb() / rgba() / hsl() / hsla() / hwb() are resolved to sRGB and serialized
 // as `rgb(r, g, b)` / `rgba(r, g, b, a)` like browsers (and jsdom) do for specified and
-// computed values. Other color functions (lab(), oklch(), color(), color-mix(), ...) are
-// kept verbatim as specified values.
+// computed values. lab() / lch() / oklab() / oklch() / color() keep their function but have
+// their channels canonicalized; color-mix() / light-dark() and relative colors (`rgb(from …)`)
+// serialize the colors nested in them the same way. Differentially matched against jsdom
+// (@asamuzakjp/css-color), which is what Sentry's / most suites' expectations were written on.
+
+import { COMP_SPACE, type Comp, formatNumber, splitComponents } from "./values.ts";
+import { TK_COMMA, TK_DELIM, TK_DIMENSION, TK_FUNCTION, TK_HASH, TK_IDENT, TK_NUMBER, TK_PERCENTAGE } from "./tokenizer.ts";
 
 /** https://drafts.csswg.org/css-color-4/#named-colors — packed 0xRRGGBB. */
 const NAMED: Record<string, number> = {
@@ -243,9 +248,276 @@ export function normalizeColor(text: string): string | null {
   }
   if (!s.endsWith(")")) return null;
   const name = s.slice(0, paren).toLowerCase();
-  if (OTHER_COLOR_FUNCTIONS.has(name)) return s;
-  const rgba = parseColorFunction(name, s.slice(paren + 1, -1));
+  const inner = s.slice(paren + 1, -1);
+  if (RELATIVE_RE.test(inner) && (LEGACY_FUNCTIONS.has(name) || CANONICAL_FUNCTIONS.has(name))) return normalizeRelativeColor(name, inner);
+  if (OTHER_COLOR_FUNCTIONS.has(name)) return normalizeOtherColorFunction(name, inner, s);
+  const rgba = parseColorFunction(name, inner);
   return rgba === null ? null : serializeRGBA(rgba);
+}
+
+// --- color functions other than the legacy sRGB ones ----------------------------------------
+
+const LEGACY_FUNCTIONS = new Set(["rgb", "rgba", "hsl", "hsla", "hwb"]);
+const CANONICAL_FUNCTIONS = new Set(["lab", "lch", "oklab", "oklch"]);
+const RELATIVE_RE = /^\s*from\s/i;
+const MATH_RE = /^(calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)\(/i;
+
+/**
+ * https://drafts.csswg.org/css-color-4/#color-syntax — reference ranges used to resolve
+ * percentages (100% = ref) for lab()/lch()/oklab()/oklch() channels.
+ * https://drafts.csswg.org/css-color-4/#specifying-lab-lch, #specifying-oklab-oklch
+ */
+const PERCENT_REF: Record<string, readonly number[]> = {
+  lab: [100, 125, 125],
+  lch: [100, 150, 0],
+  oklab: [1, 0.4, 0.4],
+  oklch: [1, 0.4, 0],
+};
+
+/** https://drafts.csswg.org/css-color-4/#predefined — `xyz` is an alias of `xyz-d65`. */
+const PREDEFINED_SPACES = new Set([
+  "srgb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb", "prophoto-rgb", "rec2020", "xyz", "xyz-d50", "xyz-d65",
+]);
+
+/** https://drafts.csswg.org/css-color-5/#color-mix — <color-interpolation-method> color spaces. */
+const POLAR_SPACES = new Set(["hsl", "hwb", "lch", "oklch"]);
+const RECTANGULAR_SPACES = new Set([
+  "srgb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb", "prophoto-rgb", "rec2020", "lab", "oklab", "xyz", "xyz-d50", "xyz-d65",
+]);
+const HUE_METHODS = new Set(["shorter", "longer", "increasing", "decreasing"]);
+
+/** Rounds to `digits` significant digits and serializes like a CSS <number>. */
+function roundSig(n: number, digits: number): string {
+  if (n === 0) return "0";
+  return formatNumber(Number(n.toPrecision(digits)));
+}
+
+/** https://drafts.csswg.org/css-color-4/#serializing-alpha-values (non-legacy functions keep 3 decimals) */
+function alphaText(c: Comp): string | null {
+  if (c.type === TK_IDENT) return c.lower === "none" ? "none" : null;
+  let a: number;
+  if (c.type === TK_NUMBER) a = c.num;
+  else if (c.type === TK_PERCENTAGE) a = c.num / 100;
+  else return null;
+  a = clamp(a, 0, 1);
+  return a === 1 ? "" : formatNumber(Math.round(a * 1000) / 1000);
+}
+
+/** Splits `comps` (spaces dropped) into channel components and an optional alpha after "/". */
+function channelsAndAlpha(comps: Comp[]): [Comp[], Comp | null] | null {
+  const channels: Comp[] = [];
+  let alpha: Comp | null = null;
+  let afterSlash = false;
+  for (let i = 0; i < comps.length; i++) {
+    const c = comps[i];
+    if (c.type === COMP_SPACE) continue;
+    if (c.type === TK_COMMA) return null;
+    if (c.type === TK_DELIM) {
+      if (c.value !== "/" || afterSlash) return null;
+      afterSlash = true;
+      continue;
+    }
+    if (afterSlash) {
+      if (alpha !== null) return null;
+      alpha = c;
+    } else channels.push(c);
+  }
+  if (afterSlash && alpha === null) return null;
+  return [channels, alpha];
+}
+
+function withAlpha(body: string, alpha: Comp | null): string | null {
+  if (alpha === null) return body + ")";
+  const a = alphaText(alpha);
+  if (a === null) return null;
+  return a === "" ? body + ")" : body + " / " + a + ")";
+}
+
+/**
+ * lab() / lch() / oklab() / oklch() specified-value serialization
+ * (https://drafts.csswg.org/css-color-4/#serializing-lab-lch, #serializing-oklab-oklch):
+ * percentages resolved against the reference ranges, lightness clamped, chroma clamped at 0,
+ * hue as <number> degrees in [0, 360), alpha omitted when 1.
+ */
+function normalizeCanonical(name: string, comps: Comp[]): string | null {
+  const parts = channelsAndAlpha(comps);
+  if (parts === null || parts[0].length !== 3) return null;
+  const [channels, alpha] = parts;
+  const ref = PERCENT_REF[name];
+  const polar = name === "lch" || name === "oklch";
+  const maxL = name === "lab" || name === "lch" ? 100 : 1;
+  let body = name + "(";
+  for (let i = 0; i < 3; i++) {
+    const c = channels[i];
+    let text: string;
+    if (c.type === TK_IDENT && c.lower === "none") text = "none";
+    else if (polar && i === 2) {
+      let h: number;
+      if (c.type === TK_NUMBER) h = c.num;
+      else if (c.type === TK_DIMENSION) {
+        const deg = parseHue(c.text);
+        if (deg === null) return null;
+        h = deg;
+      } else return null;
+      text = roundSig(((h % 360) + 360) % 360, 6);
+    } else {
+      let v: number;
+      if (c.type === TK_NUMBER) v = c.num;
+      else if (c.type === TK_PERCENTAGE) v = (c.num / 100) * ref[i];
+      else return null;
+      if (i === 0) v = clamp(v, 0, maxL);
+      else if (polar && i === 1 && v < 0) v = 0;
+      text = roundSig(v, 6);
+    }
+    body += (i === 0 ? "" : " ") + text;
+  }
+  return withAlpha(body, alpha);
+}
+
+/** color() specified-value serialization (https://drafts.csswg.org/css-color-4/#serializing-color-function-values). */
+function normalizeColorFn(comps: Comp[]): string | null {
+  let i = 0;
+  while (i < comps.length && comps[i].type === COMP_SPACE) i++;
+  const space = comps[i];
+  if (space === undefined || space.type !== TK_IDENT || !PREDEFINED_SPACES.has(space.lower)) return null;
+  const parts = channelsAndAlpha(comps.slice(i + 1));
+  if (parts === null || parts[0].length !== 3) return null;
+  const [channels, alpha] = parts;
+  let body = "color(" + (space.lower === "xyz" ? "xyz-d65" : space.lower);
+  for (const c of channels) {
+    if (c.type === TK_IDENT && c.lower === "none") body += " none";
+    else if (c.type === TK_NUMBER) body += " " + roundSig(c.num, 5);
+    else if (c.type === TK_PERCENTAGE) body += " " + roundSig(c.num / 100, 5);
+    else return null;
+  }
+  return withAlpha(body, alpha);
+}
+
+/** Splits component values on top-level commas into argument lists (spaces trimmed). */
+function commaArgs(comps: Comp[]): Comp[][] {
+  const args: Comp[][] = [[]];
+  for (const c of comps) {
+    if (c.type === TK_COMMA) args.push([]);
+    else if (c.type !== COMP_SPACE) args[args.length - 1].push(c);
+  }
+  return args;
+}
+
+/** A single component that is a <color>, serialized; null otherwise. */
+function colorComponent(c: Comp): string | null {
+  if (c.type === TK_HASH || c.type === TK_IDENT || c.type === TK_FUNCTION) return normalizeColor(c.text);
+  return null;
+}
+
+/**
+ * https://drafts.csswg.org/css-color-5/#color-mix and #serial-color-mix: the interpolation
+ * method lower-cased, both colors serialized, percentages normalized (a single 50% — or none —
+ * is omitted; a lone second percentage becomes the first's complement), both 0% invalid.
+ */
+function normalizeColorMix(comps: Comp[]): string | null {
+  const args = commaArgs(comps);
+  if (args.length !== 3) return null;
+  const method = args[0];
+  if (method.length < 2 || method[0].type !== TK_IDENT || method[0].lower !== "in" || method[1].type !== TK_IDENT) return null;
+  const space = method[1].lower;
+  let methodText = "in " + space;
+  if (POLAR_SPACES.has(space)) {
+    if (method.length === 4) {
+      if (method[2].type !== TK_IDENT || !HUE_METHODS.has(method[2].lower) || method[3].type !== TK_IDENT || method[3].lower !== "hue") return null;
+      methodText += " " + method[2].lower + " hue";
+    } else if (method.length !== 2) return null;
+  } else if (!RECTANGULAR_SPACES.has(space) || method.length !== 2) return null;
+  const colors: string[] = [];
+  const percents: (number | null)[] = [];
+  for (let k = 1; k <= 2; k++) {
+    const arg = args[k];
+    if (arg.length < 1 || arg.length > 2) return null;
+    let color: string | null = null;
+    let pct: number | null = null;
+    for (const c of arg) {
+      if (c.type === TK_PERCENTAGE && pct === null) {
+        if (c.num < 0 || c.num > 100) return null;
+        pct = c.num;
+        continue;
+      }
+      if (color !== null) return null;
+      color = colorComponent(c);
+      if (color === null) return null;
+    }
+    if (color === null) return null;
+    colors.push(color);
+    percents.push(pct);
+  }
+  const [p1, p2] = percents;
+  if (p1 === 0 && p2 === 0) return null;
+  let first = colors[0];
+  let second = colors[1];
+  if (p1 !== null && p2 !== null) {
+    first += " " + formatNumber(p1) + "%";
+    second += " " + formatNumber(p2) + "%";
+  } else if (p1 !== null || p2 !== null) {
+    const p = p1 !== null ? p1 : 100 - p2!;
+    if (p !== 50) first += " " + formatNumber(p) + "%";
+  }
+  return "color-mix(" + methodText + ", " + first + ", " + second + ")";
+}
+
+/** https://drafts.csswg.org/css-color-5/#light-dark — both colors serialized. */
+function normalizeLightDark(comps: Comp[]): string | null {
+  const args = commaArgs(comps);
+  if (args.length !== 2 || args[0].length !== 1 || args[1].length !== 1) return null;
+  const light = colorComponent(args[0][0]);
+  const dark = colorComponent(args[1][0]);
+  return light === null || dark === null ? null : "light-dark(" + light + ", " + dark + ")";
+}
+
+/**
+ * Relative color syntax (https://drafts.csswg.org/css-color-5/#relative-colors): the origin
+ * color is serialized, keywords lower-cased, everything else kept (channel math is not
+ * resolved without a used value).
+ */
+function normalizeRelativeColor(name: string, inner: string): string | null {
+  const comps = splitComponents(inner);
+  if (comps === null) return null;
+  let out = (name === "rgba" ? "rgb" : name === "hsla" ? "hsl" : name) + "(from";
+  let sawOrigin = false;
+  for (let i = 0; i < comps.length; i++) {
+    const c = comps[i];
+    if (c.type === COMP_SPACE) continue;
+    if (i === 0 || (c.type === TK_IDENT && c.lower === "from" && !sawOrigin && out.endsWith("(from"))) continue;
+    if (!sawOrigin) {
+      const origin = colorComponent(c);
+      if (origin === null) return null;
+      out += " " + origin;
+      sawOrigin = true;
+      continue;
+    }
+    out += " " + (c.type === TK_IDENT ? c.lower : c.text);
+  }
+  return sawOrigin ? out + ")" : null;
+}
+
+/** lab()/lch()/oklab()/oklch()/color()/color-mix()/light-dark() and the rest of OTHER_COLOR_FUNCTIONS. */
+function normalizeOtherColorFunction(name: string, inner: string, source: string): string | null {
+  const comps = splitComponents(inner);
+  if (comps === null) return null;
+  // Channel math (calc() & co.) needs a resolver we do not have: keep the author's text.
+  for (const c of comps) if (c.type === TK_FUNCTION && MATH_RE.test(c.text)) return name + source.slice(name.length);
+  switch (name) {
+    case "lab":
+    case "lch":
+    case "oklab":
+    case "oklch":
+      return normalizeCanonical(name, comps);
+    case "color":
+      return normalizeColorFn(comps);
+    case "color-mix":
+      return normalizeColorMix(comps);
+    case "light-dark":
+      return normalizeLightDark(comps);
+    default:
+      return name + source.slice(name.length);
+  }
 }
 
 /**
