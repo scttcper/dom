@@ -128,7 +128,7 @@ const constraintValidation = {
     // The custom validity error message takes precedence whenever customError is set
     // (Chromium and jsdom behave the same).
     if ((flags & V_CUSTOM_ERROR) !== 0) return el._customValidity;
-    return el._validationMessage(flags);
+    return builtinMessage(el, flags);
   },
 
   /** https://html.spec.whatwg.org/#dom-cva-checkvalidity */
@@ -154,6 +154,18 @@ export function installConstraintValidation(target: { prototype: object }): void
   for (const key of Reflect.ownKeys(constraintValidation)) {
     Object.defineProperty(target.prototype, key, Object.getOwnPropertyDescriptor(constraintValidation, key)!);
   }
+}
+
+/** jsdom's text for every built-in constraint failure (the default; drop-in compatibility). */
+export const MSG_JSDOM = "Constraints not satisfied";
+
+/**
+ * The message for built-in failures: jsdom's generic text unless the window was created with
+ * `validationMessages: "browser"` (docs/deviations.md).
+ */
+function builtinMessage(el: Validatable, flags: number): string {
+  const win = el._impl.doc._window as unknown as { _options?: { validationMessages?: string } } | null;
+  return win?._options?.validationMessages === "browser" ? el._validationMessage(flags) : MSG_JSDOM;
 }
 
 // --- browser-like messages (Chromium en-US wording) -----------------------------------------

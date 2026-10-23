@@ -18,8 +18,9 @@ let document: Document;
 // biome-ignore lint: untyped DOM surface in tests
 const $ = (id: string): any => document.getElementById(id);
 
+// Browser-like messages are opt-in (`validationMessages: "browser"`); the default is jsdom's text.
 beforeEach(() => {
-  document = createWindow().document;
+  document = createWindow({ validationMessages: "browser" }).document;
 });
 
 // biome-ignore lint: test helper
@@ -97,6 +98,16 @@ describe("ValidityState — https://html.spec.whatwg.org/#validitystate", () => 
     el.value = "2";
     expect(el.validity.badInput).toBe(false);
     expect(getUIValue(el)).toBe("2");
+  });
+
+  test("by default every built-in failure reads jsdom's generic message (drop-in compatibility)", () => {
+    const doc = createWindow().document;
+    doc.body!.innerHTML = "<input id=a required><input id=b type=email value=x><input id=c type=number min=5 value=1>";
+    const msgs = ["a", "b", "c"].map((id) => (doc.getElementById(id) as any).validationMessage);
+    expect(msgs).toEqual(["Constraints not satisfied", "Constraints not satisfied", "Constraints not satisfied"]);
+    const el = doc.getElementById("a") as any;
+    el.setCustomValidity("mine");
+    expect(el.validationMessage).toBe("mine");
   });
 
   test("the custom message takes precedence over built-in messages when customError is set", () => {

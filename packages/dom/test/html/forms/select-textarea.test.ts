@@ -97,7 +97,7 @@ describe("select IDL — https://html.spec.whatwg.org/#the-select-element", () =
   test("required with a placeholder label option suffers from being missing", () => {
     const s = select('<option value="">pick</option><option>a</option>', "required");
     expect(s.validity.valueMissing).toBe(true);
-    expect(s.validationMessage).toBe("Please select an item in the list.");
+    expect(s.validationMessage).toBe("Constraints not satisfied"); // jsdom text by default
     s.selectedIndex = 1;
     expect(s.validity.valid).toBe(true);
   });

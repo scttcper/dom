@@ -69,6 +69,12 @@ export interface WindowOptions {
   visualViewport?: boolean;
   /** Share localStorage (and `storage` events) with another window, like two same-origin tabs. */
   shareStorageWith?: Window;
+  /**
+   * `validationMessage` text for built-in constraint failures: "jsdom" (default) returns
+   * jsdom's generic "Constraints not satisfied"; "browser" returns Chromium-like per-constraint
+   * messages (docs/deviations.md). Custom validity messages are never affected.
+   */
+  validationMessages?: "jsdom" | "browser";
 }
 
 /** @internal Resolved, per-window constant options. */
@@ -80,6 +86,8 @@ export interface ResolvedWindowOptions {
   screenWidth: number;
   screenHeight: number;
   mediaFeatures: Record<string, string | number> | undefined;
+  /** html/forms/validation.ts reads this. */
+  validationMessages: "jsdom" | "browser";
 }
 
 const PLATFORMS: Record<string, string> = { darwin: "MacIntel", win32: "Win32", linux: "Linux x86_64" };
@@ -186,6 +194,7 @@ export class Window extends EventTarget {
       screenWidth: options.screenWidth ?? width,
       screenHeight: options.screenHeight ?? height,
       mediaFeatures: options.mediaFeatures,
+      validationMessages: options.validationMessages === "browser" ? "browser" : "jsdom",
     };
     this._url = url;
     this._location = null;
