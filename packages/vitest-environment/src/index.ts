@@ -15,7 +15,7 @@
 // global it replaced. React's IS_REACT_ACT_ENVIRONMENT is left to the testing library.
 
 import { enableCompileCache } from "node:module";
-import { createContext, type Context } from "node:vm";
+import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { Environment } from "vitest/runtime";
 import type { WindowOptions } from "@rtd/dom";
 
@@ -140,7 +140,10 @@ const environment: Environment = {
 
   setupVM(options) {
     const window = createWindow(windowOptions(options));
-    const context: Context = createContext();
+    // https://nodejs.org/api/vm.html#vmconstantsdont_contextify: the new realm's own global object
+    // (usable wherever a contextified object is), so global lookups in test and app code are
+    // ordinary property loads instead of going through the contextified sandbox's interceptors.
+    const context: Context = createContext(vmConstants.DONT_CONTEXTIFY);
     const host = globalThis as unknown as Record<string, unknown>;
     for (const name of VM_HOST_GLOBALS) {
       if (host[name] !== undefined) {
