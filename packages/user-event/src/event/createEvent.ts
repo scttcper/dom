@@ -52,7 +52,10 @@ export function createEvent<K extends EventType>(
   const {EventType, defaultInit} = eventMap[type]
   const constructors = getEventConstructors(window)
 
-  if (implOf(target) !== null) {
+  // A fallback class (the window lacks the interface, e.g. PointerEvent under
+  // jest-environment-rtd's jsdom 26 parity) takes upstream's path: its native superclass
+  // constructor would drop the members only the initializers set (pointerType, width, ...).
+  if (implOf(target) !== null && !constructors.fallbacks.has(EventType)) {
     return createNativeEvent(constructors[EventType], EventType, type, defaultInit, init) as FixedDocumentEventMap[K]
   }
 
@@ -133,6 +136,11 @@ function getEventConstructors(window: Window) {
 
 /* istanbul ignore next */
 function buildEventConstructors(window: Window) {
+  // Interfaces the window lacks (replaced by the classes below).
+  const fallbacks = new Set<string>()
+  for (const name of ['Event', 'AnimationEvent', 'ClipboardEvent', 'PopStateEvent', 'ProgressEvent', 'TransitionEvent', 'UIEvent', 'CompositionEvent', 'FocusEvent', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'DragEvent', 'PointerEvent', 'TouchEvent'] as const) {
+    if (window[name] === undefined) fallbacks.add(name)
+  }
   const Event = window.Event ?? class Event {}
   const AnimationEvent =
     window.AnimationEvent ?? class AnimationEvent extends Event {}
@@ -158,6 +166,7 @@ function buildEventConstructors(window: Window) {
   const TouchEvent = window.TouchEvent ?? class TouchEvent extends UIEvent {}
 
   return {
+    fallbacks,
     Event,
     AnimationEvent,
     ClipboardEvent,
