@@ -43,6 +43,13 @@ export function captureInterfaceBaseline(): void {
   for (const t of targets()) baseline.set(t, snapshot(t));
 }
 
+/** https://tc39.es/ecma262/#array-index (canonical numeric strings below 2^32 - 1). */
+function isArrayIndex(key: PropertyKey): boolean {
+  if (typeof key !== "string" || key === "" || key.length > 10) return false;
+  const n = Number(key);
+  return n >>> 0 === n && n !== 4294967295 && String(n) === key;
+}
+
 function sameDescriptor(a: PropertyDescriptor, b: PropertyDescriptor): boolean {
   return (
     a.value === b.value &&
@@ -60,14 +67,15 @@ export function restoreInterfaces(): number {
   let restored = 0;
   for (const [target, original] of baseline) {
     const keys = Reflect.ownKeys(target);
-    // Added properties.
-    {
-      for (const key of keys) {
-        if (original.has(key)) continue;
-        if (Reflect.deleteProperty(target, key)) restored++;
-      }
+    // Added properties. Array-index keys are ours: collections/indexed.ts grows index getters on
+    // collection prototypes on demand and remembers the bound, so deleting them would leave
+    // `list[i]` undefined for every later file in the worker. Tests don't patch index keys.
+    for (const key of keys) {
+      if (original.has(key) || isArrayIndex(key)) continue;
+      if (Reflect.deleteProperty(target, key)) restored++;
     }
     for (const [key, desc] of original) {
+      if (isArrayIndex(key)) continue;
       const current = Object.getOwnPropertyDescriptor(target, key);
       if (current !== undefined && sameDescriptor(current, desc)) continue;
       // Changed or removed.
