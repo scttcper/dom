@@ -29,7 +29,7 @@ export { currentWindowOrNull } from "./window/current.ts";
 export { Location } from "./window/Location.ts";
 export { History } from "./window/History.ts";
 export { Navigator, Clipboard, ClipboardItem } from "./window/Navigator.ts";
-export { Screen, ScreenOrientation, VisualViewport } from "./window/Screen.ts";
+export { Screen, VisualViewport } from "./window/Screen.ts";
 export { Storage } from "./window/Storage.ts";
 export { MediaQueryList } from "./window/media.ts";
 export { FileReader } from "./window/FileReader.ts";

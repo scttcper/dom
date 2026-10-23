@@ -1,44 +1,22 @@
 // https://drafts.csswg.org/cssom-view/#the-screen-interface
-// https://w3c.github.io/screen-orientation/#screenorientation-interface
 // https://drafts.csswg.org/cssom-view/#the-visualviewport-interface
 //
 // No real display: values derive from the window's configured inner size.
+//
+// No `screen.orientation` (ScreenOrientation), like jsdom and happy-dom: with a fixed angle it
+// hides rotation from code that reads `window.orientation`, e.g. React Aria's keyboard tracking,
+// whose test polyfill installs a `screen.orientation` only when there is none. docs/deviations.md.
 
 import { EventTarget } from "../events/EventTarget.ts";
 import type { Window } from "./Window.ts";
-import { $options, $orientation, $window } from "../keys.ts";
-
-export class ScreenOrientation extends EventTarget {
-  [$window]: Window;
-
-  constructor(window: Window) {
-    super();
-    this[$window] = window;
-  }
-
-  get type(): string {
-    return this[$window][$options].screenWidth >= this[$window][$options].screenHeight ? "landscape-primary" : "portrait-primary";
-  }
-
-  get angle(): number {
-    return 0;
-  }
-
-  async lock(_orientation: string): Promise<void> {
-    throw new DOMException("Screen orientation locking is not supported.", "NotSupportedError");
-  }
-
-  unlock(): void {}
-}
+import { $options, $window } from "../keys.ts";
 
 export class Screen extends EventTarget {
   [$window]: Window;
-  [$orientation]: ScreenOrientation | null;
 
   constructor(window: Window) {
     super();
     this[$window] = window;
-    this[$orientation] = null;
   }
 
   get width(): number {
@@ -67,9 +45,6 @@ export class Screen extends EventTarget {
   }
   get isExtended(): boolean {
     return false;
-  }
-  get orientation(): ScreenOrientation {
-    return (this[$orientation] ??= new ScreenOrientation(this[$window]));
   }
 }
 

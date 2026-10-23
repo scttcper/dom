@@ -21,6 +21,7 @@ import { setCurrentWindow, currentWindowOrNull } from "./current.ts";
 import { ensureInterfaces, eventInterface, domExport, type InterfaceMap } from "./interfaces.ts";
 import { CSS } from "./fallbacks.ts";
 import { DOMStringList } from "./DOMStringList.ts";
+import { AbortSignal } from "./abort.ts";
 import { windowHooks } from "./hooks.ts";
 import { Location } from "./Location.ts";
 import { History } from "./History.ts";
@@ -813,7 +814,8 @@ function normalizeScroll(value: unknown): number {
 
 // Host (Node) globals every window exposes by delegation rather than by copy. Reads go to the
 // current host global, so a faked `setTimeout` is what `window.setTimeout` returns.
-// setTimeout/setInterval are Window methods (tracked, see window/timers.ts). Not exposed, like
+// setTimeout/setInterval are Window methods (tracked, see window/timers.ts); AbortSignal is the
+// host's with a window-timer timeout() (window/abort.ts). Not exposed, like
 // jsdom (docs/deviations.md): fetch, Request, Response — with them present fetch mocks such as
 // jest-fetch-mock skip their polyfill and resolve relative URLs differently.
 export const HOST_DELEGATES = [
@@ -830,7 +832,6 @@ export const HOST_DELEGATES = [
   "URLSearchParams",
   "URLPattern",
   "AbortController",
-  "AbortSignal",
   "Blob",
   "File",
   "TextEncoder",
@@ -881,7 +882,7 @@ for (const name of ["locationbar", "menubar", "personalbar", "scrollbars", "stat
 function preparePrototype(): void {
   prototypeReady = true;
   const proto = Window.prototype;
-  ensureInterfaces(proto, { CSS, DOMStringList });
+  ensureInterfaces(proto, { CSS, DOMStringList, AbortSignal });
   const descriptors: PropertyDescriptorMap = {};
   for (const name of HOST_DELEGATES) {
     if (name in proto) continue;
@@ -902,7 +903,7 @@ function preparePrototype(): void {
 /** The interface objects every window exposes (name → class). */
 export function windowInterfaces(): InterfaceMap {
   if (!prototypeReady) preparePrototype();
-  return ensureInterfaces(Window.prototype, { CSS, DOMStringList });
+  return ensureInterfaces(Window.prototype, { CSS, DOMStringList, AbortSignal });
 }
 
 export function createWindow(options?: WindowOptions): Window {

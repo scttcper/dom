@@ -97,9 +97,9 @@ describe("Window attributes — https://html.spec.whatwg.org/#the-window-object"
     expect(window.closed).toBe(true);
   });
 
-  test("screen and BarProp", () => {
+  test("screen and BarProp; no screen.orientation (jsdom/happy-dom parity, docs/deviations.md)", () => {
     expect(window.screen.colorDepth).toBe(24);
-    expect(window.screen.orientation.type).toBe("landscape-primary");
+    expect("orientation" in window.screen).toBe(false);
     expect((window as unknown as { toolbar: { visible: boolean } }).toolbar.visible).toBe(true);
   });
 

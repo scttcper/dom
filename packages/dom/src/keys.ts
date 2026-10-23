@@ -131,7 +131,6 @@ export const $navigator: unique symbol = Symbol.for("rtd.navigator");
 export const $nodes: unique symbol = Symbol.for("rtd.nodes");
 export const $onchange: unique symbol = Symbol.for("rtd.onchange");
 export const $options: unique symbol = Symbol.for("rtd.options");
-export const $orientation: unique symbol = Symbol.for("rtd.orientation");
 export const $owner: unique symbol = Symbol.for("rtd.owner");
 export const $ownerNode: unique symbol = Symbol.for("rtd.ownerNode");
 export const $ownerRule: unique symbol = Symbol.for("rtd.ownerRule");
