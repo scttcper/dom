@@ -84,59 +84,79 @@ function deleteNamed(el: NodeImpl, name: string): void {
   if (a !== null) removeAttributeRecord(el, a);
 }
 
+/** The owning element, on each Proxy target (module-private; hidden by every trap). */
+const OWNER = Symbol("DOMStringMap owner");
+
+interface Target extends DOMStringMap {
+  [OWNER]: NodeImpl;
+}
+
+// One handler for every DOMStringMap: per-instance closures cost ~400 bytes per `dataset`.
+const handler: ProxyHandler<Target> = {
+  get(t, key, receiver) {
+    if (typeof key === "string") {
+      const v = getNamed(t[OWNER], key);
+      if (v !== undefined) return v;
+    } else if (key === OWNER) return undefined;
+    return Reflect.get(t, key, receiver);
+  },
+  set(t, key, value, receiver) {
+    if (typeof key === "string") {
+      setNamed(t[OWNER], key, String(value));
+      return true;
+    }
+    if (key === OWNER) return false;
+    return Reflect.set(t, key, value, receiver);
+  },
+  has(t, key) {
+    if (typeof key === "string" && getNamed(t[OWNER], key) !== undefined) return true;
+    if (key === OWNER) return false;
+    return Reflect.has(t, key);
+  },
+  deleteProperty(t, key) {
+    if (typeof key === "string") {
+      deleteNamed(t[OWNER], key);
+      return true;
+    }
+    if (key === OWNER) return true;
+    return Reflect.deleteProperty(t, key);
+  },
+  ownKeys(t) {
+    const keys: (string | symbol)[] = supportedNames(t[OWNER]);
+    for (const k of Reflect.ownKeys(t)) if (k !== OWNER && !keys.includes(k)) keys.push(k);
+    return keys;
+  },
+  getOwnPropertyDescriptor(t, key) {
+    if (typeof key === "string") {
+      const v = getNamed(t[OWNER], key);
+      if (v !== undefined) return { value: v, writable: true, enumerable: true, configurable: true };
+    } else if (key === OWNER) return undefined;
+    return Reflect.getOwnPropertyDescriptor(t, key);
+  },
+  defineProperty(t, key, descriptor) {
+    if (typeof key === "string") {
+      if (descriptor.get !== undefined || descriptor.set !== undefined) return false;
+      setNamed(t[OWNER], key, String(descriptor.value));
+      return true;
+    }
+    if (key === OWNER) return false;
+    return Reflect.defineProperty(t, key, descriptor);
+  },
+};
+
+/** @internal `element.dataset` for `el` (nodes/Element.ts). */
+export function createDOMStringMap(el: NodeImpl): DOMStringMap {
+  const target = Object.create(DOMStringMap.prototype) as Target;
+  target[OWNER] = el;
+  return new Proxy(target, handler);
+}
+
 export class DOMStringMap {
   [name: string]: string | undefined;
 
-  /** @internal */
+  /** @internal Use createDOMStringMap. */
   constructor(el: NodeImpl) {
-    const target = Object.create(DOMStringMap.prototype) as DOMStringMap;
-    return new Proxy(target, {
-      get(t, key, receiver) {
-        if (typeof key === "string") {
-          const v = getNamed(el, key);
-          if (v !== undefined) return v;
-        }
-        return Reflect.get(t, key, receiver);
-      },
-      set(t, key, value, receiver) {
-        if (typeof key === "string") {
-          setNamed(el, key, String(value));
-          return true;
-        }
-        return Reflect.set(t, key, value, receiver);
-      },
-      has(t, key) {
-        if (typeof key === "string" && getNamed(el, key) !== undefined) return true;
-        return Reflect.has(t, key);
-      },
-      deleteProperty(t, key) {
-        if (typeof key === "string") {
-          deleteNamed(el, key);
-          return true;
-        }
-        return Reflect.deleteProperty(t, key);
-      },
-      ownKeys(t) {
-        const keys: (string | symbol)[] = supportedNames(el);
-        for (const k of Reflect.ownKeys(t)) if (!keys.includes(k)) keys.push(k);
-        return keys;
-      },
-      getOwnPropertyDescriptor(t, key) {
-        if (typeof key === "string") {
-          const v = getNamed(el, key);
-          if (v !== undefined) return { value: v, writable: true, enumerable: true, configurable: true };
-        }
-        return Reflect.getOwnPropertyDescriptor(t, key);
-      },
-      defineProperty(t, key, descriptor) {
-        if (typeof key === "string") {
-          if (descriptor.get !== undefined || descriptor.set !== undefined) return false;
-          setNamed(el, key, String(descriptor.value));
-          return true;
-        }
-        return Reflect.defineProperty(t, key, descriptor);
-      },
-    });
+    return createDOMStringMap(el);
   }
 }
 

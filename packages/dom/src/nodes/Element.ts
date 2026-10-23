@@ -41,7 +41,7 @@ import { HTMLCollection } from "../collections/HTMLCollection.ts";
 import { classTokens, splitOnAsciiWhitespace } from "./attributes.ts";
 import { ShadowRoot } from "./ShadowRoot.ts";
 import { DOMTokenList } from "../collections/DOMTokenList.ts";
-import { DOMStringMap } from "../collections/DOMStringMap.ts";
+import { type DOMStringMap, createDOMStringMap } from "../collections/DOMStringMap.ts";
 import { NamedNodeMap } from "../collections/NamedNodeMap.ts";
 import type { Attr } from "./Attr.ts";
 import { attrNode, removeAttributeNode, setAttributeNode } from "./attr-nodes.ts";
@@ -133,7 +133,7 @@ export class Element extends Node {
 
   /** https://html.spec.whatwg.org/#dom-dataset (HTMLOrSVGElement; installed here so SVG/MathML share it). */
   get dataset(): DOMStringMap {
-    return (this[$dataset] ??= new DOMStringMap(this[$impl]));
+    return (this[$dataset] ??= createDOMStringMap(this[$impl]));
   }
 
   /** https://drafts.csswg.org/css-shadow-parts/#dom-element-part */

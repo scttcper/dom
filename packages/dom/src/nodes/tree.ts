@@ -273,8 +273,10 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
 
   let nodes: NodeImpl[] | null = null;
   if (isFragment) {
-    nodes = [];
-    for (let c = node.first; c !== null; c = c.next) nodes.push(c);
+    // Exact size (`count` children): `push` onto `[]` would allocate 17 slots for `append(a, b)`.
+    nodes = new Array(count);
+    let i = 0;
+    for (let c = node.first; c !== null; c = c.next) nodes[i++] = c;
     // Step 4.1: remove the fragment's children with the suppress observers flag set.
     const fragBit = suspendChildList(node);
     for (let i = 0; i < nodes.length; i++) remove(nodes[i], true);

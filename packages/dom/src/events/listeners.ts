@@ -40,15 +40,37 @@ export class Listener {
   }
 }
 
+/** The `items` of every list that never had a listener; never mutated (see appendListener). */
+const NO_LISTENERS: Listener[] = [];
+
 export class ListenerList {
   items: Listener[];
   /** Number of in-progress invocations iterating `items` (nested dispatches can stack). */
   iterating: number;
 
   constructor() {
-    this.items = [];
+    this.items = NO_LISTENERS;
     this.iterating = 0;
   }
+}
+
+/**
+ * Lists hold one or two listeners in practice (React's root container: capture + bubble for
+ * ~80 types), so they grow by exact-size copies like attribute records: `push` onto `[]` would
+ * give each list a 17-slot backing store. A fresh array also leaves the snapshot an in-progress
+ * dispatch iterates untouched (copy-on-write for free). Longer lists push, unless iterated.
+ */
+function appendListener(list: ListenerList, listener: Listener): void {
+  const items = list.items;
+  const n = items.length;
+  if (n >= 8 && list.iterating === 0) {
+    items.push(listener);
+    return;
+  }
+  const next: Listener[] = new Array(n + 1);
+  for (let i = 0; i < n; i++) next[i] = items[i];
+  next[n] = listener;
+  list.items = next;
 }
 
 export type ListenerMap = Map<string, ListenerList>;
@@ -158,8 +180,7 @@ export function addEventListener(
   }
   // Step 4.
   const listener = new Listener(callback, capture, once, passive === null ? defaultPassiveValue(type, target) : passive, signal);
-  if (list.iterating > 0) list.items = list.items.slice();
-  list.items.push(listener);
+  appendListener(list, listener);
   // Step 6.
   if (signal !== null) {
     const onAbort = () => removeListener(target, type, listener);
