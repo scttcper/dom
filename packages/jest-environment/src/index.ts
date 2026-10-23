@@ -17,6 +17,8 @@
 
 import type { EnvironmentContext, JestEnvironmentConfig } from "@jest/environment";
 import { TestEnvironment as NodeEnvironment } from "jest-environment-node";
+import { ModernFakeTimers } from "@jest/fake-timers";
+import { protectProperties } from "jest-util";
 import * as dom from "@rtd/dom";
 import * as internal from "@rtd/dom/internal";
 import type { Window, WindowOptions } from "@rtd/dom";
@@ -41,9 +43,29 @@ function reportToHost(error: unknown): void {
   process.emit("uncaughtException", error as Error, "uncaughtException");
 }
 
+// Error constructors whose instances our DOM throws from the outer realm.
+const ERROR_CONSTRUCTORS = ["Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "EvalError", "URIError"] as const;
+
+/**
+ * Our DOM runs in the worker's realm while test code runs in the vm context, so a TypeError
+ * thrown by @rtd/dom is not `instanceof` the test realm's TypeError (`expect(fn).toThrow(TypeError)`
+ * would fail). Give the context's error constructors a Symbol.hasInstance that also accepts the
+ * outer realm's instances; errors created in the context keep working as before.
+ */
+function bridgeErrorRealms(global: Record<string, unknown>): void {
+  for (const name of ERROR_CONSTRUCTORS) {
+    const inner = global[name] as (new () => unknown) | undefined;
+    const outer = globalThis[name] as unknown as new () => unknown;
+    if (typeof inner !== "function" || inner === outer) continue;
+    Object.defineProperty(inner, Symbol.hasInstance, {
+      value: (value: unknown) => Function.prototype[Symbol.hasInstance].call(inner, value) || value instanceof outer,
+      configurable: true,
+    });
+  }
+}
+
 export default class RtdEnvironment extends NodeEnvironment {
   rtdWindow: Window | null;
-  _uninstall: (() => void) | null;
 
   constructor(config: JestEnvironmentConfig, context: EnvironmentContext) {
     super(config, context);
@@ -52,8 +74,22 @@ export default class RtdEnvironment extends NodeEnvironment {
     this.customExportConditions = customExportConditions ?? ["browser"];
     const window = dom.createWindow({ ...windowOptions, url: windowOptions.url ?? DEFAULT_URL });
     this.rtdWindow = window;
-    this._uninstall = dom.installGlobals(window, this.global as unknown as Record<PropertyKey, unknown>);
-    Object.defineProperty(this.global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+    const global = this.global as unknown as Record<PropertyKey, unknown>;
+    // The interface objects and the document are shared module objects (one @rtd/dom per worker):
+    // keep Jest's globals cleanup (testEnvironmentOptions.globalsCleanup, "soft" by default) from
+    // stripping their properties when it cleans the file's global at teardown.
+    const interfaces = internal.windowInterfaces();
+    for (const name in interfaces) protectProperties(interfaces[name], [], 0);
+    protectProperties(window.document, [], 0);
+    dom.installGlobals(window, global);
+    Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+    bridgeErrorRealms(global as Record<string, unknown>);
+    // jest-environment-node built its fake timers before the window existed, and
+    // @sinonjs/fake-timers snapshots which timer functions the global has: rebuild them so
+    // jest.useFakeTimers() fakes requestAnimationFrame/requestIdleCallback like jsdom's env does.
+    this.fakeTimersModern = new ModernFakeTimers({ config: config.projectConfig, global: this.global });
+    // Baseline for undoing interface prototype patches at teardown (they are shared per worker).
+    internal.captureInterfaceBaseline();
     internal.setUncaughtExceptionHandler(reportToHost);
   }
 
@@ -61,12 +97,18 @@ export default class RtdEnvironment extends NodeEnvironment {
     return this.customExportConditions;
   }
 
+  /**
+   * Closes the window (cancelling its frames, idle callbacks and tasks) and undoes the file's
+   * patches to the shared interface prototypes. The globals stay installed, like under
+   * jest-environment-jsdom where the global *is* the window: work a test file left behind (React's
+   * scheduler runs on Node's setImmediate) can still read `window`/`document` instead of
+   * crashing the worker with a ReferenceError. The vm context is discarded with the file.
+   */
   override async teardown(): Promise<void> {
     internal.setUncaughtExceptionHandler(null);
     this.rtdWindow?.close();
-    this._uninstall?.();
     this.rtdWindow = null;
-    this._uninstall = null;
+    internal.restoreInterfaces();
     await super.teardown();
   }
 }

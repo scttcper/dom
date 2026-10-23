@@ -44,6 +44,7 @@ export { windowHooks, type WindowHooks, type MediaFeatureEnvironment } from "./w
 export { createFileList } from "./window/FileList.ts";
 export { evaluateMediaQueryList, mediaEnvironment } from "./window/media.ts";
 export { windowInterfaces } from "./window/Window.ts";
+export { captureInterfaceBaseline, restoreInterfaces } from "./window/isolation.ts";
 
 // --- events area ---
 export { dispatch, getCurrentEvent, retarget, nodeGetTheParent, setAssignedSlotLookup } from "./events/dispatch.ts";

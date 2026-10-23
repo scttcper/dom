@@ -24,12 +24,12 @@ function jest(...args: string[]): JestJson {
 
 describe("Jest integration — https://html.spec.whatwg.org/#the-window-object", () => {
   test("stock React + Testing Library suite passes", { timeout: 60_000 }, () => {
-    const result = jest();
+    const result = jest("--runInBand");
     // A suite that failed to load (e.g. a broken @rtd/dom import) reports its error here.
-    expect(result.testResults.map((r) => r.message).join("\n")).toBe("");
+    expect(result.testResults.map((r) => r.message).join("").trim()).toBe("");
     const failures = result.testResults.flatMap((r) => r.assertionResults.filter((a) => a.status !== "passed"));
     expect(failures).toEqual([]);
-    expect(result.numPassedTests).toBe(4);
+    expect(result.numPassedTests).toBe(8);
   });
 
   test("an unhandled exception in a React onClick fails the test (https://html.spec.whatwg.org/#report-an-exception)", { timeout: 60_000 }, () => {

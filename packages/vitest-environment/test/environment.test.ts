@@ -62,6 +62,29 @@ describe("setup(global, options) / teardown", () => {
   });
 });
 
+describe("interface isolation between VM-pool test files — https://webidl.spec.whatwg.org/#es-interfaces", () => {
+  test("setupVM teardown undoes added, changed and removed properties on shared interface objects", async () => {
+    const vm = await environment.setupVM!({});
+    const context = vm.getVmContext() as unknown as Record<string, unknown>;
+    const HTMLElement = context.HTMLElement as { prototype: Record<string, unknown> } & Record<string, unknown>;
+    const Node = context.Node as Record<string, unknown>;
+    const focus = HTMLElement.prototype.focus;
+    const hiddenDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "hidden");
+    HTMLElement.prototype.scrollIntoViewPatched = () => {};
+    HTMLElement.prototype.focus = () => {};
+    delete HTMLElement.prototype.hidden;
+    Node.EXTRA = 1;
+    const started = performance.now();
+    await vm.teardown();
+    const elapsed = performance.now() - started;
+    expect("scrollIntoViewPatched" in HTMLElement.prototype).toBe(false);
+    expect(HTMLElement.prototype.focus).toBe(focus);
+    expect(Object.getOwnPropertyDescriptor(HTMLElement.prototype, "hidden")).toEqual(hiddenDesc);
+    expect("EXTRA" in Node).toBe(false);
+    expect(elapsed).toBeLessThan(50);
+  });
+});
+
 describe("setupVM(options)", () => {
   test("returns a vm context whose global is the window, with host timers and URL", async () => {
     const vm = await environment.setupVM!({ rtd: { url: "http://localhost:5173/" } });

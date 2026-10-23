@@ -333,10 +333,16 @@ importers:
       '@jest/environment':
         specifier: 30.4.1
         version: 30.4.1
+      '@jest/fake-timers':
+        specifier: 30.4.1
+        version: 30.4.1
       '@rtd/dom':
         specifier: workspace:*
         version: link:../dom
       jest-environment-node:
+        specifier: 30.4.1
+        version: 30.4.1
+      jest-util:
         specifier: 30.4.1
         version: 30.4.1
     devDependencies:

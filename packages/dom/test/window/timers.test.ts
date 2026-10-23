@@ -82,6 +82,22 @@ describe("requestAnimationFrame — https://html.spec.whatwg.org/#dom-animationf
     expect(calls).toEqual(["canceller"]);
   });
 
+  test("a frame timer lost with an uninstalled fake clock does not wedge later frames", async () => {
+    vi.useFakeTimers();
+    const lost = vi.fn();
+    window.requestAnimationFrame(lost); // scheduled on the fake clock...
+    vi.useRealTimers(); // ...which is dropped with its pending timers
+    const t = await new Promise<number>((resolve) => window.requestAnimationFrame(resolve));
+    expect(t).toBeGreaterThan(0);
+    // The callback requested before is part of the re-armed frame.
+    expect(lost).toHaveBeenCalledTimes(1);
+    vi.useFakeTimers();
+    const spy = vi.fn();
+    window.requestAnimationFrame(spy);
+    vi.runAllTimers();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
   test("works with real timers", async () => {
     const t = await new Promise<number>((resolve) => window.requestAnimationFrame(resolve));
     expect(t).toBeGreaterThan(0);

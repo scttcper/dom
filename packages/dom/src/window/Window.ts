@@ -112,6 +112,8 @@ export interface NestedBrowsingContext {
 interface PendingTask {
   handle: unknown;
   clear: (handle: never) => void;
+  /** The host setTimeout it was scheduled with (a fake clock's, possibly since uninstalled). */
+  scheduledWith: unknown;
 }
 
 interface IdleDeadline {
@@ -372,7 +374,7 @@ export class Window extends EventTarget {
   }
 
   /** @internal */
-  get _cookies(): CookieJar {
+  get _cookieStore(): CookieJar {
     return (this._cookieJar ??= new CookieJar());
   }
 
@@ -523,7 +525,14 @@ export class Window extends EventTarget {
     (this._frameCallbacks ??= new Map()).set(id, callback);
     // One host timer per frame: every callback requested before the frame runs in it with
     // the same timestamp, like https://html.spec.whatwg.org/#run-the-animation-frame-callbacks.
-    if (this._frameTask === null) this._frameTask = this._task(runAnimationFrame, 16);
+    // Self-healing: a frame timer scheduled on a fake clock that has since been uninstalled
+    // (jest.useRealTimers()) never fires; re-arm on the current host timer instead of letting
+    // it wedge every later frame of this window.
+    const pending = this._frameTask;
+    if (pending === null || pending.scheduledWith !== this._hostSetTimeout()) {
+      if (pending !== null) this._cancelTask(pending);
+      this._frameTask = this._task(runAnimationFrame, 16);
+    }
     return id;
   }
 
@@ -565,13 +574,18 @@ export class Window extends EventTarget {
     if (this._closed) return null;
     const tasks = (this._tasks ??= new Set());
     const host = typeof this._host.setTimeout === "function" ? this._host : globalThis;
-    const task: PendingTask = { handle: undefined, clear: host.clearTimeout as PendingTask["clear"] };
+    const task: PendingTask = { handle: undefined, clear: host.clearTimeout as PendingTask["clear"], scheduledWith: host.setTimeout };
     task.handle = host.setTimeout(() => {
       tasks.delete(task);
       callback.call(this);
     }, delay);
     tasks.add(task);
     return task;
+  }
+
+  _hostSetTimeout(): unknown {
+    const set = this._host.setTimeout;
+    return typeof set === "function" ? set : globalThis.setTimeout;
   }
 
   _cancelTask(task: PendingTask): void {

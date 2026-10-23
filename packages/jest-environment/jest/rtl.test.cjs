@@ -58,6 +58,33 @@ describe("React + Testing Library — https://dom.spec.whatwg.org/#events", () =
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Count: 1");
   });
 
+  test("jest.useFakeTimers() fakes requestAnimationFrame itself, like jest-environment-jsdom", () => {
+    const real = requestAnimationFrame;
+    jest.useFakeTimers();
+    expect(requestAnimationFrame).not.toBe(real);
+    const spy = jest.fn();
+    requestAnimationFrame(spy);
+    jest.advanceTimersByTime(16);
+    expect(spy).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+    expect(requestAnimationFrame).toBe(real);
+  });
+
+  test("errors thrown by the DOM are instanceof the test realm's error constructors", () => {
+    expect(() => getComputedStyle({})).toThrow(TypeError);
+    expect(() => document.createElement("1")).toThrow(DOMException);
+    let caught;
+    try {
+      document.createElement("div").appendChild(null);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught instanceof TypeError).toBe(true);
+    expect(caught instanceof Error).toBe(true);
+    expect(new TypeError("x") instanceof TypeError).toBe(true);
+    expect(new RangeError("x") instanceof TypeError).toBe(false);
+  });
+
   test("Jest modern fake timers control requestAnimationFrame", () => {
     jest.useFakeTimers();
     render(h(Frame));
