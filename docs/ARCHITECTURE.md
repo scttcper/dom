@@ -93,6 +93,10 @@ Memory rules for per-node state (every rendered element pays them):
 - Attribute lists are exact-size arrays created with `new Array(n)` (one elements kind, no
   `push` slack) and `AttrRecord` holds only `localName`, `value` and a `rare` slot for
   namespace/prefix/`Attr` node; hot loops read `rare === null` directly.
+- Small lists in general (attributes, per-type listener lists, a fragment's children during
+  insertion) are built at their exact size: the first `push` onto `[]` allocates a 17-slot
+  backing store, which dominated React root containers (~80 one- or two-listener lists each).
+  Measure allocation with `pnpm bench` (`allocMB`/`gcMs` extras) when touching hot paths.
 
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,
 `Document`, `DocumentFragment → ShadowRoot`, `DocumentType`, `Attr`. Wrapper fields are
@@ -165,7 +169,9 @@ observers, ranges, iframes' nested windows and custom element definitions are co
 subtree releases it: version-stamped caches that could still reference removed nodes (selector
 results per root, aria's label index, live collection / computed NodeList snapshots, a form's
 listed controls) are kept in `Document[$derived]` or registered with `holdSnapshot`
-(nodes/derived.ts) and dropped by `remove()`. Intentionally retained:
+(nodes/derived.ts) and dropped by `remove()`. Snapshots rooted in a detached node are never
+registered, so a detached tree (a clone, an unmounted container) is not kept alive by the
+document. Intentionally retained:
 
 - the current window (`window/current.ts`) until it is closed or another window is created;
 - a window's own state while it is open (its custom element registry, storage, history);
