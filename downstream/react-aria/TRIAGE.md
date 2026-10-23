@@ -15,19 +15,19 @@ jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 
 Sorted by failing-test count.
 
-| # | cluster | owner | tests | repro |
-| --: | --- | --- | --: | --- |
-| 1 | `CSS` namespace is frozen (`CSS.supports = …` throws) | css | 63 (Sheet.test.js fails to load) | `repros/css-namespace-frozen.test.ts` |
-| 2 | `PointerEvent` exposed; upstream tests assume jsdom 26 (none) | window/events — fixture assumption | ~41–60 | `repros/window-pointerevent-exposed.test.ts` |
-| 3 | `offsetParent` always null → overlay containing block resolves to the viewport | css | 54 | `repros/css-offsetparent-positioned-ancestor.test.ts` |
-| 4 | rAF frame task wedged by a dropped fake timer; `jest.useFakeTimers()` doesn't fake rAF | window + jest-environment | ~38 (≈20 in smoke) | `repros/window-raf-frame-task-lost-with-fake-timers.test.ts` |
-| 5 | Interface prototypes shared across test files of a worker | jest-environment (+ window) | ~34–41, order dependent; 2 suite errors | `repros/jest-environment-prototype-state-shared-across-files.test.ts` |
-| 6 | Wrapper internals are enumerable own props (`_impl` …) | dom-core | 26 masked failures + Jest `--json` crash | `repros/dom-core-wrapper-internals-enumerable.test.ts` |
-| 7 | `validationMessage` text differs from jsdom ("Constraints not satisfied") | html-forms | 19 | `repros/html-forms-validation-message-text.test.ts` |
-| 8 | Teardown deletes `window` → late React work kills the Jest worker | jest-environment | 1 file + whatever the crashed worker had queued (5–29) | `repros/jest-environment-teardown-removes-window.test.ts` |
-| 9 | iframe child window shares the parent's interface objects | window (+ html-elements) | 4 | `repros/window-iframe-shares-interface-objects.test.ts` |
-| 10 | rtd-full: keyboard Space press fires onPress twice | user-event | 4 (2 in smoke) | none yet (see below) |
-| 11 | Unattributed (focus/selection in collections, dnd, act warnings, …) | needs investigation | ~120 | — |
+| # | cluster | owner | tests | repro | status |
+| --: | --- | --- | --: | --- | --- |
+| 1 | `CSS` namespace is frozen (`CSS.supports = …` throws) | css | 63 (Sheet.test.js fails to load) | `repros/css-namespace-frozen.test.ts` | fixed (7c74ddf) |
+| 2 | `PointerEvent` exposed; upstream tests assume jsdom 26 (none) | window/events — fixture assumption | ~41–60 | `repros/window-pointerevent-exposed.test.ts` | fixture assumption |
+| 3 | `offsetParent` always null → overlay containing block resolves to the viewport | css | 54 | `repros/css-offsetparent-positioned-ancestor.test.ts` | fixed (7c74ddf) |
+| 4 | rAF frame task wedged by a dropped fake timer; `jest.useFakeTimers()` doesn't fake rAF | window + jest-environment | ~38 (≈20 in smoke) | `repros/window-raf-frame-task-lost-with-fake-timers.test.ts` | fixed (cf0a3f9) |
+| 5 | Interface prototypes shared across test files of a worker | jest-environment (+ window) | ~34–41, order dependent; 2 suite errors | `repros/jest-environment-prototype-state-shared-across-files.test.ts` | fixed (cf0a3f9) |
+| 6 | Wrapper internals are enumerable own props (`_impl` …) | dom-core | 26 masked failures + Jest `--json` crash | `repros/dom-core-wrapper-internals-enumerable.test.ts` | in progress (symbol-keyed internals) |
+| 7 | `validationMessage` text differs from jsdom ("Constraints not satisfied") | html-forms | 19 | `repros/html-forms-validation-message-text.test.ts` | fixed (5a8c966) |
+| 8 | Teardown deletes `window` → late React work kills the Jest worker | jest-environment | 1 file + whatever the crashed worker had queued (5–29) | `repros/jest-environment-teardown-removes-window.test.ts` | fixed (cf0a3f9) |
+| 9 | iframe child window shares the parent's interface objects | window (+ html-elements) | 4 | `repros/window-iframe-shares-interface-objects.test.ts` | deviation (docs/deviations.md) |
+| 10 | rtd-full: keyboard Space press fires onPress twice | user-event 14.6.5 vs 14.6.8 | 4 (2 in smoke) | `packages/user-event/test/react/press.test.tsx` | upstream version pin (not ours) |
+| 11 | Unattributed (focus/selection in collections, dnd, act warnings, …) | needs investigation | ~120 | — | open |
 
 ## 1. css: the `CSS` namespace object is frozen
 
@@ -151,23 +151,24 @@ useFocusVisible "Setups global event listeners in a different window" (4): React
 'example', Received: 'example-focusVisible'"). Each browsing context needs its own interface
 objects.
 
-## 10. user-event (rtd-full only): Space press on Checkbox/Radio fires onPress twice
+## 10. user-event version pin (rtd-full only): Space press on Checkbox/Radio fires onPress twice
 
 RAC Checkbox, CheckboxField, RadioGroup, RadioField "should support press state with keyboard":
-`onPress` called 2× after `user.keyboard('[Space>]')` + `user.keyboard('[/Space]')`. Bisected with
-`--shims`: `react,dom,jest-dom` (stock user-event) passes, adding `user-event` fails. A plain-DOM
-comparison of the event sequence (keydown/keyup/click order, `detail`, targets) on a labelled
-checkbox is identical between stock and @rtd/user-event, so the difference involves React/act
-interplay (each dispatch wrapped in `eventWrapper`); no standalone repro yet. Reproduce with:
+`onPress` called 2× after `user.keyboard('[Space>]')` + `user.keyboard('[/Space]')`.
 
-```sh
-node downstream/react-aria/run.ts --files packages/react-aria-components/test/Checkbox.test.js --modes rtd-full --grep "press state with keyboard"
-```
+**Not a bug in our port.** react-spectrum pins `@testing-library/user-event` **14.6.5**; @rtd/user-event
+tracks **14.6.8**. Upstream commit 71a5475 (testing-library/user-event#1325) changed the `click`
+dispatched by a Space keyup from `pointerType: "undefined"` (`String(undefined)`) to `""`. React
+Aria's `usePress` treats `detail === 0 && !pointerType` as a virtual click and presses again, so
+stock 14.6.8 double-presses exactly like ours; the rtd-dom baseline passes only because it runs
+14.6.5. `packages/user-event/test/react/press.test.tsx` runs a usePress-style component under both
+our user-event and stock 14.6.8 and asserts the same event sequence and press count. We keep
+14.6.8's behavior rather than reintroduce the old string.
 
-Related (only with a `--shims` subset): substituting only `@testing-library/user-event` loses
-`act()` wrapping entirely (54 Checkbox/RadioGroup failures, "not wrapped in act(...)"), because @rtd/user-event reads
-`getConfig()` from `@rtd/testing-library` only, while stock @testing-library/react configures
-stock `@testing-library/dom`. Mixing our user-event with stock RTL is therefore not drop-in.
+Related (only with a `--shims` subset): substituting only `@testing-library/user-event` used to lose
+`act()` wrapping (stock RTL configures stock `@testing-library/dom`). Fixed in 83eab21: when a React
+act environment is active and @rtd/testing-library is unconfigured, user-event reads the project's
+stock `@testing-library/dom` config (Checkbox + RadioGroup with `--shims user-event`: 68/54 → 115/7).
 
 ## 11. Unattributed (needs investigation)
 
