@@ -56,4 +56,4 @@ defineWPT("html/semantics/popovers/popover-top-layer-nesting.html", "Fullscreen 
 defineWPT("inert/inert-form-control.html", "", { testdriver });
 defineWPT("inert/inert-label-focus.html", "label.focus() delegation to the labeled control (forms area)", { testdriver });
 defineWPT("inert/inert-node-is-uneditable.html", "user-event types into contenteditable by its own model, not through beforeinput/editing commands on the clicked node", { testdriver });
-defineWPT("inert/inert-node-is-unfocusable.html", "", { testdriver });
+defineWPT("inert/inert-node-is-unfocusable.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)", { testdriver });

@@ -256,6 +256,11 @@
   "<div> whose parent gets 'inert' attribute",
   "<div> whose grandparent gets 'inert' attribute"
  ],
+ "inert/inert-node-is-unfocusable.html": [
+  "Can get inert via property",
+  "Elements inside of inert subtrees return false when getting 'inert'",
+  "Setting inert via property correctly modifies inert state"
+ ],
  "inert/nested-inert-unfocusable.html": [
   "Input element focusable with both inerts removed"
  ]
