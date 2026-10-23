@@ -354,7 +354,7 @@ function forEachShadowIncludingInclusiveDescendant(root: NodeImpl, fn: (n: NodeI
     fn(n);
     if (n.type === ELEMENT_NODE) {
       const shadow = (n.node as Element)[$shadowRoot];
-      if (shadow !== null) forEachShadowIncludingInclusiveDescendant(shadow[$impl], fn);
+      if (shadow != null) forEachShadowIncludingInclusiveDescendant(shadow[$impl], fn);
     }
   }
 }
@@ -695,7 +695,7 @@ function upgrade(el: Element, def: CustomElementDefinition): void {
   def.constructionStack.push(el);
   try {
     // 9.1.
-    if (def.disableShadow && (el as unknown as { [$shadowRoot]: unknown })[$shadowRoot] !== null) {
+    if (def.disableShadow && (el as unknown as { [$shadowRoot]: unknown })[$shadowRoot] != null) {
       throw new DOMException("Failed to upgrade the custom element: its definition disables shadow roots, but it already has one.", "NotSupportedError");
     }
     // 9.2. State "precustomized".

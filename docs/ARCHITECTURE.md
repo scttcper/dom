@@ -85,6 +85,15 @@ Wrapper internal fields are keyed by registered symbols from `src/keys.ts` (`thi
 (Jest's diff/--json walk own enumerable keys). Methods may keep `_name` (prototype members are
 not enumerable). New wrapper fields get a key in keys.ts.
 
+Memory rules for per-node state (every rendered element pays them):
+- Rarely used per-wrapper objects (`childNodes`, `children`, `shadowRoot`, `style`, `classList`,
+  `dataset`, `attributes`, the listener map) are `declare`d fields added on first use, never
+  initialized in constructors: an initialized-to-null field costs every node a slot. Reads treat
+  "absent" like null (`== null`, `??=`).
+- Attribute lists are exact-size arrays created with `new Array(n)` (one elements kind, no
+  `push` slack) and `AttrRecord` holds only `localName`, `value` and a `rare` slot for
+  namespace/prefix/`Attr` node; hot loops read `rare === null` directly.
+
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,
 `Document`, `DocumentFragment → ShadowRoot`, `DocumentType`, `Attr`. Wrapper fields are
 initialized in constructors in a fixed order. Interface mixins (ParentNode, ChildNode, ...)

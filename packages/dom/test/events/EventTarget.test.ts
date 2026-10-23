@@ -98,7 +98,7 @@ describe("addEventListener / removeEventListener — https://dom.spec.whatwg.org
     expect(et.addEventListener("x", null, false)).toBeUndefined();
     expect(et.addEventListener("x", null, true)).toBeUndefined();
     expect(et.addEventListener("x", null)).toBeUndefined();
-    expect(et[$listeners]).toBeNull();
+    expect(et[$listeners] ?? null).toBeNull();
   });
 
   test("removing a null event listener succeeds", () => {
@@ -144,14 +144,14 @@ describe("addEventListener / removeEventListener — https://dom.spec.whatwg.org
     expect(() => (et.addEventListener as (t: string) => void)("x")).toThrow(TypeError);
   });
 
-  test("_listeners stays null until the first listener (zero-cost fast path); removed listeners never run", () => {
+  test("the listener map stays absent until the first listener (zero-cost fast path); removed listeners never run", () => {
     const et = document.createElement("div");
-    expect(et[$listeners]).toBeNull();
+    expect(et[$listeners] ?? null).toBeNull();
     let count = 0;
     const fn = () => count++;
     et.addEventListener("a", fn);
     et.addEventListener("b", fn, true);
-    expect(et[$listeners]).not.toBeNull();
+    expect(et[$listeners] ?? null).not.toBeNull();
     et.removeEventListener("a", fn);
     et.removeEventListener("b", fn, true);
     et.dispatchEvent(new Event("a"));

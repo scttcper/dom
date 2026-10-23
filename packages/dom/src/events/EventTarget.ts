@@ -19,11 +19,14 @@ import { $listeners } from "../keys.ts";
 
 export class EventTarget {
   /** @internal Event type → listener list, or null when there are no listeners (see listeners.ts). */
-  [$listeners]: ListenerMap | null;
+  /**
+   * Added on first addEventListener (absent otherwise): most nodes never get a listener (React
+   * delegates to its root container), and an always-initialized field cost every node a slot.
+   */
+  declare [$listeners]?: ListenerMap | null;
 
   /** https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget */
   constructor() {
-    this[$listeners] = null;
   }
 
   /** https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener */

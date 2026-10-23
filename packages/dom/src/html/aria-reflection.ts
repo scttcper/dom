@@ -73,7 +73,7 @@ function findRecord(el: NodeImpl, localName: string): AttrRecord | null {
   if (attrs === null) return null;
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i];
-    if (a.localName === localName && a.ns === null) return a;
+    if (a.localName === localName && (a.rare === null || a.rare.ns === null)) return a;
   }
   return null;
 }

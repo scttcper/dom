@@ -63,13 +63,16 @@ function isPotentialCustomElementName(name: string): boolean {
 export class Element extends Node {
   // Lazily created public API objects. Declared in the constructor so every Element
   // wrapper starts with the same field layout.
-  [$children]: HTMLCollection | null;
-  [$shadowRoot]: ShadowRoot | null;
+  // Rarely used per-element objects are own properties added on first use, never initialized in
+  // the constructor: an initialized-to-null field costs every element a slot (8 B each, 48 B for
+  // these six) while most elements never touch them. Reads treat "absent" like null.
+  declare [$children]?: HTMLCollection | null;
+  declare [$shadowRoot]?: ShadowRoot | null;
   /** Inline style declaration (src/css owns the class); null until `style` is read. */
-  [$style]: CSSStyleDeclaration | null;
-  [$classList]: DOMTokenList | null;
-  [$dataset]: DOMStringMap | null;
-  [$attributes]: NamedNodeMap | null;
+  declare [$style]?: CSSStyleDeclaration | null;
+  declare [$classList]?: DOMTokenList | null;
+  declare [$dataset]?: DOMStringMap | null;
+  declare [$attributes]?: NamedNodeMap | null;
 
   /** @internal Use Document.createElement / createElementNS. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
@@ -83,12 +86,6 @@ export class Element extends Node {
       impl.tag = tagId(localName);
       if (impl.tag === 0 && isPotentialCustomElementName(localName)) impl.flags |= F_CUSTOM;
     }
-    this[$children] = null;
-    this[$shadowRoot] = null;
-    this[$style] = null;
-    this[$classList] = null;
-    this[$dataset] = null;
-    this[$attributes] = null;
   }
 
   get namespaceURI(): string | null {
@@ -383,7 +380,7 @@ export class Element extends Node {
 
   get shadowRoot(): ShadowRoot | null {
     const s = this[$shadowRoot];
-    return s !== null && s.mode === "open" ? s : null;
+    return s != null && s.mode === "open" ? s : null;
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-attachshadow */
@@ -409,7 +406,7 @@ export class Element extends Node {
     if (slot === null) return null;
     const host = this[$impl].parent;
     const shadow = host === null || (host.flags & F_HAS_SHADOW) === 0 ? null : (host.node as Element)[$shadowRoot];
-    return shadow !== null && shadow.mode === "open" ? (slot.node as Element) : null;
+    return shadow != null && shadow.mode === "open" ? (slot.node as Element) : null;
   }
 
   // --- CSSOM View (no layout: geometry is always zero, scrolling is a no-op) ---------------
@@ -533,7 +530,7 @@ export function attachShadowRoot(
   }
   // Step 4.
   const current = element[$shadowRoot];
-  if (current !== null) {
+  if (current != null) {
     if (!current[$declarative] || current[$mode] !== mode) {
       throw new DOMException("Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host which already hosts a shadow tree.", "NotSupportedError");
     }

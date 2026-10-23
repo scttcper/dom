@@ -182,7 +182,10 @@ function htmlInputType(n: NodeImpl): string {
 function findAttr(n: NodeImpl, name: string): AttrRecord | null {
   const attrs = n.attrs;
   if (attrs === null) return null;
-  for (let i = 0; i < attrs.length; i++) if (attrs[i].name === name) return attrs[i];
+  for (let i = 0; i < attrs.length; i++) {
+    const a = attrs[i];
+    if ((a.rare === null ? a.localName : a.rare.name) === name) return a;
+  }
   return null;
 }
 

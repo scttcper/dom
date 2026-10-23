@@ -61,7 +61,10 @@ export function findAttributeByName(el: NodeImpl, qualifiedName: string): AttrRe
   if (attrs === null) return null;
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i];
-    if (a.name === qualifiedName) return a;
+    // Hot loops read the record's fields directly: `rare === null` means no namespace/prefix,
+    // so the qualified name is the local name (AttrRecord's getters, without the calls).
+    const r = a.rare;
+    if ((r === null ? a.localName : r.name) === qualifiedName) return a;
   }
   return null;
 }
@@ -72,7 +75,8 @@ export function findAttributeByNamespace(el: NodeImpl, ns: string | null, localN
   if (attrs === null) return null;
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i];
-    if (a.ns === ns && a.localName === localName) return a;
+    const r = a.rare;
+    if (a.localName === localName && (r === null ? ns === null : r.ns === ns)) return a;
   }
   return null;
 }
@@ -84,7 +88,8 @@ export function getAttribute(el: NodeImpl, qualifiedName: string): string | null
   const name = (el.flags & F_HTML) !== 0 ? asciiLowercase(qualifiedName) : qualifiedName;
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i];
-    if (a.name === name) return a.value;
+    const r = a.rare;
+    if ((r === null ? a.localName : r.name) === name) return a.value;
   }
   return null;
 }
@@ -99,7 +104,8 @@ export function attr(el: NodeImpl, lowerName: string): string | null {
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i];
     // Namespace-null match (an unprefixed namespaced attribute has the same qualified name).
-    if (a.name === lowerName && a.ns === null) return a.value;
+    const r = a.rare;
+    if (r === null ? a.localName === lowerName : r.ns === null && r.name === lowerName) return a.value;
   }
   return null;
 }
@@ -126,11 +132,36 @@ export function changeAttribute(el: NodeImpl, a: AttrRecord, value: string): voi
   handleAttributeChanges(el, a, oldValue, value);
 }
 
+/**
+ * Attribute lists are kept at their exact size. V8 gives an array that is pushed onto ~16 slots
+ * of slack (a one-attribute list cost 184 B instead of 56 B, two attributes 200 B instead of
+ * 64 B), and most elements carry 1–4 attributes, so appending copies into a new exact-length
+ * array (~7 ns; `concat` was ~48 ns). Every list is created with `new Array(n)` (as cloning
+ * does) so all of them share one elements kind and the read loops stay monomorphic. Long lists
+ * (rare) fall back to push.
+ */
+function addRecord(el: NodeImpl, a: AttrRecord): void {
+  const attrs = el.attrs;
+  if (attrs === null) {
+    const list: AttrRecord[] = new Array(1);
+    list[0] = a;
+    el.attrs = list;
+    return;
+  }
+  const n = attrs.length;
+  if (n >= 16) {
+    attrs.push(a);
+    return;
+  }
+  const next: AttrRecord[] = new Array(n + 1);
+  for (let i = 0; i < n; i++) next[i] = attrs[i];
+  next[n] = a;
+  el.attrs = next;
+}
+
 /** https://dom.spec.whatwg.org/#concept-element-attributes-append */
 export function appendAttribute(el: NodeImpl, a: AttrRecord): void {
-  let attrs = el.attrs;
-  if (attrs === null) el.attrs = attrs = [];
-  attrs.push(a);
+  addRecord(el, a);
   handleAttributeChanges(el, a, null, a.value);
 }
 
@@ -201,9 +232,7 @@ function coreAttributeSteps(el: NodeImpl, localName: string, value: string | nul
  * The caller guarantees no attribute with this name exists yet.
  */
 export function appendAttributeDetached(el: NodeImpl, localName: string, value: string, ns: string | null, prefix: string | null): void {
-  let attrs = el.attrs;
-  if (attrs === null) el.attrs = attrs = [];
-  attrs.push(new AttrRecord(localName, value, ns, prefix));
+  addRecord(el, new AttrRecord(localName, value, ns, prefix));
   if (ns === null) {
     if (localName === "id") el.id = value;
     else if (localName === "style" && value !== "" && (el.flags & F_HAS_STYLE_ATTR) === 0) {

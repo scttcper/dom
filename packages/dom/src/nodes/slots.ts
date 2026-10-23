@@ -45,7 +45,7 @@ function isSlottable(n: NodeImpl): boolean {
 }
 
 function shadowOf(host: NodeImpl): ShadowRoot | null {
-  return (host.flags & F_HAS_SHADOW) !== 0 ? (host.node as Element)[$shadowRoot] : null;
+  return (host.flags & F_HAS_SHADOW) !== 0 ? ((host.node as Element)[$shadowRoot] ?? null) : null;
 }
 
 /** https://dom.spec.whatwg.org/#slot-name */

@@ -2,27 +2,70 @@ import type { Attr } from "./Attr.ts";
 import type { Document } from "./Document.ts";
 import type { Node } from "./Node.ts";
 
-/**
- * One attribute of an element. Stored in `NodeImpl.attrs` in attribute-list order
- * (https://dom.spec.whatwg.org/#concept-element-attribute). The public `Attr` node is
- * created lazily (`attributes`, `getAttributeNode`) and cached in `attr`.
- */
-export class AttrRecord {
+/** The rarely present parts of an attribute: a namespace/prefix, or a materialized `Attr` node. */
+export class AttrRare {
   /** Qualified name (`prefix:localName` or `localName`). */
   name: string;
-  localName: string;
-  value: string;
   ns: string | null;
   prefix: string | null;
   attr: Attr | null;
 
-  constructor(localName: string, value: string, ns: string | null, prefix: string | null) {
-    this.name = prefix === null ? localName : prefix + ":" + localName;
-    this.localName = localName;
-    this.value = value;
+  constructor(name: string, ns: string | null, prefix: string | null) {
+    this.name = name;
     this.ns = ns;
     this.prefix = prefix;
     this.attr = null;
+  }
+}
+
+/**
+ * One attribute of an element. Stored in `NodeImpl.attrs` in attribute-list order
+ * (https://dom.spec.whatwg.org/#concept-element-attribute). The public `Attr` node is
+ * created lazily (`attributes`, `getAttributeNode`) and cached in `attr`.
+ *
+ * Memory: almost every attribute an app sets has no namespace, no prefix and no `Attr` node,
+ * so the record holds only `localName`, `value` and a `rare` slot (48 B instead of 72 B
+ * with six fields); `name`/`ns`/`prefix`/`attr` read through it. One class, so the
+ * accessors stay monomorphic and inline.
+ */
+export class AttrRecord {
+  localName: string;
+  value: string;
+  rare: AttrRare | null;
+
+  constructor(localName: string, value: string, ns: string | null, prefix: string | null) {
+    this.localName = localName;
+    this.value = value;
+    this.rare = ns === null && prefix === null ? null : new AttrRare(prefix === null ? localName : prefix + ":" + localName, ns, prefix);
+  }
+
+  /** Qualified name (`prefix:localName` or `localName`). */
+  get name(): string {
+    const r = this.rare;
+    return r === null ? this.localName : r.name;
+  }
+
+  get ns(): string | null {
+    const r = this.rare;
+    return r === null ? null : r.ns;
+  }
+
+  get prefix(): string | null {
+    const r = this.rare;
+    return r === null ? null : r.prefix;
+  }
+
+  get attr(): Attr | null {
+    const r = this.rare;
+    return r === null ? null : r.attr;
+  }
+
+  set attr(attr: Attr | null) {
+    if (this.rare === null) {
+      if (attr === null) return;
+      this.rare = new AttrRare(this.localName, null, null);
+    }
+    this.rare.attr = attr;
   }
 }
 

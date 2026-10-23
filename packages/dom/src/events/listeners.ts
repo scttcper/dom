@@ -140,7 +140,7 @@ export function addEventListener(
   checkCallback(callback, "addEventListener");
   let map = target[$listeners];
   let list: ListenerList | undefined;
-  if (map === null) {
+  if (map == null) {
     map = target[$listeners] = new Map();
   } else {
     list = map.get(type);
@@ -179,7 +179,7 @@ export function removeEventListener(
   if (callback === null || callback === undefined) return;
   checkCallback(callback, "removeEventListener");
   const map = target[$listeners];
-  if (map === null) return;
+  if (map == null) return;
   const list = map.get(type);
   if (list === undefined) return;
   const items = list.items;
@@ -196,7 +196,7 @@ export function removeEventListener(
 export function removeListener(target: EventTarget, type: string, listener: Listener): void {
   if (listener.removed) return;
   const map = target[$listeners];
-  const list = map === null ? undefined : map.get(type);
+  const list = map == null ? undefined : map.get(type);
   if (list === undefined) {
     listener.removed = true;
     return;
@@ -228,7 +228,7 @@ function removeAt(target: EventTarget, type: string, list: ListenerList, i: numb
 /** https://dom.spec.whatwg.org/#concept-event-listener-remove-all */
 export function removeAllEventListeners(target: EventTarget): void {
   const map = target[$listeners];
-  if (map === null) return;
+  if (map == null) return;
   for (const [type, list] of map) {
     const items = list.items;
     for (let i = items.length - 1; i >= 0; i--) removeAt(target, type, list, i);
@@ -239,7 +239,7 @@ export function removeAllEventListeners(target: EventTarget): void {
 /** Whether `target` has at least one listener for `type` (internal fast check for other areas). */
 export function hasListeners(target: EventTarget, type: string): boolean {
   const map = target[$listeners];
-  if (map === null) return false;
+  if (map == null) return false;
   const list = map.get(type);
   return list !== undefined && list.items.length > 0;
 }

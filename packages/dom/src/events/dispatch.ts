@@ -377,7 +377,7 @@ function legacyType(type: string): string | null {
 function invoke(event: Event, s: EventState, o: number, phase: number): void {
   const item = PATH[o] as EventTarget;
   const map = item[$listeners];
-  if (map === null) return;
+  if (map == null) return;
   // Steps 1-3.
   s.target = PATH[o + 1] as EventTarget;
   s.relatedTarget = PATH[o + 2] as EventTarget | null;

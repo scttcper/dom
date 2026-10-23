@@ -507,7 +507,7 @@ export class ElementInternals {
   /** https://html.spec.whatwg.org/#dom-elementinternals-shadowroot */
   get shadowRoot(): ShadowRoot | null {
     const shadow = (this[$target] as unknown as { [$shadowRoot]: ShadowRoot | null })[$shadowRoot];
-    return shadow === null || !shadow[$availableToElementInternals] ? null : shadow;
+    return shadow == null || !shadow[$availableToElementInternals] ? null : shadow;
   }
 
   get states(): Set<string> {

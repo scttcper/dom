@@ -109,7 +109,7 @@ export class Text extends CharacterData {
     // Find a slot with the open flag set: only slots in open shadow roots are exposed.
     const host = this[$impl].parent;
     const shadow = host === null ? null : (host.node as Element)[$shadowRoot];
-    return shadow !== null && shadow.mode === "open" ? (slot.node as Element) : null;
+    return shadow != null && shadow.mode === "open" ? (slot.node as Element) : null;
   }
 }
 

@@ -222,7 +222,7 @@ class DomSink extends TreeSink {
     clonable: boolean,
   ): number {
     const el = this.nodes[host].node as Element;
-    if (el[$shadowRoot] !== null) return -1;
+    if (el[$shadowRoot] != null) return -1;
     try {
       const shadow = attachShadowRoot(
         el,

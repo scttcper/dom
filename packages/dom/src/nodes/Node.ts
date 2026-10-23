@@ -86,14 +86,14 @@ export abstract class Node extends EventTarget {
   declare readonly DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: number;
 
   [$impl]: NodeImpl;
-  [$childNodes]: NodeList | null;
+  /** The live childNodes list, added on first access (see Element's lazily added fields). */
+  declare [$childNodes]?: NodeList | null;
 
   /** @internal Wrappers are created by the document/parser, never directly by users. */
   constructor(type: number, doc: Document | null) {
     super();
     // A Document passes null and becomes its own node document.
     this[$impl] = new NodeImpl(this, type, doc ?? (this as unknown as Document));
-    this[$childNodes] = null;
   }
 
   get nodeType(): number {
