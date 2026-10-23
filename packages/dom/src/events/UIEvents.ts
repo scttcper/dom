@@ -13,6 +13,7 @@
 // it does in browsers and `Object.defineProperty(event, ...)` (Testing Library) still works.
 // No layout: pageX/offsetX mirror clientX like jsdom (docs/deviations.md).
 
+import { exposeMembers } from "../webidl-runtime.ts";
 import {
   EF_DISPATCH,
   EF_MOUSE_EVENT,
@@ -161,30 +162,30 @@ export interface UIEventInit extends EventInit {
 
 /** https://w3c.github.io/uievents/#interface-uievent */
 export class UIEvent extends Event {
-  _view: Window | null;
-  _detail: number;
-  _which: number;
+  #view: Window | null;
+  #detail: number;
+  #which: number;
 
   constructor(type: string, eventInitDict?: UIEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     const d = dict(eventInitDict, new.target.name);
     super(type, eventInitDict);
-    this._view = viewMember(d, new.target.name);
-    this._detail = long(d, "detail");
-    this._which = ulong(d, "which");
+    this.#view = viewMember(d, new.target.name);
+    this.#detail = long(d, "detail");
+    this.#which = ulong(d, "which");
   }
 
   get view(): Window | null {
-    return this._view;
+    return this.#view;
   }
 
   get detail(): number {
-    return this._detail;
+    return this.#detail;
   }
 
   /** https://w3c.github.io/uievents/#dom-uievent-which (init value, like jsdom). */
   get which(): number {
-    return this._which;
+    return this.#which;
   }
 
   /** https://w3c.github.io/uievents/#dom-uievent-inituievent */
@@ -195,8 +196,8 @@ export class UIEvent extends Event {
     }
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
-    this._view = view ?? null;
-    this._detail = toLong(detail);
+    this.#view = view ?? null;
+    this.#detail = toLong(detail);
   }
 }
 setToStringTag(UIEvent);
@@ -254,97 +255,97 @@ export interface MouseEventInit extends EventModifierInit {
 
 /** https://w3c.github.io/uievents/#interface-mouseevent */
 export class MouseEvent extends UIEvent {
-  _screenX: number;
-  _screenY: number;
-  _clientX: number;
-  _clientY: number;
-  _mods: number;
-  _button: number;
-  _buttons: number;
-  _movementX: number;
-  _movementY: number;
+  #screenX: number;
+  #screenY: number;
+  #clientX: number;
+  #clientY: number;
+  #mods: number;
+  #button: number;
+  #buttons: number;
+  #movementX: number;
+  #movementY: number;
 
   constructor(type: string, eventInitDict?: MouseEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     const n = new.target.name;
     const d = (eventInitDict ?? null) as Dict | null;
-    this._screenX = double(d, "screenX", n);
-    this._screenY = double(d, "screenY", n);
-    this._clientX = double(d, "clientX", n);
-    this._clientY = double(d, "clientY", n);
-    this._mods = modifiers(d);
-    this._button = d === null || d.button === undefined ? 0 : toShort(d.button);
-    this._buttons = d === null || d.buttons === undefined ? 0 : toUnsignedShort(d.buttons);
-    this._movementX = double(d, "movementX", n);
-    this._movementY = double(d, "movementY", n);
+    this.#screenX = double(d, "screenX", n);
+    this.#screenY = double(d, "screenY", n);
+    this.#clientX = double(d, "clientX", n);
+    this.#clientY = double(d, "clientY", n);
+    this.#mods = modifiers(d);
+    this.#button = d === null || d.button === undefined ? 0 : toShort(d.button);
+    this.#buttons = d === null || d.buttons === undefined ? 0 : toUnsignedShort(d.buttons);
+    this.#movementX = double(d, "movementX", n);
+    this.#movementY = double(d, "movementY", n);
     this._s.relatedTarget = targetMember(d?.relatedTarget);
     this._s.flags |= EF_MOUSE_EVENT;
   }
 
   get screenX(): number {
-    return this._screenX;
+    return this.#screenX;
   }
   get screenY(): number {
-    return this._screenY;
+    return this.#screenY;
   }
   get clientX(): number {
-    return this._clientX;
+    return this.#clientX;
   }
   get clientY(): number {
-    return this._clientY;
+    return this.#clientY;
   }
   /** https://drafts.csswg.org/cssom-view/#dom-mouseevent-x */
   get x(): number {
-    return this._clientX;
+    return this.#clientX;
   }
   get y(): number {
-    return this._clientY;
+    return this.#clientY;
   }
   /** https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex (no scrolling: = clientX). */
   get pageX(): number {
-    return this._clientX;
+    return this.#clientX;
   }
   get pageY(): number {
-    return this._clientY;
+    return this.#clientY;
   }
   /** https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx (no layout: = pageX, like jsdom). */
   get offsetX(): number {
-    return this._clientX;
+    return this.#clientX;
   }
   get offsetY(): number {
-    return this._clientY;
+    return this.#clientY;
   }
   get movementX(): number {
-    return this._movementX;
+    return this.#movementX;
   }
   get movementY(): number {
-    return this._movementY;
+    return this.#movementY;
   }
   get ctrlKey(): boolean {
-    return (this._mods & M_CTRL) !== 0;
+    return (this.#mods & M_CTRL) !== 0;
   }
   get shiftKey(): boolean {
-    return (this._mods & M_SHIFT) !== 0;
+    return (this.#mods & M_SHIFT) !== 0;
   }
   get altKey(): boolean {
-    return (this._mods & M_ALT) !== 0;
+    return (this.#mods & M_ALT) !== 0;
   }
   get metaKey(): boolean {
-    return (this._mods & M_META) !== 0;
+    return (this.#mods & M_META) !== 0;
   }
   get button(): number {
-    return this._button;
+    return this.#button;
   }
   get buttons(): number {
-    return this._buttons;
+    return this.#buttons;
   }
   get relatedTarget(): EventTarget | null {
     return this._s.relatedTarget;
   }
 
   getModifierState(keyArg: string): boolean {
-    return modifierState(this._mods, toDOMString(keyArg));
+    return modifierState(this.#mods, toDOMString(keyArg));
   }
 
   /** https://w3c.github.io/uievents/#dom-mouseevent-initmouseevent */
@@ -368,12 +369,12 @@ export class MouseEvent extends UIEvent {
     if (arguments.length === 0) throw new TypeError("Failed to execute 'initMouseEvent' on 'MouseEvent': 1 argument required, but only 0 present.");
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, detail);
-    this._screenX = toLong(screenX);
-    this._screenY = toLong(screenY);
-    this._clientX = toLong(clientX);
-    this._clientY = toLong(clientY);
-    this._mods = legacyMods(ctrlKey, altKey, shiftKey, metaKey, this._mods);
-    this._button = toShort(button);
+    this.#screenX = toLong(screenX);
+    this.#screenY = toLong(screenY);
+    this.#clientX = toLong(clientX);
+    this.#clientY = toLong(clientY);
+    this.#mods = legacyMods(ctrlKey, altKey, shiftKey, metaKey, this.#mods);
+    this.#button = toShort(button);
     this._s.relatedTarget = targetMember(relatedTarget);
   }
 }
@@ -460,32 +461,32 @@ function tilt2spherical(tiltX: number, tiltY: number): [number, number] {
 
 /** https://w3c.github.io/pointerevents/#pointerevent-interface */
 export class PointerEvent extends MouseEvent {
-  _pointerId: number;
-  _width: number;
-  _height: number;
-  _pressure: number;
-  _tangentialPressure: number;
-  _tiltX: number;
-  _tiltY: number;
-  _twist: number;
-  _altitudeAngle: number;
-  _azimuthAngle: number;
-  _pointerType: string;
-  _isPrimary: boolean;
-  _persistentDeviceId: number;
-  _coalesced: PointerEvent[];
-  _predicted: PointerEvent[];
+  #pointerId: number;
+  #width: number;
+  #height: number;
+  #pressure: number;
+  #tangentialPressure: number;
+  #tiltX: number;
+  #tiltY: number;
+  #twist: number;
+  #altitudeAngle: number;
+  #azimuthAngle: number;
+  #pointerType: string;
+  #isPrimary: boolean;
+  #persistentDeviceId: number;
+  #coalesced: PointerEvent[];
+  #predicted: PointerEvent[];
 
   constructor(type: string, eventInitDict?: PointerEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     const n = new.target.name;
     const d = (eventInitDict ?? null) as Dict | null;
-    this._pointerId = long(d, "pointerId");
-    this._width = double(d, "width", n, 1);
-    this._height = double(d, "height", n, 1);
-    this._pressure = float(d, "pressure", n);
-    this._tangentialPressure = float(d, "tangentialPressure", n);
+    this.#pointerId = long(d, "pointerId");
+    this.#width = double(d, "width", n, 1);
+    this.#height = double(d, "height", n, 1);
+    this.#pressure = float(d, "pressure", n);
+    this.#tangentialPressure = float(d, "tangentialPressure", n);
     const hasTilt = d !== null && (d.tiltX !== undefined || d.tiltY !== undefined);
     const hasAngles = d !== null && (d.altitudeAngle !== undefined || d.azimuthAngle !== undefined);
     let tiltX = long(d, "tiltX");
@@ -494,66 +495,66 @@ export class PointerEvent extends MouseEvent {
     let azimuth = double(d, "azimuthAngle", n, 0);
     if (hasTilt && !hasAngles) [altitude, azimuth] = tilt2spherical(tiltX, tiltY);
     else if (hasAngles && !hasTilt) [tiltX, tiltY] = spherical2tilt(altitude, azimuth);
-    this._tiltX = tiltX;
-    this._tiltY = tiltY;
-    this._twist = long(d, "twist");
-    this._altitudeAngle = altitude;
-    this._azimuthAngle = azimuth;
-    this._pointerType = str(d, "pointerType", "");
-    this._isPrimary = bool(d, "isPrimary");
-    this._persistentDeviceId = long(d, "persistentDeviceId");
-    this._coalesced = d !== null && d.coalescedEvents != null ? Array.from(d.coalescedEvents as Iterable<PointerEvent>) : [];
-    this._predicted = d !== null && d.predictedEvents != null ? Array.from(d.predictedEvents as Iterable<PointerEvent>) : [];
+    this.#tiltX = tiltX;
+    this.#tiltY = tiltY;
+    this.#twist = long(d, "twist");
+    this.#altitudeAngle = altitude;
+    this.#azimuthAngle = azimuth;
+    this.#pointerType = str(d, "pointerType", "");
+    this.#isPrimary = bool(d, "isPrimary");
+    this.#persistentDeviceId = long(d, "persistentDeviceId");
+    this.#coalesced = d !== null && d.coalescedEvents != null ? Array.from(d.coalescedEvents as Iterable<PointerEvent>) : [];
+    this.#predicted = d !== null && d.predictedEvents != null ? Array.from(d.predictedEvents as Iterable<PointerEvent>) : [];
   }
 
   get pointerId(): number {
-    return this._pointerId;
+    return this.#pointerId;
   }
   get width(): number {
-    return this._width;
+    return this.#width;
   }
   get height(): number {
-    return this._height;
+    return this.#height;
   }
   get pressure(): number {
-    return this._pressure;
+    return this.#pressure;
   }
   get tangentialPressure(): number {
-    return this._tangentialPressure;
+    return this.#tangentialPressure;
   }
   get tiltX(): number {
-    return this._tiltX;
+    return this.#tiltX;
   }
   get tiltY(): number {
-    return this._tiltY;
+    return this.#tiltY;
   }
   get twist(): number {
-    return this._twist;
+    return this.#twist;
   }
   get altitudeAngle(): number {
-    return this._altitudeAngle;
+    return this.#altitudeAngle;
   }
   get azimuthAngle(): number {
-    return this._azimuthAngle;
+    return this.#azimuthAngle;
   }
   get pointerType(): string {
-    return this._pointerType;
+    return this.#pointerType;
   }
   get isPrimary(): boolean {
-    return this._isPrimary;
+    return this.#isPrimary;
   }
   get persistentDeviceId(): number {
-    return this._persistentDeviceId;
+    return this.#persistentDeviceId;
   }
 
   /** https://w3c.github.io/pointerevents/#dom-pointerevent-getcoalescedevents */
   getCoalescedEvents(): PointerEvent[] {
-    return this._coalesced.slice();
+    return this.#coalesced.slice();
   }
 
   /** https://w3c.github.io/pointerevents/#dom-pointerevent-getpredictedevents */
   getPredictedEvents(): PointerEvent[] {
-    return this._predicted.slice();
+    return this.#predicted.slice();
   }
 }
 setToStringTag(PointerEvent);
@@ -572,33 +573,33 @@ export class WheelEvent extends MouseEvent {
   static readonly DOM_DELTA_PIXEL = 0;
   static readonly DOM_DELTA_LINE = 1;
   static readonly DOM_DELTA_PAGE = 2;
-  _deltaX: number;
-  _deltaY: number;
-  _deltaZ: number;
-  _deltaMode: number;
+  #deltaX: number;
+  #deltaY: number;
+  #deltaZ: number;
+  #deltaMode: number;
 
   constructor(type: string, eventInitDict?: WheelEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     const n = new.target.name;
     const d = (eventInitDict ?? null) as Dict | null;
-    this._deltaX = double(d, "deltaX", n);
-    this._deltaY = double(d, "deltaY", n);
-    this._deltaZ = double(d, "deltaZ", n);
-    this._deltaMode = ulong(d, "deltaMode");
+    this.#deltaX = double(d, "deltaX", n);
+    this.#deltaY = double(d, "deltaY", n);
+    this.#deltaZ = double(d, "deltaZ", n);
+    this.#deltaMode = ulong(d, "deltaMode");
   }
 
   get deltaX(): number {
-    return this._deltaX;
+    return this.#deltaX;
   }
   get deltaY(): number {
-    return this._deltaY;
+    return this.#deltaY;
   }
   get deltaZ(): number {
-    return this._deltaZ;
+    return this.#deltaZ;
   }
   get deltaMode(): number {
-    return this._deltaMode;
+    return this.#deltaMode;
   }
 }
 setToStringTag(WheelEvent);
@@ -616,17 +617,17 @@ export interface DragEventInit extends MouseEventInit {
 
 /** https://html.spec.whatwg.org/#the-dragevent-interface */
 export class DragEvent extends MouseEvent {
-  _dataTransfer: DataTransfer | null;
+  #dataTransfer: DataTransfer | null;
 
   constructor(type: string, eventInitDict?: DragEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     // Lenient (no DataTransfer type check): Testing Library passes plain objects here.
-    this._dataTransfer = (eventInitDict?.dataTransfer ?? null) as DataTransfer | null;
+    this.#dataTransfer = (eventInitDict?.dataTransfer ?? null) as DataTransfer | null;
   }
 
   get dataTransfer(): DataTransfer | null {
-    return this._dataTransfer;
+    return this.#dataTransfer;
   }
 }
 setToStringTag(DragEvent);
@@ -649,67 +650,67 @@ export class KeyboardEvent extends UIEvent {
   static readonly DOM_KEY_LOCATION_LEFT = 1;
   static readonly DOM_KEY_LOCATION_RIGHT = 2;
   static readonly DOM_KEY_LOCATION_NUMPAD = 3;
-  _key: string;
-  _code: string;
-  _location: number;
-  _mods: number;
-  _repeat: boolean;
-  _isComposing: boolean;
-  _charCode: number;
-  _keyCode: number;
+  #key: string;
+  #code: string;
+  #location: number;
+  #mods: number;
+  #repeat: boolean;
+  #isComposing: boolean;
+  #charCode: number;
+  #keyCode: number;
 
   constructor(type: string, eventInitDict?: KeyboardEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     const d = (eventInitDict ?? null) as Dict | null;
-    this._key = str(d, "key", "");
-    this._code = str(d, "code", "");
-    this._location = ulong(d, "location");
-    this._mods = modifiers(d);
-    this._repeat = bool(d, "repeat");
-    this._isComposing = bool(d, "isComposing");
-    this._charCode = ulong(d, "charCode");
-    this._keyCode = ulong(d, "keyCode");
+    this.#key = str(d, "key", "");
+    this.#code = str(d, "code", "");
+    this.#location = ulong(d, "location");
+    this.#mods = modifiers(d);
+    this.#repeat = bool(d, "repeat");
+    this.#isComposing = bool(d, "isComposing");
+    this.#charCode = ulong(d, "charCode");
+    this.#keyCode = ulong(d, "keyCode");
   }
 
   get key(): string {
-    return this._key;
+    return this.#key;
   }
   get code(): string {
-    return this._code;
+    return this.#code;
   }
   get location(): number {
-    return this._location;
+    return this.#location;
   }
   get ctrlKey(): boolean {
-    return (this._mods & M_CTRL) !== 0;
+    return (this.#mods & M_CTRL) !== 0;
   }
   get shiftKey(): boolean {
-    return (this._mods & M_SHIFT) !== 0;
+    return (this.#mods & M_SHIFT) !== 0;
   }
   get altKey(): boolean {
-    return (this._mods & M_ALT) !== 0;
+    return (this.#mods & M_ALT) !== 0;
   }
   get metaKey(): boolean {
-    return (this._mods & M_META) !== 0;
+    return (this.#mods & M_META) !== 0;
   }
   get repeat(): boolean {
-    return this._repeat;
+    return this.#repeat;
   }
   get isComposing(): boolean {
-    return this._isComposing;
+    return this.#isComposing;
   }
   /** https://w3c.github.io/uievents/#dom-keyboardevent-charcode (legacy; init value). */
   get charCode(): number {
-    return this._charCode;
+    return this.#charCode;
   }
   /** https://w3c.github.io/uievents/#dom-keyboardevent-keycode (legacy; init value). */
   get keyCode(): number {
-    return this._keyCode;
+    return this.#keyCode;
   }
 
   getModifierState(keyArg: string): boolean {
-    return modifierState(this._mods, toDOMString(keyArg));
+    return modifierState(this.#mods, toDOMString(keyArg));
   }
 
   /** https://w3c.github.io/uievents/#dom-keyboardevent-initkeyboardevent */
@@ -728,9 +729,9 @@ export class KeyboardEvent extends UIEvent {
     if (arguments.length === 0) throw new TypeError("Failed to execute 'initKeyboardEvent' on 'KeyboardEvent': 1 argument required, but only 0 present.");
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
-    this._key = toDOMString(key);
-    this._location = toUnsignedLong(location);
-    this._mods = legacyMods(ctrlKey, altKey, shiftKey, metaKey, this._mods);
+    this.#key = toDOMString(key);
+    this.#location = toUnsignedLong(location);
+    this.#mods = legacyMods(ctrlKey, altKey, shiftKey, metaKey, this.#mods);
   }
 }
 setToStringTag(KeyboardEvent);
@@ -753,39 +754,39 @@ export interface InputEventInit extends UIEventInit {
 
 /** https://w3c.github.io/uievents/#interface-inputevent + https://w3c.github.io/input-events/ */
 export class InputEvent extends UIEvent {
-  _data: string | null;
-  _isComposing: boolean;
-  _inputType: string;
-  _dataTransfer: DataTransfer | null;
-  _targetRanges: unknown[];
+  #data: string | null;
+  #isComposing: boolean;
+  #inputType: string;
+  #dataTransfer: DataTransfer | null;
+  #targetRanges: unknown[];
 
   constructor(type: string, eventInitDict?: InputEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     const d = (eventInitDict ?? null) as Dict | null;
     const data = d === null ? undefined : d.data;
-    this._data = data === undefined || data === null ? null : toDOMString(data);
-    this._isComposing = bool(d, "isComposing");
-    this._inputType = str(d, "inputType", "");
-    this._dataTransfer = (d?.dataTransfer ?? null) as DataTransfer | null;
-    this._targetRanges = d !== null && d.targetRanges != null ? Array.from(d.targetRanges as Iterable<unknown>) : [];
+    this.#data = data === undefined || data === null ? null : toDOMString(data);
+    this.#isComposing = bool(d, "isComposing");
+    this.#inputType = str(d, "inputType", "");
+    this.#dataTransfer = (d?.dataTransfer ?? null) as DataTransfer | null;
+    this.#targetRanges = d !== null && d.targetRanges != null ? Array.from(d.targetRanges as Iterable<unknown>) : [];
   }
 
   get data(): string | null {
-    return this._data;
+    return this.#data;
   }
   get isComposing(): boolean {
-    return this._isComposing;
+    return this.#isComposing;
   }
   get inputType(): string {
-    return this._inputType;
+    return this.#inputType;
   }
   get dataTransfer(): DataTransfer | null {
-    return this._dataTransfer;
+    return this.#dataTransfer;
   }
   /** https://w3c.github.io/input-events/#dom-inputevent-gettargetranges */
   getTargetRanges(): unknown[] {
-    return this._targetRanges.slice();
+    return this.#targetRanges.slice();
   }
 }
 setToStringTag(InputEvent);
@@ -798,16 +799,16 @@ export interface CompositionEventInit extends UIEventInit {
 
 /** https://w3c.github.io/uievents/#interface-compositionevent */
 export class CompositionEvent extends UIEvent {
-  _data: string;
+  #data: string;
 
   constructor(type: string, eventInitDict?: CompositionEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
-    this._data = str((eventInitDict ?? null) as Dict | null, "data", "");
+    this.#data = str((eventInitDict ?? null) as Dict | null, "data", "");
   }
 
   get data(): string {
-    return this._data;
+    return this.#data;
   }
 
   /** https://w3c.github.io/uievents/#dom-compositionevent-initcompositionevent */
@@ -815,7 +816,7 @@ export class CompositionEvent extends UIEvent {
     if (arguments.length === 0) throw new TypeError("Failed to execute 'initCompositionEvent' on 'CompositionEvent': 1 argument required, but only 0 present.");
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
-    this._data = toDOMString(data);
+    this.#data = toDOMString(data);
   }
 }
 setToStringTag(CompositionEvent);
@@ -824,22 +825,22 @@ setToStringTag(CompositionEvent);
 
 /** https://w3c.github.io/uievents/#legacy-textevent-interface */
 export class TextEvent extends UIEvent {
-  _data: string;
+  #data: string;
 
   constructor(type: string, eventInitDict?: UIEventInit | null) {
     if (!isInternalConstruct()) throw new TypeError("Illegal constructor");
     super(type, eventInitDict);
-    this._data = "";
+    this.#data = "";
   }
 
   get data(): string {
-    return this._data;
+    return this.#data;
   }
 
   initTextEvent(type: string, bubbles = false, cancelable = false, view: Window | null = null, data = "undefined"): void {
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
-    this._data = toDOMString(data);
+    this.#data = toDOMString(data);
   }
 }
 setToStringTag(TextEvent);
@@ -870,21 +871,21 @@ export interface TouchInit {
  * event path but Touch objects are not re-created per path entry.
  */
 export class Touch {
-  _identifier: number;
-  _target: EventTarget;
-  _clientX: number;
-  _clientY: number;
-  _screenX: number;
-  _screenY: number;
-  _pageX: number;
-  _pageY: number;
-  _radiusX: number;
-  _radiusY: number;
-  _rotationAngle: number;
-  _force: number;
-  _altitudeAngle: number;
-  _azimuthAngle: number;
-  _touchType: string;
+  #identifier: number;
+  #target: EventTarget;
+  #clientX: number;
+  #clientY: number;
+  #screenX: number;
+  #screenY: number;
+  #pageX: number;
+  #pageY: number;
+  #radiusX: number;
+  #radiusY: number;
+  #rotationAngle: number;
+  #force: number;
+  #altitudeAngle: number;
+  #azimuthAngle: number;
+  #touchType: string;
 
   constructor(touchInitDict: TouchInit) {
     requireArgs(arguments.length, 1, "Touch");
@@ -892,67 +893,67 @@ export class Touch {
     if (d === null || d.identifier === undefined) throw new TypeError("Failed to construct 'Touch': required member identifier is undefined.");
     if (d.target === undefined) throw new TypeError("Failed to construct 'Touch': required member target is undefined.");
     const n = "Touch";
-    this._identifier = toLong(d.identifier);
-    this._target = d.target as EventTarget;
-    this._clientX = double(d, "clientX", n);
-    this._clientY = double(d, "clientY", n);
-    this._screenX = double(d, "screenX", n);
-    this._screenY = double(d, "screenY", n);
-    this._pageX = double(d, "pageX", n);
-    this._pageY = double(d, "pageY", n);
-    this._radiusX = float(d, "radiusX", n);
-    this._radiusY = float(d, "radiusY", n);
-    this._rotationAngle = float(d, "rotationAngle", n);
-    this._force = float(d, "force", n);
-    this._altitudeAngle = double(d, "altitudeAngle", n);
-    this._azimuthAngle = double(d, "azimuthAngle", n);
-    this._touchType = str(d, "touchType", "direct");
+    this.#identifier = toLong(d.identifier);
+    this.#target = d.target as EventTarget;
+    this.#clientX = double(d, "clientX", n);
+    this.#clientY = double(d, "clientY", n);
+    this.#screenX = double(d, "screenX", n);
+    this.#screenY = double(d, "screenY", n);
+    this.#pageX = double(d, "pageX", n);
+    this.#pageY = double(d, "pageY", n);
+    this.#radiusX = float(d, "radiusX", n);
+    this.#radiusY = float(d, "radiusY", n);
+    this.#rotationAngle = float(d, "rotationAngle", n);
+    this.#force = float(d, "force", n);
+    this.#altitudeAngle = double(d, "altitudeAngle", n);
+    this.#azimuthAngle = double(d, "azimuthAngle", n);
+    this.#touchType = str(d, "touchType", "direct");
   }
 
   get identifier(): number {
-    return this._identifier;
+    return this.#identifier;
   }
   get target(): EventTarget {
-    return this._target;
+    return this.#target;
   }
   get clientX(): number {
-    return this._clientX;
+    return this.#clientX;
   }
   get clientY(): number {
-    return this._clientY;
+    return this.#clientY;
   }
   get screenX(): number {
-    return this._screenX;
+    return this.#screenX;
   }
   get screenY(): number {
-    return this._screenY;
+    return this.#screenY;
   }
   get pageX(): number {
-    return this._pageX;
+    return this.#pageX;
   }
   get pageY(): number {
-    return this._pageY;
+    return this.#pageY;
   }
   get radiusX(): number {
-    return this._radiusX;
+    return this.#radiusX;
   }
   get radiusY(): number {
-    return this._radiusY;
+    return this.#radiusY;
   }
   get rotationAngle(): number {
-    return this._rotationAngle;
+    return this.#rotationAngle;
   }
   get force(): number {
-    return this._force;
+    return this.#force;
   }
   get altitudeAngle(): number {
-    return this._altitudeAngle;
+    return this.#altitudeAngle;
   }
   get azimuthAngle(): number {
-    return this._azimuthAngle;
+    return this.#azimuthAngle;
   }
   get touchType(): string {
-    return this._touchType;
+    return this.#touchType;
   }
 }
 setToStringTag(Touch);
@@ -960,32 +961,32 @@ setToStringTag(Touch);
 /** https://w3c.github.io/touch-events/#touchlist-interface (static list with own index properties). */
 export class TouchList {
   [index: number]: Touch;
-  _items: Touch[];
+  #items: Touch[];
 
   constructor() {
     if (!isInternalConstruct()) throw new TypeError("Illegal constructor");
-    this._items = [];
+    this.#items = [];
   }
 
   /** @internal */
   static _create(items: Touch[]): TouchList {
     const prev = isInternalConstruct();
     const list = prev ? new TouchList() : withConstruct(() => new TouchList());
-    list._items = items;
+    list.#items = items;
     for (let i = 0; i < items.length; i++) Object.defineProperty(list, i, { value: items[i], enumerable: true, configurable: true });
     return list;
   }
 
   get length(): number {
-    return this._items.length;
+    return this.#items.length;
   }
 
   item(index: number): Touch | null {
-    return this._items[toUnsignedLong(index)] ?? null;
+    return this.#items[toUnsignedLong(index)] ?? null;
   }
 
   [Symbol.iterator](): IterableIterator<Touch> {
-    return this._items[Symbol.iterator]();
+    return this.#items[Symbol.iterator]();
   }
 }
 setToStringTag(TouchList);
@@ -1016,55 +1017,55 @@ function touchSequence(v: unknown, member: string): Touch[] {
 
 /** https://w3c.github.io/touch-events/#touchevent-interface */
 export class TouchEvent extends UIEvent {
-  _touches: TouchList;
-  _targetTouches: TouchList;
-  _changedTouches: TouchList;
-  _mods: number;
+  #touches: TouchList;
+  #targetTouches: TouchList;
+  #changedTouches: TouchList;
+  #mods: number;
 
   constructor(type: string, eventInitDict?: TouchEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     const d = (eventInitDict ?? null) as Dict | null;
-    this._touches = TouchList._create(touchSequence(d?.touches, "touches"));
-    this._targetTouches = TouchList._create(touchSequence(d?.targetTouches, "targetTouches"));
-    this._changedTouches = TouchList._create(touchSequence(d?.changedTouches, "changedTouches"));
-    this._mods = modifiers(d);
+    this.#touches = TouchList._create(touchSequence(d?.touches, "touches"));
+    this.#targetTouches = TouchList._create(touchSequence(d?.targetTouches, "targetTouches"));
+    this.#changedTouches = TouchList._create(touchSequence(d?.changedTouches, "changedTouches"));
+    this.#mods = modifiers(d);
     this._s.flags |= EF_TOUCH_EVENT;
   }
 
   get touches(): TouchList {
-    return this._touches;
+    return this.#touches;
   }
   get targetTouches(): TouchList {
-    return this._targetTouches;
+    return this.#targetTouches;
   }
   get changedTouches(): TouchList {
-    return this._changedTouches;
+    return this.#changedTouches;
   }
   get altKey(): boolean {
-    return (this._mods & M_ALT) !== 0;
+    return (this.#mods & M_ALT) !== 0;
   }
   get metaKey(): boolean {
-    return (this._mods & M_META) !== 0;
+    return (this.#mods & M_META) !== 0;
   }
   get ctrlKey(): boolean {
-    return (this._mods & M_CTRL) !== 0;
+    return (this.#mods & M_CTRL) !== 0;
   }
   get shiftKey(): boolean {
-    return (this._mods & M_SHIFT) !== 0;
+    return (this.#mods & M_SHIFT) !== 0;
   }
 
   getModifierState(keyArg: string): boolean {
-    return modifierState(this._mods, toDOMString(keyArg));
+    return modifierState(this.#mods, toDOMString(keyArg));
   }
 
   /** @internal https://dom.spec.whatwg.org/#event-touch-target-list */
   _touchTargetList(): EventTarget[] {
     const out: EventTarget[] = [];
-    for (const list of [this._touches, this._targetTouches, this._changedTouches]) {
-      for (const t of list._items) {
+    for (const list of [this.#touches, this.#targetTouches, this.#changedTouches]) {
+      for (const t of list) {
         // Touch-like plain objects carry `target` (if any) as a normal property.
-        const target = t instanceof Touch ? t._target : (t as { target?: unknown }).target;
+        const target = (t as { target?: unknown }).target;
         if (target !== null && typeof target === "object") out.push(target as EventTarget);
       }
     }
@@ -1081,17 +1082,20 @@ export interface ClipboardEventInit extends EventInit {
 
 /** https://w3c.github.io/clipboard-apis/#clipboardevent */
 export class ClipboardEvent extends Event {
-  _clipboardData: DataTransfer | null;
+  #clipboardData: DataTransfer | null;
 
   constructor(type: string, eventInitDict?: ClipboardEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
     super(type, eventInitDict);
     // Lenient (no DataTransfer type check): Testing Library passes plain objects here.
-    this._clipboardData = (eventInitDict?.clipboardData ?? null) as DataTransfer | null;
+    this.#clipboardData = (eventInitDict?.clipboardData ?? null) as DataTransfer | null;
   }
 
   get clipboardData(): DataTransfer | null {
-    return this._clipboardData;
+    return this.#clipboardData;
   }
 }
 setToStringTag(ClipboardEvent);
+
+// WebIDL: attributes and operations are enumerable prototype members.
+exposeMembers(UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, DragEvent, KeyboardEvent, InputEvent, CompositionEvent, TextEvent, Touch, TouchList, TouchEvent, ClipboardEvent);

@@ -9,6 +9,7 @@
 //     Document returns its Window (except for "load"), Window returns null.
 // Listener storage is in listeners.ts, the dispatch algorithm in dispatch.ts.
 
+import { exposeMembers } from "../webidl-runtime.ts";
 import { EF_DISPATCH, EF_INITIALIZED, EF_TRUSTED, Event, NONE } from "./Event.ts";
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import { addEventListener, removeEventListener, type ListenerMap } from "./listeners.ts";
@@ -66,3 +67,6 @@ export class EventTarget {
 }
 
 Object.defineProperty(EventTarget.prototype, Symbol.toStringTag, { value: "EventTarget", configurable: true });
+
+// WebIDL: attributes and operations are enumerable prototype members.
+exposeMembers(EventTarget);

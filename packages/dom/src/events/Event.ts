@@ -11,6 +11,7 @@
 //   A dispatch pushes its structs at the top and pops them when done, so nested
 //   (re-entrant) dispatches stack naturally and steady-state dispatch allocates nothing.
 
+import { exposeMembers } from "../webidl-runtime.ts";
 import type { EventInit } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { toDOMString } from "./convert.ts";
@@ -101,6 +102,14 @@ export function isInternalConstruct(): boolean {
   return constructing;
 }
 
+const IS_TRUSTED: PropertyDescriptor = {
+  get: function isTrusted(this: Event): boolean {
+    return (this._s.flags & EF_TRUSTED) !== 0;
+  },
+  enumerable: true,
+  configurable: false,
+};
+
 export class Event {
   static readonly NONE = NONE;
   static readonly CAPTURING_PHASE = CAPTURING_PHASE;
@@ -111,8 +120,14 @@ export class Event {
   declare readonly AT_TARGET: 2;
   declare readonly BUBBLING_PHASE: 3;
 
-  /** @internal */
-  _s: EventState;
+  // All internal state lives in one private field: nothing but `isTrusted` is an own
+  // enumerable property, as with WebIDL/jsdom (pretty-format prints `Event {"isTrusted": false}`).
+  #s: EventState;
+
+  /** @internal The per-event state record (non-enumerable prototype accessor). */
+  get _s(): EventState {
+    return this.#s;
+  }
 
   /** https://dom.spec.whatwg.org/#dom-event-event */
   constructor(type: string, eventInitDict?: EventInit | null) {
@@ -130,7 +145,10 @@ export class Event {
       if (eventInitDict.cancelable) flags |= EF_CANCELABLE;
       if (eventInitDict.composed) flags |= EF_COMPOSED;
     }
-    this._s = new EventState(typeString, flags);
+    this.#s = new EventState(typeString, flags);
+    // https://dom.spec.whatwg.org/#dom-event-istrusted — [LegacyUnforgeable]: an own,
+    // enumerable, non-configurable accessor on every instance, sharing one getter.
+    Object.defineProperty(this, "isTrusted", IS_TRUSTED);
   }
 
   get type(): string {
@@ -166,14 +184,7 @@ export class Event {
     return (this._s.flags & EF_COMPOSED) !== 0;
   }
 
-  /**
-   * https://dom.spec.whatwg.org/#dom-event-istrusted
-   * Deviation: a prototype getter instead of a [LegacyUnforgeable] own property (defining an
-   * own accessor per event would cost a property definition per construction).
-   */
-  get isTrusted(): boolean {
-    return (this._s.flags & EF_TRUSTED) !== 0;
-  }
+  declare readonly isTrusted: boolean;
 
   /** https://dom.spec.whatwg.org/#dom-event-timestamp — ms since the time origin (performance.now()). */
   get timeStamp(): number {
@@ -319,3 +330,6 @@ export function setTrusted(event: Event, trusted = true): void {
 export function setToStringTag(ctor: { prototype: object; name: string }): void {
   Object.defineProperty(ctor.prototype, Symbol.toStringTag, { value: ctor.name, configurable: true });
 }
+
+// WebIDL: attributes and operations are enumerable prototype members.
+exposeMembers(Event);

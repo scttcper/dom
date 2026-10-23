@@ -8,6 +8,7 @@
 // so it also completes under fake timers (docs/deviations.md).
 
 import { createFileList, type FileList } from "../html/forms/FileList.ts";
+import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
 
 const DROP_EFFECTS = new Set(["none", "copy", "link", "move"]);
 const EFFECT_ALLOWED = new Set(["none", "copy", "copyLink", "copyMove", "link", "linkMove", "move", "all", "uninitialized"]);
@@ -68,6 +69,7 @@ function makeItem(kind: string, type: string, data: string, file: File | null): 
     item._type = type;
     item._data = data;
     item._file = file;
+    hideInternals(item);
     return item;
   } finally {
     internal = false;
@@ -155,6 +157,7 @@ function makeList(owner: DataTransfer): DataTransferItemList {
   try {
     const list = new DataTransferItemList();
     list._owner = owner;
+    hideInternals(list);
     return list;
   } finally {
     internal = false;
@@ -183,6 +186,7 @@ export class DataTransfer {
     this._items = makeList(this);
     this._types = null;
     this._files = null;
+    hideInternals(this);
   }
 
   get dropEffect(): string {
@@ -275,3 +279,5 @@ export class DataTransfer {
   }
 }
 Object.defineProperty(DataTransfer.prototype, Symbol.toStringTag, { value: "DataTransfer", configurable: true });
+
+exposeMembers(DataTransfer, DataTransferItemList, DataTransferItem);
