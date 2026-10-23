@@ -14,8 +14,11 @@ What is left:
 | rtd-full | 6 | Checkbox/Radio/Switch "press state with keyboard": `onPress` ×2 | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
 | rtd-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
 
-Also seen once: `ariaHideOutside.test.js` failing to load in a full run ("Cannot read properties of
-undefined (reading 'doc')" in `inHTMLDocument`); passes alone and in later full runs.
+Fixed since (1b93804): `ariaHideOutside.test.js` or `DOMFunctions.test.tsx` failing to load
+("Cannot read properties of undefined (reading 'doc')" in `inHTMLDocument`) whenever both ran in one
+worker. shadow-dom-testing-library defines a non-configurable `ShadowRoot.prototype.outerHTML`
+getter, per-file interface isolation could not delete it, and the next file called it on the
+prototype. Definitions on interface objects from a test realm are now always configurable.
 
 The sections below are the clusters from the first run, kept for the record; the table says where
 each one went. Clusters 12-21 were found while burning down cluster 11.
