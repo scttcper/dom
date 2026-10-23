@@ -1,0 +1,44 @@
+{
+  "repository": "https://github.com/adobe/react-spectrum.git",
+  "branch": "main",
+  "commit": "d5fb723a1c192e3a1a25c8cfdd4e26b900995307",
+  "pinnedAt": "2026-10-23",
+  "workspaces": [
+    "react-spectrum-monorepo",
+    "react-aria-components",
+    "react-aria",
+    "react-stately",
+    "@react-stately/flags",
+    "@adobe/react-spectrum",
+    "css-module-types",
+    "@internationalized/string-compiler",
+    "@react-spectrum/test-utils-internal",
+    "@react-aria/test-utils",
+    "@spectrum-icons/ui",
+    "@spectrum-icons/workflow",
+    "@spectrum-icons/color",
+    "@spectrum-icons/express",
+    "@spectrum-icons/illustrations"
+  ],
+  "presets": {
+    "smoke": [
+      "packages/react-aria-components/test/Button.test.js",
+      "packages/react-aria-components/test/Checkbox.test.js",
+      "packages/react-aria-components/test/TextField.test.js",
+      "packages/react-aria-components/test/Select.test.js",
+      "packages/react-aria-components/test/ComboBox.test.js",
+      "packages/react-aria-components/test/Menu.test.tsx",
+      "packages/react-aria-components/test/Dialog.test.js",
+      "packages/react-aria-components/test/Tabs.test.js"
+    ],
+    "interactions": [
+      "packages/react-aria/test/interactions/",
+      "packages/react-aria/test/focus/",
+      "packages/react-aria/test/selection/"
+    ],
+    "all": [
+      "packages/react-aria/test/",
+      "packages/react-aria-components/test/"
+    ]
+  }
+}
