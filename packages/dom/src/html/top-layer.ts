@@ -23,7 +23,7 @@ import { T } from "../nodes/tags.ts";
 import { assignedSlotForEventPath } from "../nodes/slots.ts";
 import { setPostDispatchHook } from "../events/dispatch.ts";
 import { contentAttr } from "./reflect.ts";
-import { fireToggleEvent, queueTask } from "./events.ts";
+import { fireToggleEvent, queueElementTask } from "./events.ts";
 import { targetPopover } from "./invokers.ts";
 import { $focused, $host, $impl, $styleVersion, $window } from "../keys.ts";
 
@@ -418,7 +418,7 @@ function queuePopoverToggle(el: NodeImpl, oldState: string, newState: string, so
   // 2-3.
   const tracker: ToggleTracker = { oldState, cancelled: false };
   r.toggleTracker = tracker;
-  queueTask(() => {
+  queueElementTask(el, () => {
     if (tracker.cancelled) return;
     fireToggleEvent(el.node as Element, "toggle", oldState, newState, false, source === null ? null : (source.node as Element));
     if (r.toggleTracker === tracker) r.toggleTracker = null;

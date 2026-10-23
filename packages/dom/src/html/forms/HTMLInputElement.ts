@@ -88,7 +88,7 @@ import {
 import { elementByIdInTree, formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
 import { FileList, createFileList } from "../../window/FileList.ts";
-import { queueTask } from "../events.ts";
+import { queueElementTask } from "../events.ts";
 import { popoverTargetAttributeActivation } from "../invokers.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
 import { $badInput, $checked, $checkedSet, $customValidity, $dirtyChecked, $dirtyValue, $files, $impl, $indeterminate, $labels, $preApplied, $preChecked, $preCheckedRadio, $preIndeterminate, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $validity, $value, $version } from "../../keys.ts";
@@ -1233,7 +1233,7 @@ export function setSelection(el: SelectionHost, start: number, end: number, dire
   el[$selDir] = dir;
   if (changed) {
     const target = el as unknown as EventTarget;
-    queueTask(() => fireEvent(target, "select", true, false));
+    queueElementTask(target, () => fireEvent(target, "select", true, false));
   }
 }
 

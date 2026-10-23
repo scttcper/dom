@@ -11,6 +11,9 @@ import type { EventTarget } from "../events/EventTarget.ts";
 import { fireAnEvent, fireSyntheticPointerEvent } from "../events/fire.ts";
 import { FocusEvent } from "../events/UIEvents.ts";
 import { ToggleEvent } from "../events/events.ts";
+import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { currentWindowOrNull } from "../window/current.ts";
+import { $impl, $window } from "../keys.ts";
 
 /** https://dom.spec.whatwg.org/#concept-event-fire — returns false if canceled. */
 export function fireEvent(target: EventTarget, type: string, bubbles = false, cancelable = false): boolean {
@@ -35,7 +38,17 @@ export function fireSyntheticClick(target: EventTarget): boolean {
   return fireSyntheticPointerEvent("click", target, true);
 }
 
-/** A queued task (https://html.spec.whatwg.org/#queue-a-task): a macrotask, after microtasks. */
-export function queueTask(fn: () => void): void {
-  setTimeout(fn, 0);
+/**
+ * https://html.spec.whatwg.org/#queue-an-element-task — a macrotask on the element's window. Its
+ * `_task` uses the window's timers (the test file's virtual clock or fake timers, so the task is
+ * ordered with the test's own timers) and close() cancels it. A bare `setTimeout` here is the
+ * outer Node realm's real timer under jest-environment-rtd (this module is loaded outside the test
+ * file's vm global): user-event's post-click wait on the virtual clock then resolved before a
+ * <details> `toggle` fired. Documents without a browsing context use the current window.
+ */
+export function queueElementTask(element: NodeImpl | EventTarget, fn: () => void): void {
+  const impl = "doc" in element ? (element as NodeImpl) : (element as unknown as { [$impl]: NodeImpl })[$impl];
+  const window = impl.doc[$window] ?? currentWindowOrNull();
+  if (window !== null) window._task(fn, 0);
+  else setTimeout(fn, 0);
 }

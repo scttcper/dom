@@ -10,7 +10,7 @@
 
 import { HTMLElement } from "./HTMLElement.ts";
 import { bool, CROSS_ORIGIN, enumerated, LOADING, ulong, url, contentAttr } from "./reflect.ts";
-import { fireEvent, queueTask } from "./events.ts";
+import { fireEvent, queueElementTask } from "./events.ts";
 import { currentDocument } from "../window/current.ts";
 import type { Document } from "../nodes/Document.ts";
 import { setAttribute } from "../nodes/attributes.ts";
@@ -186,9 +186,9 @@ export class HTMLMediaElement extends HTMLElement {
     s.ended = false;
     if (wasPlaying) {
       s.paused = true;
-      queueTask(() => fireEvent(this, "pause"));
+      queueElementTask(this, () => fireEvent(this, "pause"));
     }
-    queueTask(() => fireEvent(this, "emptied"));
+    queueElementTask(this, () => fireEvent(this, "emptied"));
   }
   /** https://html.spec.whatwg.org/#dom-media-play */
   play(): Promise<void> {
@@ -196,7 +196,7 @@ export class HTMLMediaElement extends HTMLElement {
     if (s.paused) {
       s.paused = false;
       s.ended = false;
-      queueTask(() => {
+      queueElementTask(this, () => {
         fireEvent(this, "play");
         fireEvent(this, "playing");
       });
@@ -208,7 +208,7 @@ export class HTMLMediaElement extends HTMLElement {
     const s = state(this);
     if (!s.paused) {
       s.paused = true;
-      queueTask(() => {
+      queueElementTask(this, () => {
         fireEvent(this, "timeupdate");
         fireEvent(this, "pause");
       });

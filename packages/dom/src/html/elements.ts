@@ -24,6 +24,7 @@ import { formOwner } from "./forms/form-associated.ts";
 import { currentDocument } from "../window/current.ts";
 import type { HTMLCollection } from "../collections/HTMLCollection.ts";
 import { $customValidity, $impl, $options, $validity } from "../keys.ts";
+import { queueElementTask } from "./events.ts";
 
 /** Lazily created, per-element [SameObject] value stored under a non-enumerable symbol. */
 export function sameObject<V>(el: object, key: symbol, create: () => V): V {
@@ -358,7 +359,7 @@ export class HTMLCanvasElement extends HTMLElement {
     return "data:,";
   }
   toBlob(callback: (blob: null) => void): void {
-    setTimeout(() => callback(null), 0);
+    queueElementTask(this, () => callback(null));
   }
   transferControlToOffscreen(): never {
     throw new DOMException("OffscreenCanvas is not supported.", "NotSupportedError");

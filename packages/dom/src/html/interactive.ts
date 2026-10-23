@@ -11,7 +11,7 @@ import type { Event } from "../events/Event.ts";
 import { removeAttribute, setAttribute } from "../nodes/attributes.ts";
 import { T } from "../nodes/tags.ts";
 import { nextInTree, treeRoot } from "../nodes/traverse.ts";
-import { fireEvent, fireToggleEvent, queueTask } from "./events.ts";
+import { fireEvent, fireToggleEvent, queueElementTask } from "./events.ts";
 import {
   addToTopLayer,
   type CloseWatcher,
@@ -50,7 +50,7 @@ function queueDetailsToggle(el: NodeImpl, oldState: string, newState: string): v
   }
   const tracker = { oldState, cancelled: false };
   detailsTrackers.set(el, tracker);
-  queueTask(() => {
+  queueElementTask(el, () => {
     if (tracker.cancelled) return;
     detailsTrackers.delete(el);
     fireToggleEvent(el.node as HTMLElement, "toggle", oldState, newState, false);
@@ -226,7 +226,7 @@ function queueDialogToggle(el: NodeImpl, oldState: string, newState: string, sou
   // 2-3.
   const tracker = { oldState, cancelled: false };
   r.toggleTracker = tracker;
-  queueTask(() => {
+  queueElementTask(el, () => {
     if (tracker.cancelled) return;
     fireToggleEvent(el.node as HTMLElement, "toggle", oldState, newState, false, nodeOf(source));
     if (r.toggleTracker === tracker) r.toggleTracker = null;
@@ -399,7 +399,7 @@ function closeDialog(subject: NodeImpl, result: string | null, source: NodeImpl 
     if ((focused !== null && isShadowIncludingInclusiveAncestor(subject, focused)) || wasModal) focusElement(element, { preventScroll: true });
   }
   // 13.
-  queueTask(() => fireEvent(el, "close"));
+  queueElementTask(el, () => fireEvent(el, "close"));
 }
 
 /** https://html.spec.whatwg.org/#dialog-request-close */
