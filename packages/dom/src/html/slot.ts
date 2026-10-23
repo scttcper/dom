@@ -10,23 +10,24 @@ import type { Element } from "../nodes/Element.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { assignedElements, assignedNodes, assignManually } from "../nodes/slots.ts";
+import { $impl } from "../keys.ts";
 
 export class HTMLSlotElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-slot-assignednodes */
   assignedNodes(options?: { flatten?: boolean }): Node[] {
-    return assignedNodes(this._impl, !!options?.flatten).map((n) => n.node);
+    return assignedNodes(this[$impl], !!options?.flatten).map((n) => n.node);
   }
 
   /** https://html.spec.whatwg.org/#dom-slot-assignedelements */
   assignedElements(options?: { flatten?: boolean }): Element[] {
-    return assignedElements(this._impl, !!options?.flatten).map((n) => n.node as Element);
+    return assignedElements(this[$impl], !!options?.flatten).map((n) => n.node as Element);
   }
 
   /** https://html.spec.whatwg.org/#dom-slot-assign */
   assign(...nodes: (Element | Node)[]): void {
     const impls: NodeImpl[] = [];
-    for (const n of nodes) impls.push(n._impl);
-    assignManually(this._impl, impls);
+    for (const n of nodes) impls.push(n[$impl]);
+    assignManually(this[$impl], impls);
   }
 }
 str(HTMLSlotElement, "name");

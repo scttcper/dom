@@ -25,6 +25,7 @@ import { appendAttributeDetached } from "../nodes/attributes.ts";
 import { CDATASection, Comment, ProcessingInstruction, Text } from "../nodes/CharacterData.ts";
 import { DocumentFragment } from "../nodes/DocumentFragment.ts";
 import { DocumentType } from "../nodes/DocumentType.ts";
+import { $impl } from "../keys.ts";
 
 export const PARSERERROR_NS = "http://www.mozilla.org/newlayout/xml/parsererror.xml";
 
@@ -157,7 +158,7 @@ class XMLParser {
     }
     const data = this.src.slice(this.pos, end);
     checkChars(data, this);
-    appendDetached(new Comment(data, this.doc)._impl, parent);
+    appendDetached(new Comment(data, this.doc)[$impl], parent);
     this.pos = end + 3;
   }
 
@@ -180,7 +181,7 @@ class XMLParser {
       this.fail("XML declaration not at the start of the document");
     }
     checkChars(data, this);
-    if (parent !== null) appendDetached(new ProcessingInstruction(target, data, this.doc)._impl, parent);
+    if (parent !== null) appendDetached(new ProcessingInstruction(target, data, this.doc)[$impl], parent);
   }
 
   private quoted(): string {
@@ -217,7 +218,7 @@ class XMLParser {
       this.skipWs();
     }
     this.expect(">");
-    appendDetached(new DocumentType(this.doc, name, publicId, systemId)._impl, parent);
+    appendDetached(new DocumentType(this.doc, name, publicId, systemId)[$impl], parent);
   }
 
   /** Skip the internal subset, recording simple internal general entities. */
@@ -427,7 +428,7 @@ class XMLParser {
           if (end < 0) this.fail("unterminated CDATA section");
           const data = src.slice(this.pos + 9, end);
           checkChars(data, this);
-          appendDetached(new CDATASection(data, this.doc)._impl, parent);
+          appendDetached(new CDATASection(data, this.doc)[$impl], parent);
           this.pos = end + 3;
         } else if (this.startsWith("<?")) this.pi(parent);
         else if (this.startsWith("<!")) this.fail("unexpected markup declaration");
@@ -459,7 +460,7 @@ class XMLParser {
     checkChars(text, this);
     const last = parent.last;
     if (last !== null && last.type === 3) last.data += text;
-    else appendDetached(new Text(text, this.doc)._impl, parent);
+    else appendDetached(new Text(text, this.doc)[$impl], parent);
   }
 
   /** document ::= prolog element Misc* */
@@ -503,17 +504,17 @@ class XMLParser {
  */
 export function parseXML(text: string, doc: Document, contentType: string): void {
   void contentType;
-  const fragment = new DocumentFragment(doc)._impl;
+  const fragment = new DocumentFragment(doc)[$impl];
   try {
     new XMLParser(String(text), doc).parseDocument(fragment);
   } catch (e) {
     if (!(e instanceof XMLParseError)) throw e;
     const error = createElementImpl(doc, "parsererror", PARSERERROR_NS, null);
-    appendDetached(new Text(e.message, doc)._impl, error);
-    append(error, doc._impl);
+    appendDetached(new Text(e.message, doc)[$impl], error);
+    append(error, doc[$impl]);
     return;
   }
-  append(fragment, doc._impl);
+  append(fragment, doc[$impl]);
 }
 
 /**
@@ -523,7 +524,7 @@ export function parseXML(text: string, doc: Document, contentType: string): void
  */
 export function parseXMLFragment(markup: string, context: NodeImpl): NodeImpl {
   const doc = context.doc;
-  const fragment = new DocumentFragment(doc)._impl;
+  const fragment = new DocumentFragment(doc)[$impl];
   // In-scope namespaces: walk up from the context element (nearest declaration wins); the
   // context element's own namespace is the default namespace.
   const bindings = new Map<string, string>([["xml", XML_NS]]);

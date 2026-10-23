@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@rtd/dom";
 import * as state from "../../../src/html/forms/state.ts";
 import { setUIValue, getUIValue } from "../../../src/html/forms/ui.ts";
+import { $impl } from "../../../src/keys.ts";
 
 let document: Document;
 // biome-ignore lint: untyped DOM surface in tests
@@ -149,38 +150,38 @@ describe("state predicates — https://html.spec.whatwg.org/#pseudo-classes", ()
   test(":checked, :indeterminate, :default", () => {
     document.body!.innerHTML =
       "<input type=checkbox id=c checked><input type=radio name=g id=r><select><option id=o1>a</option><option id=o2 selected>b</option></select><progress id=p></progress>";
-    expect(state.isChecked($("c")._impl)).toBe(true);
-    expect(state.isIndeterminate($("r")._impl)).toBe(true);
-    expect(state.isChecked($("o2")._impl)).toBe(true);
-    expect(state.isChecked($("o1")._impl)).toBe(false);
-    expect(state.isDefault($("o2")._impl)).toBe(true);
-    expect(state.isIndeterminate($("p")._impl)).toBe(true);
+    expect(state.isChecked($("c")[$impl])).toBe(true);
+    expect(state.isIndeterminate($("r")[$impl])).toBe(true);
+    expect(state.isChecked($("o2")[$impl])).toBe(true);
+    expect(state.isChecked($("o1")[$impl])).toBe(false);
+    expect(state.isDefault($("o2")[$impl])).toBe(true);
+    expect(state.isIndeterminate($("p")[$impl])).toBe(true);
     $("c").indeterminate = true;
-    expect(state.isIndeterminate($("c")._impl)).toBe(true);
+    expect(state.isIndeterminate($("c")[$impl])).toBe(true);
   });
 
   test(":valid / :invalid exclude barred elements; forms and fieldsets reflect their controls", () => {
     document.body!.innerHTML = "<form id=f><fieldset id=fs><input id=i required></fieldset><input id=d required disabled></form>";
-    expect(state.isInvalid($("i")._impl)).toBe(true);
-    expect(state.isInvalid($("d")._impl)).toBe(false);
-    expect(state.isValid($("d")._impl)).toBe(false);
-    expect(state.isInvalid($("fs")._impl)).toBe(true);
-    expect(state.isInvalid($("f")._impl)).toBe(true);
+    expect(state.isInvalid($("i")[$impl])).toBe(true);
+    expect(state.isInvalid($("d")[$impl])).toBe(false);
+    expect(state.isValid($("d")[$impl])).toBe(false);
+    expect(state.isInvalid($("fs")[$impl])).toBe(true);
+    expect(state.isInvalid($("f")[$impl])).toBe(true);
     $("i").value = "x";
-    expect(state.isValid($("f")._impl)).toBe(true);
+    expect(state.isValid($("f")[$impl])).toBe(true);
   });
 
   test(":read-only / :read-write, :required / :optional, :placeholder-shown, :in-range", () => {
     document.body!.innerHTML =
       "<input id=a><input id=b readonly><input id=c type=checkbox><textarea id=t required placeholder=p></textarea><input type=number id=n min=1 value=0>";
-    expect(state.isReadWrite($("a")._impl)).toBe(true);
-    expect(state.isReadOnly($("b")._impl)).toBe(true);
-    expect(state.isReadOnly($("c")._impl)).toBe(true);
-    expect(state.isRequired($("t")._impl)).toBe(true);
-    expect(state.isOptional($("a")._impl)).toBe(true);
-    expect(state.isPlaceholderShown($("t")._impl)).toBe(true);
-    expect(state.isOutOfRange($("n")._impl)).toBe(true);
+    expect(state.isReadWrite($("a")[$impl])).toBe(true);
+    expect(state.isReadOnly($("b")[$impl])).toBe(true);
+    expect(state.isReadOnly($("c")[$impl])).toBe(true);
+    expect(state.isRequired($("t")[$impl])).toBe(true);
+    expect(state.isOptional($("a")[$impl])).toBe(true);
+    expect(state.isPlaceholderShown($("t")[$impl])).toBe(true);
+    expect(state.isOutOfRange($("n")[$impl])).toBe(true);
     $("n").value = "3";
-    expect(state.isInRange($("n")._impl)).toBe(true);
+    expect(state.isInRange($("n")[$impl])).toBe(true);
   });
 });

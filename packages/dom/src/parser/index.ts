@@ -48,6 +48,7 @@ import {
 import { attachShadowRoot } from "../nodes/Element.ts";
 
 import { parseXMLFragment } from "./xml.ts";
+import { $availableToElementInternals, $declarative, $host, $impl, $isHTML, $mode, $shadowRoot } from "../keys.ts";
 
 export { parseXML, parseXMLFragment, PARSERERROR_NS } from "./xml.ts";
 
@@ -151,21 +152,21 @@ class DomSink extends TreeSink {
       prev.data += text;
       return;
     }
-    const t = new Text(text, p.doc)._impl;
+    const t = new Text(text, p.doc)[$impl];
     if (r === null) appendDetached(t, p);
     else insertDetached(t, p, r);
   }
 
   override insertComment(parent: number, ref: number, data: string): void {
     const p = this.parentOf(parent, ref);
-    const c = new Comment(data, p.doc)._impl;
+    const c = new Comment(data, p.doc)[$impl];
     if (ref < 0) appendDetached(c, p);
     else insertDetached(c, p, this.nodes[ref]);
   }
 
   override insertProcessingInstruction(parent: number, ref: number, target: string, data: string): void {
     const p = this.parentOf(parent, ref);
-    const c = new ProcessingInstruction(target, data, p.doc)._impl;
+    const c = new ProcessingInstruction(target, data, p.doc)[$impl];
     if (ref < 0) appendDetached(c, p);
     else insertDetached(c, p, this.nodes[ref]);
   }
@@ -174,7 +175,7 @@ class DomSink extends TreeSink {
     const p = this.nodes[doc];
     // https://html.spec.whatwg.org/#the-initial-insertion-mode: only if no doctype/element child yet.
     for (let c = p.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE || c.type === 10) return;
-    appendDetached(new DocumentType(p.doc, name, publicId, systemId)._impl, p);
+    appendDetached(new DocumentType(p.doc, name, publicId, systemId)[$impl], p);
   }
 
   override remove(child: number): void {
@@ -207,7 +208,7 @@ class DomSink extends TreeSink {
     const el = this.nodes[template];
     const content = (el.node as unknown as { content?: DocumentFragment }).content;
     if (content === undefined || content === null) return template;
-    return this.register(content._impl);
+    return this.register(content[$impl]);
   }
 
   override attachDeclarativeShadowRoot(
@@ -219,7 +220,7 @@ class DomSink extends TreeSink {
     clonable: boolean,
   ): number {
     const el = this.nodes[host].node as Element;
-    if (el._shadowRoot !== null) return -1;
+    if (el[$shadowRoot] !== null) return -1;
     try {
       const shadow = attachShadowRoot(
         el,
@@ -229,9 +230,9 @@ class DomSink extends TreeSink {
         delegatesFocus,
         slotAssignment === "manual" ? "manual" : "named",
       );
-      shadow._declarative = true;
-      shadow._availableToElementInternals = true;
-      return this.register(shadow._impl);
+      shadow[$declarative] = true;
+      shadow[$availableToElementInternals] = true;
+      return this.register(shadow[$impl]);
     } catch {
       return -1;
     }
@@ -246,7 +247,7 @@ class DomSink extends TreeSink {
 
   override setDocumentMode(mode: number): void {
     const doc = this.modeTarget;
-    if (doc !== null) doc._mode = mode === MODE_QUIRKS ? "quirks" : mode === MODE_LIMITED_QUIRKS ? "limited-quirks" : "no-quirks";
+    if (doc !== null) doc[$mode] = mode === MODE_QUIRKS ? "quirks" : mode === MODE_LIMITED_QUIRKS ? "limited-quirks" : "no-quirks";
   }
 }
 
@@ -296,8 +297,8 @@ export function parseFragment(html: string, context: NodeImpl, options?: HTMLPar
   const doc = context.doc;
   // https://html.spec.whatwg.org/#fragment-parsing-algorithm-steps: XML documents use the XML
   // fragment parsing algorithm.
-  if (!doc._isHTML) return parseXMLFragment(html, context);
-  const fragment = new DocumentFragment(doc)._impl;
+  if (!doc[$isHTML]) return parseXMLFragment(html, context);
+  const fragment = new DocumentFragment(doc)[$impl];
   const builder = acquire();
   const sink = builder.sink as DomSink;
   try {
@@ -313,7 +314,7 @@ export function parseFragment(html: string, context: NodeImpl, options?: HTMLPar
         break;
       }
     }
-    const mode = doc._mode === "quirks" ? MODE_QUIRKS : doc._mode === "limited-quirks" ? MODE_LIMITED_QUIRKS : 0;
+    const mode = doc[$mode] === "quirks" ? MODE_QUIRKS : doc[$mode] === "limited-quirks" ? MODE_LIMITED_QUIRKS : 0;
     const encoding = ns === NS_MATHML ? (attr(context, "encoding") ?? "") : "";
     builder.parseFragment(html, root, ctx, context.name, ns, encoding, form, mode, toOptions(options));
     sink.finish();
@@ -329,12 +330,12 @@ export function parseFragment(html: string, context: NodeImpl, options?: HTMLPar
  * no children). Sets `doc._mode` (quirks detection).
  */
 export function parseDocument(html: string, doc: Document, options?: HTMLParseOptions): void {
-  const fragment = new DocumentFragment(doc)._impl;
+  const fragment = new DocumentFragment(doc)[$impl];
   const builder = acquire();
   const sink = builder.sink as DomSink;
   try {
     sink.begin(doc);
-    doc._mode = "no-quirks";
+    doc[$mode] = "no-quirks";
     const root = sink.register(fragment);
     builder.parseDocument(html, root, toOptions(options));
     sink.finish();
@@ -343,7 +344,7 @@ export function parseDocument(html: string, doc: Document, options?: HTMLParseOp
     release(builder);
   }
   // Insert with the normal algorithm: connects the tree, fills the id index, runs hooks.
-  append(fragment, doc._impl);
+  append(fragment, doc[$impl]);
 }
 
 /**
@@ -354,15 +355,15 @@ export function parseDocument(html: string, doc: Document, options?: HTMLParseOp
 export function setHTMLUnsafe(target: NodeImpl, html: string): void {
   let context = target;
   if (target.type !== ELEMENT_NODE) {
-    const host = (target.node as unknown as { _host: Element | null })._host;
+    const host = (target.node as unknown as { [$host]: Element | null })[$host];
     if (host === null) throw new TypeError("setHTMLUnsafe: no context element");
-    context = host._impl;
+    context = host[$impl];
   }
   const fragment = parseFragment(html, context, { allowDeclarativeShadowRoots: true });
   let dest = target;
   if (target.type === ELEMENT_NODE && target.tag === T.template && target.ns === HTML_NS) {
     const content = (target.node as unknown as { content?: DocumentFragment }).content;
-    if (content !== undefined) dest = content._impl;
+    if (content !== undefined) dest = content[$impl];
   }
   (dest.node as unknown as { _replaceAll(node: unknown): void })._replaceAll(fragment.node);
 }

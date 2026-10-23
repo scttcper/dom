@@ -7,35 +7,36 @@
 // Callbacks are never invoked (docs/deviations.md). Tests that need entries mock them.
 
 import type { Element } from "../nodes/Element.ts";
+import { $callback, $targets } from "../keys.ts";
 
 type ResizeObserverCallback = (entries: unknown[], observer: ResizeObserver) => void;
 type IntersectionObserverCallback = (entries: unknown[], observer: IntersectionObserver) => void;
 
 export class ResizeObserver {
-  _callback: ResizeObserverCallback;
-  _targets: Set<Element>;
+  [$callback]: ResizeObserverCallback;
+  [$targets]: Set<Element>;
 
   constructor(callback: ResizeObserverCallback) {
     if (typeof callback !== "function") {
       throw new TypeError("Failed to construct 'ResizeObserver': parameter 1 is not of type 'ResizeObserverCallback'.");
     }
-    this._callback = callback;
-    this._targets = new Set();
+    this[$callback] = callback;
+    this[$targets] = new Set();
   }
 
   observe(target: Element, _options?: { box?: string }): void {
     if (target === null || typeof target !== "object") {
       throw new TypeError("Failed to execute 'observe' on 'ResizeObserver': parameter 1 is not of type 'Element'.");
     }
-    this._targets.add(target);
+    this[$targets].add(target);
   }
 
   unobserve(target: Element): void {
-    this._targets.delete(target);
+    this[$targets].delete(target);
   }
 
   disconnect(): void {
-    this._targets.clear();
+    this[$targets].clear();
   }
 
   get [Symbol.toStringTag](): string {
@@ -51,8 +52,8 @@ export interface IntersectionObserverInit {
 }
 
 export class IntersectionObserver {
-  _callback: IntersectionObserverCallback;
-  _targets: Set<Element>;
+  [$callback]: IntersectionObserverCallback;
+  [$targets]: Set<Element>;
   readonly root: Element | null;
   readonly rootMargin: string;
   readonly scrollMargin: string;
@@ -62,8 +63,8 @@ export class IntersectionObserver {
     if (typeof callback !== "function") {
       throw new TypeError("Failed to construct 'IntersectionObserver': parameter 1 is not of type 'IntersectionObserverCallback'.");
     }
-    this._callback = callback;
-    this._targets = new Set();
+    this[$callback] = callback;
+    this[$targets] = new Set();
     this.root = options.root ?? null;
     this.rootMargin = normalizeMargin(options.rootMargin ?? "0px");
     this.scrollMargin = normalizeMargin(options.scrollMargin ?? "0px");
@@ -78,15 +79,15 @@ export class IntersectionObserver {
   }
 
   observe(target: Element): void {
-    this._targets.add(target);
+    this[$targets].add(target);
   }
 
   unobserve(target: Element): void {
-    this._targets.delete(target);
+    this[$targets].delete(target);
   }
 
   disconnect(): void {
-    this._targets.clear();
+    this[$targets].clear();
   }
 
   takeRecords(): unknown[] {

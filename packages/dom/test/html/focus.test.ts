@@ -19,6 +19,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@rtd/dom";
 import { isFocusable, sequentialFocusOrder, matchesFocus, matchesFocusWithin } from "../../src/html/focus.ts";
+import { $impl } from "../../src/keys.ts";
 
 let document: Document;
 let doc: any;
@@ -57,27 +58,27 @@ describe("focusable area — https://html.spec.whatwg.org/#focusable-area", () =
   ])("%s → %s", (html, expected) => {
     const e = el(html);
     const target = e.localName === "fieldset" || e.localName === "div" && e.hasAttribute("inert") ? e.firstElementChild : e;
-    expect(isFocusable(target._impl)).toBe(expected);
+    expect(isFocusable(target[$impl])).toBe(expected);
   });
 
   test("a disconnected element is not focusable", () => {
     const b = doc.createElement("button");
-    expect(isFocusable(b._impl)).toBe(false);
+    expect(isFocusable(b[$impl])).toBe(false);
     b.focus();
     expect(doc.activeElement).toBe(doc.body);
   });
 
   test("summary is focusable only as the first summary child of details", () => {
     const d = el("<details><summary>one</summary><summary>two</summary></details>");
-    expect(isFocusable(d.children[0]._impl)).toBe(true);
-    expect(isFocusable(d.children[1]._impl)).toBe(false);
+    expect(isFocusable(d.children[0][$impl])).toBe(true);
+    expect(isFocusable(d.children[1][$impl])).toBe(false);
   });
 
   test("SVG a[href] and SVG elements with tabindex are focusable", () => {
     const svg = el('<svg><a href="#x"><text>t</text></a><rect tabindex="0"></rect><circle></circle></svg>');
-    expect(isFocusable(svg.children[0]._impl)).toBe(true);
-    expect(isFocusable(svg.children[1]._impl)).toBe(true);
-    expect(isFocusable(svg.children[2]._impl)).toBe(false);
+    expect(isFocusable(svg.children[0][$impl])).toBe(true);
+    expect(isFocusable(svg.children[1][$impl])).toBe(true);
+    expect(isFocusable(svg.children[2][$impl])).toBe(false);
   });
 });
 
@@ -229,10 +230,10 @@ describe(":focus and :focus-within — https://drafts.csswg.org/selectors-4/#the
     doc.body.innerHTML = "<div id=outer><div id=inner><input id=i></div></div><p id=p></p>";
     const i = doc.getElementById("i");
     i.focus();
-    expect(matchesFocus(i._impl)).toBe(true);
-    expect(matchesFocusWithin(doc.getElementById("outer")._impl)).toBe(true);
-    expect(matchesFocusWithin(doc.getElementById("p")._impl)).toBe(false);
-    expect(matchesFocus(doc.getElementById("inner")._impl)).toBe(false);
+    expect(matchesFocus(i[$impl])).toBe(true);
+    expect(matchesFocusWithin(doc.getElementById("outer")[$impl])).toBe(true);
+    expect(matchesFocusWithin(doc.getElementById("p")[$impl])).toBe(false);
+    expect(matchesFocus(doc.getElementById("inner")[$impl])).toBe(false);
   });
 });
 
@@ -258,9 +259,9 @@ describe("modal dialogs make the rest of the document inert — https://html.spe
     const d = doc.getElementById("d");
     d.showModal();
     expect(doc.activeElement.id).toBe("in");
-    expect(isFocusable(doc.getElementById("out")._impl)).toBe(false);
+    expect(isFocusable(doc.getElementById("out")[$impl])).toBe(false);
     d.close();
-    expect(isFocusable(doc.getElementById("out")._impl)).toBe(true);
+    expect(isFocusable(doc.getElementById("out")[$impl])).toBe(true);
   });
 });
 
@@ -285,7 +286,7 @@ describe("delegatesFocus — https://html.spec.whatwg.org/#focus-delegate", () =
     expect(root.activeElement.id).toBe("inner");
     expect(doc.activeElement).toBe(host);
     expect(host.matches(":focus")).toBe(true);
-    expect(matchesFocusWithin(host._impl)).toBe(true);
+    expect(matchesFocusWithin(host[$impl])).toBe(true);
   });
 
   test("ShadowRoot.activeElement is null when focus is outside the shadow tree", () => {

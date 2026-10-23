@@ -14,6 +14,7 @@ import type { Element } from "../nodes/Element.ts";
 import { T } from "../nodes/tags.ts";
 import { contentAttr } from "./reflect.ts";
 import { fireToggleEvent, queueTask } from "./events.ts";
+import { $focused, $host, $impl } from "../keys.ts";
 
 interface TopLayerState {
   /** Elements in the top layer, bottom to top. */
@@ -89,8 +90,8 @@ export function inertByModal(el: NodeImpl): boolean {
 function flatParent(n: NodeImpl): NodeImpl | null {
   if (n.parent !== null) return n.parent;
   if ((n.flags & F_SHADOW_ROOT) !== 0) {
-    const host = (n.node as unknown as { _host: Element | null })._host;
-    return host === null ? null : host._impl;
+    const host = (n.node as unknown as { [$host]: Element | null })[$host];
+    return host === null ? null : host[$impl];
   }
   return null;
 }
@@ -206,7 +207,7 @@ export function showPopover(el: NodeImpl, throwExceptions: boolean, invoker: Nod
     if (popoverState(el) !== type || !checkPopoverValidity(el, false, throwExceptions, doc)) return;
   }
   invokers.set(el, invoker);
-  previouslyFocused.set(el, doc._focused);
+  previouslyFocused.set(el, doc[$focused]);
   addToTopLayer(el);
   showing.add(el);
   if (type === P_AUTO || type === P_HINT) s.autoPopovers.push(el);
@@ -239,7 +240,7 @@ export function hidePopover(el: NodeImpl, focusPreviousElement: boolean, fireEve
   const prev = previouslyFocused.get(el) ?? null;
   previouslyFocused.delete(el);
   if (focusPreviousElement && prev !== null) {
-    const focused = doc._focused;
+    const focused = doc[$focused];
     // Restore focus only when it is inside the popover (or nowhere).
     if (focused === null || isFlatInclusiveAncestor(el, focused)) focusHook?.(prev);
   }

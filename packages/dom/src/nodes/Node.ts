@@ -41,6 +41,7 @@ import { liveRangeCount, rangesNormalizeMerge } from "../traversal/live.ts";
 import { nodeGetTheParent } from "../events/dispatch.ts";
 import { inspectNode } from "./inspect.ts";
 import { XML_NS, XMLNS_NS } from "./constants.ts";
+import { $childNodes, $host, $impl } from "../keys.ts";
 
 export abstract class Node extends EventTarget {
   static readonly ELEMENT_NODE = ELEMENT_NODE;
@@ -81,84 +82,84 @@ export abstract class Node extends EventTarget {
   declare readonly DOCUMENT_POSITION_CONTAINED_BY: number;
   declare readonly DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: number;
 
-  _impl: NodeImpl;
-  _childNodes: NodeList | null;
+  [$impl]: NodeImpl;
+  [$childNodes]: NodeList | null;
 
   /** @internal Wrappers are created by the document/parser, never directly by users. */
   constructor(type: number, doc: Document | null) {
     super();
     // A Document passes null and becomes its own node document.
-    this._impl = new NodeImpl(this, type, doc ?? (this as unknown as Document));
-    this._childNodes = null;
+    this[$impl] = new NodeImpl(this, type, doc ?? (this as unknown as Document));
+    this[$childNodes] = null;
   }
 
   get nodeType(): number {
-    return this._impl.type;
+    return this[$impl].type;
   }
 
   abstract get nodeName(): string;
 
   get baseURI(): string {
-    return this._impl.doc.baseURI;
+    return this[$impl].doc.baseURI;
   }
 
   get isConnected(): boolean {
-    return (this._impl.flags & F_CONNECTED) !== 0;
+    return (this[$impl].flags & F_CONNECTED) !== 0;
   }
 
   get ownerDocument(): Document | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     return impl.type === DOCUMENT_NODE ? null : impl.doc;
   }
 
   /** https://dom.spec.whatwg.org/#dom-node-getrootnode */
   getRootNode(options?: GetRootNodeOptions): Node {
-    let root = treeRoot(this._impl);
+    let root = treeRoot(this[$impl]);
     if (options?.composed) {
       // Shadow-including root: https://dom.spec.whatwg.org/#concept-shadow-including-root
       while ((root.flags & F_SHADOW_ROOT) !== 0) {
-        const host = (root.node as unknown as { _host: Element })._host;
-        root = treeRoot(host._impl);
+        const host = (root.node as unknown as { [$host]: Element })[$host];
+        root = treeRoot(host[$impl]);
       }
     }
     return root.node;
   }
 
   get parentNode(): Node | null {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     return p === null ? null : p.node;
   }
 
   get parentElement(): Element | null {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     return p !== null && p.type === ELEMENT_NODE ? (p.node as Element) : null;
   }
 
   hasChildNodes(): boolean {
-    return this._impl.first !== null;
+    return this[$impl].first !== null;
   }
 
   get childNodes(): NodeList {
-    return (this._childNodes ??= NodeList._live(this._impl));
+    return (this[$childNodes] ??= NodeList._live(this[$impl]));
   }
 
   get firstChild(): Node | null {
-    const c = this._impl.first;
+    const c = this[$impl].first;
     return c === null ? null : c.node;
   }
 
   get lastChild(): Node | null {
-    const c = this._impl.last;
+    const c = this[$impl].last;
     return c === null ? null : c.node;
   }
 
   get previousSibling(): Node | null {
-    const c = this._impl.prev;
+    const c = this[$impl].prev;
     return c === null ? null : c.node;
   }
 
   get nextSibling(): Node | null {
-    const c = this._impl.next;
+    const c = this[$impl].next;
     return c === null ? null : c.node;
   }
 
@@ -178,7 +179,7 @@ export abstract class Node extends EventTarget {
 
   /** https://dom.spec.whatwg.org/#dom-node-normalize */
   normalize(): void {
-    const root = this._impl;
+    const root = this[$impl];
     let n = root.first;
     while (n !== null) {
       if (n.type !== TEXT_NODE) {
@@ -220,14 +221,14 @@ export abstract class Node extends EventTarget {
   }
 
   cloneNode(deep = false): Node {
-    if ((this._impl.flags & F_SHADOW_ROOT) !== 0) {
+    if ((this[$impl].flags & F_SHADOW_ROOT) !== 0) {
       throw new DOMException("Shadow roots cannot be cloned.", "NotSupportedError");
     }
-    return cloneNode(this._impl, this._impl.doc, deep).node;
+    return cloneNode(this[$impl], this[$impl].doc, deep).node;
   }
 
   isEqualNode(other: Node | null): boolean {
-    return other !== null && isEqualNode(this._impl, other._impl);
+    return other !== null && isEqualNode(this[$impl], other[$impl]);
   }
 
   isSameNode(other: Node | null): boolean {
@@ -237,8 +238,8 @@ export abstract class Node extends EventTarget {
   /** https://dom.spec.whatwg.org/#dom-node-comparedocumentposition */
   compareDocumentPosition(other: Node): number {
     if (this === other) return 0;
-    let node1: NodeImpl | null = other._impl;
-    let node2: NodeImpl | null = this._impl;
+    let node1: NodeImpl | null = other[$impl];
+    let node2: NodeImpl | null = this[$impl];
     let attr1: NodeImpl | null = null;
     let attr2: NodeImpl | null = null;
     if (node1.type === ATTRIBUTE_NODE) {
@@ -250,8 +251,8 @@ export abstract class Node extends EventTarget {
       node2 = ownerElementImpl(node2);
       if (attr1 !== null && node1 !== null && node2 === node1) {
         for (const a of node2.attrs ?? []) {
-          if (a.attr?._impl === attr1) return DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC | DOCUMENT_POSITION_PRECEDING;
-          if (a.attr?._impl === attr2) return DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC | DOCUMENT_POSITION_FOLLOWING;
+          if (a.attr?.[$impl] === attr1) return DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC | DOCUMENT_POSITION_PRECEDING;
+          if (a.attr?.[$impl] === attr2) return DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC | DOCUMENT_POSITION_FOLLOWING;
         }
       }
     }
@@ -274,47 +275,47 @@ export abstract class Node extends EventTarget {
   /** https://dom.spec.whatwg.org/#dom-node-contains */
   contains(other: Node | null): boolean {
     if (other === null) return false;
-    const self = this._impl;
-    for (let n: NodeImpl | null = other._impl; n !== null; n = n.parent) if (n === self) return true;
+    const self = this[$impl];
+    for (let n: NodeImpl | null = other[$impl]; n !== null; n = n.parent) if (n === self) return true;
     return false;
   }
 
   /** https://dom.spec.whatwg.org/#dom-node-lookupprefix */
   lookupPrefix(namespace: string | null): string | null {
     if (namespace === null || namespace === undefined || namespace === "") return null;
-    const el = namespaceContextElement(this._impl);
+    const el = namespaceContextElement(this[$impl]);
     return el === null ? null : locatePrefix(el, String(namespace));
   }
 
   /** https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri */
   lookupNamespaceURI(prefix: string | null): string | null {
     const p = prefix === undefined || prefix === null || prefix === "" ? null : String(prefix);
-    return locateNamespace(this._impl, p);
+    return locateNamespace(this[$impl], p);
   }
 
   /** https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace */
   isDefaultNamespace(namespace: string | null): boolean {
     const ns = namespace === undefined || namespace === null || namespace === "" ? null : String(namespace);
-    return locateNamespace(this._impl, null) === ns;
+    return locateNamespace(this[$impl], null) === ns;
   }
 
   insertBefore<T extends Node>(node: T, child: Node | null): T {
-    preInsert(node._impl, this._impl, child === null ? null : child._impl);
+    preInsert(node[$impl], this[$impl], child === null ? null : child[$impl]);
     return node;
   }
 
   appendChild<T extends Node>(node: T): T {
-    preInsert(node._impl, this._impl, null);
+    preInsert(node[$impl], this[$impl], null);
     return node;
   }
 
   replaceChild<T extends Node>(node: Node, child: T): T {
-    replace(child._impl, node._impl, this._impl);
+    replace(child[$impl], node[$impl], this[$impl]);
     return child;
   }
 
   removeChild<T extends Node>(child: T): T {
-    preRemove(child._impl, this._impl);
+    preRemove(child[$impl], this[$impl]);
     return child;
   }
 
@@ -325,12 +326,12 @@ export abstract class Node extends EventTarget {
 
   /** Node.js `util.inspect` / console.log: a short description, never the `_impl` graph. */
   [Symbol.for("nodejs.util.inspect.custom")](depth: number, options: unknown, inspect: unknown): string {
-    return inspectNode(this._impl, depth, options, inspect);
+    return inspectNode(this[$impl], depth, options, inspect);
   }
 
   /** @internal Used by textContent/innerHTML setters. */
   _replaceAll(node: Node | null): void {
-    replaceAll(node === null ? null : node._impl, this._impl);
+    replaceAll(node === null ? null : node[$impl], this[$impl]);
   }
 }
 
@@ -414,7 +415,7 @@ function locateNamespace(n: NodeImpl, prefix: string | null): string | null {
 
 function ownerElementImpl(attr: NodeImpl): NodeImpl | null {
   const el = (attr.node as unknown as { ownerElement: Element | null }).ownerElement;
-  return el === null ? null : el._impl;
+  return el === null ? null : el[$impl];
 }
 
 function isAncestor(a: NodeImpl, b: NodeImpl): boolean {

@@ -44,10 +44,11 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ELEMENT_NODE, F_HAS_SHADOW, F_SHADOW_ROOT, TEXT_NODE } from "../nodes/constants.ts";
 import { reportException } from "./report.ts";
 import { removeListener, type ListenerList } from "./listeners.ts";
+import { $host, $impl, $listeners } from "../keys.ts";
 
-type NodeLike = EventTarget & { _impl: NodeImpl };
-type MaybeNode = EventTarget & { _impl?: NodeImpl };
-type ShadowRootLike = { _host: EventTarget | null; mode?: string };
+type NodeLike = EventTarget & { [$impl]: NodeImpl };
+type MaybeNode = EventTarget & { [$impl]?: NodeImpl };
+type ShadowRootLike = { [$host]: EventTarget | null; mode?: string };
 
 // --- window.event ---------------------------------------------------------------------------
 // https://html.spec.whatwg.org/#current-event — one value for the (single) current window.
@@ -98,7 +99,7 @@ function treeRoot(n: NodeImpl): NodeImpl {
  * `Node._getTheParent` delegates here; Document/Window override it themselves.
  */
 export function nodeGetTheParent(node: NodeLike, event: Event): EventTarget | null {
-  const impl = node._impl;
+  const impl = node[$impl];
   const parent = impl.parent;
   if (parent !== null && (parent.flags & F_HAS_SHADOW) !== 0) {
     const slot = assignedSlot(impl);
@@ -107,10 +108,10 @@ export function nodeGetTheParent(node: NodeLike, event: Event): EventTarget | nu
   if ((impl.flags & F_SHADOW_ROOT) !== 0) {
     const s = event._s;
     if ((s.flags & EF_COMPOSED) === 0 && s.pathLength > 0) {
-      const first = (PATH[s.pathStart] as MaybeNode)._impl;
+      const first = (PATH[s.pathStart] as MaybeNode)[$impl];
       if (first !== undefined && treeRoot(first) === impl) return null;
     }
-    return (node as unknown as ShadowRootLike)._host;
+    return (node as unknown as ShadowRootLike)[$host];
   }
   return parent === null ? null : parent.node;
 }
@@ -122,8 +123,8 @@ function isShadowIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
     if (cur === a) return true;
     if (cur.parent !== null) cur = cur.parent;
     else if ((cur.flags & F_SHADOW_ROOT) !== 0) {
-      const host = (cur.node as unknown as ShadowRootLike)._host as MaybeNode | null;
-      cur = host === null || host._impl === undefined ? null : host._impl;
+      const host = (cur.node as unknown as ShadowRootLike)[$host] as MaybeNode | null;
+      cur = host === null || host[$impl] === undefined ? null : host[$impl];
     } else cur = null;
   }
   return false;
@@ -132,7 +133,7 @@ function isShadowIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
 /** Whether retargeting `a` can ever change it (it is a node in a shadow tree). */
 function inShadowTree(a: EventTarget | null): boolean {
   if (a === null) return false;
-  const impl = (a as MaybeNode)._impl;
+  const impl = (a as MaybeNode)[$impl];
   return impl !== undefined && (treeRoot(impl).flags & F_SHADOW_ROOT) !== 0;
 }
 
@@ -140,13 +141,13 @@ function inShadowTree(a: EventTarget | null): boolean {
 export function retarget(a: EventTarget | null, b: EventTarget): EventTarget | null {
   for (;;) {
     if (a === null) return null;
-    const ai = (a as MaybeNode)._impl;
+    const ai = (a as MaybeNode)[$impl];
     if (ai === undefined) return a;
     const root = treeRoot(ai);
     if ((root.flags & F_SHADOW_ROOT) === 0) return a;
-    const bi = (b as MaybeNode)._impl;
+    const bi = (b as MaybeNode)[$impl];
     if (bi !== undefined && isShadowIncludingInclusiveAncestor(root, bi)) return a;
-    a = (root.node as unknown as ShadowRootLike)._host;
+    a = (root.node as unknown as ShadowRootLike)[$host];
   }
 }
 
@@ -174,7 +175,7 @@ function appendToEventPath(
   let f = 0;
   if (root !== null && (root.flags & F_SHADOW_ROOT) !== 0) {
     f |= PF_IN_SHADOW_TREE;
-    const impl = (item as MaybeNode)._impl;
+    const impl = (item as MaybeNode)[$impl];
     if (impl === root && (item as unknown as ShadowRootLike).mode === "closed") f |= PF_ROOT_OF_CLOSED_TREE;
   }
   if (slotInClosedTree) f |= PF_SLOT_IN_CLOSED_TREE;
@@ -217,7 +218,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       const touchList = (s.flags & EF_TOUCH_EVENT) !== 0 ? (event as unknown as { _touchTargetList(): EventTarget[] })._touchTargetList() : null;
       s.pathStart = base;
       s.pathLength = 0;
-      const targetImpl = (target as MaybeNode)._impl;
+      const targetImpl = (target as MaybeNode)[$impl];
       let curRoot: NodeImpl | null = targetImpl === undefined ? null : treeRoot(targetImpl);
       let targetRoot = curRoot;
       let targetRootIsShadow = targetRoot !== null && (targetRoot.flags & F_SHADOW_ROOT) !== 0;
@@ -237,7 +238,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       let parent = target._getTheParent(event);
       // Step 6.9.
       while (parent !== null) {
-        const pi = (parent as MaybeNode)._impl;
+        const pi = (parent as MaybeNode)[$impl];
         let parentRoot: NodeImpl | null;
         if (pi === undefined) parentRoot = null;
         else if (prevImpl !== undefined && prevImpl.parent === pi) parentRoot = curRoot;
@@ -359,7 +360,7 @@ function legacyType(type: string): string | null {
 /** https://dom.spec.whatwg.org/#concept-event-listener-invoke */
 function invoke(event: Event, s: EventState, o: number, phase: number): void {
   const item = PATH[o] as EventTarget;
-  const map = item._listeners;
+  const map = item[$listeners];
   if (map === null) return;
   // Steps 1-3.
   s.target = PATH[o + 1] as EventTarget;

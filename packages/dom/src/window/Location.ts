@@ -5,32 +5,33 @@
 // `hashchange` asynchronously, like browsers.
 
 import type { Window } from "./Window.ts";
+import { $url, $window } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#location-object-navigate-ish — parse relative to the document URL. */
 function parseURL(window: Window, url: string): URL {
-  const parsed = URL.parse(String(url), window._url.href);
+  const parsed = URL.parse(String(url), window[$url].href);
   if (parsed === null) throw new DOMException(`Failed to execute 'assign' on 'Location': '${url}' is not a valid URL.`, "SyntaxError");
   return parsed;
 }
 
 export class Location {
-  _window: Window;
+  [$window]: Window;
 
   constructor(window: Window) {
-    this._window = window;
+    this[$window] = window;
   }
 
   /** https://html.spec.whatwg.org/#dom-location-href */
   get href(): string {
-    return this._window._url.href;
+    return this[$window][$url].href;
   }
 
   set href(value: string) {
-    this._window._navigate(parseURL(this._window, value), false);
+    this[$window]._navigate(parseURL(this[$window], value), false);
   }
 
   toString(): string {
-    return this._window._url.href;
+    return this[$window][$url].href;
   }
 
   valueOf(): this {
@@ -38,23 +39,23 @@ export class Location {
   }
 
   get origin(): string {
-    return this._window._url.origin;
+    return this[$window][$url].origin;
   }
 
   get protocol(): string {
-    return this._window._url.protocol;
+    return this[$window][$url].protocol;
   }
 
   /** https://html.spec.whatwg.org/#dom-location-protocol (setter steps 4-6) */
   set protocol(value: string) {
-    const copy = new URL(this._window._url.href);
+    const copy = new URL(this[$window][$url].href);
     copy.protocol = String(value);
     if (copy.protocol !== "http:" && copy.protocol !== "https:") return;
-    this._window._navigate(copy, false);
+    this[$window]._navigate(copy, false);
   }
 
   get host(): string {
-    return this._window._url.host;
+    return this[$window][$url].host;
   }
 
   set host(value: string) {
@@ -62,7 +63,7 @@ export class Location {
   }
 
   get hostname(): string {
-    return this._window._url.hostname;
+    return this[$window][$url].hostname;
   }
 
   set hostname(value: string) {
@@ -70,7 +71,7 @@ export class Location {
   }
 
   get port(): string {
-    return this._window._url.port;
+    return this[$window][$url].port;
   }
 
   set port(value: string) {
@@ -78,7 +79,7 @@ export class Location {
   }
 
   get pathname(): string {
-    return this._window._url.pathname;
+    return this[$window][$url].pathname;
   }
 
   set pathname(value: string) {
@@ -86,7 +87,7 @@ export class Location {
   }
 
   get search(): string {
-    return this._window._url.search;
+    return this[$window][$url].search;
   }
 
   set search(value: string) {
@@ -94,20 +95,20 @@ export class Location {
   }
 
   get hash(): string {
-    return this._window._url.hash;
+    return this[$window][$url].hash;
   }
 
   /** https://html.spec.whatwg.org/#dom-location-hash (steps 3-6) */
   set hash(value: string) {
-    const copy = new URL(this._window._url.href);
+    const copy = new URL(this[$window][$url].href);
     let input = String(value);
     if (input.startsWith("#")) input = input.slice(1);
     copy.hash = input;
     // Step 6: if copyURL's fragment equals this's url's fragment, return.
     // Only the fragment differs between the two, so comparing hrefs compares fragments
     // (including null vs. empty).
-    if (copy.href === this._window._url.href) return;
-    this._window._navigate(copy, false);
+    if (copy.href === this[$window][$url].href) return;
+    this[$window]._navigate(copy, false);
   }
 
   get ancestorOrigins(): readonly string[] {
@@ -116,21 +117,21 @@ export class Location {
 
   /** https://html.spec.whatwg.org/#dom-location-assign */
   assign(url: string): void {
-    this._window._navigate(parseURL(this._window, url), false);
+    this[$window]._navigate(parseURL(this[$window], url), false);
   }
 
   /** https://html.spec.whatwg.org/#dom-location-replace */
   replace(url: string): void {
-    this._window._navigate(parseURL(this._window, url), true);
+    this[$window]._navigate(parseURL(this[$window], url), true);
   }
 
   /** https://html.spec.whatwg.org/#dom-location-reload — no-op: there is nothing to reload. */
   reload(): void {}
 
   _set(component: "host" | "hostname" | "port" | "pathname" | "search", value: string): void {
-    const copy = new URL(this._window._url.href);
+    const copy = new URL(this[$window][$url].href);
     copy[component] = String(value);
-    this._window._navigate(copy, false);
+    this[$window]._navigate(copy, false);
   }
 
   get [Symbol.toStringTag](): string {

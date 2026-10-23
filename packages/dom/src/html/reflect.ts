@@ -22,9 +22,10 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { setAttribute, removeAttribute, isAsciiWhitespace } from "../nodes/attributes.ts";
 import { DOMTokenList } from "../collections/DOMTokenList.ts";
 import { HTML_NS } from "../nodes/constants.ts";
+import { $impl } from "../keys.ts";
 
 type Ctor = { prototype: object };
-type Wrapper = { _impl: NodeImpl };
+type Wrapper = { [$impl]: NodeImpl };
 
 const INT_MIN = -2147483648;
 const INT_MAX = 2147483647;
@@ -138,10 +139,10 @@ export function str(C: Ctor, list: string): void {
       C,
       idl,
       function () {
-        return contentAttr(this._impl, content) ?? "";
+        return contentAttr(this[$impl], content) ?? "";
       },
       function (v) {
-        setAttribute(this._impl, content, String(v));
+        setAttribute(this[$impl], content, String(v));
       },
     );
   }
@@ -154,10 +155,10 @@ export function strNullEmpty(C: Ctor, list: string): void {
       C,
       idl,
       function () {
-        return contentAttr(this._impl, content) ?? "";
+        return contentAttr(this[$impl], content) ?? "";
       },
       function (v) {
-        setAttribute(this._impl, content, v === null ? "" : String(v));
+        setAttribute(this[$impl], content, v === null ? "" : String(v));
       },
     );
   }
@@ -170,11 +171,11 @@ export function nullableStr(C: Ctor, list: string): void {
       C,
       idl,
       function () {
-        return contentAttr(this._impl, content);
+        return contentAttr(this[$impl], content);
       },
       function (v) {
-        if (v === null || v === undefined) removeAttribute(this._impl, content);
-        else setAttribute(this._impl, content, String(v));
+        if (v === null || v === undefined) removeAttribute(this[$impl], content);
+        else setAttribute(this[$impl], content, String(v));
       },
     );
   }
@@ -187,11 +188,11 @@ export function bool(C: Ctor, list: string): void {
       C,
       idl,
       function () {
-        return contentAttr(this._impl, content) !== null;
+        return contentAttr(this[$impl], content) !== null;
       },
       function (v) {
-        if (v) setAttribute(this._impl, content, "");
-        else removeAttribute(this._impl, content);
+        if (v) setAttribute(this[$impl], content, "");
+        else removeAttribute(this[$impl], content);
       },
     );
   }
@@ -204,13 +205,13 @@ export function url(C: Ctor, list: string): void {
       C,
       idl,
       function () {
-        const impl = this._impl;
+        const impl = this[$impl];
         const v = contentAttr(impl, content);
         if (v === null) return "";
         return resolveURL(impl, v) ?? v;
       },
       function (v) {
-        setAttribute(this._impl, content, String(v));
+        setAttribute(this[$impl], content, String(v));
       },
     );
   }
@@ -230,13 +231,13 @@ export function long(C: Ctor, list: string, def = 0): void {
       C,
       idl,
       function () {
-        const v = contentAttr(this._impl, content);
+        const v = contentAttr(this[$impl], content);
         if (v === null) return def;
         const n = parseInteger(v);
         return n >= INT_MIN && n <= INT_MAX ? n : def;
       },
       function (v) {
-        setAttribute(this._impl, content, String(Number(v) | 0));
+        setAttribute(this[$impl], content, String(Number(v) | 0));
       },
     );
   }
@@ -249,7 +250,7 @@ export function nonNegativeLong(C: Ctor, list: string, def = -1): void {
       C,
       idl,
       function () {
-        const v = contentAttr(this._impl, content);
+        const v = contentAttr(this[$impl], content);
         if (v === null) return def;
         const n = parseNonNegativeInteger(v);
         return n <= INT_MAX ? n : def;
@@ -257,7 +258,7 @@ export function nonNegativeLong(C: Ctor, list: string, def = -1): void {
       function (v) {
         const n = Number(v) | 0;
         if (n < 0) throw indexSizeError(`The value provided (${n}) is negative.`);
-        setAttribute(this._impl, content, String(n));
+        setAttribute(this[$impl], content, String(n));
       },
     );
   }
@@ -271,7 +272,7 @@ export function ulong(C: Ctor, list: string, def = 0, positive = false): void {
       C,
       idl,
       function () {
-        const v = contentAttr(this._impl, content);
+        const v = contentAttr(this[$impl], content);
         if (v === null) return def;
         const n = parseNonNegativeInteger(v);
         return n >= min && n <= INT_MAX ? n : def;
@@ -280,7 +281,7 @@ export function ulong(C: Ctor, list: string, def = 0, positive = false): void {
         let n = Number(v) >>> 0;
         if (positive && n === 0) throw indexSizeError("The value provided is 0, which is not a positive number.");
         if (n > INT_MAX) n = def;
-        setAttribute(this._impl, content, String(n));
+        setAttribute(this[$impl], content, String(n));
       },
     );
   }
@@ -292,7 +293,7 @@ export function clampedUlong(C: Ctor, idl: string, content: string, def: number,
     C,
     idl,
     function () {
-      const v = contentAttr(this._impl, content);
+      const v = contentAttr(this[$impl], content);
       if (v === null) return def;
       const n = parseNonNegativeInteger(v);
       if (Number.isNaN(n)) return def;
@@ -301,7 +302,7 @@ export function clampedUlong(C: Ctor, idl: string, content: string, def: number,
     function (v) {
       let n = Number(v) >>> 0;
       if (n > INT_MAX) n = def;
-      setAttribute(this._impl, content, String(n));
+      setAttribute(this[$impl], content, String(n));
     },
   );
 }
@@ -313,7 +314,7 @@ export function double(C: Ctor, list: string, def = 0, positive = false): void {
       C,
       idl,
       function () {
-        const v = contentAttr(this._impl, content);
+        const v = contentAttr(this[$impl], content);
         if (v === null) return def;
         const n = parseFloatingPoint(v);
         if (Number.isNaN(n) || (positive && n <= 0)) return def;
@@ -323,7 +324,7 @@ export function double(C: Ctor, list: string, def = 0, positive = false): void {
         const n = Number(v);
         if (!Number.isFinite(n)) throw new TypeError("The provided double value is non-finite.");
         if (positive && n <= 0) return;
-        setAttribute(this._impl, content, String(n));
+        setAttribute(this[$impl], content, String(n));
       },
     );
   }
@@ -357,14 +358,14 @@ export function enumerated(C: Ctor, list: string, spec: EnumSpec): void {
       C,
       idl,
       function () {
-        const v = contentAttr(this._impl, content);
+        const v = contentAttr(this[$impl], content);
         if (v === null) return missing;
         if (v === "") return map.get("") ?? empty;
         return map.get(lower(v)) ?? invalid;
       },
       function (v) {
-        if (nullable && (v === null || v === undefined)) removeAttribute(this._impl, content);
-        else setAttribute(this._impl, content, String(v));
+        if (nullable && (v === null || v === undefined)) removeAttribute(this[$impl], content);
+        else setAttribute(this[$impl], content, String(v));
       },
     );
   }
@@ -397,13 +398,13 @@ export function tokenList(C: Ctor, idl: string, content: string, supported: read
       const self = this as unknown as Record<symbol, DOMTokenList | undefined>;
       let list = self[key];
       if (list === undefined) {
-        list = new DOMTokenList(this._impl, content, supported);
+        list = new DOMTokenList(this[$impl], content, supported);
         Object.defineProperty(this, key, { value: list });
       }
       return list;
     },
     function (v) {
-      setAttribute(this._impl, content, String(v));
+      setAttribute(this[$impl], content, String(v));
     },
   );
 }

@@ -15,6 +15,7 @@ import { bool, contentAttr, str } from "../reflect.ts";
 import { stripAndCollapseWS } from "./common.ts";
 import { currentDocument } from "../../window/current.ts";
 import type { HTMLSelectElement } from "./HTMLSelectElement.ts";
+import { $dirtiness, $impl, $selSet, $selectedness, $settled, $version } from "../../keys.ts";
 
 /** The select element an option belongs to (parent, or grandparent through an optgroup). */
 export function optionSelect(option: NodeImpl): NodeImpl | null {
@@ -30,39 +31,39 @@ export function optionSelect(option: NodeImpl): NodeImpl | null {
 
 export class HTMLOptionElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#concept-option-selectedness (authoritative when `_selSet`). */
-  _selectedness: boolean;
-  _selSet: boolean;
+  [$selectedness]: boolean;
+  [$selSet]: boolean;
   /** https://html.spec.whatwg.org/#concept-option-dirtiness */
-  _dirtiness: boolean;
+  [$dirtiness]: boolean;
 
   /** @internal Use Document.createElement or `new Option()`. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_ATTR_HOOK;
-    this._selectedness = false;
-    this._selSet = false;
-    this._dirtiness = false;
+    this[$impl].flags |= F_ATTR_HOOK;
+    this[$selectedness] = false;
+    this[$selSet] = false;
+    this[$dirtiness] = false;
   }
 
   _selectednessNow(): boolean {
-    if (this._selSet) return this._selectedness;
-    const select = optionSelect(this._impl);
+    if (this[$selSet]) return this[$selectedness];
+    const select = optionSelect(this[$impl]);
     if (select !== null) {
       const s = select.node as HTMLSelectElement;
-      if (!s._settled) {
+      if (!s[$settled]) {
         s._selectednessSettingAlgorithm();
-        if (this._selSet) return this._selectedness;
+        if (this[$selSet]) return this[$selectedness];
       }
     }
-    return contentAttr(this._impl, "selected") !== null;
+    return contentAttr(this[$impl], "selected") !== null;
   }
 
   /** Set selectedness without dirtiness or a reset (used by the select's algorithms). */
   _setSelectedness(value: boolean): void {
-    if (this._selSet && this._selectedness === value) return;
-    this._impl.doc._version++;
-    this._selectedness = value;
-    this._selSet = true;
+    if (this[$selSet] && this[$selectedness] === value) return;
+    this[$impl].doc[$version]++;
+    this[$selectedness] = value;
+    this[$selSet] = true;
   }
 
   /** https://html.spec.whatwg.org/#dom-option-selected */
@@ -72,11 +73,11 @@ export class HTMLOptionElement extends HTMLElement {
 
   set selected(value: boolean) {
     this._setSelectedness(!!value);
-    this._dirtiness = true;
-    const select = optionSelect(this._impl);
+    this[$dirtiness] = true;
+    const select = optionSelect(this[$impl]);
     if (select !== null) {
       const s = select.node as HTMLSelectElement;
-      if (value) s._deselectOthers(this._impl);
+      if (value) s._deselectOthers(this[$impl]);
       s._selectednessSettingAlgorithm();
     }
   }
@@ -86,7 +87,7 @@ export class HTMLOptionElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-option-text — descendant text, stripped and collapsed, excluding script descendants. */
   get text(): string {
-    const root = this._impl;
+    const root = this[$impl];
     let s = "";
     for (let n = root.first; n !== null; ) {
       if (n.tag === T.script || (n.ns === SVG_NS && n.name === "script")) {
@@ -105,7 +106,7 @@ export class HTMLOptionElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-option-value */
   get value(): string {
-    return contentAttr(this._impl, "value") ?? this.text;
+    return contentAttr(this[$impl], "value") ?? this.text;
   }
 
   set value(value: string) {
@@ -114,7 +115,7 @@ export class HTMLOptionElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-option-label */
   get label(): string {
-    const label = contentAttr(this._impl, "label");
+    const label = contentAttr(this[$impl], "label");
     return label !== null ? label : this.text;
   }
 
@@ -124,17 +125,17 @@ export class HTMLOptionElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-option-index */
   get index(): number {
-    const select = optionSelect(this._impl);
+    const select = optionSelect(this[$impl]);
     if (select === null) return 0;
     let i = 0;
     for (let c = select.first; c !== null; c = c.next) {
       if (c.tag === T.option) {
-        if (c === this._impl) return i;
+        if (c === this[$impl]) return i;
         i++;
       } else if (c.tag === T.optgroup) {
         for (let o = c.first; o !== null; o = o.next) {
           if (o.tag === T.option) {
-            if (o === this._impl) return i;
+            if (o === this[$impl]) return i;
             i++;
           }
         }
@@ -145,7 +146,7 @@ export class HTMLOptionElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-option-form */
   get form(): Element | null {
-    const select = optionSelect(this._impl);
+    const select = optionSelect(this[$impl]);
     return select === null ? null : (select.node as HTMLSelectElement).form;
   }
 
@@ -153,12 +154,12 @@ export class HTMLOptionElement extends HTMLElement {
   override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     if (namespace !== null || localName !== "selected") return;
-    if (this._dirtiness) return;
+    if (this[$dirtiness]) return;
     this._setSelectedness(value !== null);
-    const select = optionSelect(this._impl);
+    const select = optionSelect(this[$impl]);
     if (select !== null) {
       const s = select.node as HTMLSelectElement;
-      if (value !== null) s._deselectOthers(this._impl);
+      if (value !== null) s._deselectOthers(this[$impl]);
       s._selectednessSettingAlgorithm();
     }
   }
@@ -166,9 +167,9 @@ export class HTMLOptionElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#the-option-element:concept-node-clone-ext */
   override _cloningSteps(copy: Element): void {
     const c = copy as HTMLOptionElement;
-    c._selectedness = this._selectednessNow();
-    c._selSet = true;
-    c._dirtiness = this._dirtiness;
+    c[$selectedness] = this._selectednessNow();
+    c[$selSet] = true;
+    c[$dirtiness] = this[$dirtiness];
   }
 }
 
@@ -196,7 +197,7 @@ export class HTMLOptGroupElement extends HTMLElement {
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_CHILDREN_HOOK;
+    this[$impl].flags |= F_CHILDREN_HOOK;
   }
 
   declare disabled: boolean;
@@ -204,7 +205,7 @@ export class HTMLOptGroupElement extends HTMLElement {
 
   /** Options added to / removed from an optgroup change the select's list of options. */
   override _childrenChangedSteps(): void {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     if (p !== null && p.tag === T.select) (p.node as HTMLSelectElement)._selectednessSettingAlgorithm();
   }
 }

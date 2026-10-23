@@ -10,6 +10,7 @@ import { getImplicitAriaRolesJestDom } from "@rtd/aria";
 import { computeAccessibleDescription, computeAccessibleName } from "../aria.ts";
 import { ELEMENT_ROLES } from "../element-roles.generated.ts";
 import { checkHtmlElement, deprecate, getMessage, normalize, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
+import { $impl } from "@rtd/dom/internal";
 
 // --- toHaveRole -------------------------------------------------------------------------
 //
@@ -55,7 +56,7 @@ function getExplicitOrImplicitRoles(htmlElement: DOMNode): string[] {
     // Handle fallback roles, such as role="switch button"
     return roleValue.split(" ").filter(Boolean);
   }
-  if (htmlElement._impl !== undefined) return getImplicitAriaRolesJestDom(htmlElement);
+  if (htmlElement[$impl] !== undefined) return getImplicitAriaRolesJestDom(htmlElement);
   return getImplicitAriaRoles(htmlElement);
 }
 

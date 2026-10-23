@@ -8,6 +8,8 @@
 // never invalidated by walking). The HTMLCollection subclasses override `_collect()`; the
 // NodeLists use their own snapshot plus prototype index getters.
 
+import type { Document as OwnerDocument } from "../../nodes/Document.ts";
+import { holdSnapshot } from "../../nodes/derived.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { Node } from "../../nodes/Node.ts";
@@ -19,32 +21,46 @@ import { attr } from "../../nodes/attributes.ts";
 import { labelsFor } from "./form-associated.ts";
 import { I_RADIO, inputType } from "./input-type.ts";
 import { HTML_NS } from "../../nodes/constants.ts";
+import { $cache, $el, $form, $impl, $name, $version } from "../../keys.ts";
 
 // --- live NodeLists ----------------------------------------------------------------------------
+
+/** Version-stamped members of a computed NodeList (dropped on node removal, nodes/derived.ts). */
+class SnapshotCache {
+  items: Node[] = [];
+  version = -1;
+  doc: object | null = null;
+  _dropSnapshot(): void {
+    this.items = [];
+    this.version = -1;
+    this.doc = null;
+  }
+}
 
 /**
  * Base for the live NodeLists computed from the tree (labels, RadioNodeList): a version-stamped
  * snapshot plus Proxy-free prototype index getters (collections/indexed.ts).
  */
 abstract class ComputedNodeList extends NodeList {
-  declare _cache: { items: Node[]; version: number; doc: object | null };
+  declare [$cache]: SnapshotCache;
 
   constructor() {
     super(null);
-    Object.defineProperty(this, "_cache", { value: { items: [], version: -1, doc: null } });
+    Object.defineProperty(this, $cache, { value: new SnapshotCache() });
   }
 
   abstract _compute(): Node[];
-  abstract _doc(): { _version: number };
+  abstract _ownerDocument(): { [$version]: number };
 
   _snapshot(): Node[] {
-    const c = this._cache;
-    const doc = this._doc();
-    if (c.version === doc._version && c.doc === doc) return c.items;
+    const c = this[$cache];
+    const doc = this._ownerDocument();
+    if (c.version === doc[$version] && c.doc === doc) return c.items;
     const items = this._compute();
     c.items = items;
-    c.version = doc._version;
+    c.version = doc[$version];
     c.doc = doc;
+    if (items.length !== 0) holdSnapshot(doc as unknown as OwnerDocument, c);
     if (items.length > nodeListIndex.count) ensureIndexGetters(nodeListIndex, items.length);
     return items;
   }
@@ -67,20 +83,20 @@ const nodeListIndex = indexGetterTable(ComputedNodeList.prototype, (self, i) => 
 
 /** Live NodeList of the label elements associated with a labelable element. */
 export class LabelsNodeList extends ComputedNodeList {
-  declare _el: NodeImpl;
+  declare [$el]: NodeImpl;
 
   /** @internal */
   constructor(el: NodeImpl) {
     super();
-    Object.defineProperty(this, "_el", { value: el });
+    Object.defineProperty(this, $el, { value: el });
   }
 
-  _doc(): { _version: number } {
-    return this._el.doc;
+  _ownerDocument(): { [$version]: number } {
+    return this[$el].doc;
   }
 
   _compute(): Node[] {
-    const impls = labelsFor(this._el, []);
+    const impls = labelsFor(this[$el], []);
     const items: Node[] = new Array(impls.length);
     for (let i = 0; i < impls.length; i++) items[i] = impls[i].node;
     return items;
@@ -91,24 +107,24 @@ export class LabelsNodeList extends ComputedNodeList {
 
 /** https://html.spec.whatwg.org/#radionodelist — live list of a form's controls with a given name/id. */
 export class RadioNodeList extends ComputedNodeList {
-  declare _form: NodeImpl;
-  declare _name: string;
+  declare [$form]: NodeImpl;
+  declare [$name]: string;
 
   /** @internal */
   constructor(form: NodeImpl, name: string) {
     super();
-    Object.defineProperty(this, "_form", { value: form });
-    Object.defineProperty(this, "_name", { value: name });
+    Object.defineProperty(this, $form, { value: form });
+    Object.defineProperty(this, $name, { value: name });
   }
 
-  _doc(): { _version: number } {
-    return this._form.doc;
+  _ownerDocument(): { [$version]: number } {
+    return this[$form].doc;
   }
 
   _compute(): Node[] {
-    const controls = (this._form.node as unknown as { _controls(): NodeImpl[] })._controls();
+    const controls = (this[$form].node as unknown as { _controls(): NodeImpl[] })._controls();
     const items: Node[] = [];
-    const name = this._name;
+    const name = this[$name];
     for (let i = 0; i < controls.length; i++) {
       const c = controls[i];
       if (c.id === name || attr(c, "name") === name) items.push(c.node);
@@ -120,7 +136,7 @@ export class RadioNodeList extends ComputedNodeList {
   get value(): string {
     const items = this._snapshot();
     for (let i = 0; i < items.length; i++) {
-      const impl = (items[i] as Element)._impl;
+      const impl = (items[i] as Element)[$impl];
       if (impl.tag === T.input && inputType(impl) === I_RADIO && (items[i] as unknown as { checked: boolean }).checked) {
         return attr(impl, "value") ?? "on";
       }
@@ -132,7 +148,7 @@ export class RadioNodeList extends ComputedNodeList {
     const v = String(value);
     const items = this._snapshot();
     for (let i = 0; i < items.length; i++) {
-      const impl = (items[i] as Element)._impl;
+      const impl = (items[i] as Element)[$impl];
       if (impl.tag === T.input && inputType(impl) === I_RADIO && (attr(impl, "value") ?? "on") === v) {
         (items[i] as unknown as { checked: boolean }).checked = true;
         return;
@@ -164,7 +180,7 @@ export class HTMLFormControlsCollection extends HTMLCollection {
     let first: Element | null = null;
     let count = 0;
     for (let i = 0; i < items.length; i++) {
-      const impl = items[i]._impl;
+      const impl = items[i][$impl];
       if (impl.id === n || attr(impl, "name") === n) {
         if (count === 0) first = items[i];
         count++;
@@ -222,7 +238,7 @@ export class HTMLOptionsCollection extends HTMLCollection {
       if (index < items.length) items[index].remove();
       return;
     }
-    if (typeof value !== "object" || !("_impl" in value) || value._impl.tag !== T.option) {
+    if (typeof value !== "object" || !($impl in value) || value[$impl].tag !== T.option) {
       throw new TypeError("Failed to set an indexed property on 'HTMLOptionsCollection': parameter 2 is not of type 'HTMLOptionElement'.");
     }
     const length = items.length;
@@ -265,16 +281,16 @@ export class HTMLOptionsCollection extends HTMLCollection {
   /** https://html.spec.whatwg.org/#dom-htmloptionscollection-add */
   add(element: Element, before: Element | number | null = null): void {
     const parent = this._s.root.node as Element;
-    if (element === null || typeof element !== "object" || !("_impl" in element)) {
+    if (element === null || typeof element !== "object" || !($impl in element)) {
       throw new TypeError("Failed to execute 'add' on 'HTMLOptionsCollection': parameter 1 is not of type 'HTMLOptionElement or HTMLOptGroupElement'.");
     }
-    const tag = element._impl.tag;
+    const tag = element[$impl].tag;
     if (tag !== T.option && tag !== T.optgroup) {
       throw new TypeError("Failed to execute 'add' on 'HTMLOptionsCollection': parameter 1 is not of type 'HTMLOptionElement or HTMLOptGroupElement'.");
     }
     // Step 1: element is an ancestor of the select → HierarchyRequestError.
     for (let p: NodeImpl | null = this._s.root; p !== null; p = p.parent) {
-      if (p === element._impl) throw new DOMException("The new element is an ancestor of the select element.", "HierarchyRequestError");
+      if (p === element[$impl]) throw new DOMException("The new element is an ancestor of the select element.", "HierarchyRequestError");
     }
     let reference: Element | null = null;
     if (typeof before === "number") reference = this._snapshot()[before] ?? null;
@@ -282,7 +298,7 @@ export class HTMLOptionsCollection extends HTMLCollection {
       reference = before;
       // Step 2: before is an element that is not a descendant of the select → NotFoundError.
       let inside = false;
-      for (let p = before._impl.parent; p !== null; p = p.parent) {
+      for (let p = before[$impl].parent; p !== null; p = p.parent) {
         if (p === this._s.root) {
           inside = true;
           break;

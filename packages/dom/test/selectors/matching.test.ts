@@ -28,6 +28,7 @@ import {
   KEY_TAG,
   KEY_NONE,
 } from "../../src/selectors/internal.ts";
+import { $impl, $version } from "../../src/keys.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyEl = any;
@@ -35,7 +36,7 @@ type AnyEl = any;
 let document: Document;
 const ids = (list: ArrayLike<AnyEl>) => Array.from(list, (e: AnyEl) => e.id);
 const $$ = (sel: string, root: AnyEl = document) => ids(root.querySelectorAll(sel));
-const impl = (el: AnyEl) => el._impl;
+const impl = (el: AnyEl) => el[$impl];
 
 beforeEach(() => {
   document = createWindow().document;
@@ -139,7 +140,7 @@ describe("fast paths — #id, .class, tag, [attr], [attr=v], *", () => {
   });
 });
 
-describe("version-stamped result cache — Document._version (docs/ARCHITECTURE.md, performance invariant 4)", () => {
+describe("version-stamped result cache — Document[$version] (docs/ARCHITECTURE.md, performance invariant 4)", () => {
   test("repeated queries return fresh NodeLists with identical contents", () => {
     document.body!.innerHTML = `<p id=a class=x></p><p id=b class=x></p>`;
     const l1 = document.querySelectorAll(".x");

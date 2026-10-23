@@ -5,6 +5,7 @@ export default defineProject({
   test: {
     name: "@rtd/compat",
     include: ["test/**/*.test.{ts,tsx}"],
+    exclude: ["test/leaks/**"], // vitest.leaks.config.ts (needs --expose-gc)
     environment: "node",
   },
 });

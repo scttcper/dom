@@ -24,6 +24,7 @@ import type { Element } from "../nodes/Element.ts";
 import { CDATA_SECTION_NODE, ELEMENT_NODE, F_ATTR_HOOK, F_CHILDREN_HOOK, F_CONNECT_HOOK, F_CONNECTED, HTML_NS, SVG_NS, TEXT_NODE } from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { firstElementChild, nextElementInTree } from "../nodes/traverse.ts";
+import { $impl, $styleVersion } from "../keys.ts";
 
 export interface StyleSheetHooks {
   /** Create the CSS style sheet for a <style> element (or SVG <style>) from its child text. */
@@ -62,12 +63,12 @@ function removeAssociatedSheet(el: Element): void {
   const sheet = getSheet(el);
   if (sheet === null) return;
   setSheet(el, null);
-  styleSheetHooks.removeSheet?.(el._impl, sheet);
+  styleSheetHooks.removeSheet?.(el[$impl], sheet);
 }
 
 /** https://html.spec.whatwg.org/#update-a-style-block */
 export function updateStyleBlock(el: Element): void {
-  const impl = el._impl;
+  const impl = el[$impl];
   removeAssociatedSheet(el);
   if ((impl.flags & F_CONNECTED) === 0) return;
   // Shadow trees count (connected flag covers shadow-including roots).
@@ -75,7 +76,7 @@ export function updateStyleBlock(el: Element): void {
   if (type !== null && type !== "" && type.toLowerCase() !== "text/css") return;
   const create = styleSheetHooks.createSheet;
   if (create === null) {
-    impl.doc._styleVersion++;
+    impl.doc[$styleVersion]++;
     return;
   }
   setSheet(el, create(impl, childTextContent(impl), contentAttr(impl, "media") ?? ""));
@@ -86,7 +87,7 @@ export function updateStyleBlock(el: Element): void {
 export class HTMLStyleElement extends HTMLElement {
   constructor(doc?: Document, localName?: string, ns?: string | null, prefix?: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_CONNECT_HOOK | F_CHILDREN_HOOK | F_ATTR_HOOK;
+    this[$impl].flags |= F_CONNECT_HOOK | F_CHILDREN_HOOK | F_ATTR_HOOK;
   }
 
   override _connectedSteps(): void {
@@ -135,7 +136,7 @@ function isStylesheetLink(impl: NodeImpl): boolean {
 }
 
 function updateLinkSheet(el: HTMLLinkElement): void {
-  const impl = el._impl;
+  const impl = el[$impl];
   removeAssociatedSheet(el);
   if ((impl.flags & F_CONNECTED) === 0 || !isStylesheetLink(impl) || contentAttr(impl, "disabled") !== null) return;
   const create = styleSheetHooks.createLinkSheet;
@@ -149,7 +150,7 @@ function updateLinkSheet(el: HTMLLinkElement): void {
 export class HTMLLinkElement extends HTMLElement {
   constructor(doc?: Document, localName?: string, ns?: string | null, prefix?: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
+    this[$impl].flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
   }
 
   override _connectedSteps(): void {
@@ -211,7 +212,7 @@ export class HTMLScriptElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-script-text */
   get text(): string {
-    return childTextContent(this._impl);
+    return childTextContent(this[$impl]);
   }
 
   set text(value: string) {
@@ -223,7 +224,7 @@ export class HTMLScriptElement extends HTMLElement {
     // "force async" starts true for script-created elements (parser-inserted ones cannot be
     // told apart here, see docs/deviations.md).
     const forceAsync = (this as unknown as Record<symbol, boolean | undefined>)[NON_BLOCKING] ?? true;
-    return forceAsync || contentAttr(this._impl, "async") !== null;
+    return forceAsync || contentAttr(this[$impl], "async") !== null;
   }
 
   set async(v: boolean) {
@@ -245,7 +246,7 @@ tokenList(HTMLScriptElement, "blocking", "blocking", ["render"]);
 export class HTMLTitleElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-title-text */
   get text(): string {
-    return childTextContent(this._impl);
+    return childTextContent(this[$impl]);
   }
 
   set text(value: string) {
@@ -260,7 +261,7 @@ function stripAndCollapse(s: string): string {
 
 /** https://html.spec.whatwg.org/#the-title-element-2 — first <title> in the document, tree order. */
 function titleElement(doc: Document): NodeImpl | null {
-  const root = doc._impl;
+  const root = doc[$impl];
   for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
     if (n.tag === T.title && n.ns === HTML_NS) return n;
   }
@@ -274,7 +275,7 @@ function svgTitle(docEl: NodeImpl): NodeImpl | null {
 
 /** https://html.spec.whatwg.org/#document.title */
 export function getDocumentTitle(doc: Document): string {
-  const docEl = firstElementChild(doc._impl);
+  const docEl = firstElementChild(doc[$impl]);
   let value: string;
   if (docEl !== null && docEl.ns === SVG_NS && docEl.name === "svg") {
     const t = svgTitle(docEl);
@@ -287,12 +288,12 @@ export function getDocumentTitle(doc: Document): string {
 }
 
 export function setDocumentTitle(doc: Document, value: string): void {
-  const docEl = firstElementChild(doc._impl);
+  const docEl = firstElementChild(doc[$impl]);
   if (docEl === null) return;
   if (docEl.ns === SVG_NS && docEl.name === "svg") {
     let t = svgTitle(docEl);
     if (t === null) {
-      t = doc.createElementNS(SVG_NS, "title")._impl;
+      t = doc.createElementNS(SVG_NS, "title")[$impl];
       docEl.node.insertBefore(t.node, docEl.first === null ? null : docEl.first.node);
     }
     t.node.textContent = value;
@@ -303,7 +304,7 @@ export function setDocumentTitle(doc: Document, value: string): void {
   if (t === null) {
     const head = (doc as unknown as { head: Element | null }).head;
     if (head === null) return;
-    t = head.appendChild(doc.createElement("title"))._impl;
+    t = head.appendChild(doc.createElement("title"))[$impl];
   }
   t.node.textContent = value;
 }
@@ -327,7 +328,7 @@ if (!Object.hasOwn(Document.prototype, "title")) {
 if (!Object.hasOwn(Document.prototype, "dir")) {
   Object.defineProperty(Document.prototype, "dir", {
     get(this: Document) {
-      const html = firstElementChild(this._impl);
+      const html = firstElementChild(this[$impl]);
       if (html === null || html.tag !== T.html || html.ns !== HTML_NS) return "";
       const v = contentAttr(html, "dir");
       if (v === null) return "";
@@ -335,7 +336,7 @@ if (!Object.hasOwn(Document.prototype, "dir")) {
       return k === "ltr" || k === "rtl" || k === "auto" ? k : "";
     },
     set(this: Document, v: unknown) {
-      const html = firstElementChild(this._impl);
+      const html = firstElementChild(this[$impl]);
       if (html !== null && html.tag === T.html && html.ns === HTML_NS) (html.node as Element).setAttribute("dir", String(v));
     },
     configurable: true,
@@ -355,12 +356,12 @@ for (const [idl, content] of [
   Object.defineProperty(Document.prototype, idl, {
     get(this: Document) {
       const body = (this as unknown as { body: Element | null }).body;
-      if (body === null || body._impl.tag !== T.body) return "";
-      return contentAttr(body._impl, content) ?? "";
+      if (body === null || body[$impl].tag !== T.body) return "";
+      return contentAttr(body[$impl], content) ?? "";
     },
     set(this: Document, v: unknown) {
       const body = (this as unknown as { body: Element | null }).body;
-      if (body !== null && body._impl.tag === T.body) body.setAttribute(content, v === null ? "" : String(v));
+      if (body !== null && body[$impl].tag === T.body) body.setAttribute(content, v === null ? "" : String(v));
     },
     configurable: true,
     enumerable: true,

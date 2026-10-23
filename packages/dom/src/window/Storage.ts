@@ -9,6 +9,7 @@
 
 import { eventInterface } from "./interfaces.ts";
 import type { Window } from "./Window.ts";
+import { $closed, $url } from "../keys.ts";
 
 /** https://storage.spec.whatwg.org/#storage-shed */
 export interface StorageShed {
@@ -162,10 +163,10 @@ export class Storage {
 function broadcast(s: StorageState, key: string | null, oldValue: string | null, newValue: string | null): void {
   if (s.type !== "local") return; // session storage has no other documents to notify here
   const source = s.window;
-  const origin = source._url.origin;
-  const url = source._url.href;
+  const origin = source[$url].origin;
+  const url = source[$url].href;
   for (const other of source._storageShed.windows) {
-    if (other === source || other._closed || other._url.origin !== origin) continue;
+    if (other === source || other[$closed] || other[$url].origin !== origin) continue;
     other._task(() => {
       const StorageEvent = eventInterface("StorageEvent");
       other.dispatchEvent(new StorageEvent("storage", { key, oldValue, newValue, url, storageArea: other.localStorage }) as never);
@@ -176,7 +177,7 @@ function broadcast(s: StorageState, key: string | null, oldValue: string | null,
 /** @internal Create a window's localStorage (area shared per origin within the shed). */
 export function createLocalStorage(window: Window): Storage {
   const shed = window._storageShed;
-  const origin = window._url.origin;
+  const origin = window[$url].origin;
   let area = shed.areas.get(origin);
   if (area === undefined) shed.areas.set(origin, (area = new Map()));
   return new Storage(kConstruct, window, "local", area);

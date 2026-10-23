@@ -15,6 +15,7 @@ import { Event } from "../events/Event.ts";
 import type { Element } from "../nodes/Element.ts";
 import { attr } from "../nodes/attributes.ts";
 import type { Window } from "./Window.ts";
+import { $closed, $impl, $window } from "../keys.ts";
 
 type NestedWindowFactory = (frameElement: Element, parent: Window, src: string | null, srcdoc: string | null) => Window;
 
@@ -35,10 +36,10 @@ export function frameContentWindow(frame: Element): Window | null {
 /** https://html.spec.whatwg.org/#the-iframe-element:html-element-insertion-steps */
 export function frameConnected(frame: Element): void {
   if (factory === null || contexts.has(frame)) return;
-  const parent = frame._impl.doc._window;
+  const parent = frame[$impl].doc[$window];
   // Only documents with a browsing context get nested ones (not DOMParser/template documents).
-  if (parent === null || parent._closed) return;
-  const impl = frame._impl;
+  if (parent === null || parent[$closed]) return;
+  const impl = frame[$impl];
   const window = factory(frame, parent, attr(impl, "src"), attr(impl, "srcdoc"));
   contexts.set(frame, window);
   // https://html.spec.whatwg.org/#iframe-load-event-steps — queued, so listeners added right

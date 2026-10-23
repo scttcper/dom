@@ -23,6 +23,7 @@ import {
 } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
+import { $clonable, $delegatesFocus, $impl, $isHTML, $mode, $serializable, $shadowRoot, $slotAssignment } from "../keys.ts";
 
 // --- HTML ------------------------------------------------------------------------------------
 
@@ -129,17 +130,17 @@ function serializedAttrName(ns: string | null, name: string, localName: string):
 }
 
 interface ShadowLike {
-  _impl: NodeImpl;
-  _mode: string;
-  _delegatesFocus: boolean;
-  _serializable: boolean;
-  _slotAssignment: string;
-  _clonable: boolean;
+  [$impl]: NodeImpl;
+  [$mode]: string;
+  [$delegatesFocus]: boolean;
+  [$serializable]: boolean;
+  [$slotAssignment]: string;
+  [$clonable]: boolean;
 }
 
 function templateContentsOf(el: NodeImpl): NodeImpl {
-  const content = (el.node as unknown as { content?: { _impl: NodeImpl } }).content;
-  return content === undefined || content === null ? el : content._impl;
+  const content = (el.node as unknown as { content?: { [$impl]: NodeImpl } }).content;
+  return content === undefined || content === null ? el : content[$impl];
 }
 
 let htmlOut = "";
@@ -198,18 +199,18 @@ function htmlElement(el: NodeImpl): void {
 }
 
 function htmlShadowRoot(host: NodeImpl): void {
-  const shadow = (host.node as unknown as { _shadowRoot?: ShadowLike | null })._shadowRoot;
+  const shadow = (host.node as unknown as { [$shadowRoot]?: ShadowLike | null })[$shadowRoot];
   if (shadow === undefined || shadow === null) return;
-  const include = (optSerializable && shadow._serializable) || (optRoots !== null && optRoots.includes(shadow));
+  const include = (optSerializable && shadow[$serializable]) || (optRoots !== null && optRoots.includes(shadow));
   if (!include) return;
-  let s = '<template shadowrootmode="' + (shadow._mode === "open" ? "open" : "closed") + '"';
-  if (shadow._delegatesFocus) s += ' shadowrootdelegatesfocus=""';
-  if (shadow._serializable) s += ' shadowrootserializable=""';
-  if (shadow._slotAssignment === "manual") s += ' shadowrootslotassignment="manual"';
-  if (shadow._clonable) s += ' shadowrootclonable=""';
+  let s = '<template shadowrootmode="' + (shadow[$mode] === "open" ? "open" : "closed") + '"';
+  if (shadow[$delegatesFocus]) s += ' shadowrootdelegatesfocus=""';
+  if (shadow[$serializable]) s += ' shadowrootserializable=""';
+  if (shadow[$slotAssignment] === "manual") s += ' shadowrootslotassignment="manual"';
+  if (shadow[$clonable]) s += ' shadowrootclonable=""';
   // TODO(html): shadowrootcustomelementregistry when scoped custom element registries land.
   htmlOut += s + ">";
-  htmlChildren(shadow._impl);
+  htmlChildren(shadow[$impl]);
   htmlOut += "</template>";
 }
 
@@ -253,7 +254,7 @@ function runHtml(node: NodeImpl, serializable: boolean, roots: readonly unknown[
 
 /** Is `node`'s node document an HTML document? */
 function inHTMLDocument(node: NodeImpl): boolean {
-  return (node.doc as unknown as { _isHTML: boolean })._isHTML;
+  return (node.doc as unknown as { [$isHTML]: boolean })[$isHTML];
 }
 
 /**

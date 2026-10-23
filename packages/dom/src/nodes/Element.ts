@@ -54,6 +54,7 @@ import { _shadowRootAttached, assignedSlot as slotOf, assignedSlotForEventPath, 
 import { setAssignedSlotLookup } from "../events/dispatch.ts";
 import type { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
 import type { ShadowRootInit } from "../webidl.ts";
+import { $attributes, $children, $classList, $dataset, $declarative, $impl, $isHTML, $mode, $shadowRoot, $style, $value } from "../keys.ts";
 
 /** Valid custom element name test (fast path: must contain "-" and start with a-z). */
 function isPotentialCustomElementName(name: string): boolean {
@@ -64,32 +65,32 @@ function isPotentialCustomElementName(name: string): boolean {
 export class Element extends Node {
   // Lazily created public API objects. Declared in the constructor so every Element
   // wrapper starts with the same field layout.
-  _children: HTMLCollection | null;
-  _shadowRoot: ShadowRoot | null;
+  [$children]: HTMLCollection | null;
+  [$shadowRoot]: ShadowRoot | null;
   /** Inline style declaration (src/css owns the class); null until `style` is read. */
-  _style: CSSStyleDeclaration | null;
-  _classList: DOMTokenList | null;
-  _dataset: DOMStringMap | null;
-  _attributes: NamedNodeMap | null;
+  [$style]: CSSStyleDeclaration | null;
+  [$classList]: DOMTokenList | null;
+  [$dataset]: DOMStringMap | null;
+  [$attributes]: NamedNodeMap | null;
 
   /** @internal Use Document.createElement / createElementNS. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(ELEMENT_NODE, doc);
-    const impl = this._impl;
+    const impl = this[$impl];
     impl.name = localName;
     impl.ns = ns;
     impl.prefix = prefix;
     if (ns === HTML_NS) {
-      if (doc._isHTML) impl.flags |= F_HTML;
+      if (doc[$isHTML]) impl.flags |= F_HTML;
       impl.tag = tagId(localName);
       if (impl.tag === 0 && isPotentialCustomElementName(localName)) impl.flags |= F_CUSTOM;
     }
-    this._children = null;
-    this._shadowRoot = null;
-    this._style = null;
-    this._classList = null;
-    this._dataset = null;
-    this._attributes = null;
+    this[$children] = null;
+    this[$shadowRoot] = null;
+    this[$style] = null;
+    this[$classList] = null;
+    this[$dataset] = null;
+    this[$attributes] = null;
   }
 
   override get nodeName(): string {
@@ -97,24 +98,28 @@ export class Element extends Node {
   }
 
   get namespaceURI(): string | null {
-    return this._impl.ns;
+    return this[$impl].ns;
   }
 
   get prefix(): string | null {
-    return this._impl.prefix;
+    return this[$impl].prefix;
   }
 
   get localName(): string {
-    return this._impl.name;
+    return this[$impl].name;
   }
 
   /** https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name */
   get tagName(): string {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (impl.prefix === null) {
       if ((impl.flags & F_HTML) === 0) return impl.name;
       let upper = upperNames.get(impl.name);
-      if (upper === undefined) upperNames.set(impl.name, (upper = asciiUppercase(impl.name)));
+      if (upper === undefined) {
+        // Bounded: generated custom element names would otherwise grow it for the whole process.
+        if (upperNames.size >= 1024) upperNames.clear();
+        upperNames.set(impl.name, (upper = asciiUppercase(impl.name)));
+      }
       return upper;
     }
     const qualified = impl.prefix + ":" + impl.name;
@@ -122,24 +127,24 @@ export class Element extends Node {
   }
 
   get id(): string {
-    return this._impl.id;
+    return this[$impl].id;
   }
 
   set id(value: string) {
-    setAttribute(this._impl, "id", String(value));
+    setAttribute(this[$impl], "id", String(value));
   }
 
   get className(): string {
-    return getAttribute(this._impl, "class") ?? "";
+    return getAttribute(this[$impl], "class") ?? "";
   }
 
   set className(value: string) {
-    setAttribute(this._impl, "class", String(value));
+    setAttribute(this[$impl], "class", String(value));
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-classlist */
   get classList(): DOMTokenList {
-    return (this._classList ??= new DOMTokenList(this._impl, "class"));
+    return (this[$classList] ??= new DOMTokenList(this[$impl], "class"));
   }
 
   set classList(value: string) {
@@ -148,13 +153,13 @@ export class Element extends Node {
 
   /** https://html.spec.whatwg.org/#dom-dataset (HTMLOrSVGElement; installed here so SVG/MathML share it). */
   get dataset(): DOMStringMap {
-    return (this._dataset ??= new DOMStringMap(this._impl));
+    return (this[$dataset] ??= new DOMStringMap(this[$impl]));
   }
 
   /** https://drafts.csswg.org/css-shadow-parts/#dom-element-part */
   get part(): DOMTokenList {
     let p = partLists.get(this);
-    if (p === undefined) partLists.set(this, (p = new DOMTokenList(this._impl, "part")));
+    if (p === undefined) partLists.set(this, (p = new DOMTokenList(this[$impl], "part")));
     return p;
   }
 
@@ -164,20 +169,20 @@ export class Element extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-element-attributes */
   get attributes(): NamedNodeMap {
-    return (this._attributes ??= new NamedNodeMap(this._impl));
+    return (this[$attributes] ??= new NamedNodeMap(this[$impl]));
   }
 
   get slot(): string {
-    return getAttribute(this._impl, "slot") ?? "";
+    return getAttribute(this[$impl], "slot") ?? "";
   }
 
   set slot(value: string) {
-    setAttribute(this._impl, "slot", String(value));
+    setAttribute(this[$impl], "slot", String(value));
   }
 
   override get textContent(): string {
     // Concatenation of the data of all Text descendants, in tree order.
-    const root = this._impl;
+    const root = this[$impl];
     let s = "";
     for (let n = root.first; n !== null; n = nextInTree(n, root)) {
       if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
@@ -187,38 +192,38 @@ export class Element extends Node {
 
   override set textContent(value: string | null) {
     const v = value === null || value === undefined ? "" : String(value);
-    this._replaceAll(v === "" ? null : this._impl.doc.createTextNode(v));
+    this._replaceAll(v === "" ? null : this[$impl].doc.createTextNode(v));
   }
 
   // --- attributes -------------------------------------------------------------------------
 
   hasAttributes(): boolean {
-    const attrs = this._impl.attrs;
+    const attrs = this[$impl].attrs;
     return attrs !== null && attrs.length !== 0;
   }
 
   getAttributeNames(): string[] {
-    const attrs = this._impl.attrs;
+    const attrs = this[$impl].attrs;
     return attrs === null ? [] : attrs.map((a) => a.name);
   }
 
   getAttribute(qualifiedName: string): string | null {
-    return getAttribute(this._impl, String(qualifiedName));
+    return getAttribute(this[$impl], String(qualifiedName));
   }
 
   getAttributeNS(namespace: string | null, localName: string): string | null {
-    const a = findAttributeByNamespace(this._impl, namespace === "" || namespace === undefined ? null : namespace, String(localName));
+    const a = findAttributeByNamespace(this[$impl], namespace === "" || namespace === undefined ? null : namespace, String(localName));
     return a === null ? null : a.value;
   }
 
   setAttribute(qualifiedName: string, value: string): void {
-    setAttribute(this._impl, String(qualifiedName), String(value));
+    setAttribute(this[$impl], String(qualifiedName), String(value));
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-setattributens */
   setAttributeNS(namespace: string | null, qualifiedName: string, value: string): void {
     const { namespace: ns, prefix, localName } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "attribute");
-    const impl = this._impl;
+    const impl = this[$impl];
     const v = String(value);
     const existing = findAttributeByNamespace(impl, ns, localName);
     if (existing === null) appendAttribute(impl, new AttrRecord(localName, v, ns, prefix));
@@ -227,7 +232,7 @@ export class Element extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-element-getattributenode */
   getAttributeNode(qualifiedName: string): Attr | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     const q = String(qualifiedName);
     const a = findAttributeByName(impl, (impl.flags & F_HTML) !== 0 ? asciiLowercase(q) : q);
     return a === null ? null : attrNode(impl, a);
@@ -235,37 +240,37 @@ export class Element extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-element-getattributenodens */
   getAttributeNodeNS(namespace: string | null, localName: string): Attr | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     const a = findAttributeByNamespace(impl, namespace === "" || namespace === undefined ? null : namespace, String(localName));
     return a === null ? null : attrNode(impl, a);
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-setattributenode */
   setAttributeNode(attr: Attr): Attr | null {
-    return setAttributeNode(this._impl, attr);
+    return setAttributeNode(this[$impl], attr);
   }
 
   setAttributeNodeNS(attr: Attr): Attr | null {
-    return setAttributeNode(this._impl, attr);
+    return setAttributeNode(this[$impl], attr);
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-removeattributenode */
   removeAttributeNode(attr: Attr): Attr {
-    return removeAttributeNode(this._impl, attr);
+    return removeAttributeNode(this[$impl], attr);
   }
 
   removeAttribute(qualifiedName: string): void {
-    removeAttribute(this._impl, String(qualifiedName));
+    removeAttribute(this[$impl], String(qualifiedName));
   }
 
   removeAttributeNS(namespace: string | null, localName: string): void {
-    const a = findAttributeByNamespace(this._impl, namespace === "" || namespace === undefined ? null : namespace, String(localName));
-    if (a !== null) removeAttributeRecord(this._impl, a);
+    const a = findAttributeByNamespace(this[$impl], namespace === "" || namespace === undefined ? null : namespace, String(localName));
+    if (a !== null) removeAttributeRecord(this[$impl], a);
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-toggleattribute */
   toggleAttribute(qualifiedName: string, force?: boolean): boolean {
-    const impl = this._impl;
+    const impl = this[$impl];
     const qname = String(qualifiedName);
     if (!isValidAttributeLocalName(qname)) {
       throw new DOMException(`"${qname}" is not a valid attribute name.`, "InvalidCharacterError");
@@ -287,17 +292,17 @@ export class Element extends Node {
   }
 
   hasAttribute(qualifiedName: string): boolean {
-    return getAttribute(this._impl, String(qualifiedName)) !== null;
+    return getAttribute(this[$impl], String(qualifiedName)) !== null;
   }
 
   hasAttributeNS(namespace: string | null, localName: string): boolean {
-    return findAttributeByNamespace(this._impl, namespace === "" || namespace === undefined ? null : namespace, String(localName)) !== null;
+    return findAttributeByNamespace(this[$impl], namespace === "" || namespace === undefined ? null : namespace, String(localName)) !== null;
   }
 
   // --- selectors --------------------------------------------------------------------------
 
   matches(selectors: string): boolean {
-    return matches(this._impl, String(selectors));
+    return matches(this[$impl], String(selectors));
   }
 
   webkitMatchesSelector(selectors: string): boolean {
@@ -305,31 +310,31 @@ export class Element extends Node {
   }
 
   closest(selectors: string): Element | null {
-    const r = closest(this._impl, String(selectors));
+    const r = closest(this[$impl], String(selectors));
     return r === null ? null : (r.node as Element);
   }
 
   getElementsByTagName(qualifiedName: string): HTMLCollection {
-    return getElementsByTagName(this._impl, String(qualifiedName));
+    return getElementsByTagName(this[$impl], String(qualifiedName));
   }
 
   getElementsByTagNameNS(namespace: string | null, localName: string): HTMLCollection {
-    return getElementsByTagNameNS(this._impl, namespace, String(localName));
+    return getElementsByTagNameNS(this[$impl], namespace, String(localName));
   }
 
   getElementsByClassName(classNames: string): HTMLCollection {
-    return getElementsByClassName(this._impl, String(classNames));
+    return getElementsByClassName(this[$impl], String(classNames));
   }
 
   // --- markup -----------------------------------------------------------------------------
 
   get innerHTML(): string {
-    return serializeChildren(this._impl);
+    return serializeChildren(this[$impl]);
   }
 
   /** https://html.spec.whatwg.org/#dom-element-innerhtml */
   set innerHTML(value: string) {
-    const impl = this._impl;
+    const impl = this[$impl];
     const fragment = parseFragment(value === null ? "" : String(value), impl);
     // Step 4: for <template>, replace the children of its template contents instead.
     if (impl.tag === T.template && impl.ns === HTML_NS) {
@@ -344,24 +349,24 @@ export class Element extends Node {
 
   /** https://html.spec.whatwg.org/#dom-element-gethtml */
   getHTML(options?: GetHTMLOptions): string {
-    return getHTML(this._impl, options);
+    return getHTML(this[$impl], options);
   }
 
   /** https://html.spec.whatwg.org/#dom-element-sethtmlunsafe */
   setHTMLUnsafe(html: string): void {
-    setHTMLUnsafe(this._impl, String(html));
+    setHTMLUnsafe(this[$impl], String(html));
   }
 
   get outerHTML(): string {
-    return serializeNode(this._impl);
+    return serializeNode(this[$impl]);
   }
 
   set outerHTML(value: string) {
-    const impl = this._impl;
+    const impl = this[$impl];
     const parent = impl.parent;
     if (parent === null) return;
     if (parent.type === 9) throw new DOMException("Cannot set outerHTML of the document element.", "NoModificationAllowedError");
-    const context = parent.type === 11 ? impl.doc.createElement("body")._impl : parent;
+    const context = parent.type === 11 ? impl.doc.createElement("body")[$impl] : parent;
     const fragment = parseFragment(value === null ? "" : String(value), context);
     parent.node.replaceChild(fragment.node, this);
   }
@@ -369,7 +374,7 @@ export class Element extends Node {
   /** https://html.spec.whatwg.org/#dom-element-insertadjacenthtml */
   insertAdjacentHTML(position: string, text: string): void {
     const pos = asciiLowercase(String(position));
-    const impl = this._impl;
+    const impl = this[$impl];
     let context: NodeImpl;
     if (pos === "beforebegin" || pos === "afterend") {
       const parent = impl.parent;
@@ -383,7 +388,7 @@ export class Element extends Node {
       throw new DOMException(`"${position}" is not a valid position.`, "SyntaxError");
     }
     if (context.type !== ELEMENT_NODE || (context.ns === HTML_NS && context.name === "html" && (context.flags & F_HTML) !== 0)) {
-      context = impl.doc.createElement("body")._impl;
+      context = impl.doc.createElement("body")[$impl];
     }
     const fragment = parseFragment(String(text), context).node;
     insertAdjacent(this, pos, fragment);
@@ -397,13 +402,13 @@ export class Element extends Node {
   }
 
   insertAdjacentText(where: string, data: string): void {
-    insertAdjacent(this, asciiLowercase(String(where)), this._impl.doc.createTextNode(String(data)));
+    insertAdjacent(this, asciiLowercase(String(where)), this[$impl].doc.createTextNode(String(data)));
   }
 
   // --- shadow DOM -------------------------------------------------------------------------
 
   get shadowRoot(): ShadowRoot | null {
-    const s = this._shadowRoot;
+    const s = this[$shadowRoot];
     return s !== null && s.mode === "open" ? s : null;
   }
 
@@ -431,10 +436,10 @@ export class Element extends Node {
   /** https://dom.spec.whatwg.org/#dom-slotable-assignedslot */
   get assignedSlot(): Element | null {
     if (slotAssignmentActive === 0) return null;
-    const slot = slotOf(this._impl);
+    const slot = slotOf(this[$impl]);
     if (slot === null) return null;
-    const host = this._impl.parent;
-    const shadow = host === null || (host.flags & F_HAS_SHADOW) === 0 ? null : (host.node as Element)._shadowRoot;
+    const host = this[$impl].parent;
+    const shadow = host === null || (host.flags & F_HAS_SHADOW) === 0 ? null : (host.node as Element)[$shadowRoot];
     return shadow !== null && shadow.mode === "open" ? (slot.node as Element) : null;
   }
 
@@ -451,7 +456,7 @@ export class Element extends Node {
 
   /** https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility — without layout: connected and not hidden by `hidden` / display:none ancestors is unknowable, so connectedness. */
   checkVisibility(_options?: object): boolean {
-    return (this._impl.flags & F_CONNECTED) !== 0;
+    return (this[$impl].flags & F_CONNECTED) !== 0;
   }
 
   get scrollTop(): number {
@@ -557,7 +562,7 @@ export function attachShadowRoot(
   delegatesFocus: boolean,
   slotAssignment: "named" | "manual",
 ): ShadowRoot {
-  const impl = element._impl;
+  const impl = element[$impl];
   // Steps 1-2.
   if (impl.ns !== HTML_NS) throw new DOMException("This element does not support attachShadow", "NotSupportedError");
   const name = impl.name;
@@ -570,18 +575,18 @@ export function attachShadowRoot(
     throw new DOMException("Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host whose custom element definition disables it.", "NotSupportedError");
   }
   // Step 4.
-  const current = element._shadowRoot;
+  const current = element[$shadowRoot];
   if (current !== null) {
-    if (!current._declarative || current._mode !== mode) {
+    if (!current[$declarative] || current[$mode] !== mode) {
       throw new DOMException("Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host which already hosts a shadow tree.", "NotSupportedError");
     }
     current._replaceAll(null);
-    current._declarative = false;
+    current[$declarative] = false;
     return current;
   }
   // Steps 5-12.
   const shadow = new ShadowRoot(impl.doc, element, mode, delegatesFocus, slotAssignment, clonable, serializable);
-  element._shadowRoot = shadow;
+  element[$shadowRoot] = shadow;
   impl.flags |= F_HAS_SHADOW;
   _shadowRootAttached();
   if (!slotLookupInstalled) {
@@ -609,7 +614,7 @@ export function cachedCollection(root: NodeImpl, key: string, filter: ((el: Node
 export function getElementsByTagName(root: NodeImpl, qualifiedName: string): HTMLCollection {
   if (qualifiedName === "*") return cachedCollection(root, "t*", null);
   const lower = asciiLowercase(qualifiedName);
-  const isHTMLDoc = root.doc._isHTML;
+  const isHTMLDoc = root.doc[$isHTML];
   const colon = qualifiedName.indexOf(":");
   const prefix = colon === -1 ? null : qualifiedName.slice(0, colon);
   const local = colon === -1 ? qualifiedName : qualifiedName.slice(colon + 1);
@@ -636,7 +641,7 @@ export function getElementsByClassName(root: NodeImpl, classNames: string): HTML
   const wanted: string[] = [];
   for (const t of splitOnAsciiWhitespace(classNames)) if (!wanted.includes(t)) wanted.push(t);
   if (wanted.length === 0) return cachedCollection(root, "c", () => false);
-  const quirks = root.doc._mode === "quirks";
+  const quirks = root.doc[$mode] === "quirks";
   if (quirks) {
     const lowered = wanted.map(asciiLowercase);
     return cachedCollection(root, "q" + classNames, (el) => {

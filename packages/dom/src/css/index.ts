@@ -16,6 +16,7 @@ import { installElementView, installHTMLElementView } from "./view.ts";
 import { HTMLElement as HTMLElementClass } from "../html/HTMLElement.ts";
 import { Element as ElementClass } from "../nodes/Element.ts";
 import { setComputedColorMode } from "./cascade.ts";
+import { $impl } from "../keys.ts";
 
 export { CSSStyleDeclaration } from "./CSSStyleDeclaration.ts";
 export {
@@ -72,8 +73,8 @@ for (const C of [Document, ShadowRoot]) {
   const proto = C.prototype as object;
   if (!Object.hasOwn(proto, "styleSheets")) {
     Object.defineProperty(proto, "styleSheets", {
-      get(this: { _impl: import("../nodes/NodeImpl.ts").NodeImpl }) {
-        return styleSheetsOf(this._impl);
+      get(this: { [$impl]: import("../nodes/NodeImpl.ts").NodeImpl }) {
+        return styleSheetsOf(this[$impl]);
       },
       enumerable: true,
       configurable: true,
@@ -81,11 +82,11 @@ for (const C of [Document, ShadowRoot]) {
   }
   if (!Object.hasOwn(proto, "adoptedStyleSheets")) {
     Object.defineProperty(proto, "adoptedStyleSheets", {
-      get(this: { _impl: import("../nodes/NodeImpl.ts").NodeImpl }) {
-        return adoptedStyleSheetsOf(this._impl);
+      get(this: { [$impl]: import("../nodes/NodeImpl.ts").NodeImpl }) {
+        return adoptedStyleSheetsOf(this[$impl]);
       },
-      set(this: { _impl: import("../nodes/NodeImpl.ts").NodeImpl }, value: unknown) {
-        setAdoptedStyleSheets(this._impl, value);
+      set(this: { [$impl]: import("../nodes/NodeImpl.ts").NodeImpl }, value: unknown) {
+        setAdoptedStyleSheets(this[$impl], value);
       },
       enumerable: true,
       configurable: true,

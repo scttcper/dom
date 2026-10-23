@@ -43,6 +43,7 @@ import {
 import { isInvalidCandidate } from "./validation.ts";
 import { faceEntries, faceReset, isFACE, validatableOf } from "./face.ts";
 import { listOfOptions } from "./collections.ts";
+import { $constructingEntryList, $firingSubmissionEvents, $lockedForReset } from "../../keys.ts";
 
 /** https://html.spec.whatwg.org/#attr-fs-enctype (formEnctype: missing → ""). */
 export const FORM_ENCTYPE: EnumSpec = {
@@ -56,9 +57,9 @@ export const FORM_METHOD: EnumSpec = { keywords: ["get", "post", "dialog"], miss
 
 /** Internal shape of HTMLFormElement used here (avoids a value import cycle). */
 interface FormLike extends Element {
-  _firingSubmissionEvents: boolean;
-  _lockedForReset: boolean;
-  _constructingEntryList: boolean;
+  [$firingSubmissionEvents]: boolean;
+  [$lockedForReset]: boolean;
+  [$constructingEntryList]: boolean;
   _controls(): NodeImpl[];
 }
 
@@ -121,11 +122,11 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
   // Step 2: if form cannot navigate (not connected), return.
   if ((form.flags & F_CONNECTED) === 0) return;
   // Step 3: if form's constructing entry list is true, return.
-  if (f._constructingEntryList) return;
+  if (f[$constructingEntryList]) return;
   // Step 6: if submitted from submit() is false:
   if (!fromSubmit) {
-    if (f._firingSubmissionEvents) return;
-    f._firingSubmissionEvents = true;
+    if (f[$firingSubmissionEvents]) return;
+    f[$firingSubmissionEvents] = true;
     try {
       // 6.3: interactively validate constraints unless the submitter's no-validate state is true.
       const noValidate =
@@ -143,7 +144,7 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
       const event = new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitter === form ? null : submitter.node });
       if (!dispatchTrusted(f, event)) return;
     } finally {
-      f._firingSubmissionEvents = false;
+      f[$firingSubmissionEvents] = false;
     }
     // Step 7: form may have been disconnected by a listener.
     if ((form.flags & F_CONNECTED) === 0) return;
@@ -154,8 +155,8 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
 /** https://html.spec.whatwg.org/#concept-form-reset */
 export function resetForm(form: NodeImpl): void {
   const f = form.node as unknown as FormLike;
-  if (f._lockedForReset) return;
-  f._lockedForReset = true;
+  if (f[$lockedForReset]) return;
+  f[$lockedForReset] = true;
   try {
     if (fireEvent(f, "reset", true, true)) {
       const controls = formControls(form, [], true);
@@ -166,7 +167,7 @@ export function resetForm(form: NodeImpl): void {
       }
     }
   } finally {
-    f._lockedForReset = false;
+    f[$lockedForReset] = false;
   }
 }
 
@@ -252,8 +253,8 @@ export function constructEntryList(
   beforeUnlock: ((entries: Entry[]) => void) | null = null,
 ): Entry[] | null {
   const f = form.node as unknown as FormLike;
-  if (f._constructingEntryList) return null;
-  f._constructingEntryList = true;
+  if (f[$constructingEntryList]) return null;
+  f[$constructingEntryList] = true;
   const entries: Entry[] = [];
   try {
     const controls = formControls(form, [], true);
@@ -314,7 +315,7 @@ export function constructEntryList(
     // Steps 6–7 (the `formdata` event) run while the constructing flag is still set.
     if (beforeUnlock !== null) beforeUnlock(entries);
   } finally {
-    f._constructingEntryList = false;
+    f[$constructingEntryList] = false;
   }
   return entries;
 }

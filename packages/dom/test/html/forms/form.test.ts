@@ -18,6 +18,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@rtd/dom";
 import { implicitSubmission } from "../../../src/html/forms/index.ts";
 import { isActuallyDisabled } from "../../../src/html/forms/form-associated.ts";
+import { $impl } from "../../../src/keys.ts";
 
 // biome-ignore lint: untyped DOM surface in tests
 let window: any;
@@ -101,15 +102,15 @@ describe("disabled — https://html.spec.whatwg.org/#concept-fe-disabled", () =>
   test("a disabled fieldset disables descendants except inside its first legend", () => {
     document.body!.innerHTML =
       "<fieldset disabled><legend><input id=inlegend></legend><input id=a><legend><input id=second></legend></fieldset>";
-    expect(isActuallyDisabled($("inlegend")._impl)).toBe(false);
-    expect(isActuallyDisabled($("a")._impl)).toBe(true);
-    expect(isActuallyDisabled($("second")._impl)).toBe(true);
+    expect(isActuallyDisabled($("inlegend")[$impl])).toBe(false);
+    expect(isActuallyDisabled($("a")[$impl])).toBe(true);
+    expect(isActuallyDisabled($("second")[$impl])).toBe(true);
     expect($("a").matches(":disabled")).toBe(true);
   });
 
   test("options inside a disabled optgroup are disabled", () => {
     document.body!.innerHTML = "<select><optgroup disabled><option id=o>x</option></optgroup></select>";
-    expect(isActuallyDisabled($("o")._impl)).toBe(true);
+    expect(isActuallyDisabled($("o")[$impl])).toBe(true);
   });
 });
 
@@ -160,9 +161,9 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#concept-form-
     const log: string[] = [];
     $("b").addEventListener("click", () => log.push("click"));
     for (const id of ["f", "g", "h"]) $(id).addEventListener("submit", (e: any) => (e.preventDefault(), log.push("submit:" + id)));
-    implicitSubmission($("f")._impl);
-    implicitSubmission($("g")._impl);
-    implicitSubmission($("h")._impl);
+    implicitSubmission($("f")[$impl]);
+    implicitSubmission($("g")[$impl]);
+    implicitSubmission($("h")[$impl]);
     expect(log).toEqual(["click", "submit:f", "submit:g"]);
   });
 });

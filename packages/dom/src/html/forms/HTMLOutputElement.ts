@@ -13,21 +13,22 @@ import { formOwner } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
 import { serializeFloat } from "./microsyntaxes.ts";
 import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./validation.ts";
+import { $customValidity, $defaultValueOverride, $impl, $labels, $options, $validity } from "../../keys.ts";
 
 export class HTMLOutputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#concept-output-default-value-override (null = none). */
-  _defaultValueOverride: string | null;
-  _customValidity: string;
-  _validity: ValidityState | null;
-  _labels: LabelsNodeList | null;
+  [$defaultValueOverride]: string | null;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
+  [$labels]: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._defaultValueOverride = null;
-    this._customValidity = "";
-    this._validity = null;
-    this._labels = null;
+    this[$defaultValueOverride] = null;
+    this[$customValidity] = "";
+    this[$validity] = null;
+    this[$labels] = null;
   }
 
   get type(): string {
@@ -38,22 +39,22 @@ export class HTMLOutputElement extends HTMLElement {
   declare name: string;
 
   get form(): Element | null {
-    const owner = formOwner(this._impl);
+    const owner = formOwner(this[$impl]);
     return owner === null ? null : (owner.node as Element);
   }
 
   get labels(): LabelsNodeList {
-    return (this._labels ??= new LabelsNodeList(this._impl));
+    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
   }
 
   /** https://html.spec.whatwg.org/#dom-output-defaultvalue */
   get defaultValue(): string {
-    return this._defaultValueOverride ?? this.textContent;
+    return this[$defaultValueOverride] ?? this.textContent;
   }
 
   set defaultValue(value: string) {
-    if (this._defaultValueOverride === null) this.textContent = String(value);
-    else this._defaultValueOverride = String(value);
+    if (this[$defaultValueOverride] === null) this.textContent = String(value);
+    else this[$defaultValueOverride] = String(value);
   }
 
   /** https://html.spec.whatwg.org/#dom-output-value */
@@ -62,14 +63,14 @@ export class HTMLOutputElement extends HTMLElement {
   }
 
   set value(value: string) {
-    this._defaultValueOverride = this.defaultValue;
+    this[$defaultValueOverride] = this.defaultValue;
     this.textContent = String(value);
   }
 
   /** https://html.spec.whatwg.org/#the-output-element:concept-form-reset-control */
   _reset(): void {
     this.textContent = this.defaultValue;
-    this._defaultValueOverride = null;
+    this[$defaultValueOverride] = null;
   }
 
   // Output elements are always barred from constraint validation.
@@ -78,11 +79,11 @@ export class HTMLOutputElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    return this._customValidity === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
   }
 
   _validationMessage(_flags: number): string {
-    return this._customValidity;
+    return this[$customValidity];
   }
 }
 
@@ -93,7 +94,7 @@ str(HTMLOutputElement, "name");
 tokenList(HTMLOutputElement, "htmlFor", "for");
 
 function attrFloat(el: HTMLElement, name: string): number {
-  const v = contentAttr(el._impl, name);
+  const v = contentAttr(el[$impl], name);
   return v === null ? NaN : parseFloatingPoint(v);
 }
 
@@ -104,12 +105,12 @@ function setFloat(el: HTMLElement, name: string, value: unknown): void {
 }
 
 export class HTMLProgressElement extends HTMLElement {
-  _labels: LabelsNodeList | null;
+  [$labels]: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._labels = null;
+    this[$labels] = null;
   }
 
   /** https://html.spec.whatwg.org/#dom-progress-max */
@@ -137,23 +138,23 @@ export class HTMLProgressElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-progress-position — -1 when indeterminate. */
   get position(): number {
-    if (contentAttr(this._impl, "value") === null) return -1;
+    if (contentAttr(this[$impl], "value") === null) return -1;
     return this.value / this.max;
   }
 
   get labels(): LabelsNodeList {
-    return (this._labels ??= new LabelsNodeList(this._impl));
+    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
   }
 }
 
 /** https://html.spec.whatwg.org/#the-meter-element — the clamped values of the meter algorithm. */
 export class HTMLMeterElement extends HTMLElement {
-  _labels: LabelsNodeList | null;
+  [$labels]: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._labels = null;
+    this[$labels] = null;
   }
 
   get min(): number {
@@ -225,7 +226,7 @@ export class HTMLMeterElement extends HTMLElement {
   }
 
   get labels(): LabelsNodeList {
-    return (this._labels ??= new LabelsNodeList(this._impl));
+    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
   }
 }
 
@@ -234,16 +235,16 @@ function isOption(el: { tag: number }): boolean {
 }
 
 export class HTMLDataListElement extends HTMLElement {
-  _options: HTMLCollection | null;
+  [$options]: HTMLCollection | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._options = null;
+    this[$options] = null;
   }
 
   /** https://html.spec.whatwg.org/#dom-datalist-options */
   get options(): HTMLCollection {
-    return (this._options ??= HTMLCollection._descendants(this._impl, isOption));
+    return (this[$options] ??= HTMLCollection._descendants(this[$impl], isOption));
   }
 }

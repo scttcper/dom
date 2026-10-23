@@ -6,6 +6,7 @@ import type { Node } from "../nodes/Node.ts";
 import { parseDocument, parseHTMLUnsafe, parseXML } from "../parser/index.ts";
 import { serializeXML } from "../serializer/index.ts";
 import { currentWindowOrNull } from "./current.ts";
+import { $contentType, $impl, $url } from "../keys.ts";
 
 const XML_TYPES = ["text/xml", "application/xml", "application/xhtml+xml", "image/svg+xml"];
 
@@ -25,8 +26,8 @@ export class DOMParser {
     }
     // Step 2.2: an XML document whose content type is `type`.
     const doc = new Document();
-    doc._contentType = type;
-    doc._url = url;
+    doc[$contentType] = type;
+    doc[$url] = url;
     parseXML(String(string), doc, type);
     return doc;
   }
@@ -35,7 +36,7 @@ export class DOMParser {
 /** https://w3c.github.io/DOM-Parsing/#the-xmlserializer-interface */
 export class XMLSerializer {
   serializeToString(root: Node): string {
-    return serializeXML(root._impl, false);
+    return serializeXML(root[$impl], false);
   }
 }
 

@@ -14,6 +14,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, Event, type Document, type Element } from "@rtd/dom";
 import { assignedNodes, assignManually } from "@rtd/dom/internal";
+import { $focused, $impl } from "../../src/keys.ts";
 
 let document: Document;
 
@@ -22,7 +23,7 @@ beforeEach(() => {
 });
 
 function slotNodes(slot: Element, flatten = false) {
-  return assignedNodes(slot._impl, flatten).map((n) => n.node);
+  return assignedNodes(slot[$impl], flatten).map((n) => n.node);
 }
 
 describe("attach a shadow root — https://dom.spec.whatwg.org/#concept-attach-a-shadow-root", () => {
@@ -103,7 +104,7 @@ describe("shadow-including connectedness and roots — https://dom.spec.whatwg.o
     const root = host.attachShadow({ mode: "open" });
     const button = root.appendChild(document.createElement("button"));
     expect(root.activeElement).toBeNull();
-    (document as unknown as { _focused: unknown })._focused = button._impl;
+    (document as unknown as { [$focused]: unknown })[$focused] = button[$impl];
     expect(root.activeElement).toBe(button);
   });
 });
@@ -175,7 +176,7 @@ describe("slot assignment — https://dom.spec.whatwg.org/#assign-slotables", ()
     const slot = root.appendChild(document.createElement("slot"));
     const a = host.appendChild(document.createElement("a"));
     expect(slotNodes(slot)).toEqual([]);
-    assignManually(slot._impl, [a._impl]);
+    assignManually(slot[$impl], [a[$impl]]);
     expect(slotNodes(slot)).toEqual([a]);
   });
 

@@ -81,6 +81,12 @@ deep clone of 1,000 rows, `innerHTML` parse of 250 rows, warm selector queries, 
 mutation + selector queries, 30-level capture/bubble propagation (10 dispatches),
 MutationObserver streaming of 50 appends.
 
+Leak workload: `dom/window-churn` creates a window from a 250-row form document, queries,
+focuses, adds a listener and closes it, 10 times per iteration (what a reused test worker does
+per file); extra `heapSlopeKBPerWindow` is the least-squares slope of heap-after-GC per closed
+window (≈0 when `close()` releases everything). Retention itself is asserted by the leak suite
+(`tests/compat/test/leaks`, `pnpm vitest run --project @rtd/leaks`).
+
 Every workload **verifies its observable result** after every iteration (untimed), so a DOM
 that skips work fails instead of winning. A failing configuration is reported with its error
 (in the table and the `## Errors` section) and not re-sampled; the others keep running.

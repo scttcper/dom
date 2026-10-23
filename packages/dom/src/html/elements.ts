@@ -23,6 +23,7 @@ import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation,
 import { formOwner } from "./forms/form-associated.ts";
 import { currentDocument } from "../window/current.ts";
 import type { HTMLCollection } from "../collections/HTMLCollection.ts";
+import { $customValidity, $impl, $options, $validity } from "../keys.ts";
 
 /** Lazily created, per-element [SameObject] value stored under a non-enumerable symbol. */
 export function sameObject<V>(el: object, key: symbol, create: () => V): V {
@@ -45,13 +46,13 @@ export class HTMLHeadElement extends HTMLElement {}
 export class HTMLBaseElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-base-href — resolved against the document's fallback base URL. */
   get href(): string {
-    const impl = this._impl;
+    const impl = this[$impl];
     const v = contentAttr(impl, "href") ?? "";
     const parsed = URL.parse(v, impl.doc.URL);
     return parsed === null ? v : parsed.href;
   }
   set href(v: string) {
-    setAttribute(this._impl, "href", String(v));
+    setAttribute(this[$impl], "href", String(v));
   }
 }
 str(HTMLBaseElement, "target");
@@ -142,7 +143,7 @@ export class HTMLImageElement extends HTMLElement {
    * completely available nor broken.
    */
   get complete(): boolean {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "srcset") !== null) return false;
     const src = contentAttr(impl, "src");
     return src === null || src === "";
@@ -164,16 +165,16 @@ export class HTMLImageElement extends HTMLElement {
   }
   /** https://html.spec.whatwg.org/#dom-img-width — rendered width unavailable: the attribute, or the natural width (0). */
   get width(): number {
-    return dimension(this._impl, "width");
+    return dimension(this[$impl], "width");
   }
   set width(v: number) {
-    setAttribute(this._impl, "width", String(clampUlong(v)));
+    setAttribute(this[$impl], "width", String(clampUlong(v)));
   }
   get height(): number {
-    return dimension(this._impl, "height");
+    return dimension(this[$impl], "height");
   }
   set height(v: number) {
-    setAttribute(this._impl, "height", String(clampUlong(v)));
+    setAttribute(this[$impl], "height", String(clampUlong(v)));
   }
   decode(): Promise<void> {
     return Promise.resolve();
@@ -210,8 +211,8 @@ function dimension(impl: NodeImpl, name: string): number {
 export const Image = function Image(this: unknown, width?: number, height?: number): HTMLImageElement {
   if (new.target === undefined) throw new TypeError("Failed to construct 'Image': Please use the 'new' operator.");
   const el = currentDocument().createElementNS(HTML_NS, "img") as HTMLImageElement;
-  if (width !== undefined) setAttribute(el._impl, "width", String(Number(width) >>> 0));
-  if (height !== undefined) setAttribute(el._impl, "height", String(Number(height) >>> 0));
+  if (width !== undefined) setAttribute(el[$impl], "width", String(Number(width) >>> 0));
+  if (height !== undefined) setAttribute(el[$impl], "height", String(Number(height) >>> 0));
   return el;
 } as unknown as { new (width?: number, height?: number): HTMLImageElement; prototype: HTMLImageElement };
 Image.prototype = HTMLImageElement.prototype;
@@ -221,7 +222,7 @@ export class HTMLIFrameElement extends HTMLElement {
   constructor(doc?: Document, localName?: string, ns?: string | null, prefix?: string | null) {
     super(doc, localName, ns, prefix);
     // Nested browsing context on insertion/removal (window/browsing-context.ts).
-    this._impl.flags |= F_CONNECT_HOOK;
+    this[$impl].flags |= F_CONNECT_HOOK;
   }
   override _connectedSteps(): void {
     super._connectedSteps();
@@ -279,8 +280,8 @@ str(HTMLEmbedElement, "type width height align name");
  * validation (willValidate false), but setCustomValidity still sets validity.customError.
  */
 export class HTMLObjectElement extends HTMLElement {
-  _customValidity = "";
-  _validity: ValidityState | null = null;
+  [$customValidity] = "";
+  [$validity]: ValidityState | null = null;
 
   get contentDocument(): null {
     return null;
@@ -292,17 +293,17 @@ export class HTMLObjectElement extends HTMLElement {
     return null;
   }
   get form(): Element | null {
-    const f = formOwner(this._impl);
+    const f = formOwner(this[$impl]);
     return f === null ? null : (f.node as Element);
   }
   _barredFromValidation(): boolean {
     return true;
   }
   _validityFlags(): number {
-    return this._customValidity === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
   }
   _validationMessage(_flags: number): string {
-    return this._customValidity;
+    return this[$customValidity];
   }
 }
 export interface HTMLObjectElement extends ConstraintValidation {}
@@ -337,7 +338,7 @@ export class HTMLMapElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-map-areas */
   get areas(): HTMLCollection {
     return sameObject(this, AREAS, () =>
-      fnCollection(this._impl, (root, out) => {
+      fnCollection(this[$impl], (root, out) => {
         for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
           if (n.tag === T.area && n.ns === HTML_NS) out.push(n.node as Element);
         }
@@ -409,81 +410,81 @@ function pushRows(section: NodeImpl, out: Element[]): void {
 
 export class HTMLTableElement extends HTMLElement {
   get caption(): Element | null {
-    const c = childOfType(this._impl, T.caption);
+    const c = childOfType(this[$impl], T.caption);
     return c === null ? null : (c.node as Element);
   }
   set caption(value: Element | null) {
-    const old = childOfType(this._impl, T.caption);
+    const old = childOfType(this[$impl], T.caption);
     if (old !== null) this.removeChild(old.node);
     if (value !== null) this.insertBefore(value, this.firstChild);
   }
   createCaption(): Element {
-    const c = childOfType(this._impl, T.caption);
+    const c = childOfType(this[$impl], T.caption);
     if (c !== null) return c.node as Element;
-    const el = this._impl.doc.createElement("caption");
+    const el = this[$impl].doc.createElement("caption");
     this.insertBefore(el, this.firstChild);
     return el;
   }
   deleteCaption(): void {
-    const c = childOfType(this._impl, T.caption);
+    const c = childOfType(this[$impl], T.caption);
     if (c !== null) this.removeChild(c.node);
   }
   get tHead(): Element | null {
-    const c = childOfType(this._impl, T.thead);
+    const c = childOfType(this[$impl], T.thead);
     return c === null ? null : (c.node as Element);
   }
   set tHead(value: Element | null) {
-    if (value !== null && value._impl.tag !== T.thead) throw hierarchyError("Not a thead element.");
-    const old = childOfType(this._impl, T.thead);
+    if (value !== null && value[$impl].tag !== T.thead) throw hierarchyError("Not a thead element.");
+    const old = childOfType(this[$impl], T.thead);
     if (old !== null) this.removeChild(old.node);
     if (value !== null) this.insertBefore(value, this._afterCaptionAndColgroups());
   }
   createTHead(): Element {
-    const c = childOfType(this._impl, T.thead);
+    const c = childOfType(this[$impl], T.thead);
     if (c !== null) return c.node as Element;
-    const el = this._impl.doc.createElement("thead");
+    const el = this[$impl].doc.createElement("thead");
     this.insertBefore(el, this._afterCaptionAndColgroups());
     return el;
   }
   deleteTHead(): void {
-    const c = childOfType(this._impl, T.thead);
+    const c = childOfType(this[$impl], T.thead);
     if (c !== null) this.removeChild(c.node);
   }
   get tFoot(): Element | null {
-    const c = childOfType(this._impl, T.tfoot);
+    const c = childOfType(this[$impl], T.tfoot);
     return c === null ? null : (c.node as Element);
   }
   set tFoot(value: Element | null) {
-    if (value !== null && value._impl.tag !== T.tfoot) throw hierarchyError("Not a tfoot element.");
-    const old = childOfType(this._impl, T.tfoot);
+    if (value !== null && value[$impl].tag !== T.tfoot) throw hierarchyError("Not a tfoot element.");
+    const old = childOfType(this[$impl], T.tfoot);
     if (old !== null) this.removeChild(old.node);
     if (value !== null) this.appendChild(value);
   }
   createTFoot(): Element {
-    const c = childOfType(this._impl, T.tfoot);
+    const c = childOfType(this[$impl], T.tfoot);
     if (c !== null) return c.node as Element;
-    return this.appendChild(this._impl.doc.createElement("tfoot"));
+    return this.appendChild(this[$impl].doc.createElement("tfoot"));
   }
   deleteTFoot(): void {
-    const c = childOfType(this._impl, T.tfoot);
+    const c = childOfType(this[$impl], T.tfoot);
     if (c !== null) this.removeChild(c.node);
   }
   get tBodies(): HTMLCollection {
     return sameObject(this, TBODIES, () =>
-      fnCollection(this._impl, (root, out) => {
+      fnCollection(this[$impl], (root, out) => {
         for (let c = root.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) out.push(c.node as Element);
       }),
     );
   }
   createTBody(): Element {
-    const el = this._impl.doc.createElement("tbody");
+    const el = this[$impl].doc.createElement("tbody");
     let lastBody: NodeImpl | null = null;
-    for (let c = this._impl.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c;
+    for (let c = this[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c;
     this.insertBefore(el, lastBody === null ? null : lastBody.next === null ? null : lastBody.next.node);
     return el;
   }
   get rows(): HTMLCollection {
-    return sameObject(this, ROWS, () => fnCollection(this._impl, fillTableRows));
+    return sameObject(this, ROWS, () => fnCollection(this[$impl], fillTableRows));
   }
   /** https://html.spec.whatwg.org/#dom-table-insertrow */
   insertRow(index = -1): Element {
@@ -491,13 +492,13 @@ export class HTMLTableElement extends HTMLElement {
     const rows = this.rows;
     const n = rows.length;
     if (index < -1 || index > n) throw indexError(index);
-    const doc = this._impl.doc;
+    const doc = this[$impl].doc;
     const tr = doc.createElement("tr");
-    if (n === 0 && childOfType(this._impl, T.tbody) === null) {
+    if (n === 0 && childOfType(this[$impl], T.tbody) === null) {
       this.appendChild(doc.createElement("tbody")).appendChild(tr);
     } else if (n === 0) {
       let lastBody: Element | null = null;
-      for (let c = this._impl.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c.node as Element;
+      for (let c = this[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c.node as Element;
       lastBody!.appendChild(tr);
     } else if (index === -1 || index === n) {
       rows.item(n - 1)!.parentNode!.appendChild(tr);
@@ -519,7 +520,7 @@ export class HTMLTableElement extends HTMLElement {
     rows.item(index)!.remove();
   }
   _afterCaptionAndColgroups(): Element | null {
-    for (let c = this._impl.first; c !== null; c = c.next) {
+    for (let c = this[$impl].first; c !== null; c = c.next) {
       if (c.type === ELEMENT_NODE && !((c.tag === T.caption || c.tag === T.colgroup) && c.ns === HTML_NS)) return c.node as Element;
     }
     return null;
@@ -537,14 +538,14 @@ str(HTMLTableColElement, "align ch=char chOff=charoff vAlign=valign width");
 
 export class HTMLTableSectionElement extends HTMLElement {
   get rows(): HTMLCollection {
-    return sameObject(this, ROWS, () => fnCollection(this._impl, pushRows));
+    return sameObject(this, ROWS, () => fnCollection(this[$impl], pushRows));
   }
   insertRow(index = -1): Element {
     index = Number(index) | 0;
     const rows = this.rows;
     const n = rows.length;
     if (index < -1 || index > n) throw indexError(index);
-    const tr = this._impl.doc.createElement("tr");
+    const tr = this[$impl].doc.createElement("tr");
     if (index === -1 || index === n) this.appendChild(tr);
     else this.insertBefore(tr, rows.item(index));
     return tr;
@@ -566,7 +567,7 @@ str(HTMLTableSectionElement, "align ch=char chOff=charoff vAlign=valign");
 export class HTMLTableRowElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-tr-rowindex */
   get rowIndex(): number {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     if (p === null) return -1;
     let table: NodeImpl | null = null;
     if (p.tag === T.table && p.ns === HTML_NS) table = p;
@@ -577,7 +578,7 @@ export class HTMLTableRowElement extends HTMLElement {
     return rows.indexOf(this);
   }
   get sectionRowIndex(): number {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     if (p === null) return -1;
     const rows: Element[] = [];
     if (p.tag === T.table) fillTableRows(p, rows);
@@ -586,7 +587,7 @@ export class HTMLTableRowElement extends HTMLElement {
   }
   get cells(): HTMLCollection {
     return sameObject(this, CELLS, () =>
-      fnCollection(this._impl, (root, out) => {
+      fnCollection(this[$impl], (root, out) => {
         for (let c = root.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && (c.tag === T.td || c.tag === T.th) && c.ns === HTML_NS) out.push(c.node as Element);
       }),
     );
@@ -596,7 +597,7 @@ export class HTMLTableRowElement extends HTMLElement {
     const cells = this.cells;
     const n = cells.length;
     if (index < -1 || index > n) throw indexError(index);
-    const td = this._impl.doc.createElement("td");
+    const td = this[$impl].doc.createElement("td");
     if (index === -1 || index === n) this.appendChild(td);
     else this.insertBefore(td, cells.item(index));
     return td;
@@ -618,11 +619,11 @@ strNullEmpty(HTMLTableRowElement, "bgColor=bgcolor");
 
 export class HTMLTableCellElement extends HTMLElement {
   get cellIndex(): number {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     if (p === null || p.tag !== T.tr) return -1;
     let i = 0;
     for (let c = p.first; c !== null; c = c.next) {
-      if (c === this._impl) return i;
+      if (c === this[$impl]) return i;
       if (c.type === ELEMENT_NODE && (c.tag === T.td || c.tag === T.th) && c.ns === HTML_NS) i++;
     }
     return -1;

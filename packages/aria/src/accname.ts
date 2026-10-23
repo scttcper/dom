@@ -27,6 +27,7 @@ import { daaGetRole, anyTag, type Flavor } from "./role.ts";
 import { controlValue, inputType, labelsOf, selectedOptions } from "./forms.ts";
 import { queryIdRefs, textContent } from "./tree.ts";
 import { isDisplayInline, isDisplayNone, isVisibilityHidden, pseudoText } from "./style.ts";
+import { $impl, $styleVersion, $version } from "@rtd/dom/internal";
 
 /** Minimal CSSStyleDeclaration shape read from a user-supplied `getComputedStyle`. */
 export interface StyleLike {
@@ -243,7 +244,7 @@ function slotAssignedNodes(slot: NodeImpl): NodeImpl[] | null {
   if (typeof fn !== "function") return null;
   const nodes = fn.call(slot.node);
   const out: NodeImpl[] = [];
-  for (let i = 0; i < nodes.length; i++) out.push((nodes[i] as unknown as { _impl: NodeImpl })._impl);
+  for (let i = 0; i < nodes.length; i++) out.push((nodes[i] as unknown as { [$impl]: NodeImpl })[$impl]);
   return out;
 }
 
@@ -572,14 +573,14 @@ export function computeAccessibleNameImpl(
   const doc = root.doc;
   if (cacheable) {
     const c = root.cache as NodeCache | null;
-    if (c !== null && c.nameVersion === doc._version && c.ariaNameStyleVersion === doc._styleVersion) return c.name;
+    if (c !== null && c.nameVersion === doc[$version] && c.ariaNameStyleVersion === doc[$styleVersion]) return c.name;
   }
   const ctx = new Ctx(COMPUTE_NAME, options, flavor);
   const name = asFlatString(computeTextAlternative(ctx, root, false, false, false));
   if (cacheable && !ctx.usedState) {
     const c = nodeCache(root);
-    c.nameVersion = doc._version;
-    c.ariaNameStyleVersion = doc._styleVersion;
+    c.nameVersion = doc[$version];
+    c.ariaNameStyleVersion = doc[$styleVersion];
     c.name = name;
   }
   return name;

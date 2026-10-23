@@ -13,6 +13,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { isInaccessible, isSubtreeInaccessible } from "@rtd/aria";
 import type { Element } from "@rtd/dom";
 import { makeDocument } from "./helpers.ts";
+import { $version } from "@rtd/dom/internal";
 
 const { document, renderIntoDocument, cleanup } = makeDocument();
 
@@ -66,7 +67,7 @@ describe("isInaccessible — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion"
     expect(isInaccessible(testNode)).toBe(true);
   });
 
-  test("the memoized answer is invalidated by a mutation (Document._version)", () => {
+  test("the memoized answer is invalidated by a mutation (Document[$version])", () => {
     const testNode = testNodeOf('<section id="s"><span data-test>x</span></section>');
     expect(isInaccessible(testNode)).toBe(false);
     document.getElementById("s")!.setAttribute("hidden", "");

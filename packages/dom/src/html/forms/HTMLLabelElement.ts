@@ -10,6 +10,7 @@ import { contentAttr, str } from "../reflect.ts";
 import { formOwner, isActuallyDisabled, labeledControl } from "./form-associated.ts";
 import { I_HIDDEN, inputType } from "./input-type.ts";
 import { syntheticClick } from "./form-submission.ts";
+import { $impl } from "../../keys.ts";
 
 /** https://html.spec.whatwg.org/#interactive-content */
 export function isInteractiveContent(el: NodeImpl): boolean {
@@ -40,13 +41,13 @@ export class HTMLLabelElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-label-control */
   get control(): Element | null {
-    const c = labeledControl(this._impl);
+    const c = labeledControl(this[$impl]);
     return c === null ? null : (c.node as Element);
   }
 
   /** https://html.spec.whatwg.org/#dom-label-form */
   get form(): Element | null {
-    const c = labeledControl(this._impl);
+    const c = labeledControl(this[$impl]);
     if (c === null) return null;
     // Only form-associated controls have a form owner (meter/progress do not).
     if (c.tag === T.meter || c.tag === T.progress) return null;
@@ -61,12 +62,12 @@ export class HTMLLabelElement extends HTMLElement {
   }
 
   _activationBehavior(event: Event | null): void {
-    const label = this._impl;
+    const label = this[$impl];
     const control = labeledControl(label);
     if (control === null) return;
     // Events targeted at the control (or inside it), or at interactive content inside the
     // label, do nothing.
-    const target = event === null ? null : ((event.target as unknown as { _impl?: NodeImpl } | null)?._impl ?? null);
+    const target = event === null ? null : ((event.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null);
     if (target !== null && target !== label) {
       for (let n: NodeImpl | null = target; n !== null && n !== label; n = n.parent) {
         if (n === control) return;

@@ -9,10 +9,11 @@ import {
   type NodeImpl,
 } from "@rtd/dom/internal";
 import type { Element, Node } from "@rtd/dom";
+import { $impl } from "@rtd/dom/internal";
 
 /** The NodeImpl behind a public wrapper. */
 export function implOf(node: Node | Element): NodeImpl {
-  const impl = (node as unknown as { _impl?: NodeImpl })._impl;
+  const impl = (node as unknown as { [$impl]?: NodeImpl })[$impl];
   if (impl === undefined) throw new TypeError("Expected a node created by @rtd/dom.");
   return impl;
 }

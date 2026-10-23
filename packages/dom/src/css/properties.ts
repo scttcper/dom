@@ -51,36 +51,42 @@ const COMPUTED_INITIAL: Record<string, string> = {
   "list-style-type": "disc", "vertical-align": "baseline", "white-space": "normal", "text-transform": "none",
 };
 
-const info = new Map<string, PropInfo>();
-const allNames: string[] = [];
+// Built on first use (startup: ~0.2 ms of module evaluation otherwise).
+let info: Map<string, PropInfo> = null as never;
+let allNames: string[] = null as never;
 
-for (let i = 0; i < PROPERTY_TABLE.length; i += 4) {
-  const name = PROPERTY_TABLE[i] as string;
-  const inherited = PROPERTY_TABLE[i + 1] === 1;
-  const initial = COMPUTED_INITIAL[name] ?? (PROPERTY_TABLE[i + 2] as string);
-  const lh = PROPERTY_TABLE[i + 3] as string;
-  info.set(name, new PropInfo(name, inherited, initial, lh === "" ? null : lh.split(" ")));
-  allNames.push(name);
-}
-
-// Legacy -webkit- aliases (https://compat.spec.whatwg.org/#css-simple-aliases) carry no data
-// of their own; borrow inheritance/initial values from the unprefixed property.
-for (const name of allNames) {
-  if (!name.startsWith("-webkit-")) continue;
-  const p = info.get(name)!;
-  const base = info.get(name.slice(8));
-  if (base !== undefined && p.initial === "" && p.specLonghands === null) {
-    p.inherited = base.inherited;
-    p.initial = base.initial;
+function buildTable(): void {
+  info = new Map();
+  allNames = [];
+  for (let i = 0; i < PROPERTY_TABLE.length; i += 4) {
+    const name = PROPERTY_TABLE[i] as string;
+    const inherited = PROPERTY_TABLE[i + 1] === 1;
+    const initial = COMPUTED_INITIAL[name] ?? (PROPERTY_TABLE[i + 2] as string);
+    const lh = PROPERTY_TABLE[i + 3] as string;
+    info.set(name, new PropInfo(name, inherited, initial, lh === "" ? null : lh.split(" ")));
+    allNames.push(name);
+  }
+  // Legacy -webkit- aliases (https://compat.spec.whatwg.org/#css-simple-aliases) carry no data
+  // of their own; borrow inheritance/initial values from the unprefixed property.
+  for (const name of allNames) {
+    if (!name.startsWith("-webkit-")) continue;
+    const p = info.get(name)!;
+    const base = info.get(name.slice(8));
+    if (base !== undefined && p.initial === "" && p.specLonghands === null) {
+      p.inherited = base.inherited;
+      p.initial = base.initial;
+    }
   }
 }
 
 /** Metadata for a lowercase property name, or undefined if unsupported. */
 export function propertyInfo(name: string): PropInfo | undefined {
+  if (info === null) buildTable();
   return info.get(name);
 }
 
 export function isSupportedProperty(name: string): boolean {
+  if (info === null) buildTable();
   return info.has(name);
 }
 
@@ -90,12 +96,14 @@ export function isCustomPropertyName(name: string): boolean {
 
 export function isInherited(name: string): boolean {
   if (isCustomPropertyName(name)) return true;
+  if (info === null) buildTable();
   const p = info.get(name);
   return p !== undefined && p.inherited;
 }
 
 /** All supported property names (sorted). */
 export function allPropertyNames(): readonly string[] {
+  if (allNames === null) buildTable();
   return allNames;
 }
 
@@ -108,6 +116,7 @@ let computedNames: string[] | null = null;
 export function computedPropertyNames(): readonly string[] {
   if (computedNames !== null) return computedNames;
   computedNames = [];
+  if (info === null) buildTable();
   for (const name of allNames) {
     const p = info.get(name)!;
     if (name.charCodeAt(0) === 0x2d || p.specLonghands !== null) continue;

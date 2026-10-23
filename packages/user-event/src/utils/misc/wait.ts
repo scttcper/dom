@@ -82,6 +82,8 @@ const STALE_MS = 50
 interface PendingTimer {
   due: number
   interval: number
+  /** The host handle (key in timerByHandle), so pruning a stale timer drops both entries. */
+  handle: unknown
 }
 
 type TimerGlobals = {
@@ -112,7 +114,7 @@ function wrapSchedule(name: 'setTimeout' | 'setInterval') {
       return original.call(this, callback, delay, ...args)
     }
     const ms = Math.max(1, Number(delay) || 0)
-    const timer: PendingTimer = {due: performance.now() + ms, interval: isInterval ? ms : 0}
+    const timer: PendingTimer = {due: performance.now() + ms, interval: isInterval ? ms : 0, handle: undefined}
     pendingTimers.add(timer)
     let handle: unknown
     const run = function (this: unknown, ...runArgs: unknown[]) {
@@ -125,6 +127,7 @@ function wrapSchedule(name: 'setTimeout' | 'setInterval') {
       return (callback as AnyFn).apply(this, runArgs)
     }
     handle = original.call(this, run, delay, ...args)
+    timer.handle = handle
     timerByHandle.set(handle, timer)
     return handle
   } as unknown as TimerFn
@@ -175,7 +178,10 @@ function trackedTimerDueSoon(): boolean {
   for (const timer of pendingTimers) {
     if (timer.due <= now + DUE_SOON_MS) {
       if (timer.interval === 0 && timer.due < now - STALE_MS) {
+        // Cleared through a reference captured before the wrappers: forget it entirely (the
+        // handle would otherwise keep the timer's callback, and whatever it closes over, alive).
         pendingTimers.delete(timer)
+        timerByHandle.delete(timer.handle)
         continue
       }
       return true

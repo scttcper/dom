@@ -11,6 +11,7 @@ import type { Element } from "@rtd/dom";
 import { isDisplayNone, isVisibilityHidden } from "./style.ts";
 import type { GetComputedStyle } from "./accname.ts";
 import { implOf } from "./tree.ts";
+import { $styleVersion, $version, $window } from "@rtd/dom/internal";
 
 /**
  * Subtree exclusion for one element: `element.hidden === true` (HTMLElement only),
@@ -52,7 +53,7 @@ export function isInaccessibleImpl(impl: NodeImpl): boolean {
   // since visibility is inherited we can exit early
   if (isVisibilityHidden(impl)) return true;
   const doc = impl.doc;
-  return chainInaccessible(impl, doc._version, doc._styleVersion);
+  return chainInaccessible(impl, doc[$version], doc[$styleVersion]);
 }
 
 // --- public, dom-accessibility-api / Testing Library compatible ---------------------------
@@ -75,7 +76,7 @@ function checkGetComputedStyle(impl: NodeImpl, options: IsSubtreeInaccessibleOpt
     if (typeof gcs !== "function") throw new TypeError(NO_WINDOW);
     return gcs;
   }
-  if ((impl.doc as unknown as { _window: unknown })._window === null) throw new TypeError(NO_WINDOW);
+  if ((impl.doc as unknown as { [$window]: unknown })[$window] === null) throw new TypeError(NO_WINDOW);
   return null;
 }
 

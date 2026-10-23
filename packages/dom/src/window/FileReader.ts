@@ -6,6 +6,7 @@
 import { EventTarget } from "../events/EventTarget.ts";
 import { getEventHandler, setEventHandler } from "../events/handlers.ts";
 import { eventInterface } from "./interfaces.ts";
+import { $error, $generation, $readyState, $result } from "../keys.ts";
 
 type ReadKind = "ArrayBuffer" | "BinaryString" | "Text" | "DataURL";
 
@@ -14,28 +15,28 @@ export class FileReader extends EventTarget {
   static readonly LOADING = 1;
   static readonly DONE = 2;
 
-  _readyState: number;
-  _result: string | ArrayBuffer | null;
-  _error: DOMException | null;
+  [$readyState]: number;
+  [$result]: string | ArrayBuffer | null;
+  [$error]: DOMException | null;
   /** Incremented by abort() and every new read so stale completions are dropped. */
-  _generation: number;
+  [$generation]: number;
 
   constructor() {
     super();
-    this._readyState = 0;
-    this._result = null;
-    this._error = null;
-    this._generation = 0;
+    this[$readyState] = 0;
+    this[$result] = null;
+    this[$error] = null;
+    this[$generation] = 0;
   }
 
   get readyState(): number {
-    return this._readyState;
+    return this[$readyState];
   }
   get result(): string | ArrayBuffer | null {
-    return this._result;
+    return this[$result];
   }
   get error(): DOMException | null {
-    return this._error;
+    return this[$error];
   }
 
   readAsArrayBuffer(blob: Blob): void {
@@ -53,15 +54,15 @@ export class FileReader extends EventTarget {
 
   /** https://w3c.github.io/FileAPI/#dfn-abort */
   abort(): void {
-    if (this._readyState === 0 || this._readyState === 2) {
-      this._result = null;
+    if (this[$readyState] === 0 || this[$readyState] === 2) {
+      this[$result] = null;
       return;
     }
-    this._generation++;
-    this._readyState = 2;
-    this._result = null;
+    this[$generation]++;
+    this[$readyState] = 2;
+    this[$result] = null;
     this._fire("abort");
-    if (this._readyState !== 1) this._fire("loadend");
+    if (this[$readyState] !== 1) this._fire("loadend");
   }
 
   /** https://w3c.github.io/FileAPI/#readOperation */
@@ -70,33 +71,33 @@ export class FileReader extends EventTarget {
       throw new TypeError(`Failed to execute 'readAs${kind}' on 'FileReader': parameter 1 is not of type 'Blob'.`);
     }
     // Step 1: InvalidStateError while a read is in progress.
-    if (this._readyState === 1) {
+    if (this[$readyState] === 1) {
       throw new DOMException("Failed to execute 'readAs" + kind + "' on 'FileReader': The object is already busy reading Blobs.", "InvalidStateError");
     }
-    this._readyState = 1;
-    this._result = null;
-    this._error = null;
-    const generation = ++this._generation;
+    this[$readyState] = 1;
+    this[$result] = null;
+    this[$error] = null;
+    const generation = ++this[$generation];
     queueMicrotask(() => {
-      if (generation === this._generation) this._fire("loadstart");
+      if (generation === this[$generation]) this._fire("loadstart");
     });
     blob.arrayBuffer().then(
       (buffer) => {
-        if (generation !== this._generation) return;
+        if (generation !== this[$generation]) return;
         const total = buffer.byteLength;
         this._fire("progress", total, total);
-        if (generation !== this._generation) return;
-        this._readyState = 2;
-        this._result = packageData(buffer, kind, blob.type, encoding);
+        if (generation !== this[$generation]) return;
+        this[$readyState] = 2;
+        this[$result] = packageData(buffer, kind, blob.type, encoding);
         this._fire("load", total, total);
-        if (this._readyState !== 1) this._fire("loadend", total, total);
+        if (this[$readyState] !== 1) this._fire("loadend", total, total);
       },
       (error: unknown) => {
-        if (generation !== this._generation) return;
-        this._readyState = 2;
-        this._error = error instanceof DOMException ? error : new DOMException(String(error), "NotReadableError");
+        if (generation !== this[$generation]) return;
+        this[$readyState] = 2;
+        this[$error] = error instanceof DOMException ? error : new DOMException(String(error), "NotReadableError");
         this._fire("error");
-        if (this._readyState !== 1) this._fire("loadend");
+        if (this[$readyState] !== 1) this._fire("loadend");
       },
     );
   }

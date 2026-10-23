@@ -9,6 +9,7 @@ import type { NodeImpl } from "./NodeImpl.ts";
 import { insert } from "./tree.ts";
 import { activeObservers, queueCharacterDataMutationRecord } from "../observers/queue.ts";
 import { liveRangeCount, rangesReplaceData, rangesSplitText } from "../traversal/live.ts";
+import { $impl, $version } from "../keys.ts";
 
 /** https://dom.spec.whatwg.org/#concept-cd-replace */
 export function replaceData(node: NodeImpl, offset: number, count: number, data: string): void {
@@ -26,7 +27,7 @@ export function replaceData(node: NodeImpl, offset: number, count: number, data:
   // Step 12: children changed steps of the parent.
   const parent = node.parent;
   if (parent !== null && (parent.flags & F_CHILDREN_HOOK) !== 0) (parent.node as Element)._childrenChangedSteps();
-  node.doc._version++;
+  node.doc[$version]++;
 }
 
 /** https://dom.spec.whatwg.org/#concept-text-split */
@@ -37,7 +38,7 @@ export function splitText(node: NodeImpl, offset: number): NodeImpl {
   // Steps 3-6.
   const count = length - offset;
   const newData = node.data.slice(offset);
-  const newNode = node.doc.createTextNode(newData)._impl;
+  const newNode = node.doc.createTextNode(newData)[$impl];
   // Step 7.
   const parent = node.parent;
   if (parent !== null) {

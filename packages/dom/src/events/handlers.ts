@@ -21,6 +21,7 @@ import { Event, setCanceledFlag } from "./Event.ts";
 import { addEventListener, removeEventListener } from "./listeners.ts";
 import { ErrorEvent, BeforeUnloadEvent } from "./events.ts";
 import { isWindow } from "./UIEvents.ts";
+import { $impl, $window } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#globaleventhandlers (+ pointer, touch, animation, transition, selection events). */
 export const GLOBAL_EVENT_HANDLER_EVENTS: readonly string[] = [
@@ -135,37 +136,63 @@ export function setEventHandler(target: EventTarget, type: string, value: unknow
   }
 }
 
-function defineHandler(proto: object, type: string, resolve: ((self: EventTarget) => EventTarget | null) | null): void {
-  Object.defineProperty(proto, "on" + type, {
-    configurable: true,
-    enumerable: true,
+type HandlerAccessor = { get(this: EventTarget): unknown; set(this: EventTarget, value: unknown): void };
+
+/** Accessors without target resolution, shared by every prototype that installs `type`. */
+const directAccessors = new Map<string, HandlerAccessor>();
+
+function handlerAccessor(type: string, resolve: ((self: EventTarget) => EventTarget | null) | null): HandlerAccessor {
+  if (resolve === null) {
+    let a = directAccessors.get(type);
+    if (a === undefined) {
+      a = {
+        get(this: EventTarget) {
+          return getEventHandler(this, type);
+        },
+        set(this: EventTarget, value: unknown) {
+          setEventHandler(this, type, value);
+        },
+      };
+      directAccessors.set(type, a);
+    }
+    return a;
+  }
+  return {
     get(this: EventTarget) {
-      const target = resolve === null ? this : resolve(this);
+      const target = resolve(this);
       return target === null ? null : getEventHandler(target, type);
     },
     set(this: EventTarget, value: unknown) {
-      const target = resolve === null ? this : resolve(this);
+      const target = resolve(this);
       if (target !== null) setEventHandler(target, type, value);
     },
-  });
+  };
+}
+
+function addHandler(descriptors: PropertyDescriptorMap, type: string, resolve: ((self: EventTarget) => EventTarget | null) | null): void {
+  const { get, set } = handlerAccessor(type, resolve);
+  descriptors["on" + type] = { configurable: true, enumerable: true, get, set };
 }
 
 /** https://html.spec.whatwg.org/#determining-the-target-of-an-event-handler (body/frameset → Window). */
 function bodyWindow(self: EventTarget): EventTarget | null {
-  const impl = (self as unknown as { _impl?: { doc: { _window: EventTarget | null } } })._impl;
-  return impl === undefined ? null : impl.doc._window;
+  const impl = (self as unknown as { [$impl]?: { doc: { [$window]: EventTarget | null } } })[$impl];
+  return impl === undefined ? null : impl.doc[$window];
 }
 
 export type EventHandlersKind = "element" | "body" | "document" | "window";
 
 /** Install the `on*` IDL attributes for an interface prototype (see the header comment). */
 export function installEventHandlers(proto: object, kind: EventHandlersKind): void {
+  // One defineProperties call per prototype (startup: about half the cost of one call per name).
+  const descriptors: PropertyDescriptorMap = {};
   if (kind === "body") {
-    for (const type of WINDOW_REFLECTING_BODY_EVENTS) defineHandler(proto, type, bodyWindow);
-    for (const type of WINDOW_EVENT_HANDLER_EVENTS) defineHandler(proto, type, bodyWindow);
-    return;
+    for (const type of WINDOW_REFLECTING_BODY_EVENTS) addHandler(descriptors, type, bodyWindow);
+    for (const type of WINDOW_EVENT_HANDLER_EVENTS) addHandler(descriptors, type, bodyWindow);
+  } else {
+    for (const type of GLOBAL_EVENT_HANDLER_EVENTS) addHandler(descriptors, type, null);
+    if (kind === "window") for (const type of WINDOW_EVENT_HANDLER_EVENTS) addHandler(descriptors, type, null);
+    if (kind === "document") for (const type of DOCUMENT_EVENTS) addHandler(descriptors, type, null);
   }
-  for (const type of GLOBAL_EVENT_HANDLER_EVENTS) defineHandler(proto, type, null);
-  if (kind === "window") for (const type of WINDOW_EVENT_HANDLER_EVENTS) defineHandler(proto, type, null);
-  if (kind === "document") for (const type of DOCUMENT_EVENTS) defineHandler(proto, type, null);
+  Object.defineProperties(proto, descriptors);
 }

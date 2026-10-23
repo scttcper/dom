@@ -17,6 +17,7 @@ import { hidePopover, isPopoverShowing, showPopover } from "./top-layer.ts";
 import { fireAnEvent } from "../events/fire.ts";
 import { Event } from "../events/Event.ts";
 import { isActuallyDisabled } from "./forms/form-associated.ts";
+import { $impl } from "../keys.ts";
 
 type Ctor = { prototype: object };
 
@@ -27,7 +28,7 @@ const explicit = new WeakMap<NodeImpl, Map<string, WeakRef<Element>>>();
 function attrAssociated(el: NodeImpl, attr: string): NodeImpl | null {
   const ref = explicit.get(el)?.get(attr)?.deref();
   if (ref !== undefined) {
-    const impl = ref._impl;
+    const impl = ref[$impl];
     // Valid only while in a shadow-including ancestor tree of the element (approximated: same tree).
     return treeRoot(impl) === treeRoot(el) || (impl.flags & 1) !== 0 ? impl : null;
   }
@@ -44,11 +45,11 @@ function elementReflection(C: Ctor, idl: string, content: string): void {
     C,
     idl,
     function () {
-      const n = attrAssociated(this._impl, content);
+      const n = attrAssociated(this[$impl], content);
       return n === null ? null : n.node;
     },
     function (v: Element | null) {
-      const impl = this._impl;
+      const impl = this[$impl];
       let map = explicit.get(impl);
       if (v === null || v === undefined) {
         map?.delete(content);
@@ -77,14 +78,14 @@ export function installCommandInvoker(C: Ctor): void {
     C,
     "command",
     function () {
-      const v = contentAttr(this._impl, "command");
+      const v = contentAttr(this[$impl], "command");
       if (v === null) return "";
       if (v.startsWith("--")) return v;
       const k = v.toLowerCase();
       return COMMANDS.includes(k) ? k : "";
     },
     function (v) {
-      setAttribute(this._impl, "command", String(v));
+      setAttribute(this[$impl], "command", String(v));
     },
   );
 }

@@ -12,23 +12,24 @@ import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-assoc
 import { LabelsNodeList } from "./collections.ts";
 import { buttonType, FORM_ENCTYPE, FORM_METHOD, resetForm, submitForm } from "./form-submission.ts";
 import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./validation.ts";
+import { $customValidity, $impl, $labels, $validity } from "../../keys.ts";
 
 export class HTMLButtonElement extends HTMLElement {
-  _customValidity: string;
-  _validity: ValidityState | null;
-  _labels: LabelsNodeList | null;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
+  [$labels]: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._customValidity = "";
-    this._validity = null;
-    this._labels = null;
+    this[$customValidity] = "";
+    this[$validity] = null;
+    this[$labels] = null;
   }
 
   /** https://html.spec.whatwg.org/#dom-button-type */
   get type(): string {
-    return buttonType(this._impl);
+    return buttonType(this[$impl]);
   }
 
   set type(value: string) {
@@ -36,17 +37,17 @@ export class HTMLButtonElement extends HTMLElement {
   }
 
   get form(): Element | null {
-    const owner = formOwner(this._impl);
+    const owner = formOwner(this[$impl]);
     return owner === null ? null : (owner.node as Element);
   }
 
   get labels(): LabelsNodeList {
-    return (this._labels ??= new LabelsNodeList(this._impl));
+    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
   }
 
   /** https://html.spec.whatwg.org/#dom-fs-formaction */
   get formAction(): string {
-    return reflectActionURL(this._impl, "formaction");
+    return reflectActionURL(this[$impl], "formaction");
   }
 
   set formAction(v: string) {
@@ -64,16 +65,16 @@ export class HTMLButtonElement extends HTMLElement {
   // --- constraint validation -----------------------------------------------------------------
 
   _barredFromValidation(): boolean {
-    const impl = this._impl;
+    const impl = this[$impl];
     return buttonType(impl) !== "submit" || isActuallyDisabled(impl) || hasDatalistAncestor(impl);
   }
 
   _validityFlags(): number {
-    return this._customValidity === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
   }
 
   _validationMessage(_flags: number): string {
-    return this._customValidity;
+    return this[$customValidity];
   }
 
   // --- activation behavior: https://html.spec.whatwg.org/#the-button-element:activation-behaviour
@@ -83,7 +84,7 @@ export class HTMLButtonElement extends HTMLElement {
   }
 
   _activationBehavior(_event: Event | null): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (isActuallyDisabled(impl)) return;
     const form = formOwner(impl);
     if (form !== null && (impl.flags & F_CONNECTED) !== 0) {

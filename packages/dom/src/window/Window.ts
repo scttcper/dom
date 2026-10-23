@@ -32,6 +32,7 @@ import { getCurrentEvent } from "../events/dispatch.ts";
 import { reportException } from "../events/report.ts";
 import "./document.ts";
 import { setNestedWindowFactory } from "./browsing-context.ts";
+import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
   /** Document URL. Default "http://localhost/". */
@@ -131,51 +132,51 @@ export class Window extends EventTarget {
   status: string;
   opener: Window | null;
   /** @internal */
-  _options: ResolvedWindowOptions;
+  [$options]: ResolvedWindowOptions;
   /** @internal The document's URL (https://dom.spec.whatwg.org/#concept-document-url) as a parsed URL. */
-  _url: URL;
-  _location: Location | null;
-  _history: History | null;
-  _navigator: Navigator | null;
-  _screen: Screen | null;
-  _visualViewport: VisualViewport | null;
+  [$url]: URL;
+  [$location]: Location | null;
+  [$history]: History | null;
+  [$navigator]: Navigator | null;
+  [$screen]: Screen | null;
+  [$visualViewport]: VisualViewport | null;
   /** Present only for windows created with `visualViewport: true` (an own accessor). */
   declare readonly visualViewport?: VisualViewport;
-  _localStorage: Storage | null;
-  _sessionStorage: Storage | null;
-  _shed: StorageShed | null;
-  _customElements: unknown;
-  _cookieJar: CookieJar | null;
+  [$localStorage]: Storage | null;
+  [$sessionStorage]: Storage | null;
+  [$shed]: StorageShed | null;
+  [$customElements]: unknown;
+  [$cookieJar]: CookieJar | null;
   /** MediaQueryLists with change listeners (https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes). */
-  _mediaQueryLists: Set<MediaQueryList>;
-  _tasks: Set<PendingTask> | null;
+  [$mediaQueryLists]: Set<MediaQueryList>;
+  [$tasks]: Set<PendingTask> | null;
   /** https://html.spec.whatwg.org/#list-of-animation-frame-callbacks */
-  _frameCallbacks: Map<number, FrameRequestCallback> | null;
-  _runningFrame: Map<number, FrameRequestCallback> | null;
-  _frameTask: PendingTask | null;
-  _frameId: number;
-  _idleCallbacks: Map<number, PendingTask> | null;
-  _idleId: number;
-  _innerWidth: number;
-  _innerHeight: number;
-  _devicePixelRatio: number;
-  _scrollX: number;
-  _scrollY: number;
-  _closed: boolean;
+  [$frameCallbacks]: Map<number, FrameRequestCallback> | null;
+  [$runningFrame]: Map<number, FrameRequestCallback> | null;
+  [$frameTask]: PendingTask | null;
+  [$frameId]: number;
+  [$idleCallbacks]: Map<number, PendingTask> | null;
+  [$idleId]: number;
+  [$innerWidth]: number;
+  [$innerHeight]: number;
+  [$devicePixelRatio]: number;
+  [$scrollX]: number;
+  [$scrollY]: number;
+  [$closed]: boolean;
   /**
    * @internal The global whose timers/performance the window uses: the Node global by default,
    * the global it is installed on otherwise (a Jest vm context), so fake timers installed on
    * that global control animation frames and window tasks.
    */
-  _host: typeof globalThis;
+  [$host]: typeof globalThis;
   /** @internal Parent window of a nested browsing context (iframe), else null. */
-  _parentWindow: Window | null;
+  [$parentWindow]: Window | null;
   /** @internal The <iframe> hosting this window, else null. */
-  _frameElement: Element | null;
+  [$frameElement]: Element | null;
   /** @internal The host global this window is installed on (installGlobals), else null: what WindowProxy references to it return. */
-  _globalObject: Window | null;
+  [$globalObject]: Window | null;
   /** @internal Nested windows of connected iframes in this window's document (created lazily). */
-  _childWindows: Set<Window> | null;
+  [$childWindows]: Set<Window> | null;
 
   constructor(options: WindowOptions = {}, nested?: NestedBrowsingContext) {
     super();
@@ -188,7 +189,7 @@ export class Window extends EventTarget {
     this.opener = null;
     const width = options.width ?? 1024;
     const height = options.height ?? 768;
-    this._options = {
+    this[$options] = {
       userAgent: options.userAgent ?? DEFAULT_USER_AGENT,
       platform: options.platform ?? DEFAULT_PLATFORM,
       languages: options.languages ?? DEFAULT_LANGUAGES,
@@ -198,47 +199,47 @@ export class Window extends EventTarget {
       mediaFeatures: options.mediaFeatures,
       validationMessages: options.validationMessages === "browser" ? "browser" : "jsdom",
     };
-    this._url = url;
-    this._location = null;
-    this._history = null;
-    this._navigator = null;
-    this._screen = null;
-    this._visualViewport = null;
-    this._localStorage = null;
-    this._sessionStorage = null;
-    this._shed = options.shareStorageWith === undefined ? null : options.shareStorageWith._storageShed;
-    this._customElements = null;
-    this._cookieJar = null;
-    this._mediaQueryLists = new Set();
-    this._tasks = null;
-    this._frameCallbacks = null;
-    this._runningFrame = null;
-    this._frameTask = null;
-    this._frameId = 0;
-    this._idleCallbacks = null;
-    this._idleId = 0;
-    this._innerWidth = width;
-    this._innerHeight = height;
-    this._devicePixelRatio = options.devicePixelRatio ?? 1;
-    this._scrollX = 0;
-    this._scrollY = 0;
-    this._closed = false;
-    this._host = globalThis;
-    this._parentWindow = null;
-    this._frameElement = null;
-    this._childWindows = null;
-    this._globalObject = null;
-    if (this._shed !== null) this._shed.windows.add(this);
+    this[$url] = url;
+    this[$location] = null;
+    this[$history] = null;
+    this[$navigator] = null;
+    this[$screen] = null;
+    this[$visualViewport] = null;
+    this[$localStorage] = null;
+    this[$sessionStorage] = null;
+    this[$shed] = options.shareStorageWith === undefined ? null : options.shareStorageWith._storageShed;
+    this[$customElements] = null;
+    this[$cookieJar] = null;
+    this[$mediaQueryLists] = new Set();
+    this[$tasks] = null;
+    this[$frameCallbacks] = null;
+    this[$runningFrame] = null;
+    this[$frameTask] = null;
+    this[$frameId] = 0;
+    this[$idleCallbacks] = null;
+    this[$idleId] = 0;
+    this[$innerWidth] = width;
+    this[$innerHeight] = height;
+    this[$devicePixelRatio] = options.devicePixelRatio ?? 1;
+    this[$scrollX] = 0;
+    this[$scrollY] = 0;
+    this[$closed] = false;
+    this[$host] = globalThis;
+    this[$parentWindow] = null;
+    this[$frameElement] = null;
+    this[$childWindows] = null;
+    this[$globalObject] = null;
+    if (this[$shed] !== null) this[$shed].windows.add(this);
     if (options.visualViewport === true) {
       Object.defineProperty(this, "visualViewport", { get: visualViewportGetter, enumerable: true, configurable: true });
     }
     if (nested !== undefined) {
       // A nested browsing context never becomes the current window, uses its parent's host
       // timers and starts with about:blank (no doctype) or its srcdoc document.
-      this._parentWindow = nested.parent;
-      this._frameElement = nested.frameElement;
-      this._host = nested.parent._host;
-      (nested.parent._childWindows ??= new Set()).add(this);
+      this[$parentWindow] = nested.parent;
+      this[$frameElement] = nested.frameElement;
+      this[$host] = nested.parent[$host];
+      (nested.parent[$childWindows] ??= new Set()).add(this);
       if (nested.srcdoc !== null) {
         parseDocument(nested.srcdoc, doc);
       } else {
@@ -275,33 +276,33 @@ export class Window extends EventTarget {
   }
   /** https://html.spec.whatwg.org/#dom-parent — a top-level traversable is its own parent. */
   get parent(): Window {
-    const p = this._parentWindow;
-    return p === null ? this : (p._globalObject ?? p);
+    const p = this[$parentWindow];
+    return p === null ? this : (p[$globalObject] ?? p);
   }
   get top(): Window {
-    let w = this._parentWindow;
+    let w = this[$parentWindow];
     if (w === null) return this;
-    while (w._parentWindow !== null) w = w._parentWindow;
-    return w._globalObject ?? w;
+    while (w[$parentWindow] !== null) w = w[$parentWindow];
+    return w[$globalObject] ?? w;
   }
   get length(): number {
     return 0;
   }
   get frameElement(): Element | null {
-    return this._frameElement;
+    return this[$frameElement];
   }
   get closed(): boolean {
-    return this._closed;
+    return this[$closed];
   }
 
   /** https://html.spec.whatwg.org/#dom-origin */
   get origin(): string {
-    return this._url.origin;
+    return this[$url].origin;
   }
 
   /** https://html.spec.whatwg.org/#dom-issecurecontext (https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy) */
   get isSecureContext(): boolean {
-    const { protocol, hostname } = this._url;
+    const { protocol, hostname } = this[$url];
     if (protocol === "https:" || protocol === "wss:" || protocol === "file:") return true;
     return hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "127.0.0.1" || hostname === "[::1]";
   }
@@ -319,7 +320,7 @@ export class Window extends EventTarget {
 
   /** https://html.spec.whatwg.org/#dom-location */
   get location(): Location {
-    return (this._location ??= new Location(this));
+    return (this[$location] ??= new Location(this));
   }
   set location(value: string) {
     this.location.href = value;
@@ -327,12 +328,12 @@ export class Window extends EventTarget {
 
   /** https://html.spec.whatwg.org/#dom-history */
   get history(): History {
-    return (this._history ??= new History(this));
+    return (this[$history] ??= new History(this));
   }
 
   /** https://html.spec.whatwg.org/#dom-navigator */
   get navigator(): Navigator {
-    return (this._navigator ??= new Navigator(this));
+    return (this[$navigator] ??= new Navigator(this));
   }
   get clientInformation(): Navigator {
     return this.navigator;
@@ -340,42 +341,42 @@ export class Window extends EventTarget {
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-screen */
   get screen(): Screen {
-    return (this._screen ??= new Screen(this));
+    return (this[$screen] ??= new Screen(this));
   }
 
   /** https://html.spec.whatwg.org/#dom-localstorage */
   get localStorage(): Storage {
-    return (this._localStorage ??= createLocalStorage(this));
+    return (this[$localStorage] ??= createLocalStorage(this));
   }
 
   /** https://html.spec.whatwg.org/#dom-sessionstorage */
   get sessionStorage(): Storage {
-    return (this._sessionStorage ??= createSessionStorage(this));
+    return (this[$sessionStorage] ??= createSessionStorage(this));
   }
 
   /** https://html.spec.whatwg.org/#dom-window-customelements (html-elements registers the factory). */
   get customElements(): unknown {
-    if (this._customElements === null) {
+    if (this[$customElements] === null) {
       const factory = windowHooks.createCustomElementRegistry;
       // TODO(html-elements): register windowHooks.createCustomElementRegistry.
-      if (factory !== null) this._customElements = factory(this);
+      if (factory !== null) this[$customElements] = factory(this);
       else return undefined;
     }
-    return this._customElements;
+    return this[$customElements];
   }
 
   /** @internal */
   get _storageShed(): StorageShed {
-    if (this._shed === null) {
-      this._shed = createStorageShed();
-      this._shed.windows.add(this);
+    if (this[$shed] === null) {
+      this[$shed] = createStorageShed();
+      this[$shed].windows.add(this);
     }
-    return this._shed;
+    return this[$shed];
   }
 
   /** @internal */
   get _cookieStore(): CookieJar {
-    return (this._cookieJar ??= new CookieJar());
+    return (this[$cookieJar] ??= new CookieJar());
   }
 
   // --- viewport (https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) ----
@@ -383,31 +384,31 @@ export class Window extends EventTarget {
   // MediaQueryList change listeners fire (tests resize by assigning innerWidth).
 
   get innerWidth(): number {
-    return this._innerWidth;
+    return this[$innerWidth];
   }
   set innerWidth(value: number) {
-    this._innerWidth = value;
-    if (this._mediaQueryLists.size !== 0) reportMediaQueryChanges(this);
+    this[$innerWidth] = value;
+    if (this[$mediaQueryLists].size !== 0) reportMediaQueryChanges(this);
   }
   get innerHeight(): number {
-    return this._innerHeight;
+    return this[$innerHeight];
   }
   set innerHeight(value: number) {
-    this._innerHeight = value;
-    if (this._mediaQueryLists.size !== 0) reportMediaQueryChanges(this);
+    this[$innerHeight] = value;
+    if (this[$mediaQueryLists].size !== 0) reportMediaQueryChanges(this);
   }
   get outerWidth(): number {
-    return this._innerWidth;
+    return this[$innerWidth];
   }
   get outerHeight(): number {
-    return this._innerHeight;
+    return this[$innerHeight];
   }
   get devicePixelRatio(): number {
-    return this._devicePixelRatio;
+    return this[$devicePixelRatio];
   }
   set devicePixelRatio(value: number) {
-    this._devicePixelRatio = value;
-    if (this._mediaQueryLists.size !== 0) reportMediaQueryChanges(this);
+    this[$devicePixelRatio] = value;
+    if (this[$mediaQueryLists].size !== 0) reportMediaQueryChanges(this);
   }
   get screenX(): number {
     return 0;
@@ -422,38 +423,38 @@ export class Window extends EventTarget {
     return 0;
   }
   get scrollX(): number {
-    return this._scrollX;
+    return this[$scrollX];
   }
   set scrollX(value: number) {
-    this._scrollX = value;
+    this[$scrollX] = value;
   }
   get scrollY(): number {
-    return this._scrollY;
+    return this[$scrollY];
   }
   set scrollY(value: number) {
-    this._scrollY = value;
+    this[$scrollY] = value;
   }
   get pageXOffset(): number {
-    return this._scrollX;
+    return this[$scrollX];
   }
   set pageXOffset(value: number) {
-    this._scrollX = value;
+    this[$scrollX] = value;
   }
   get pageYOffset(): number {
-    return this._scrollY;
+    return this[$scrollY];
   }
   set pageYOffset(value: number) {
-    this._scrollY = value;
+    this[$scrollY] = value;
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-scroll — no layout: just records the position. */
   scroll(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
     if (typeof x === "object" && x !== null) {
-      if (x.left !== undefined) this._scrollX = normalizeScroll(x.left);
-      if (x.top !== undefined) this._scrollY = normalizeScroll(x.top);
+      if (x.left !== undefined) this[$scrollX] = normalizeScroll(x.left);
+      if (x.top !== undefined) this[$scrollY] = normalizeScroll(x.top);
     } else if (x !== undefined) {
-      this._scrollX = normalizeScroll(x);
-      this._scrollY = normalizeScroll(y ?? 0);
+      this[$scrollX] = normalizeScroll(x);
+      this[$scrollY] = normalizeScroll(y ?? 0);
     }
   }
 
@@ -464,9 +465,9 @@ export class Window extends EventTarget {
   /** https://drafts.csswg.org/cssom-view/#dom-window-scrollby */
   scrollBy(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
     if (typeof x === "object" && x !== null) {
-      this.scroll({ left: this._scrollX + (Number(x.left) || 0), top: this._scrollY + (Number(x.top) || 0) });
+      this.scroll({ left: this[$scrollX] + (Number(x.left) || 0), top: this[$scrollY] + (Number(x.top) || 0) });
     } else {
-      this.scroll(this._scrollX + (Number(x) || 0), this._scrollY + (Number(y) || 0));
+      this.scroll(this[$scrollX] + (Number(x) || 0), this[$scrollY] + (Number(y) || 0));
     }
   }
 
@@ -475,14 +476,14 @@ export class Window extends EventTarget {
    * set the viewport size, report media query changes and fire `resize`.
    */
   resizeTo(width: number, height: number): void {
-    this._innerWidth = Number(width);
-    this._innerHeight = Number(height);
-    if (this._mediaQueryLists.size !== 0) reportMediaQueryChanges(this);
+    this[$innerWidth] = Number(width);
+    this[$innerHeight] = Number(height);
+    if (this[$mediaQueryLists].size !== 0) reportMediaQueryChanges(this);
     this.dispatchEvent(new Event("resize"));
   }
 
   resizeBy(x: number, y: number): void {
-    this.resizeTo(this._innerWidth + Number(x), this._innerHeight + Number(y));
+    this.resizeTo(this[$innerWidth] + Number(x), this[$innerHeight] + Number(y));
   }
 
   moveTo(_x: number, _y: number): void {}
@@ -492,7 +493,7 @@ export class Window extends EventTarget {
 
   /** https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle */
   getComputedStyle(element: Element, pseudoElement?: string | null): CSSStyleDeclaration {
-    if (element === null || typeof element !== "object" || !("_impl" in element) || element._impl.type !== 1) {
+    if (element === null || typeof element !== "object" || !($impl in element) || element[$impl].type !== 1) {
       throw new TypeError("Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.");
     }
     const hook = windowHooks.getComputedStyle ?? domExport<(e: Element, p?: string | null) => unknown>("getComputedStyle") ?? null;
@@ -521,25 +522,25 @@ export class Window extends EventTarget {
     if (typeof callback !== "function") {
       throw new TypeError("Failed to execute 'requestAnimationFrame' on 'Window': The callback provided as parameter 1 is not a function.");
     }
-    const id = ++this._frameId;
-    (this._frameCallbacks ??= new Map()).set(id, callback);
+    const id = ++this[$frameId];
+    (this[$frameCallbacks] ??= new Map()).set(id, callback);
     // One host timer per frame: every callback requested before the frame runs in it with
     // the same timestamp, like https://html.spec.whatwg.org/#run-the-animation-frame-callbacks.
     // Self-healing: a frame timer scheduled on a fake clock that has since been uninstalled
     // (jest.useRealTimers()) never fires; re-arm on the current host timer instead of letting
     // it wedge every later frame of this window.
-    const pending = this._frameTask;
+    const pending = this[$frameTask];
     if (pending === null || pending.scheduledWith !== this._hostSetTimeout()) {
       if (pending !== null) this._cancelTask(pending);
-      this._frameTask = this._task(runAnimationFrame, 16);
+      this[$frameTask] = this._task(runAnimationFrame, 16);
     }
     return id;
   }
 
   /** https://html.spec.whatwg.org/#animationframeprovider-cancelanimationframe */
   cancelAnimationFrame(handle: number): void {
-    this._frameCallbacks?.delete(handle);
-    this._runningFrame?.delete(handle);
+    this[$frameCallbacks]?.delete(handle);
+    this[$runningFrame]?.delete(handle);
   }
 
   /** https://w3c.github.io/requestidlecallback/#the-requestidlecallback-method */
@@ -548,8 +549,8 @@ export class Window extends EventTarget {
       throw new TypeError("Failed to execute 'requestIdleCallback' on 'Window': The callback provided as parameter 1 is not a function.");
     }
     void options;
-    const id = ++this._idleId;
-    const map = (this._idleCallbacks ??= new Map());
+    const id = ++this[$idleId];
+    const map = (this[$idleCallbacks] ??= new Map());
     const task = this._task(() => {
       map.delete(id);
       const deadline = Date.now() + 50;
@@ -560,9 +561,9 @@ export class Window extends EventTarget {
   }
 
   cancelIdleCallback(handle: number): void {
-    const task = this._idleCallbacks?.get(handle);
+    const task = this[$idleCallbacks]?.get(handle);
     if (task === undefined) return;
-    this._idleCallbacks!.delete(handle);
+    this[$idleCallbacks]!.delete(handle);
     this._cancelTask(task);
   }
 
@@ -571,9 +572,9 @@ export class Window extends EventTarget {
    * timers apply). Tracked so close() cancels it. Returns null once the window is closed.
    */
   _task(callback: () => void, delay: number): PendingTask | null {
-    if (this._closed) return null;
-    const tasks = (this._tasks ??= new Set());
-    const host = typeof this._host.setTimeout === "function" ? this._host : globalThis;
+    if (this[$closed]) return null;
+    const tasks = (this[$tasks] ??= new Set());
+    const host = typeof this[$host].setTimeout === "function" ? this[$host] : globalThis;
     const task: PendingTask = { handle: undefined, clear: host.clearTimeout as PendingTask["clear"], scheduledWith: host.setTimeout };
     task.handle = host.setTimeout(() => {
       tasks.delete(task);
@@ -584,12 +585,12 @@ export class Window extends EventTarget {
   }
 
   _hostSetTimeout(): unknown {
-    const set = this._host.setTimeout;
+    const set = this[$host].setTimeout;
     return typeof set === "function" ? set : globalThis.setTimeout;
   }
 
   _cancelTask(task: PendingTask): void {
-    this._tasks?.delete(task);
+    this[$tasks]?.delete(task);
     task.clear(task.handle as never);
   }
 
@@ -651,24 +652,24 @@ export class Window extends EventTarget {
    * environments call this on teardown.
    */
   close(): void {
-    if (this._closed) return;
-    this._closed = true;
-    const tasks = this._tasks;
+    if (this[$closed]) return;
+    this[$closed] = true;
+    const tasks = this[$tasks];
     if (tasks !== null) {
       for (const task of tasks) task.clear(task.handle as never);
       tasks.clear();
     }
-    this._frameCallbacks = null;
-    this._runningFrame = null;
-    this._frameTask = null;
-    this._idleCallbacks = null;
-    this._mediaQueryLists.clear();
-    this._shed?.windows.delete(this);
-    if (this._childWindows !== null) {
-      for (const child of this._childWindows) child.close();
-      this._childWindows = null;
+    this[$frameCallbacks] = null;
+    this[$runningFrame] = null;
+    this[$frameTask] = null;
+    this[$idleCallbacks] = null;
+    this[$mediaQueryLists].clear();
+    this[$shed]?.windows.delete(this);
+    if (this[$childWindows] !== null) {
+      for (const child of this[$childWindows]) child.close();
+      this[$childWindows] = null;
     }
-    this._parentWindow?._childWindows?.delete(this);
+    this[$parentWindow]?.[$childWindows]?.delete(this);
     if (currentWindowOrNull() === this) setCurrentWindow(null);
   }
 
@@ -681,8 +682,8 @@ export class Window extends EventTarget {
 
   /** @internal Set the document's URL. */
   _setURL(url: URL): void {
-    this._url = url;
-    this.document._url = url.href;
+    this[$url] = url;
+    this.document[$url] = url.href;
   }
 
   /** https://dom.spec.whatwg.org/#get-the-parent — a Window is the end of the propagation path. */
@@ -697,17 +698,17 @@ export class Window extends EventTarget {
 
 /** https://drafts.csswg.org/cssom-view/#dom-window-visualviewport (only with `visualViewport: true`) */
 function visualViewportGetter(this: Window): VisualViewport {
-  return (this._visualViewport ??= new VisualViewport(this));
+  return (this[$visualViewport] ??= new VisualViewport(this));
 }
 
 /** https://html.spec.whatwg.org/#run-the-animation-frame-callbacks */
 function runAnimationFrame(this: Window): void {
-  this._frameTask = null;
-  const callbacks = this._frameCallbacks;
+  this[$frameTask] = null;
+  const callbacks = this[$frameCallbacks];
   if (callbacks === null) return;
-  this._frameCallbacks = null;
-  this._runningFrame = callbacks;
-  const now = (this._host.performance ?? performance).now();
+  this[$frameCallbacks] = null;
+  this[$runningFrame] = callbacks;
+  const now = (this[$host].performance ?? performance).now();
   for (const [id, callback] of callbacks) {
     // Skip callbacks cancelled by an earlier callback in this frame.
     if (!callbacks.has(id)) continue;
@@ -717,7 +718,7 @@ function runAnimationFrame(this: Window): void {
       reportException(error, this);
     }
   }
-  this._runningFrame = null;
+  this[$runningFrame] = null;
 }
 
 function normalizeScroll(value: unknown): number {
@@ -802,7 +803,7 @@ function preparePrototype(): void {
     if (name in proto) continue;
     descriptors[name] = {
       get(this: Window) {
-        return (this._host as unknown as Record<string, unknown>)[name] ?? (globalThis as Record<string, unknown>)[name];
+        return (this[$host] as unknown as Record<string, unknown>)[name] ?? (globalThis as Record<string, unknown>)[name];
       },
       set(this: Window, value: unknown) {
         Object.defineProperty(this, name, { value, writable: true, enumerable: true, configurable: true });
@@ -834,7 +835,7 @@ function createNestedWindow(frameElement: Element, parent: Window, src: string |
   if (srcdoc !== null) url = "about:srcdoc";
   else if (src !== null && src !== "") url = URL.parse(src, parent.document.baseURI)?.href ?? "about:blank";
   return new Window(
-    { url, width: parent._innerWidth, height: parent._innerHeight, devicePixelRatio: parent._devicePixelRatio, userAgent: parent._options.userAgent },
+    { url, width: parent[$innerWidth], height: parent[$innerHeight], devicePixelRatio: parent[$devicePixelRatio], userAgent: parent[$options].userAgent },
     { parent, frameElement, srcdoc },
   );
 }

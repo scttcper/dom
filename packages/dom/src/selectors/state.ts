@@ -18,12 +18,13 @@ import { T } from "../nodes/tags.ts";
 import { attr, asciiLowercase } from "../nodes/attributes.ts";
 import { nextInTree, nextSkippingChildren } from "../nodes/traverse.ts";
 import { clearSelectorCaches } from "./index.ts";
+import { $host, $impl, $url } from "../keys.ts";
 
 export type Predicate = (el: NodeImpl) => boolean;
 
-type Wrapper = Record<string, unknown>;
+type Wrapper = Record<PropertyKey, unknown>;
 
-function wrapperProp(el: NodeImpl, name: string): unknown {
+function wrapperProp(el: NodeImpl, name: PropertyKey): unknown {
   return (el.node as unknown as Wrapper)[name];
 }
 
@@ -49,8 +50,8 @@ export function setActiveTarget(el: NodeImpl | null): void {
 
 /** Host element of a shadow root impl, or null. */
 export function shadowHost(sr: NodeImpl): NodeImpl | null {
-  const host = wrapperProp(sr, "_host") as { _impl: NodeImpl } | null | undefined;
-  return host === null || host === undefined ? null : host._impl;
+  const host = wrapperProp(sr, $host) as { [$impl]: NodeImpl } | null | undefined;
+  return host === null || host === undefined ? null : host[$impl];
 }
 
 /** Parent in the flat tree approximation: parent element, or the host of a shadow root. */
@@ -89,7 +90,7 @@ function never(_el: NodeImpl): boolean {
 
 /** https://html.spec.whatwg.org/#the-indicated-part-of-the-document (id, then a[name]). */
 function targetElement(el: NodeImpl): NodeImpl | null {
-  const url = el.doc._url;
+  const url = el.doc[$url];
   const hash = url.indexOf("#");
   if (hash === -1 || hash === url.length - 1) return null;
   let fragment = url.slice(hash + 1);
@@ -99,7 +100,7 @@ function targetElement(el: NodeImpl): NodeImpl | null {
   const doc = el.doc;
   const byId = doc._idLookup(fragment);
   if (byId !== null) return byId;
-  const root = doc._impl;
+  const root = doc[$impl];
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type === ELEMENT_NODE && n.tag === T.a && attr(n, "name") === fragment) return n;
   }
@@ -107,12 +108,12 @@ function targetElement(el: NodeImpl): NodeImpl | null {
 }
 
 function target(el: NodeImpl): boolean {
-  if (el.doc._url.indexOf("#") === -1) return false;
+  if (el.doc[$url].indexOf("#") === -1) return false;
   return targetElement(el) === el;
 }
 
 function targetWithin(el: NodeImpl): boolean {
-  if (el.doc._url.indexOf("#") === -1) return false;
+  if (el.doc[$url].indexOf("#") === -1) return false;
   const t = targetElement(el);
   return t !== null && isShadowIncludingInclusiveAncestor(el, t);
 }

@@ -14,7 +14,8 @@
 // from the wrapper's IDL attributes when the element class implements them, falling back
 // to the content attributes (the initial state) otherwise.
 
-import { ELEMENT_NODE, DOCUMENT_NODE, HTML_NS, T, attr, treeRoot, type NodeImpl } from "@rtd/dom/internal";
+import { ELEMENT_NODE, DOCUMENT_NODE, HTML_NS, T, attr, treeRoot, type NodeImpl, derivedCache } from "@rtd/dom/internal";
+import { $impl, $version } from "@rtd/dom/internal";
 
 /** Canonical `type` IDL value of an HTML input: https://html.spec.whatwg.org/multipage/input.html#attr-input-type */
 const INPUT_TYPES = new Set([
@@ -41,7 +42,7 @@ interface StateWrapper {
   checked?: unknown;
   indeterminate?: unknown;
   selected?: unknown;
-  selectedOptions?: ArrayLike<{ _impl: NodeImpl }>;
+  selectedOptions?: ArrayLike<{ [$impl]: NodeImpl }>;
 }
 
 /** Child text content (https://dom.spec.whatwg.org/#concept-child-text-content). */
@@ -133,7 +134,7 @@ export function selectedOptions(select: NodeImpl): NodeImpl[] {
   const so = (select.node as unknown as StateWrapper).selectedOptions;
   if (so !== undefined && so !== null && typeof so.length === "number") {
     const out: NodeImpl[] = [];
-    for (let i = 0; i < so.length; i++) out.push(so[i]._impl);
+    for (let i = 0; i < so.length; i++) out.push(so[i][$impl]);
     return out;
   }
   const out: NodeImpl[] = [];
@@ -170,8 +171,13 @@ class LabelIndex {
   }
 }
 
-/** Label associations per tree root, rebuilt when the document version changes (jsdom memoizes the same way). */
-const labelIndexes = new WeakMap<NodeImpl, LabelIndex>();
+/**
+ * Label associations per tree root, rebuilt when the document version changes (jsdom memoizes
+ * the same way). Held in the document's derived caches (dropped on node removal) so a stale index
+ * never keeps a removed tree alive.
+ */
+const LABEL_INDEXES = {};
+const newLabelIndexes = (): WeakMap<NodeImpl, LabelIndex> => new WeakMap();
 const EMPTY: NodeImpl[] = [];
 
 function buildLabelIndex(root: NodeImpl, version: number): LabelIndex {
@@ -270,7 +276,8 @@ function labeledControl(label: NodeImpl, docRoot: NodeImpl | null, ids: Map<stri
 export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
   if (!isLabelable(impl)) return null;
   const root = treeRoot(impl);
-  const version = impl.doc._version;
+  const version = impl.doc[$version];
+  const labelIndexes = derivedCache(impl.doc, LABEL_INDEXES, newLabelIndexes);
   let index = labelIndexes.get(root);
   if (index === undefined || index.version !== version) {
     index = buildLabelIndex(root, version);

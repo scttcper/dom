@@ -30,6 +30,7 @@ import { F_CHILD_LIST } from "../nodes/constants.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
+import { $items, $version } from "../keys.ts";
 
 /** Index getter tables of lazy NodeList subclasses, by prototype. */
 const lazyTables = new Map<object, IndexGetterTable>();
@@ -47,8 +48,8 @@ export class NodeList {
   #lazy: boolean;
 
   /** For lazy subclasses: their cached snapshot (subclasses manage these). */
-  declare _items: Node[] | null;
-  declare _version: number;
+  declare [$items]: Node[] | null;
+  declare [$version]: number;
 
   /**
    * @internal Use `NodeList._static` / `NodeList._live`. Subclasses call `super(null)` and

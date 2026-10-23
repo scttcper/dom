@@ -26,6 +26,7 @@ import { ErrorEvent } from "./events.ts";
 import { setTrusted } from "./Event.ts";
 import { dispatch } from "./dispatch.ts";
 import { currentWindow } from "../window/current.ts";
+import { $impl, $window } from "../keys.ts";
 
 export type UncaughtExceptionHandler = (error: unknown, event: ErrorEvent | null) => void;
 
@@ -45,10 +46,10 @@ const reporting = new WeakSet<object>();
 
 function windowFor(target: EventTarget | null): EventTarget | null {
   if (target !== null) {
-    const t = target as unknown as { _impl?: { doc: { _window: EventTarget | null } }; document?: { _window?: unknown } };
-    if (t._impl !== undefined) return t._impl.doc._window;
+    const t = target as unknown as { [$impl]?: { doc: { [$window]: EventTarget | null } }; document?: { [$window]?: unknown } };
+    if (t[$impl] !== undefined) return t[$impl].doc[$window];
     const doc = t.document;
-    if (doc !== undefined && doc !== null && doc._window === target) return target;
+    if (doc !== undefined && doc !== null && doc[$window] === target) return target;
   }
   try {
     return currentWindow() as unknown as EventTarget;

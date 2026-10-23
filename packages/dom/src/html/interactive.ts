@@ -13,6 +13,7 @@ import { nextInTree, treeRoot } from "../nodes/traverse.ts";
 import { fireEvent, fireToggleEvent, queueTask } from "./events.ts";
 import { addModal, hideAllPopoversUntil, isPopoverShowing, matchesModal, removeFromTopLayer } from "./top-layer.ts";
 import { blurElement, focusDelegate, focusElement, isFocusable, isSummaryForParentDetails } from "./focus.ts";
+import { $focused, $impl } from "../keys.ts";
 
 // --- <details> ------------------------------------------------------------------------------
 
@@ -47,13 +48,13 @@ function nameGroupOthers(el: NodeImpl, name: string, out: NodeImpl[]): NodeImpl[
 export class HTMLDetailsElement extends HTMLElement {
   constructor(doc?: Document, localName?: string, ns?: string | null, prefix?: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
+    this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
   }
 
   override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     if (localName !== "open" || namespace !== null) return;
-    const impl = this._impl;
+    const impl = this[$impl];
     // https://html.spec.whatwg.org/#the-details-element:concept-element-attributes-change-ext
     if (oldValue === null && value !== null) {
       queueDetailsToggle(impl, "closed", "open");
@@ -72,7 +73,7 @@ export class HTMLDetailsElement extends HTMLElement {
   override _connectedSteps(): void {
     super._connectedSteps();
     // https://html.spec.whatwg.org/#ensure-details-exclusivity-by-closing-the-given-element-if-needed
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "open") === null) return;
     const name = contentAttr(impl, "name");
     if (name === null || name === "") return;
@@ -93,13 +94,13 @@ const SummaryBase = HTMLElement;
  * <summary> uses the HTMLElement interface; this subclass (named "HTMLElement", not exposed on
  * the window) only adds activation behavior (https://html.spec.whatwg.org/#the-summary-element:activation-behaviour).
  */
-export const HTMLSummaryElement = class HTMLElement extends SummaryBase {
+export const HTMLSummaryElement: typeof SummaryBase = class HTMLElement extends SummaryBase {
   get _hasActivationBehavior(): boolean {
-    return isSummaryForParentDetails(this._impl);
+    return isSummaryForParentDetails(this[$impl]);
   }
 
   _activationBehavior(_event: Event): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (!isSummaryForParentDetails(impl)) return;
     const details = impl.parent!;
     if (contentAttr(details, "open") !== null) removeAttribute(details, "open");
@@ -133,7 +134,7 @@ function queueDialogToggle(el: NodeImpl, oldState: string, newState: string): vo
 export class HTMLDialogElement extends HTMLElement {
   constructor(doc?: Document, localName?: string, ns?: string | null, prefix?: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
+    this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
   }
 
   get returnValue(): string {
@@ -146,7 +147,7 @@ export class HTMLDialogElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-dialog-show */
   show(): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "open") !== null) {
       if (!matchesModal(impl)) return;
       throw new DOMException("The dialog is already open as a modal dialog.", "InvalidStateError");
@@ -155,14 +156,14 @@ export class HTMLDialogElement extends HTMLElement {
     if (contentAttr(impl, "open") !== null) return;
     queueDialogToggle(impl, "closed", "open");
     setAttribute(impl, "open", "");
-    this._setPreviouslyFocused(impl.doc._focused);
+    this._setPreviouslyFocused(impl.doc[$focused]);
     hideAllPopoversUntil(null, impl.doc, false, true);
     dialogFocusingSteps(impl);
   }
 
   /** https://html.spec.whatwg.org/#dom-dialog-showmodal */
   showModal(): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "open") !== null) {
       if (matchesModal(impl)) return;
       throw new DOMException("The dialog is already open as a non-modal dialog.", "InvalidStateError");
@@ -174,7 +175,7 @@ export class HTMLDialogElement extends HTMLElement {
     queueDialogToggle(impl, "closed", "open");
     setAttribute(impl, "open", "");
     addModal(impl);
-    this._setPreviouslyFocused(impl.doc._focused);
+    this._setPreviouslyFocused(impl.doc[$focused]);
     hideAllPopoversUntil(null, impl.doc, false, true);
     dialogFocusingSteps(impl);
   }
@@ -186,7 +187,7 @@ export class HTMLDialogElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-dialog-requestclose (no close watcher: always cancelable). */
   requestClose(returnValue?: string): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "open") === null) return;
     if (!fireEvent(this, "cancel", false, true)) return;
     closeDialog(this, returnValue === undefined ? null : String(returnValue));
@@ -196,14 +197,14 @@ export class HTMLDialogElement extends HTMLElement {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     // Removing `open` directly runs the dialog cleanup steps (no close event).
     if (localName === "open" && namespace === null && value === null && oldValue !== null) {
-      removeFromTopLayer(this._impl);
+      removeFromTopLayer(this[$impl]);
     }
   }
 
   override _disconnectedSteps(): void {
     super._disconnectedSteps();
     // https://html.spec.whatwg.org/#the-dialog-element:html-element-removing-steps
-    removeFromTopLayer(this._impl);
+    removeFromTopLayer(this[$impl]);
   }
 
   _setPreviouslyFocused(el: NodeImpl | null): void {
@@ -222,7 +223,7 @@ enumerated(HTMLDialogElement, "closedBy=closedby", { keywords: ["any", "closereq
 
 /** https://html.spec.whatwg.org/#close-the-dialog */
 function closeDialog(dialog: HTMLDialogElement, result: string | null): void {
-  const impl = dialog._impl;
+  const impl = dialog[$impl];
   if (contentAttr(impl, "open") === null) return;
   fireToggleEvent(dialog, "beforetoggle", "open", "closed", false);
   if (contentAttr(impl, "open") === null) return;
@@ -232,7 +233,7 @@ function closeDialog(dialog: HTMLDialogElement, result: string | null): void {
   if (result !== null) dialog.returnValue = result;
   // Restore focus to the previously focused element when focus is inside the dialog (or lost).
   const prev = dialog._takePreviouslyFocused();
-  const focused = impl.doc._focused;
+  const focused = impl.doc[$focused];
   if (prev !== null && (focused === null || isInclusiveAncestor(impl, focused))) {
     if ((prev.flags & F_CONNECTED) !== 0) focusElement(prev);
   }
@@ -253,7 +254,7 @@ function dialogFocusingSteps(dialog: NodeImpl): void {
     if (isFocusable(dialog)) control = dialog;
     else {
       // Nothing focusable inside: focus leaves the previously focused element.
-      const focused = dialog.doc._focused;
+      const focused = dialog.doc[$focused];
       if (focused !== null) blurElement(focused);
       return;
     }

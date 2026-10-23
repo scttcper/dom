@@ -17,6 +17,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow } from "@rtd/dom";
 import { isDefined } from "../../src/html/custom-elements.ts";
+import { $impl } from "../../src/keys.ts";
 
 let window: any;
 let document: any;
@@ -149,7 +150,7 @@ describe("HTML element constructors — https://html.spec.whatwg.org/#html-eleme
     expect(y.ownerDocument).toBe(document);
     expect(y).toBeInstanceOf(HTMLElement);
     expect(y.isConnected).toBe(false);
-    expect(isDefined(y._impl)).toBe(true);
+    expect(isDefined((y as any)[$impl])).toBe(true);
   });
 
   test("step 4: an autonomous definition whose class extends a built-in other than HTMLElement throws", () => {
@@ -206,7 +207,7 @@ describe("create an element (synchronous custom elements flag) — https://dom.s
     const doc = document.implementation.createHTMLDocument("");
     const el = doc.createElement(ce.name);
     expect(el).not.toBeInstanceOf(ce.class);
-    expect(isDefined(el._impl)).toBe(false);
+    expect(isDefined(el[$impl])).toBe(false);
   });
 });
 
@@ -228,10 +229,10 @@ describe("upgrades — https://html.spec.whatwg.org/#concept-upgrade-an-element"
       }
     }
     const one = document.getElementById("one");
-    expect(isDefined(one._impl)).toBe(false);
+    expect(isDefined(one[$impl])).toBe(false);
     customElements.define("up-a", U);
     expect(one).toBeInstanceOf(U);
-    expect(isDefined(one._impl)).toBe(true);
+    expect(isDefined(one[$impl])).toBe(true);
     expect(log).toEqual(["ctor one", "attr one x null 1", "connected one", "ctor two", "connected two"]);
   });
 
@@ -265,7 +266,7 @@ describe("upgrades — https://html.spec.whatwg.org/#concept-upgrade-an-element"
     }
     window.addEventListener("error", (e: any) => e.preventDefault());
     customElements.define("odd-el", Odd);
-    expect(isDefined(document.body.firstChild._impl)).toBe(false);
+    expect(isDefined(document.body.firstChild[$impl])).toBe(false);
   });
 
   test("properties set before the upgrade shadow class accessors (as in browsers)", () => {

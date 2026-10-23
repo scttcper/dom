@@ -12,82 +12,83 @@ import { DocumentFragment } from "./DocumentFragment.ts";
 import { treeRoot } from "./traverse.ts";
 import { parseFragment, setHTMLUnsafe } from "../parser/index.ts";
 import { getHTML, serializeChildren, type GetHTMLOptions } from "../serializer/index.ts";
+import { $availableToElementInternals, $clonable, $declarative, $delegatesFocus, $focused, $host, $impl, $mode, $serializable, $slotAssignment, $y } from "../keys.ts";
 
 export type ShadowRootMode = "open" | "closed";
 export type SlotAssignmentMode = "manual" | "named";
 
 export class ShadowRoot extends DocumentFragment {
   /** https://dom.spec.whatwg.org/#shadowroot-mode */
-  _mode: ShadowRootMode;
-  _delegatesFocus: boolean;
-  _slotAssignment: SlotAssignmentMode;
-  _clonable: boolean;
-  _serializable: boolean;
+  [$mode]: ShadowRootMode;
+  [$delegatesFocus]: boolean;
+  [$slotAssignment]: SlotAssignmentMode;
+  [$clonable]: boolean;
+  [$serializable]: boolean;
   /** https://dom.spec.whatwg.org/#shadowroot-declarative */
-  _declarative: boolean;
+  [$declarative]: boolean;
   /** https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals */
-  _availableToElementInternals: boolean;
+  [$availableToElementInternals]: boolean;
 
   /** @internal Use Element.attachShadow. */
   constructor(doc: Document, host: Element, mode: ShadowRootMode, delegatesFocus: boolean, slotAssignment: SlotAssignmentMode, clonable: boolean, serializable: boolean) {
     if (arguments.length < 3) throw new TypeError("Illegal constructor");
     super(doc);
-    const impl = this._impl;
+    const impl = this[$impl];
     impl.flags |= F_SHADOW_ROOT;
     // Connectedness is shadow-including: a shadow root is connected iff its host is.
-    if ((host._impl.flags & F_CONNECTED) !== 0) impl.flags |= F_CONNECTED;
-    this._host = host;
-    this._mode = mode;
-    this._delegatesFocus = delegatesFocus;
-    this._slotAssignment = slotAssignment;
-    this._clonable = clonable;
-    this._serializable = serializable;
-    this._declarative = false;
-    this._availableToElementInternals = false;
+    if ((host[$impl].flags & F_CONNECTED) !== 0) impl.flags |= F_CONNECTED;
+    this[$host] = host;
+    this[$mode] = mode;
+    this[$delegatesFocus] = delegatesFocus;
+    this[$slotAssignment] = slotAssignment;
+    this[$clonable] = clonable;
+    this[$serializable] = serializable;
+    this[$declarative] = false;
+    this[$availableToElementInternals] = false;
   }
 
   get mode(): ShadowRootMode {
-    return this._mode;
+    return this[$mode];
   }
 
   get host(): Element {
-    return this._host!;
+    return this[$host]!;
   }
 
   get delegatesFocus(): boolean {
-    return this._delegatesFocus;
+    return this[$delegatesFocus];
   }
 
   get slotAssignment(): SlotAssignmentMode {
-    return this._slotAssignment;
+    return this[$slotAssignment];
   }
 
   get clonable(): boolean {
-    return this._clonable;
+    return this[$clonable];
   }
 
   get serializable(): boolean {
-    return this._serializable;
+    return this[$serializable];
   }
 
   /** https://html.spec.whatwg.org/#dom-shadowroot-innerhtml */
   get innerHTML(): string {
-    return serializeChildren(this._impl);
+    return serializeChildren(this[$impl]);
   }
 
   set innerHTML(value: string) {
-    const fragment = parseFragment(value === null ? "" : String(value), this._host!._impl);
+    const fragment = parseFragment(value === null ? "" : String(value), this[$host]![$impl]);
     this._replaceAll(fragment.node);
   }
 
   /** https://html.spec.whatwg.org/#dom-shadowroot-gethtml (serializableShadowRoots / shadowRoots options not supported) */
   getHTML(options?: GetHTMLOptions): string {
-    return getHTML(this._impl, options);
+    return getHTML(this[$impl], options);
   }
 
   /** https://html.spec.whatwg.org/#dom-shadowroot-sethtmlunsafe */
   setHTMLUnsafe(html: string): void {
-    setHTMLUnsafe(this._impl, String(html));
+    setHTMLUnsafe(this[$impl], String(html));
   }
 
   /**
@@ -95,14 +96,14 @@ export class ShadowRoot extends DocumentFragment {
    * focused element retargeted against this shadow root, if it is in this shadow tree.
    */
   get activeElement(): Element | null {
-    const self = this._impl;
-    let candidate: NodeImpl | null = self.doc._focused;
+    const self = this[$impl];
+    let candidate: NodeImpl | null = self.doc[$focused];
     while (candidate !== null) {
       const root = treeRoot(candidate);
       if (root === self) return candidate.node as Element;
       if ((root.flags & F_SHADOW_ROOT) === 0) return null;
-      const host = (root.node as ShadowRoot)._host;
-      candidate = host === null ? null : host._impl;
+      const host = (root.node as ShadowRoot)[$host];
+      candidate = host === null ? null : host[$impl];
     }
     return null;
   }

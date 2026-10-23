@@ -45,6 +45,7 @@ import { clearParserAssociation, isActuallyDisabled, parserAssociateForm } from 
 import { hidePopover, isInTopLayer, isPopoverShowing, popoverAttributeChanged, showPopover, topLayerRemovingSteps } from "./top-layer.ts";
 import { ShadowRoot } from "../nodes/ShadowRoot.ts";
 import { Document as DocumentClass } from "../nodes/Document.ts";
+import { $impl, $shadowRoot, $states, $style, $target, $value } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#click-in-progress-flag */
 const clickInProgress = new WeakSet<Element>();
@@ -59,7 +60,7 @@ export class HTMLElement extends Element {
     if (doc !== undefined) {
       super(doc, localName!, ns!, prefix!);
       // Custom element candidates need connected hooks to upgrade on insertion.
-      if ((this._impl.flags & F_CUSTOM) !== 0) this._impl.flags |= F_CONNECT_HOOK;
+      if ((this[$impl].flags & F_CUSTOM) !== 0) this[$impl].flags |= F_CONNECT_HOOK;
       return;
     }
     const r = htmlElementConstructorSteps(new.target);
@@ -71,13 +72,13 @@ export class HTMLElement extends Element {
   // --- hooks ------------------------------------------------------------------------------
 
   override _connectedSteps(): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if ((impl.flags & F_CUSTOM) !== 0 || isValueOf(this) !== null) ceConnected(this);
     if ((impl.flags & F_FACE) !== 0) faceStateMaybeChanged(impl);
   }
 
   override _disconnectedSteps(): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (isPopoverShowing(impl) || isInTopLayer(impl)) topLayerRemovingSteps(impl);
     if (definitionOf(this) !== undefined) ceDisconnected(this);
     // The ancestor chain changed: a parser-made form association ends (html/forms).
@@ -90,19 +91,19 @@ export class HTMLElement extends Element {
    * (https://html.spec.whatwg.org/#create-an-element-for-the-token). Implemented in html/forms.
    */
   _parserAssociateForm(form: Element): void {
-    parserAssociateForm(this._impl, form._impl);
+    parserAssociateForm(this[$impl], form[$impl]);
   }
 
   override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
-    if (localName === "popover" && namespace === null) popoverAttributeChanged(this._impl, oldValue, value);
+    if (localName === "popover" && namespace === null) popoverAttributeChanged(this[$impl], oldValue, value);
     if (definitionOf(this) !== undefined) ceAttributeChanged(this, localName, oldValue, value, namespace);
-    if ((this._impl.flags & F_FACE) !== 0 && namespace === null && (localName === "form" || localName === "disabled")) faceStateMaybeChanged(this._impl);
+    if ((this[$impl].flags & F_FACE) !== 0 && namespace === null && (localName === "form" || localName === "disabled")) faceStateMaybeChanged(this[$impl]);
   }
 
   // --- ElementCSSInlineStyle ------------------------------------------------------------
 
   get style(): CSSStyleDeclaration {
-    return (this._style ??= new CSSStyleDeclaration(this));
+    return (this[$style] ??= new CSSStyleDeclaration(this));
   }
 
   set style(value: string) {
@@ -113,7 +114,7 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-translate */
   get translate(): boolean {
-    for (let n: NodeImpl | null = this._impl; n !== null && n.type === 1; n = n.parent) {
+    for (let n: NodeImpl | null = this[$impl]; n !== null && n.type === 1; n = n.parent) {
       const v = contentAttr(n, "translate");
       if (v === null) continue;
       const k = v.toLowerCase();
@@ -124,20 +125,20 @@ export class HTMLElement extends Element {
   }
 
   set translate(value: boolean) {
-    setAttribute(this._impl, "translate", value ? "yes" : "no");
+    setAttribute(this[$impl], "translate", value ? "yes" : "no");
   }
 
   /** https://html.spec.whatwg.org/#dom-hidden */
   get hidden(): boolean | string {
-    const v = contentAttr(this._impl, "hidden");
+    const v = contentAttr(this[$impl], "hidden");
     if (v === null) return false;
     return v.toLowerCase() === "until-found" ? "until-found" : true;
   }
 
   set hidden(value: boolean | string | number | null) {
-    if (typeof value === "string" && value.toLowerCase() === "until-found") setAttribute(this._impl, "hidden", "until-found");
-    else if (value === false || value === "" || value === null || value === undefined || value === 0 || Number.isNaN(value)) removeAttribute(this._impl, "hidden");
-    else setAttribute(this._impl, "hidden", "");
+    if (typeof value === "string" && value.toLowerCase() === "until-found") setAttribute(this[$impl], "hidden", "until-found");
+    else if (value === false || value === "" || value === null || value === undefined || value === 0 || Number.isNaN(value)) removeAttribute(this[$impl], "hidden");
+    else setAttribute(this[$impl], "hidden", "");
   }
 
   /** https://html.spec.whatwg.org/#dom-accesskeylabel — no key mapping here. */
@@ -147,23 +148,23 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-draggable */
   get draggable(): boolean {
-    const v = contentAttr(this._impl, "draggable");
+    const v = contentAttr(this[$impl], "draggable");
     if (v !== null) {
       const k = v.toLowerCase();
       if (k === "true") return true;
       if (k === "false") return false;
     }
-    const impl = this._impl;
+    const impl = this[$impl];
     return impl.tag === T.img || (impl.tag === T.a && contentAttr(impl, "href") !== null);
   }
 
   set draggable(value: boolean) {
-    setAttribute(this._impl, "draggable", value ? "true" : "false");
+    setAttribute(this[$impl], "draggable", value ? "true" : "false");
   }
 
   /** https://html.spec.whatwg.org/#dom-spellcheck */
   get spellcheck(): boolean {
-    for (let n: NodeImpl | null = this._impl; n !== null && n.type === 1; n = n.parent) {
+    for (let n: NodeImpl | null = this[$impl]; n !== null && n.type === 1; n = n.parent) {
       const v = contentAttr(n, "spellcheck");
       if (v === null) continue;
       const k = v.toLowerCase();
@@ -174,24 +175,24 @@ export class HTMLElement extends Element {
   }
 
   set spellcheck(value: boolean) {
-    setAttribute(this._impl, "spellcheck", value ? "true" : "false");
+    setAttribute(this[$impl], "spellcheck", value ? "true" : "false");
   }
 
   /** https://html.spec.whatwg.org/#dom-autocorrect */
   get autocorrect(): boolean {
-    const v = contentAttr(this._impl, "autocorrect");
+    const v = contentAttr(this[$impl], "autocorrect");
     return v === null || v.toLowerCase() !== "off";
   }
 
   set autocorrect(value: boolean) {
-    setAttribute(this._impl, "autocorrect", value ? "on" : "off");
+    setAttribute(this[$impl], "autocorrect", value ? "on" : "off");
   }
 
   // --- editing ---------------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#dom-contenteditable */
   get contentEditable(): string {
-    const v = contentAttr(this._impl, "contenteditable");
+    const v = contentAttr(this[$impl], "contenteditable");
     if (v === null) return "inherit";
     const k = v.toLowerCase();
     if (k === "" || k === "true") return "true";
@@ -202,31 +203,31 @@ export class HTMLElement extends Element {
 
   set contentEditable(value: string) {
     const k = String(value).toLowerCase();
-    if (k === "inherit") removeAttribute(this._impl, "contenteditable");
-    else if (k === "true" || k === "false" || k === "plaintext-only") setAttribute(this._impl, "contenteditable", k);
+    if (k === "inherit") removeAttribute(this[$impl], "contenteditable");
+    else if (k === "true" || k === "false" || k === "plaintext-only") setAttribute(this[$impl], "contenteditable", k);
     else throw new DOMException(`Failed to set the 'contentEditable' property on 'HTMLElement': The value provided ('${value}') is not one of 'true', 'false', 'plaintext-only', or 'inherit'.`, "SyntaxError");
   }
 
   /** https://html.spec.whatwg.org/#dom-iscontenteditable */
   get isContentEditable(): boolean {
-    return (this._impl.flags & F_CONNECTED) !== 0 && isEditable(this._impl);
+    return (this[$impl].flags & F_CONNECTED) !== 0 && isEditable(this[$impl]);
   }
 
   // --- innerText / outerText -------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#dom-innertext */
   get innerText(): string {
-    return getInnerText(this._impl);
+    return getInnerText(this[$impl]);
   }
 
   set innerText(value: string) {
     const v = value === null ? "" : String(value);
-    this._replaceAll(v === "" ? null : renderedTextFragment(v, this._impl));
+    this._replaceAll(v === "" ? null : renderedTextFragment(v, this[$impl]));
   }
 
   /** https://html.spec.whatwg.org/#dom-outertext */
   get outerText(): string {
-    return getInnerText(this._impl);
+    return getInnerText(this[$impl]);
   }
 
   set outerText(value: string) {
@@ -235,8 +236,8 @@ export class HTMLElement extends Element {
     const prev = this.previousSibling;
     const next = this.nextSibling;
     const v = value === null ? "" : String(value);
-    const fragment = renderedTextFragment(v, this._impl);
-    if (!fragment.hasChildNodes()) fragment.appendChild(this._impl.doc.createTextNode(""));
+    const fragment = renderedTextFragment(v, this[$impl]);
+    if (!fragment.hasChildNodes()) fragment.appendChild(this[$impl].doc.createTextNode(""));
     parent.replaceChild(fragment, this);
     // Merge adjacent text nodes at the edges (https://html.spec.whatwg.org/#merge-with-the-next-text-node).
     if (next !== null && next.nodeType === 3) mergeWithPrevious(next);
@@ -247,7 +248,7 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-click */
   click(): void {
-    if (isActuallyDisabled(this._impl)) return;
+    if (isActuallyDisabled(this[$impl])) return;
     if (clickInProgress.has(this)) return;
     clickInProgress.add(this);
     try {
@@ -261,13 +262,13 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-showpopover */
   showPopover(options?: { source?: HTMLElement }): void {
-    showPopover(this._impl, true, options?.source?._impl ?? null);
-    this._impl.flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
+    showPopover(this[$impl], true, options?.source?.[$impl] ?? null);
+    this[$impl].flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
   }
 
   /** https://html.spec.whatwg.org/#dom-hidepopover */
   hidePopover(): void {
-    hidePopover(this._impl, true, true, true, null);
+    hidePopover(this[$impl], true, true, true, null);
   }
 
   /** https://html.spec.whatwg.org/#dom-togglepopover */
@@ -279,11 +280,11 @@ export class HTMLElement extends Element {
       force = options.force;
       source = options.source ?? null;
     }
-    const impl = this._impl;
+    const impl = this[$impl];
     const showingNow = isPopoverShowing(impl);
     if (showingNow && force !== true) hidePopover(impl, true, true, true, null);
     else if (!showingNow && force !== false) {
-      showPopover(impl, true, source?._impl ?? null);
+      showPopover(impl, true, source?.[$impl] ?? null);
       impl.flags |= F_CONNECT_HOOK | F_ATTR_HOOK;
     } else {
       // Validity is still checked (throws NotSupportedError without a popover attribute).
@@ -353,60 +354,60 @@ const attachedInternals = new WeakMap<Element, ElementInternals>();
  * root, and form association (delegated to html/forms/face.ts).
  */
 export class ElementInternals {
-  _target: HTMLElement;
-  _states: Set<string> | null;
-  _value: unknown;
+  [$target]: HTMLElement;
+  [$states]: Set<string> | null;
+  [$value]: unknown;
 
   constructor(target: HTMLElement) {
     if (!(target instanceof HTMLElement) || attachedInternals.has(target)) throw new TypeError("Illegal constructor");
-    this._target = target;
-    this._states = null;
-    this._value = null;
+    this[$target] = target;
+    this[$states] = null;
+    this[$value] = null;
   }
 
   get shadowRoot(): ShadowRoot | null {
-    return (this._target as unknown as { _shadowRoot: ShadowRoot | null })._shadowRoot;
+    return (this[$target] as unknown as { [$shadowRoot]: ShadowRoot | null })[$shadowRoot];
   }
 
   get states(): Set<string> {
-    return (this._states ??= new CustomStateSet());
+    return (this[$states] ??= new CustomStateSet());
   }
 
   get form(): Element | null {
-    return internalsForm(this._target._impl);
+    return internalsForm(this[$target][$impl]);
   }
 
   get labels(): unknown {
-    return internalsLabels(this._target._impl);
+    return internalsLabels(this[$target][$impl]);
   }
 
   get willValidate(): boolean {
-    return internalsWillValidate(this._target._impl);
+    return internalsWillValidate(this[$target][$impl]);
   }
 
   get validity(): ValidityState {
-    return internalsValidity(this._target._impl);
+    return internalsValidity(this[$target][$impl]);
   }
 
   get validationMessage(): string {
-    return internalsValidationMessage(this._target._impl);
+    return internalsValidationMessage(this[$target][$impl]);
   }
 
   setFormValue(value: unknown, state?: unknown): void {
-    internalsSetFormValue(this._target._impl, value, state);
-    this._value = value;
+    internalsSetFormValue(this[$target][$impl], value, state);
+    this[$value] = value;
   }
 
   setValidity(flags?: Record<string, unknown>, message?: string, anchor?: Element): void {
-    internalsSetValidity(this._target._impl, flags, message, anchor);
+    internalsSetValidity(this[$target][$impl], flags, message, anchor);
   }
 
   checkValidity(): boolean {
-    return internalsCheckValidity(this._target._impl);
+    return internalsCheckValidity(this[$target][$impl]);
   }
 
   reportValidity(): boolean {
-    return internalsCheckValidity(this._target._impl, "reportValidity");
+    return internalsCheckValidity(this[$target][$impl], "reportValidity");
   }
 }
 
@@ -485,12 +486,12 @@ export function installHTMLOrSVGElement(C: ElementCtor): void {
     "nonce",
     function () {
       const slot = (this as unknown as Record<symbol, [string, string | null] | undefined>)[NONCE];
-      const current = contentAttr(this._impl, "nonce");
+      const current = contentAttr(this[$impl], "nonce");
       if (slot !== undefined && slot[1] === current) return slot[0];
       return current ?? "";
     },
     function (v) {
-      Object.defineProperty(this, NONCE, { value: [String(v), contentAttr(this._impl, "nonce")], writable: true, configurable: true });
+      Object.defineProperty(this, NONCE, { value: [String(v), contentAttr(this[$impl], "nonce")], writable: true, configurable: true });
     },
   );
   bool(C, "autofocus");
@@ -498,17 +499,17 @@ export function installHTMLOrSVGElement(C: ElementCtor): void {
     C,
     "tabIndex",
     function () {
-      const v = tabIndexValue(this._impl);
-      return Number.isNaN(v) ? defaultTabIndex(this._impl) : v;
+      const v = tabIndexValue(this[$impl]);
+      return Number.isNaN(v) ? defaultTabIndex(this[$impl]) : v;
     },
     function (v) {
-      setAttribute(this._impl, "tabindex", String(Number(v) | 0));
+      setAttribute(this[$impl], "tabindex", String(Number(v) | 0));
     },
   );
   Object.defineProperty(C.prototype, "focus", {
     /** https://html.spec.whatwg.org/#dom-focus */
     value: function focus(this: Element, options?: { preventScroll?: boolean; focusVisible?: boolean }): void {
-      focusElement(this._impl, options);
+      focusElement(this[$impl], options);
     },
     writable: true,
     configurable: true,
@@ -517,7 +518,7 @@ export function installHTMLOrSVGElement(C: ElementCtor): void {
   Object.defineProperty(C.prototype, "blur", {
     /** https://html.spec.whatwg.org/#dom-blur */
     value: function blur(this: Element): void {
-      blurElement(this._impl);
+      blurElement(this[$impl]);
     },
     writable: true,
     configurable: true,
@@ -535,7 +536,7 @@ installHTMLOrSVGElement(HTMLElement);
 for (const C of [DocumentClass, ShadowRoot]) {
   if (!Object.hasOwn(C.prototype, "activeElement")) {
     defineAccessor(C, "activeElement", function () {
-      return activeElement(this._impl);
+      return activeElement(this[$impl]);
     });
   }
 }

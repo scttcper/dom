@@ -2,6 +2,7 @@
 // https://github.com/testing-library/dom-testing-library/blob/main/src/helpers.ts
 
 import type { NodeImpl } from "@rtd/dom/internal";
+import { $impl } from "@rtd/dom/internal";
 
 // Constant node.nodeType for text nodes, see:
 // https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType#Node_type_constants
@@ -104,7 +105,7 @@ function getTypeName(object: unknown): string {
  * @rtd/dom internals directly; `checkContainerType` must have run first.
  */
 export function implOf(node: any): NodeImpl {
-  const impl = node._impl;
+  const impl = node[$impl];
   if (impl === undefined) {
     throw new TypeError("@rtd/testing-library requires nodes created by @rtd/dom.");
   }

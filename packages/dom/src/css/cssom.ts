@@ -20,45 +20,46 @@ import { containsNesting, resolveNested } from "./selector-info.ts";
 import { serializeString, serializeUrl, splitComponents, TK_FUNCTION, TK_IDENT, TK_STRING, TK_URL, COMP_SPACE } from "./values.ts";
 import { evaluateSupportsCondition } from "./supports.ts";
 import { currentWindowOrNull } from "../window/current.ts";
+import { $block, $compiled, $compiledFor, $condition, $constructed, $defaultNamespace, $disabled, $disallowModification, $doc, $href, $impl, $indexed, $keyText, $layerName, $list, $matches, $media, $name, $names, $namespaces, $owner, $ownerNode, $ownerRule, $parent, $prefix, $prelude, $queries, $rules, $selector, $sheet, $sheets, $style, $styleVersion, $supportsText, $title, $uri, $version } from "../keys.ts";
 
 // --- lists -------------------------------------------------------------------------------------
 
 /** https://drafts.csswg.org/cssom/#the-cssrulelist-interface — live view over a rule array. */
 export class CSSRuleList {
-  _rules: CSSRule[];
-  _indexed: number;
+  [$rules]: CSSRule[];
+  [$indexed]: number;
 
   constructor(rules: CSSRule[]) {
-    this._rules = rules;
-    this._indexed = 0;
+    this[$rules] = rules;
+    this[$indexed] = 0;
     this._sync();
   }
 
   /** @internal Swap the backing array (replaceSync). */
   _setRules(rules: CSSRule[]): void {
-    this._rules = rules;
+    this[$rules] = rules;
     this._sync();
   }
 
   /** @internal Re-sync own indexed properties after the backing array changed. */
   _sync(): void {
     const self = this as unknown as Record<number, CSSRule>;
-    const rules = this._rules;
+    const rules = this[$rules];
     for (let i = 0; i < rules.length; i++) self[i] = rules[i];
-    for (let i = rules.length; i < this._indexed; i++) delete self[i];
-    this._indexed = rules.length;
+    for (let i = rules.length; i < this[$indexed]; i++) delete self[i];
+    this[$indexed] = rules.length;
   }
 
   get length(): number {
-    return this._rules.length;
+    return this[$rules].length;
   }
 
   item(index: number): CSSRule | null {
-    return this._rules[index >>> 0] ?? null;
+    return this[$rules][index >>> 0] ?? null;
   }
 
   *[Symbol.iterator](): IterableIterator<CSSRule> {
-    yield* this._rules;
+    yield* this[$rules];
   }
 
   get [Symbol.toStringTag](): string {
@@ -68,63 +69,63 @@ export class CSSRuleList {
 
 /** https://drafts.csswg.org/cssom/#the-medialist-interface */
 export class MediaList {
-  _queries: MediaQuery[];
-  _owner: { _changed(): void } | null;
-  _indexed: number;
+  [$queries]: MediaQuery[];
+  [$owner]: { _changed(): void } | null;
+  [$indexed]: number;
 
   constructor(text: string, owner: { _changed(): void } | null) {
-    this._queries = text === "" ? [] : parseMediaQueryList(text);
-    this._owner = owner;
-    this._indexed = 0;
+    this[$queries] = text === "" ? [] : parseMediaQueryList(text);
+    this[$owner] = owner;
+    this[$indexed] = 0;
     this._sync();
   }
 
   _sync(): void {
     const self = this as unknown as Record<number, string>;
-    const q = this._queries;
+    const q = this[$queries];
     for (let i = 0; i < q.length; i++) self[i] = q[i].text;
-    for (let i = q.length; i < this._indexed; i++) delete self[i];
-    this._indexed = q.length;
+    for (let i = q.length; i < this[$indexed]; i++) delete self[i];
+    this[$indexed] = q.length;
   }
 
   get mediaText(): string {
-    return serializeMediaQueryList(this._queries);
+    return serializeMediaQueryList(this[$queries]);
   }
 
   set mediaText(text: string) {
     const t = text === null ? "" : String(text);
-    this._queries = t === "" ? [] : parseMediaQueryList(t).slice();
+    this[$queries] = t === "" ? [] : parseMediaQueryList(t).slice();
     this._sync();
-    this._owner?._changed();
+    this[$owner]?._changed();
   }
 
   get length(): number {
-    return this._queries.length;
+    return this[$queries].length;
   }
 
   item(index: number): string | null {
-    return this._queries[index >>> 0]?.text ?? null;
+    return this[$queries][index >>> 0]?.text ?? null;
   }
 
   /** https://drafts.csswg.org/cssom/#dom-medialist-appendmedium */
   appendMedium(medium: string): void {
     const q = parseMediaQueryList(String(medium));
     if (q.length !== 1) return;
-    for (const existing of this._queries) if (existing.text === q[0].text) return;
-    this._queries = [...this._queries, q[0]];
+    for (const existing of this[$queries]) if (existing.text === q[0].text) return;
+    this[$queries] = [...this[$queries], q[0]];
     this._sync();
-    this._owner?._changed();
+    this[$owner]?._changed();
   }
 
   /** https://drafts.csswg.org/cssom/#dom-medialist-deletemedium */
   deleteMedium(medium: string): void {
     const q = parseMediaQueryList(String(medium));
     if (q.length !== 1) return;
-    const before = this._queries.length;
-    this._queries = this._queries.filter((x) => x.text !== q[0].text);
-    if (this._queries.length === before) throw new DOMException("Failed to execute 'deleteMedium' on 'MediaList': Failed to delete the medium.", "NotFoundError");
+    const before = this[$queries].length;
+    this[$queries] = this[$queries].filter((x) => x.text !== q[0].text);
+    if (this[$queries].length === before) throw new DOMException("Failed to execute 'deleteMedium' on 'MediaList': Failed to delete the medium.", "NotFoundError");
     this._sync();
-    this._owner?._changed();
+    this[$owner]?._changed();
   }
 
   toString(): string {
@@ -132,7 +133,7 @@ export class MediaList {
   }
 
   *[Symbol.iterator](): IterableIterator<string> {
-    for (const q of this._queries) yield q.text;
+    for (const q of this[$queries]) yield q.text;
   }
 
   get [Symbol.toStringTag](): string {
@@ -142,33 +143,33 @@ export class MediaList {
 
 /** https://drafts.csswg.org/cssom/#the-stylesheetlist-interface — kept in sync by stylesheets.ts. */
 export class StyleSheetList {
-  _sheets: CSSStyleSheet[];
-  _indexed: number;
+  [$sheets]: CSSStyleSheet[];
+  [$indexed]: number;
 
   constructor() {
-    this._sheets = [];
-    this._indexed = 0;
+    this[$sheets] = [];
+    this[$indexed] = 0;
   }
 
   /** @internal */
   _set(sheets: CSSStyleSheet[]): void {
-    this._sheets = sheets;
+    this[$sheets] = sheets;
     const self = this as unknown as Record<number, CSSStyleSheet>;
     for (let i = 0; i < sheets.length; i++) self[i] = sheets[i];
-    for (let i = sheets.length; i < this._indexed; i++) delete self[i];
-    this._indexed = sheets.length;
+    for (let i = sheets.length; i < this[$indexed]; i++) delete self[i];
+    this[$indexed] = sheets.length;
   }
 
   get length(): number {
-    return this._sheets.length;
+    return this[$sheets].length;
   }
 
   item(index: number): CSSStyleSheet | null {
-    return this._sheets[index >>> 0] ?? null;
+    return this[$sheets][index >>> 0] ?? null;
   }
 
   *[Symbol.iterator](): IterableIterator<CSSStyleSheet> {
-    yield* this._sheets;
+    yield* this[$sheets];
   }
 
   get [Symbol.toStringTag](): string {
@@ -180,18 +181,18 @@ export class StyleSheetList {
 
 /** https://drafts.csswg.org/cssom/#the-stylesheet-interface */
 export class StyleSheet {
-  _ownerNode: Element | null;
-  _media: MediaList;
-  _disabled: boolean;
-  _title: string | null;
-  _href: string | null;
+  [$ownerNode]: Element | null;
+  [$media]: MediaList;
+  [$disabled]: boolean;
+  [$title]: string | null;
+  [$href]: string | null;
 
   constructor(ownerNode: Element | null, media: string, title: string | null, href: string | null) {
-    this._ownerNode = ownerNode;
-    this._media = new MediaList(media, this as unknown as { _changed(): void });
-    this._disabled = false;
-    this._title = title;
-    this._href = href;
+    this[$ownerNode] = ownerNode;
+    this[$media] = new MediaList(media, this as unknown as { _changed(): void });
+    this[$disabled] = false;
+    this[$title] = title;
+    this[$href] = href;
   }
 
   _changed(): void {}
@@ -201,11 +202,11 @@ export class StyleSheet {
   }
 
   get href(): string | null {
-    return this._href;
+    return this[$href];
   }
 
   get ownerNode(): Element | null {
-    return this._ownerNode;
+    return this[$ownerNode];
   }
 
   get parentStyleSheet(): CSSStyleSheet | null {
@@ -213,25 +214,25 @@ export class StyleSheet {
   }
 
   get title(): string | null {
-    return this._title;
+    return this[$title];
   }
 
   get media(): MediaList {
-    return this._media;
+    return this[$media];
   }
 
   set media(text: string) {
-    this._media.mediaText = String(text);
+    this[$media].mediaText = String(text);
   }
 
   get disabled(): boolean {
-    return this._disabled;
+    return this[$disabled];
   }
 
   set disabled(value: boolean) {
     const v = !!value;
-    if (v === this._disabled) return;
-    this._disabled = v;
+    if (v === this[$disabled]) return;
+    this[$disabled] = v;
     this._changed();
   }
 }
@@ -248,97 +249,97 @@ function syntaxError(method: string, iface: string, rule: string): DOMException 
 
 /** https://drafts.csswg.org/cssom/#the-cssstylesheet-interface */
 export class CSSStyleSheet extends StyleSheet {
-  _rules: CSSRule[];
-  _list: CSSRuleList | null;
+  [$rules]: CSSRule[];
+  [$list]: CSSRuleList | null;
   /** Document whose style version this sheet bumps (owner node's document, or the constructor document). */
-  _doc: Document | null;
+  [$doc]: Document | null;
   /** https://drafts.csswg.org/cssom/#concept-css-style-sheet-constructed-flag */
-  _constructed: boolean;
+  [$constructed]: boolean;
   /** https://drafts.csswg.org/cssom/#concept-css-style-sheet-disallow-modification-flag */
-  _disallowModification: boolean;
-  _ownerRule: CSSImportRule | null;
+  [$disallowModification]: boolean;
+  [$ownerRule]: CSSImportRule | null;
   /** @namespace declarations (prefix → URI), for selector compilation. */
-  _namespaces: Map<string, string | null> | null;
-  _defaultNamespace: string | null | undefined;
+  [$namespaces]: Map<string, string | null> | null;
+  [$defaultNamespace]: string | null | undefined;
   /** Bumped on every change (rule index cache key). */
-  _version: number;
+  [$version]: number;
 
   constructor(options?: CSSStyleSheetInit) {
     const media = options?.media;
     super(null, media === undefined ? "" : typeof media === "string" ? media : media.mediaText, null, null);
-    this._rules = [];
-    this._list = null;
-    this._doc = null;
-    this._constructed = true;
-    this._disallowModification = false;
-    this._ownerRule = null;
-    this._namespaces = null;
-    this._defaultNamespace = undefined;
-    this._version = 0;
-    if (options?.disabled) this._disabled = true;
-    this._doc = (currentWindowOrNull()?.document as Document | undefined) ?? null;
-    if (options?.baseURL !== undefined) this._href = null;
+    this[$rules] = [];
+    this[$list] = null;
+    this[$doc] = null;
+    this[$constructed] = true;
+    this[$disallowModification] = false;
+    this[$ownerRule] = null;
+    this[$namespaces] = null;
+    this[$defaultNamespace] = undefined;
+    this[$version] = 0;
+    if (options?.disabled) this[$disabled] = true;
+    this[$doc] = (currentWindowOrNull()?.document as Document | undefined) ?? null;
+    if (options?.baseURL !== undefined) this[$href] = null;
   }
 
   /** @internal Create a non-constructed sheet for a <style>/<link> owner. */
   static _forOwner(owner: Element, text: string, media: string, href: string | null): CSSStyleSheet {
     const sheet = new CSSStyleSheet();
-    sheet._constructed = false;
-    sheet._ownerNode = owner;
-    sheet._doc = owner._impl.doc;
-    sheet._href = href;
-    sheet._title = owner.getAttribute("title");
-    if (media !== "") sheet._media.mediaText = media;
+    sheet[$constructed] = false;
+    sheet[$ownerNode] = owner;
+    sheet[$doc] = owner[$impl].doc;
+    sheet[$href] = href;
+    sheet[$title] = owner.getAttribute("title");
+    if (media !== "") sheet[$media].mediaText = media;
     sheet._setText(text);
     return sheet;
   }
 
   override _changed(): void {
-    this._version++;
-    const doc = this._doc;
-    if (doc !== null) doc._styleVersion++;
+    this[$version]++;
+    const doc = this[$doc];
+    if (doc !== null) doc[$styleVersion]++;
   }
 
   /** Replaces all rules from stylesheet text (no @import fetching). */
   _setText(text: string): void {
-    this._rules = [];
-    this._namespaces = null;
-    this._defaultNamespace = undefined;
+    this[$rules] = [];
+    this[$namespaces] = null;
+    this[$defaultNamespace] = undefined;
     const raws = text === "" ? [] : parseStylesheet(text);
     let seenOther = false;
     for (const raw of raws) {
       const name = raw.kind === RULE_AT ? raw.name.toLowerCase() : "";
       if (name === "import" || name === "namespace") {
         if (seenOther && name === "import") continue;
-        if (seenOther && this._rules.some((r) => !(r instanceof CSSImportRule) && !(r instanceof CSSNamespaceRule) && !(r instanceof CSSLayerStatementRule))) continue;
+        if (seenOther && this[$rules].some((r) => !(r instanceof CSSImportRule) && !(r instanceof CSSNamespaceRule) && !(r instanceof CSSLayerStatementRule))) continue;
       }
       const rule = createRule(raw, null, this, false, false);
       if (rule === null) continue;
       if (!(rule instanceof CSSImportRule) && !(rule instanceof CSSLayerStatementRule) && !(rule instanceof CSSNamespaceRule)) seenOther = true;
-      rule._sheet = this;
-      this._rules.push(rule);
+      rule[$sheet] = this;
+      this[$rules].push(rule);
       if (rule instanceof CSSNamespaceRule) this._registerNamespace(rule);
     }
-    this._list?._setRules(this._rules);
+    this[$list]?._setRules(this[$rules]);
     this._changed();
   }
 
   _registerNamespace(rule: CSSNamespaceRule): void {
-    if (rule._prefix === "") this._defaultNamespace = rule._uri === "" ? null : rule._uri;
-    else (this._namespaces ??= new Map()).set(rule._prefix, rule._uri === "" ? null : rule._uri);
+    if (rule[$prefix] === "") this[$defaultNamespace] = rule[$uri] === "" ? null : rule[$uri];
+    else (this[$namespaces] ??= new Map()).set(rule[$prefix], rule[$uri] === "" ? null : rule[$uri]);
   }
 
   override get parentStyleSheet(): CSSStyleSheet | null {
-    return this._ownerRule === null ? null : this._ownerRule.parentStyleSheet;
+    return this[$ownerRule] === null ? null : this[$ownerRule].parentStyleSheet;
   }
 
   get ownerRule(): CSSImportRule | null {
-    return this._ownerRule;
+    return this[$ownerRule];
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules */
   get cssRules(): CSSRuleList {
-    return (this._list ??= new CSSRuleList(this._rules));
+    return (this[$list] ??= new CSSRuleList(this[$rules]));
   }
 
   get rules(): CSSRuleList {
@@ -348,43 +349,43 @@ export class CSSStyleSheet extends StyleSheet {
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule */
   insertRule(rule: string, index: number = 0): number {
     if (arguments.length === 0) throw new TypeError("Failed to execute 'insertRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.");
-    if (this._disallowModification) throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.", "NotAllowedError");
+    if (this[$disallowModification]) throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.", "NotAllowedError");
     const text = String(rule);
     const i = index >>> 0;
-    if (i > this._rules.length) {
-      throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${this._rules.length}).`, "IndexSizeError");
+    if (i > this[$rules].length) {
+      throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${this[$rules].length}).`, "IndexSizeError");
     }
     const raw = parseRule(text);
     if (raw === null) throw syntaxError("insertRule", "CSSStyleSheet", text);
     const name = raw.kind === RULE_AT ? raw.name.toLowerCase() : "";
-    if (name === "import" && this._constructed) throw syntaxError("insertRule", "CSSStyleSheet", text);
+    if (name === "import" && this[$constructed]) throw syntaxError("insertRule", "CSSStyleSheet", text);
     const created = createRule(raw, null, this, false, false);
     if (created === null) throw syntaxError("insertRule", "CSSStyleSheet", text);
     // https://drafts.csswg.org/cssom/#insert-a-css-rule step 6 constraints.
     if (created instanceof CSSImportRule) {
       for (let k = 0; k < i; k++) {
-        const r = this._rules[k];
+        const r = this[$rules][k];
         if (!(r instanceof CSSImportRule) && !(r instanceof CSSLayerStatementRule)) {
           throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': @import rules must precede all rules except @charset and @layer statements.", "HierarchyRequestError");
         }
       }
     } else if (!(created instanceof CSSNamespaceRule) && !(created instanceof CSSLayerStatementRule)) {
-      for (let k = i; k < this._rules.length; k++) {
-        if (this._rules[k] instanceof CSSImportRule || this._rules[k] instanceof CSSNamespaceRule) {
+      for (let k = i; k < this[$rules].length; k++) {
+        if (this[$rules][k] instanceof CSSImportRule || this[$rules][k] instanceof CSSNamespaceRule) {
           throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Rules cannot be inserted before @import or @namespace rules.", "HierarchyRequestError");
         }
       }
     } else if (created instanceof CSSNamespaceRule) {
-      for (const r of this._rules) {
+      for (const r of this[$rules]) {
         if (!(r instanceof CSSImportRule) && !(r instanceof CSSNamespaceRule) && !(r instanceof CSSLayerStatementRule)) {
           throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Failed to insert a @namespace rule after other rules.", "InvalidStateError");
         }
       }
       this._registerNamespace(created);
     }
-    created._sheet = this;
-    this._rules.splice(i, 0, created);
-    this._list?._sync();
+    created[$sheet] = this;
+    this[$rules].splice(i, 0, created);
+    this[$list]?._sync();
     this._changed();
     return i;
   }
@@ -392,14 +393,14 @@ export class CSSStyleSheet extends StyleSheet {
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule */
   deleteRule(index: number): void {
     if (arguments.length === 0) throw new TypeError("Failed to execute 'deleteRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.");
-    if (this._disallowModification) throw new DOMException("Failed to execute 'deleteRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.", "NotAllowedError");
+    if (this[$disallowModification]) throw new DOMException("Failed to execute 'deleteRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.", "NotAllowedError");
     const i = index >>> 0;
-    if (i >= this._rules.length) {
-      throw new DOMException(`Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${Math.max(0, this._rules.length - 1)}).`, "IndexSizeError");
+    if (i >= this[$rules].length) {
+      throw new DOMException(`Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${Math.max(0, this[$rules].length - 1)}).`, "IndexSizeError");
     }
-    const [removed] = this._rules.splice(i, 1);
-    removed._sheet = null;
-    this._list?._sync();
+    const [removed] = this[$rules].splice(i, 1);
+    removed[$sheet] = null;
+    this[$list]?._sync();
     this._changed();
   }
 
@@ -407,7 +408,7 @@ export class CSSStyleSheet extends StyleSheet {
   addRule(selector: string = "undefined", style: string = "undefined", index?: number): number {
     let rule = String(selector) + " { " + String(style) + " }";
     if (String(style) === "") rule = String(selector) + " { }";
-    this.insertRule(rule, index === undefined ? this._rules.length : index);
+    this.insertRule(rule, index === undefined ? this[$rules].length : index);
     return -1;
   }
 
@@ -418,21 +419,21 @@ export class CSSStyleSheet extends StyleSheet {
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace */
   replace(text: string): Promise<CSSStyleSheet> {
-    if (!this._constructed || this._disallowModification) {
+    if (!this[$constructed] || this[$disallowModification]) {
       return Promise.reject(new DOMException("Failed to execute 'replace' on 'CSSStyleSheet': Can't call replace on non-constructed CSSStyleSheets.", "NotAllowedError"));
     }
-    this._disallowModification = true;
+    this[$disallowModification] = true;
     const value = String(text);
     return Promise.resolve().then(() => {
       this._setText(stripImports(value));
-      this._disallowModification = false;
+      this[$disallowModification] = false;
       return this;
     });
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync */
   replaceSync(text: string): void {
-    if (!this._constructed || this._disallowModification) {
+    if (!this[$constructed] || this[$disallowModification]) {
       throw new DOMException("Failed to execute 'replaceSync' on 'CSSStyleSheet': Can't call replaceSync on non-constructed CSSStyleSheets.", "NotAllowedError");
     }
     this._setText(stripImports(String(text)));
@@ -455,8 +456,8 @@ function stripImports(text: string): string {
 /** https://drafts.csswg.org/cssom/#the-cssrule-interface */
 export class CSSRule {
   /** Owning sheet for top-level rules (nested rules find it through their parent). */
-  _sheet: CSSStyleSheet | null;
-  _parent: CSSRule | null;
+  [$sheet]: CSSStyleSheet | null;
+  [$parent]: CSSRule | null;
 
   static readonly STYLE_RULE = 1;
   static readonly CHARSET_RULE = 2;
@@ -477,8 +478,8 @@ export class CSSRule {
 
   constructor() {
     if (new.target === CSSRule) throw new TypeError("Illegal constructor");
-    this._sheet = null;
-    this._parent = null;
+    this[$sheet] = null;
+    this[$parent] = null;
   }
 
   get type(): number {
@@ -493,13 +494,13 @@ export class CSSRule {
   set cssText(_value: string) {}
 
   get parentRule(): CSSRule | null {
-    return this._parent;
+    return this[$parent];
   }
 
   get parentStyleSheet(): CSSStyleSheet | null {
     let r: CSSRule = this;
-    while (r._parent !== null) r = r._parent;
-    return r._sheet;
+    while (r[$parent] !== null) r = r[$parent];
+    return r[$sheet];
   }
 
   /** Bumps the owning sheet (and document) style version. */
@@ -533,22 +534,22 @@ function blockText(prefix: string, rules: CSSRule[]): string {
 
 /** https://drafts.csswg.org/cssom/#the-cssgroupingrule-interface */
 export class CSSGroupingRule extends CSSRule {
-  _rules: CSSRule[];
-  _list: CSSRuleList | null;
+  [$rules]: CSSRule[];
+  [$list]: CSSRuleList | null;
 
   constructor() {
     super();
-    this._rules = [];
-    this._list = null;
+    this[$rules] = [];
+    this[$list] = null;
   }
 
   get cssRules(): CSSRuleList {
-    return (this._list ??= new CSSRuleList(this._rules));
+    return (this[$list] ??= new CSSRuleList(this[$rules]));
   }
 
   /** Whether rules inside are nested in a style rule (relative selectors, nested declarations). */
   _nestedContext(): boolean {
-    for (let r: CSSRule | null = this; r !== null; r = r._parent) if (r instanceof CSSStyleRule) return true;
+    for (let r: CSSRule | null = this; r !== null; r = r[$parent]) if (r instanceof CSSStyleRule) return true;
     return false;
   }
 
@@ -557,8 +558,8 @@ export class CSSGroupingRule extends CSSRule {
     if (arguments.length === 0) throw new TypeError(`Failed to execute 'insertRule' on '${this.constructor.name}': 1 argument required, but only 0 present.`);
     const text = String(rule);
     const i = index >>> 0;
-    if (i > this._rules.length) {
-      throw new DOMException(`Failed to execute 'insertRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${this._rules.length}).`, "IndexSizeError");
+    if (i > this[$rules].length) {
+      throw new DOMException(`Failed to execute 'insertRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${this[$rules].length}).`, "IndexSizeError");
     }
     const raw = parseRule(text);
     if (raw === null) throw syntaxError("insertRule", this.constructor.name, text);
@@ -570,8 +571,8 @@ export class CSSGroupingRule extends CSSRule {
       }
       throw syntaxError("insertRule", this.constructor.name, text);
     }
-    this._rules.splice(i, 0, created);
-    this._list?._sync();
+    this[$rules].splice(i, 0, created);
+    this[$list]?._sync();
     this._changed();
     return i;
   }
@@ -580,32 +581,32 @@ export class CSSGroupingRule extends CSSRule {
   deleteRule(index: number): void {
     if (arguments.length === 0) throw new TypeError(`Failed to execute 'deleteRule' on '${this.constructor.name}': 1 argument required, but only 0 present.`);
     const i = index >>> 0;
-    if (i >= this._rules.length) {
-      throw new DOMException(`Failed to execute 'deleteRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${Math.max(0, this._rules.length - 1)}).`, "IndexSizeError");
+    if (i >= this[$rules].length) {
+      throw new DOMException(`Failed to execute 'deleteRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${Math.max(0, this[$rules].length - 1)}).`, "IndexSizeError");
     }
-    const [removed] = this._rules.splice(i, 1);
-    removed._parent = null;
-    this._list?._sync();
+    const [removed] = this[$rules].splice(i, 1);
+    removed[$parent] = null;
+    this[$list]?._sync();
     this._changed();
   }
 }
 
 /** https://drafts.csswg.org/cssom/#the-cssstylerule-interface (+ CSS Nesting: nested cssRules) */
 export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRule {
-  _selector: string;
-  _block: DeclBlock;
-  _style: CSSStyleDeclaration | null;
+  [$selector]: string;
+  [$block]: DeclBlock;
+  [$style]: CSSStyleDeclaration | null;
   /** Compiled (nesting-resolved) selector list, cached until selectorText or an ancestor selector changes. */
-  _compiled: CompiledSelectorList | null;
-  _compiledFor: string;
+  [$compiled]: CompiledSelectorList | null;
+  [$compiledFor]: string;
 
   constructor(selector: string, block: DeclBlock) {
     super();
-    this._selector = selector;
-    this._block = block;
-    this._style = null;
-    this._compiled = null;
-    this._compiledFor = "";
+    this[$selector] = selector;
+    this[$block] = block;
+    this[$style] = null;
+    this[$compiled] = null;
+    this[$compiledFor] = "";
   }
 
   override get type(): number {
@@ -614,25 +615,25 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext */
   get selectorText(): string {
-    if (containsNesting(this._selector)) return this._selector;
-    return serializeSelector(this._selector) ?? this._selector;
+    if (containsNesting(this[$selector])) return this[$selector];
+    return serializeSelector(this[$selector]) ?? this[$selector];
   }
 
   set selectorText(value: string) {
     const text = String(value).trim();
     if (!isValidSelectorFor(text, this._nestedContextForSelf())) return;
-    this._selector = text;
-    this._compiled = null;
+    this[$selector] = text;
+    this[$compiled] = null;
     this._changed();
   }
 
   _nestedContextForSelf(): boolean {
-    for (let r: CSSRule | null = this._parent; r !== null; r = r._parent) if (r instanceof CSSStyleRule) return true;
+    for (let r: CSSRule | null = this[$parent]; r !== null; r = r[$parent]) if (r instanceof CSSStyleRule) return true;
     return false;
   }
 
   get style(): CSSStyleDeclaration {
-    return (this._style ??= new CSSStyleDeclaration(null, this._block, this));
+    return (this[$style] ??= new CSSStyleDeclaration(null, this[$block], this));
   }
 
   set style(text: string) {
@@ -640,11 +641,11 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
   }
 
   override get cssText(): string {
-    const decls = this._block.serialize();
-    if (this._rules.length === 0) return decls === "" ? `${this.selectorText} { }` : `${this.selectorText} { ${decls} }`;
+    const decls = this[$block].serialize();
+    if (this[$rules].length === 0) return decls === "" ? `${this.selectorText} { }` : `${this.selectorText} { ${decls} }`;
     let out = `${this.selectorText} {`;
     if (decls !== "") out += "\n  " + decls;
-    for (const r of this._rules) out += "\n" + indent(r.cssText);
+    for (const r of this[$rules]) out += "\n" + indent(r.cssText);
     return out + "\n}";
   }
 
@@ -653,27 +654,27 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
    * Top-level rules resolve to their own selector list.
    */
   _resolvedSelectors(): string[] {
-    let parent: CSSRule | null = this._parent;
-    while (parent !== null && !(parent instanceof CSSStyleRule)) parent = parent._parent;
+    let parent: CSSRule | null = this[$parent];
+    while (parent !== null && !(parent instanceof CSSStyleRule)) parent = parent[$parent];
     if (parent === null) {
-      if (!containsNesting(this._selector)) return [this._selector];
-      return resolveNested(this._selector, [":scope"]);
+      if (!containsNesting(this[$selector])) return [this[$selector]];
+      return resolveNested(this[$selector], [":scope"]);
     }
-    return resolveNested(this._selector, (parent as CSSStyleRule)._resolvedSelectors());
+    return resolveNested(this[$selector], (parent as CSSStyleRule)._resolvedSelectors());
   }
 
   /** Compiled selector list for matching (null if the engine rejects it). */
   _compile(): CompiledSelectorList | null {
     const resolved = this._resolvedSelectors().join(", ");
-    if (this._compiled !== null && this._compiledFor === resolved) return this._compiled;
+    if (this[$compiled] !== null && this[$compiledFor] === resolved) return this[$compiled];
     const sheet = this.parentStyleSheet;
     const options =
-      sheet !== null && (sheet._namespaces !== null || sheet._defaultNamespace !== undefined)
-        ? { namespaces: sheet._namespaces ?? undefined, defaultNamespace: sheet._defaultNamespace }
+      sheet !== null && (sheet[$namespaces] !== null || sheet[$defaultNamespace] !== undefined)
+        ? { namespaces: sheet[$namespaces] ?? undefined, defaultNamespace: sheet[$defaultNamespace] }
         : undefined;
-    this._compiled = compileSelectorList(resolved, options);
-    this._compiledFor = resolved;
-    return this._compiled;
+    this[$compiled] = compileSelectorList(resolved, options);
+    this[$compiledFor] = resolved;
+    return this[$compiled];
   }
 
   get [Symbol.toStringTag](): string {
@@ -683,13 +684,13 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
 
 /** https://drafts.csswg.org/css-nesting-1/#cssnesteddeclarations — declarations after/inside nested group rules. */
 export class CSSNestedDeclarations extends CSSRule implements DeclarationOwnerRule {
-  _block: DeclBlock;
-  _style: CSSStyleDeclaration | null;
+  [$block]: DeclBlock;
+  [$style]: CSSStyleDeclaration | null;
 
   constructor(block: DeclBlock) {
     super();
-    this._block = block;
-    this._style = null;
+    this[$block] = block;
+    this[$style] = null;
   }
 
   override get type(): number {
@@ -697,11 +698,11 @@ export class CSSNestedDeclarations extends CSSRule implements DeclarationOwnerRu
   }
 
   get style(): CSSStyleDeclaration {
-    return (this._style ??= new CSSStyleDeclaration(null, this._block, this));
+    return (this[$style] ??= new CSSStyleDeclaration(null, this[$block], this));
   }
 
   override get cssText(): string {
-    return this._block.serialize();
+    return this[$block].serialize();
   }
 }
 
@@ -714,11 +715,11 @@ export class CSSConditionRule extends CSSGroupingRule {
 
 /** https://drafts.csswg.org/css-conditional-3/#the-cssmediarule-interface */
 export class CSSMediaRule extends CSSConditionRule {
-  _media: MediaList;
+  [$media]: MediaList;
 
   constructor(media: string) {
     super();
-    this._media = new MediaList(media, this);
+    this[$media] = new MediaList(media, this);
   }
 
   override get type(): number {
@@ -726,31 +727,31 @@ export class CSSMediaRule extends CSSConditionRule {
   }
 
   get media(): MediaList {
-    return this._media;
+    return this[$media];
   }
 
   set media(text: string) {
-    this._media.mediaText = String(text);
+    this[$media].mediaText = String(text);
   }
 
   override get conditionText(): string {
-    return this._media.mediaText;
+    return this[$media].mediaText;
   }
 
   override get cssText(): string {
-    return blockText("@media " + this._media.mediaText, this._rules);
+    return blockText("@media " + this[$media].mediaText, this[$rules]);
   }
 }
 
 /** https://drafts.csswg.org/css-conditional-3/#the-csssupportsrule-interface */
 export class CSSSupportsRule extends CSSConditionRule {
-  _condition: string;
-  _matches: boolean;
+  [$condition]: string;
+  [$matches]: boolean;
 
   constructor(condition: string) {
     super();
-    this._condition = condition;
-    this._matches = evaluateSupportsCondition(condition);
+    this[$condition] = condition;
+    this[$matches] = evaluateSupportsCondition(condition);
   }
 
   override get type(): number {
@@ -758,122 +759,122 @@ export class CSSSupportsRule extends CSSConditionRule {
   }
 
   override get conditionText(): string {
-    return this._condition;
+    return this[$condition];
   }
 
   override get cssText(): string {
-    return blockText("@supports " + this._condition, this._rules);
+    return blockText("@supports " + this[$condition], this[$rules]);
   }
 }
 
 /** https://drafts.csswg.org/css-contain-3/#the-csscontainerrule-interface — stored, never matches (no layout). */
 export class CSSContainerRule extends CSSConditionRule {
-  _condition: string;
+  [$condition]: string;
 
   constructor(condition: string) {
     super();
-    this._condition = condition;
+    this[$condition] = condition;
   }
 
   override get conditionText(): string {
-    return this._condition;
+    return this[$condition];
   }
 
   get containerName(): string {
-    const m = /^([^\s(]+)\s/.exec(this._condition);
+    const m = /^([^\s(]+)\s/.exec(this[$condition]);
     return m !== null && m[1].toLowerCase() !== "not" ? m[1] : "";
   }
 
   get containerQuery(): string {
     const name = this.containerName;
-    return name === "" ? this._condition : this._condition.slice(name.length).trim();
+    return name === "" ? this[$condition] : this[$condition].slice(name.length).trim();
   }
 
   override get cssText(): string {
-    return blockText("@container " + this._condition, this._rules);
+    return blockText("@container " + this[$condition], this[$rules]);
   }
 }
 
 /** https://drafts.csswg.org/css-cascade-5/#the-csslayerblockrule-interface */
 export class CSSLayerBlockRule extends CSSGroupingRule {
-  _name: string;
+  [$name]: string;
 
   constructor(name: string) {
     super();
-    this._name = name;
+    this[$name] = name;
   }
 
   get name(): string {
-    return this._name;
+    return this[$name];
   }
 
   override get cssText(): string {
-    return blockText(this._name === "" ? "@layer" : "@layer " + this._name, this._rules);
+    return blockText(this[$name] === "" ? "@layer" : "@layer " + this[$name], this[$rules]);
   }
 }
 
 /** https://drafts.csswg.org/css-cascade-5/#the-csslayerstatementrule-interface */
 export class CSSLayerStatementRule extends CSSRule {
-  _names: string[];
+  [$names]: string[];
 
   constructor(names: string[]) {
     super();
-    this._names = names;
+    this[$names] = names;
   }
 
   get nameList(): readonly string[] {
-    return Object.freeze(this._names.slice());
+    return Object.freeze(this[$names].slice());
   }
 
   override get cssText(): string {
-    return "@layer " + this._names.join(", ") + ";";
+    return "@layer " + this[$names].join(", ") + ";";
   }
 }
 
 /** https://drafts.csswg.org/css-cascade-6/#the-cssscoperule-interface — stored, applied unscoped is wrong, so not applied. */
 export class CSSScopeRule extends CSSGroupingRule {
-  _prelude: string;
+  [$prelude]: string;
 
   constructor(prelude: string) {
     super();
-    this._prelude = prelude;
+    this[$prelude] = prelude;
   }
 
   get start(): string | null {
-    const m = /^\(([^)]*)\)/.exec(this._prelude);
+    const m = /^\(([^)]*)\)/.exec(this[$prelude]);
     return m === null ? null : m[1].trim();
   }
 
   get end(): string | null {
-    const m = /to\s*\(([^)]*)\)/i.exec(this._prelude);
+    const m = /to\s*\(([^)]*)\)/i.exec(this[$prelude]);
     return m === null ? null : m[1].trim();
   }
 
   override get cssText(): string {
-    return blockText(this._prelude === "" ? "@scope" : "@scope " + this._prelude, this._rules);
+    return blockText(this[$prelude] === "" ? "@scope" : "@scope " + this[$prelude], this[$rules]);
   }
 }
 
 /** https://drafts.csswg.org/css-transitions-2/#the-cssstartingstylerule-interface — stored, not applied. */
 export class CSSStartingStyleRule extends CSSGroupingRule {
   override get cssText(): string {
-    return blockText("@starting-style", this._rules);
+    return blockText("@starting-style", this[$rules]);
   }
 }
 
 /** https://drafts.csswg.org/cssom/#the-cssimportrule-interface — never fetched (styleSheet is null). */
 export class CSSImportRule extends CSSRule {
-  _href: string;
-  _media: MediaList;
-  _layerName: string | null;
-  _supportsText: string | null;
+  [$href]: string;
+  [$media]: MediaList;
+  [$layerName]: string | null;
+  [$supportsText]: string | null;
 
   constructor(href: string, media: string, layerName: string | null, supportsText: string | null) {
     super();
-    this._href = href;
-    this._media = new MediaList(media, this);
-    this._layerName = layerName;
-    this._supportsText = supportsText;
+    this[$href] = href;
+    this[$media] = new MediaList(media, this);
+    this[$layerName] = layerName;
+    this[$supportsText] = supportsText;
   }
 
   override get type(): number {
@@ -881,11 +882,11 @@ export class CSSImportRule extends CSSRule {
   }
 
   get href(): string {
-    return this._href;
+    return this[$href];
   }
 
   get media(): MediaList {
-    return this._media;
+    return this[$media];
   }
 
   get styleSheet(): CSSStyleSheet | null {
@@ -893,18 +894,18 @@ export class CSSImportRule extends CSSRule {
   }
 
   get layerName(): string | null {
-    return this._layerName;
+    return this[$layerName];
   }
 
   get supportsText(): string | null {
-    return this._supportsText;
+    return this[$supportsText];
   }
 
   override get cssText(): string {
-    let out = "@import " + serializeUrl(this._href);
-    if (this._layerName !== null) out += this._layerName === "" ? " layer" : ` layer(${this._layerName})`;
-    if (this._supportsText !== null) out += ` supports(${this._supportsText})`;
-    const media = this._media.mediaText;
+    let out = "@import " + serializeUrl(this[$href]);
+    if (this[$layerName] !== null) out += this[$layerName] === "" ? " layer" : ` layer(${this[$layerName]})`;
+    if (this[$supportsText] !== null) out += ` supports(${this[$supportsText]})`;
+    const media = this[$media].mediaText;
     if (media !== "") out += " " + media;
     return out + ";";
   }
@@ -912,13 +913,13 @@ export class CSSImportRule extends CSSRule {
 
 /** https://drafts.csswg.org/cssom/#the-cssnamespacerule-interface */
 export class CSSNamespaceRule extends CSSRule {
-  _prefix: string;
-  _uri: string;
+  [$prefix]: string;
+  [$uri]: string;
 
   constructor(prefix: string, uri: string) {
     super();
-    this._prefix = prefix;
-    this._uri = uri;
+    this[$prefix] = prefix;
+    this[$uri] = uri;
   }
 
   override get type(): number {
@@ -926,31 +927,31 @@ export class CSSNamespaceRule extends CSSRule {
   }
 
   get namespaceURI(): string {
-    return this._uri;
+    return this[$uri];
   }
 
   get prefix(): string {
-    return this._prefix;
+    return this[$prefix];
   }
 
   override get cssText(): string {
-    return "@namespace " + (this._prefix === "" ? "" : this._prefix + " ") + serializeUrl(this._uri) + ";";
+    return "@namespace " + (this[$prefix] === "" ? "" : this[$prefix] + " ") + serializeUrl(this[$uri]) + ";";
   }
 }
 
 /** Rules holding a declaration block of descriptors. */
 class DescriptorRule extends CSSRule implements DeclarationOwnerRule {
-  _block: DeclBlock;
-  _style: CSSStyleDeclaration | null;
+  [$block]: DeclBlock;
+  [$style]: CSSStyleDeclaration | null;
 
   constructor(block: DeclBlock) {
     super();
-    this._block = block;
-    this._style = null;
+    this[$block] = block;
+    this[$style] = null;
   }
 
   get style(): CSSStyleDeclaration {
-    return (this._style ??= new CSSStyleDeclaration(null, this._block, this));
+    return (this[$style] ??= new CSSStyleDeclaration(null, this[$block], this));
   }
 }
 
@@ -961,18 +962,18 @@ export class CSSFontFaceRule extends DescriptorRule {
   }
 
   override get cssText(): string {
-    const d = this._block.serialize();
+    const d = this[$block].serialize();
     return d === "" ? "@font-face { }" : `@font-face { ${d} }`;
   }
 }
 
 /** https://drafts.csswg.org/cssom/#the-csspagerule-interface */
 export class CSSPageRule extends DescriptorRule {
-  _selector: string;
+  [$selector]: string;
 
   constructor(selector: string, block: DeclBlock) {
     super(block);
-    this._selector = selector;
+    this[$selector] = selector;
   }
 
   override get type(): number {
@@ -980,51 +981,51 @@ export class CSSPageRule extends DescriptorRule {
   }
 
   get selectorText(): string {
-    return this._selector;
+    return this[$selector];
   }
 
   set selectorText(v: string) {
-    this._selector = String(v).trim();
+    this[$selector] = String(v).trim();
   }
 
   override get cssText(): string {
-    const d = this._block.serialize();
-    const sel = this._selector === "" ? "@page" : "@page " + this._selector;
+    const d = this[$block].serialize();
+    const sel = this[$selector] === "" ? "@page" : "@page " + this[$selector];
     return d === "" ? `${sel} { }` : `${sel} { ${d} }`;
   }
 }
 
 /** https://drafts.css-houdini.org/css-properties-values-api/#the-css-property-rule-interface */
 export class CSSPropertyRule extends CSSRule {
-  _name: string;
-  _block: DeclBlock;
+  [$name]: string;
+  [$block]: DeclBlock;
 
   constructor(name: string, block: DeclBlock) {
     super();
-    this._name = name;
-    this._block = block;
+    this[$name] = name;
+    this[$block] = block;
   }
 
   get name(): string {
-    return this._name;
+    return this[$name];
   }
 
   get syntax(): string {
-    return unquote(this._block.getPropertyValue("syntax"));
+    return unquote(this[$block].getPropertyValue("syntax"));
   }
 
   get inherits(): boolean {
-    return this._block.getPropertyValue("inherits").toLowerCase() === "true";
+    return this[$block].getPropertyValue("inherits").toLowerCase() === "true";
   }
 
   get initialValue(): string | null {
-    const i = this._block.indexOf("initial-value");
-    return i === -1 ? null : this._block.values[i];
+    const i = this[$block].indexOf("initial-value");
+    return i === -1 ? null : this[$block].values[i];
   }
 
   override get cssText(): string {
-    const d = this._block.serialize();
-    return d === "" ? `@property ${this._name} { }` : `@property ${this._name} { ${d} }`;
+    const d = this[$block].serialize();
+    return d === "" ? `@property ${this[$name]} { }` : `@property ${this[$name]} { ${d} }`;
   }
 }
 
@@ -1034,11 +1035,11 @@ function unquote(s: string): string {
 
 /** https://drafts.csswg.org/css-animations-1/#interface-csskeyframerule */
 export class CSSKeyframeRule extends DescriptorRule {
-  _keyText: string;
+  [$keyText]: string;
 
   constructor(keyText: string, block: DeclBlock) {
     super(block);
-    this._keyText = keyText;
+    this[$keyText] = keyText;
   }
 
   override get type(): number {
@@ -1046,33 +1047,33 @@ export class CSSKeyframeRule extends DescriptorRule {
   }
 
   get keyText(): string {
-    return this._keyText;
+    return this[$keyText];
   }
 
   set keyText(value: string) {
     const k = normalizeKeyText(String(value));
     if (k === null) throw new DOMException(`Failed to set the 'keyText' property on 'CSSKeyframeRule': The key '${value}' is invalid and cannot be parsed`, "SyntaxError");
-    this._keyText = k;
+    this[$keyText] = k;
     this._changed();
   }
 
   override get cssText(): string {
-    const d = this._block.serialize();
-    return d === "" ? `${this._keyText} { }` : `${this._keyText} { ${d} }`;
+    const d = this[$block].serialize();
+    return d === "" ? `${this[$keyText]} { }` : `${this[$keyText]} { ${d} }`;
   }
 }
 
 /** https://drafts.csswg.org/css-animations-1/#interface-csskeyframesrule */
 export class CSSKeyframesRule extends CSSRule {
-  _name: string;
-  _rules: CSSKeyframeRule[];
-  _list: CSSRuleList | null;
+  [$name]: string;
+  [$rules]: CSSKeyframeRule[];
+  [$list]: CSSRuleList | null;
 
   constructor(name: string) {
     super();
-    this._name = name;
-    this._rules = [];
-    this._list = null;
+    this[$name] = name;
+    this[$rules] = [];
+    this[$list] = null;
   }
 
   override get type(): number {
@@ -1080,20 +1081,20 @@ export class CSSKeyframesRule extends CSSRule {
   }
 
   get name(): string {
-    return this._name;
+    return this[$name];
   }
 
   set name(v: string) {
-    this._name = String(v);
+    this[$name] = String(v);
     this._changed();
   }
 
   get cssRules(): CSSRuleList {
-    return (this._list ??= new CSSRuleList(this._rules));
+    return (this[$list] ??= new CSSRuleList(this[$rules]));
   }
 
   get length(): number {
-    return this._rules.length;
+    return this[$rules].length;
   }
 
   appendRule(rule: string): void {
@@ -1101,34 +1102,34 @@ export class CSSKeyframesRule extends CSSRule {
     if (raw === null || raw.kind !== RULE_QUALIFIED) return;
     const created = createKeyframe(raw);
     if (created === null) return;
-    created._parent = this;
-    this._rules.push(created);
-    this._list?._sync();
+    created[$parent] = this;
+    this[$rules].push(created);
+    this[$list]?._sync();
     this._changed();
   }
 
   deleteRule(select: string): void {
     const i = this._findIndex(String(select));
     if (i === -1) return;
-    this._rules.splice(i, 1);
-    this._list?._sync();
+    this[$rules].splice(i, 1);
+    this[$list]?._sync();
     this._changed();
   }
 
   findRule(select: string): CSSKeyframeRule | null {
     const i = this._findIndex(String(select));
-    return i === -1 ? null : this._rules[i];
+    return i === -1 ? null : this[$rules][i];
   }
 
   _findIndex(select: string): number {
     const k = normalizeKeyText(select);
     if (k === null) return -1;
-    for (let i = this._rules.length - 1; i >= 0; i--) if (this._rules[i]._keyText === k) return i;
+    for (let i = this[$rules].length - 1; i >= 0; i--) if (this[$rules][i][$keyText] === k) return i;
     return -1;
   }
 
   override get cssText(): string {
-    return blockText("@keyframes " + this._name, this._rules);
+    return blockText("@keyframes " + this[$name], this[$rules]);
   }
 }
 
@@ -1174,13 +1175,13 @@ function fillChildren(rule: CSSGroupingRule, raw: RawRule, sheet: CSSStyleSheet 
     const block = new DeclBlock();
     block.addRaw(raw.decls);
     const nd = new CSSNestedDeclarations(block);
-    nd._parent = rule;
-    rule._rules.push(nd);
+    nd[$parent] = rule;
+    rule[$rules].push(nd);
   }
   for (const child of raw.rules) {
     const c = createRule(child, rule, sheet, nested || rule instanceof CSSStyleRule, false);
     if (c === null || c instanceof CSSImportRule || c instanceof CSSNamespaceRule) continue;
-    rule._rules.push(c);
+    rule[$rules].push(c);
   }
 }
 
@@ -1236,7 +1237,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     const block = new DeclBlock();
     block.addRaw(raw.decls);
     const sr = new CSSStyleRule(raw.prelude, block);
-    sr._parent = parent;
+    sr[$parent] = parent;
     fillChildren(sr, raw, sheet, true);
     return sr;
   }
@@ -1246,7 +1247,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     case "media": {
       if (!raw.hasBlock) return null;
       const r = new CSSMediaRule(prelude);
-      r._parent = parent;
+      r[$parent] = parent;
       fillChildren(r, raw, sheet, nested);
       rule = r;
       break;
@@ -1254,7 +1255,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     case "supports": {
       if (!raw.hasBlock || prelude === "") return null;
       const r = new CSSSupportsRule(prelude);
-      r._parent = parent;
+      r[$parent] = parent;
       fillChildren(r, raw, sheet, nested);
       rule = r;
       break;
@@ -1262,7 +1263,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     case "container": {
       if (!raw.hasBlock) return null;
       const r = new CSSContainerRule(prelude);
-      r._parent = parent;
+      r[$parent] = parent;
       fillChildren(r, raw, sheet, nested);
       rule = r;
       break;
@@ -1273,7 +1274,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
       if (raw.hasBlock) {
         if (names.length > 1) return null;
         const r = new CSSLayerBlockRule(names[0] ?? "");
-        r._parent = parent;
+        r[$parent] = parent;
         fillChildren(r, raw, sheet, nested);
         rule = r;
       } else {
@@ -1285,7 +1286,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     case "scope": {
       if (!raw.hasBlock) return null;
       const r = new CSSScopeRule(prelude);
-      r._parent = parent;
+      r[$parent] = parent;
       fillChildren(r, raw, sheet, true);
       rule = r;
       break;
@@ -1293,7 +1294,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     case "starting-style": {
       if (!raw.hasBlock) return null;
       const r = new CSSStartingStyleRule();
-      r._parent = parent;
+      r[$parent] = parent;
       fillChildren(r, raw, sheet, nested);
       rule = r;
       break;
@@ -1310,8 +1311,8 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
         if (child.kind !== RULE_QUALIFIED) continue;
         const k = createKeyframe(child);
         if (k === null) continue;
-        k._parent = r;
-        r._rules.push(k);
+        k[$parent] = r;
+        r[$rules].push(k);
       }
       rule = r;
       break;
@@ -1370,7 +1371,7 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
       // @charset and unknown at-rules are not represented in the CSSOM.
       return null;
   }
-  if (rule !== null) rule._parent = parent;
+  if (rule !== null) rule[$parent] = parent;
   return rule;
 }
 

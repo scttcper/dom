@@ -89,6 +89,7 @@ import { LabelsNodeList } from "./collections.ts";
 import { FileList, createFileList } from "../../window/FileList.ts";
 import { queueTask } from "../events.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
+import { $badInput, $checked, $checkedSet, $customValidity, $dirtyChecked, $dirtyValue, $files, $impl, $indeterminate, $labels, $preApplied, $preChecked, $preCheckedRadio, $preIndeterminate, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $validity, $value, $version } from "../../keys.ts";
 
 /** Accept a FileList or any array-like of File (user-event and tests build lists by hand). */
 function toFileList(value: unknown): FileList {
@@ -345,83 +346,83 @@ type SelectionDirection = (typeof DIRECTIONS)[number];
 
 export class HTMLInputElement extends HTMLElement {
   /** The value while the dirty value flag is set (value mode "value"). */
-  _value: string;
+  [$value]: string;
   /** https://html.spec.whatwg.org/#concept-input-value-dirty-flag */
-  _dirtyValue: boolean;
+  [$dirtyValue]: boolean;
   /** Checkedness, authoritative only when `_checkedSet` (otherwise derived from the checked attribute). */
-  _checked: boolean;
-  _checkedSet: boolean;
+  [$checked]: boolean;
+  [$checkedSet]: boolean;
   /** https://html.spec.whatwg.org/#concept-input-checked-dirty-flag */
-  _dirtyChecked: boolean;
-  _indeterminate: boolean;
-  _files: FileList | null;
-  _selStart: number;
-  _selEnd: number;
-  _selDir: SelectionDirection;
-  _customValidity: string;
-  _validity: ValidityState | null;
-  _labels: LabelsNodeList | null;
+  [$dirtyChecked]: boolean;
+  [$indeterminate]: boolean;
+  [$files]: FileList | null;
+  [$selStart]: number;
+  [$selEnd]: number;
+  [$selDir]: SelectionDirection;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
+  [$labels]: LabelsNodeList | null;
   /** The value was last changed by a user edit (tooLong/tooShort only apply then). */
-  _userEdited: boolean;
+  [$userEdited]: boolean;
   /** The user typed something the type cannot represent (e.g. "1e" in a number field). */
-  _badInput: boolean;
+  [$badInput]: boolean;
   /** User-event's UI value (raw typed text) — null when it equals the value. See ui.ts. */
-  _uiValue: string | null;
+  [$uiValue]: string | null;
   // Legacy-pre-activation state (https://html.spec.whatwg.org/#legacy-pre-activation-behavior).
-  _preChecked: boolean;
-  _preIndeterminate: boolean;
-  _preCheckedRadio: NodeImpl | null;
+  [$preChecked]: boolean;
+  [$preIndeterminate]: boolean;
+  [$preCheckedRadio]: NodeImpl | null;
   /** Legacy-pre-activation ran (and changed state) for the current dispatch. */
-  _preApplied: boolean;
+  [$preApplied]: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
-    this._value = "";
-    this._dirtyValue = false;
-    this._checked = false;
-    this._checkedSet = false;
-    this._dirtyChecked = false;
-    this._indeterminate = false;
-    this._files = null;
-    this._selStart = 0;
-    this._selEnd = 0;
-    this._selDir = "none";
-    this._customValidity = "";
-    this._validity = null;
-    this._labels = null;
-    this._userEdited = false;
-    this._badInput = false;
-    this._uiValue = null;
-    this._preChecked = false;
-    this._preIndeterminate = false;
-    this._preCheckedRadio = null;
-    this._preApplied = false;
+    this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
+    this[$value] = "";
+    this[$dirtyValue] = false;
+    this[$checked] = false;
+    this[$checkedSet] = false;
+    this[$dirtyChecked] = false;
+    this[$indeterminate] = false;
+    this[$files] = null;
+    this[$selStart] = 0;
+    this[$selEnd] = 0;
+    this[$selDir] = "none";
+    this[$customValidity] = "";
+    this[$validity] = null;
+    this[$labels] = null;
+    this[$userEdited] = false;
+    this[$badInput] = false;
+    this[$uiValue] = null;
+    this[$preChecked] = false;
+    this[$preIndeterminate] = false;
+    this[$preCheckedRadio] = null;
+    this[$preApplied] = false;
   }
 
   // --- type ---------------------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#dom-input-type */
   get type(): string {
-    return INPUT_TYPE_NAMES[inputType(this._impl)];
+    return INPUT_TYPE_NAMES[inputType(this[$impl])];
   }
 
   set type(value: string) {
-    setAttribute(this._impl, "type", String(value));
+    setAttribute(this[$impl], "type", String(value));
   }
 
   // --- value ------------------------------------------------------------------------------------
 
   /** The element's value (https://html.spec.whatwg.org/#concept-fe-value) for value mode "value". */
   _currentValue(type: number): string {
-    if (this._dirtyValue) return this._value;
-    return sanitizeValue(type, attr(this._impl, "value") ?? "", this._impl);
+    if (this[$dirtyValue]) return this[$value];
+    return sanitizeValue(type, attr(this[$impl], "value") ?? "", this[$impl]);
   }
 
   /** https://html.spec.whatwg.org/#dom-input-value */
   get value(): string {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
     switch (valueMode(type)) {
       case MODE_VALUE:
@@ -431,13 +432,13 @@ export class HTMLInputElement extends HTMLElement {
       case MODE_DEFAULT_ON:
         return attr(impl, "value") ?? "on";
     }
-    const files = this._files;
+    const files = this[$files];
     return files === null || files.length === 0 ? "" : "C:\\fakepath\\" + files.item(0)!.name;
   }
 
   set value(v: string) {
     const value = v === null ? "" : String(v); // [LegacyNullToEmptyString]
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
     switch (valueMode(type)) {
       case MODE_VALUE:
@@ -454,24 +455,24 @@ export class HTMLInputElement extends HTMLElement {
         "InvalidStateError",
       );
     }
-    this._files = null;
+    this[$files] = null;
   }
 
   /** Value-mode setter steps (script assignment): https://html.spec.whatwg.org/#dom-input-value-value */
   _setValueFromAPI(type: number, value: string): void {
     const old = this._currentValue(type);
-    this._impl.doc._version++;
-    this._value = sanitizeValue(type, value, this._impl);
-    this._dirtyValue = true;
-    this._userEdited = false;
-    this._badInput = false;
-    this._uiValue = null;
-    if (this._value !== old) {
+    this[$impl].doc[$version]++;
+    this[$value] = sanitizeValue(type, value, this[$impl]);
+    this[$dirtyValue] = true;
+    this[$userEdited] = false;
+    this[$badInput] = false;
+    this[$uiValue] = null;
+    if (this[$value] !== old) {
       // Move the text entry cursor to the end, unselecting, direction none.
-      const len = this._value.length;
-      this._selStart = len;
-      this._selEnd = len;
-      this._selDir = "none";
+      const len = this[$value].length;
+      this[$selStart] = len;
+      this[$selEnd] = len;
+      this[$selDir] = "none";
     }
   }
 
@@ -479,17 +480,17 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#concept-fe-checked */
   _checkedness(): boolean {
-    return this._checkedSet ? this._checked : attr(this._impl, "checked") !== null;
+    return this[$checkedSet] ? this[$checked] : attr(this[$impl], "checked") !== null;
   }
 
   /** Set checkedness; when it becomes true on a radio, uncheck the rest of its group. */
   _setCheckedness(value: boolean, dirty: boolean): void {
     // State that selectors (:checked), collections and aria caches observe: bump the version.
-    this._impl.doc._version++;
-    this._checked = value;
-    this._checkedSet = true;
-    if (dirty) this._dirtyChecked = true;
-    if (value && inputType(this._impl) === I_RADIO) uncheckOtherRadios(this._impl);
+    this[$impl].doc[$version]++;
+    this[$checked] = value;
+    this[$checkedSet] = true;
+    if (dirty) this[$dirtyChecked] = true;
+    if (value && inputType(this[$impl]) === I_RADIO) uncheckOtherRadios(this[$impl]);
   }
 
   /** https://html.spec.whatwg.org/#dom-input-checked */
@@ -503,32 +504,32 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-input-indeterminate */
   get indeterminate(): boolean {
-    return this._indeterminate;
+    return this[$indeterminate];
   }
 
   set indeterminate(value: boolean) {
-    this._impl.doc._version++;
-    this._indeterminate = !!value;
+    this[$impl].doc[$version]++;
+    this[$indeterminate] = !!value;
   }
 
   // --- files ----------------------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#dom-input-files */
   get files(): FileList | null {
-    if (inputType(this._impl) !== I_FILE) return null;
-    return (this._files ??= createFileList([]));
+    if (inputType(this[$impl]) !== I_FILE) return null;
+    return (this[$files] ??= createFileList([]));
   }
 
   set files(value: FileList | null) {
-    if (inputType(this._impl) !== I_FILE || value === null || value === undefined) return;
-    this._files = toFileList(value);
+    if (inputType(this[$impl]) !== I_FILE || value === null || value === undefined) return;
+    this[$files] = toFileList(value);
   }
 
   // --- numbers and dates ----------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#dom-input-valueasnumber */
   get valueAsNumber(): number {
-    const type = inputType(this._impl);
+    const type = inputType(this[$impl]);
     if (!isNumericType(type)) return NaN;
     return stringToNumber(type, this._currentValue(type));
   }
@@ -538,7 +539,7 @@ export class HTMLInputElement extends HTMLElement {
     if (!Number.isFinite(n) && !Number.isNaN(n)) {
       throw new TypeError("Failed to set the 'valueAsNumber' property on 'HTMLInputElement': The value provided is infinite.");
     }
-    const type = inputType(this._impl);
+    const type = inputType(this[$impl]);
     if (!isNumericType(type)) {
       throw new DOMException(
         "Failed to set the 'valueAsNumber' property on 'HTMLInputElement': This input element does not support Number values.",
@@ -550,7 +551,7 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-input-valueasdate */
   get valueAsDate(): Date | null {
-    const type = inputType(this._impl);
+    const type = inputType(this[$impl]);
     if (type !== I_DATE && type !== I_MONTH && type !== I_WEEK && type !== I_TIME) return null;
     const n = stringToNumber(type, this._currentValue(type));
     if (Number.isNaN(n)) return null;
@@ -559,7 +560,7 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   set valueAsDate(v: Date | null) {
-    const type = inputType(this._impl);
+    const type = inputType(this[$impl]);
     if (type !== I_DATE && type !== I_MONTH && type !== I_WEEK && type !== I_TIME) {
       throw new DOMException(
         "Failed to set the 'valueAsDate' property on 'HTMLInputElement': This input element does not support Date values.",
@@ -594,7 +595,7 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   _stepUpOrDown(n: number, up: boolean): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
     const method = up ? "stepUp" : "stepDown";
     // Step 1: stepUp/stepDown do not apply.
@@ -644,7 +645,7 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   _assertSelectable(member: string): void {
-    if (!supportsSelectionType(inputType(this._impl))) {
+    if (!supportsSelectionType(inputType(this[$impl]))) {
       throw new DOMException(
         `Failed to ${member.endsWith(")") ? "execute" : "set"} '${member.replace("()", "")}' on 'HTMLInputElement': The input element's type ('${this.type}') does not support selection.`,
         "InvalidStateError",
@@ -654,30 +655,30 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-textarea/input-selectionstart */
   get selectionStart(): number | null {
-    if (!supportsSelectionType(inputType(this._impl))) return null;
-    return Math.min(this._selStart, this._selectionLength());
+    if (!supportsSelectionType(inputType(this[$impl]))) return null;
+    return Math.min(this[$selStart], this._selectionLength());
   }
 
   set selectionStart(value: number | null) {
     this._assertSelectable("selectionStart");
     const start = toUnsignedLong(value);
     const end = Math.max(start, this.selectionEnd!);
-    setSelection(this, start, end, this._selDir);
+    setSelection(this, start, end, this[$selDir]);
   }
 
   get selectionEnd(): number | null {
-    if (!supportsSelectionType(inputType(this._impl))) return null;
-    return Math.min(this._selEnd, this._selectionLength());
+    if (!supportsSelectionType(inputType(this[$impl]))) return null;
+    return Math.min(this[$selEnd], this._selectionLength());
   }
 
   set selectionEnd(value: number | null) {
     this._assertSelectable("selectionEnd");
-    setSelection(this, this.selectionStart!, toUnsignedLong(value), this._selDir);
+    setSelection(this, this.selectionStart!, toUnsignedLong(value), this[$selDir]);
   }
 
   get selectionDirection(): string | null {
-    if (!supportsSelectionType(inputType(this._impl))) return null;
-    return this._selDir;
+    if (!supportsSelectionType(inputType(this[$impl]))) return null;
+    return this[$selDir];
   }
 
   set selectionDirection(value: string | null) {
@@ -693,7 +694,7 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-textarea/input-select */
   select(): void {
-    const type = inputType(this._impl);
+    const type = inputType(this[$impl]);
     if (!selectApplies(type)) return;
     // Types without the selection APIs (email, number, ...) still track the selection internally.
     setSelection(this, 0, this._selectionLength(), "none");
@@ -702,12 +703,12 @@ export class HTMLInputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-textarea/input-setrangetext */
   setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
     this._assertSelectable("setRangeText()");
-    const result = rangeText(this.value, this._selStart, this._selEnd, String(replacement), start, end, selectionMode, arguments.length);
-    const type = inputType(this._impl);
-    this._impl.doc._version++;
-    this._value = sanitizeValue(type, result.value, this._impl);
-    this._dirtyValue = true;
-    this._uiValue = null;
+    const result = rangeText(this.value, this[$selStart], this[$selEnd], String(replacement), start, end, selectionMode, arguments.length);
+    const type = inputType(this[$impl]);
+    this[$impl].doc[$version]++;
+    this[$value] = sanitizeValue(type, result.value, this[$impl]);
+    this[$dirtyValue] = true;
+    this[$uiValue] = null;
     setSelection(this, result.start, result.end, "none");
   }
 
@@ -728,7 +729,7 @@ export class HTMLInputElement extends HTMLElement {
   }
   set height(v: number) {
     const n = toUnsignedLong(v);
-    setAttribute(this._impl, "height", String(n <= 2147483647 ? n : 0));
+    setAttribute(this[$impl], "height", String(n <= 2147483647 ? n : 0));
   }
   /** https://html.spec.whatwg.org/#dom-input-width — the rendered image width; 0 without layout. */
   get width(): number {
@@ -736,7 +737,7 @@ export class HTMLInputElement extends HTMLElement {
   }
   set width(v: number) {
     const n = toUnsignedLong(v);
-    setAttribute(this._impl, "width", String(n <= 2147483647 ? n : 0));
+    setAttribute(this[$impl], "width", String(n <= 2147483647 ? n : 0));
   }
   declare max: string;
   declare maxLength: number;
@@ -758,15 +759,15 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-fs-formaction */
   get formAction(): string {
-    return reflectActionURL(this._impl, "formaction");
+    return reflectActionURL(this[$impl], "formaction");
   }
   set formAction(v: string) {
-    setAttribute(this._impl, "formaction", String(v));
+    setAttribute(this[$impl], "formaction", String(v));
   }
 
   /** https://html.spec.whatwg.org/#dom-input-list */
   get list(): Element | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (!listApplies(inputType(impl))) return null;
     const id = attr(impl, "list");
     if (id === null) return null;
@@ -776,14 +777,14 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-fae-form */
   get form(): Element | null {
-    const owner = formOwner(this._impl);
+    const owner = formOwner(this[$impl]);
     return owner === null ? null : (owner.node as Element);
   }
 
   /** https://html.spec.whatwg.org/#dom-lfe-labels */
   get labels(): LabelsNodeList | null {
-    if (inputType(this._impl) === I_HIDDEN) return null;
-    return (this._labels ??= new LabelsNodeList(this._impl));
+    if (inputType(this[$impl]) === I_HIDDEN) return null;
+    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
   }
 
   /** https://html.spec.whatwg.org/#dom-input-showpicker — no picker UI here. */
@@ -797,13 +798,13 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#concept-fe-mutable */
   _isMutable(): boolean {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (isActuallyDisabled(impl)) return false;
     return !(readonlyApplies(inputType(impl)) && attr(impl, "readonly") !== null);
   }
 
   _barredFromValidation(): boolean {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
     if (type === I_HIDDEN || type === I_RESET || type === I_BUTTON) return true;
     if (readonlyApplies(type) && attr(impl, "readonly") !== null) return true;
@@ -811,9 +812,9 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
-    let flags = this._customValidity === "" ? 0 : V_CUSTOM_ERROR;
+    let flags = this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
     const mode = valueMode(type);
     // valueMissing
     if (requiredApplies(type) && attr(impl, "required") !== null) {
@@ -822,7 +823,7 @@ export class HTMLInputElement extends HTMLElement {
       } else if (type === I_RADIO) {
         if (radioGroupMissing(impl)) flags |= V_VALUE_MISSING;
       } else if (type === I_FILE) {
-        if (this._files === null || this._files.length === 0) flags |= V_VALUE_MISSING;
+        if (this[$files] === null || this[$files].length === 0) flags |= V_VALUE_MISSING;
       } else if (mode === MODE_VALUE && this._isMutable() && this._currentValue(type) === "") {
         flags |= V_VALUE_MISSING;
       }
@@ -832,7 +833,7 @@ export class HTMLInputElement extends HTMLElement {
     }
     if (mode !== MODE_VALUE) return flags;
     const value = this._currentValue(type);
-    if (this._badInput) flags |= V_BAD_INPUT;
+    if (this[$badInput]) flags |= V_BAD_INPUT;
     if (value === "") return flags;
     // typeMismatch
     if (type === I_EMAIL) {
@@ -864,7 +865,7 @@ export class HTMLInputElement extends HTMLElement {
         }
       }
       // tooLong / tooShort: only after a user edit.
-      if (this._userEdited) {
+      if (this[$userEdited]) {
         const max = readNonNegativeLong(impl, "maxlength", -1);
         if (max !== -1 && value.length > max) flags |= V_TOO_LONG;
         const min = readNonNegativeLong(impl, "minlength", -1);
@@ -891,7 +892,7 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   _validationMessage(flags: number): string {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
     if ((flags & V_VALUE_MISSING) !== 0) {
       if (type === I_CHECKBOX) return MSG_CHECKBOX;
@@ -920,21 +921,21 @@ export class HTMLInputElement extends HTMLElement {
       const high = !Number.isNaN(max) && highN > max ? null : numberToString(type, highN);
       return msgStep(low, high);
     }
-    return this._customValidity;
+    return this[$customValidity];
   }
 
   // --- algorithms --------------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control */
   _reset(): void {
-    this._dirtyValue = false;
-    this._dirtyChecked = false;
-    this._userEdited = false;
-    this._badInput = false;
-    this._uiValue = null;
-    this._value = "";
-    this._files = null;
-    this._setCheckedness(attr(this._impl, "checked") !== null, false);
+    this[$dirtyValue] = false;
+    this[$dirtyChecked] = false;
+    this[$userEdited] = false;
+    this[$badInput] = false;
+    this[$uiValue] = null;
+    this[$value] = "";
+    this[$files] = null;
+    this._setCheckedness(attr(this[$impl], "checked") !== null, false);
   }
 
   /** Hook: attribute change steps (type change, value/checked content attribute, radio group). */
@@ -950,11 +951,11 @@ export class HTMLInputElement extends HTMLElement {
       }
       case "checked":
         // https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2
-        if (!this._dirtyChecked) this._setCheckedness(value !== null, false);
+        if (!this[$dirtyChecked]) this._setCheckedness(value !== null, false);
         break;
       case "name":
       case "form":
-        if (inputType(this._impl) === I_RADIO && this._checkedness()) uncheckOtherRadios(this._impl);
+        if (inputType(this[$impl]) === I_RADIO && this._checkedness()) uncheckOtherRadios(this[$impl]);
         break;
       case "value": {
         // With the dirty value flag unset the value follows the attribute (derived on read);
@@ -966,53 +967,53 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#input-type-change */
   _typeChange(oldType: number, newType: number): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const oldMode = valueMode(oldType);
     const newMode = valueMode(newType);
     if (oldMode === MODE_VALUE && (newMode === MODE_DEFAULT || newMode === MODE_DEFAULT_ON)) {
       // Step 1: carry the value over into the value content attribute.
-      const v = this._dirtyValue ? this._value : sanitizeValue(oldType, attr(impl, "value") ?? "", impl);
-      this._dirtyValue = false;
+      const v = this[$dirtyValue] ? this[$value] : sanitizeValue(oldType, attr(impl, "value") ?? "", impl);
+      this[$dirtyValue] = false;
       if (v !== "") setAttribute(impl, "value", v);
     } else if (oldMode !== MODE_VALUE && newMode === MODE_VALUE) {
       // Step 2: value from the content attribute, dirty flag false.
-      this._dirtyValue = false;
-      this._value = "";
+      this[$dirtyValue] = false;
+      this[$value] = "";
     } else if (oldMode !== MODE_FILENAME && newMode === MODE_FILENAME) {
       // Step 3.
-      this._dirtyValue = false;
-      this._value = "";
+      this[$dirtyValue] = false;
+      this[$value] = "";
     }
-    if (oldMode === MODE_FILENAME && newMode !== MODE_FILENAME) this._files = null;
+    if (oldMode === MODE_FILENAME && newMode !== MODE_FILENAME) this[$files] = null;
     // Step 5: radio group membership changed.
     if (newType === I_RADIO && this._checkedness()) uncheckOtherRadios(impl);
     // Step 6: value sanitization.
-    if (newMode === MODE_VALUE && this._dirtyValue) this._value = sanitizeValue(newType, this._value, impl);
-    this._uiValue = null;
-    this._badInput = false;
+    if (newMode === MODE_VALUE && this[$dirtyValue]) this[$value] = sanitizeValue(newType, this[$value], impl);
+    this[$uiValue] = null;
+    this[$badInput] = false;
     // Step 7: selection becomes applicable → reset it.
     if (!supportsSelectionType(oldType) && supportsSelectionType(newType)) {
-      this._selStart = 0;
-      this._selEnd = 0;
-      this._selDir = "none";
+      this[$selStart] = 0;
+      this[$selEnd] = 0;
+      this[$selDir] = "none";
     }
   }
 
   /** Insertion steps (connected case): radio group rule on insertion. */
   override _connectedSteps(): void {
     super._connectedSteps();
-    if (inputType(this._impl) === I_RADIO && this._checkedness()) uncheckOtherRadios(this._impl);
+    if (inputType(this[$impl]) === I_RADIO && this._checkedness()) uncheckOtherRadios(this[$impl]);
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:concept-node-clone-ext */
   override _cloningSteps(copy: Element): void {
     const c = copy as HTMLInputElement;
-    c._value = this._value;
-    c._dirtyValue = this._dirtyValue;
-    c._checked = this._checkedness();
-    c._checkedSet = true;
-    c._dirtyChecked = this._dirtyChecked;
-    c._indeterminate = this._indeterminate;
+    c[$value] = this[$value];
+    c[$dirtyValue] = this[$dirtyValue];
+    c[$checked] = this._checkedness();
+    c[$checkedSet] = true;
+    c[$dirtyChecked] = this[$dirtyChecked];
+    c[$indeterminate] = this[$indeterminate];
   }
 
   // --- activation behavior (called by the events agent's dispatch algorithm) ------------------
@@ -1026,56 +1027,56 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#the-input-element:legacy-pre-activation-behavior */
   _legacyPreActivationBehavior(): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
-    this._preApplied = false;
+    this[$preApplied] = false;
     // Disabled controls: user interaction never dispatches clicks to them (HTMLElement.click()
     // and user-event filter), but a script-dispatched click still activates them.
     if (type === I_CHECKBOX) {
-      this._preApplied = true;
-      this._preChecked = this._checkedness();
-      this._preIndeterminate = this._indeterminate;
-      this._setCheckedness(!this._preChecked, true);
-      this._indeterminate = false;
+      this[$preApplied] = true;
+      this[$preChecked] = this._checkedness();
+      this[$preIndeterminate] = this[$indeterminate];
+      this._setCheckedness(!this[$preChecked], true);
+      this[$indeterminate] = false;
     } else if (type === I_RADIO) {
-      this._preApplied = true;
-      this._preChecked = this._checkedness();
-      this._preCheckedRadio = checkedRadioInGroup(impl);
+      this[$preApplied] = true;
+      this[$preChecked] = this._checkedness();
+      this[$preCheckedRadio] = checkedRadioInGroup(impl);
       this._setCheckedness(true, true);
     }
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:legacy-canceled-activation-behavior */
   _legacyCanceledActivationBehavior(): void {
-    if (!this._preApplied) return;
-    this._preApplied = false;
-    const impl = this._impl;
+    if (!this[$preApplied]) return;
+    this[$preApplied] = false;
+    const impl = this[$impl];
     const type = inputType(impl);
-    impl.doc._version++;
+    impl.doc[$version]++;
     if (type === I_CHECKBOX) {
-      this._checked = this._preChecked;
-      this._checkedSet = true;
-      this._indeterminate = this._preIndeterminate;
+      this[$checked] = this[$preChecked];
+      this[$checkedSet] = true;
+      this[$indeterminate] = this[$preIndeterminate];
     } else if (type === I_RADIO) {
-      const prev = this._preCheckedRadio;
-      this._preCheckedRadio = null;
+      const prev = this[$preCheckedRadio];
+      this[$preCheckedRadio] = null;
       if (prev !== null && prev !== impl && inSameRadioGroup(impl, prev)) {
         (prev.node as HTMLInputElement)._setCheckedness(true, false);
       } else if (prev !== impl) {
-        this._checked = false;
-        this._checkedSet = true;
+        this[$checked] = false;
+        this[$checkedSet] = true;
       }
     }
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:activation-behaviour */
   _activationBehavior(_event: Event | null): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const type = inputType(impl);
     if (type === I_CHECKBOX || type === I_RADIO) {
       // https://html.spec.whatwg.org/#checkbox-state-(type=checkbox):input-activation-behavior
       if ((impl.flags & F_CONNECTED) === 0) return;
-      if (type === I_RADIO && this._preChecked) return; // clicking a checked radio changes nothing
+      if (type === I_RADIO && this[$preChecked]) return; // clicking a checked radio changes nothing
       fireEvent(this, "input", true, false, true);
       fireEvent(this, "change", true, false);
       return;
@@ -1126,9 +1127,9 @@ function compilePattern(pattern: string): RegExp | null {
 // --- selection helpers (shared with textarea) ---------------------------------------------------
 
 interface SelectionHost {
-  _selStart: number;
-  _selEnd: number;
-  _selDir: SelectionDirection;
+  [$selStart]: number;
+  [$selEnd]: number;
+  [$selDir]: SelectionDirection;
   _selectionLength(): number;
 }
 
@@ -1141,10 +1142,10 @@ export function setSelection(el: SelectionHost, start: number, end: number, dire
   if (end > len) end = len;
   if (start > end) start = end;
   const dir = direction === "forward" || direction === "backward" ? direction : "none";
-  const changed = start !== Math.min(el._selStart, len) || end !== Math.min(el._selEnd, len) || dir !== el._selDir;
-  el._selStart = start;
-  el._selEnd = end;
-  el._selDir = dir;
+  const changed = start !== Math.min(el[$selStart], len) || end !== Math.min(el[$selEnd], len) || dir !== el[$selDir];
+  el[$selStart] = start;
+  el[$selEnd] = end;
+  el[$selDir] = dir;
   if (changed) {
     const target = el as unknown as EventTarget;
     queueTask(() => fireEvent(target, "select", true, false));
@@ -1238,10 +1239,10 @@ function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): vo
 export function uncheckOtherRadios(el: NodeImpl): void {
   forEachInRadioGroup(el, (other) => {
     const w = other.node as HTMLInputElement;
-    if (w._checkedSet && !w._checked) return false;
-    other.doc._version++;
-    w._checked = false;
-    w._checkedSet = true;
+    if (w[$checkedSet] && !w[$checked]) return false;
+    other.doc[$version]++;
+    w[$checked] = false;
+    w[$checkedSet] = true;
     return false;
   });
 }

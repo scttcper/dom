@@ -23,6 +23,7 @@ import { preInsert, remove, replace, replaceAll, ensureReplaceAllValidity } from
 import { querySelector, querySelectorAll } from "../selectors/index.ts";
 import { HTMLCollection } from "../collections/HTMLCollection.ts";
 import type { NodeList } from "../collections/NodeList.ts";
+import { $children, $impl } from "../keys.ts";
 
 export interface ParentNode {
   readonly children: HTMLCollection;
@@ -62,15 +63,15 @@ function define(target: Ctor, source: object): void {
 
 /** https://dom.spec.whatwg.org/#converting-nodes-into-a-node */
 export function convertNodesIntoNode(nodes: (Node | string)[], doc: Document): NodeImpl {
-  if (nodes.length === 1) return toNode(nodes[0], doc)._impl;
+  if (nodes.length === 1) return toNode(nodes[0], doc)[$impl];
   const fragment = doc.createDocumentFragment();
   for (const n of nodes) fragment.appendChild(toNode(n, doc));
-  return fragment._impl;
+  return fragment[$impl];
 }
 
 /** WebIDL `(Node or DOMString)`: anything that is not a Node is stringified. */
 function toNode(n: unknown, doc: Document): Node {
-  if (typeof n === "object" && n !== null && "_impl" in n) return n as Node;
+  if (typeof n === "object" && n !== null && $impl in n) return n as Node;
   return doc.createTextNode(String(n));
 }
 
@@ -80,46 +81,46 @@ function wrap(n: NodeImpl | null): Element | null {
 
 const parentNode = {
   get children(): HTMLCollection {
-    const self = this as unknown as Node & { _children: HTMLCollection | null };
-    return (self._children ??= HTMLCollection._children(self._impl));
+    const self = this as unknown as Node & { [$children]: HTMLCollection | null };
+    return (self[$children] ??= HTMLCollection._childrenOf(self[$impl]));
   },
   get firstElementChild(): Element | null {
-    return wrap(firstElementChild((this as unknown as Node)._impl));
+    return wrap(firstElementChild((this as unknown as Node)[$impl]));
   },
   get lastElementChild(): Element | null {
-    return wrap(lastElementChild((this as unknown as Node)._impl));
+    return wrap(lastElementChild((this as unknown as Node)[$impl]));
   },
   get childElementCount(): number {
     let count = 0;
-    for (let c = (this as unknown as Node)._impl.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) count++;
+    for (let c = (this as unknown as Node)[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) count++;
     return count;
   },
   prepend(this: Node, ...nodes: (Node | string)[]): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     preInsert(convertNodesIntoNode(nodes, impl.doc), impl, impl.first);
   },
   append(this: Node, ...nodes: (Node | string)[]): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     preInsert(convertNodesIntoNode(nodes, impl.doc), impl, null);
   },
   replaceChildren(this: Node, ...nodes: (Node | string)[]): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const node = convertNodesIntoNode(nodes, impl.doc);
     ensureReplaceAllValidity(node, impl);
     replaceAll(node, impl);
   },
   querySelector(this: Node, selectors: string): Element | null {
-    return wrap(querySelector(this._impl, String(selectors)));
+    return wrap(querySelector(this[$impl], String(selectors)));
   },
   querySelectorAll(this: Node, selectors: string): NodeList {
-    return querySelectorAll(this._impl, String(selectors));
+    return querySelectorAll(this[$impl], String(selectors));
   },
 };
 
 /** https://dom.spec.whatwg.org/#dom-childnode-before (and after/replaceWith/remove) */
 const childNode = {
   before(this: Node, ...nodes: (Node | string)[]): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const parent = impl.parent;
     if (parent === null) return;
     let viablePrevious = impl.prev;
@@ -128,7 +129,7 @@ const childNode = {
     preInsert(node, parent, viablePrevious === null ? parent.first : viablePrevious.next);
   },
   after(this: Node, ...nodes: (Node | string)[]): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const parent = impl.parent;
     if (parent === null) return;
     let viableNext = impl.next;
@@ -136,7 +137,7 @@ const childNode = {
     preInsert(convertNodesIntoNode(nodes, impl.doc), parent, viableNext);
   },
   replaceWith(this: Node, ...nodes: (Node | string)[]): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     const parent = impl.parent;
     if (parent === null) return;
     let viableNext = impl.next;
@@ -146,23 +147,23 @@ const childNode = {
     else preInsert(node, parent, viableNext);
   },
   remove(this: Node): void {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (impl.parent !== null) remove(impl, false);
   },
 };
 
 const nonDocumentTypeChildNode = {
   get previousElementSibling(): Element | null {
-    return wrap(previousElementSibling((this as unknown as Node)._impl));
+    return wrap(previousElementSibling((this as unknown as Node)[$impl]));
   },
   get nextElementSibling(): Element | null {
-    return wrap(nextElementSibling((this as unknown as Node)._impl));
+    return wrap(nextElementSibling((this as unknown as Node)[$impl]));
   },
 };
 
 const nonElementParentNode = {
   getElementById(this: Node, elementId: string): Element | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     const id = String(elementId);
     if (id === "") return null;
     if (impl.type !== DOCUMENT_FRAGMENT_NODE) return wrap((this as unknown as Document)._idLookup(id));

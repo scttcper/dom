@@ -12,30 +12,31 @@ import type { AddEventListenerOptions, EventListenerOrEventListenerObject } from
 import { windowHooks, type MediaFeatureEnvironment } from "./hooks.ts";
 import { MediaQueryListEvent } from "./events.ts";
 import type { Window } from "./Window.ts";
+import { $matches, $media, $mediaQueryLists, $onchange, $options, $window } from "../keys.ts";
 
 export class MediaQueryList extends EventTarget {
-  _window: Window;
-  _media: string;
+  [$window]: Window;
+  [$media]: string;
   /** Last value change listeners were told about. */
-  _matches: boolean;
-  _onchange: EventListenerOrEventListenerObject | null;
+  [$matches]: boolean;
+  [$onchange]: EventListenerOrEventListenerObject | null;
 
   constructor(window: Window, media: string) {
     super();
-    this._window = window;
-    this._media = media;
-    this._matches = false;
-    this._onchange = null;
+    this[$window] = window;
+    this[$media] = media;
+    this[$matches] = false;
+    this[$onchange] = null;
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media */
   get media(): string {
-    return this._media;
+    return this[$media];
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches */
   get matches(): boolean {
-    return evaluateMediaQuery(this._media, this._window);
+    return evaluateMediaQuery(this[$media], this[$window]);
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener */
@@ -53,22 +54,22 @@ export class MediaQueryList extends EventTarget {
   }
 
   get onchange(): EventListenerOrEventListenerObject | null {
-    return this._onchange;
+    return this[$onchange];
   }
 
   set onchange(value: EventListenerOrEventListenerObject | null) {
-    if (this._onchange !== null) super.removeEventListener("change", this._onchange);
-    this._onchange = typeof value === "function" || (value !== null && typeof value === "object") ? value : null;
-    if (this._onchange !== null) {
-      super.addEventListener("change", this._onchange);
+    if (this[$onchange] !== null) super.removeEventListener("change", this[$onchange]);
+    this[$onchange] = typeof value === "function" || (value !== null && typeof value === "object") ? value : null;
+    if (this[$onchange] !== null) {
+      super.addEventListener("change", this[$onchange]);
       this._watch();
     }
   }
 
   _watch(): void {
-    const watched = this._window._mediaQueryLists;
+    const watched = this[$window][$mediaQueryLists];
     if (watched.has(this)) return;
-    this._matches = this.matches;
+    this[$matches] = this.matches;
     watched.add(this);
   }
 
@@ -79,11 +80,11 @@ export class MediaQueryList extends EventTarget {
 
 /** https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes */
 export function reportMediaQueryChanges(window: Window): void {
-  for (const mql of window._mediaQueryLists) {
+  for (const mql of window[$mediaQueryLists]) {
     const matches = mql.matches;
-    if (matches === mql._matches) continue;
-    mql._matches = matches;
-    mql.dispatchEvent(new MediaQueryListEvent("change", { media: mql._media, matches }));
+    if (matches === mql[$matches]) continue;
+    mql[$matches] = matches;
+    mql.dispatchEvent(new MediaQueryListEvent("change", { media: mql[$media], matches }));
   }
 }
 
@@ -93,7 +94,7 @@ export function mediaEnvironment(window: Window): MediaFeatureEnvironment {
     height: window.innerHeight,
     devicePixelRatio: window.devicePixelRatio,
     mediaType: "screen",
-    features: window._options.mediaFeatures ?? null,
+    features: window[$options].mediaFeatures ?? null,
   };
 }
 

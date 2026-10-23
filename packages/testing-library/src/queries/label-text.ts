@@ -19,6 +19,7 @@ import {
 } from "../query-helpers.ts";
 import { matchesSelector } from "../selectors.ts";
 import type { SelectorMatcherOptions } from "./text.ts";
+import { $impl } from "@rtd/dom/internal";
 
 function queryAllLabels(container: any): { textToMatch: string | null; node: any }[] {
   // `container.querySelectorAll('label,input')`
@@ -65,7 +66,7 @@ function queryAllByLabelText(
   for (let i = 0; i < ariaLabelled.length; i++) labelledElements.push(ariaLabelled[i]);
 
   const unique = Array.from(new Set(labelledElements));
-  return selector === "*" ? unique : unique.filter((element) => matchesSelector(element._impl, selector));
+  return selector === "*" ? unique : unique.filter((element) => matchesSelector(element[$impl], selector));
 }
 
 function collectLabelled(

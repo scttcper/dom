@@ -17,6 +17,7 @@
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { DOCUMENT_NODE } from "../nodes/constants.ts";
+import { $impl, $listeners, $window } from "../keys.ts";
 
 export class Listener {
   callback: EventListenerOrEventListenerObject;
@@ -104,14 +105,14 @@ function flattenMore(options: boolean | AddEventListenerOptions | undefined | nu
 function defaultPassiveValue(type: string, target: EventTarget): boolean {
   if (type !== "touchstart" && type !== "touchmove" && type !== "wheel" && type !== "mousewheel") return false;
   const t = target as unknown as {
-    _impl?: { type: number; doc: { _impl: unknown; documentElement: unknown; body: unknown; _window: unknown } };
-    document?: { _window?: unknown };
+    [$impl]?: { type: number; doc: { [$impl]: unknown; documentElement: unknown; body: unknown; [$window]: unknown } };
+    document?: { [$window]?: unknown };
   };
-  const impl = t._impl;
+  const impl = t[$impl];
   if (impl === undefined) {
     // A Window: its document's browsing context window is itself.
     const doc = t.document;
-    return doc !== undefined && doc !== null && doc._window === target;
+    return doc !== undefined && doc !== null && doc[$window] === target;
   }
   if (impl.type === DOCUMENT_NODE) return true;
   const doc = impl.doc;
@@ -137,10 +138,10 @@ export function addEventListener(
   // Step 3.
   if (callback === null || callback === undefined) return;
   checkCallback(callback, "addEventListener");
-  let map = target._listeners;
+  let map = target[$listeners];
   let list: ListenerList | undefined;
   if (map === null) {
-    map = target._listeners = new Map();
+    map = target[$listeners] = new Map();
   } else {
     list = map.get(type);
   }
@@ -177,7 +178,7 @@ export function removeEventListener(
   const capture = flattenCapture(options);
   if (callback === null || callback === undefined) return;
   checkCallback(callback, "removeEventListener");
-  const map = target._listeners;
+  const map = target[$listeners];
   if (map === null) return;
   const list = map.get(type);
   if (list === undefined) return;
@@ -194,7 +195,7 @@ export function removeEventListener(
 /** https://dom.spec.whatwg.org/#remove-an-event-listener */
 export function removeListener(target: EventTarget, type: string, listener: Listener): void {
   if (listener.removed) return;
-  const map = target._listeners;
+  const map = target[$listeners];
   const list = map === null ? undefined : map.get(type);
   if (list === undefined) {
     listener.removed = true;
@@ -226,18 +227,18 @@ function removeAt(target: EventTarget, type: string, list: ListenerList, i: numb
 
 /** https://dom.spec.whatwg.org/#concept-event-listener-remove-all */
 export function removeAllEventListeners(target: EventTarget): void {
-  const map = target._listeners;
+  const map = target[$listeners];
   if (map === null) return;
   for (const [type, list] of map) {
     const items = list.items;
     for (let i = items.length - 1; i >= 0; i--) removeAt(target, type, list, i);
   }
-  target._listeners = null;
+  target[$listeners] = null;
 }
 
 /** Whether `target` has at least one listener for `type` (internal fast check for other areas). */
 export function hasListeners(target: EventTarget, type: string): boolean {
-  const map = target._listeners;
+  const map = target[$listeners];
   if (map === null) return false;
   const list = map.get(type);
   return list !== undefined && list.items.length > 0;

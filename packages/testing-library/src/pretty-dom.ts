@@ -17,6 +17,7 @@ import { getUserCodeFrame } from "./get-user-code-frame.ts";
 import { getDocument } from "./helpers.ts";
 import { getConfig } from "./config.ts";
 import { matchesSelector } from "./selectors.ts";
+import { $impl } from "@rtd/dom/internal";
 
 declare const process: any;
 
@@ -134,7 +135,8 @@ const KNOWN_OPTIONS = new Set([
 const DELEGATE = Symbol("delegate");
 
 const ELEMENT_REGEXP = /^((HTML|SVG)\w*)?Element$/;
-const ctorIsElementName = new Map<unknown, boolean>();
+// Weak: custom element classes defined by test files must not outlive them.
+const ctorIsElementName = new WeakMap<object, boolean>();
 
 function isCustomElement(val: any): boolean {
   const { tagName } = val;
@@ -149,6 +151,7 @@ function pluginHandles(impl: NodeImpl): boolean {
   switch (impl.type) {
     case ELEMENT_NODE: {
       if (!constructorName && !isCustomElement(node)) return false;
+      if (typeof ctor !== "function") return ELEMENT_REGEXP.test(constructorName) || isCustomElement(node);
       let ok = ctorIsElementName.get(ctor);
       if (ok === undefined) ctorIsElementName.set(ctor, (ok = ELEMENT_REGEXP.test(constructorName)));
       return ok || isCustomElement(node);
@@ -283,7 +286,7 @@ function makePrintConfig(options: Record<string, any>, filterNode: ((node: any) 
 
 function formatDOM(dom: any, filterNode: ((node: any) => boolean) | undefined, prettyFormatOptions: Record<string, any>): string {
   const allOptions = { printFunctionName: false, highlight: shouldHighlight(), ...prettyFormatOptions };
-  const impl: NodeImpl | undefined = dom._impl;
+  const impl: NodeImpl | undefined = dom[$impl];
   const effectiveFilter = filterNode ?? filterCommentsAndDefaultIgnoreTagsTags;
   if (impl !== undefined) {
     const config = makePrintConfig(allOptions, filterNode === undefined ? null : filterNode);
@@ -312,7 +315,7 @@ export function formatWithFastPrinter(dom: any, filterNode: ((node: any) => bool
   const config = makePrintConfig(options, filterNode ?? null);
   if (config === null) return null;
   try {
-    return printNode(dom._impl, config, "", 0);
+    return printNode(dom[$impl], config, "", 0);
   } catch (e) {
     if (e === DELEGATE) return null;
     throw e;
@@ -354,7 +357,7 @@ export function prettyDOM(dom?: any, maxLength?: any, options: Record<string, an
 }
 
 function outerHTMLLength(dom: any): number {
-  const impl: NodeImpl | undefined = dom._impl;
+  const impl: NodeImpl | undefined = dom[$impl];
   if (impl !== undefined && impl.type === ELEMENT_NODE) return serializeNode(impl).length;
   return dom.outerHTML.length;
 }

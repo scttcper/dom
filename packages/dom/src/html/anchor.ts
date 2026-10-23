@@ -14,6 +14,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Event } from "../events/Event.ts";
 import { nextInTree } from "../nodes/traverse.ts";
 import { TEXT_NODE, CDATA_SECTION_NODE } from "../nodes/constants.ts";
+import { $impl, $window } from "../keys.ts";
 
 type Hyperlink = HTMLElement;
 
@@ -37,12 +38,12 @@ function installHyperlinkUtils(C: { prototype: object }): void {
   const define = (name: string, get: (u: URL | null, impl: NodeImpl) => string, set?: (u: URL, v: string) => boolean) => {
     Object.defineProperty(proto, name, {
       get(this: Hyperlink) {
-        const impl = this._impl;
+        const impl = this[$impl];
         return get(linkURL(impl), impl);
       },
       set: set
         ? function (this: Hyperlink, v: unknown) {
-            const impl = this._impl;
+            const impl = this[$impl];
             const u = linkURL(impl);
             if (u === null) return;
             if (set(u, String(v))) updateHref(impl, u);
@@ -55,14 +56,14 @@ function installHyperlinkUtils(C: { prototype: object }): void {
   // https://html.spec.whatwg.org/#dom-hyperlink-href
   Object.defineProperty(proto, "href", {
     get(this: Hyperlink) {
-      const impl = this._impl;
+      const impl = this[$impl];
       const href = contentAttr(impl, "href");
       if (href === null) return "";
       const u = URL.parse(href, impl.doc.baseURI);
       return u === null ? href : u.href;
     },
     set(this: Hyperlink, v: unknown) {
-      setAttribute(this._impl, "href", String(v));
+      setAttribute(this[$impl], "href", String(v));
     },
     configurable: true,
     enumerable: true,
@@ -157,10 +158,10 @@ function installHyperlinkUtils(C: { prototype: object }): void {
  * navigation is emulated (via the window's location); nothing else happens.
  */
 function followHyperlink(el: Hyperlink): void {
-  const impl = el._impl;
+  const impl = el[$impl];
   const u = linkURL(impl);
   if (u === null) return;
-  const window = impl.doc._window as unknown as { location?: { hash: string; href: string } } | null;
+  const window = impl.doc[$window] as unknown as { location?: { hash: string; href: string } } | null;
   if (window === null || window.location === undefined) return;
   const target = contentAttr(impl, "target");
   if (target !== null && target !== "" && target.toLowerCase() !== "_self") return;
@@ -182,7 +183,7 @@ function followHyperlink(el: Hyperlink): void {
 export class HTMLAnchorElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-a-text */
   get text(): string {
-    const root = this._impl;
+    const root = this[$impl];
     let s = "";
     for (let n = root.first; n !== null; n = nextInTree(n, root)) if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
     return s;
@@ -194,11 +195,11 @@ export class HTMLAnchorElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#the-a-element:activation-behaviour */
   get _hasActivationBehavior(): boolean {
-    return contentAttr(this._impl, "href") !== null;
+    return contentAttr(this[$impl], "href") !== null;
   }
 
   _activationBehavior(_event: Event): void {
-    if (contentAttr(this._impl, "href") === null) return;
+    if (contentAttr(this[$impl], "href") === null) return;
     followHyperlink(this);
   }
 }
@@ -210,11 +211,11 @@ enumerated(HTMLAnchorElement, "referrerPolicy=referrerpolicy", REFERRER_POLICY);
 /** https://html.spec.whatwg.org/#htmlareaelement */
 export class HTMLAreaElement extends HTMLElement {
   get _hasActivationBehavior(): boolean {
-    return contentAttr(this._impl, "href") !== null;
+    return contentAttr(this[$impl], "href") !== null;
   }
 
   _activationBehavior(_event: Event): void {
-    if (contentAttr(this._impl, "href") === null) return;
+    if (contentAttr(this[$impl], "href") === null) return;
     followHyperlink(this);
   }
 }

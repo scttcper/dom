@@ -20,10 +20,20 @@
 //
 // Everything defined is recorded with the previous descriptor (never invoking Node's lazy
 // getters such as `localStorage`/`navigator`) and restored by `uninstall()`.
+//
+// Reading the descriptors of Node's lazy undici globals we replace (FormData, MessageEvent,
+// CloseEvent, ErrorEvent) loads undici (~10 ms) and is deliberate, not just needed to restore
+// them: undici's classes are evaluated against the *current* global `Event`/`EventTarget`
+// (`class MessageEvent extends Event` in Node's bundle). Deferred until after our Event is
+// installed, the first fetch()/Response/WebSocket use in a test would make Node's MessageEvent,
+// CloseEvent, ErrorEvent, WebSocket and EventSource extend @rtd/dom's classes for the rest of the
+// process. (FormData/MessageEvent/CloseEvent could be re-fetched synchronously at uninstall via
+// node:http and Response#formData; ErrorEvent has no synchronous public path.)
 
 import { recordHostOriginal } from "./host-originals.ts";
 import { Window, windowInterfaces, HOST_DELEGATES } from "./Window.ts";
 import { currentWindowOrNull, setCurrentWindow } from "./current.ts";
+import { $globalObject, $host } from "../keys.ts";
 
 const SELF_REFERENCES = ["window", "self", "frames", "parent", "top"];
 
@@ -149,10 +159,10 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
   Object.defineProperty(doc, "defaultView", { get: () => target, enumerable: true, configurable: true });
 
   setCurrentWindow(window);
-  const previousHost = window._host;
-  window._host = target as unknown as typeof globalThis;
-  const previousGlobal = window._globalObject;
-  window._globalObject = target as unknown as Window;
+  const previousHost = window[$host];
+  window[$host] = target as unknown as typeof globalThis;
+  const previousGlobal = window[$globalObject];
+  window[$globalObject] = target as unknown as Window;
 
   let installed = true;
   return function uninstall(): void {
@@ -164,8 +174,8 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
       else Object.defineProperty(target, key, descriptor);
     }
     saved.clear();
-    window._host = previousHost;
-    window._globalObject = previousGlobal;
+    window[$host] = previousHost;
+    window[$globalObject] = previousGlobal;
     if (currentWindowOrNull() === window) setCurrentWindow(previousWindow);
   };
 }

@@ -22,6 +22,7 @@
 import * as rtdInternal from '@rtd/dom/internal'
 import type {NodeImpl} from '@rtd/dom/internal'
 import type {Element, Node} from './dom-types.ts'
+import { $impl } from "@rtd/dom/internal";
 
 /**
  * @rtd/dom html-forms UI state (`src/html/forms/ui.ts`, re-exported from `@rtd/dom/internal`).
@@ -92,7 +93,7 @@ const NodeImplClass = (internal?.NodeImpl ?? null) as (abstract new (...args: ne
 /** The NodeImpl behind an @rtd/dom wrapper, or null for nodes of other DOM implementations. */
 export function implOf(node: Node | null | undefined): NodeImpl | null {
   if (NodeImplClass === null || node == null) return null
-  const impl = (node as {_impl?: unknown})._impl
+  const impl = (node as {[$impl]?: unknown})[$impl]
   return impl instanceof NodeImplClass ? impl : null
 }
 

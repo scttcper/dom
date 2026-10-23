@@ -16,6 +16,7 @@ import { assignedSlot as slotOf, slotAssignmentActive } from "./slots.ts";
 import { currentDocument } from "../window/current.ts";
 import { installChildNode, installNonDocumentTypeChildNode, type ChildNode, type NonDocumentTypeChildNode } from "./mixins.ts";
 import type { Element } from "./Element.ts";
+import { $impl, $shadowRoot } from "../keys.ts";
 
 function arity(method: string, required: number, given: number): never {
   throw new TypeError(`Failed to execute '${method}' on 'CharacterData': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`);
@@ -23,20 +24,20 @@ function arity(method: string, required: number, given: number): never {
 
 export abstract class CharacterData extends Node {
   get data(): string {
-    return this._impl.data;
+    return this[$impl].data;
   }
 
   set data(value: string) {
-    const impl = this._impl;
+    const impl = this[$impl];
     replaceData(impl, 0, impl.data.length, value === null ? "" : String(value));
   }
 
   get length(): number {
-    return this._impl.data.length;
+    return this[$impl].data.length;
   }
 
   override get nodeValue(): string {
-    return this._impl.data;
+    return this[$impl].data;
   }
 
   override set nodeValue(value: string | null) {
@@ -44,7 +45,7 @@ export abstract class CharacterData extends Node {
   }
 
   override get textContent(): string {
-    return this._impl.data;
+    return this[$impl].data;
   }
 
   override set textContent(value: string | null) {
@@ -53,7 +54,7 @@ export abstract class CharacterData extends Node {
 
   substringData(offset: number, count: number): string {
     if (arguments.length < 2) arity("substringData", 2, arguments.length);
-    const data = this._impl.data;
+    const data = this[$impl].data;
     offset >>>= 0;
     count >>>= 0;
     if (offset > data.length) throw new DOMException("Offset is greater than the node's length.", "IndexSizeError");
@@ -62,23 +63,23 @@ export abstract class CharacterData extends Node {
 
   appendData(data: string): void {
     if (arguments.length < 1) arity("appendData", 1, 0);
-    const impl = this._impl;
+    const impl = this[$impl];
     replaceData(impl, impl.data.length, 0, String(data));
   }
 
   insertData(offset: number, data: string): void {
     if (arguments.length < 2) arity("insertData", 2, arguments.length);
-    replaceData(this._impl, offset >>> 0, 0, String(data));
+    replaceData(this[$impl], offset >>> 0, 0, String(data));
   }
 
   deleteData(offset: number, count: number): void {
     if (arguments.length < 2) arity("deleteData", 2, arguments.length);
-    replaceData(this._impl, offset >>> 0, count >>> 0, "");
+    replaceData(this[$impl], offset >>> 0, count >>> 0, "");
   }
 
   replaceData(offset: number, count: number, data: string): void {
     if (arguments.length < 3) arity("replaceData", 3, arguments.length);
-    replaceData(this._impl, offset >>> 0, count >>> 0, String(data));
+    replaceData(this[$impl], offset >>> 0, count >>> 0, String(data));
   }
 }
 export interface CharacterData extends ChildNode, NonDocumentTypeChildNode {}
@@ -88,7 +89,7 @@ installNonDocumentTypeChildNode(CharacterData);
 export class Text extends CharacterData {
   constructor(data = "", doc: Document = currentDocument()) {
     super(TEXT_NODE, doc);
-    this._impl.data = String(data);
+    this[$impl].data = String(data);
   }
 
   override get nodeName(): string {
@@ -97,12 +98,12 @@ export class Text extends CharacterData {
 
   /** https://dom.spec.whatwg.org/#dom-text-splittext */
   splitText(offset: number): Text {
-    return splitText(this._impl, Number(offset) >>> 0).node as Text;
+    return splitText(this[$impl], Number(offset) >>> 0).node as Text;
   }
 
   /** https://dom.spec.whatwg.org/#dom-text-wholetext */
   get wholeText(): string {
-    let start = this._impl;
+    let start = this[$impl];
     while (start.prev !== null && (start.prev.type === TEXT_NODE || start.prev.type === CDATA_SECTION_NODE)) start = start.prev;
     let s = "";
     for (let n: NodeImpl | null = start; n !== null && (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE); n = n.next) s += n.data;
@@ -112,11 +113,11 @@ export class Text extends CharacterData {
   /** https://dom.spec.whatwg.org/#dom-slotable-assignedslot */
   get assignedSlot(): Element | null {
     if (slotAssignmentActive === 0) return null;
-    const slot = slotOf(this._impl);
+    const slot = slotOf(this[$impl]);
     if (slot === null) return null;
     // Find a slot with the open flag set: only slots in open shadow roots are exposed.
-    const host = this._impl.parent;
-    const shadow = host === null ? null : (host.node as Element)._shadowRoot;
+    const host = this[$impl].parent;
+    const shadow = host === null ? null : (host.node as Element)[$shadowRoot];
     return shadow !== null && shadow.mode === "open" ? (slot.node as Element) : null;
   }
 }
@@ -124,7 +125,7 @@ export class Text extends CharacterData {
 export class CDATASection extends Text {
   constructor(data = "", doc: Document = currentDocument()) {
     super(data, doc);
-    this._impl.type = CDATA_SECTION_NODE;
+    this[$impl].type = CDATA_SECTION_NODE;
   }
 
   override get nodeName(): string {
@@ -135,7 +136,7 @@ export class CDATASection extends Text {
 export class Comment extends CharacterData {
   constructor(data = "", doc: Document = currentDocument()) {
     super(COMMENT_NODE, doc);
-    this._impl.data = String(data);
+    this[$impl].data = String(data);
   }
 
   override get nodeName(): string {
@@ -146,15 +147,15 @@ export class Comment extends CharacterData {
 export class ProcessingInstruction extends CharacterData {
   constructor(target: string, data: string, doc: Document = currentDocument()) {
     super(PROCESSING_INSTRUCTION_NODE, doc);
-    this._impl.name = target;
-    this._impl.data = data;
+    this[$impl].name = target;
+    this[$impl].data = data;
   }
 
   get target(): string {
-    return this._impl.name;
+    return this[$impl].name;
   }
 
   override get nodeName(): string {
-    return this._impl.name;
+    return this[$impl].name;
   }
 }

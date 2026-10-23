@@ -9,6 +9,7 @@
 import { exposeMembers, hideInternals } from "../../webidl-runtime.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { fireEvent, normalizeNewlines } from "./common.ts";
+import { $customValidity, $el, $impl, $options, $validity, $window } from "../../keys.ts";
 
 export const V_VALUE_MISSING = 1 << 0;
 export const V_TYPE_MISMATCH = 1 << 1;
@@ -23,8 +24,8 @@ export const V_CUSTOM_ERROR = 1 << 9;
 
 /** Internal contract every element with the constraint validation API implements. */
 export interface Validatable extends Element {
-  _customValidity: string;
-  _validity: ValidityState | null;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
   /** Bit set of V_* flags describing the current validity state. */
   _validityFlags(): number;
   /** https://html.spec.whatwg.org/#barred-from-constraint-validation */
@@ -35,46 +36,46 @@ export interface Validatable extends Element {
 
 /** https://html.spec.whatwg.org/#validitystate */
 export class ValidityState {
-  _el: Validatable;
+  [$el]: Validatable;
 
   /** @internal */
   constructor(el: Validatable) {
-    this._el = el;
+    this[$el] = el;
     hideInternals(this);
   }
 
   get valueMissing(): boolean {
-    return (this._el._validityFlags() & V_VALUE_MISSING) !== 0;
+    return (this[$el]._validityFlags() & V_VALUE_MISSING) !== 0;
   }
   get typeMismatch(): boolean {
-    return (this._el._validityFlags() & V_TYPE_MISMATCH) !== 0;
+    return (this[$el]._validityFlags() & V_TYPE_MISMATCH) !== 0;
   }
   get patternMismatch(): boolean {
-    return (this._el._validityFlags() & V_PATTERN_MISMATCH) !== 0;
+    return (this[$el]._validityFlags() & V_PATTERN_MISMATCH) !== 0;
   }
   get tooLong(): boolean {
-    return (this._el._validityFlags() & V_TOO_LONG) !== 0;
+    return (this[$el]._validityFlags() & V_TOO_LONG) !== 0;
   }
   get tooShort(): boolean {
-    return (this._el._validityFlags() & V_TOO_SHORT) !== 0;
+    return (this[$el]._validityFlags() & V_TOO_SHORT) !== 0;
   }
   get rangeUnderflow(): boolean {
-    return (this._el._validityFlags() & V_RANGE_UNDERFLOW) !== 0;
+    return (this[$el]._validityFlags() & V_RANGE_UNDERFLOW) !== 0;
   }
   get rangeOverflow(): boolean {
-    return (this._el._validityFlags() & V_RANGE_OVERFLOW) !== 0;
+    return (this[$el]._validityFlags() & V_RANGE_OVERFLOW) !== 0;
   }
   get stepMismatch(): boolean {
-    return (this._el._validityFlags() & V_STEP_MISMATCH) !== 0;
+    return (this[$el]._validityFlags() & V_STEP_MISMATCH) !== 0;
   }
   get badInput(): boolean {
-    return (this._el._validityFlags() & V_BAD_INPUT) !== 0;
+    return (this[$el]._validityFlags() & V_BAD_INPUT) !== 0;
   }
   get customError(): boolean {
-    return (this._el._validityFlags() & V_CUSTOM_ERROR) !== 0;
+    return (this[$el]._validityFlags() & V_CUSTOM_ERROR) !== 0;
   }
   get valid(): boolean {
-    return this._el._validityFlags() === 0;
+    return this[$el]._validityFlags() === 0;
   }
 
   get [Symbol.toStringTag](): string {
@@ -116,7 +117,7 @@ const constraintValidation = {
   /** https://html.spec.whatwg.org/#dom-cva-validity */
   get validity(): ValidityState {
     const el = this as unknown as Validatable;
-    return (el._validity ??= new ValidityState(el));
+    return (el[$validity] ??= new ValidityState(el));
   },
 
   /** https://html.spec.whatwg.org/#dom-cva-validationmessage */
@@ -127,7 +128,7 @@ const constraintValidation = {
     if (flags === 0) return "";
     // The custom validity error message takes precedence whenever customError is set
     // (Chromium and jsdom behave the same).
-    if ((flags & V_CUSTOM_ERROR) !== 0) return el._customValidity;
+    if ((flags & V_CUSTOM_ERROR) !== 0) return el[$customValidity];
     return builtinMessage(el, flags);
   },
 
@@ -146,7 +147,7 @@ const constraintValidation = {
 
   /** https://html.spec.whatwg.org/#dom-cva-setcustomvalidity */
   setCustomValidity(error: string): void {
-    (this as unknown as Validatable)._customValidity = normalizeNewlines(String(error));
+    (this as unknown as Validatable)[$customValidity] = normalizeNewlines(String(error));
   },
 };
 
@@ -164,8 +165,8 @@ export const MSG_JSDOM = "Constraints not satisfied";
  * `validationMessages: "browser"` (docs/deviations.md).
  */
 function builtinMessage(el: Validatable, flags: number): string {
-  const win = el._impl.doc._window as unknown as { _options?: { validationMessages?: string } } | null;
-  return win?._options?.validationMessages === "browser" ? el._validationMessage(flags) : MSG_JSDOM;
+  const win = el[$impl].doc[$window] as unknown as { [$options]?: { validationMessages?: string } } | null;
+  return win?.[$options]?.validationMessages === "browser" ? el._validationMessage(flags) : MSG_JSDOM;
 }
 
 // --- browser-like messages (Chromium en-US wording) -----------------------------------------

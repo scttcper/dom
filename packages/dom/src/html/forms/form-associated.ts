@@ -16,6 +16,7 @@ import { T } from "../../nodes/tags.ts";
 import { attr } from "../../nodes/attributes.ts";
 import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
 import { I_HIDDEN, I_IMAGE, inputType } from "./input-type.ts";
+import { $assocGen } from "../../keys.ts";
 
 // --- categories ---------------------------------------------------------------------------
 
@@ -127,7 +128,7 @@ const parserAssoc = new WeakMap<NodeImpl, ParserAssociation>();
 let parserAssocCount = 0;
 
 function formGeneration(form: NodeImpl): number {
-  return (form.node as unknown as { _assocGen: number })._assocGen;
+  return (form.node as unknown as { [$assocGen]: number })[$assocGen];
 }
 
 /**

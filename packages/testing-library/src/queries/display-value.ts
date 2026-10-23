@@ -6,6 +6,7 @@ import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } fro
 import { checkContainerType, implOf } from "../helpers.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "../matches.ts";
 import { getNodeTextImpl } from "../get-node-text.ts";
+import { $impl } from "@rtd/dom/internal";
 
 function queryAllByDisplayValue(container: any, value: Matcher, { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {}): any[] {
   checkContainerType(container);
@@ -25,7 +26,7 @@ function queryAllByDisplayValue(container: any, value: Matcher, { exact = true, 
       let found = false;
       for (let i = 0; i < options.length; i++) {
         const option = options[i];
-        if (option.selected && matcher(getNodeTextImpl(option._impl), option, value, matchNormalizer)) {
+        if (option.selected && matcher(getNodeTextImpl(option[$impl]), option, value, matchNormalizer)) {
           found = true;
           break;
         }

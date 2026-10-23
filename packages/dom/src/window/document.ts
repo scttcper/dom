@@ -8,9 +8,10 @@ import { Document } from "../nodes/Document.ts";
 import type { Location } from "./Location.ts";
 import { documentParseHTMLUnsafe } from "./fallbacks.ts";
 import type { Window } from "./Window.ts";
+import { $options, $url, $window } from "../keys.ts";
 
 function windowOf(doc: Document): Window | null {
-  return doc._window;
+  return doc[$window];
 }
 
 const members: PropertyDescriptorMap = {
@@ -18,17 +19,17 @@ const members: PropertyDescriptorMap = {
   cookie: {
     get(this: Document): string {
       const win = windowOf(this);
-      return win === null ? "" : win._cookies.get(win._url);
+      return win === null ? "" : win._cookieStore.get(win[$url]);
     },
     set(this: Document, value: string) {
       const win = windowOf(this);
-      if (win !== null) win._cookies.set(String(value), win._url);
+      if (win !== null) win._cookieStore.set(String(value), win[$url]);
     },
   },
   /** https://html.spec.whatwg.org/#dom-document-referrer */
   referrer: {
     get(this: Document): string {
-      return windowOf(this)?._options.referrer ?? "";
+      return windowOf(this)?.[$options].referrer ?? "";
     },
   },
   /** https://html.spec.whatwg.org/#dom-document-readystate — documents are fully loaded. */
@@ -70,7 +71,7 @@ const members: PropertyDescriptorMap = {
   /** https://html.spec.whatwg.org/#dom-document-domain */
   domain: {
     get(this: Document): string {
-      return windowOf(this)?._url.hostname ?? "";
+      return windowOf(this)?.[$url].hostname ?? "";
     },
     set() {},
   },

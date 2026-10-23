@@ -8,6 +8,7 @@ import { noteInlineStyle } from "../css/inline-count.ts";
 import { activeObservers, queueAttributeMutationRecord } from "../observers/queue.ts";
 import { slotAssignmentActive, slotsAttributeChanged } from "./slots.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
+import { $style, $version } from "../keys.ts";
 
 /** ASCII-lowercase without allocating when the input is already lowercase (the common case). */
 export function asciiLowercase(s: string): string {
@@ -165,7 +166,7 @@ export function handleAttributeChanges(el: NodeImpl, a: AttrRecord, oldValue: st
   if ((el.flags & F_ATTR_HOOK) !== 0) {
     (el.node as Element)._attributeChangedSteps(a.localName, oldValue, newValue, a.ns);
   }
-  el.doc._version++;
+  el.doc[$version]++;
   if (ceReactionsPending) flushCEReactions(); // custom element reactions (html agent; see create.ts)
 }
 
@@ -189,7 +190,7 @@ function coreAttributeSteps(el: NodeImpl, localName: string, value: string | nul
         if ((el.flags & F_HAS_STYLE_ATTR) === 0) noteInlineStyle(el.doc, 1);
         el.flags |= F_HAS_STYLE_ATTR;
       }
-      (el.node as Element)._style?._attributeChanged(value);
+      (el.node as Element)[$style]?._attributeChanged(value);
       break;
   }
 }

@@ -8,6 +8,7 @@
 import { createRequire } from "node:module";
 import { daa06 } from "@rtd/aria";
 import type { DOMNode } from "./utils.ts";
+import { $impl } from "@rtd/dom/internal";
 
 interface DAA {
   computeAccessibleName(element: DOMNode): string;
@@ -20,11 +21,11 @@ function foreign(): DAA {
 }
 
 export function computeAccessibleName(element: DOMNode): string {
-  if (element._impl !== undefined) return daa06.computeAccessibleName(element);
+  if (element[$impl] !== undefined) return daa06.computeAccessibleName(element);
   return foreign().computeAccessibleName(element);
 }
 
 export function computeAccessibleDescription(element: DOMNode): string {
-  if (element._impl !== undefined) return daa06.computeAccessibleDescription(element);
+  if (element[$impl] !== undefined) return daa06.computeAccessibleDescription(element);
   return foreign().computeAccessibleDescription(element);
 }

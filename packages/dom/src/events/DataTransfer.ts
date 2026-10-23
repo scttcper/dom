@@ -9,6 +9,7 @@
 
 import { createFileList, type FileList } from "../html/forms/FileList.ts";
 import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
+import { $data, $dropEffect, $effectAllowed, $file, $files, $items, $kind, $owner, $type, $types, $x, $y } from "../keys.ts";
 
 const DROP_EFFECTS = new Set(["none", "copy", "link", "move"]);
 const EFFECT_ALLOWED = new Set(["none", "copy", "copyLink", "copyMove", "link", "linkMove", "move", "all", "uninitialized"]);
@@ -22,37 +23,37 @@ let internal = false;
 /** https://html.spec.whatwg.org/#the-datatransferitem-interface */
 export class DataTransferItem {
   /** "string" | "file", or "" once removed from its list. */
-  _kind: string;
-  _type: string;
-  _data: string;
-  _file: File | null;
+  [$kind]: string;
+  [$type]: string;
+  [$data]: string;
+  [$file]: File | null;
 
   constructor() {
     if (!internal) throw new TypeError("Illegal constructor");
-    this._kind = "";
-    this._type = "";
-    this._data = "";
-    this._file = null;
+    this[$kind] = "";
+    this[$type] = "";
+    this[$data] = "";
+    this[$file] = null;
   }
 
   get kind(): string {
-    return this._kind;
+    return this[$kind];
   }
 
   get type(): string {
-    return this._type;
+    return this[$type];
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransferitem-getasstring */
   getAsString(callback: ((data: string) => void) | null): void {
-    if (callback === null || callback === undefined || this._kind !== "string") return;
-    const data = this._data;
+    if (callback === null || callback === undefined || this[$kind] !== "string") return;
+    const data = this[$data];
     queueMicrotask(() => callback(data));
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransferitem-getasfile */
   getAsFile(): File | null {
-    return this._kind === "file" ? this._file : null;
+    return this[$kind] === "file" ? this[$file] : null;
   }
 
   webkitGetAsEntry(): null {
@@ -65,10 +66,10 @@ function makeItem(kind: string, type: string, data: string, file: File | null): 
   internal = true;
   try {
     const item = new DataTransferItem();
-    item._kind = kind;
-    item._type = type;
-    item._data = data;
-    item._file = file;
+    item[$kind] = kind;
+    item[$type] = type;
+    item[$data] = data;
+    item[$file] = file;
     hideInternals(item);
     return item;
   } finally {
@@ -79,17 +80,17 @@ function makeItem(kind: string, type: string, data: string, file: File | null): 
 /** https://html.spec.whatwg.org/#the-datatransferitemlist-interface */
 export class DataTransferItemList {
   [index: number]: DataTransferItem;
-  _items: DataTransferItem[];
-  _owner: DataTransfer | null;
+  [$items]: DataTransferItem[];
+  [$owner]: DataTransfer | null;
 
   constructor() {
     if (!internal) throw new TypeError("Illegal constructor");
-    this._items = [];
-    this._owner = null;
+    this[$items] = [];
+    this[$owner] = null;
   }
 
   get length(): number {
-    return this._items.length;
+    return this[$items].length;
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransferitemlist-add */
@@ -100,8 +101,8 @@ export class DataTransferItemList {
         throw new TypeError("Failed to execute 'add' on 'DataTransferItemList': parameter 1 is not of type 'File'.");
       }
       const t = asciiLowercase(String(type));
-      for (const existing of this._items) {
-        if (existing._kind === "string" && existing._type === t) {
+      for (const existing of this[$items]) {
+        if (existing[$kind] === "string" && existing[$type] === t) {
           throw new DOMException(`Failed to execute 'add' on 'DataTransferItemList': An item already exists for type '${t}'.`, "NotSupportedError");
         }
       }
@@ -112,7 +113,7 @@ export class DataTransferItemList {
       }
       item = makeItem("file", asciiLowercase(data.type), "", data);
     }
-    this._items.push(item);
+    this[$items].push(item);
     this._changed();
     return item;
   }
@@ -120,33 +121,33 @@ export class DataTransferItemList {
   /** https://html.spec.whatwg.org/#dom-datatransferitemlist-remove */
   remove(index: number): void {
     const i = index >>> 0;
-    if (i >= this._items.length) return;
-    const [removed] = this._items.splice(i, 1);
-    removed._kind = "";
+    if (i >= this[$items].length) return;
+    const [removed] = this[$items].splice(i, 1);
+    removed[$kind] = "";
     this._changed();
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransferitemlist-clear */
   clear(): void {
-    for (const item of this._items) item._kind = "";
-    this._items.length = 0;
+    for (const item of this[$items]) item[$kind] = "";
+    this[$items].length = 0;
     this._changed();
   }
 
   [Symbol.iterator](): IterableIterator<DataTransferItem> {
-    return this._items[Symbol.iterator]();
+    return this[$items][Symbol.iterator]();
   }
 
   /** @internal Re-sync own index properties and invalidate the owner's cached views. */
   _changed(): void {
-    const items = this._items;
+    const items = this[$items];
     for (let i = 0; i < items.length; i++) {
       Object.defineProperty(this, i, { value: items[i], enumerable: true, configurable: true, writable: false });
     }
     for (let i = items.length; Object.prototype.hasOwnProperty.call(this, i); i++) delete (this as Record<number, unknown>)[i];
-    if (this._owner !== null) {
-      this._owner._types = null;
-      this._owner._files = null;
+    if (this[$owner] !== null) {
+      this[$owner][$types] = null;
+      this[$owner][$files] = null;
     }
   }
 }
@@ -156,7 +157,7 @@ function makeList(owner: DataTransfer): DataTransferItemList {
   internal = true;
   try {
     const list = new DataTransferItemList();
-    list._owner = owner;
+    list[$owner] = owner;
     hideInternals(list);
     return list;
   } finally {
@@ -173,42 +174,42 @@ function normalizeFormat(format: string): { type: string; url: boolean } {
 
 /** https://html.spec.whatwg.org/#the-datatransfer-interface */
 export class DataTransfer {
-  _dropEffect: string;
-  _effectAllowed: string;
-  _items: DataTransferItemList;
-  _types: readonly string[] | null;
-  _files: FileList | null;
+  [$dropEffect]: string;
+  [$effectAllowed]: string;
+  [$items]: DataTransferItemList;
+  [$types]: readonly string[] | null;
+  [$files]: FileList | null;
 
   /** https://html.spec.whatwg.org/#dom-datatransfer */
   constructor() {
-    this._dropEffect = "none";
-    this._effectAllowed = "uninitialized";
-    this._items = makeList(this);
-    this._types = null;
-    this._files = null;
+    this[$dropEffect] = "none";
+    this[$effectAllowed] = "uninitialized";
+    this[$items] = makeList(this);
+    this[$types] = null;
+    this[$files] = null;
     hideInternals(this);
   }
 
   get dropEffect(): string {
-    return this._dropEffect;
+    return this[$dropEffect];
   }
 
   set dropEffect(value: string) {
     const v = String(value);
-    if (DROP_EFFECTS.has(v)) this._dropEffect = v;
+    if (DROP_EFFECTS.has(v)) this[$dropEffect] = v;
   }
 
   get effectAllowed(): string {
-    return this._effectAllowed;
+    return this[$effectAllowed];
   }
 
   set effectAllowed(value: string) {
     const v = String(value);
-    if (EFFECT_ALLOWED.has(v)) this._effectAllowed = v;
+    if (EFFECT_ALLOWED.has(v)) this[$effectAllowed] = v;
   }
 
   get items(): DataTransferItemList {
-    return this._items;
+    return this[$items];
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-setdragimage (no rendering: no-op). */
@@ -216,25 +217,25 @@ export class DataTransfer {
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-types */
   get types(): readonly string[] {
-    if (this._types !== null) return this._types;
+    if (this[$types] !== null) return this[$types];
     const out: string[] = [];
     let hasFiles = false;
-    for (const item of this._items._items) {
-      if (item._kind === "string") out.push(item._type);
-      else if (item._kind === "file") hasFiles = true;
+    for (const item of this[$items][$items]) {
+      if (item[$kind] === "string") out.push(item[$type]);
+      else if (item[$kind] === "file") hasFiles = true;
     }
     if (hasFiles) out.push("Files");
-    return (this._types = Object.freeze(out));
+    return (this[$types] = Object.freeze(out));
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-getdata */
   getData(format: string): string {
     const { type, url } = normalizeFormat(format);
-    for (const item of this._items._items) {
-      if (item._kind !== "string" || item._type !== type) continue;
-      if (!url) return item._data;
+    for (const item of this[$items][$items]) {
+      if (item[$kind] !== "string" || item[$type] !== type) continue;
+      if (!url) return item[$data];
       // First URL in a text/uri-list: first line that is not a comment.
-      for (const line of item._data.split(/\r?\n/)) {
+      for (const line of item[$data].split(/\r?\n/)) {
         if (line !== "" && !line.startsWith("#")) return line;
       }
       return "";
@@ -245,37 +246,37 @@ export class DataTransfer {
   /** https://html.spec.whatwg.org/#dom-datatransfer-setdata */
   setData(format: string, data: string): void {
     const { type } = normalizeFormat(format);
-    const items = this._items._items;
+    const items = this[$items][$items];
     for (let i = 0; i < items.length; i++) {
-      if (items[i]._kind === "string" && items[i]._type === type) {
-        items[i]._kind = "";
+      if (items[i][$kind] === "string" && items[i][$type] === type) {
+        items[i][$kind] = "";
         items.splice(i, 1);
         break;
       }
     }
     items.push(makeItem("string", type, String(data), null));
-    this._items._changed();
+    this[$items]._changed();
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-cleardata */
   clearData(format?: string): void {
-    const items = this._items._items;
+    const items = this[$items][$items];
     const type = format === undefined ? null : normalizeFormat(format).type;
     for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i]._kind === "string" && (type === null || items[i]._type === type)) {
-        items[i]._kind = "";
+      if (items[i][$kind] === "string" && (type === null || items[i][$type] === type)) {
+        items[i][$kind] = "";
         items.splice(i, 1);
       }
     }
-    this._items._changed();
+    this[$items]._changed();
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-files */
   get files(): FileList {
-    if (this._files !== null) return this._files;
+    if (this[$files] !== null) return this[$files];
     const files: File[] = [];
-    for (const item of this._items._items) if (item._kind === "file" && item._file !== null) files.push(item._file);
-    return (this._files = createFileList(files));
+    for (const item of this[$items][$items]) if (item[$kind] === "file" && item[$file] !== null) files.push(item[$file]);
+    return (this[$files] = createFileList(files));
   }
 }
 Object.defineProperty(DataTransfer.prototype, Symbol.toStringTag, { value: "DataTransfer", configurable: true });

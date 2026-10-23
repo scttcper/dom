@@ -12,6 +12,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { DOCUMENT_NODE, F_SHADOW_ROOT } from "../nodes/constants.ts";
 import { CSSStyleSheet, StyleSheetList } from "./cssom.ts";
 import type { RuleIndex } from "./cascade.ts";
+import { $constructed, $css, $doc, $impl, $ownerNode, $styleVersion } from "../keys.ts";
 
 /** Style sheets of one tree (a document or a shadow root). */
 export class RootStyles {
@@ -59,7 +60,7 @@ export class DocCSS {
 
   constructor(doc: Document) {
     this.doc = doc;
-    this.main = new RootStyles(doc._impl);
+    this.main = new RootStyles(doc[$impl]);
     this.shadows = null;
     this.envWidth = -1;
     this.envHeight = -1;
@@ -71,13 +72,13 @@ export class DocCSS {
 }
 
 export function docCSS(doc: Document): DocCSS {
-  let c = doc._css as DocCSS | null;
-  if (c === null) doc._css = c = new DocCSS(doc);
+  let c = doc[$css] as DocCSS | null;
+  if (c === null) doc[$css] = c = new DocCSS(doc);
   return c;
 }
 
 export function existingDocCSS(doc: Document): DocCSS | null {
-  return doc._css as DocCSS | null;
+  return doc[$css] as DocCSS | null;
 }
 
 /** RootStyles for a tree root (document or shadow root impl), created on demand. */
@@ -150,7 +151,7 @@ export function registerOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): void 
   rs.ownerNodes.splice(i, 0, owner);
   rs.owners.splice(i, 0, sheet);
   syncList(rs);
-  owner.doc._styleVersion++;
+  owner.doc[$styleVersion]++;
 }
 
 /** Removes an owner sheet (element disconnected, emptied or retyped). */
@@ -169,8 +170,8 @@ export function unregisterOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): voi
       }
     }
   }
-  sheet._ownerNode = null;
-  owner.doc._styleVersion++;
+  sheet[$ownerNode] = null;
+  owner.doc[$styleVersion]++;
 }
 
 /** `styleSheetHooks.createSheet` — https://html.spec.whatwg.org/#update-a-style-block step 6 */
@@ -219,17 +220,17 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
     if (!(s instanceof CSSStyleSheet)) {
       throw new TypeError("Failed to set the 'adoptedStyleSheets' property: Failed to convert value to 'CSSStyleSheet'.");
     }
-    if (!s._constructed) {
+    if (!s[$constructed]) {
       throw new DOMException("Failed to set the 'adoptedStyleSheets' property: Can't adopt non-constructed stylesheets.", "NotAllowedError");
     }
-    if (s._doc !== null && s._doc !== root.doc) {
+    if (s[$doc] !== null && s[$doc] !== root.doc) {
       throw new DOMException("Failed to set the 'adoptedStyleSheets' property: Sharing constructed stylesheets in multiple documents is not allowed", "NotAllowedError");
     }
   }
   const rs = rootStylesFor(root, true)!;
   rs.adopted = list as CSSStyleSheet[];
-  for (const s of rs.adopted) if (s._doc === null) s._doc = root.doc;
-  root.doc._styleVersion++;
+  for (const s of rs.adopted) if (s[$doc] === null) s[$doc] = root.doc;
+  root.doc[$styleVersion]++;
 }
 
 /**
@@ -237,8 +238,8 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
  * and bumps the style version if so. Cheap: compares a few references.
  */
 export function validateAdopted(css: DocCSS): void {
-  if (checkAdopted(css.main)) css.doc._styleVersion++;
-  if (css.shadows !== null) for (const rs of css.shadows.values()) if (checkAdopted(rs)) css.doc._styleVersion++;
+  if (checkAdopted(css.main)) css.doc[$styleVersion]++;
+  if (css.shadows !== null) for (const rs of css.shadows.values()) if (checkAdopted(rs)) css.doc[$styleVersion]++;
 }
 
 function checkAdopted(rs: RootStyles): boolean {
@@ -248,7 +249,7 @@ function checkAdopted(rs: RootStyles): boolean {
   if (!changed) for (let i = 0; i < a.length; i++) if (a[i] !== snap[i]) changed = true;
   if (changed) {
     rs.adoptedSnapshot = a.slice();
-    for (const s of a) if (s instanceof CSSStyleSheet && s._doc === null) s._doc = rs.root.doc;
+    for (const s of a) if (s instanceof CSSStyleSheet && s[$doc] === null) s[$doc] = rs.root.doc;
   }
   return changed;
 }

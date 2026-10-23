@@ -11,16 +11,17 @@ import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { treeRoot } from "../nodes/traverse.ts";
 import { Range, StaticRange, compareBoundaryPoints, nodeLength } from "./Range.ts";
+import { $ec, $eo, $host, $impl, $sc, $so } from "../keys.ts";
 
 const DIR_NONE = 0;
 const DIR_FORWARDS = 1;
 const DIR_BACKWARDS = 2;
 
 function toImpl(node: unknown, method: string): NodeImpl {
-  if (node === null || typeof node !== "object" || !("_impl" in node)) {
+  if (node === null || typeof node !== "object" || !($impl in node)) {
     throw new TypeError(`Failed to execute '${method}' on 'Selection': parameter 1 is not of type 'Node'.`);
   }
-  return (node as Node)._impl;
+  return (node as Node)[$impl];
 }
 
 function checkBoundary(n: NodeImpl, offset: number): void {
@@ -44,11 +45,11 @@ export class Selection {
   #inDocument(n: NodeImpl): boolean {
     let root = treeRoot(n);
     while ((root.flags & F_SHADOW_ROOT) !== 0) {
-      const host = (root.node as unknown as { _host: { _impl: NodeImpl } | null })._host;
+      const host = (root.node as unknown as { [$host]: { [$impl]: NodeImpl } | null })[$host];
       if (host === null) return false;
-      root = treeRoot(host._impl);
+      root = treeRoot(host[$impl]);
     }
-    return root === this.#doc._impl;
+    return root === this.#doc[$impl];
   }
 
   #set(range: Range | null, direction: number): void {
@@ -59,25 +60,25 @@ export class Selection {
   get anchorNode(): Node | null {
     const r = this.#range;
     if (r === null) return null;
-    return (this.#direction === DIR_BACKWARDS ? r._ec : r._sc).node;
+    return (this.#direction === DIR_BACKWARDS ? r[$ec] : r[$sc]).node;
   }
 
   get anchorOffset(): number {
     const r = this.#range;
     if (r === null) return 0;
-    return this.#direction === DIR_BACKWARDS ? r._eo : r._so;
+    return this.#direction === DIR_BACKWARDS ? r[$eo] : r[$so];
   }
 
   get focusNode(): Node | null {
     const r = this.#range;
     if (r === null) return null;
-    return (this.#direction === DIR_BACKWARDS ? r._sc : r._ec).node;
+    return (this.#direction === DIR_BACKWARDS ? r[$sc] : r[$ec]).node;
   }
 
   get focusOffset(): number {
     const r = this.#range;
     if (r === null) return 0;
-    return this.#direction === DIR_BACKWARDS ? r._so : r._eo;
+    return this.#direction === DIR_BACKWARDS ? r[$so] : r[$eo];
   }
 
   get isCollapsed(): boolean {
@@ -111,7 +112,7 @@ export class Selection {
   /** https://w3c.github.io/selection-api/#dom-selection-addrange */
   addRange(range: Range): void {
     if (!(range instanceof Range)) throw new TypeError("Failed to execute 'addRange' on 'Selection': parameter 1 is not of type 'Range'.");
-    if (range._root() !== this.#doc._impl) return;
+    if (range._treeRoot() !== this.#doc[$impl]) return;
     if (this.#range !== null) return;
     this.#set(range, DIR_FORWARDS);
   }
@@ -154,8 +155,8 @@ export class Selection {
     const r = this.#range;
     if (r === null) throw new DOMException("There is no selection to collapse.", "InvalidStateError");
     const n = new Range(this.#doc);
-    n._setStart(r._sc, r._so);
-    n._setEnd(r._sc, r._so);
+    n._setStart(r[$sc], r[$so]);
+    n._setEnd(r[$sc], r[$so]);
     this.#set(n, DIR_FORWARDS);
   }
 
@@ -163,8 +164,8 @@ export class Selection {
     const r = this.#range;
     if (r === null) throw new DOMException("There is no selection to collapse.", "InvalidStateError");
     const n = new Range(this.#doc);
-    n._setStart(r._ec, r._eo);
-    n._setEnd(r._ec, r._eo);
+    n._setStart(r[$ec], r[$eo]);
+    n._setEnd(r[$ec], r[$eo]);
     this.#set(n, DIR_FORWARDS);
   }
 
@@ -176,10 +177,10 @@ export class Selection {
     const r = this.#range;
     if (r === null) throw new DOMException("This Selection object doesn't have any Ranges.", "InvalidStateError");
     checkBoundary(n, o);
-    const anchorNode = this.#direction === DIR_BACKWARDS ? r._ec : r._sc;
-    const anchorOffset = this.#direction === DIR_BACKWARDS ? r._eo : r._so;
+    const anchorNode = this.#direction === DIR_BACKWARDS ? r[$ec] : r[$sc];
+    const anchorOffset = this.#direction === DIR_BACKWARDS ? r[$eo] : r[$so];
     const nr = new Range(this.#doc);
-    if (treeRoot(n) !== r._root()) {
+    if (treeRoot(n) !== r._treeRoot()) {
       nr._setStart(n, o);
       nr._setEnd(n, o);
     } else if (compareBoundaryPoints(anchorNode, anchorOffset, n, o) <= 0) {
@@ -233,19 +234,19 @@ export class Selection {
   containsNode(node: Node, allowPartialContainment = false): boolean {
     const n = toImpl(node, "containsNode");
     const r = this.#range;
-    if (r === null || !this.#inDocument(n) || treeRoot(n) !== r._root()) return false;
+    if (r === null || !this.#inDocument(n) || treeRoot(n) !== r._treeRoot()) return false;
     const len = nodeLength(n);
     if (allowPartialContainment) {
-      return compareBoundaryPoints(r._sc, r._so, n, len) <= 0 && compareBoundaryPoints(r._ec, r._eo, n, 0) >= 0;
+      return compareBoundaryPoints(r[$sc], r[$so], n, len) <= 0 && compareBoundaryPoints(r[$ec], r[$eo], n, 0) >= 0;
     }
-    return compareBoundaryPoints(r._sc, r._so, n, 0) <= 0 && compareBoundaryPoints(r._ec, r._eo, n, len) >= 0;
+    return compareBoundaryPoints(r[$sc], r[$so], n, 0) <= 0 && compareBoundaryPoints(r[$ec], r[$eo], n, len) >= 0;
   }
 
   /** https://w3c.github.io/selection-api/#dom-selection-getcomposedranges (no shadow root reparenting) */
   getComposedRanges(..._args: unknown[]): StaticRange[] {
     const r = this.#range;
     if (r === null) return [];
-    return [new StaticRange({ startContainer: r._sc.node, startOffset: r._so, endContainer: r._ec.node, endOffset: r._eo })];
+    return [new StaticRange({ startContainer: r[$sc].node, startOffset: r[$so], endContainer: r[$ec].node, endOffset: r[$eo] })];
   }
 
   /** No layout: https://w3c.github.io/selection-api/#dom-selection-modify is a no-op. */

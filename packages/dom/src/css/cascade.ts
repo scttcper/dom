@@ -44,6 +44,7 @@ import { containsVar, formatNumber, grammarFor, G_COLOR, isCSSWideKeyword, split
 import { CSSTokenizer, TK_EOF, TK_FUNCTION as TOK_FUNCTION, TK_LPAREN, TK_RPAREN, TK_COMMA, TK_LBRACKET, TK_RBRACKET } from "./tokenizer.ts";
 import { inlineStyleCount } from "./inline-count.ts";
 import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor, validateAdopted } from "./stylesheets.ts";
+import { $block, $css, $disabled, $doc, $host, $impl, $matches, $media, $name, $names, $queries, $rules, $shadowRoot, $style, $styleVersion, $version, $window } from "../keys.ts";
 
 // --- rule index --------------------------------------------------------------------------------
 
@@ -156,28 +157,28 @@ class IndexBuilder {
   }
 
   sheet(sheet: CSSStyleSheet): void {
-    if (sheet._disabled) return;
-    if (sheet._media._queries.length !== 0 && !evaluateMediaQueryList(sheet._media._queries, this.env)) return;
-    this.rules(sheet._rules, this.root, null);
+    if (sheet[$disabled]) return;
+    if (sheet[$media][$queries].length !== 0 && !evaluateMediaQueryList(sheet[$media][$queries], this.env)) return;
+    this.rules(sheet[$rules], this.root, null);
   }
 
   rules(rules: CSSRule[], layer: LayerNode, parentStyle: CSSStyleRule | null): void {
     for (let i = 0; i < rules.length; i++) {
       const r = rules[i];
       if (r instanceof CSSStyleRule) {
-        this.style(r, r._block, layer);
-        if (r._rules.length !== 0) this.rules(r._rules, layer, r);
+        this.style(r, r[$block], layer);
+        if (r[$rules].length !== 0) this.rules(r[$rules], layer, r);
       } else if (r instanceof CSSNestedDeclarations) {
-        if (parentStyle !== null) this.style(parentStyle, r._block, layer);
+        if (parentStyle !== null) this.style(parentStyle, r[$block], layer);
       } else if (r instanceof CSSMediaRule) {
-        if (evaluateMediaQueryList(r._media._queries, this.env)) this.rules(r._rules, layer, parentStyle);
+        if (evaluateMediaQueryList(r[$media][$queries], this.env)) this.rules(r[$rules], layer, parentStyle);
       } else if (r instanceof CSSSupportsRule) {
-        if (r._matches) this.rules(r._rules, layer, parentStyle);
+        if (r[$matches]) this.rules(r[$rules], layer, parentStyle);
       } else if (r instanceof CSSLayerBlockRule) {
-        const name = r._name === "" ? "\0anon" + this.anon++ : r._name;
-        this.rules(r._rules, this.layer(layer, name), parentStyle);
+        const name = r[$name] === "" ? "\0anon" + this.anon++ : r[$name];
+        this.rules(r[$rules], this.layer(layer, name), parentStyle);
       } else if (r instanceof CSSLayerStatementRule) {
-        for (const n of r._names) this.layer(layer, n);
+        for (const n of r[$names]) this.layer(layer, n);
       } else if (r instanceof CSSGroupingRule) {
         // @container, @scope, @starting-style: not applied (no layout / scoping proximity).
       }
@@ -215,7 +216,7 @@ class IndexBuilder {
 
 function windowEnv(doc: Document): MediaEnvironment {
   // Viewport + per-window feature overrides (createWindow({ mediaFeatures })), shared with matchMedia.
-  const w = doc._window;
+  const w = doc[$window];
   return w === null ? DEFAULT_MEDIA_ENV : mediaEnvironment(w);
 }
 
@@ -224,27 +225,27 @@ function windowEnv(doc: Document): MediaEnvironment {
  * rules) and returns the current `_styleVersion`.
  */
 export function currentStyleVersion(doc: Document): number {
-  const css = doc._css as DocCSS | null;
-  if (css === null) return doc._styleVersion;
+  const css = doc[$css] as DocCSS | null;
+  if (css === null) return doc[$styleVersion];
   validateAdopted(css);
-  const w = doc._window as unknown as { innerWidth?: number; innerHeight?: number; devicePixelRatio?: number } | null;
+  const w = doc[$window] as unknown as { innerWidth?: number; innerHeight?: number; devicePixelRatio?: number } | null;
   if (w !== null) {
     const width = w.innerWidth ?? 1024;
     const height = w.innerHeight ?? 768;
     const dpr = w.devicePixelRatio ?? 1;
     if (width !== css.envWidth || height !== css.envHeight || dpr !== css.envDpr) {
-      if (css.envWidth !== -1) doc._styleVersion++;
+      if (css.envWidth !== -1) doc[$styleVersion]++;
       css.envWidth = width;
       css.envHeight = height;
       css.envDpr = dpr;
     }
   }
-  return doc._styleVersion;
+  return doc[$styleVersion];
 }
 
 function sheetsHaveRules(rs: RootStyles): boolean {
-  for (const s of rs.owners) if (s._rules.length !== 0) return true;
-  for (const s of rs.adopted) if (s instanceof CSSStyleSheet && s._rules.length !== 0) return true;
+  for (const s of rs.owners) if (s[$rules].length !== 0) return true;
+  for (const s of rs.adopted) if (s instanceof CSSStyleSheet && s[$rules].length !== 0) return true;
   return false;
 }
 
@@ -364,9 +365,9 @@ let uaIndex: RuleIndex | null = null;
 function uaRuleIndex(): RuleIndex {
   if (uaIndex !== null) return uaIndex;
   const sheet = new CSSStyleSheet();
-  sheet._doc = null;
+  sheet[$doc] = null;
   sheet._setText(UA_CSS);
-  sheet._doc = null;
+  sheet[$doc] = null;
   uaIndex = new RuleIndex(0);
   const b = new IndexBuilder(uaIndex, DEFAULT_MEDIA_ENV);
   b.sheet(sheet);
@@ -432,8 +433,8 @@ const inlineCache = new Map<string, DeclBlock>();
 /** Declarations of an element's style attribute (live CSSStyleDeclaration when one exists). */
 function inlineBlock(el: NodeImpl): DeclBlock | null {
   if ((el.flags & F_HAS_STYLE_ATTR) === 0) return null;
-  const style = (el.node as Element)._style;
-  if (style !== null && style !== undefined) return style._block;
+  const style = (el.node as Element)[$style];
+  if (style !== null && style !== undefined) return style[$block];
   const text = attr(el, "style");
   if (text === null || text === "") return null;
   let b = inlineCache.get(text);
@@ -451,8 +452,8 @@ export function inheritanceParent(el: NodeImpl): NodeImpl | null {
   if (p === null) return null;
   if (p.type === ELEMENT_NODE) return p;
   if ((p.flags & F_SHADOW_ROOT) !== 0) {
-    const host = (p.node as unknown as { _host?: Element | null })._host;
-    return host ? host._impl : null;
+    const host = (p.node as unknown as { [$host]?: Element | null })[$host];
+    return host ? host[$impl] : null;
   }
   return null;
 }
@@ -468,15 +469,15 @@ function rootOf(el: NodeImpl): RootStyles | null {
 
 /** Shadow root of a host element when that shadow tree has style sheets. */
 function shadowStylesOf(el: NodeImpl): RootStyles | null {
-  const sr = (el.node as unknown as { _shadowRoot?: { _impl: NodeImpl } | null })._shadowRoot;
+  const sr = (el.node as unknown as { [$shadowRoot]?: { [$impl]: NodeImpl } | null })[$shadowRoot];
   if (sr === null || sr === undefined) return null;
-  return rootStylesFor(sr._impl, false);
+  return rootStylesFor(sr[$impl], false);
 }
 
 function hostOf(rs: RootStyles): NodeImpl | null {
   if (rs.root.type === DOCUMENT_NODE) return null;
-  const host = (rs.root.node as unknown as { _host?: Element | null })._host;
-  return host ? host._impl : null;
+  const host = (rs.root.node as unknown as { [$host]?: Element | null })[$host];
+  return host ? host[$impl] : null;
 }
 
 class Matched {
@@ -605,10 +606,10 @@ export function styleRecord(el: NodeImpl): StyleRecord {
   const sv = currentStyleVersion(doc);
   const c: NodeCache = nodeCache(el);
   const cached = c.style as StyleRecord | null;
-  if (cached !== null && c.styleVersion === doc._version && c.styleSheetVersion === sv && !cached.volatile) return cached;
+  if (cached !== null && c.styleVersion === doc[$version] && c.styleSheetVersion === sv && !cached.volatile) return cached;
   const rec = computeRecord(el, PSEUDO_NONE, sv);
   c.style = rec;
-  c.styleVersion = doc._version;
+  c.styleVersion = doc[$version];
   c.styleSheetVersion = sv;
   return rec;
 }
@@ -617,7 +618,7 @@ function pseudoRecord(el: NodeImpl, pseudo: number): StyleRecord {
   const owner = styleRecord(el);
   const existing = pseudo === PSEUDO_BEFORE ? owner.before : owner.after;
   if (existing !== null && !existing.volatile) return existing;
-  const rec = computeRecord(el, pseudo, el.doc._styleVersion);
+  const rec = computeRecord(el, pseudo, el.doc[$styleVersion]);
   if (pseudo === PSEUDO_BEFORE) owner.before = rec;
   else owner.after = rec;
   return rec;
@@ -741,7 +742,7 @@ function parentPx(rec: StyleRecord, prop: string, fallback: number): number {
 function rootFontSize(rec: StyleRecord): number {
   const doc = rec.el.doc;
   let root: NodeImpl | null = null;
-  for (let c = doc._impl.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) root = c;
+  for (let c = doc[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) root = c;
   if (root === null || root === rec.el) return 16;
   return parseFloat(computedValueOf(styleRecord(root), "font-size")) || 16;
 }
@@ -975,11 +976,11 @@ export function hasAuthorStyles(doc: Document): boolean {
   const css = existingDocCSS(doc);
   if (css !== null) {
     const sv = currentStyleVersion(doc);
-    if (css.authorVersion === doc._version && css.authorStyleVersion === sv) return css.authorResult;
+    if (css.authorVersion === doc[$version] && css.authorStyleVersion === sv) return css.authorResult;
     let result = sheetsHaveRules(css.main);
     if (!result && css.shadows !== null) for (const rs of css.shadows.values()) if (sheetsHaveRules(rs)) result = true;
     if (!result && inlineStyleCount(doc) > 0) result = hasConnectedInlineStyle(doc);
-    css.authorVersion = doc._version;
+    css.authorVersion = doc[$version];
     css.authorStyleVersion = sv;
     css.authorResult = result;
     return result;
@@ -995,7 +996,7 @@ function docCSSFor(doc: Document): Document {
 }
 
 function hasConnectedInlineStyle(doc: Document): boolean {
-  const root = doc._impl;
+  const root = doc[$impl];
   for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
     if ((n.flags & F_HAS_STYLE_ATTR) !== 0) return true;
   }
@@ -1004,7 +1005,7 @@ function hasConnectedInlineStyle(doc: Document): boolean {
 
 /** Does any style sheet apply to this element's tree (or its shadow tree, for hosts)? */
 function sheetsApply(el: NodeImpl): boolean {
-  const css = el.doc._css as DocCSS | null;
+  const css = el.doc[$css] as DocCSS | null;
   if (css === null) return false;
   if (css.main.hasSheets()) return true;
   return css.shadows !== null && css.shadows.size !== 0;
@@ -1107,7 +1108,7 @@ const EMPTY_NAMES: string[] = [];
  * when the pseudo-element has no content. https://drafts.csswg.org/css-content-3/#content-property
  */
 export function pseudoContent(el: NodeImpl, pseudo: "::before" | "::after"): string {
-  const css = el.doc._css as DocCSS | null;
+  const css = el.doc[$css] as DocCSS | null;
   if (css === null || !sheetsApply(el)) return "";
   const kind = pseudoKind(pseudo);
   if (kind <= 0) return "";

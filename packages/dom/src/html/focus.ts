@@ -29,6 +29,7 @@ import { isActuallyDisabled } from "./forms/form-associated.ts";
 import { isEditingHost, isRenderingHidden } from "./shared.ts";
 import { inertByModal, setTopLayerFocusHooks } from "./top-layer.ts";
 import { frameContentWindow } from "../window/browsing-context.ts";
+import { $focused, $frameElement, $host, $impl, $shadowRoot, $window } from "../keys.ts";
 
 // --- predicates ---------------------------------------------------------------------------
 
@@ -124,8 +125,8 @@ function parentOrHost(n: NodeImpl): NodeImpl | null {
   const p = n.parent;
   if (p !== null) return p;
   if ((n.flags & F_SHADOW_ROOT) !== 0) {
-    const host = (n.node as unknown as { _host: Element | null })._host;
-    return host === null ? null : host._impl;
+    const host = (n.node as unknown as { [$host]: Element | null })[$host];
+    return host === null ? null : host[$impl];
   }
   return null;
 }
@@ -158,14 +159,14 @@ export function isSequentiallyFocusable(impl: NodeImpl): boolean {
 
 // --- focus delegates (shadow hosts with delegatesFocus) ------------------------------------
 
-function shadowRootOf(impl: NodeImpl): { _impl: NodeImpl; delegatesFocus?: boolean } | null {
-  return (impl.node as unknown as { _shadowRoot: { _impl: NodeImpl; delegatesFocus?: boolean } | null })._shadowRoot ?? null;
+function shadowRootOf(impl: NodeImpl): { [$impl]: NodeImpl; delegatesFocus?: boolean } | null {
+  return (impl.node as unknown as { [$shadowRoot]: { [$impl]: NodeImpl; delegatesFocus?: boolean } | null })[$shadowRoot] ?? null;
 }
 
 /** https://html.spec.whatwg.org/#focus-delegate */
 export function focusDelegate(host: NodeImpl): NodeImpl | null {
   const shadow = shadowRootOf(host);
-  const root = shadow !== null && shadow.delegatesFocus ? shadow._impl : host;
+  const root = shadow !== null && shadow.delegatesFocus ? shadow[$impl] : host;
   // Autofocus delegate first, then the first focusable area in tree order (shadow-including).
   let first: NodeImpl | null = null;
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
@@ -212,7 +213,7 @@ export function focusElement(impl: NodeImpl, options?: FocusElementOptions): boo
     const shadow = shadowRootOf(target);
     if (shadow !== null && shadow.delegatesFocus) {
       // A focused element inside the host's shadow tree already satisfies focus().
-      const current = target.doc._focused;
+      const current = target.doc[$focused];
       if (current !== null && isShadowIncludingInclusiveAncestor(target, current)) return true;
       const d = focusDelegate(target);
       if (d !== null) target = d;
@@ -223,19 +224,19 @@ export function focusElement(impl: NodeImpl, options?: FocusElementOptions): boo
   // document, so those become the focused areas of their documents first (outermost first,
   // as the focus update steps fire focus events in reverse new-chain order).
   focusContainerChain(doc);
-  const old = doc._focused;
+  const old = doc[$focused];
   // 2. Already focused.
   if (old === target) return true;
   focusVisibleFlag = options?.focusVisible ?? !wasPointerFocus(target);
   runFocusUpdate(doc, old, target);
-  return doc._focused === target;
+  return doc[$focused] === target;
 }
 
 /** The <iframe> element hosting `doc`'s browsing context, or null (top-level / no browsing context). */
 function containerOf(doc: Document): NodeImpl | null {
-  const window = doc._window as unknown as { _frameElement?: Element | null } | null;
-  const frame = window?._frameElement ?? null;
-  return frame === null ? null : frame._impl;
+  const window = doc[$window] as unknown as { [$frameElement]?: Element | null } | null;
+  const frame = window?.[$frameElement] ?? null;
+  return frame === null ? null : frame[$impl];
 }
 
 /** The active document of a frame element's nested browsing context, or null. */
@@ -251,13 +252,13 @@ function focusContainerChain(doc: Document): void {
   if (frame === null || (frame.flags & F_CONNECTED) === 0) return;
   const parentDoc = frame.doc;
   focusContainerChain(parentDoc);
-  if (parentDoc._focused !== frame) runFocusUpdate(parentDoc, parentDoc._focused, frame);
+  if (parentDoc[$focused] !== frame) runFocusUpdate(parentDoc, parentDoc[$focused], frame);
 }
 
 /** https://html.spec.whatwg.org/#unfocusing-steps */
 export function blurElement(impl: NodeImpl): void {
   const doc = impl.doc;
-  const focused = doc._focused;
+  const focused = doc[$focused];
   if (focused === null) return;
   // The element must be the focused area or a shadow host containing it.
   if (focused !== impl && !isShadowIncludingInclusiveAncestor(impl, focused)) return;
@@ -266,27 +267,27 @@ export function blurElement(impl: NodeImpl): void {
 
 /** https://html.spec.whatwg.org/#focus-update-steps (single document). */
 function runFocusUpdate(doc: Document, old: NodeImpl | null, next: NodeImpl | null): void {
-  const view = doc._window;
+  const view = doc[$window];
   if (old !== null) {
     // Leaving a container: the focused element of its nested document is unfocused first
     // (the old focus chain is ordered innermost first).
     const nested = nestedDocument(old);
-    if (nested !== null && nested._focused !== null) runFocusUpdate(nested, nested._focused, null);
-    doc._focused = null;
+    if (nested !== null && nested[$focused] !== null) runFocusUpdate(nested, nested[$focused], null);
+    doc[$focused] = null;
     const oldNode = old.node as Element;
     const related = next === null ? null : (next.node as Element);
     fireFocusEvent(oldNode, "blur", related, false, view);
     fireFocusEvent(oldNode, "focusout", related, true, view);
     // A blur/focusout handler may have focused something else (or detached `next`).
-    if (doc._focused !== null) return;
+    if (doc[$focused] !== null) return;
   }
   if (next === null) return;
   if ((next.flags & F_CONNECTED) === 0) return;
-  doc._focused = next;
+  doc[$focused] = next;
   const nextNode = next.node as Element;
   const related = old === null ? null : (old.node as Element);
   fireFocusEvent(nextNode, "focus", related, false, view);
-  if (doc._focused !== next) return;
+  if (doc[$focused] !== next) return;
   fireFocusEvent(nextNode, "focusin", related, true, view);
 }
 
@@ -315,7 +316,7 @@ function wasPointerFocus(target: NodeImpl): boolean {
 /** https://html.spec.whatwg.org/#dom-documentorshadowroot-activeelement */
 export function activeElement(root: NodeImpl): Element | null {
   const doc = root.doc;
-  let candidate = doc._focused;
+  let candidate = doc[$focused];
   if (root.type === DOCUMENT_FRAGMENT_NODE) {
     // Shadow root: retarget the focused element against it.
     while (candidate !== null) {
@@ -343,14 +344,14 @@ export function activeElement(root: NodeImpl): Element | null {
 
 /** https://html.spec.whatwg.org/#dom-document-hasfocus (no system focus model: true while an element is focused, as jsdom). */
 export function documentHasFocus(doc: Document): boolean {
-  return doc._focused !== null;
+  return doc[$focused] !== null;
 }
 
 // --- selector predicates ------------------------------------------------------------------
 
 /** :focus — https://html.spec.whatwg.org/#selector-focus (shadow hosts match when focus is inside their shadow tree). */
 export function matchesFocus(impl: NodeImpl): boolean {
-  const f = impl.doc._focused;
+  const f = impl.doc[$focused];
   if (f === null) return false;
   if (f === impl) return true;
   if (shadowRootOf(impl) === null) return false;
@@ -365,13 +366,13 @@ export function matchesFocus(impl: NodeImpl): boolean {
 
 /** :focus-within — https://drafts.csswg.org/selectors-4/#the-focus-within-pseudo */
 export function matchesFocusWithin(impl: NodeImpl): boolean {
-  const f = impl.doc._focused;
+  const f = impl.doc[$focused];
   return f !== null && isShadowIncludingInclusiveAncestor(impl, f);
 }
 
 /** :focus-visible — https://drafts.csswg.org/selectors-4/#the-focus-visible-pseudo (heuristic). */
 export function matchesFocusVisible(impl: NodeImpl): boolean {
-  return impl.doc._focused === impl && focusVisibleFlag;
+  return impl.doc[$focused] === impl && focusVisibleFlag;
 }
 
 // --- sequential focus navigation ----------------------------------------------------------
@@ -382,8 +383,8 @@ export function matchesFocusVisible(impl: NodeImpl): boolean {
  * ties), then tabindex 0 / default-focusable elements in tree order. Each shadow tree forms its
  * own scope at its host's position (https://html.spec.whatwg.org/#focus-navigation-scope-owner).
  */
-export function sequentialFocusOrder(root: { _impl: NodeImpl } | NodeImpl): Element[] {
-  const r = "_impl" in root ? root._impl : root;
+export function sequentialFocusOrder(root: { [$impl]: NodeImpl } | NodeImpl): Element[] {
+  const r = $impl in root ? root[$impl] : root;
   const out: Element[] = [];
   appendScope(r, out);
   return out;
@@ -420,7 +421,7 @@ function appendOne(n: NodeImpl, out: Element[]): void {
   }
   const t = tabIndexValue(n);
   if (isFocusable(n) && !shadow.delegatesFocus && (Number.isNaN(t) || t >= 0)) out.push(n.node as Element);
-  if (Number.isNaN(t) || t >= 0) appendScope(shadow._impl, out);
+  if (Number.isNaN(t) || t >= 0) appendScope(shadow[$impl], out);
 }
 
 /** https://html.spec.whatwg.org/#autofocus-delegate — first focusable descendant with `autofocus`. */

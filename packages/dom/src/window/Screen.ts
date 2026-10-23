@@ -6,17 +6,18 @@
 
 import { EventTarget } from "../events/EventTarget.ts";
 import type { Window } from "./Window.ts";
+import { $options, $orientation, $window } from "../keys.ts";
 
 export class ScreenOrientation extends EventTarget {
-  _window: Window;
+  [$window]: Window;
 
   constructor(window: Window) {
     super();
-    this._window = window;
+    this[$window] = window;
   }
 
   get type(): string {
-    return this._window._options.screenWidth >= this._window._options.screenHeight ? "landscape-primary" : "portrait-primary";
+    return this[$window][$options].screenWidth >= this[$window][$options].screenHeight ? "landscape-primary" : "portrait-primary";
   }
 
   get angle(): number {
@@ -31,26 +32,26 @@ export class ScreenOrientation extends EventTarget {
 }
 
 export class Screen extends EventTarget {
-  _window: Window;
-  _orientation: ScreenOrientation | null;
+  [$window]: Window;
+  [$orientation]: ScreenOrientation | null;
 
   constructor(window: Window) {
     super();
-    this._window = window;
-    this._orientation = null;
+    this[$window] = window;
+    this[$orientation] = null;
   }
 
   get width(): number {
-    return this._window._options.screenWidth;
+    return this[$window][$options].screenWidth;
   }
   get height(): number {
-    return this._window._options.screenHeight;
+    return this[$window][$options].screenHeight;
   }
   get availWidth(): number {
-    return this._window._options.screenWidth;
+    return this[$window][$options].screenWidth;
   }
   get availHeight(): number {
-    return this._window._options.screenHeight;
+    return this[$window][$options].screenHeight;
   }
   get availLeft(): number {
     return 0;
@@ -68,16 +69,16 @@ export class Screen extends EventTarget {
     return false;
   }
   get orientation(): ScreenOrientation {
-    return (this._orientation ??= new ScreenOrientation(this._window));
+    return (this[$orientation] ??= new ScreenOrientation(this[$window]));
   }
 }
 
 export class VisualViewport extends EventTarget {
-  _window: Window;
+  [$window]: Window;
 
   constructor(window: Window) {
     super();
-    this._window = window;
+    this[$window] = window;
   }
 
   get offsetLeft(): number {
@@ -87,16 +88,16 @@ export class VisualViewport extends EventTarget {
     return 0;
   }
   get pageLeft(): number {
-    return this._window.scrollX;
+    return this[$window].scrollX;
   }
   get pageTop(): number {
-    return this._window.scrollY;
+    return this[$window].scrollY;
   }
   get width(): number {
-    return this._window.innerWidth;
+    return this[$window].innerWidth;
   }
   get height(): number {
-    return this._window.innerHeight;
+    return this[$window].innerHeight;
   }
   get scale(): number {
     return 1;

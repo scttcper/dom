@@ -7,6 +7,7 @@ import type { EventTarget } from "./EventTarget.ts";
 import { dispatch } from "./dispatch.ts";
 import { PointerEvent, type PointerEventInit } from "./UIEvents.ts";
 import type { EventInit } from "../webidl.ts";
+import { $impl, $window } from "../keys.ts";
 
 type EventCtor<E extends Event, I> = new (type: string, init?: I) => E;
 
@@ -40,8 +41,8 @@ export function dispatchTrusted(event: Event, target: EventTarget): boolean {
  * is responsible for the click-in-progress flag and the disabled check.
  */
 export function fireSyntheticPointerEvent(type: string, target: EventTarget, notTrusted: boolean, init?: PointerEventInit): boolean {
-  const impl = (target as unknown as { _impl?: { doc: { _window: unknown } } })._impl;
-  const view = impl === undefined ? null : impl.doc._window;
+  const impl = (target as unknown as { [$impl]?: { doc: { [$window]: unknown } } })[$impl];
+  const view = impl === undefined ? null : impl.doc[$window];
   const event = new PointerEvent(type, {
     pointerId: -1,
     ...init,

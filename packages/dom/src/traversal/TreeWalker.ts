@@ -10,6 +10,7 @@ import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nextInTree, previousInTree } from "../nodes/traverse.ts";
 import { registerNodeIterator, type IteratorState } from "./live.ts";
+import { $active, $current, $filter, $impl, $inflight, $pointerBeforeReference, $reference, $root, $whatToShow } from "../keys.ts";
 
 /** https://dom.spec.whatwg.org/#interface-nodefilter (constants; the interface object is a plain namespace-like object). */
 export const NodeFilter = Object.freeze({
@@ -39,45 +40,45 @@ export type NodeFilterCallback = (node: Node) => number;
 export type NodeFilterArg = NodeFilterCallback | { acceptNode(node: Node): number } | null;
 
 function rootImpl(root: unknown, iface: string): NodeImpl {
-  if (root === null || typeof root !== "object" || !("_impl" in root)) {
+  if (root === null || typeof root !== "object" || !($impl in root)) {
     throw new TypeError(`Failed to execute 'create${iface}' on 'Document': parameter 1 is not of type 'Node'.`);
   }
-  return (root as Node)._impl;
+  return (root as Node)[$impl];
 }
 
 /** Shared state + https://dom.spec.whatwg.org/#concept-node-filter */
 abstract class Traverser {
-  _root: NodeImpl;
-  _whatToShow: number;
-  _filter: NodeFilterArg;
-  _active: boolean;
+  [$root]: NodeImpl;
+  [$whatToShow]: number;
+  [$filter]: NodeFilterArg;
+  [$active]: boolean;
 
   constructor(root: NodeImpl, whatToShow: number, filter: NodeFilterArg) {
-    this._root = root;
-    this._whatToShow = Number(whatToShow) >>> 0;
-    this._filter = filter === undefined ? null : filter;
-    this._active = false;
+    this[$root] = root;
+    this[$whatToShow] = Number(whatToShow) >>> 0;
+    this[$filter] = filter === undefined ? null : filter;
+    this[$active] = false;
   }
 
   get root(): Node {
-    return this._root.node;
+    return this[$root].node;
   }
 
   get whatToShow(): number {
-    return this._whatToShow;
+    return this[$whatToShow];
   }
 
   get filter(): NodeFilterArg {
-    return this._filter;
+    return this[$filter];
   }
 
   /** https://dom.spec.whatwg.org/#concept-node-filter */
   _filterNode(n: NodeImpl): number {
-    if (this._active) throw new DOMException("Recursive node filtering is not allowed.", "InvalidStateError");
-    if ((this._whatToShow & (1 << (n.type - 1))) === 0) return FILTER_SKIP;
-    const filter = this._filter;
+    if (this[$active]) throw new DOMException("Recursive node filtering is not allowed.", "InvalidStateError");
+    if ((this[$whatToShow] & (1 << (n.type - 1))) === 0) return FILTER_SKIP;
+    const filter = this[$filter];
     if (filter === null) return FILTER_ACCEPT;
-    this._active = true;
+    this[$active] = true;
     let result: unknown;
     try {
       if (typeof filter === "function") {
@@ -88,7 +89,7 @@ abstract class Traverser {
         result = accept.call(filter, n.node);
       }
     } finally {
-      this._active = false;
+      this[$active] = false;
     }
     return (Number(result) >>> 0) & 0xffff;
   }
@@ -97,27 +98,27 @@ abstract class Traverser {
 /** https://dom.spec.whatwg.org/#interface-nodeiterator */
 export class NodeIterator extends Traverser implements IteratorState {
   /** https://dom.spec.whatwg.org/#nodeiterator-reference */
-  _reference: NodeImpl;
+  [$reference]: NodeImpl;
   /** https://dom.spec.whatwg.org/#nodeiterator-pointer-before-reference */
-  _pointerBeforeReference: boolean;
-  _inflight: IteratorState | null;
+  [$pointerBeforeReference]: boolean;
+  [$inflight]: IteratorState | null;
 
   /** @internal Use document.createNodeIterator(). */
   constructor(root: Node, whatToShow = 0xffffffff, filter: NodeFilterArg = null) {
     const r = rootImpl(root, "NodeIterator");
     super(r, whatToShow, filter);
-    this._reference = r;
-    this._pointerBeforeReference = true;
-    this._inflight = null;
+    this[$reference] = r;
+    this[$pointerBeforeReference] = true;
+    this[$inflight] = null;
     registerNodeIterator(this);
   }
 
   get referenceNode(): Node {
-    return this._reference.node;
+    return this[$reference].node;
   }
 
   get pointerBeforeReferenceNode(): boolean {
-    return this._pointerBeforeReference;
+    return this[$pointerBeforeReference];
   }
 
   /**
@@ -128,13 +129,13 @@ export class NodeIterator extends Traverser implements IteratorState {
    * keeps reporting the last accepted node until the candidate is accepted.
    */
   #traverse(next: boolean): Node | null {
-    const root = this._root;
-    const pos: IteratorState = { _root: root, _reference: this._reference, _pointerBeforeReference: this._pointerBeforeReference, _inflight: null };
-    this._inflight = pos;
+    const root = this[$root];
+    const pos: IteratorState = { [$root]: root, [$reference]: this[$reference], [$pointerBeforeReference]: this[$pointerBeforeReference], [$inflight]: null };
+    this[$inflight] = pos;
     try {
       for (;;) {
-        let node = pos._reference;
-        let before = pos._pointerBeforeReference;
+        let node = pos[$reference];
+        let before = pos[$pointerBeforeReference];
         if (next) {
           if (!before) {
             const n = nextInTree(node, root);
@@ -150,16 +151,16 @@ export class NodeIterator extends Traverser implements IteratorState {
         } else {
           before = true;
         }
-        pos._reference = node;
-        pos._pointerBeforeReference = before;
+        pos[$reference] = node;
+        pos[$pointerBeforeReference] = before;
         if (this._filterNode(node) === FILTER_ACCEPT) {
-          this._reference = pos._reference;
-          this._pointerBeforeReference = pos._pointerBeforeReference;
+          this[$reference] = pos[$reference];
+          this[$pointerBeforeReference] = pos[$pointerBeforeReference];
           return node.node;
         }
       }
     } finally {
-      this._inflight = null;
+      this[$inflight] = null;
     }
   }
 
@@ -177,33 +178,33 @@ export class NodeIterator extends Traverser implements IteratorState {
 
 /** https://dom.spec.whatwg.org/#interface-treewalker */
 export class TreeWalker extends Traverser {
-  _current: NodeImpl;
+  [$current]: NodeImpl;
 
   /** @internal Use document.createTreeWalker(). */
   constructor(root: Node, whatToShow = 0xffffffff, filter: NodeFilterArg = null) {
     const r = rootImpl(root, "TreeWalker");
     super(r, whatToShow, filter);
-    this._current = r;
+    this[$current] = r;
   }
 
   get currentNode(): Node {
-    return this._current.node;
+    return this[$current].node;
   }
 
   set currentNode(node: Node) {
-    if (node === null || typeof node !== "object" || !("_impl" in node)) {
+    if (node === null || typeof node !== "object" || !($impl in node)) {
       throw new TypeError("Failed to set the 'currentNode' property on 'TreeWalker': The provided value is not of type 'Node'.");
     }
-    this._current = node._impl;
+    this[$current] = node[$impl];
   }
 
   /** https://dom.spec.whatwg.org/#dom-treewalker-parentnode */
   parentNode(): Node | null {
-    let node: NodeImpl | null = this._current;
-    while (node !== null && node !== this._root) {
+    let node: NodeImpl | null = this[$current];
+    while (node !== null && node !== this[$root]) {
       node = node.parent;
       if (node !== null && this._filterNode(node) === FILTER_ACCEPT) {
-        this._current = node;
+        this[$current] = node;
         return node.node;
       }
     }
@@ -212,11 +213,11 @@ export class TreeWalker extends Traverser {
 
   /** https://dom.spec.whatwg.org/#concept-traverse-children */
   #traverseChildren(first: boolean): Node | null {
-    let node: NodeImpl | null = first ? this._current.first : this._current.last;
+    let node: NodeImpl | null = first ? this[$current].first : this[$current].last;
     while (node !== null) {
       const result = this._filterNode(node);
       if (result === FILTER_ACCEPT) {
-        this._current = node;
+        this[$current] = node;
         return node.node;
       }
       if (result === FILTER_SKIP) {
@@ -233,7 +234,7 @@ export class TreeWalker extends Traverser {
           break;
         }
         const parent: NodeImpl | null = node.parent;
-        if (parent === null || parent === this._root || parent === this._current) return null;
+        if (parent === null || parent === this[$root] || parent === this[$current]) return null;
         node = parent;
       }
     }
@@ -250,22 +251,22 @@ export class TreeWalker extends Traverser {
 
   /** https://dom.spec.whatwg.org/#concept-traverse-siblings */
   #traverseSiblings(next: boolean): Node | null {
-    let node: NodeImpl = this._current;
-    if (node === this._root) return null;
+    let node: NodeImpl = this[$current];
+    if (node === this[$root]) return null;
     for (;;) {
       let sibling: NodeImpl | null = next ? node.next : node.prev;
       while (sibling !== null) {
         node = sibling;
         const result = this._filterNode(node);
         if (result === FILTER_ACCEPT) {
-          this._current = node;
+          this[$current] = node;
           return node.node;
         }
         sibling = next ? node.first : node.last;
         if (result === FILTER_REJECT || sibling === null) sibling = next ? node.next : node.prev;
       }
       const parent: NodeImpl | null = node.parent;
-      if (parent === null || parent === this._root) return null;
+      if (parent === null || parent === this[$root]) return null;
       node = parent;
       if (this._filterNode(node) === FILTER_ACCEPT) return null;
     }
@@ -281,8 +282,8 @@ export class TreeWalker extends Traverser {
 
   /** https://dom.spec.whatwg.org/#dom-treewalker-previousnode */
   previousNode(): Node | null {
-    let node: NodeImpl = this._current;
-    while (node !== this._root) {
+    let node: NodeImpl = this[$current];
+    while (node !== this[$root]) {
       let sibling: NodeImpl | null = node.prev;
       while (sibling !== null) {
         node = sibling;
@@ -292,16 +293,16 @@ export class TreeWalker extends Traverser {
           result = this._filterNode(node);
         }
         if (result === FILTER_ACCEPT) {
-          this._current = node;
+          this[$current] = node;
           return node.node;
         }
         sibling = node.prev;
       }
       const parent: NodeImpl | null = node.parent;
-      if (node === this._root || parent === null) return null;
+      if (node === this[$root] || parent === null) return null;
       node = parent;
       if (this._filterNode(node) === FILTER_ACCEPT) {
-        this._current = node;
+        this[$current] = node;
         return node.node;
       }
     }
@@ -310,21 +311,21 @@ export class TreeWalker extends Traverser {
 
   /** https://dom.spec.whatwg.org/#dom-treewalker-nextnode */
   nextNode(): Node | null {
-    let node: NodeImpl = this._current;
+    let node: NodeImpl = this[$current];
     let result = FILTER_ACCEPT;
     for (;;) {
       while (result !== FILTER_REJECT && node.first !== null) {
         node = node.first;
         result = this._filterNode(node);
         if (result === FILTER_ACCEPT) {
-          this._current = node;
+          this[$current] = node;
           return node.node;
         }
       }
       let sibling: NodeImpl | null = null;
       let temporary: NodeImpl | null = node;
       while (temporary !== null) {
-        if (temporary === this._root) return null;
+        if (temporary === this[$root]) return null;
         sibling = temporary.next;
         if (sibling !== null) {
           node = sibling;
@@ -335,7 +336,7 @@ export class TreeWalker extends Traverser {
       if (temporary === null) return null;
       result = this._filterNode(node);
       if (result === FILTER_ACCEPT) {
-        this._current = node;
+        this[$current] = node;
         return node.node;
       }
     }

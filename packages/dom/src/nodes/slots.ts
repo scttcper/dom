@@ -16,6 +16,7 @@ import { attr } from "./attributes.ts";
 import { nextInTree, treeRoot } from "./traverse.ts";
 import { T } from "./tags.ts";
 import { signalSlotChange } from "../observers/queue.ts";
+import { $host, $impl, $shadowRoot } from "../keys.ts";
 
 /** Number of shadow roots attached in this process; gates all slot bookkeeping. */
 export let slotAssignmentActive = 0;
@@ -44,7 +45,7 @@ function isSlottable(n: NodeImpl): boolean {
 }
 
 function shadowOf(host: NodeImpl): ShadowRoot | null {
-  return (host.flags & F_HAS_SHADOW) !== 0 ? (host.node as Element)._shadowRoot : null;
+  return (host.flags & F_HAS_SHADOW) !== 0 ? (host.node as Element)[$shadowRoot] : null;
 }
 
 /** https://dom.spec.whatwg.org/#slot-name */
@@ -64,7 +65,7 @@ export function findSlot(slottable: NodeImpl, open: boolean): NodeImpl | null {
   const shadow = shadowOf(parent);
   if (shadow === null) return null;
   if (open && shadow.mode !== "open") return null;
-  const root = shadow._impl;
+  const root = shadow[$impl];
   if (shadow.slotAssignment === "manual") {
     for (let n = root.first; n !== null; n = nextInTree(n, root)) {
       if (isSlot(n) && (manuallyAssignedOf.get(n) ?? EMPTY).includes(slottable)) return n;
@@ -84,7 +85,7 @@ export function findSlottables(slot: NodeImpl): NodeImpl[] {
   const root = treeRoot(slot);
   if ((root.flags & F_SHADOW_ROOT) === 0) return result;
   const shadow = root.node as ShadowRoot;
-  const host = shadow._host!._impl;
+  const host = shadow[$host]![$impl];
   if (shadow.slotAssignment === "manual") {
     const manual = manuallyAssignedOf.get(slot);
     if (manual !== undefined) for (const s of manual) if (s.parent === host) result.push(s);

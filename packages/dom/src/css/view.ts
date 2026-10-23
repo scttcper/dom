@@ -12,6 +12,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE, F_CONNECTED, HTML_NS } from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { computedValue, computedPosition, inheritanceParent, isDisplayNone, computedVisibility } from "./cascade.ts";
+import { $impl } from "../keys.ts";
 
 export interface CheckVisibilityOptions {
   checkOpacity?: boolean;
@@ -136,7 +137,7 @@ export function offsetParent(el: NodeImpl): NodeImpl | null {
 export function installHTMLElementView(HTMLElementClass: { prototype: object }): void {
   Object.defineProperty(HTMLElementClass.prototype, "offsetParent", {
     get(this: Element): Element | null {
-      const p = offsetParent(this._impl);
+      const p = offsetParent(this[$impl]);
       return p === null ? null : (p.node as Element);
     },
     enumerable: true,
@@ -153,30 +154,30 @@ export function installElementView(ElementClass: { prototype: object }): void {
   def("checkVisibility", {
     writable: true,
     value: function checkVisibilityMethod(this: Element, options?: CheckVisibilityOptions): boolean {
-      return checkVisibility(this._impl, options);
+      return checkVisibility(this[$impl], options);
     },
   });
   def("scrollTop", {
     get(this: Element) {
-      return getScrollTop(this._impl);
+      return getScrollTop(this[$impl]);
     },
     set(this: Element, v: unknown) {
-      setScrollTop(this._impl, v);
+      setScrollTop(this[$impl], v);
     },
   });
   def("scrollLeft", {
     get(this: Element) {
-      return getScrollLeft(this._impl);
+      return getScrollLeft(this[$impl]);
     },
     set(this: Element, v: unknown) {
-      setScrollLeft(this._impl, v);
+      setScrollLeft(this[$impl], v);
     },
   });
   for (const [name, by] of [["scroll", false], ["scrollTo", false], ["scrollBy", true]] as const) {
     def(name, {
       writable: true,
       value: function (this: Element, x?: unknown, y?: unknown): void {
-        scrollElement(this._impl, by, x, y, arguments.length);
+        scrollElement(this[$impl], by, x, y, arguments.length);
       },
     });
   }

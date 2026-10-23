@@ -34,6 +34,7 @@ import {
   V_VALUE_MISSING,
   type Validatable,
 } from "./validation.ts";
+import { $customValidity, $host, $impl, $validity } from "../../keys.ts";
 
 /** ValidityStateFlags dictionary keys in V_* bit order. */
 const FLAG_NAMES: [string, number][] = [
@@ -68,8 +69,8 @@ export class FaceState {
   lastOwner: NodeImpl | null;
   lastDisabled: boolean;
   // Validatable members (unused fields of the interface kept for shape).
-  _customValidity: string;
-  _validity: ValidityState | null;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
 
   constructor(impl: NodeImpl) {
     this.impl = impl;
@@ -82,8 +83,8 @@ export class FaceState {
     this.labels = null;
     this.lastOwner = null;
     this.lastDisabled = false;
-    this._customValidity = "";
-    this._validity = null;
+    this[$customValidity] = "";
+    this[$validity] = null;
   }
 
   _validityFlags(): number {
@@ -178,8 +179,8 @@ export function internalsSetValidity(impl: NodeImpl, flags: Record<string, unkno
   if (anchor !== undefined && anchor !== null) {
     // Step 3: the anchor must be a shadow-including descendant of the element.
     let inside = false;
-    for (let n: NodeImpl | null = anchor._impl; n !== null; n = n.parent ?? ((n.node as unknown as { _host?: { _impl: NodeImpl } | null })._host?._impl ?? null)) {
-      if (n === impl && n !== anchor._impl) {
+    for (let n: NodeImpl | null = anchor[$impl]; n !== null; n = n.parent ?? ((n.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host]?.[$impl] ?? null)) {
+      if (n === impl && n !== anchor[$impl]) {
         inside = true;
         break;
       }

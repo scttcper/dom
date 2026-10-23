@@ -14,22 +14,23 @@ import { setAttribute } from "../nodes/attributes.ts";
 import { ELEMENT_NODE, SVG_NS, XLINK_NS } from "../nodes/constants.ts";
 import { contentAttr } from "./reflect.ts";
 import { installHTMLOrSVGElement } from "./HTMLElement.ts";
+import { $attr, $el, $impl, $style } from "../keys.ts";
 
 /** https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedString */
 export class SVGAnimatedString {
-  _el: Element;
-  _attr: string;
+  [$el]: Element;
+  [$attr]: string;
   constructor(el: Element, attr: string) {
-    this._el = el;
-    this._attr = attr;
+    this[$el] = el;
+    this[$attr] = attr;
   }
   get baseVal(): string {
-    const impl = this._el._impl;
-    if (this._attr === "href") return contentAttr(impl, "href") ?? xlinkHref(impl) ?? "";
-    return contentAttr(impl, this._attr) ?? "";
+    const impl = this[$el][$impl];
+    if (this[$attr] === "href") return contentAttr(impl, "href") ?? xlinkHref(impl) ?? "";
+    return contentAttr(impl, this[$attr]) ?? "";
   }
   set baseVal(v: string) {
-    setAttribute(this._el._impl, this._attr, String(v));
+    setAttribute(this[$el][$impl], this[$attr], String(v));
   }
   get animVal(): string {
     return this.baseVal;
@@ -48,7 +49,7 @@ const HREF = Symbol("href");
 
 export class SVGElement extends Element {
   get style(): CSSStyleDeclaration {
-    return (this._style ??= new CSSStyleDeclaration(this));
+    return (this[$style] ??= new CSSStyleDeclaration(this));
   }
 
   set style(value: string) {
@@ -72,7 +73,7 @@ export class SVGElement extends Element {
 
   /** https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement */
   get ownerSVGElement(): SVGSVGElement | null {
-    for (let p = this._impl.parent; p !== null && p.type === ELEMENT_NODE; p = p.parent) {
+    for (let p = this[$impl].parent; p !== null && p.type === ELEMENT_NODE; p = p.parent) {
       if (p.ns === SVG_NS && p.name === "svg") return p.node as SVGSVGElement;
     }
     return null;
@@ -187,7 +188,7 @@ export class SVGSVGElement extends SVGGraphicsElement {
   }
   setCurrentTime(): void {}
   getElementById(id: string): Element | null {
-    const root = this._impl;
+    const root = this[$impl];
     for (let n = root.first; n !== null; n = nextEl(n, root)) if (n.type === ELEMENT_NODE && n.id === String(id)) return n.node as Element;
     return null;
   }

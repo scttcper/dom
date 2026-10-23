@@ -8,6 +8,7 @@ import { Event, setTrusted } from "../../events/Event.ts";
 import { dispatch } from "../../events/dispatch.ts";
 import { setAttribute } from "../../nodes/attributes.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
+import { $impl } from "../../keys.ts";
 
 const INT_MAX = 2147483647;
 
@@ -34,12 +35,12 @@ export function readPositiveUnsigned(impl: NodeImpl, name: string, def: number):
  */
 export function positiveWithFallback(C: { prototype: object }, idl: string, content: string, def: number): void {
   Object.defineProperty(C.prototype, idl, {
-    get(this: { _impl: NodeImpl }) {
-      return readPositiveUnsigned(this._impl, content, def);
+    get(this: { [$impl]: NodeImpl }) {
+      return readPositiveUnsigned(this[$impl], content, def);
     },
-    set(this: { _impl: NodeImpl }, v: unknown) {
+    set(this: { [$impl]: NodeImpl }, v: unknown) {
       const n = toUnsignedLong(v);
-      setAttribute(this._impl, content, String(n >= 1 && n <= INT_MAX ? n : def));
+      setAttribute(this[$impl], content, String(n >= 1 && n <= INT_MAX ? n : def));
     },
     enumerable: true,
     configurable: true,

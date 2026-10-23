@@ -12,6 +12,7 @@
 // shapes Testing Library and React apps hammer (`*`, `#id`, `.class`, `tag`, `[attr]`,
 // `[attr="v"]`); everything else runs the generic matcher per element.
 
+import { derivedCache, peekDerivedCache } from "../nodes/derived.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE, F_CONNECTED, F_HTML } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { classTokens } from "../nodes/attributes.ts";
@@ -35,6 +36,7 @@ import {
   FAST_TAG,
   FAST_ATTR,
 } from "./compile.ts";
+import { $ids, $mode, $version } from "../keys.ts";
 
 /** A compiled selector string, cached by text. */
 class Query {
@@ -144,7 +146,7 @@ function attrMatch(el: NodeImpl, t: Test, exists: boolean): boolean {
 }
 
 function isQuirks(root: NodeImpl): boolean {
-  return root.doc._mode === "quirks";
+  return root.doc[$mode] === "quirks";
 }
 
 /** Collect (or find the first of, when `first`) the matching descendants of `root` in tree order. */
@@ -161,7 +163,7 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
     case FAST_ID: {
       const t = q.fastT!;
       if ((root.flags & F_CONNECTED) !== 0 && !isQuirks(root)) {
-        const found = root.doc._ids.get(t.name);
+        const found = root.doc[$ids].get(t.name);
         if (found === undefined) {
           if (root.type === DOCUMENT_NODE) return null;
         } else if (!Array.isArray(found)) {
@@ -248,7 +250,8 @@ const NO_OUT: NodeImpl[] = [];
 // polling, repeated getBy* calls). Results of selectors whose outcome depends only on the tree
 // and attributes (CompileInfo.volatile === false) are reused while Document._version is unchanged
 // (https://dom.spec.whatwg.org's mutation algorithms bump it in nodes/tree.ts, attributes.ts,
-// CharacterData.ts). Keyed weakly by the root so cached results never keep a document alive.
+// CharacterData.ts). Kept per document in Document[$derived] (nodes/derived.ts), keyed weakly by
+// the root, so cached results never keep a document or a removed subtree alive.
 
 class ResultEntry {
   version: number;
@@ -267,21 +270,25 @@ class ResultEntry {
 }
 
 const MAX_ENTRIES_PER_ROOT = 64;
-const results = new WeakMap<NodeImpl, Map<Query, ResultEntry>>();
+/** Owner token of the per-document cache (nodes/derived.ts): WeakMap root → entries. */
+const RESULTS = {};
+const newResults = (): WeakMap<NodeImpl, Map<Query, ResultEntry>> => new WeakMap();
 
 function cacheable(q: Query): boolean {
   return !q.info.volatile && q.fast !== FAST_ID;
 }
 
 function cachedEntry(root: NodeImpl, q: Query, create: boolean): ResultEntry | null {
+  const doc = root.doc;
+  const results = create ? derivedCache(doc, RESULTS, newResults) : peekDerivedCache<WeakMap<NodeImpl, Map<Query, ResultEntry>>>(doc, RESULTS);
+  if (results === undefined) return null;
   let m = results.get(root);
   if (m === undefined) {
     if (!create) return null;
     m = new Map();
     results.set(root, m);
   }
-  const doc = root.doc;
-  const version = doc._version;
+  const version = doc[$version];
   let e = m.get(q);
   if (e !== undefined && e.version === version && e.doc === doc) return e;
   if (!create) return null;

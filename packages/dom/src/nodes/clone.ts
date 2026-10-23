@@ -18,6 +18,7 @@ import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { appendDetached } from "./tree.ts";
 import { createElementImpl } from "./create.ts";
+import { $clonable, $declarative, $delegatesFocus, $impl, $mode, $serializable, $shadowRoot, $slotAssignment } from "../keys.ts";
 
 /** Clone `node` into `doc`. Deep clones build the copy detached and never fire hooks. */
 export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
@@ -28,17 +29,17 @@ export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImp
   // Clonable shadow roots are cloned with their host, regardless of `deep`
   // (https://dom.spec.whatwg.org/#concept-node-clone step for shadow hosts).
   if ((node.flags & F_HAS_SHADOW) !== 0) {
-    const shadow = (node.node as Element)._shadowRoot!;
-    if (shadow._clonable) {
+    const shadow = (node.node as Element)[$shadowRoot]!;
+    if (shadow[$clonable]) {
       const copyShadow = (copy.node as Element).attachShadow({
-        mode: shadow._mode,
+        mode: shadow[$mode],
         clonable: true,
-        serializable: shadow._serializable,
-        delegatesFocus: shadow._delegatesFocus,
-        slotAssignment: shadow._slotAssignment,
+        serializable: shadow[$serializable],
+        delegatesFocus: shadow[$delegatesFocus],
+        slotAssignment: shadow[$slotAssignment],
       });
-      copyShadow._declarative = shadow._declarative;
-      for (let c = shadow._impl.first; c !== null; c = c.next) appendDetached(cloneNode(c, doc, true), copyShadow._impl);
+      copyShadow[$declarative] = shadow[$declarative];
+      for (let c = shadow[$impl].first; c !== null; c = c.next) appendDetached(cloneNode(c, doc, true), copyShadow[$impl]);
     }
   }
   return copy;
@@ -64,26 +65,26 @@ function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
       return el;
     }
     case TEXT_NODE:
-      return doc.createTextNode(node.data)._impl;
+      return doc.createTextNode(node.data)[$impl];
     case CDATA_SECTION_NODE:
       // Not via createCDATASection: cloning into an HTML document must not throw.
-      return new (node.node.constructor as new (data: string, doc: Document) => { _impl: NodeImpl })(node.data, doc)._impl;
+      return new (node.node.constructor as new (data: string, doc: Document) => { [$impl]: NodeImpl })(node.data, doc)[$impl];
     case COMMENT_NODE:
-      return doc.createComment(node.data)._impl;
+      return doc.createComment(node.data)[$impl];
     case PROCESSING_INSTRUCTION_NODE:
-      return doc.createProcessingInstruction(node.name, node.data)._impl;
+      return doc.createProcessingInstruction(node.name, node.data)[$impl];
     case DOCUMENT_FRAGMENT_NODE:
-      return doc.createDocumentFragment()._impl;
+      return doc.createDocumentFragment()[$impl];
     case DOCUMENT_TYPE_NODE: {
       const dt = node.node as unknown as { name: string; publicId: string; systemId: string };
-      return doc.implementation.createDocumentType(dt.name, dt.publicId, dt.systemId)._impl;
+      return doc.implementation.createDocumentType(dt.name, dt.publicId, dt.systemId)[$impl];
     }
     case DOCUMENT_NODE:
-      return (node.node as Document)._cloneDocument()._impl;
+      return (node.node as Document)._cloneDocument()[$impl];
     case ATTRIBUTE_NODE: {
       const a = doc.createAttributeNS(node.ns, node.prefix === null ? node.name : node.prefix + ":" + node.name);
       a.value = node.data;
-      return a._impl;
+      return a[$impl];
     }
   }
   throw new DOMException("Cannot clone this node.", "NotSupportedError");

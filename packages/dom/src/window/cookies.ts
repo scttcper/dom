@@ -5,6 +5,7 @@
 // path-match), Secure (only on secure origins) and ignores Domain / SameSite / HttpOnly
 // cookies (scripts cannot set HttpOnly cookies).
 
+import { $cookies } from "../keys.ts";
 interface Cookie {
   name: string;
   value: string;
@@ -30,10 +31,10 @@ function pathMatches(requestPath: string, cookiePath: string): boolean {
 }
 
 export class CookieJar {
-  _cookies: Cookie[];
+  [$cookies]: Cookie[];
 
   constructor() {
-    this._cookies = [];
+    this[$cookies] = [];
   }
 
   /** https://httpwg.org/specs/rfc6265.html#sane-set-cookie-syntax — the `document.cookie` setter. */
@@ -80,14 +81,14 @@ export class CookieJar {
       }
     }
     if (secure && url.protocol !== "https:" && url.hostname !== "localhost") return;
-    const i = this._cookies.findIndex((c) => c.name === name && c.path === path);
+    const i = this[$cookies].findIndex((c) => c.name === name && c.path === path);
     if (expires <= now) {
-      if (i !== -1) this._cookies.splice(i, 1);
+      if (i !== -1) this[$cookies].splice(i, 1);
       return;
     }
     const cookie: Cookie = { name, value, path, expires, secure };
-    if (i !== -1) this._cookies[i] = cookie;
-    else this._cookies.push(cookie);
+    if (i !== -1) this[$cookies][i] = cookie;
+    else this[$cookies].push(cookie);
   }
 
   /** https://httpwg.org/specs/rfc6265.html#cookie — the `document.cookie` getter. */
@@ -95,10 +96,10 @@ export class CookieJar {
     let out = "";
     // Longer paths first, then creation order (RFC 6265 §5.4 step 2).
     const matching: Cookie[] = [];
-    for (let i = this._cookies.length - 1; i >= 0; i--) {
-      const c = this._cookies[i];
+    for (let i = this[$cookies].length - 1; i >= 0; i--) {
+      const c = this[$cookies][i];
       if (c.expires <= now) {
-        this._cookies.splice(i, 1);
+        this[$cookies].splice(i, 1);
         continue;
       }
       if (c.secure && url.protocol !== "https:" && url.hostname !== "localhost") continue;

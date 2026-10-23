@@ -18,6 +18,7 @@ import { Document } from "../../src/nodes/Document.ts";
 import type { Element } from "../../src/nodes/Element.ts";
 import { getHTML, serializeXML } from "../../src/serializer/index.ts";
 import { parseDocument, parseFragment, parseXML, PARSERERROR_NS, setHTMLUnsafe } from "../../src/parser/index.ts";
+import { $contentType, $impl } from "../../src/keys.ts";
 
 let document: Document;
 
@@ -73,7 +74,7 @@ describe("HTML fragment serialization — https://html.spec.whatwg.org/#serialis
     el.appendChild(document.createProcessingInstruction("t", "d"));
     expect(el.innerHTML).toBe("<!--c--><?t d?>");
     const doc = document.implementation.createHTMLDocument("x");
-    expect((doc as unknown as Document)._impl.first?.node && (doc.documentElement as Element).outerHTML.startsWith("<html>")).toBe(true);
+    expect((doc as unknown as Document)[$impl].first?.node && (doc.documentElement as Element).outerHTML.startsWith("<html>")).toBe(true);
   });
 
   test("no extra U+000A is serialized for pre/textarea/listing (the parser dropped it)", () => {
@@ -91,22 +92,22 @@ describe("getHTML() — https://html.spec.whatwg.org/#dom-element-gethtml", () =
     const shadow = host.attachShadow({ mode: "open", serializable: true });
     shadow.innerHTML = "<b>in</b>";
     host.innerHTML = "<i>light</i>";
-    expect(getHTML(host._impl, { serializableShadowRoots: true })).toBe(
+    expect(getHTML(host[$impl], { serializableShadowRoots: true })).toBe(
       '<template shadowrootmode="open" shadowrootserializable=""><b>in</b></template><i>light</i>',
     );
-    expect(getHTML(host._impl)).toBe("<i>light</i>");
+    expect(getHTML(host[$impl])).toBe("<i>light</i>");
   });
 
   test("shadowRoots lists roots to include even when not serializable", () => {
     const host = document.createElement("div");
     const shadow = host.attachShadow({ mode: "closed" });
     shadow.innerHTML = "x";
-    expect(getHTML(host._impl, { shadowRoots: [shadow] })).toBe('<template shadowrootmode="closed">x</template>');
+    expect(getHTML(host[$impl], { shadowRoots: [shadow] })).toBe('<template shadowrootmode="closed">x</template>');
   });
 
   test("setHTMLUnsafe parses declarative shadow roots", () => {
     const host = document.createElement("div");
-    setHTMLUnsafe(host._impl, '<section><template shadowrootmode="open"><p>s</p></template>light</section>');
+    setHTMLUnsafe(host[$impl], '<section><template shadowrootmode="open"><p>s</p></template>light</section>');
     const section = host.firstElementChild!;
     expect(section.shadowRoot?.innerHTML).toBe("<p>s</p>");
     expect(section.innerHTML).toBe("light");
@@ -121,7 +122,7 @@ describe("getHTML() — https://html.spec.whatwg.org/#dom-element-gethtml", () =
 describe("HTML parsing entry points — https://html.spec.whatwg.org/#html-fragment-parsing-algorithm", () => {
   test("fragment parsing uses the context element: <tr> markup in a <tbody> context", () => {
     const tbody = document.createElement("tbody");
-    const fragment = parseFragment("<tr><td>1</td></tr>", tbody._impl);
+    const fragment = parseFragment("<tr><td>1</td></tr>", tbody[$impl]);
     expect(fragment.first?.name).toBe("tr");
   });
 
@@ -149,7 +150,7 @@ describe("HTML parsing entry points — https://html.spec.whatwg.org/#html-fragm
 
 describe("XML serialization — https://w3c.github.io/DOM-Parsing/#dfn-xml-serialization", () => {
   test("HTML elements get the XHTML default namespace declared; void elements self-close", () => {
-    expect(serializeXML(div("<br>")._impl, false)).toBe('<div xmlns="http://www.w3.org/1999/xhtml"><br /></div>');
+    expect(serializeXML(div("<br>")[$impl], false)).toBe('<div xmlns="http://www.w3.org/1999/xhtml"><br /></div>');
   });
 
   test("non-HTML empty elements self-close and text escapes & < >", () => {
@@ -157,27 +158,27 @@ describe("XML serialization — https://w3c.github.io/DOM-Parsing/#dfn-xml-seria
     const r = doc.createElementNS("urn:a", "r");
     r.appendChild(doc.createElementNS("urn:a", "e"));
     r.appendChild(doc.createTextNode("<&>"));
-    expect(serializeXML(r._impl, false)).toBe('<r xmlns="urn:a"><e/>&lt;&amp;&gt;</r>');
+    expect(serializeXML(r[$impl], false)).toBe('<r xmlns="urn:a"><e/>&lt;&amp;&gt;</r>');
   });
 
   test("prefixed elements declare their prefix", () => {
     const doc = new Document();
-    expect(serializeXML(doc.createElementNS("urn:x", "x:a")._impl, false)).toBe('<x:a xmlns:x="urn:x"/>');
+    expect(serializeXML(doc.createElementNS("urn:x", "x:a")[$impl], false)).toBe('<x:a xmlns:x="urn:x"/>');
   });
 
   test("require well-formed throws InvalidStateError for comments containing --", () => {
     const doc = new Document();
     const r = doc.createElementNS(null, "r");
     r.appendChild(doc.createComment("a--b"));
-    expect(() => serializeXML(r._impl, true)).toThrow(expect.objectContaining({ name: "InvalidStateError" }));
-    expect(serializeXML(r._impl, false)).toBe("<r><!--a--b--></r>");
+    expect(() => serializeXML(r[$impl], true)).toThrow(expect.objectContaining({ name: "InvalidStateError" }));
+    expect(serializeXML(r[$impl], false)).toBe("<r><!--a--b--></r>");
   });
 });
 
 describe("XML parsing — https://html.spec.whatwg.org/#dom-domparser-parsefromstring", () => {
   function xml(src: string): Document {
     const doc = new Document();
-    doc._contentType = "application/xml";
+    doc[$contentType] = "application/xml";
     parseXML(src, doc, "application/xml");
     return doc;
   }

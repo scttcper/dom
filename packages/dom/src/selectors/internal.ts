@@ -28,6 +28,7 @@ import {
   KEY_CLASS,
   KEY_TAG,
 } from "./compile.ts";
+import { $cx, $info } from "../keys.ts";
 
 export { KEY_NONE, KEY_ID, KEY_CLASS, KEY_TAG, packSpecificity, unpackSpecificity };
 export { querySelectorAllImpls, isValidSelector, clearSelectorCaches } from "./index.ts";
@@ -48,9 +49,9 @@ export class CompiledSelector {
   /** Depends on state not covered by Document._version (focus, hover, checkedness, values, ...). */
   readonly volatile: boolean;
   /** @internal */
-  readonly _cx: CComplex;
+  readonly [$cx]: CComplex;
   /** @internal */
-  readonly _info: CompileInfo;
+  readonly [$info]: CompileInfo;
 
   constructor(cx: CComplex, info: CompileInfo) {
     this.text = cx.text;
@@ -60,8 +61,8 @@ export class CompiledSelector {
     this.key = key.value;
     this.pseudoElement = cx.pseudoElement;
     this.volatile = info.volatile;
-    this._cx = cx;
-    this._info = info;
+    this[$cx] = cx;
+    this[$info] = info;
   }
 
   /** Specificity as an (a, b, c) tuple. */
@@ -138,11 +139,11 @@ export function matchesSelector(sel: CompiledSelector, el: NodeImpl, pseudoEleme
   const prevScope = setScope(options?.scope ?? null);
   const prevHost = options?.shadowHost !== undefined ? setHostContext(options.shadowHost) : null;
   try {
-    return matchComplex(sel._cx, el);
+    return matchComplex(sel[$cx], el);
   } finally {
     setScope(prevScope);
     if (options?.shadowHost !== undefined) setHostContext(prevHost);
-    if (sel._info.nthTests.length !== 0) resetMemos(sel._info);
+    if (sel[$info].nthTests.length !== 0) resetMemos(sel[$info]);
   }
 }
 

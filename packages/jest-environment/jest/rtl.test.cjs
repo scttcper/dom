@@ -47,7 +47,7 @@ describe("environment globals — https://html.spec.whatwg.org/#the-window-objec
     expect(dom.Node).toBe(Node);
     expect(dom.currentWindowOrNull().document).toBe(document);
     expect(typeof internal.windowHooks).toBe("object");
-    expect(document.body._impl).toBeInstanceOf(internal.NodeImpl);
+    expect(document.body[internal.$impl]).toBeInstanceOf(internal.NodeImpl);
   });
 });
 

@@ -29,6 +29,7 @@ import type { EventInit } from "../webidl.ts";
 import type { Window } from "../window/Window.ts";
 import type { DataTransfer } from "./DataTransfer.ts";
 import { toDOMString, toDouble, toFloat, toLong, toShort, toUnsignedLong, toUnsignedShort } from "./convert.ts";
+import { $window } from "../keys.ts";
 
 type Dict = Record<string, unknown>;
 
@@ -49,8 +50,8 @@ function dict(v: unknown, iface: string): Dict | null {
 /** Window detection without importing the Window class (avoids an import cycle). */
 export function isWindow(v: unknown): v is Window {
   if (v === null || typeof v !== "object") return false;
-  const w = v as { document?: { _window?: unknown }; window?: unknown };
-  return w.window === v || (w.document != null && w.document._window === v);
+  const w = v as { document?: { [$window]?: unknown }; window?: unknown };
+  return w.window === v || (w.document != null && w.document[$window] === v);
 }
 
 function viewMember(d: Dict | null, iface: string): Window | null {

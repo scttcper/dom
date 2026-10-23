@@ -7,6 +7,7 @@
 
 import { eventInterface } from "./interfaces.ts";
 import type { Window } from "./Window.ts";
+import { $entries, $index, $scrollRestoration, $url, $window } from "../keys.ts";
 
 interface SessionHistoryEntry {
   url: string;
@@ -20,34 +21,34 @@ function withoutFragment(href: string): string {
 }
 
 export class History {
-  _window: Window;
-  _entries: SessionHistoryEntry[];
-  _index: number;
-  _scrollRestoration: "auto" | "manual";
+  [$window]: Window;
+  [$entries]: SessionHistoryEntry[];
+  [$index]: number;
+  [$scrollRestoration]: "auto" | "manual";
 
   constructor(window: Window) {
-    this._window = window;
-    this._entries = [{ url: window._url.href, state: null }];
-    this._index = 0;
-    this._scrollRestoration = "auto";
+    this[$window] = window;
+    this[$entries] = [{ url: window[$url].href, state: null }];
+    this[$index] = 0;
+    this[$scrollRestoration] = "auto";
   }
 
   /** https://html.spec.whatwg.org/#dom-history-length */
   get length(): number {
-    return this._entries.length;
+    return this[$entries].length;
   }
 
   /** https://html.spec.whatwg.org/#dom-history-state */
   get state(): unknown {
-    return this._entries[this._index].state;
+    return this[$entries][this[$index]].state;
   }
 
   get scrollRestoration(): "auto" | "manual" {
-    return this._scrollRestoration;
+    return this[$scrollRestoration];
   }
 
   set scrollRestoration(value: string) {
-    if (value === "auto" || value === "manual") this._scrollRestoration = value;
+    if (value === "auto" || value === "manual") this[$scrollRestoration] = value;
   }
 
   /** https://html.spec.whatwg.org/#dom-history-go */
@@ -57,9 +58,9 @@ export class History {
     if (d === 0) return;
     // https://html.spec.whatwg.org/#traverse-the-history-by-a-delta — queued; the target step is
     // computed when the task runs, and out-of-range deltas do nothing.
-    this._window._task(() => {
-      const target = this._index + d;
-      if (target < 0 || target >= this._entries.length) return;
+    this[$window]._task(() => {
+      const target = this[$index] + d;
+      if (target < 0 || target >= this[$entries].length) return;
       this._traverseTo(target);
     }, 0);
   }
@@ -84,20 +85,20 @@ export class History {
 
   /** https://html.spec.whatwg.org/#shared-history-push/replace-state-steps */
   _sharedPushReplaceState(data: unknown, url: string | URL | null | undefined, replace: boolean, method: string): void {
-    const window = this._window;
+    const window = this[$window];
     // Step 4: serialize first (throws DataCloneError for functions, DOM nodes, ...).
     const state = data === undefined || data === null ? null : structuredClone(data);
-    let newURL = window._url;
+    let newURL = window[$url];
     if (url !== undefined && url !== null) {
       // Step 6.1-6.2: parse relative to the document's URL.
-      const parsed = URL.parse(String(url), window._url.href);
+      const parsed = URL.parse(String(url), window[$url].href);
       if (parsed === null) {
         throw new DOMException(`Failed to execute '${method}' on 'History': A history state object with URL '${String(url)}' cannot be created.`, "SecurityError");
       }
       // Step 6.3: https://html.spec.whatwg.org/#can-have-its-url-rewritten
-      if (!canHaveURLRewritten(window._url, parsed)) {
+      if (!canHaveURLRewritten(window[$url], parsed)) {
         throw new DOMException(
-          `Failed to execute '${method}' on 'History': A history state object with URL '${parsed.href}' cannot be created in a document with origin '${window._url.origin}' and URL '${window._url.href}'.`,
+          `Failed to execute '${method}' on 'History': A history state object with URL '${parsed.href}' cannot be created in a document with origin '${window[$url].origin}' and URL '${window[$url].href}'.`,
           "SecurityError",
         );
       }
@@ -105,11 +106,11 @@ export class History {
     }
     const entry: SessionHistoryEntry = { url: newURL.href, state };
     if (replace) {
-      this._entries[this._index] = entry;
+      this[$entries][this[$index]] = entry;
     } else {
-      this._entries.length = this._index + 1;
-      this._entries.push(entry);
-      this._index++;
+      this[$entries].length = this[$index] + 1;
+      this[$entries].push(entry);
+      this[$index]++;
     }
     window._setURL(newURL);
   }
@@ -120,18 +121,18 @@ export class History {
    * `hashchange`; any other navigation just updates the URL (docs/deviations.md).
    */
   _navigate(url: URL, replace: boolean): void {
-    const window = this._window;
-    const oldURL = window._url.href;
+    const window = this[$window];
+    const oldURL = window[$url].href;
     const newURL = url.href;
     // https://html.spec.whatwg.org/#navigate step 12: navigating to the current URL replaces.
     if (newURL === oldURL) replace = true;
     const entry: SessionHistoryEntry = { url: newURL, state: null };
     if (replace) {
-      this._entries[this._index] = entry;
+      this[$entries][this[$index]] = entry;
     } else {
-      this._entries.length = this._index + 1;
-      this._entries.push(entry);
-      this._index++;
+      this[$entries].length = this[$index] + 1;
+      this[$entries].push(entry);
+      this[$index]++;
     }
     window._setURL(url);
     // https://html.spec.whatwg.org/#scroll-to-fragid — fragment navigations fire hashchange.
@@ -142,10 +143,10 @@ export class History {
 
   /** https://html.spec.whatwg.org/#update-document-for-history-step-application (same-document case) */
   _traverseTo(target: number): void {
-    const window = this._window;
-    const oldURL = window._url.href;
-    this._index = target;
-    const entry = this._entries[target];
+    const window = this[$window];
+    const oldURL = window[$url].href;
+    this[$index] = target;
+    const entry = this[$entries][target];
     if (entry.url !== oldURL) window._setURL(new URL(entry.url));
     const PopStateEvent = eventInterface("PopStateEvent");
     window.dispatchEvent(new PopStateEvent("popstate", { state: entry.state }) as never);
@@ -153,7 +154,7 @@ export class History {
   }
 
   _queueHashChange(oldURL: string, newURL: string): void {
-    const window = this._window;
+    const window = this[$window];
     window._task(() => {
       const HashChangeEvent = eventInterface("HashChangeEvent");
       window.dispatchEvent(new HashChangeEvent("hashchange", { oldURL, newURL }) as never);

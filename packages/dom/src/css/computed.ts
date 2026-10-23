@@ -8,43 +8,44 @@ import { CSSStyleDeclaration } from "./CSSStyleDeclaration.ts";
 import { computedValue, customPropertyNames } from "./cascade.ts";
 import { computedPropertyNames, isCustomPropertyName } from "./properties.ts";
 import { indexGetterTable, ensureIndexGetters, type IndexGetterTable } from "../collections/indexed.ts";
+import { $el, $impl, $pseudo, $readonly } from "../keys.ts";
 
 /**
  * Computed declarations enumerate every longhand (sorted, like browsers) and resolve values
  * lazily through the cascade's per-element cache, so reads stay live across mutations.
  */
 export class CSSComputedStyleDeclaration extends CSSStyleDeclaration {
-  _el: NodeImpl;
-  _pseudo: string | null;
+  [$el]: NodeImpl;
+  [$pseudo]: string | null;
 
   constructor(el: NodeImpl, pseudo: string | null) {
     super(null, null, null);
-    this._el = el;
-    this._pseudo = pseudo;
-    this._readonly = true;
+    this[$el] = el;
+    this[$pseudo] = pseudo;
+    this[$readonly] = true;
     if (table === null) table = indexGetterTable(CSSComputedStyleDeclaration.prototype, (self, i) => (self as CSSComputedStyleDeclaration).item(i), 0);
     ensureIndexGetters(table, computedPropertyNames().length);
   }
 
   override get length(): number {
-    if (this._pseudo === INVALID) return 0;
-    const n = computedPropertyNames().length + customNames(this._el, this._pseudo).length;
+    if (this[$pseudo] === INVALID) return 0;
+    const n = computedPropertyNames().length + customNames(this[$el], this[$pseudo]).length;
     if (table !== null && n > table.count) ensureIndexGetters(table, n);
     return n;
   }
 
   override item(index: number): string {
-    if (this._pseudo === INVALID) return "";
+    if (this[$pseudo] === INVALID) return "";
     const names = computedPropertyNames();
     const i = index >>> 0;
     if (i < names.length) return names[i];
-    return customNames(this._el, this._pseudo)[i - names.length] ?? "";
+    return customNames(this[$el], this[$pseudo])[i - names.length] ?? "";
   }
 
   override getPropertyValue(property: string): string {
-    if (this._pseudo === INVALID) return "";
+    if (this[$pseudo] === INVALID) return "";
     const p = String(property);
-    return computedValue(this._el, isCustomPropertyName(p) ? p : p.toLowerCase(), this._pseudo);
+    return computedValue(this[$el], isCustomPropertyName(p) ? p : p.toLowerCase(), this[$pseudo]);
   }
 
   override getPropertyPriority(_property: string): string {
@@ -75,7 +76,7 @@ const cache = new WeakMap<NodeImpl, CSSComputedStyleDeclaration>();
 
 /** https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle — the declaration object is reused per element (it is live). */
 export function getComputedStyle(element: Element, pseudoElement?: string | null): CSSStyleDeclaration {
-  const impl = element._impl;
+  const impl = element[$impl];
   let pseudo = pseudoElement === undefined || pseudoElement === null || pseudoElement === "" ? null : String(pseudoElement);
   if (pseudo !== null) {
     const lower = pseudo.toLowerCase();

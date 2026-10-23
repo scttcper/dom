@@ -375,4 +375,84 @@ export const domWorkloads: Workload[] = [
       };
     },
   },
+  {
+    // Leak workload: windows created and closed in one process (what a reused test worker does
+    // per file). Times 10 create → build → close cycles; `heapSlopeKBPerWindow` is the
+    // least-squares slope of heap-after-GC per closed window (≈0 when closing releases
+    // everything).
+    id: "dom/window-churn",
+    title: "Window churn: create, build a form, close (memory slope)",
+    kind: "dom",
+    iterations: 40,
+    warmup: 10,
+    async setup({ config }) {
+      const html = `<!doctype html><html><head><style>.a { color: red }</style></head><body><form>${rowsHtml}<input id=i><button>Go</button></form></body></html>`;
+      let open: () => { document: any; close(): void };
+      if (config === "jsdom") {
+        const { JSDOM } = await import("jsdom");
+        open = () => {
+          const w = new JSDOM(html).window;
+          return { document: w.document, close: () => w.close() };
+        };
+      } else if (config === "happy-dom") {
+        const { Window } = await import("happy-dom");
+        open = () => {
+          const w = new Window();
+          w.document.write(html);
+          return { document: w.document, close: () => void w.happyDOM.close() };
+        };
+      } else {
+        const { createWindow, currentWindowOrNull, setCurrentWindow } = await import("@rtd/dom");
+        open = () => {
+          // Keep the environment's window current (createWindow activates the new one).
+          const previous = currentWindowOrNull();
+          const w = createWindow({ html });
+          setCurrentWindow(previous);
+          return { document: w.document, close: () => w.close() };
+        };
+      }
+      const gc = (globalThis as any).gc as () => void;
+      const heap: Array<[number, number]> = [];
+      let done = 0;
+      const CYCLES = 10;
+      return {
+        run() {
+          let rows = 0;
+          for (let c = 0; c < CYCLES; c++) {
+            const w = open();
+            const d = w.document;
+            rows += d.querySelectorAll(".row").length;
+            d.getElementById("i").focus();
+            d.body.addEventListener("click", () => {});
+            w.close();
+          }
+          return rows;
+        },
+        verify(rows: any) {
+          eq(rows, 250 * CYCLES, "rows found");
+        },
+        afterEach() {
+          done += CYCLES;
+          if (done % (CYCLES * 5) === 0 && gc) {
+            gc();
+            gc();
+            heap.push([done, process.memoryUsage().heapUsed]);
+          }
+        },
+        extra(): Record<string, number> {
+          const pts = heap.slice(2);
+          if (pts.length < 3) return {};
+          const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+          const my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+          let num = 0;
+          let den = 0;
+          for (const [x, y] of pts) {
+            num += (x - mx) * (y - my);
+            den += (x - mx) ** 2;
+          }
+          return { heapSlopeKBPerWindow: num / den / 1024 };
+        },
+      };
+    },
+  },
 ];

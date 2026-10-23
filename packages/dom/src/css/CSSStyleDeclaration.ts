@@ -15,6 +15,7 @@ import type { Element } from "../nodes/Element.ts";
 import { attr, setAttribute } from "../nodes/attributes.ts";
 import { DeclBlock } from "./declarations.ts";
 import { allPropertyNames, cssPropertyToIDLAttribute, isCustomPropertyName } from "./properties.ts";
+import { $block, $impl, $indexed, $owner, $parentRule, $readonly, $updating } from "../keys.ts";
 
 /** Parent rule interface needed here (avoids importing cssom.ts). */
 export interface DeclarationOwnerRule {
@@ -24,102 +25,102 @@ export interface DeclarationOwnerRule {
 
 export class CSSStyleDeclaration {
   /** Inline style owner element, or null. */
-  _owner: Element | null;
+  [$owner]: Element | null;
   /** Rule owning these declarations (CSSStyleRule, CSSFontFaceRule, ...), or null. */
-  _parentRule: DeclarationOwnerRule | null;
-  _block: DeclBlock;
+  [$parentRule]: DeclarationOwnerRule | null;
+  [$block]: DeclBlock;
   /** Computed declarations are read-only. */
-  _readonly: boolean;
+  [$readonly]: boolean;
   /** Set while this declaration writes its owner's style attribute. */
-  _updating: boolean;
+  [$updating]: boolean;
   /** Number of own indexed properties currently defined. */
-  _indexed: number;
+  [$indexed]: number;
 
   constructor(owner: Element | null = null, block: DeclBlock | null = null, parentRule: DeclarationOwnerRule | null = null) {
     if (!accessorsInstalled) installAccessors();
-    this._owner = owner;
-    this._parentRule = parentRule;
-    this._block = block ?? new DeclBlock();
-    this._readonly = false;
-    this._updating = false;
-    this._indexed = 0;
+    this[$owner] = owner;
+    this[$parentRule] = parentRule;
+    this[$block] = block ?? new DeclBlock();
+    this[$readonly] = false;
+    this[$updating] = false;
+    this[$indexed] = 0;
     if (owner !== null) {
-      const text = attr(owner._impl, "style");
-      if (text !== null && text !== "") this._block.parse(text);
+      const text = attr(owner[$impl], "style");
+      if (text !== null && text !== "") this[$block].parse(text);
     }
-    if (this._block.names.length !== 0) this._syncIndices();
+    if (this[$block].names.length !== 0) this._syncIndices();
   }
 
   /** @internal Core hook: the owner's style attribute changed (https://drafts.csswg.org/cssom/#ref-for-concept-element-attributes-change-ext). */
   _attributeChanged(value: string | null): void {
-    if (this._updating) return;
-    this._block.parse(value ?? "");
+    if (this[$updating]) return;
+    this[$block].parse(value ?? "");
     this._syncIndices();
   }
 
   /** https://drafts.csswg.org/cssom/#update-style-attribute-for */
   _changed(): void {
     this._syncIndices();
-    const owner = this._owner;
+    const owner = this[$owner];
     if (owner !== null) {
-      this._updating = true;
+      this[$updating] = true;
       try {
-        setAttribute(owner._impl, "style", this._block.serialize());
+        setAttribute(owner[$impl], "style", this[$block].serialize());
       } finally {
-        this._updating = false;
+        this[$updating] = false;
       }
-    } else if (this._parentRule !== null) {
-      this._parentRule._declarationsChanged();
+    } else if (this[$parentRule] !== null) {
+      this[$parentRule]._declarationsChanged();
     }
   }
 
   _syncIndices(): void {
-    const names = this._block.names;
+    const names = this[$block].names;
     const self = this as unknown as Record<number, string>;
     const n = names.length;
     for (let i = 0; i < n; i++) if (self[i] !== names[i]) self[i] = names[i];
-    for (let i = n; i < this._indexed; i++) delete self[i];
-    this._indexed = n;
+    for (let i = n; i < this[$indexed]; i++) delete self[i];
+    this[$indexed] = n;
   }
 
   _checkWritable(): void {
-    if (this._readonly) {
+    if (this[$readonly]) {
       throw new DOMException("Failed to execute on 'CSSStyleDeclaration': These styles are computed, and therefore read-only.", "NoModificationAllowedError");
     }
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext */
   get cssText(): string {
-    if (this._readonly) return "";
-    return this._block.serialize();
+    if (this[$readonly]) return "";
+    return this[$block].serialize();
   }
 
   set cssText(text: string) {
     this._checkWritable();
-    this._block.parse(text === null ? "" : String(text));
+    this[$block].parse(text === null ? "" : String(text));
     this._changed();
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length */
   get length(): number {
-    return this._block.names.length;
+    return this[$block].names.length;
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item */
   item(index: number): string {
-    return this._block.names[index >>> 0] ?? "";
+    return this[$block].names[index >>> 0] ?? "";
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue */
   getPropertyValue(property: string): string {
     const p = String(property);
-    return this._block.getPropertyValue(isCustomPropertyName(p) ? p : p.toLowerCase());
+    return this[$block].getPropertyValue(isCustomPropertyName(p) ? p : p.toLowerCase());
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority */
   getPropertyPriority(property: string): string {
     const p = String(property);
-    return this._block.getPropertyPriority(isCustomPropertyName(p) ? p : p.toLowerCase());
+    return this[$block].getPropertyPriority(isCustomPropertyName(p) ? p : p.toLowerCase());
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty */
@@ -138,7 +139,7 @@ export class CSSStyleDeclaration {
       if (prio.toLowerCase() !== "important") return;
       important = true;
     }
-    if (this._block.setValue(p, v, important, false)) this._changed();
+    if (this[$block].setValue(p, v, important, false)) this._changed();
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty */
@@ -146,14 +147,14 @@ export class CSSStyleDeclaration {
     this._checkWritable();
     let p = String(property);
     if (!isCustomPropertyName(p)) p = p.toLowerCase();
-    const value = this._block.getPropertyValue(p);
-    if (this._block.remove(p)) this._changed();
+    const value = this[$block].getPropertyValue(p);
+    if (this[$block].remove(p)) this._changed();
     return value;
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule */
   get parentRule(): DeclarationOwnerRule | null {
-    return this._parentRule;
+    return this[$parentRule];
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-cssfloat */
@@ -168,7 +169,7 @@ export class CSSStyleDeclaration {
   /** Setter steps of the camel-cased / dashed attributes (https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-camel-cased-attribute). */
   _setNamed(property: string, value: unknown): void {
     // Computed declarations ignore named assignments (jsdom-compatible; browsers throw).
-    if (this._readonly) return;
+    if (this[$readonly]) return;
     this.setProperty(property, value === null || value === undefined ? "" : String(value));
   }
 

@@ -9,6 +9,7 @@
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
+import { $impl } from "../keys.ts";
 
 export type ElementConstructor = new (doc: Document, localName: string, ns: string | null, prefix: string | null) => Element;
 
@@ -21,7 +22,7 @@ export function setElementClassLookup(fn: (localName: string, ns: string | null)
 /** Create an element wrapper of the right interface for (namespace, localName) and return its impl. */
 export function createElementImpl(doc: Document, localName: string, ns: string | null, prefix: string | null): NodeImpl {
   const Ctor = lookup!(localName, ns);
-  return new Ctor(doc, localName, ns, prefix)._impl;
+  return new Ctor(doc, localName, ns, prefix)[$impl];
 }
 
 // --- custom elements (installed by html/custom-elements.ts) --------------------------------

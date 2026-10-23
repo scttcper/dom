@@ -12,6 +12,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, NodeList, HTMLCollection, type Document } from "@rtd/dom";
+import { $mode } from "../../src/keys.ts";
 
 let document: Document;
 
@@ -90,7 +91,7 @@ describe("HTMLCollection — https://dom.spec.whatwg.org/#interface-htmlcollecti
     document.body!.innerHTML = '<p class="a b"></p><p class="a"></p><p class="A B"></p>';
     expect(document.getElementsByClassName(" b  a ").length).toBe(1);
     expect(document.getElementsByClassName("").length).toBe(0);
-    (document as unknown as { _mode: string })._mode = "quirks";
+    (document as unknown as { [$mode]: string })[$mode] = "quirks";
     expect(document.getElementsByClassName("a b").length).toBe(2);
   });
 

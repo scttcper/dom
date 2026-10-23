@@ -51,7 +51,7 @@ can actually win and kept available everywhere else:
 ### NodeImpl: one hidden class for every node
 
 Every public node wrapper (`HTMLDivElement`, `Text`, `Document`, ...) owns exactly one
-`NodeImpl` in `_impl`. `NodeImpl` (nodes/NodeImpl.ts) is a single class whose constructor
+`NodeImpl` in `node[$impl]`. `NodeImpl` (nodes/NodeImpl.ts) is a single class whose constructor
 initializes every field, so all nodes share one V8 hidden class. Wrappers have many
 prototypes and therefore many hidden classes; walking fields on wrappers goes megamorphic
 (measured ~3x slower on a 30-class tree). All hot internal algorithms walk `NodeImpl`.
@@ -78,6 +78,12 @@ non-hot, type-specific state on the wrapper (e.g. input value lives on `HTMLInpu
 New hot fields need an entry in this table.
 
 ### Wrappers
+
+Wrapper internal fields are keyed by registered symbols from `src/keys.ts` (`this[$impl]`,
+`this[$listeners]`, `doc[$version]`, ...; re-exported by `@rtd/dom/internal`), never by
+`_`-prefixed strings: `Object.keys(node)`, `for...in` and `JSON.stringify` must see no internals
+(Jest's diff/--json walk own enumerable keys). Methods may keep `_name` (prototype members are
+not enumerable). New wrapper fields get a key in keys.ts.
 
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,
 `Document`, `DocumentFragment → ShadowRoot`, `DocumentType`, `Attr`. Wrapper fields are
@@ -141,6 +147,25 @@ Allocation-free preorder iteration: `for (let n = root.first; n !== null; n = ne
 5. Startup: importing `@rtd/dom` and creating a window must stay far below happy-dom
    (target: < 15 ms import from the bundled build, < 1 ms `createWindow`).
 6. No `Proxy` on hot paths (indexed access on collections is the main temptation).
+
+## Memory: what may stay reachable (enforced by `tests/compat/test/leaks`)
+
+After `window.close()` (environments call it on teardown) a window, its documents, nodes,
+observers, ranges, iframes' nested windows and custom element definitions are collectable, and
+`installGlobals()`'s uninstall restores every host global. Within a live document, removing a
+subtree releases it: version-stamped caches that could still reference removed nodes (selector
+results per root, aria's label index, live collection / computed NodeList snapshots, a form's
+listed controls) are kept in `Document[$derived]` or registered with `holdSnapshot`
+(nodes/derived.ts) and dropped by `remove()`. Intentionally retained:
+
+- the current window (`window/current.ts`) until it is closed or another window is created;
+- a window's own state while it is open (its custom element registry, storage, history);
+- host timers created through `window.setTimeout` & co. (they are the host's), until they fire
+  or are cleared;
+- process-wide, bounded string caches (compiled selectors ≤ 2048, inline style blocks ≤ 2000,
+  media query lists ≤ 500, `pattern` regexps ≤ 256, uppercase tag names ≤ 1024) and per-process
+  interface objects;
+- the host originals `installGlobals` captured (Node's own classes, not ours).
 
 ## Deviations from the specs
 

@@ -22,6 +22,7 @@ import {
   pseudoContent,
   NodeCache,
 } from "@rtd/dom/internal";
+import { $impl, $styleVersion } from "../../src/keys.ts";
 
 let window: Window;
 let document: Document;
@@ -132,7 +133,7 @@ describe("cascade sort — https://drafts.csswg.org/css-cascade-5/#cascade-sort"
     expect(cs("#q", "::before").content).toBe('"« "');
     expect(cs("#q", "::after").color).toBe("red");
     expect(cs("#q").content).toBe("normal");
-    expect(pseudoContent(($("#q") as unknown as { _impl: never })._impl, "::after")).toBe("hey!");
+    expect(pseudoContent(($("#q") as unknown as { [$impl]: never })[$impl], "::after")).toBe("hey!");
   });
 });
 
@@ -140,9 +141,9 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
   test("insertRule/deleteRule (emotion production mode), <style> text changes, removal", () => {
     html(`<style id=s></style><div class="css-1" id=e></div>`);
     const sheet = (document.getElementById("s") as unknown as { sheet: CSSStyleSheet }).sheet;
-    const before = document._styleVersion;
+    const before = document[$styleVersion];
     sheet.insertRule(".css-1{display:none}", 0);
-    expect(document._styleVersion).toBeGreaterThan(before);
+    expect(document[$styleVersion]).toBeGreaterThan(before);
     expect(cs("#e").display).toBe("none");
     sheet.deleteRule(0);
     expect(cs("#e").display).toBe("block");
@@ -194,7 +195,7 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
 });
 
 describe("fast internal API (src/css/internal.ts)", () => {
-  const impl = (sel: string) => ($(sel) as unknown as { _impl: Parameters<typeof isDisplayNone>[0] })._impl;
+  const impl = (sel: string) => ($(sel) as unknown as { [$impl]: Parameters<typeof isDisplayNone>[0] })[$impl];
 
   test("without author styles: UA + inline checks, no style records allocated for plain elements", () => {
     html(`<div id=a><span id=b></span></div><p id=c style="visibility:hidden"><i id=d></i></p><template id=t></template>`);

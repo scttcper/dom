@@ -7,14 +7,15 @@ import { Node } from "./Node.ts";
 import { nextInTree } from "./traverse.ts";
 import { currentDocument } from "../window/current.ts";
 import { installNonElementParentNode, installParentNode, type NonElementParentNode, type ParentNode } from "./mixins.ts";
+import { $host, $impl } from "../keys.ts";
 
 export class DocumentFragment extends Node {
   /** Host for shadow roots and template contents (https://dom.spec.whatwg.org/#concept-documentfragment-host). */
-  _host: Element | null;
+  [$host]: Element | null;
 
   constructor(doc: Document = currentDocument()) {
     super(DOCUMENT_FRAGMENT_NODE, doc);
-    this._host = null;
+    this[$host] = null;
   }
 
   override get nodeName(): string {
@@ -22,7 +23,7 @@ export class DocumentFragment extends Node {
   }
 
   override get textContent(): string {
-    const root = this._impl;
+    const root = this[$impl];
     let s = "";
     for (let n = root.first; n !== null; n = nextInTree(n, root)) {
       if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
@@ -32,7 +33,7 @@ export class DocumentFragment extends Node {
 
   override set textContent(value: string | null) {
     const v = value === null || value === undefined ? "" : String(value);
-    this._replaceAll(v === "" ? null : this._impl.doc.createTextNode(v));
+    this._replaceAll(v === "" ? null : this[$impl].doc.createTextNode(v));
   }
 }
 

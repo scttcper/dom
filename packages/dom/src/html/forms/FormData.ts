@@ -22,6 +22,7 @@ import { dispatchTrusted } from "./common.ts";
 import { formOwner } from "./form-associated.ts";
 import { constructEntryList, isSubmitButton } from "./form-submission.ts";
 import { hostOriginals } from "../../window/host-originals.ts";
+import { $impl } from "../../keys.ts";
 
 type NodeFormDataClass = typeof globalThis.FormData;
 
@@ -52,13 +53,13 @@ export class FormData {
   constructor(form?: Element, submitter: Element | null = null) {
     const self = Reflect.construct(nodeFormData(), [], new.target) as FormData;
     if (form === undefined) return self;
-    const formImpl = (form as { _impl?: NodeImpl } | null)?._impl;
+    const formImpl = (form as { [$impl]?: NodeImpl } | null)?.[$impl];
     if (formImpl === undefined || formImpl.tag !== T.form) {
       throw new TypeError("Failed to construct 'FormData': parameter 1 is not of type 'HTMLFormElement'.");
     }
     let submitterImpl: NodeImpl | null = null;
     if (submitter !== null && submitter !== undefined) {
-      const s = (submitter as { _impl?: NodeImpl })._impl;
+      const s = (submitter as { [$impl]?: NodeImpl })[$impl];
       // Step 1.1–1.2: submitter must be a submit button owned by form.
       if (s === undefined || !isSubmitButton(s)) {
         throw new TypeError("Failed to construct 'FormData': The specified element is not a submit button.");

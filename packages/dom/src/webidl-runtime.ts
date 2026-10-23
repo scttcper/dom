@@ -23,9 +23,13 @@ export function exposeMembers(...ctors: Ctor[]): void {
   }
 }
 
-/** Make an instance's `_`-prefixed own fields non-enumerable. Call at the end of a constructor. */
+/**
+ * Make an instance's internal own fields (`_`-prefixed or symbol-keyed, see keys.ts)
+ * non-enumerable, so spreads and Jest's symbol-aware equality skip them too. Call at the end of
+ * a constructor.
+ */
 export function hideInternals(obj: object): void {
-  for (const key of Object.keys(obj)) {
-    if (key.charCodeAt(0) === 95 /* _ */) Object.defineProperty(obj, key, { enumerable: false });
+  for (const key of Reflect.ownKeys(obj)) {
+    if (typeof key === "symbol" || key.charCodeAt(0) === 95 /* _ */) Object.defineProperty(obj, key, { enumerable: false });
   }
 }

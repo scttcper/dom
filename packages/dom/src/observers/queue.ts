@@ -13,6 +13,7 @@ import { reportException } from "../events/report.ts";
 import { Event } from "../events/Event.ts";
 import { MutationRecord } from "./MutationRecord.ts";
 import type { MutationObserver, MutationObserverInit } from "./MutationObserver.ts";
+import { $callback, $hasTransients, $id, $nodes, $records } from "../keys.ts";
 
 /** Number of MutationObservers with at least one (non-transient) registration. */
 export let activeObservers = 0;
@@ -154,7 +155,7 @@ function queueMutationRecord(
   for (let i = 0; i < observers.length; i++) {
     const observer = observers[i];
     const record = new MutationRecord(typeName, target, name, namespace, oldValues![i], added, removed, previousSibling, nextSibling);
-    const queue = observer._records;
+    const queue = observer[$records];
     if (queue.length === 0 && !pending.includes(observer)) pending.push(observer);
     queue.push(record);
   }
@@ -193,8 +194,8 @@ export function addTransientObservers(parent: NodeImpl, node: NodeImpl): void {
       const registered = list[i];
       if (!registered.options.subtree) continue;
       addRegistration(node, new RegisteredObserver(registered.observer, registered.options, registered));
-      registered.observer._nodes.push(node);
-      registered.observer._hasTransients = true;
+      registered.observer[$nodes].push(node);
+      registered.observer[$hasTransients] = true;
     }
   }
 }
@@ -219,19 +220,19 @@ export function notifyMutationObservers(): void {
   // Step 2: observers in creation order.
   const notifySet = pending;
   pending = [];
-  if (notifySet.length > 1) notifySet.sort((a, b) => a._id - b._id);
+  if (notifySet.length > 1) notifySet.sort((a, b) => a[$id] - b[$id]);
   // Step 3.
   const signalSet = signalSlots;
   signalSlots = [];
   // Step 4.
   for (let i = 0; i < notifySet.length; i++) {
     const mo = notifySet[i];
-    const records = mo._records;
-    mo._records = [];
+    const records = mo[$records];
+    mo[$records] = [];
     removeTransientRegistrations(mo);
     if (records.length !== 0) {
       try {
-        mo._callback.call(mo, records, mo);
+        mo[$callback].call(mo, records, mo);
       } catch (e) {
         reportException(e, null);
       }
@@ -245,17 +246,17 @@ export function notifyMutationObservers(): void {
 
 /** Notify step 4.3: drop `mo`'s transient registrations from every node in its node list. */
 export function removeTransientRegistrations(mo: MutationObserver): void {
-  if (!mo._hasTransients) return;
-  mo._hasTransients = false;
+  if (!mo[$hasTransients]) return;
+  mo[$hasTransients] = false;
   const kept: NodeImpl[] = [];
-  const nodes = mo._nodes;
+  const nodes = mo[$nodes];
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     removeRegistrations(node, (r) => r.observer === mo && r.source !== null);
     const list = registeredObserverList(node);
     if (list !== null && !kept.includes(node) && list.some((r) => r.observer === mo)) kept.push(node);
   }
-  mo._nodes = kept;
+  mo[$nodes] = kept;
 }
 
 /** @internal Drop `mo` from the pending list (disconnect). */

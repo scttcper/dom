@@ -9,6 +9,7 @@ import "./index.ts";
 export * from "./nodes/constants.ts";
 export { NodeImpl, AttrRecord } from "./nodes/NodeImpl.ts";
 export { NodeCache, nodeCache } from "./nodes/cache.ts";
+export { derivedCache, peekDerivedCache } from "./nodes/derived.ts";
 export { T, tagId, tagName } from "./nodes/tags.ts";
 export {
   nextInTree,
@@ -133,3 +134,4 @@ export {
 // --- css area (fast style queries; see src/css/internal.ts) ---
 export * from "./css/internal.ts";
 export { isFACE, faceState } from "./html/forms/face.ts";
+export * from "./keys.ts";

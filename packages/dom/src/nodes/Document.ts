@@ -37,62 +37,70 @@ import type { ElementCreationOptions } from "../webidl.ts";
 import type { Event } from "../events/Event.ts";
 import { createEvent } from "../events/createEvent.ts";
 import { parseDocument } from "../parser/index.ts";
+import { $contentType, $css, $derived, $doc, $focused, $forms, $ids, $impl, $implementation, $isHTML, $mode, $ranges, $selection, $styleVersion, $url, $version, $window, $writeBuffer } from "../keys.ts";
 
 export class Document extends Node {
   /** Browsing context's window, or null for documents created via DOMImplementation / new Document(). */
-  _window: Window | null;
+  [$window]: Window | null;
   /** Bumped on every tree, attribute and character-data mutation of nodes owned by this document. */
-  _version: number;
+  [$version]: number;
   /** Bumped when author style sheets change (src/css). */
-  _styleVersion: number;
+  [$styleVersion]: number;
   /** Connected elements by id. A value is an array only when several connected elements share an id. */
-  _ids: Map<string, NodeImpl | NodeImpl[]>;
+  [$ids]: Map<string, NodeImpl | NodeImpl[]>;
   /** Focused element (https://html.spec.whatwg.org/#focused-area-of-the-document), null = viewport/body. */
-  _focused: NodeImpl | null;
-  _isHTML: boolean;
-  _contentType: string;
-  _url: string;
-  _mode: "no-quirks" | "quirks" | "limited-quirks";
-  _implementation: DOMImplementation | null;
+  [$focused]: NodeImpl | null;
+  [$isHTML]: boolean;
+  [$contentType]: string;
+  [$url]: string;
+  [$mode]: "no-quirks" | "quirks" | "limited-quirks";
+  [$implementation]: DOMImplementation | null;
   /** Opaque per-document state owned by src/css (style sheet list, rule index). */
-  _css: object | null;
+  [$css]: object | null;
   /** Markup written since document.open() (null when no open() is in effect). */
-  _writeBuffer: string | null;
+  [$writeBuffer]: string | null;
   /** https://w3c.github.io/selection-api/#dfn-selection — created on first getSelection(). */
-  _selection: Selection | null;
+  [$selection]: Selection | null;
   /** Live ranges whose boundary points are in this document (traversal/live.ts); null when none. */
-  _ranges: WeakRef<object>[] | null;
+  [$ranges]: WeakRef<object>[] | null;
+  /**
+   * Derived per-document caches (selector results, label index, ...) keyed by owner token; see
+   * nodes/derived.ts. Dropped whenever a node is removed from a tree of this document, so caches
+   * never keep removed subtrees alive.
+   */
+  [$derived]: Map<object, unknown> | null;
   /** document.forms (named-properties proxy), created on first read. */
-  _forms: HTMLCollection | null;
+  [$forms]: HTMLCollection | null;
 
   constructor() {
     super(DOCUMENT_NODE, null);
     // A document is the root of its own tree, so it is always connected.
-    this._impl.flags |= F_CONNECTED;
-    this._window = null;
-    this._version = 0;
-    this._styleVersion = 0;
-    this._ids = new Map();
-    this._focused = null;
-    this._isHTML = false;
-    this._contentType = "application/xml";
-    this._url = "about:blank";
-    this._mode = "no-quirks";
-    this._implementation = null;
-    this._css = null;
-    this._writeBuffer = null;
-    this._selection = null;
-    this._forms = null;
-    this._ranges = null;
+    this[$impl].flags |= F_CONNECTED;
+    this[$window] = null;
+    this[$version] = 0;
+    this[$styleVersion] = 0;
+    this[$ids] = new Map();
+    this[$focused] = null;
+    this[$isHTML] = false;
+    this[$contentType] = "application/xml";
+    this[$url] = "about:blank";
+    this[$mode] = "no-quirks";
+    this[$implementation] = null;
+    this[$css] = null;
+    this[$writeBuffer] = null;
+    this[$selection] = null;
+    this[$forms] = null;
+    this[$ranges] = null;
+    this[$derived] = null;
   }
 
   /** @internal Create an HTML document (what a Window and DOMImplementation.createHTMLDocument use). */
   static _createHTML(window: Window | null, url = "about:blank"): Document {
     const doc = new Document();
-    doc._window = window;
-    doc._isHTML = true;
-    doc._contentType = "text/html";
-    doc._url = url;
+    doc[$window] = window;
+    doc[$isHTML] = true;
+    doc[$contentType] = "text/html";
+    doc[$url] = url;
     return doc;
   }
 
@@ -111,33 +119,33 @@ export class Document extends Node {
   /** @internal */
   _idAdd(el: NodeImpl): void {
     const id = el.id;
-    const existing = this._ids.get(id);
-    if (existing === undefined) this._ids.set(id, el);
+    const existing = this[$ids].get(id);
+    if (existing === undefined) this[$ids].set(id, el);
     else if (Array.isArray(existing)) existing.push(el);
-    else this._ids.set(id, [existing, el]);
+    else this[$ids].set(id, [existing, el]);
   }
 
   /** @internal */
   _idRemove(el: NodeImpl): void {
     const id = el.id;
-    const existing = this._ids.get(id);
+    const existing = this[$ids].get(id);
     if (existing === undefined) return;
     if (existing === el) {
-      this._ids.delete(id);
+      this[$ids].delete(id);
     } else if (Array.isArray(existing)) {
       const i = existing.indexOf(el);
       if (i !== -1) existing.splice(i, 1);
-      if (existing.length === 1) this._ids.set(id, existing[0]);
+      if (existing.length === 1) this[$ids].set(id, existing[0]);
     }
   }
 
   /** @internal First connected element in tree order with this id. */
   _idLookup(id: string): NodeImpl | null {
-    const found = this._ids.get(id);
+    const found = this[$ids].get(id);
     if (found === undefined) return null;
     if (!Array.isArray(found)) return found;
     // Duplicate ids: resolve tree order by walking (rare).
-    const root = this._impl;
+    const root = this[$impl];
     for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
       if (n.id === id) return n;
     }
@@ -147,20 +155,20 @@ export class Document extends Node {
   // --- properties -------------------------------------------------------------------------
 
   get URL(): string {
-    return this._url;
+    return this[$url];
   }
 
   get documentURI(): string {
-    return this._url;
+    return this[$url];
   }
 
   override get baseURI(): string {
     // TODO(window): honour <base href>.
-    return this._url;
+    return this[$url];
   }
 
   get compatMode(): string {
-    return this._mode === "quirks" ? "BackCompat" : "CSS1Compat";
+    return this[$mode] === "quirks" ? "BackCompat" : "CSS1Compat";
   }
 
   get characterSet(): string {
@@ -176,30 +184,30 @@ export class Document extends Node {
   }
 
   get contentType(): string {
-    return this._contentType;
+    return this[$contentType];
   }
 
   get defaultView(): Window | null {
-    return this._window;
+    return this[$window];
   }
 
   get implementation(): DOMImplementation {
-    return (this._implementation ??= new DOMImplementation(this));
+    return (this[$implementation] ??= new DOMImplementation(this));
   }
 
   get doctype(): DocumentType | null {
-    for (let c = this._impl.first; c !== null; c = c.next) if (c.type === DOCUMENT_TYPE_NODE) return c.node as DocumentType;
+    for (let c = this[$impl].first; c !== null; c = c.next) if (c.type === DOCUMENT_TYPE_NODE) return c.node as DocumentType;
     return null;
   }
 
   get documentElement(): Element | null {
-    const el = firstElementChild(this._impl);
+    const el = firstElementChild(this[$impl]);
     return el === null ? null : (el.node as Element);
   }
 
   /** https://html.spec.whatwg.org/#dom-document-head */
   get head(): Element | null {
-    const html = firstElementChild(this._impl);
+    const html = firstElementChild(this[$impl]);
     if (html === null || html.tag !== T.html) return null;
     for (let c = html.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.head) return c.node as Element;
     return null;
@@ -207,7 +215,7 @@ export class Document extends Node {
 
   /** https://html.spec.whatwg.org/#dom-document-body */
   get body(): Element | null {
-    const html = firstElementChild(this._impl);
+    const html = firstElementChild(this[$impl]);
     if (html === null || html.tag !== T.html) return null;
     for (let c = html.first; c !== null; c = c.next) {
       if (c.type === ELEMENT_NODE && (c.tag === T.body || c.tag === T.frameset)) return c.node as Element;
@@ -217,7 +225,7 @@ export class Document extends Node {
 
   /** https://html.spec.whatwg.org/#dom-document-body (setter) */
   set body(value: Element | null) {
-    const impl = value === null || value === undefined ? null : value._impl;
+    const impl = value === null || value === undefined ? null : value[$impl];
     // Step 1.
     if (impl === null || impl.ns !== HTML_NS || (impl.tag !== T.body && impl.tag !== T.frameset)) {
       throw new DOMException("The new body element must be a 'body' or 'frameset' element.", "HierarchyRequestError");
@@ -244,8 +252,8 @@ export class Document extends Node {
     if (!isValidElementLocalName(name)) {
       throw new DOMException(`"${name}" is not a valid element name.`, "InvalidCharacterError");
     }
-    if (this._isHTML) name = asciiLowercase(name);
-    const ns = this._isHTML || this._contentType === "application/xhtml+xml" ? HTML_NS : null;
+    if (this[$isHTML]) name = asciiLowercase(name);
+    const ns = this[$isHTML] || this[$contentType] === "application/xhtml+xml" ? HTML_NS : null;
     // Synchronous custom element construction + customized built-ins (`is`): html/custom-elements.ts.
     const is = typeof _options === "object" && _options !== null && _options.is !== undefined ? String(_options.is) : null;
     return createElementImplSync(this, name, ns, null, is).node as Element;
@@ -267,7 +275,7 @@ export class Document extends Node {
   }
 
   createCDATASection(data: string): CDATASection {
-    if (this._isHTML) throw new DOMException("CDATA sections are not supported in HTML documents.", "NotSupportedError");
+    if (this[$isHTML]) throw new DOMException("CDATA sections are not supported in HTML documents.", "NotSupportedError");
     if (String(data).includes("]]>")) throw new DOMException('Data contains "]]>".', "InvalidCharacterError");
     return new CDATASection(String(data), this);
   }
@@ -286,7 +294,7 @@ export class Document extends Node {
   createAttribute(localName: string): Attr {
     let name = String(localName);
     if (!isValidAttributeLocalName(name)) throw new DOMException(`"${name}" is not a valid attribute name.`, "InvalidCharacterError");
-    if (this._isHTML) name = asciiLowercase(name);
+    if (this[$isHTML]) name = asciiLowercase(name);
     return new Attr(this, name, "", null, null, null);
   }
 
@@ -297,45 +305,45 @@ export class Document extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-document-importnode */
   importNode<T extends Node>(node: T, deep = false): T {
-    if (node._impl.type === DOCUMENT_NODE || (node._impl.flags & 0x20) !== 0) {
+    if (node[$impl].type === DOCUMENT_NODE || (node[$impl].flags & 0x20) !== 0) {
       throw new DOMException("Documents and shadow roots cannot be imported.", "NotSupportedError");
     }
-    return cloneNode(node._impl, this, deep).node as T;
+    return cloneNode(node[$impl], this, deep).node as T;
   }
 
   /** https://dom.spec.whatwg.org/#dom-document-adoptnode */
   adoptNode<T extends Node>(node: T): T {
-    if (node._impl.type === DOCUMENT_NODE) throw new DOMException("Documents cannot be adopted.", "NotSupportedError");
-    if ((node._impl.flags & 0x20) !== 0) throw new DOMException("Shadow roots cannot be adopted.", "HierarchyRequestError");
-    adopt(node._impl, this);
+    if (node[$impl].type === DOCUMENT_NODE) throw new DOMException("Documents cannot be adopted.", "NotSupportedError");
+    if ((node[$impl].flags & 0x20) !== 0) throw new DOMException("Shadow roots cannot be adopted.", "HierarchyRequestError");
+    adopt(node[$impl], this);
     return node;
   }
 
   getElementsByTagName(qualifiedName: string): HTMLCollection {
-    return getElementsByTagName(this._impl, String(qualifiedName));
+    return getElementsByTagName(this[$impl], String(qualifiedName));
   }
 
   getElementsByTagNameNS(namespace: string | null, localName: string): HTMLCollection {
-    return getElementsByTagNameNS(this._impl, namespace, String(localName));
+    return getElementsByTagNameNS(this[$impl], namespace, String(localName));
   }
 
   getElementsByClassName(classNames: string): HTMLCollection {
-    return getElementsByClassName(this._impl, String(classNames));
+    return getElementsByClassName(this[$impl], String(classNames));
   }
 
   // --- HTML document collections (https://html.spec.whatwg.org/#dom-document-forms and following) ---
 
   /** document.forms supports named access (`document.forms.login`), so it is the Proxy-wrapped variant. */
   get forms(): HTMLCollection {
-    return (this._forms ??= withNamedProperties(cachedCollection(this._impl, "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS)));
+    return (this[$forms] ??= withNamedProperties(cachedCollection(this[$impl], "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS)));
   }
 
   get images(): HTMLCollection {
-    return cachedCollection(this._impl, "\u0001images", (el) => el.tag === T.img && el.ns === HTML_NS);
+    return cachedCollection(this[$impl], "\u0001images", (el) => el.tag === T.img && el.ns === HTML_NS);
   }
 
   get embeds(): HTMLCollection {
-    return cachedCollection(this._impl, "\u0001embeds", (el) => el.tag === T.embed && el.ns === HTML_NS);
+    return cachedCollection(this[$impl], "\u0001embeds", (el) => el.tag === T.embed && el.ns === HTML_NS);
   }
 
   get plugins(): HTMLCollection {
@@ -343,21 +351,21 @@ export class Document extends Node {
   }
 
   get scripts(): HTMLCollection {
-    return cachedCollection(this._impl, "\u0001scripts", (el) => el.tag === T.script && el.ns === HTML_NS);
+    return cachedCollection(this[$impl], "\u0001scripts", (el) => el.tag === T.script && el.ns === HTML_NS);
   }
 
   /** a and area elements with an href attribute. */
   get links(): HTMLCollection {
-    return cachedCollection(this._impl, "\u0001links", (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null);
+    return cachedCollection(this[$impl], "\u0001links", (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null);
   }
 
   /** a elements with a name attribute. */
   get anchors(): HTMLCollection {
-    return cachedCollection(this._impl, "\u0001anchors", (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null);
+    return cachedCollection(this[$impl], "\u0001anchors", (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null);
   }
 
   get applets(): HTMLCollection {
-    return cachedCollection(this._impl, "\u0001applets", () => false);
+    return cachedCollection(this[$impl], "\u0001applets", () => false);
   }
 
   // --- ranges, traversal, selection --------------------------------------------------------
@@ -379,7 +387,7 @@ export class Document extends Node {
 
   /** https://w3c.github.io/selection-api/#dom-document-getselection */
   getSelection(): Selection | null {
-    return (this._selection ??= new Selection(this));
+    return (this[$selection] ??= new Selection(this));
   }
 
   /**
@@ -389,21 +397,21 @@ export class Document extends Node {
    * `open(url, name, features)` is window.open.
    */
   open(...args: unknown[]): Document | Window | null {
-    if (args.length >= 3) return (this._window as unknown as { open?: (...a: unknown[]) => Window | null })?.open?.(...args) ?? null;
-    if (!this._isHTML) throw new DOMException("Only HTML documents can be opened.", "InvalidStateError");
+    if (args.length >= 3) return (this[$window] as unknown as { open?: (...a: unknown[]) => Window | null })?.open?.(...args) ?? null;
+    if (!this[$isHTML]) throw new DOMException("Only HTML documents can be opened.", "InvalidStateError");
     this._replaceAll(null);
-    this._writeBuffer = "";
+    this[$writeBuffer] = "";
     return this;
   }
 
   /** https://html.spec.whatwg.org/#dom-document-write */
   write(...text: string[]): void {
-    if (!this._isHTML) throw new DOMException("Only HTML documents can be written to.", "InvalidStateError");
+    if (!this[$isHTML]) throw new DOMException("Only HTML documents can be written to.", "InvalidStateError");
     // No open insertion point: write() implicitly runs the document open steps.
-    if (this._writeBuffer === null) this.open();
-    this._writeBuffer += text.map(String).join("");
+    if (this[$writeBuffer] === null) this.open();
+    this[$writeBuffer] += text.map(String).join("");
     this._replaceAll(null);
-    parseDocument(this._writeBuffer!, this);
+    parseDocument(this[$writeBuffer]!, this);
   }
 
   /** https://html.spec.whatwg.org/#dom-document-writeln */
@@ -413,8 +421,8 @@ export class Document extends Node {
 
   /** https://html.spec.whatwg.org/#dom-document-close */
   close(): void {
-    if (!this._isHTML) throw new DOMException("Only HTML documents can be closed.", "InvalidStateError");
-    this._writeBuffer = null;
+    if (!this[$isHTML]) throw new DOMException("Only HTML documents can be closed.", "InvalidStateError");
+    this[$writeBuffer] = null;
   }
 
   /** https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations — no animation engine, so none run. */
@@ -425,10 +433,10 @@ export class Document extends Node {
   /** @internal Clone steps for Document nodes (cloneNode on a document). */
   _cloneDocument(): Document {
     const doc = new Document();
-    doc._isHTML = this._isHTML;
-    doc._contentType = this._contentType;
-    doc._url = this._url;
-    doc._mode = this._mode;
+    doc[$isHTML] = this[$isHTML];
+    doc[$contentType] = this[$contentType];
+    doc[$url] = this[$url];
+    doc[$mode] = this[$mode];
     return doc;
   }
 
@@ -440,8 +448,8 @@ export class Document extends Node {
 
   /** https://dom.spec.whatwg.org/#get-the-parent — a document's parent is its window for non-load events. */
   override _getTheParent(event: Event): import("../events/EventTarget.ts").EventTarget | null {
-    if (event.type === "load" || this._window === null) return null;
-    return this._window as unknown as import("../events/EventTarget.ts").EventTarget;
+    if (event.type === "load" || this[$window] === null) return null;
+    return this[$window] as unknown as import("../events/EventTarget.ts").EventTarget;
   }
 }
 
@@ -452,18 +460,18 @@ installEventHandlers(Document.prototype, "document"); // GlobalEventHandlers + o
 
 /** https://dom.spec.whatwg.org/#interface-domimplementation */
 export class DOMImplementation {
-  _doc: Document;
+  [$doc]: Document;
 
   /** @internal Use document.implementation. */
   constructor(doc: Document) {
     if (!(doc instanceof Document)) throw new TypeError("Illegal constructor");
-    this._doc = doc;
+    this[$doc] = doc;
   }
 
   /** https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype */
   createDocumentType(qualifiedName: string, publicId: string, systemId: string): DocumentType {
     if (!isValidDoctypeName(String(qualifiedName))) throw new DOMException(`"${qualifiedName}" is not a valid doctype name.`, "InvalidCharacterError");
-    return new DocumentType(this._doc, String(qualifiedName), String(publicId), String(systemId));
+    return new DocumentType(this[$doc], String(qualifiedName), String(publicId), String(systemId));
   }
 
   createHTMLDocument(title?: string): Document {
@@ -484,8 +492,8 @@ export class DOMImplementation {
 
   createDocument(namespace: string | null, qualifiedName: string | null, doctype: DocumentType | null = null): Document {
     const doc = new Document();
-    if (namespace === HTML_NS) doc._contentType = "application/xhtml+xml";
-    else if (namespace === SVG_NS) doc._contentType = "image/svg+xml";
+    if (namespace === HTML_NS) doc[$contentType] = "application/xhtml+xml";
+    else if (namespace === SVG_NS) doc[$contentType] = "image/svg+xml";
     if (doctype !== null) doc.appendChild(doctype);
     if (qualifiedName !== null && qualifiedName !== "") doc.appendChild(doc.createElementNS(namespace, qualifiedName));
     return doc;

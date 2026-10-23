@@ -15,6 +15,7 @@ import {
   removeRegistrations,
   setActiveObservers,
 } from "./queue.ts";
+import { $callback, $hasTransients, $id, $impl, $nodes, $records } from "../keys.ts";
 
 export interface MutationObserverInit {
   childList?: boolean;
@@ -32,30 +33,30 @@ let nextId = 0;
 
 export class MutationObserver {
   /** @internal Creation order (notify order). */
-  _id: number;
+  [$id]: number;
   /** @internal https://dom.spec.whatwg.org/#concept-mo-callback */
-  _callback: MutationCallback;
+  [$callback]: MutationCallback;
   /** @internal https://dom.spec.whatwg.org/#concept-mo-queue */
-  _records: MutationRecord[];
+  [$records]: MutationRecord[];
   /** @internal https://dom.spec.whatwg.org/#mutationobserver-node-list (nodes with a registration of this observer). */
-  _nodes: NodeImpl[];
+  [$nodes]: NodeImpl[];
   /** @internal Whether `_nodes` may contain transient registrations. */
-  _hasTransients: boolean;
+  [$hasTransients]: boolean;
 
   constructor(callback: MutationCallback) {
     if (typeof callback !== "function") {
       throw new TypeError("Failed to construct 'MutationObserver': parameter 1 is not of type 'Function'.");
     }
-    this._id = nextId++;
-    this._callback = callback;
-    this._records = [];
-    this._nodes = [];
-    this._hasTransients = false;
+    this[$id] = nextId++;
+    this[$callback] = callback;
+    this[$records] = [];
+    this[$nodes] = [];
+    this[$hasTransients] = false;
   }
 
   /** https://dom.spec.whatwg.org/#dom-mutationobserver-observe */
   observe(target: Node, options: MutationObserverInit = {}): void {
-    if (target === null || typeof target !== "object" || !("_impl" in target)) {
+    if (target === null || typeof target !== "object" || !($impl in target)) {
       throw new TypeError("Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.");
     }
     let attributes = options.attributes;
@@ -85,41 +86,41 @@ export class MutationObserver {
       );
     }
     const normalized = new NormalizedOptions(options, !!attributes, !!characterData);
-    const node = target._impl;
+    const node = target[$impl];
     // Step 7.
     const list = registeredObserverList(node);
     if (list !== null) {
       for (let i = 0; i < list.length; i++) {
         const registered = list[i];
         if (registered.observer !== this || registered.source !== null) continue;
-        for (const n of this._nodes) removeRegistrations(n, (r) => r.source === registered);
+        for (const n of this[$nodes]) removeRegistrations(n, (r) => r.source === registered);
         registered.options = normalized;
         return;
       }
     }
     // Step 8.
-    if (this._nodes.length === 0) setActiveObservers(activeObservers + 1);
+    if (this[$nodes].length === 0) setActiveObservers(activeObservers + 1);
     addRegistration(node, new RegisteredObserver(this, normalized, null));
-    this._nodes.push(node);
+    this[$nodes].push(node);
   }
 
   /** https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect */
   disconnect(): void {
-    const nodes = this._nodes;
+    const nodes = this[$nodes];
     if (nodes.length !== 0) {
       for (let i = 0; i < nodes.length; i++) removeRegistrations(nodes[i], (r) => r.observer === this);
-      this._nodes = [];
+      this[$nodes] = [];
       setActiveObservers(activeObservers - 1);
     }
-    this._hasTransients = false;
-    this._records = [];
+    this[$hasTransients] = false;
+    this[$records] = [];
     dropPending(this);
   }
 
   /** https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords */
   takeRecords(): MutationRecord[] {
-    const records = this._records;
-    this._records = [];
+    const records = this[$records];
+    this[$records] = [];
     return records;
   }
 }

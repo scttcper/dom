@@ -15,14 +15,15 @@ import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEven
 import { addEventListener, removeEventListener, type ListenerMap } from "./listeners.ts";
 import { dispatch } from "./dispatch.ts";
 import { toDOMString } from "./convert.ts";
+import { $listeners } from "../keys.ts";
 
 export class EventTarget {
   /** @internal Event type → listener list, or null when there are no listeners (see listeners.ts). */
-  _listeners: ListenerMap | null;
+  [$listeners]: ListenerMap | null;
 
   /** https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget */
   constructor() {
-    this._listeners = null;
+    this[$listeners] = null;
   }
 
   /** https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener */

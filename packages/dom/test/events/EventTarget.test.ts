@@ -14,6 +14,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { CustomEvent, Event, EventTarget, type Document, type Window } from "@rtd/dom";
 import { setup } from "./helpers.ts";
+import { $listeners } from "../../src/keys.ts";
 
 let window: Window;
 let document: Document;
@@ -97,7 +98,7 @@ describe("addEventListener / removeEventListener — https://dom.spec.whatwg.org
     expect(et.addEventListener("x", null, false)).toBeUndefined();
     expect(et.addEventListener("x", null, true)).toBeUndefined();
     expect(et.addEventListener("x", null)).toBeUndefined();
-    expect(et._listeners).toBeNull();
+    expect(et[$listeners]).toBeNull();
   });
 
   test("removing a null event listener succeeds", () => {
@@ -145,12 +146,12 @@ describe("addEventListener / removeEventListener — https://dom.spec.whatwg.org
 
   test("_listeners stays null until the first listener (zero-cost fast path); removed listeners never run", () => {
     const et = document.createElement("div");
-    expect(et._listeners).toBeNull();
+    expect(et[$listeners]).toBeNull();
     let count = 0;
     const fn = () => count++;
     et.addEventListener("a", fn);
     et.addEventListener("b", fn, true);
-    expect(et._listeners).not.toBeNull();
+    expect(et[$listeners]).not.toBeNull();
     et.removeEventListener("a", fn);
     et.removeEventListener("b", fn, true);
     et.dispatchEvent(new Event("a"));

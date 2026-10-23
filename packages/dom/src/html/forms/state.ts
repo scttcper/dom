@@ -26,6 +26,7 @@ import { isFACE, validatableOf } from "./face.ts";
 import type { HTMLInputElement } from "./HTMLInputElement.ts";
 import { radioGroupHasNoChecked } from "./HTMLInputElement.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
+import { $impl, $indeterminate } from "../../keys.ts";
 
 export { isActuallyDisabled } from "./form-associated.ts";
 
@@ -182,7 +183,7 @@ export function isChecked(el: NodeImpl): boolean {
 export function isIndeterminate(el: NodeImpl): boolean {
   if (el.tag === T.input) {
     const type = inputType(el);
-    if (type === I_CHECKBOX) return (el.node as HTMLInputElement)._indeterminate;
+    if (type === I_CHECKBOX) return (el.node as HTMLInputElement)[$indeterminate];
     if (type === I_RADIO) return radioGroupHasNoChecked(el);
     return false;
   }
@@ -207,9 +208,9 @@ export function isDefault(el: NodeImpl): boolean {
 }
 
 function isDefaultButton(el: NodeImpl): boolean {
-  const node = el.node as unknown as { form: { _impl: NodeImpl } | null };
+  const node = el.node as unknown as { form: { [$impl]: NodeImpl } | null };
   const form = node.form;
-  return form !== null && defaultButton(form._impl) === el;
+  return form !== null && defaultButton(form[$impl]) === el;
 }
 
 /** `:placeholder-shown` — https://html.spec.whatwg.org/#selector-placeholder-shown */
@@ -261,7 +262,7 @@ export function inputChecked(el: NodeImpl): boolean {
 
 /** The indeterminate IDL flag of an input. */
 export function inputIndeterminate(el: NodeImpl): boolean {
-  return el.tag === T.input && (el.node as HTMLInputElement)._indeterminate;
+  return el.tag === T.input && (el.node as HTMLInputElement)[$indeterminate];
 }
 
 /** Selectedness of an option. */

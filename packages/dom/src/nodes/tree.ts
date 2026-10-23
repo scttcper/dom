@@ -5,6 +5,7 @@
 // (connectedness, id index, focus fixup, mutation records, document version, element hooks)
 // lives in exactly one place.
 
+import { dropDerivedCaches } from "./derived.ts";
 import {
   DOCUMENT_FRAGMENT_NODE,
   DOCUMENT_NODE,
@@ -36,6 +37,7 @@ import {
 import { NodeList } from "../collections/NodeList.ts";
 import { liveRangeCount, nodeIteratorCount, rangesAdopt, rangesAfterInsert, rangesBeforeRemove, iteratorsBeforeRemove } from "../traversal/live.ts";
 import { slotsAfterInsert, slotsAfterRemove, slotAssignmentActive } from "./slots.ts";
+import { $childNodes, $derived, $focused, $host, $impl, $isHTML, $shadowRoot, $version } from "../keys.ts";
 
 function hierarchyError(message: string): DOMException {
   return new DOMException(message, "HierarchyRequestError");
@@ -58,8 +60,8 @@ function isHostIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
     const parent: NodeImpl | null = cur.parent;
     if (parent === null && cur.type === DOCUMENT_FRAGMENT_NODE) {
       // Shadow roots and template contents link to their host via the wrapper.
-      const host: { _impl: NodeImpl } | null | undefined = (cur.node as unknown as { _host?: { _impl: NodeImpl } | null })._host;
-      cur = host ? host._impl : null;
+      const host: { [$impl]: NodeImpl } | null | undefined = (cur.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host];
+      cur = host ? host[$impl] : null;
     } else {
       cur = parent;
     }
@@ -222,7 +224,7 @@ function link(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null): void {
   }
   parent.childCount++;
   if ((parent.flags & F_CHILD_LIST) !== 0) {
-    const list = parent.node._childNodes!;
+    const list = parent.node[$childNodes]!;
     if (child === null) NodeList._appended(list, node.node);
     else NodeList._rebuild(list);
   }
@@ -241,7 +243,7 @@ function unlink(node: NodeImpl): void {
   node.next = null;
   parent.childCount--;
   if ((parent.flags & F_CHILD_LIST) !== 0) {
-    const list = parent.node._childNodes!;
+    const list = parent.node[$childNodes]!;
     if (next === null) NodeList._popped(list);
     else NodeList._rebuild(list);
   }
@@ -257,7 +259,7 @@ function suspendChildList(n: NodeImpl): number {
 function resumeChildList(n: NodeImpl, bit: number): void {
   if (bit !== 0) {
     n.flags |= F_CHILD_LIST;
-    NodeList._rebuild(n.node._childNodes!);
+    NodeList._rebuild(n.node[$childNodes]!);
   }
 }
 
@@ -305,7 +307,7 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
   }
   // Step 9: children changed steps.
   childrenChanged(parent);
-  doc._version++;
+  doc[$version]++;
   // Custom element reactions queued by hooks above (html agent; see create.ts). Keep last.
   if (ceReactionsPending) flushCEReactions();
 }
@@ -324,7 +326,7 @@ function connectSubtree(root: NodeImpl, doc: Document): void {
     if (n.type === ELEMENT_NODE) {
       if (n.id !== "") doc._idAdd(n);
       if ((n.flags & F_CONNECT_HOOK) !== 0) (n.node as Element)._connectedSteps();
-      if ((n.flags & F_HAS_SHADOW) !== 0) connectSubtree((n.node as Element)._shadowRoot!._impl, doc);
+      if ((n.flags & F_HAS_SHADOW) !== 0) connectSubtree((n.node as Element)[$shadowRoot]![$impl], doc);
     }
   }
 }
@@ -335,9 +337,9 @@ function disconnectSubtree(root: NodeImpl, doc: Document): void {
     if (n.type === ELEMENT_NODE) {
       if (n.id !== "") doc._idRemove(n);
       // Focus fixup rule: https://html.spec.whatwg.org/#focus-fixup-rule
-      if (doc._focused === n) doc._focused = null;
+      if (doc[$focused] === n) doc[$focused] = null;
       if ((n.flags & F_CONNECT_HOOK) !== 0) (n.node as Element)._disconnectedSteps();
-      if ((n.flags & F_HAS_SHADOW) !== 0) disconnectSubtree((n.node as Element)._shadowRoot!._impl, doc);
+      if ((n.flags & F_HAS_SHADOW) !== 0) disconnectSubtree((n.node as Element)[$shadowRoot]![$impl], doc);
     }
   }
 }
@@ -379,7 +381,10 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   }
   // Step 18.
   childrenChanged(parent);
-  doc._version++;
+  doc[$version]++;
+  // Version-stamped derived caches may still reference the removed subtree: drop them now
+  // instead of on their next (maybe never) lookup (nodes/derived.ts).
+  if (doc[$derived] !== null) dropDerivedCaches(doc);
   // Custom element reactions queued by hooks above (html agent; see create.ts). Keep last.
   if (ceReactionsPending) flushCEReactions();
 }
@@ -460,7 +465,7 @@ export function adopt(node: NodeImpl, doc: Document): void {
   const oldDoc = node.doc;
   if (node.parent !== null) remove(node, false);
   if (oldDoc !== doc) {
-    const html = doc._isHTML;
+    const html = doc[$isHTML];
     for (let n: NodeImpl | null = node; n !== null; n = nextInTree(n, node)) {
       n.doc = doc;
       if (n.type === ELEMENT_NODE) {
@@ -471,10 +476,10 @@ export function adopt(node: NodeImpl, doc: Document): void {
         if (attrs !== null) {
           for (let i = 0; i < attrs.length; i++) {
             const a = attrs[i].attr;
-            if (a !== null) a._impl.doc = doc;
+            if (a !== null) a[$impl].doc = doc;
           }
         }
-        if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)._shadowRoot!._impl, doc);
+        if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)[$shadowRoot]![$impl], doc);
       }
     }
     if (liveRangeCount !== 0) rangesAdopt(node, oldDoc);
@@ -491,16 +496,16 @@ function adoptShadowTree(root: NodeImpl, doc: Document): void {
   for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
     n.doc = doc;
     if (n.type === ELEMENT_NODE) {
-      if (n.ns === HTML_NS && doc._isHTML) n.flags |= F_HTML;
+      if (n.ns === HTML_NS && doc[$isHTML]) n.flags |= F_HTML;
       else n.flags &= ~F_HTML;
       const attrs = n.attrs;
       if (attrs !== null) {
         for (let i = 0; i < attrs.length; i++) {
           const a = attrs[i].attr;
-          if (a !== null) a._impl.doc = doc;
+          if (a !== null) a[$impl].doc = doc;
         }
       }
-      if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)._shadowRoot!._impl, doc);
+      if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)[$shadowRoot]![$impl], doc);
     }
   }
 }

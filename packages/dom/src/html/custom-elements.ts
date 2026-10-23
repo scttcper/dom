@@ -22,6 +22,7 @@ import { nextInTree } from "../nodes/traverse.ts";
 import { currentWindow } from "../window/current.ts";
 import { reportException as reportError } from "../events/report.ts";
 import { elementClassFor, isBuiltinInterface, localNamesForInterface } from "./registry.ts";
+import { $byCtor, $byName, $impl, $running, $shadowRoot, $whenDefined, $window } from "../keys.ts";
 
 type Callback = (...args: unknown[]) => unknown;
 
@@ -90,19 +91,19 @@ export interface ElementDefinitionOptions {
 
 /** https://html.spec.whatwg.org/#customelementregistry */
 export class CustomElementRegistry {
-  _byName: Map<string, CustomElementDefinition>;
-  _byCtor: Map<Function, CustomElementDefinition>;
-  _whenDefined: Map<string, Deferred>;
-  _running: boolean;
-  _window: object | null;
+  [$byName]: Map<string, CustomElementDefinition>;
+  [$byCtor]: Map<Function, CustomElementDefinition>;
+  [$whenDefined]: Map<string, Deferred>;
+  [$running]: boolean;
+  [$window]: object | null;
 
   /** @internal */
   constructor(window: object | null = null) {
-    this._byName = new Map();
-    this._byCtor = new Map();
-    this._whenDefined = new Map();
-    this._running = false;
-    this._window = window;
+    this[$byName] = new Map();
+    this[$byCtor] = new Map();
+    this[$whenDefined] = new Map();
+    this[$running] = false;
+    this[$window] = window;
   }
 
   /** https://html.spec.whatwg.org/#dom-customelementregistry-define */
@@ -117,10 +118,10 @@ export class CustomElementRegistry {
       throw new DOMException(`Failed to execute 'define' on 'CustomElementRegistry': "${name}" is not a valid custom element name`, "SyntaxError");
     }
     // 3–4.
-    if (this._byName.has(name)) {
+    if (this[$byName].has(name)) {
       throw new DOMException(`Failed to execute 'define' on 'CustomElementRegistry': the name "${name}" has already been used with this registry`, "NotSupportedError");
     }
-    if (this._byCtor.has(constructor)) {
+    if (this[$byCtor].has(constructor)) {
       throw new DOMException("Failed to execute 'define' on 'CustomElementRegistry': this constructor has already been used with this registry", "NotSupportedError");
     }
     // 5–6.
@@ -135,8 +136,8 @@ export class CustomElementRegistry {
       localName = e;
     }
     // 7.
-    if (this._running) throw new DOMException("Element definition is already running.", "NotSupportedError");
-    this._running = true;
+    if (this[$running]) throw new DOMException("Element definition is already running.", "NotSupportedError");
+    this[$running] = true;
     let def: CustomElementDefinition;
     try {
       const prototype = (constructor as { prototype: unknown }).prototype;
@@ -188,36 +189,36 @@ export class CustomElementRegistry {
         constructionStack: [],
       };
     } finally {
-      this._running = false;
+      this[$running] = false;
     }
     // 14–15.
-    this._byName.set(name, def);
-    this._byCtor.set(constructor, def);
+    this[$byName].set(name, def);
+    this[$byCtor].set(constructor, def);
     definedCount++;
     // 16–17. Upgrade candidates in the window's document, in shadow-including tree order.
-    const doc = (this._window as { document?: Document } | null)?.document;
+    const doc = (this[$window] as { document?: Document } | null)?.document;
     if (doc != null) {
       const candidates: Element[] = [];
-      collectCandidates(doc._impl, def, candidates);
+      collectCandidates(doc[$impl], def, candidates);
       for (const el of candidates) enqueueUpgrade(el, def);
       flushReactions();
     }
     // 18.
-    const d = this._whenDefined.get(name);
+    const d = this[$whenDefined].get(name);
     if (d !== undefined) {
       d.resolve(constructor);
-      this._whenDefined.delete(name);
+      this[$whenDefined].delete(name);
     }
   }
 
   /** https://html.spec.whatwg.org/#dom-customelementregistry-get */
   get(name: string): Function | undefined {
-    return this._byName.get(String(name))?.constructor;
+    return this[$byName].get(String(name))?.constructor;
   }
 
   /** https://html.spec.whatwg.org/#dom-customelementregistry-getname */
   getName(constructor: Function): string | null {
-    return this._byCtor.get(constructor)?.name ?? null;
+    return this[$byCtor].get(constructor)?.name ?? null;
   }
 
   /** https://html.spec.whatwg.org/#dom-customelementregistry-whendefined */
@@ -226,21 +227,21 @@ export class CustomElementRegistry {
     if (!isValidCustomElementName(name)) {
       return Promise.reject(new DOMException(`"${name}" is not a valid custom element name`, "SyntaxError"));
     }
-    const def = this._byName.get(name);
+    const def = this[$byName].get(name);
     if (def !== undefined) return Promise.resolve(def.constructor);
-    let d = this._whenDefined.get(name);
+    let d = this[$whenDefined].get(name);
     if (d === undefined) {
       const { promise, resolve } = Promise.withResolvers<Function>();
       d = { promise, resolve };
-      this._whenDefined.set(name, d);
+      this[$whenDefined].set(name, d);
     }
     return d.promise;
   }
 
   /** https://html.spec.whatwg.org/#dom-customelementregistry-upgrade */
-  upgrade(root: { _impl: NodeImpl }): void {
+  upgrade(root: { [$impl]: NodeImpl }): void {
     const candidates: Element[] = [];
-    forEachShadowIncludingInclusiveDescendant(root._impl, (n) => {
+    forEachShadowIncludingInclusiveDescendant(root[$impl], (n) => {
       if (n.type === ELEMENT_NODE) candidates.push(n.node as Element);
     });
     for (const el of candidates) tryToUpgrade(el);
@@ -250,10 +251,10 @@ export class CustomElementRegistry {
   /** @internal https://html.spec.whatwg.org/#look-up-a-custom-element-definition (registry part). */
   _lookup(ns: string | null, localName: string, is: string | null): CustomElementDefinition | null {
     if (ns !== HTML_NS) return null;
-    const byName = this._byName.get(localName);
+    const byName = this[$byName].get(localName);
     if (byName !== undefined && byName.localName === localName) return byName;
     if (is !== null) {
-      const byIs = this._byName.get(is);
+      const byIs = this[$byName].get(is);
       if (byIs !== undefined && byIs.localName === localName) return byIs;
     }
     return null;
@@ -281,8 +282,8 @@ function forEachShadowIncludingInclusiveDescendant(root: NodeImpl, fn: (n: NodeI
   for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
     fn(n);
     if (n.type === ELEMENT_NODE) {
-      const shadow = (n.node as Element)._shadowRoot;
-      if (shadow !== null) forEachShadowIncludingInclusiveDescendant(shadow._impl, fn);
+      const shadow = (n.node as Element)[$shadowRoot];
+      if (shadow !== null) forEachShadowIncludingInclusiveDescendant(shadow[$impl], fn);
     }
   }
 }
@@ -311,7 +312,7 @@ export function customElementRegistryFor(window: object): CustomElementRegistry 
 /** https://html.spec.whatwg.org/#look-up-a-custom-element-definition */
 export function lookupDefinition(doc: Document, ns: string | null, localName: string, is: string | null): CustomElementDefinition | null {
   if (definedCount === 0 || ns !== HTML_NS) return null;
-  const window = doc._window;
+  const window = doc[$window];
   if (window === null) return null;
   const r = registries.get(window);
   return r === undefined ? null : r._lookup(ns, localName, is);
@@ -362,7 +363,7 @@ export function htmlElementConstructorSteps(newTarget: Function): ConstructResul
   } catch {
     registry = undefined;
   }
-  const def = registry?._byCtor.get(newTarget);
+  const def = registry?.[$byCtor].get(newTarget);
   if (def === undefined) throw new TypeError("Illegal constructor");
   // 4–5. The "active function object": the first built-in interface on NewTarget's chain.
   let active: Function | null = null;
@@ -400,7 +401,7 @@ export function initNewCustomElement(el: Element, def: CustomElementDefinition):
 }
 
 function markCustom(el: Element, def: CustomElementDefinition): void {
-  const impl = el._impl;
+  const impl = el[$impl];
   definitions.set(el, def);
   impl.flags |= F_CE_CUSTOM | F_CONNECT_HOOK;
   // Form-associated custom elements join the forms categories (html/forms/form-associated.ts).
@@ -436,7 +437,7 @@ function createElementSync(doc: Document, localName: string, ns: string | null, 
     creatingDocument = doc;
     try {
       const result = new C();
-      const r = result._impl;
+      const r = result[$impl];
       if (!(result instanceof (elementClassFor("x-x", HTML_NS) as Function))) throw new TypeError("The custom element constructor did not produce an HTMLElement.");
       if (r.attrs !== null && r.attrs.length !== 0) throw new DOMException("The result must not have attributes", "NotSupportedError");
       if (r.first !== null) throw new DOMException("The result must not have children", "NotSupportedError");
@@ -449,7 +450,7 @@ function createElementSync(doc: Document, localName: string, ns: string | null, 
       reportException(e);
       // 6.3 Failure: an HTMLUnknownElement whose custom element state is "failed".
       const Unknown = elementClassFor("applet", HTML_NS);
-      const impl = new Unknown(doc, localName, ns, prefix)._impl;
+      const impl = new Unknown(doc, localName, ns, prefix)[$impl];
       impl.flags &= ~F_CONNECT_HOOK;
       return impl;
     } finally {
@@ -471,7 +472,7 @@ setCustomElementCreate(createElementSync);
 
 /** https://html.spec.whatwg.org/#concept-upgrade-an-element */
 function upgrade(el: Element, def: CustomElementDefinition): void {
-  const impl = el._impl;
+  const impl = el[$impl];
   // 1. Already custom (or failed: definition set without the custom flag).
   if ((impl.flags & F_CE_CUSTOM) !== 0 || definitions.has(el)) return;
   // 2–3. Set the definition; state "failed" until construction succeeds.
@@ -509,7 +510,7 @@ function upgrade(el: Element, def: CustomElementDefinition): void {
 
 /** https://html.spec.whatwg.org/#concept-try-upgrade */
 function tryToUpgrade(el: Element): void {
-  const impl = el._impl;
+  const impl = el[$impl];
   if ((impl.flags & F_CE_CUSTOM) !== 0) return;
   const def = lookupDefinition(impl.doc, impl.ns, impl.name, isValues.get(el) ?? null);
   if (def !== null) enqueueUpgrade(el, def);
@@ -591,18 +592,18 @@ export function reportException(e: unknown, target: Element | null = null): void
 
 export function ceConnected(el: Element): void {
   if (definedCount === 0) return;
-  if ((el._impl.flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "connectedCallback", []);
+  if ((el[$impl].flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "connectedCallback", []);
   else tryToUpgrade(el);
 }
 
 export function ceDisconnected(el: Element): void {
-  if ((el._impl.flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "disconnectedCallback", []);
+  if ((el[$impl].flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "disconnectedCallback", []);
 }
 
 export function ceAttributeChanged(el: Element, localName: string, oldValue: string | null, value: string | null, ns: string | null): void {
-  if ((el._impl.flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "attributeChangedCallback", [localName, oldValue, value, ns]);
+  if ((el[$impl].flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "attributeChangedCallback", [localName, oldValue, value, ns]);
 }
 
 export function ceAdopted(el: Element, oldDoc: Document, newDoc: Document): void {
-  if ((el._impl.flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "adoptedCallback", [oldDoc, newDoc]);
+  if ((el[$impl].flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "adoptedCallback", [oldDoc, newDoc]);
 }

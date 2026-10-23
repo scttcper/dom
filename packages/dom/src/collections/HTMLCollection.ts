@@ -21,6 +21,7 @@
 // Everything else (length, item, namedItem, indexed access, iteration) goes through
 // `_snapshot()`.
 
+import { holdSnapshot } from "../nodes/derived.ts";
 import { ELEMENT_NODE, HTML_NS } from "../nodes/constants.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
@@ -28,6 +29,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { attr } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
+import { $impl, $items, $version } from "../keys.ts";
 
 export type ElementFilter = (el: NodeImpl) => boolean;
 
@@ -49,13 +51,20 @@ export class CollectionState {
     this.doc = null;
     this.version = -1;
   }
+
+  /** nodes/derived.ts: release the (stale) members once a node was removed from the document. */
+  _dropSnapshot(): void {
+    this.items = [];
+    this.doc = null;
+    this.version = -1;
+  }
 }
 
 export class HTMLCollection {
   declare _s: CollectionState;
   /** Free for subclasses that override `_snapshot()` (not used by the base class). */
-  declare _items: Element[] | null;
-  declare _version: number;
+  declare [$items]: Element[] | null;
+  declare [$version]: number;
 
   /** @internal Use the static factories or a subclass. */
   constructor(root: NodeImpl, childrenOnly = false, filter: ElementFilter | null = null) {
@@ -64,12 +73,12 @@ export class HTMLCollection {
   }
 
   /** @internal The collection root. */
-  get _root(): NodeImpl {
+  get _rootImpl(): NodeImpl {
     return this._s.root;
   }
 
   /** @internal Element children of `root` (ParentNode.children). */
-  static _children(root: NodeImpl): HTMLCollection {
+  static _childrenOf(root: NodeImpl): HTMLCollection {
     return new HTMLCollection(root, true, null);
   }
 
@@ -103,12 +112,13 @@ export class HTMLCollection {
   _snapshot(): Element[] {
     const s = this._s;
     const doc = s.root.doc;
-    if (s.version === doc._version && s.doc === doc) return s.items;
+    if (s.version === doc[$version] && s.doc === doc) return s.items;
     const items: Element[] = [];
     this._collect(items);
     s.items = items;
     s.doc = doc;
-    s.version = doc._version;
+    s.version = doc[$version];
+    if (items.length !== 0) holdSnapshot(doc, s);
     if (items.length > table!.count) ensureIndexGetters(table!, items.length);
     return items;
   }
@@ -132,7 +142,7 @@ export class HTMLCollection {
     if (name === "") return null;
     const items = this._snapshot();
     for (let i = 0; i < items.length; i++) {
-      const impl = items[i]._impl;
+      const impl = items[i][$impl];
       if (impl.id === name) return items[i];
       if (impl.ns === HTML_NS && attr(impl, "name") === name) return items[i];
     }
@@ -144,7 +154,7 @@ export class HTMLCollection {
     const names: string[] = [];
     const items = this._snapshot();
     for (let i = 0; i < items.length; i++) {
-      const impl = items[i]._impl;
+      const impl = items[i][$impl];
       if (impl.id !== "" && !names.includes(impl.id)) names.push(impl.id);
       if (impl.ns === HTML_NS) {
         const n = attr(impl, "name");

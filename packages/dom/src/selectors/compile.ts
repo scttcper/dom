@@ -39,6 +39,7 @@ import {
   P_READ_WRITE, P_DEFAULT, P_OPEN, P_HEADING,
 } from "./parser.ts";
 import { predicates, type Predicate, matchesLang, directionality, customState, parentOrHost, shadowHost } from "./state.ts";
+import { $mode, $version } from "../keys.ts";
 
 // --- test opcodes ------------------------------------------------------------------------
 
@@ -879,7 +880,7 @@ function matchFeatureless(tests: Test[], el: NodeImpl): boolean {
 }
 
 function isQuirks(doc: Document): boolean {
-  return doc._mode === "quirks";
+  return doc[$mode] === "quirks";
 }
 
 function matchTest(t: Test, el: NodeImpl): boolean {
@@ -1041,7 +1042,7 @@ function sameType(x: NodeImpl, el: NodeImpl): boolean {
 function matchNth(t: Test, el: NodeImpl): boolean {
   const list = t.list;
   if (list !== null && !matchList(list, el)) return false;
-  const version = el.doc._version;
+  const version = el.doc[$version];
   const ofType = t.op === O_NTH_OF_TYPE || t.op === O_NTH_LAST_OF_TYPE;
   const fromEnd = t.op === O_NTH_LAST_CHILD || t.op === O_NTH_LAST_OF_TYPE;
   // Forward index, with a memo keyed by the previous counted sibling (consecutive siblings in

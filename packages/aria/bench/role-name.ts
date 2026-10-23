@@ -17,6 +17,7 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { $impl } from "@rtd/dom/internal";
 
 const require = createRequire(import.meta.url);
 
@@ -60,7 +61,7 @@ async function setup(engine: string): Promise<Env> {
     const internal = await import("@rtd/aria/internal");
     const doc = createWindow().document;
     doc.body!.innerHTML = html;
-    const elements = Array.from(doc.body!.querySelectorAll("form *")).map((e: any) => e._impl);
+    const elements = Array.from(doc.body!.querySelectorAll("form *")).map((e: any) => e[$impl]);
     void aria;
     let k = 0;
     return {

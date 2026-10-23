@@ -32,6 +32,7 @@ import { currentDocument } from "../window/current.ts";
 import { parseFragment } from "../parser/index.ts";
 import { DOMRect, DOMRectList } from "../window/geometry.ts";
 import { refileRange, registerLiveRange } from "./live.ts";
+import { $ec, $eo, $home, $impl, $sc, $so } from "../keys.ts";
 
 export const START_TO_START = 0;
 export const START_TO_END = 1;
@@ -64,10 +65,10 @@ export function nodeLength(n: NodeImpl): number {
 }
 
 function toNodeImpl(node: unknown, method: string, iface = "Range"): NodeImpl {
-  if (node === null || typeof node !== "object" || !("_impl" in node)) {
+  if (node === null || typeof node !== "object" || !($impl in node)) {
     throw new TypeError(`Failed to execute '${method}' on '${iface}': parameter 1 is not of type 'Node'.`);
   }
-  return (node as Node)._impl;
+  return (node as Node)[$impl];
 }
 
 /**
@@ -126,41 +127,41 @@ function commonAncestor(a: NodeImpl, b: NodeImpl): NodeImpl {
 /** https://dom.spec.whatwg.org/#interface-abstractrange */
 export abstract class AbstractRange {
   /** @internal start container / offset, end container / offset */
-  _sc: NodeImpl;
-  _so: number;
-  _ec: NodeImpl;
-  _eo: number;
+  [$sc]: NodeImpl;
+  [$so]: number;
+  [$ec]: NodeImpl;
+  [$eo]: number;
 
   /** @internal live.ts bookkeeping (null for StaticRange). */
-  _home: object | null;
+  [$home]: object | null;
 
   constructor(sc: NodeImpl, so: number, ec: NodeImpl, eo: number) {
-    this._sc = sc;
-    this._so = so;
-    this._ec = ec;
-    this._eo = eo;
-    this._home = null;
+    this[$sc] = sc;
+    this[$so] = so;
+    this[$ec] = ec;
+    this[$eo] = eo;
+    this[$home] = null;
   }
 
   get startContainer(): Node {
-    return this._sc.node;
+    return this[$sc].node;
   }
 
   get startOffset(): number {
-    return this._so;
+    return this[$so];
   }
 
   get endContainer(): Node {
-    return this._ec.node;
+    return this[$ec].node;
   }
 
   get endOffset(): number {
-    return this._eo;
+    return this[$eo];
   }
 
   /** https://dom.spec.whatwg.org/#range-collapsed */
   get collapsed(): boolean {
-    return this._sc === this._ec && this._so === this._eo;
+    return this[$sc] === this[$ec] && this[$so] === this[$eo];
   }
 }
 
@@ -200,7 +201,7 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#dom-range-range */
   constructor(doc?: Document) {
-    const d = (doc ?? currentDocument())._impl;
+    const d = (doc ?? currentDocument())[$impl];
     super(d, 0, d, 0);
     registerLiveRange(this);
   }
@@ -208,46 +209,46 @@ export class Range extends AbstractRange {
   /** @internal Create a live range in `doc` with the given boundary points. */
   static _create(doc: Document, sc: NodeImpl, so: number, ec: NodeImpl, eo: number): Range {
     const r = new Range(doc);
-    r._sc = sc;
-    r._so = so;
-    r._ec = ec;
-    r._eo = eo;
+    r[$sc] = sc;
+    r[$so] = so;
+    r[$ec] = ec;
+    r[$eo] = eo;
     refileRange(r);
     return r;
   }
 
   /** https://dom.spec.whatwg.org/#concept-range-root */
-  _root(): NodeImpl {
-    return treeRoot(this._sc);
+  _treeRoot(): NodeImpl {
+    return treeRoot(this[$sc]);
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer */
   get commonAncestorContainer(): Node {
-    return commonAncestor(this._sc, this._ec).node;
+    return commonAncestor(this[$sc], this[$ec]).node;
   }
 
   /** https://dom.spec.whatwg.org/#concept-range-bp-set */
   _setStart(node: NodeImpl, offset: number): void {
     if (node.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
-    if (treeRoot(node) !== this._root() || compareBoundaryPoints(node, offset, this._ec, this._eo) > 0) {
-      this._ec = node;
-      this._eo = offset;
+    if (treeRoot(node) !== this._treeRoot() || compareBoundaryPoints(node, offset, this[$ec], this[$eo]) > 0) {
+      this[$ec] = node;
+      this[$eo] = offset;
     }
-    this._sc = node;
-    this._so = offset;
+    this[$sc] = node;
+    this[$so] = offset;
     refileRange(this);
   }
 
   _setEnd(node: NodeImpl, offset: number): void {
     if (node.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
-    if (treeRoot(node) !== this._root() || compareBoundaryPoints(node, offset, this._sc, this._so) < 0) {
-      this._sc = node;
-      this._so = offset;
+    if (treeRoot(node) !== this._treeRoot() || compareBoundaryPoints(node, offset, this[$sc], this[$so]) < 0) {
+      this[$sc] = node;
+      this[$so] = offset;
     }
-    this._ec = node;
-    this._eo = offset;
+    this[$ec] = node;
+    this[$eo] = offset;
     refileRange(this);
   }
 
@@ -290,11 +291,11 @@ export class Range extends AbstractRange {
   /** https://dom.spec.whatwg.org/#dom-range-collapse */
   collapse(toStart = false): void {
     if (toStart) {
-      this._ec = this._sc;
-      this._eo = this._so;
+      this[$ec] = this[$sc];
+      this[$eo] = this[$so];
     } else {
-      this._sc = this._ec;
-      this._so = this._eo;
+      this[$sc] = this[$ec];
+      this[$so] = this[$eo];
     }
   }
 
@@ -303,10 +304,10 @@ export class Range extends AbstractRange {
     const parent = n.parent;
     if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
     const index = indexOf(n);
-    this._sc = parent;
-    this._so = index;
-    this._ec = parent;
-    this._eo = index + 1;
+    this[$sc] = parent;
+    this[$so] = index;
+    this[$ec] = parent;
+    this[$eo] = index + 1;
     refileRange(this);
   }
 
@@ -317,10 +318,10 @@ export class Range extends AbstractRange {
   /** https://dom.spec.whatwg.org/#dom-range-selectnodecontents */
   _selectContents(n: NodeImpl): void {
     if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
-    this._sc = n;
-    this._so = 0;
-    this._ec = n;
-    this._eo = nodeLength(n);
+    this[$sc] = n;
+    this[$so] = 0;
+    this[$ec] = n;
+    this[$eo] = nodeLength(n);
     refileRange(this);
   }
 
@@ -340,31 +341,31 @@ export class Range extends AbstractRange {
     if (!(sourceRange instanceof Range)) {
       throw new TypeError("Failed to execute 'compareBoundaryPoints' on 'Range': parameter 2 is not of type 'Range'.");
     }
-    if (this._root() !== sourceRange._root()) throw new DOMException("The two Ranges are not in the same tree.", "WrongDocumentError");
+    if (this._treeRoot() !== sourceRange._treeRoot()) throw new DOMException("The two Ranges are not in the same tree.", "WrongDocumentError");
     switch (h) {
       case START_TO_START:
-        return compareBoundaryPoints(this._sc, this._so, sourceRange._sc, sourceRange._so);
+        return compareBoundaryPoints(this[$sc], this[$so], sourceRange[$sc], sourceRange[$so]);
       case START_TO_END:
-        return compareBoundaryPoints(this._ec, this._eo, sourceRange._sc, sourceRange._so);
+        return compareBoundaryPoints(this[$ec], this[$eo], sourceRange[$sc], sourceRange[$so]);
       case END_TO_END:
-        return compareBoundaryPoints(this._ec, this._eo, sourceRange._ec, sourceRange._eo);
+        return compareBoundaryPoints(this[$ec], this[$eo], sourceRange[$ec], sourceRange[$eo]);
       default:
-        return compareBoundaryPoints(this._sc, this._so, sourceRange._ec, sourceRange._eo);
+        return compareBoundaryPoints(this[$sc], this[$so], sourceRange[$ec], sourceRange[$eo]);
     }
   }
 
   /** https://dom.spec.whatwg.org/#contained */
   _contains(n: NodeImpl): boolean {
-    return compareBoundaryPoints(n, 0, this._sc, this._so) > 0 && compareBoundaryPoints(n, nodeLength(n), this._ec, this._eo) < 0;
+    return compareBoundaryPoints(n, 0, this[$sc], this[$so]) > 0 && compareBoundaryPoints(n, nodeLength(n), this[$ec], this[$eo]) < 0;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-deletecontents */
   deleteContents(): void {
     if (this.collapsed) return;
-    const osn = this._sc;
-    const oso = this._so;
-    const oen = this._ec;
-    const oeo = this._eo;
+    const osn = this[$sc];
+    const oso = this[$so];
+    const oen = this[$ec];
+    const oeo = this[$eo];
     // Step 3.
     if (osn === oen && isCharacterData(osn)) {
       replaceData(osn, oso, oeo - oso, "");
@@ -394,18 +395,18 @@ export class Range extends AbstractRange {
     // Step 9.
     if (isCharacterData(oen)) replaceData(oen, 0, oeo, "");
     // Step 10.
-    this._sc = this._ec = newNode;
-    this._so = this._eo = newOffset;
+    this[$sc] = this[$ec] = newNode;
+    this[$so] = this[$eo] = newOffset;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-extractcontents */
   extractContents(): DocumentFragment {
-    return extract(this, this._sc, this._so, this._ec, this._eo).node as DocumentFragment;
+    return extract(this, this[$sc], this[$so], this[$ec], this[$eo]).node as DocumentFragment;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-clonecontents */
   cloneContents(): DocumentFragment {
-    return cloneContents(this._sc, this._so, this._ec, this._eo).node as DocumentFragment;
+    return cloneContents(this[$sc], this[$so], this[$ec], this[$eo]).node as DocumentFragment;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-insertnode */
@@ -417,14 +418,14 @@ export class Range extends AbstractRange {
   surroundContents(newParent: Node): void {
     const np = toNodeImpl(newParent, "surroundContents");
     // Step 1: a non-Text node partially contained in the range.
-    const ca = commonAncestor(this._sc, this._ec);
-    for (let n: NodeImpl = this._sc; n !== ca; n = n.parent!) {
-      if (!isText(n) && !isInclusiveAncestor(n, this._ec)) {
+    const ca = commonAncestor(this[$sc], this[$ec]);
+    for (let n: NodeImpl = this[$sc]; n !== ca; n = n.parent!) {
+      if (!isText(n) && !isInclusiveAncestor(n, this[$ec])) {
         throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
       }
     }
-    for (let n: NodeImpl = this._ec; n !== ca; n = n.parent!) {
-      if (!isText(n) && !isInclusiveAncestor(n, this._sc)) {
+    for (let n: NodeImpl = this[$ec]; n !== ca; n = n.parent!) {
+      if (!isText(n) && !isInclusiveAncestor(n, this[$sc])) {
         throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
       }
     }
@@ -434,7 +435,7 @@ export class Range extends AbstractRange {
       throw new DOMException("The node provided is a Document, DocumentType or DocumentFragment.", "InvalidNodeTypeError");
     }
     // Steps 3-7.
-    const fragment = extract(this, this._sc, this._so, this._ec, this._eo);
+    const fragment = extract(this, this[$sc], this[$so], this[$ec], this[$eo]);
     if (np.first !== null) replaceAll(null, np);
     insertIntoRange(this, np);
     append(fragment, np);
@@ -443,7 +444,7 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#dom-range-clonerange */
   cloneRange(): Range {
-    return Range._create(this._sc.doc, this._sc, this._so, this._ec, this._eo);
+    return Range._create(this[$sc].doc, this[$sc], this[$so], this[$ec], this[$eo]);
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-detach — does nothing. */
@@ -453,54 +454,54 @@ export class Range extends AbstractRange {
   isPointInRange(node: Node, offset: number): boolean {
     const n = toNodeImpl(node, "isPointInRange");
     const o = Number(offset) >>> 0;
-    if (treeRoot(n) !== this._root()) return false;
+    if (treeRoot(n) !== this._treeRoot()) return false;
     if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
-    return compareBoundaryPoints(n, o, this._sc, this._so) >= 0 && compareBoundaryPoints(n, o, this._ec, this._eo) <= 0;
+    return compareBoundaryPoints(n, o, this[$sc], this[$so]) >= 0 && compareBoundaryPoints(n, o, this[$ec], this[$eo]) <= 0;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-comparepoint */
   comparePoint(node: Node, offset: number): number {
     const n = toNodeImpl(node, "comparePoint");
     const o = Number(offset) >>> 0;
-    if (treeRoot(n) !== this._root()) throw new DOMException("The node provided and the Range are not in the same tree.", "WrongDocumentError");
+    if (treeRoot(n) !== this._treeRoot()) throw new DOMException("The node provided and the Range are not in the same tree.", "WrongDocumentError");
     if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
-    if (compareBoundaryPoints(n, o, this._sc, this._so) < 0) return -1;
-    if (compareBoundaryPoints(n, o, this._ec, this._eo) > 0) return 1;
+    if (compareBoundaryPoints(n, o, this[$sc], this[$so]) < 0) return -1;
+    if (compareBoundaryPoints(n, o, this[$ec], this[$eo]) > 0) return 1;
     return 0;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-intersectsnode */
   intersectsNode(node: Node): boolean {
     const n = toNodeImpl(node, "intersectsNode");
-    if (treeRoot(n) !== this._root()) return false;
+    if (treeRoot(n) !== this._treeRoot()) return false;
     const parent = n.parent;
     if (parent === null) return true;
     const offset = indexOf(n);
-    return compareBoundaryPoints(parent, offset, this._ec, this._eo) < 0 && compareBoundaryPoints(parent, offset + 1, this._sc, this._so) > 0;
+    return compareBoundaryPoints(parent, offset, this[$ec], this[$eo]) < 0 && compareBoundaryPoints(parent, offset + 1, this[$sc], this[$so]) > 0;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-stringifier */
   toString(): string {
-    const sc = this._sc;
-    const ec = this._ec;
-    if (sc === ec && isText(sc)) return sc.data.slice(this._so, this._eo);
+    const sc = this[$sc];
+    const ec = this[$ec];
+    if (sc === ec && isText(sc)) return sc.data.slice(this[$so], this[$eo]);
     let s = "";
-    if (isText(sc)) s += sc.data.slice(this._so);
+    if (isText(sc)) s += sc.data.slice(this[$so]);
     const root = treeRoot(sc);
-    const end = isCharacterData(ec) ? ec : afterBoundary(ec, this._eo, root);
-    for (let n = afterBoundary(sc, this._so, root); n !== null && n !== end; n = nextInTree(n, root)) {
+    const end = isCharacterData(ec) ? ec : afterBoundary(ec, this[$eo], root);
+    for (let n = afterBoundary(sc, this[$so], root); n !== null && n !== end; n = nextInTree(n, root)) {
       // Every Text node strictly between the boundary points is contained.
       if (isText(n)) s += n.data;
     }
-    if (isText(ec)) s += ec.data.slice(0, this._eo);
+    if (isText(ec)) s += ec.data.slice(0, this[$eo]);
     return s;
   }
 
   /** https://html.spec.whatwg.org/#dom-range-createcontextualfragment */
   createContextualFragment(fragment: string): DocumentFragment {
-    const node = this._sc;
+    const node = this[$sc];
     let element: NodeImpl | null;
     switch (node.type) {
       case DOCUMENT_NODE:
@@ -516,7 +517,7 @@ export class Range extends AbstractRange {
       }
     }
     if (element === null || (element.name === "html" && element.ns === HTML_NS && (element.flags & F_HTML) !== 0)) {
-      element = node.doc.createElement("body")._impl;
+      element = node.doc.createElement("body")[$impl];
     }
     return parseFragment(String(fragment), element).node as DocumentFragment;
   }
@@ -556,9 +557,9 @@ function afterBoundary(node: NodeImpl, offset: number, root: NodeImpl): NodeImpl
 /** Nodes contained in the range in tree order; with `outermost`, omit nodes whose parent is contained. */
 function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean }, outermost: boolean): NodeImpl[] {
   const out: NodeImpl[] = [];
-  const root = treeRoot(range._sc);
-  const end = isCharacterData(range._ec) ? range._ec : afterBoundary(range._ec, range._eo, root);
-  let n = afterBoundary(range._sc, range._so, root);
+  const root = treeRoot(range[$sc]);
+  const end = isCharacterData(range[$ec]) ? range[$ec] : afterBoundary(range[$ec], range[$eo], root);
+  let n = afterBoundary(range[$sc], range[$so], root);
   while (n !== null && n !== end) {
     if (range._contains(n)) {
       out.push(n);
@@ -593,7 +594,7 @@ function cloneWithData(n: NodeImpl, data: string): NodeImpl {
 
 /** https://dom.spec.whatwg.org/#concept-range-extract (`range` is the live range to collapse, or null for a subrange). */
 function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl, oeo: number): NodeImpl {
-  const fragment = osn.doc.createDocumentFragment()._impl;
+  const fragment = osn.doc.createDocumentFragment()[$impl];
   if (osn === oen && oso === oeo) return fragment;
   // Step 4.
   if (osn === oen && isCharacterData(osn)) {
@@ -641,15 +642,15 @@ function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl,
   }
   // Step 18.
   if (range !== null) {
-    range._sc = range._ec = newNode;
-    range._so = range._eo = newOffset;
+    range[$sc] = range[$ec] = newNode;
+    range[$so] = range[$eo] = newOffset;
   }
   return fragment;
 }
 
 /** https://dom.spec.whatwg.org/#concept-range-clone */
 function cloneContents(osn: NodeImpl, oso: number, oen: NodeImpl, oeo: number): NodeImpl {
-  const fragment = osn.doc.createDocumentFragment()._impl;
+  const fragment = osn.doc.createDocumentFragment()[$impl];
   if (osn === oen && oso === oeo) return fragment;
   if (osn === oen && isCharacterData(osn)) {
     append(cloneWithData(osn, osn.data.slice(oso, oeo)), fragment);
@@ -680,8 +681,8 @@ function cloneContents(osn: NodeImpl, oso: number, oen: NodeImpl, oeo: number): 
 
 /** https://dom.spec.whatwg.org/#concept-range-insert */
 function insertIntoRange(range: Range, node: NodeImpl): void {
-  const sn = range._sc;
-  const so = range._so;
+  const sn = range[$sc];
+  const so = range[$so];
   // Step 1.
   if (sn.type === PROCESSING_INSTRUCTION_NODE || sn.type === COMMENT_NODE || (isText(sn) && sn.parent === null) || sn === node) {
     throw new DOMException("The Range's start node cannot contain the inserted node.", "HierarchyRequestError");
@@ -705,7 +706,7 @@ function insertIntoRange(range: Range, node: NodeImpl): void {
   preInsert(node, parent, reference);
   // Step 13.
   if (range.collapsed) {
-    range._ec = parent;
-    range._eo = newOffset;
+    range[$ec] = parent;
+    range[$eo] = newOffset;
   }
 }

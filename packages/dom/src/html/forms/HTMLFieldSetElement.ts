@@ -9,18 +9,19 @@ import { T } from "../../nodes/tags.ts";
 import { bool, str } from "../reflect.ts";
 import { formOwner, isListed } from "./form-associated.ts";
 import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./validation.ts";
+import { $customValidity, $elements, $impl, $validity } from "../../keys.ts";
 
 export class HTMLFieldSetElement extends HTMLElement {
-  _customValidity: string;
-  _validity: ValidityState | null;
-  _elements: HTMLCollection | null;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
+  [$elements]: HTMLCollection | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._customValidity = "";
-    this._validity = null;
-    this._elements = null;
+    this[$customValidity] = "";
+    this[$validity] = null;
+    this[$elements] = null;
   }
 
   get type(): string {
@@ -28,13 +29,13 @@ export class HTMLFieldSetElement extends HTMLElement {
   }
 
   get form(): Element | null {
-    const owner = formOwner(this._impl);
+    const owner = formOwner(this[$impl]);
     return owner === null ? null : (owner.node as Element);
   }
 
   /** https://html.spec.whatwg.org/#dom-fieldset-elements — listed descendants. */
   get elements(): HTMLCollection {
-    return (this._elements ??= HTMLCollection._descendants(this._impl, isListed));
+    return (this[$elements] ??= HTMLCollection._descendants(this[$impl], isListed));
   }
 
   declare disabled: boolean;
@@ -46,11 +47,11 @@ export class HTMLFieldSetElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    return this._customValidity === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
   }
 
   _validationMessage(_flags: number): string {
-    return this._customValidity;
+    return this[$customValidity];
   }
 }
 
@@ -63,7 +64,7 @@ str(HTMLFieldSetElement, "name");
 export class HTMLLegendElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-legend-form */
   get form(): Element | null {
-    const p = this._impl.parent;
+    const p = this[$impl].parent;
     if (p === null || p.tag !== T.fieldset) return null;
     const owner = formOwner(p);
     return owner === null ? null : (owner.node as Element);

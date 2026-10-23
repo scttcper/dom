@@ -25,6 +25,7 @@ import {
   type ValidityState,
 } from "./validation.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
+import { $customValidity, $dirtiness, $impl, $labels, $options, $selectedOptions, $settled, $updatingSelectedContent, $validity } from "../../keys.ts";
 
 function opt(o: NodeImpl): HTMLOptionElement {
   return o.node as HTMLOptionElement;
@@ -39,38 +40,38 @@ class SelectedOptionsCollection extends HTMLCollection {
 }
 
 export class HTMLSelectElement extends HTMLElement {
-  _customValidity: string;
-  _validity: ValidityState | null;
-  _labels: LabelsNodeList | null;
-  _options: HTMLOptionsCollection | null;
-  _selectedOptions: HTMLCollection | null;
+  [$customValidity]: string;
+  [$validity]: ValidityState | null;
+  [$labels]: LabelsNodeList | null;
+  [$options]: HTMLOptionsCollection | null;
+  [$selectedOptions]: HTMLCollection | null;
   /**
    * The selectedness setting algorithm has run at least once. Trees built by the parser or by
    * cloning attach options without hooks; the first read (or insertion) settles them.
    */
-  _settled: boolean;
+  [$settled]: boolean;
   /** Re-entrancy guard for `_updateSelectedContent` (it mutates the select's subtree). */
-  _updatingSelectedContent: boolean;
+  [$updatingSelectedContent]: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this._impl.flags |= F_CHILDREN_HOOK | F_ATTR_HOOK | F_CONNECT_HOOK;
-    this._customValidity = "";
-    this._validity = null;
-    this._labels = null;
-    this._options = null;
-    this._selectedOptions = null;
-    this._settled = false;
-    this._updatingSelectedContent = false;
+    this[$impl].flags |= F_CHILDREN_HOOK | F_ATTR_HOOK | F_CONNECT_HOOK;
+    this[$customValidity] = "";
+    this[$validity] = null;
+    this[$labels] = null;
+    this[$options] = null;
+    this[$selectedOptions] = null;
+    this[$settled] = false;
+    this[$updatingSelectedContent] = false;
   }
 
   _ensureSettled(): void {
-    if (!this._settled) this._selectednessSettingAlgorithm();
+    if (!this[$settled]) this._selectednessSettingAlgorithm();
   }
 
   override _cloningSteps(copy: Element): void {
-    (copy as HTMLSelectElement)._settled = this._settled;
+    (copy as HTMLSelectElement)[$settled] = this[$settled];
   }
 
   override _connectedSteps(): void {
@@ -80,31 +81,31 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-select-type */
   get type(): string {
-    return contentAttr(this._impl, "multiple") !== null ? "select-multiple" : "select-one";
+    return contentAttr(this[$impl], "multiple") !== null ? "select-multiple" : "select-one";
   }
 
   /** https://html.spec.whatwg.org/#concept-select-size */
   _displaySize(): number {
-    const v = contentAttr(this._impl, "size");
+    const v = contentAttr(this[$impl], "size");
     if (v !== null) {
       // Parsing success wins, even for 0 (browsers treat 0 like 1; the spec does not).
       const n = parseNonNegativeInteger(v);
       if (!Number.isNaN(n)) return n;
     }
-    return contentAttr(this._impl, "multiple") !== null ? 4 : 1;
+    return contentAttr(this[$impl], "multiple") !== null ? 4 : 1;
   }
 
   _isSingle(): boolean {
-    return contentAttr(this._impl, "multiple") === null;
+    return contentAttr(this[$impl], "multiple") === null;
   }
 
   /** https://html.spec.whatwg.org/#dom-select-options */
   get options(): HTMLOptionsCollection {
-    return (this._options ??= new HTMLOptionsCollection(this._impl));
+    return (this[$options] ??= new HTMLOptionsCollection(this[$impl]));
   }
 
   get length(): number {
-    return listOfOptions(this._impl, []).length;
+    return listOfOptions(this[$impl], []).length;
   }
 
   set length(value: number) {
@@ -137,31 +138,31 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-select-selectedoptions */
   get selectedOptions(): HTMLCollection {
-    return (this._selectedOptions ??= new SelectedOptionsCollection(this._impl, false, null));
+    return (this[$selectedOptions] ??= new SelectedOptionsCollection(this[$impl], false, null));
   }
 
   /** https://html.spec.whatwg.org/#dom-select-selectedindex */
   get selectedIndex(): number {
-    const options = listOfOptions(this._impl, []);
+    const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) return i;
     return -1;
   }
 
   set selectedIndex(value: number) {
     const index = Number(value) | 0;
-    const options = listOfOptions(this._impl, []);
+    const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) opt(options[i])._setSelectedness(false);
     if (index >= 0 && index < options.length) {
       const o = opt(options[index]);
       o._setSelectedness(true);
-      o._dirtiness = true;
+      o[$dirtiness] = true;
     }
     this._updateSelectedContent();
   }
 
   /** https://html.spec.whatwg.org/#dom-select-value */
   get value(): string {
-    const options = listOfOptions(this._impl, []);
+    const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) {
       const o = opt(options[i]);
       if (o._selectednessNow()) return o.value;
@@ -171,13 +172,13 @@ export class HTMLSelectElement extends HTMLElement {
 
   set value(v: string) {
     const value = String(v);
-    const options = listOfOptions(this._impl, []);
+    const options = listOfOptions(this[$impl], []);
     let found = false;
     for (let i = 0; i < options.length; i++) {
       const o = opt(options[i]);
       if (!found && o.value === value) {
         o._setSelectedness(true);
-        o._dirtiness = true;
+        o[$dirtiness] = true;
         found = true;
       } else {
         o._setSelectedness(false);
@@ -187,12 +188,12 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   get form(): Element | null {
-    const owner = formOwner(this._impl);
+    const owner = formOwner(this[$impl]);
     return owner === null ? null : (owner.node as Element);
   }
 
   get labels(): LabelsNodeList {
-    return (this._labels ??= new LabelsNodeList(this._impl));
+    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
   }
 
   declare autocomplete: string;
@@ -204,7 +205,7 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-select-showpicker — no picker UI. */
   showPicker(): void {
-    if (isActuallyDisabled(this._impl)) {
+    if (isActuallyDisabled(this[$impl])) {
       throw new DOMException("Failed to execute 'showPicker' on 'HTMLSelectElement': HTMLSelectElement::showPicker() cannot be used on immutable controls.", "InvalidStateError");
     }
   }
@@ -218,20 +219,20 @@ export class HTMLSelectElement extends HTMLElement {
    */
   _deselectOthers(selected: NodeImpl): void {
     if (!this._isSingle()) return;
-    const options = listOfOptions(this._impl, []);
+    const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) if (options[i] !== selected) opt(options[i])._setSelectedness(false);
   }
 
   /** https://html.spec.whatwg.org/#selectedness-setting-algorithm */
   _selectednessSettingAlgorithm(): void {
-    this._settled = true;
+    this[$settled] = true;
     this._runSelectedness();
     this._updateSelectedContent();
   }
 
   _runSelectedness(): void {
     if (!this._isSingle() || this._displaySize() !== 1) return;
-    const options = listOfOptions(this._impl, []);
+    const options = listOfOptions(this[$impl], []);
     let selectedCount = 0;
     for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) selectedCount++;
     if (selectedCount === 0) {
@@ -256,7 +257,7 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#get-a-select's-enabled-selectedcontent */
   _enabledSelectedContent(): NodeImpl | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "multiple") !== null) return null;
     for (let n = impl.first; n !== null; ) {
       // Option contents are skipped: keeps the walk O(children) for large option lists.
@@ -276,12 +277,12 @@ export class HTMLSelectElement extends HTMLElement {
    * option's children into the select's selectedcontent element.
    */
   _updateSelectedContent(): void {
-    if (this._updatingSelectedContent) return;
+    if (this[$updatingSelectedContent]) return;
     const sc = this._enabledSelectedContent();
     if (sc === null) return;
-    this._updatingSelectedContent = true;
+    this[$updatingSelectedContent] = true;
     try {
-      const options = listOfOptions(this._impl, []);
+      const options = listOfOptions(this[$impl], []);
       let selected: NodeImpl | null = null;
       for (let i = 0; i < options.length; i++) {
         if (opt(options[i])._selectednessNow()) {
@@ -295,22 +296,22 @@ export class HTMLSelectElement extends HTMLElement {
         return;
       }
       // https://html.spec.whatwg.org/#clone-an-option-into-a-selectedcontent
-      const doc = this._impl.doc;
+      const doc = this[$impl].doc;
       const fragment = doc.createDocumentFragment();
       for (let c = selected.first; c !== null; c = c.next) fragment.appendChild(c.node.cloneNode(true));
       target.replaceChildren(fragment);
     } finally {
-      this._updatingSelectedContent = false;
+      this[$updatingSelectedContent] = false;
     }
   }
 
   /** https://html.spec.whatwg.org/#the-select-element:concept-form-reset-control */
   _reset(): void {
-    this._settled = true;
-    const options = listOfOptions(this._impl, []);
+    this[$settled] = true;
+    const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) {
       const o = opt(options[i]);
-      o._dirtiness = false;
+      o[$dirtiness] = false;
       o._setSelectedness(contentAttr(options[i], "selected") !== null);
     }
     this._selectednessSettingAlgorithm();
@@ -330,12 +331,12 @@ export class HTMLSelectElement extends HTMLElement {
   // --- constraint validation -------------------------------------------------------------------
 
   _barredFromValidation(): boolean {
-    return isActuallyDisabled(this._impl) || hasDatalistAncestor(this._impl);
+    return isActuallyDisabled(this[$impl]) || hasDatalistAncestor(this[$impl]);
   }
 
   /** https://html.spec.whatwg.org/#placeholder-label-option */
   _placeholderLabelOption(): NodeImpl | null {
-    const impl = this._impl;
+    const impl = this[$impl];
     if (contentAttr(impl, "required") === null || !this._isSingle() || this._displaySize() !== 1) return null;
     const options = listOfOptions(impl, []);
     if (options.length === 0) return null;
@@ -345,9 +346,9 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    let flags = this._customValidity === "" ? 0 : V_CUSTOM_ERROR;
-    if (contentAttr(this._impl, "required") !== null) {
-      const options = listOfOptions(this._impl, []);
+    let flags = this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    if (contentAttr(this[$impl], "required") !== null) {
+      const options = listOfOptions(this[$impl], []);
       let selected: NodeImpl | null = null;
       let count = 0;
       for (let i = 0; i < options.length; i++) {
@@ -363,7 +364,7 @@ export class HTMLSelectElement extends HTMLElement {
 
   _validationMessage(flags: number): string {
     if ((flags & V_VALUE_MISSING) !== 0) return MSG_SELECT;
-    return this._customValidity;
+    return this[$customValidity];
   }
 }
 

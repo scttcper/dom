@@ -6,19 +6,20 @@
 import { HTMLCollection as Base } from "../collections/HTMLCollection.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { $fill } from "../keys.ts";
 
 export type Fill = (root: NodeImpl, out: Element[]) => void;
 
 const FnCollection = class HTMLCollection extends Base {
-  declare _fill: Fill;
+  declare [$fill]: Fill;
 
   constructor(root: NodeImpl, fill: Fill) {
     super(root, false, null);
-    Object.defineProperty(this, "_fill", { value: fill });
+    Object.defineProperty(this, $fill, { value: fill });
   }
 
   override _collect(out: Element[]): void {
-    this._fill(this._s.root, out);
+    this[$fill](this._s.root, out);
   }
 };
 

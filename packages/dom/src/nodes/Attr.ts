@@ -9,38 +9,39 @@ import type { Element } from "./Element.ts";
 import { Node } from "./Node.ts";
 import type { AttrRecord } from "./NodeImpl.ts";
 import { changeAttribute } from "./attributes.ts";
+import { $impl, $owner, $record } from "../keys.ts";
 
 export class Attr extends Node {
   /** Backing record while attached to an element; null for a detached Attr. */
-  _record: AttrRecord | null;
-  _owner: Element | null;
+  [$record]: AttrRecord | null;
+  [$owner]: Element | null;
 
   /** @internal */
   constructor(doc: Document, localName: string, value: string, ns: string | null, prefix: string | null, owner: Element | null, record: AttrRecord | null = null) {
     super(ATTRIBUTE_NODE, doc);
-    const impl = this._impl;
+    const impl = this[$impl];
     impl.name = localName;
     impl.data = value;
     impl.ns = ns;
     impl.prefix = prefix;
-    this._owner = owner;
-    this._record = record;
+    this[$owner] = owner;
+    this[$record] = record;
   }
 
   get namespaceURI(): string | null {
-    return this._impl.ns;
+    return this[$impl].ns;
   }
 
   get prefix(): string | null {
-    return this._impl.prefix;
+    return this[$impl].prefix;
   }
 
   get localName(): string {
-    return this._impl.name;
+    return this[$impl].name;
   }
 
   get name(): string {
-    const impl = this._impl;
+    const impl = this[$impl];
     return impl.prefix === null ? impl.name : impl.prefix + ":" + impl.name;
   }
 
@@ -49,15 +50,15 @@ export class Attr extends Node {
   }
 
   get value(): string {
-    const r = this._record;
-    return r === null ? this._impl.data : r.value;
+    const r = this[$record];
+    return r === null ? this[$impl].data : r.value;
   }
 
   set value(value: string) {
     const v = String(value);
-    const r = this._record;
-    if (r === null || this._owner === null) this._impl.data = v;
-    else changeAttribute(this._owner._impl, r, v);
+    const r = this[$record];
+    if (r === null || this[$owner] === null) this[$impl].data = v;
+    else changeAttribute(this[$owner][$impl], r, v);
   }
 
   override get nodeValue(): string {
@@ -77,7 +78,7 @@ export class Attr extends Node {
   }
 
   get ownerElement(): Element | null {
-    return this._owner;
+    return this[$owner];
   }
 
   get specified(): boolean {
@@ -86,16 +87,16 @@ export class Attr extends Node {
 
   /** @internal Attach to `owner` with backing `record` (record.value is the value from now on). */
   _attach(owner: Element, record: AttrRecord): void {
-    this._owner = owner;
-    this._record = record;
-    this._impl.doc = owner._impl.doc;
+    this[$owner] = owner;
+    this[$record] = record;
+    this[$impl].doc = owner[$impl].doc;
   }
 
   /** @internal Detach from the element, keeping the current value. */
   _detach(): void {
-    const r = this._record;
-    if (r !== null) this._impl.data = r.value;
-    this._owner = null;
-    this._record = null;
+    const r = this[$record];
+    if (r !== null) this[$impl].data = r.value;
+    this[$owner] = null;
+    this[$record] = null;
   }
 }

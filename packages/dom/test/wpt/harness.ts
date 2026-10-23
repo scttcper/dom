@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { Script, createContext } from "node:vm";
 import { describe, test as vitestTest, expect } from "vitest";
 import * as dom from "@rtd/dom";
+import { $mode } from "../../src/keys.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const FIXTURES = join(here, "fixtures");
@@ -505,7 +506,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
   // Replace the default document content with the test's markup.
   for (let c = doc.firstChild; c !== null; c = doc.firstChild) doc.removeChild(c);
   const mode = (tree as unknown as { mode?: string }).mode;
-  if (mode === "quirks" || mode === "limited-quirks") (doc as unknown as { _mode: string })._mode = mode;
+  if (mode === "quirks" || mode === "limited-quirks") (doc as unknown as { [$mode]: string })[$mode] = mode;
   build(doc, doc, tree.childNodes ?? [], false);
 
   const sources: string[] = [];

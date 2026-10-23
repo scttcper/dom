@@ -51,7 +51,13 @@ export function ensureInterfaces(proto: object, fallbacks: InterfaceMap = {}): I
     if (Object.hasOwn(proto, name)) continue;
     descriptors[name] = { value: map[name], writable: true, configurable: true, enumerable: false };
   }
-  Object.defineProperties(proto, descriptors);
+  // Startup: defining ~300 properties on a prototype already in use costs ~1 ms (every addition
+  // to a prototype map invalidates prototype-chain validity cells); on a fresh object spliced
+  // into the chain right below `proto` it costs ~0.2 ms. Lookups through `window.X` see the
+  // same values; own members of `proto` still shadow them.
+  const holder = Object.create(Object.getPrototypeOf(proto));
+  Object.defineProperties(holder, descriptors);
+  Object.setPrototypeOf(proto, holder);
   interfaces = map;
   return map;
 }

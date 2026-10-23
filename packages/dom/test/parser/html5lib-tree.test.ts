@@ -19,6 +19,7 @@ import { Document } from "../../src/nodes/Document.ts";
 import type { NodeImpl } from "../../src/nodes/NodeImpl.ts";
 import { parseDocument, parseFragment } from "../../src/parser/index.ts";
 import { HTML_NS, MATHML_NS, SVG_NS, XLINK_NS, XML_NS, XMLNS_NS } from "../../src/nodes/constants.ts";
+import { $impl } from "../../src/keys.ts";
 
 createWindow();
 
@@ -83,9 +84,9 @@ function dump(parent: NodeImpl, depth: number, out: string[]): void {
         attrs.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
         for (const [name, value] of attrs) out.push(`${indent}  ${name}="${value}"`);
         if (n.ns === HTML_NS && n.name === "template") {
-          const content = (n.node as unknown as { content?: { _impl: NodeImpl } }).content;
+          const content = (n.node as unknown as { content?: { [$impl]: NodeImpl } }).content;
           out.push(`${indent}  content`);
-          if (content !== undefined) dump(content._impl, depth + 2, out);
+          if (content !== undefined) dump(content[$impl], depth + 2, out);
         }
         dump(n, depth + 1, out);
         break;
@@ -115,7 +116,7 @@ export function runTreeTest(t: TreeTest): string {
   if (t.fragment === null) {
     parseDocument(t.data, doc, { scripting });
     const out: string[] = [];
-    dump(doc._impl, 0, out);
+    dump(doc[$impl], 0, out);
     return out.join("\n");
   }
   const [a, b] = t.fragment.split(" ");
@@ -123,7 +124,7 @@ export function runTreeTest(t: TreeTest): string {
     b === undefined
       ? doc.createElement(a)
       : doc.createElementNS(a === "svg" ? SVG_NS : a === "math" ? MATHML_NS : HTML_NS, b);
-  const fragment = parseFragment(t.data, context._impl, { scripting });
+  const fragment = parseFragment(t.data, context[$impl], { scripting });
   const out: string[] = [];
   dump(fragment, 0, out);
   return out.join("\n");

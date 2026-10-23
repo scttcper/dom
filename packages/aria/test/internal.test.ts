@@ -13,10 +13,11 @@ import { computeAccessibleName, getImplicitRole, isInaccessible, roleSupportsPro
 import { tlRoleMatches, tlRole } from "@rtd/aria/internal";
 import type { Element } from "@rtd/dom";
 import { makeDocument } from "./helpers.ts";
+import { $impl } from "@rtd/dom/internal";
 
 const { document, renderIntoDocument } = makeDocument();
 const $ = (sel: string) => document.querySelector(sel) as Element;
-const impl = (el: Element) => (el as unknown as { _impl: never })._impl;
+const impl = (el: Element) => (el as unknown as { [$impl]: never })[$impl];
 
 describe("name cache invalidation — https://w3c.github.io/accname/#computation-steps", () => {
   test("a text change in a label recomputes the labelled control's name", () => {

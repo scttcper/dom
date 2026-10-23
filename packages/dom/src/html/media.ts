@@ -15,6 +15,7 @@ import { currentDocument } from "../window/current.ts";
 import type { Document } from "../nodes/Document.ts";
 import { setAttribute } from "../nodes/attributes.ts";
 import { HTML_NS } from "../nodes/constants.ts";
+import { $impl } from "../keys.ts";
 
 /** Per-element playback state (wrapper-side; media elements are rare). */
 class MediaState {
@@ -161,7 +162,7 @@ export class HTMLMediaElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-media-muted — initially the `muted` attribute's presence. */
   get muted(): boolean {
     const s = state(this);
-    return s.muted ?? contentAttr(this._impl, "muted") !== null;
+    return s.muted ?? contentAttr(this[$impl], "muted") !== null;
   }
   set muted(v: boolean) {
     const s = state(this);
@@ -278,8 +279,8 @@ export const Audio = function Audio(this: unknown, src?: string): HTMLAudioEleme
   if (new.target === undefined) throw new TypeError("Failed to construct 'Audio': Please use the 'new' operator.");
   const doc: Document = currentDocument();
   const el = doc.createElementNS(HTML_NS, "audio") as HTMLAudioElement;
-  setAttribute(el._impl, "preload", "auto");
-  if (src !== undefined) setAttribute(el._impl, "src", String(src));
+  setAttribute(el[$impl], "preload", "auto");
+  if (src !== undefined) setAttribute(el[$impl], "src", String(src));
   return el;
 } as unknown as { new (src?: string): HTMLAudioElement; prototype: HTMLAudioElement };
 Audio.prototype = HTMLAudioElement.prototype;
