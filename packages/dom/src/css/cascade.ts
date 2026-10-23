@@ -908,7 +908,12 @@ export function computedValueOf(rec: StyleRecord, prop: string): string {
   if (longhands !== undefined) {
     const vals: string[] = [];
     for (const l of longhands) vals.push(computedValueOf(rec, l));
-    result = vals.indexOf("") !== -1 ? "" : isCascadeOnlyShorthand(prop) ? serializeCascadeShorthand(prop, vals) : serializeShorthand(prop, vals, true);
+    // `background` serializes in its short (declared-style) form, as jsdom <= 26 and happy-dom
+    // do: `toHaveStyle({background: "red"})` is a staple of suites written against them, and
+    // browsers' long form ("rgb(255, 0, 0) none repeat scroll 0% 0% / auto ...") matches no
+    // expectation anyone writes. docs/deviations.md (computed colors keep their author form too).
+    result =
+      vals.indexOf("") !== -1 ? "" : isCascadeOnlyShorthand(prop) ? serializeCascadeShorthand(prop, vals) : serializeShorthand(prop, vals, prop !== "background");
   } else if (prop === "display") {
     result = computeDisplay(rec);
   } else {
