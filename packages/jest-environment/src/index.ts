@@ -261,6 +261,8 @@ export default class RtdEnvironment implements JestEnvironment<number> {
     this.fakeTimersModern = new ModernFakeTimers({ config: projectConfig, global: this.global as unknown as typeof globalThis });
     // Baseline for undoing interface prototype patches at teardown (they are shared per worker).
     internal.captureInterfaceBaseline();
+    // Definitions on interface objects stay configurable, so teardown can undo them.
+    internal.guardInterfaceDefinitions(global as never);
     internal.setUncaughtExceptionHandler(reportToHost);
   }
 

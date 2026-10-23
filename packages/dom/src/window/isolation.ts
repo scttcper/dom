@@ -36,11 +36,67 @@ function snapshot(target: object): Map<PropertyKey, PropertyDescriptor> {
   return map;
 }
 
+/** The objects in the baseline (interface objects and their prototypes). */
+let guarded: WeakSet<object> | null = null;
+
 /** Record the pristine interface state (first call wins; later calls are no-ops). */
 export function captureInterfaceBaseline(): void {
   if (baseline !== null) return;
   baseline = new Map();
-  for (const t of targets()) baseline.set(t, snapshot(t));
+  guarded = new WeakSet();
+  for (const t of targets()) {
+    baseline.set(t, snapshot(t));
+    guarded.add(t);
+  }
+}
+
+type Descriptors = Record<PropertyKey, PropertyDescriptor>;
+type RealmGlobal = { Object: ObjectConstructor; Reflect: typeof Reflect };
+
+/** `desc` with `configurable: true` when it would define a non-configurable property. */
+function configurableDescriptor(desc: PropertyDescriptor): PropertyDescriptor {
+  return desc !== null && typeof desc === "object" && desc.configurable !== true ? { ...desc, configurable: true } : desc;
+}
+
+/**
+ * Make properties a test file defines on interface objects and prototypes configurable, so
+ * `restoreInterfaces()` can undo them. `Object.defineProperty`/`defineProperties` default to
+ * non-configurable: shadow-dom-testing-library adds `ShadowRoot.prototype.outerHTML` that way,
+ * the getter outlived its file, and the next file in the worker crashed reading
+ * `ShadowRoot.prototype.outerHTML` (it calls the getter on the prototype). Patches `realm`'s own
+ * `Object.defineProperty`, `Object.defineProperties` and `Reflect.defineProperty` (a test file's
+ * vm global has its own intrinsics; @rtd/dom's code in the outer realm is unaffected). Call after
+ * `captureInterfaceBaseline()`. docs/deviations.md.
+ */
+export function guardInterfaceDefinitions(realm: RealmGlobal): void {
+  const set = guarded;
+  if (set === null) return;
+  const O = realm.Object;
+  const R = realm.Reflect;
+  const defineProperty = O.defineProperty;
+  const defineProperties = O.defineProperties;
+  const reflectDefineProperty = R.defineProperty;
+  const wrappers = {
+    defineProperty<T>(o: T, key: PropertyKey, desc: PropertyDescriptor & ThisType<unknown>): T {
+      return defineProperty(o, key, set.has(o as object) ? configurableDescriptor(desc) : desc);
+    },
+    defineProperties<T>(o: T, props: Descriptors & ThisType<unknown>): T {
+      if (!set.has(o as object) || props === null || typeof props !== "object") return defineProperties(o, props);
+      const coerced: Descriptors = {};
+      for (const key of Reflect.ownKeys(props)) {
+        if (Object.getOwnPropertyDescriptor(props, key)?.enumerable) coerced[key as string] = configurableDescriptor((props as Record<PropertyKey, PropertyDescriptor>)[key]);
+      }
+      return defineProperties(o, coerced);
+    },
+    reflectDefineProperty(o: object, key: PropertyKey, desc: PropertyDescriptor): boolean {
+      return reflectDefineProperty(o, key, set.has(o) ? configurableDescriptor(desc) : desc);
+    },
+  };
+  // Same names and lengths as the originals; data properties like the intrinsics'.
+  Object.defineProperty(wrappers.reflectDefineProperty, "name", { value: "defineProperty" });
+  Object.defineProperty(O, "defineProperty", { value: wrappers.defineProperty, writable: true, configurable: true, enumerable: false });
+  Object.defineProperty(O, "defineProperties", { value: wrappers.defineProperties, writable: true, configurable: true, enumerable: false });
+  Object.defineProperty(R, "defineProperty", { value: wrappers.reflectDefineProperty, writable: true, configurable: true, enumerable: false });
 }
 
 /** https://tc39.es/ecma262/#array-index (canonical numeric strings below 2^32 - 1). */

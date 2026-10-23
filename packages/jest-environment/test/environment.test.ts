@@ -159,3 +159,15 @@ describe("matchMedia — https://drafts.csswg.org/cssom-view/#dom-window-matchme
     });
   });
 });
+
+describe("interface isolation — definitions on shared interface objects stay undoable", () => {
+  test("Object.defineProperties on a prototype from the test realm defines a configurable property, removed at teardown", async () => {
+    let proto: object | null = null;
+    await withEnvironment({}, (_env, global) => {
+      proto = global.ShadowRoot.prototype;
+      global.Object.defineProperties(proto, { outerHTML: { get: () => "patched" } });
+      expect(Object.getOwnPropertyDescriptor(proto, "outerHTML")!.configurable).toBe(true);
+    });
+    expect(Object.hasOwn(proto!, "outerHTML")).toBe(false);
+  });
+});

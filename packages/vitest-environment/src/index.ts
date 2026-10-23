@@ -26,7 +26,7 @@ import type { WindowOptions } from "@rtd/dom";
 // dynamic import below.
 if (process.env.RTD_COMPILE_CACHE !== "0") enableCompileCache?.();
 const { createWindow, installGlobals } = await import("@rtd/dom");
-const { setUncaughtExceptionHandler, captureInterfaceBaseline, restoreInterfaces, installClock, VirtualClock } = await import("@rtd/dom/internal");
+const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = await import("@rtd/dom/internal");
 
 /**
  * Exceptions nobody handled (listener exceptions, reportError(), React's uncaught errors) go to
@@ -158,6 +158,8 @@ const environment: Environment = {
     // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared
     // module classes: snapshot once and undo each file's prototype patches at teardown.
     captureInterfaceBaseline();
+    // Definitions on interface objects stay configurable, so teardown can undo them.
+    guardInterfaceDefinitions(context as never);
     setUncaughtExceptionHandler(reportToHost);
     return {
       getVmContext() {
