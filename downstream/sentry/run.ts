@@ -7,7 +7,7 @@
 //   rtd-nohacks  EXPERIMENT: rtd-full + undo upstream's jsdom-only speed hacks (harness/nohacks.ts)
 //   rtd-direct   EXPERIMENT: rtd-dom with a DONT_CONTEXTIFY vm context (opt-in via --modes)
 //
-//   node downstream/sentry/run.ts [--install] [--latest] [--preset smoke|components|views|all]
+//   node downstream/sentry/run.ts [--install] [--latest] [--preset smoke|perf|components|views|all]
 //        [--files a,b] [--modes jsdom,rtd-dom,rtd-full,rtd-nohacks] [--workers 6] [--repeat N]
 //        [--gc] [--shard i/n] [--grep PATTERN] [--shims react,dom,user-event,jest-dom] [--no-report]
 //
@@ -53,6 +53,52 @@ const PRESETS: Record<string, string[]> = {
     "static/app/components/searchQueryBuilder/index.spec.tsx",
     "static/app/components/timeRangeSelector/index.spec.tsx",
   ],
+  // Fast iteration set (39 files, ~40 s/mode at --workers 4): chosen from the full-suite reports
+  // of 2026-10-23 among files passing in jsdom, rtd-dom and rtd-full with and without time
+  // skipping. The 9 slowest on jsdom (they set wall time; searchQueryBuilder is left to smoke),
+  // 25 spread evenly over the duration distribution (per-file overhead dominates the small
+  // ones), and the 5 that gained most from idle time skipping. Use full runs for checkpoints.
+  perf: [
+    "static/app/views/authV2/oauthAuthorize/authentication.spec.tsx", // slowest
+    "static/app/views/authV2/oauthAuthorize/index.spec.tsx", // slowest
+    "static/app/views/investigations/detail/index.spec.tsx", // slowest
+    "static/app/views/dashboards/detail.spec.tsx", // slowest
+    "static/app/views/issueList/overview.spec.tsx", // slowest
+    "static/app/views/seerWorkflows/overview/index.spec.tsx", // slowest
+    "static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx", // slowest
+    "static/gsAdmin/views/customerDetails.spec.tsx", // slowest
+    "static/app/views/explore/metrics/metricsTab.spec.tsx", // slowest
+    "static/app/views/issueDetails/activitySection/index.spec.tsx", // spread
+    "static/app/views/issueDetails/sidebar/metricDetectorTriggeredSection.spec.tsx", // spread
+    "static/app/components/notificationActions/notificationActionManager.spec.tsx", // skip-sensitive
+    "static/app/components/events/featureFlags/eventFeatureFlagDrawer.spec.tsx", // skip-sensitive
+    "static/app/views/dashboards/widgetBuilder/hooks/useTraceMetricsVisualizeModeState.spec.tsx", // spread
+    "static/app/views/settings/organizationIntegrations/integrationCodeMappings.spec.tsx", // skip-sensitive
+    "static/app/views/settings/account/accountSecurity/index.spec.tsx", // skip-sensitive
+    "static/app/views/issueDetails/eventGraph.spec.tsx", // skip-sensitive
+    "static/app/components/seer/markdown/embeds/components/conversationsQuery.spec.tsx", // spread
+    "static/app/views/issueList/noGroupsHandler/index.spec.tsx", // spread
+    "static/app/views/settings/projectIssueGrouping/index.spec.tsx", // spread
+    "static/app/utils/useTeamsById.spec.tsx", // spread
+    "static/app/views/dashboards/revisionListItem.spec.tsx", // spread
+    "static/app/views/dashboards/widgetCard/hooks/useTraceMetricsWidgetQuery.spec.tsx", // spread
+    "static/app/views/explore/replays/detail/errorList/useErrorFilters.spec.tsx", // spread
+    "static/app/views/dashboards/datasetConfig/errors.spec.tsx", // spread
+    "static/app/views/settings/organizationIntegrations/installedIntegration.spec.tsx", // spread
+    "static/app/views/detectors/components/forms/metric/useInitialMetricDetectorFormData.spec.tsx", // spread
+    "static/app/components/arithmeticBuilder/conditionalFilter/conditionalFilterAutocomplete.spec.tsx", // spread
+    "static/app/views/settings/dynamicSampling/projectsTable.spec.tsx", // spread
+    "static/gsAdmin/views/instanceLevelOAuth/instanceLevelOAuth.spec.tsx", // spread
+    "static/app/views/projectInstall/gettingStarted.spec.tsx", // spread
+    "static/app/views/explore/metrics/parseAggregateExpression.spec.tsx", // spread
+    "static/app/views/dashboards/widgetBuilder/issueWidget/utils.spec.tsx", // spread
+    "static/app/views/dashboards/utils/transformTimeSeriesResponse.spec.tsx", // spread
+    "static/app/views/insights/common/utils/getAlertsUrl.spec.tsx", // spread
+    "static/app/utils/replays/playback/providers/replayPlayerPluginsContextProvider.spec.tsx", // spread
+    "static/app/views/performance/traceDetails/traceRenderers/traceViewCalculations.spec.tsx", // spread
+    "tests/js/sentry-test/snapshots/snapshotScenarios.spec.ts", // spread
+    "static/app/utils/profiling/colors/utils.spec.tsx", // spread
+  ],
   components: ["static/app/components/"],
   views: [
     "static/app/views/issueDetails/",
@@ -92,7 +138,7 @@ const { values } = parseArgs({
 
 if (values.help) {
   console.log(
-    "node downstream/sentry/run.ts [--install] [--latest] [--preset smoke|components|views|all | --files a,b] " +
+    "node downstream/sentry/run.ts [--install] [--latest] [--preset smoke|perf|components|views|all | --files a,b] " +
       "[--modes jsdom,rtd-dom,rtd-full,rtd-nohacks] [--workers 6] [--repeat N] [--gc] [--shard i/n] [--grep PATTERN] " +
       "[--shims react,dom,user-event,jest-dom] [--label NAME] [--no-report]",
   );

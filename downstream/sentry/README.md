@@ -10,6 +10,9 @@ Prior art: `~/gh/vibedom/downstream/sentry` (the author's earlier Jest adapter).
 
 ```sh
 pnpm build                                   # rtd-full / rtd-nohacks use packages/*/dist/*.cjs
+pnpm downstream:sentry --preset perf --modes jsdom,rtd-dom,rtd-full --workers 4 --repeat 2
+                                             # fast A/B set (39 files, ~1 min/round): iterate on this,
+                                             # run --preset all for checkpoints
 pnpm downstream:sentry --install             # first time: clone the pinned commit + frozen install
 pnpm downstream:sentry --preset smoke        # 15 component-heavy files, all four modes
 pnpm downstream:sentry --preset components   # static/app/components/** (~650 files)
