@@ -175,6 +175,16 @@ export class Navigator {
   get clipboard(): Clipboard {
     return (this[$clipboard] ??= new Clipboard());
   }
+  /**
+   * Deliberate deviation (docs/deviations.md): the spec attribute is readonly, so assignment
+   * throws in strict mode, but jsdom has no `navigator.clipboard` and suites stub it with
+   * `Object.assign(navigator, { clipboard })`. [Replaceable]-style
+   * (https://webidl.spec.whatwg.org/#Replaceable): assigning shadows the accessor with an own
+   * data property; deleting it brings the real clipboard back.
+   */
+  set clipboard(value: unknown) {
+    Object.defineProperty(this, "clipboard", { value, writable: true, enumerable: true, configurable: true });
+  }
 
   /** https://html.spec.whatwg.org/#the-useractivation-interface */
   get userActivation(): { hasBeenActive: boolean; isActive: boolean } {

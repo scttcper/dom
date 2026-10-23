@@ -1,7 +1,11 @@
 /**
- * Animation frames, idle callbacks and window messaging, built on the host's timers.
+ * Timers, animation frames, idle callbacks and window messaging, built on the host's timers.
  *
  * Spec:
+ *   HTML Standard §8.6 "Timers" — https://html.spec.whatwg.org/#timers
+ *     https://html.spec.whatwg.org/#timer-initialisation-steps
+ *     https://html.spec.whatwg.org/#close-a-browsing-context
+ *     (jsdom: lib/jsdom/browser/Window.js stopAllTimers / timerInitializationSteps)
  *   HTML Standard §8.10 "Animation frames"
  *     https://html.spec.whatwg.org/#animation-frames
  *     https://html.spec.whatwg.org/#run-the-animation-frame-callbacks
@@ -18,6 +22,7 @@
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createWindow, type Window } from "@rtd/dom";
+import { $timers } from "@rtd/dom/internal";
 
 let window: Window;
 
@@ -188,13 +193,88 @@ describe("postMessage — https://html.spec.whatwg.org/#dom-window-postmessage",
   });
 });
 
-describe("host delegates — https://html.spec.whatwg.org/#timers", () => {
-  test("window.setTimeout is the current host setTimeout (fake timers included)", () => {
-    const w = window as unknown as Record<string, unknown>;
-    expect(w.setTimeout).toBe(globalThis.setTimeout);
+describe("setTimeout / setInterval — https://html.spec.whatwg.org/#timers", () => {
+  test("delegate to the current host timers, so fake timers installed later control them", () => {
+    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
     vi.useFakeTimers();
-    expect(w.setTimeout).toBe(globalThis.setTimeout);
+    const spy = vi.fn();
+    w.setTimeout(spy, 100, "a", "b");
+    const tick = vi.fn();
+    const id = w.setInterval(tick, 10);
+    vi.advanceTimersByTime(100);
+    expect(spy).toHaveBeenCalledWith("a", "b");
+    expect(tick).toHaveBeenCalledTimes(10);
+    w.clearInterval(id);
+    vi.advanceTimersByTime(100);
+    expect(tick).toHaveBeenCalledTimes(10);
+  });
+
+  test("handles are the host's (Node Timeout objects; deviation, docs/deviations.md)", () => {
+    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
+    const handle = w.setTimeout(() => {}, 1000);
+    expect(handle).toBeInstanceOf((setTimeout(() => {}, 0) as object).constructor);
+    w.clearTimeout(handle);
+    expect(w.clearTimeout).toBe(globalThis.clearTimeout);
     expect(w.queueMicrotask).toBe(globalThis.queueMicrotask);
     expect(w.URL).toBe(URL);
+  });
+
+  // https://html.spec.whatwg.org/#close-a-browsing-context — jsdom's window.close() clears the
+  // map of active timers, and timer initialization on a closed window returns 0
+  // (lib/jsdom/browser/Window.js timerInitializationSteps).
+  test("close() clears pending timeouts and intervals (real timers)", async () => {
+    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
+    let fired = 0;
+    w.setTimeout(() => fired++, 5);
+    w.setInterval(() => fired++, 5);
+    window.close();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(fired).toBe(0);
+  });
+
+  test("close() clears timers scheduled on a fake clock", () => {
+    vi.useFakeTimers();
+    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
+    const spy = vi.fn();
+    w.setTimeout(spy, 5);
+    w.setInterval(spy, 5);
+    window.close();
+    vi.advanceTimersByTime(100);
+    expect(spy).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test("a closed window's setTimeout/setInterval return 0 and schedule nothing", () => {
+    vi.useFakeTimers();
+    window.close();
+    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
+    expect(w.setTimeout(() => {}, 1)).toBe(0);
+    expect(w.setInterval(() => {}, 1)).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test("fired and cleared timers are not retained (swept once the list grows)", async () => {
+    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
+    for (let i = 0; i < 300; i++) w.setTimeout(() => {}, 0);
+    for (let i = 0; i < 300; i++) w.clearTimeout(w.setTimeout(() => {}, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const pending = w.setTimeout(() => {}, 1000);
+    for (let i = 0; i < 600; i++) w.setTimeout(() => {}, 0);
+    const handles = (window as unknown as Record<symbol, { handles: Map<unknown, unknown> }>)[$timers].handles;
+    expect(handles.has(pending)).toBe(true);
+    expect(handles.size).toBeLessThanOrEqual(602);
+    w.clearTimeout(pending);
+  });
+
+  // https://webidl.spec.whatwg.org/#dfn-create-operation-function step 2.1: an undefined `this`
+  // is the realm's global — here the current window.
+  test("called without a receiver (const { setTimeout } = window), it acts on the current window", () => {
+    vi.useFakeTimers();
+    const { setTimeout: st } = window as unknown as { setTimeout: (cb: () => void, ms: number) => unknown };
+    const spy = vi.fn();
+    st(spy, 1);
+    window.close();
+    vi.advanceTimersByTime(10);
+    expect(spy).not.toHaveBeenCalled();
   });
 });

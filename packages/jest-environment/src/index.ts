@@ -17,7 +17,7 @@
 
 import type { EnvironmentContext, JestEnvironmentConfig } from "@jest/environment";
 import { TestEnvironment as NodeEnvironment } from "jest-environment-node";
-import { ModernFakeTimers } from "@jest/fake-timers";
+import { LegacyFakeTimers, ModernFakeTimers } from "@jest/fake-timers";
 import { protectProperties } from "jest-util";
 import * as dom from "@rtd/dom";
 import * as internal from "@rtd/dom/internal";
@@ -28,7 +28,28 @@ export const RTD_MODULES = Symbol.for("rtd.dom.modules");
 
 export interface RtdTestEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
   customExportConditions?: string[];
+  /**
+   * Keep Node's `fetch`, `Request` and `Response` on the test global. Off by default:
+   * jest-environment-jsdom has none of them, and fetch mocks (jest-fetch-mock) pick a different
+   * implementation when they exist (docs/deviations.md).
+   */
+  nodeFetch?: boolean;
 }
+
+/**
+ * The subset of jsdom's `JSDOM` object jest-environment-jsdom exposes as `environment.dom`
+ * that suites actually use: custom environments and @sentry/jest-environment (which copies it to
+ * `global.jsdom`) call `reconfigure({ url })` to change the URL without navigating.
+ */
+export interface RtdDom {
+  readonly window: Window;
+  /** https://github.com/jsdom/jsdom#reconfiguring-the-jsdom-with-reconfiguresettings */
+  reconfigure(settings: { url?: string; windowTop?: unknown }): void;
+}
+
+// Node globals jest-environment-jsdom does not have and whose mere presence changes what
+// libraries do (feature detection). See docs/deviations.md for the full audit.
+const JSDOM_ABSENT_GLOBALS = ["fetch", "Request", "Response"] as const;
 
 /** Same default URL as jest-environment-jsdom. */
 const DEFAULT_URL = "http://localhost/";
@@ -64,17 +85,37 @@ function bridgeErrorRealms(global: Record<string, unknown>): void {
   }
 }
 
+function createDom(window: Window): RtdDom {
+  return {
+    window,
+    reconfigure(settings) {
+      // jsdom: "windowTop" overrides window.top; "url" replaces the document URL (no
+      // navigation, no history entry, no events). Only the URL is supported here.
+      if (settings.windowTop !== undefined) throw new TypeError("jest-environment-rtd: dom.reconfigure() does not support windowTop");
+      if (settings.url === undefined) return;
+      const url = URL.parse(String(settings.url));
+      if (url === null) throw new TypeError(`Could not parse "${settings.url}" as a URL`);
+      window._setURL(url);
+    },
+  };
+}
+
 export default class RtdEnvironment extends NodeEnvironment {
   rtdWindow: Window | null;
+  /** jest-environment-jsdom's `dom`, reduced to what suites use (see RtdDom). */
+  dom: RtdDom | null;
 
   constructor(config: JestEnvironmentConfig, context: EnvironmentContext) {
     super(config, context);
-    const { customExportConditions, ...windowOptions } = (config.projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, ...windowOptions } = (config.projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
     const window = dom.createWindow({ ...windowOptions, url: windowOptions.url ?? DEFAULT_URL });
     this.rtdWindow = window;
+    this.dom = createDom(window);
     const global = this.global as unknown as Record<PropertyKey, unknown>;
+    // `delete` only: reading or redefining Node 26's lazy fetch globals would load undici.
+    if (nodeFetch !== true) for (const name of JSDOM_ABSENT_GLOBALS) delete global[name];
     // The interface objects and the document are shared module objects (one @rtd/dom per worker):
     // keep Jest's globals cleanup (testEnvironmentOptions.globalsCleanup, "soft" by default) from
     // stripping their properties when it cleans the file's global at teardown.
@@ -84,9 +125,22 @@ export default class RtdEnvironment extends NodeEnvironment {
     dom.installGlobals(window, global);
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
-    // jest-environment-node built its fake timers before the window existed, and
-    // @sinonjs/fake-timers snapshots which timer functions the global has: rebuild them so
-    // jest.useFakeTimers() fakes requestAnimationFrame/requestIdleCallback like jsdom's env does.
+    // The file's setTimeout/setInterval belong to the window, as under jsdom: teardown's
+    // window.close() clears what is still pending, so a long app timer (TanStack Query GC,
+    // polling) cannot keep this vm context and its module graph alive after the file ends.
+    internal.trackGlobalTimers(window, global);
+    // jest-environment-node built its fake timers before the window existed: @sinonjs/fake-timers
+    // snapshots which timer functions the global has and legacy timers capture the real ones to
+    // restore. Rebuild both so jest.useFakeTimers() fakes requestAnimationFrame /
+    // requestIdleCallback like jsdom's env does and useRealTimers() restores the tracked timers.
+    this.fakeTimers?.dispose();
+    this.fakeTimers = new LegacyFakeTimers({
+      config: config.projectConfig,
+      global: this.global,
+      moduleMocker: this.moduleMocker!,
+      timerConfig: { idToRef: (id: number) => ({ id, ref() { return this; }, unref() { return this; } }), refToId: (timer: { id?: number } | undefined) => timer?.id },
+    });
+    this.fakeTimersModern?.dispose();
     this.fakeTimersModern = new ModernFakeTimers({ config: config.projectConfig, global: this.global });
     // Baseline for undoing interface prototype patches at teardown (they are shared per worker).
     internal.captureInterfaceBaseline();
@@ -98,7 +152,7 @@ export default class RtdEnvironment extends NodeEnvironment {
   }
 
   /**
-   * Closes the window (cancelling its frames, idle callbacks and tasks) and undoes the file's
+   * Closes the window (cancelling its timers, frames, idle callbacks and tasks) and undoes the file's
    * patches to the shared interface prototypes. The globals stay installed, like under
    * jest-environment-jsdom where the global *is* the window: work a test file left behind (React's
    * scheduler runs on Node's setImmediate) can still read `window`/`document` instead of
@@ -108,6 +162,7 @@ export default class RtdEnvironment extends NodeEnvironment {
     internal.setUncaughtExceptionHandler(null);
     this.rtdWindow?.close();
     this.rtdWindow = null;
+    this.dom = null;
     internal.restoreInterfaces();
     await super.teardown();
   }

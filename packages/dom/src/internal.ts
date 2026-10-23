@@ -8,6 +8,7 @@ import "./index.ts";
 
 export * from "./nodes/constants.ts";
 export { NodeImpl, AttrRecord } from "./nodes/NodeImpl.ts";
+import type { NodeImpl as NodeImplType } from "./nodes/NodeImpl.ts";
 export { NodeCache, nodeCache } from "./nodes/cache.ts";
 export { derivedCache, peekDerivedCache } from "./nodes/derived.ts";
 export { T, tagId, tagName } from "./nodes/tags.ts";
@@ -46,6 +47,7 @@ export { createFileList } from "./window/FileList.ts";
 export { evaluateMediaQueryList, mediaEnvironment } from "./window/media.ts";
 export { windowInterfaces } from "./window/Window.ts";
 export { captureInterfaceBaseline, restoreInterfaces } from "./window/isolation.ts";
+export { trackGlobalTimers } from "./window/timers.ts";
 
 // --- events area ---
 export { dispatch, getCurrentEvent, retarget, nodeGetTheParent, setAssignedSlotLookup } from "./events/dispatch.ts";
@@ -138,3 +140,46 @@ export { isFACE, faceState } from "./html/forms/face.ts";
 // --- html-dom area (ARIA element reflection: explicitly set aria-labelledby/... references) ---
 export { attrAssociatedElement, attrAssociatedElements, hasExplicitAttrElements } from "./html/aria-reflection.ts";
 export * from "./keys.ts";
+
+// --- user-replaced window.getComputedStyle ---
+//
+// Stock Testing Library, dom-accessibility-api, user-event and jest-dom read styles through
+// `element.ownerDocument.defaultView.getComputedStyle`, so test setups that replace it (Sentry:
+// `window.getComputedStyle = el => el.style`, to skip jsdom's cascade) change what they see.
+// Our upper layers read the cascade directly (css/internal.ts, aria's caches); they call this
+// once per query/call and, when it returns a function, read styles through it exactly where
+// the stock package calls getComputedStyle. Returns null while the window's own implementation
+// is in place (the fast path stays at one property read + identity check).
+
+import { Window } from "./window/Window.ts";
+import { installedWindowMethods } from "./window/host-originals.ts";
+import type { Element } from "./nodes/Element.ts";
+import type { CSSStyleDeclaration } from "./css/CSSStyleDeclaration.ts";
+
+/** A user-installed `getComputedStyle`, bound to its window (called like `window.getComputedStyle(el)`). */
+export type ComputedStyleOverride = (element: Element, pseudoElement?: string) => CSSStyleDeclaration;
+
+const OWN_GET_COMPUTED_STYLE: unknown = Window.prototype.getComputedStyle;
+
+// One-entry memo: (view, function) -> bound override. The view is held weakly so a closed test
+// file's window isn't kept alive by the last query that saw an override.
+let memoView: WeakRef<object> | null = null;
+let memoFn: unknown = null;
+let memoResult: ComputedStyleOverride | null = null;
+
+/**
+ * The user-replaced `getComputedStyle` of `node`'s window (`ownerDocument.defaultView`), bound
+ * to that window, or null when it is @rtd/dom's own (the prototype method, or the bound copy
+ * installGlobals put on a host global) or there is no window / no function.
+ */
+export function getComputedStyleOverride(node: NodeImplType): ComputedStyleOverride | null {
+  const view = (node.doc as unknown as { defaultView: Record<string, unknown> | null }).defaultView;
+  if (view === null || view === undefined) return null;
+  const fn = view.getComputedStyle;
+  if (fn === OWN_GET_COMPUTED_STYLE || typeof fn !== "function" || installedWindowMethods.has(fn)) return null;
+  if (fn === memoFn && memoView?.deref() === view) return memoResult;
+  memoView = new WeakRef(view);
+  memoFn = fn;
+  memoResult = (fn as (...args: unknown[]) => unknown).bind(view) as ComputedStyleOverride;
+  return memoResult;
+}

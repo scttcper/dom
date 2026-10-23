@@ -14,3 +14,10 @@ export const hostOriginals = new Map<string, unknown>();
 export function recordHostOriginal(key: string, value: unknown): void {
   if (!hostOriginals.has(key)) hostOriginals.set(key, value);
 }
+
+/**
+ * The bound Window methods installGlobals puts on a host global (`window.getComputedStyle` there
+ * is `Window.prototype.getComputedStyle.bind(window)`), so code can tell them from user
+ * replacements and spies by identity.
+ */
+export const installedWindowMethods: WeakSet<object> = new WeakSet();

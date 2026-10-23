@@ -160,8 +160,9 @@ listed controls) are kept in `Document[$derived]` or registered with `holdSnapsh
 
 - the current window (`window/current.ts`) until it is closed or another window is created;
 - a window's own state while it is open (its custom element registry, storage, history);
-- host timers created through `window.setTimeout` & co. (they are the host's), until they fire
-  or are cleared;
+- host timers created through `window.setTimeout` & co. (they are the host's), until they fire,
+  are cleared or the window closes (`close()` clears the ones created through the window's, or
+  under jest-environment-rtd / Vitest VM pools the file global's, setTimeout/setInterval);
 - process-wide, bounded string caches (compiled selectors ≤ 2048, inline style blocks ≤ 2000,
   media query lists ≤ 500, `pattern` regexps ≤ 256, uppercase tag names ≤ 1024) and per-process
   interface objects;

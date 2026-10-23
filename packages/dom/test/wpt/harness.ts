@@ -747,6 +747,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     }
   }
   if (harness !== null) Object.assign(sandbox, harness);
+  const windowTimers = window as unknown as Record<"setTimeout" | "clearTimeout" | "setInterval" | "clearInterval", (...args: unknown[]) => unknown>;
   sandbox.test_driver = testdriver?.(window, doc) ?? unsupportedTestDriver();
   Object.assign(sandbox, {
     window: windowProxy,
@@ -755,10 +756,12 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     document: doc,
     DOMException,
     console,
-    setTimeout,
-    clearTimeout,
-    setInterval,
-    clearInterval,
+    // The window's own timers: closing the window after the run cancels whatever a page left
+    // pending (negative-settimeout, type-long-*), instead of firing into the next file.
+    setTimeout: windowTimers.setTimeout.bind(window),
+    clearTimeout: windowTimers.clearTimeout.bind(window),
+    setInterval: windowTimers.setInterval.bind(window),
+    clearInterval: windowTimers.clearInterval.bind(window),
     queueMicrotask,
   });
   windowOfProxy.set(windowProxy, window);
@@ -972,6 +975,7 @@ export async function runWPT(file: string, options: RunOptions = {}): Promise<Su
     }
   }
   harness._runCompletion();
+  loaded.window.close();
   return results.map((t) => ({ name: t.name, status: t.status, message: t.message }));
 }
 

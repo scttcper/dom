@@ -110,4 +110,53 @@ describe("jest-environment-rtd constructor/setup/teardown ×N", () => {
     for (let i = 0; i < 4; i++) await cycle();
     expect(await tracker.alive()).toEqual({});
   });
+
+  // jsdom's window.close() (called by jest-environment-jsdom's teardown) clears the window's
+  // timers (https://html.spec.whatwg.org/#close-a-browsing-context). Long app timers left
+  // behind (TanStack Query's 5 min cache GC, polling intervals) must not keep a finished test
+  // file's global, window and module graph alive (Sentry: 7.2 MiB retained per file before).
+  test("timers a test file left pending do not retain its global, window or closures", async () => {
+    let RtdEnvironment: any;
+    try {
+      RtdEnvironment = (await import("../../../../packages/jest-environment/src/index.ts")).default;
+    } catch {
+      return; // jest-environment-rtd's dependencies are not installed
+    }
+    const tracker = new Tracker();
+    const cycle = async () => {
+      const env = new RtdEnvironment(
+        { globalConfig: {}, projectConfig: { testEnvironmentOptions: {}, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        { console, docblockPragmas: {}, testPath: "x.test.js" },
+      );
+      await env.setup();
+      const global = env.global;
+      tracker.track("window", env.rtdWindow);
+      tracker.track("global", global);
+      const moduleState = tracker.track("closure", { cache: new Array(1000).fill(global) });
+      global.setTimeout(() => moduleState, 300_000);
+      global.setInterval(() => moduleState, 60_000);
+      global.window.setTimeout(() => moduleState, 300_000);
+      global.requestAnimationFrame(() => moduleState);
+      await env.teardown();
+    };
+    for (let i = 0; i < 4; i++) await cycle();
+    expect(await tracker.alive()).toEqual({});
+  });
+});
+
+describe("vitest-environment-rtd setupVM/teardown ×N (VM pools)", () => {
+  test("timers a test file left pending do not retain its vm context or closures", async () => {
+    const tracker = new Tracker();
+    const cycle = async () => {
+      const env = await environment.setupVM!({});
+      const context = env.getVmContext() as AnyGlobal;
+      tracker.track("context", context);
+      const moduleState = tracker.track("closure", { context });
+      context.setTimeout(() => moduleState, 300_000);
+      context.setInterval(() => moduleState, 60_000);
+      await env.teardown();
+    };
+    for (let i = 0; i < 4; i++) await cycle();
+    expect(await tracker.alive()).toEqual({});
+  });
 });

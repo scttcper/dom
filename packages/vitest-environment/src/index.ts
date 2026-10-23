@@ -26,7 +26,7 @@ import type { WindowOptions } from "@rtd/dom";
 // dynamic import below.
 if (process.env.RTD_COMPILE_CACHE !== "0") enableCompileCache?.();
 const { createWindow, installGlobals } = await import("@rtd/dom");
-const { setUncaughtExceptionHandler, captureInterfaceBaseline, restoreInterfaces } = await import("@rtd/dom/internal");
+const { setUncaughtExceptionHandler, captureInterfaceBaseline, restoreInterfaces, trackGlobalTimers } = await import("@rtd/dom/internal");
 
 /**
  * Exceptions nobody handled (listener exceptions, reportError(), React's uncaught errors) go to
@@ -116,6 +116,10 @@ const environment: Environment = {
       }
     }
     const uninstall = installGlobals(window, context as Record<PropertyKey, unknown>);
+    // The file's setTimeout/setInterval belong to the window (jsdom parity): teardown's close()
+    // clears pending ones so they cannot keep the discarded context alive in the long-lived
+    // worker. (setup() needs no such thing: Vitest calls it once per worker, not per file.)
+    trackGlobalTimers(window, context as Record<PropertyKey, unknown>);
     // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared
     // module classes: snapshot once and undo each file's prototype patches at teardown.
     captureInterfaceBaseline();

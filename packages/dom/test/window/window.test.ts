@@ -140,6 +140,16 @@ describe("Window attributes — https://html.spec.whatwg.org/#the-window-object"
     expect(Object.prototype.toString.call(window.location)).toBe("[object Location]");
     expect(Object.prototype.toString.call(window.navigator)).toBe("[object Navigator]");
   });
+
+  // https://fetch.spec.whatwg.org/#fetch-method is exposed on Window in browsers, but jsdom has no
+  // fetch/Request/Response (it does have Headers), and fetch mocks pick their implementation by
+  // feature detection (docs/deviations.md). installGlobals leaves a host global's own fetch alone.
+  test("fetch, Request and Response are absent like on jsdom; Headers and FormData exist", () => {
+    const w = window as unknown as Record<string, unknown>;
+    expect([typeof w.fetch, typeof w.Request, typeof w.Response]).toEqual(["undefined", "undefined", "undefined"]);
+    expect(w.Headers).toBe(Headers);
+    expect(typeof w.FormData).toBe("function");
+  });
 });
 
 describe("Navigator — https://html.spec.whatwg.org/#the-navigator-object", () => {
@@ -161,6 +171,60 @@ describe("Navigator — https://html.spec.whatwg.org/#the-navigator-object", () 
     const w = createWindow({ userAgent: "UA/1", languages: ["de-DE"] });
     expect(w.navigator.userAgent).toBe("UA/1");
     expect(w.navigator.language).toBe("de-DE");
+  });
+
+  // https://html.spec.whatwg.org/#dom-navigator-platform is implementation-defined; jsdom always
+  // returns "" (lib/jsdom/living/navigator/NavigatorID-impl.js). Host-independent defaults keep
+  // React Aria's isMac() (/^Mac/i.test(navigator.platform)) false on every machine.
+  test("platform defaults to \"\" and userAgent to a fixed string, whatever the host OS (jsdom parity)", () => {
+    expect(window.navigator.platform).toBe("");
+    expect(window.navigator.userAgent).toBe("Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0");
+    expect(window.navigator.appVersion).toBe("5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0");
+  });
+
+  test("createWindow({ platform }) overrides navigator.platform", () => {
+    const w = createWindow({ platform: "MacIntel" });
+    expect(w.navigator.platform).toBe("MacIntel");
+    w.close();
+  });
+
+  // Deliberate deviation (docs/deviations.md): the attribute is readonly
+  // (https://w3c.github.io/clipboard-apis/#navigator-interface), but jsdom has no
+  // navigator.clipboard, so `Object.assign(navigator, { clipboard })` defines a property there.
+  describe("navigator.clipboard is [Replaceable]-style — https://webidl.spec.whatwg.org/#Replaceable", () => {
+    test("assignment in strict mode shadows it with an own data property", () => {
+      "use strict";
+      const stub = { writeText: vi.fn() };
+      Object.assign(window.navigator, { clipboard: stub });
+      expect(window.navigator.clipboard).toBe(stub);
+      expect(Object.getOwnPropertyDescriptor(window.navigator, "clipboard")).toEqual({ value: stub, writable: true, enumerable: true, configurable: true });
+      const second = { writeText: vi.fn() };
+      (window.navigator as unknown as { clipboard: unknown }).clipboard = second;
+      expect(window.navigator.clipboard).toBe(second);
+    });
+
+    test("deleting the own property brings back the real clipboard", async () => {
+      const real = window.navigator.clipboard;
+      Object.assign(window.navigator, { clipboard: {} });
+      delete (window.navigator as unknown as { clipboard?: unknown }).clipboard;
+      expect(window.navigator.clipboard).toBe(real);
+      await real.writeText("x");
+      expect(await window.navigator.clipboard.readText()).toBe("x");
+    });
+
+    test("user-event's defineProperty stub and vi.spyOn on the clipboard keep working", async () => {
+      const stub = { readText: async () => "stub" };
+      Object.defineProperty(window.navigator, "clipboard", { get: () => stub, configurable: true });
+      expect(window.navigator.clipboard).toBe(stub);
+      delete (window.navigator as unknown as { clipboard?: unknown }).clipboard;
+      const spy = vi.spyOn(window.navigator.clipboard, "writeText");
+      await window.navigator.clipboard.writeText("y");
+      expect(spy).toHaveBeenCalledWith("y");
+      spy.mockRestore();
+      const getter = vi.spyOn(window.navigator, "clipboard", "get").mockReturnValue(stub as never);
+      expect(window.navigator.clipboard).toBe(stub);
+      getter.mockRestore();
+    });
   });
 
   test("clipboard is an in-memory async clipboard (https://w3c.github.io/clipboard-apis/#clipboard-interface)", async () => {

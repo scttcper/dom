@@ -34,7 +34,8 @@ import { reportException } from "../events/report.ts";
 import "./document.ts";
 import { setNestedWindowFactory } from "./browsing-context.ts";
 import { windowOrigin } from "./origin.ts";
-import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $url, $visualViewport, $y } from "../keys.ts";
+import { type TimerList, clearTimers, startTimer } from "./timers.ts";
+import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
   /** Document URL. Default "http://localhost/". */
@@ -50,7 +51,7 @@ export interface WindowOptions {
   devicePixelRatio?: number;
   /** navigator.userAgent */
   userAgent?: string;
-  /** navigator.platform */
+  /** navigator.platform. Default "" (jsdom), whatever the host OS (docs/deviations.md). */
   platform?: string;
   /** navigator.languages (first one is navigator.language). Default ["en-US", "en"]. */
   languages?: readonly string[];
@@ -93,14 +94,13 @@ export interface ResolvedWindowOptions {
   validationMessages: "jsdom" | "browser";
 }
 
-const PLATFORMS: Record<string, string> = { darwin: "MacIntel", win32: "Win32", linux: "Linux x86_64" };
-const DEFAULT_PLATFORM = PLATFORMS[process.platform] ?? "";
-const UA_OS: Record<string, string> = {
-  darwin: "Macintosh; Intel Mac OS X 10_15_7",
-  win32: "Windows NT 10.0; Win64; x64",
-  linux: "X11; Linux x86_64",
-};
-const DEFAULT_USER_AGENT = `Mozilla/5.0 (${UA_OS[process.platform] ?? process.platform}) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0`;
+// Host-independent defaults, so a suite behaves the same on a developer's Mac and on Linux CI.
+// jsdom: NavigatorID#platform is always "" (lib/jsdom/living/navigator/NavigatorID-impl.js), and
+// its userAgent is `Mozilla/5.0 (${process.platform}) AppleWebKit/537.36 (KHTML, like Gecko)
+// jsdom/x`; ours is that string as jsdom produces it on Linux CI, pinned (docs/deviations.md).
+// https://html.spec.whatwg.org/#dom-navigator-platform (implementation-defined).
+const DEFAULT_PLATFORM = "";
+const DEFAULT_USER_AGENT = "Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0";
 const DEFAULT_LANGUAGES: readonly string[] = Object.freeze(["en-US", "en"]);
 
 /** @internal A nested browsing context (an <iframe>'s), see window/browsing-context.ts. */
@@ -128,6 +128,29 @@ type FrameRequestCallback = (time: number) => void;
 
 let prototypeReady = false;
 
+/**
+ * @internal Host global → the window installed on it (globals.ts installGlobals). Under the test
+ * environments the global code sees as `window` is the host global, not a Window instance.
+ */
+export const installedWindows = new WeakMap<object, Window>();
+
+/**
+ * The window an operation acts on. WebIDL operations on a global accept the global object itself
+ * as `this`, and undefined/null mean the current realm's global
+ * (https://webidl.spec.whatwg.org/#dfn-create-operation-function step 2.1). So
+ * `iframe.contentWindow.requestAnimationFrame.bind(window)` (rrweb) and `const { setTimeout } =
+ * window` work. Normal path: one monomorphic symbol load.
+ */
+function receiver(self: Window | null | undefined, operation: string): Window {
+  return self != null && self[$closed] !== undefined ? self : otherReceiver(self, operation);
+}
+
+function otherReceiver(self: unknown, operation: string): Window {
+  const window = self == null ? currentWindowOrNull() : typeof self === "object" || typeof self === "function" ? installedWindows.get(self) : undefined;
+  if (window == null) throw new TypeError(`Failed to execute '${operation}' on 'Window': Illegal invocation`);
+  return window;
+}
+
 export class Window extends EventTarget {
   document: Document;
   name: string;
@@ -152,6 +175,8 @@ export class Window extends EventTarget {
   /** MediaQueryLists with change listeners (https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes). */
   [$mediaQueryLists]: Set<MediaQueryList>;
   [$tasks]: Set<PendingTask> | null;
+  /** Host timers created through setTimeout/setInterval of this window or its installed global (window/timers.ts). */
+  [$timers]: TimerList | null;
   /** https://html.spec.whatwg.org/#list-of-animation-frame-callbacks */
   [$frameCallbacks]: Map<number, FrameRequestCallback> | null;
   [$runningFrame]: Map<number, FrameRequestCallback> | null;
@@ -214,6 +239,7 @@ export class Window extends EventTarget {
     this[$cookieJar] = null;
     this[$mediaQueryLists] = new Set();
     this[$tasks] = null;
+    this[$timers] = null;
     this[$frameCallbacks] = null;
     this[$runningFrame] = null;
     this[$frameTask] = null;
@@ -455,25 +481,27 @@ export class Window extends EventTarget {
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-scroll — no layout: just records the position. */
   scroll(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
+    const self = receiver(this, "scroll");
     if (typeof x === "object" && x !== null) {
-      if (x.left !== undefined) this[$scrollX] = normalizeScroll(x.left);
-      if (x.top !== undefined) this[$scrollY] = normalizeScroll(x.top);
+      if (x.left !== undefined) self[$scrollX] = normalizeScroll(x.left);
+      if (x.top !== undefined) self[$scrollY] = normalizeScroll(x.top);
     } else if (x !== undefined) {
-      this[$scrollX] = normalizeScroll(x);
-      this[$scrollY] = normalizeScroll(y ?? 0);
+      self[$scrollX] = normalizeScroll(x);
+      self[$scrollY] = normalizeScroll(y ?? 0);
     }
   }
 
   scrollTo(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
-    this.scroll(x, y);
+    receiver(this, "scrollTo").scroll(x, y);
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-scrollby */
   scrollBy(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
+    const self = receiver(this, "scrollBy");
     if (typeof x === "object" && x !== null) {
-      this.scroll({ left: this[$scrollX] + (Number(x.left) || 0), top: this[$scrollY] + (Number(x.top) || 0) });
+      self.scroll({ left: self[$scrollX] + (Number(x.left) || 0), top: self[$scrollY] + (Number(x.top) || 0) });
     } else {
-      this.scroll(this[$scrollX] + (Number(x) || 0), this[$scrollY] + (Number(y) || 0));
+      self.scroll(self[$scrollX] + (Number(x) || 0), self[$scrollY] + (Number(y) || 0));
     }
   }
 
@@ -482,14 +510,16 @@ export class Window extends EventTarget {
    * set the viewport size, report media query changes and fire `resize`.
    */
   resizeTo(width: number, height: number): void {
-    this[$innerWidth] = Number(width);
-    this[$innerHeight] = Number(height);
-    if (this[$mediaQueryLists].size !== 0) reportMediaQueryChanges(this);
-    this.dispatchEvent(new Event("resize"));
+    const self = receiver(this, "resizeTo");
+    self[$innerWidth] = Number(width);
+    self[$innerHeight] = Number(height);
+    if (self[$mediaQueryLists].size !== 0) reportMediaQueryChanges(self);
+    self.dispatchEvent(new Event("resize"));
   }
 
   resizeBy(x: number, y: number): void {
-    this.resizeTo(this[$innerWidth] + Number(x), this[$innerHeight] + Number(y));
+    const self = receiver(this, "resizeBy");
+    self.resizeTo(self[$innerWidth] + Number(x), self[$innerHeight] + Number(y));
   }
 
   moveTo(_x: number, _y: number): void {}
@@ -503,7 +533,7 @@ export class Window extends EventTarget {
       throw new TypeError("Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.");
     }
     const hook = windowHooks.getComputedStyle ?? domExport<(e: Element, p?: string | null) => unknown>("getComputedStyle") ?? null;
-    if (hook !== null) return hook(element, pseudoElement, this) as CSSStyleDeclaration;
+    if (hook !== null) return hook(element, pseudoElement, receiver(this, "getComputedStyle")) as CSSStyleDeclaration;
     // TODO(css): register windowHooks.getComputedStyle. Fallback: the inline declarations only.
     return new CSSStyleDeclaration(element);
   }
@@ -511,12 +541,12 @@ export class Window extends EventTarget {
   /** https://drafts.csswg.org/cssom-view/#dom-window-matchmedia */
   matchMedia(query: string): MediaQueryList {
     if (arguments.length === 0) throw new TypeError("Failed to execute 'matchMedia' on 'Window': 1 argument required, but only 0 present.");
-    return new MediaQueryList(this, String(query).trim());
+    return new MediaQueryList(receiver(this, "matchMedia"), String(query).trim());
   }
 
   /** https://w3c.github.io/selection-api/#dom-window-getselection */
   getSelection(): unknown {
-    const doc = this.document as unknown as { getSelection?: () => unknown };
+    const doc = receiver(this, "getSelection").document as unknown as { getSelection?: () => unknown };
     // TODO(dom-core): Document.prototype.getSelection.
     return typeof doc.getSelection === "function" ? doc.getSelection() : null;
   }
@@ -528,25 +558,27 @@ export class Window extends EventTarget {
     if (typeof callback !== "function") {
       throw new TypeError("Failed to execute 'requestAnimationFrame' on 'Window': The callback provided as parameter 1 is not a function.");
     }
-    const id = ++this[$frameId];
-    (this[$frameCallbacks] ??= new Map()).set(id, callback);
+    const self = receiver(this, "requestAnimationFrame");
+    const id = ++self[$frameId];
+    (self[$frameCallbacks] ??= new Map()).set(id, callback);
     // One host timer per frame: every callback requested before the frame runs in it with
     // the same timestamp, like https://html.spec.whatwg.org/#run-the-animation-frame-callbacks.
     // Self-healing: a frame timer scheduled on a fake clock that has since been uninstalled
     // (jest.useRealTimers()) never fires; re-arm on the current host timer instead of letting
     // it wedge every later frame of this window.
-    const pending = this[$frameTask];
-    if (pending === null || pending.scheduledWith !== this._hostSetTimeout()) {
-      if (pending !== null) this._cancelTask(pending);
-      this[$frameTask] = this._task(runAnimationFrame, 16);
+    const pending = self[$frameTask];
+    if (pending === null || pending.scheduledWith !== self._hostSetTimeout()) {
+      if (pending !== null) self._cancelTask(pending);
+      self[$frameTask] = self._task(runAnimationFrame, 16);
     }
     return id;
   }
 
   /** https://html.spec.whatwg.org/#animationframeprovider-cancelanimationframe */
   cancelAnimationFrame(handle: number): void {
-    this[$frameCallbacks]?.delete(handle);
-    this[$runningFrame]?.delete(handle);
+    const self = receiver(this, "cancelAnimationFrame");
+    self[$frameCallbacks]?.delete(handle);
+    self[$runningFrame]?.delete(handle);
   }
 
   /** https://w3c.github.io/requestidlecallback/#the-requestidlecallback-method */
@@ -555,9 +587,10 @@ export class Window extends EventTarget {
       throw new TypeError("Failed to execute 'requestIdleCallback' on 'Window': The callback provided as parameter 1 is not a function.");
     }
     void options;
-    const id = ++this[$idleId];
-    const map = (this[$idleCallbacks] ??= new Map());
-    const task = this._task(() => {
+    const self = receiver(this, "requestIdleCallback");
+    const id = ++self[$idleId];
+    const map = (self[$idleCallbacks] ??= new Map());
+    const task = self._task(() => {
       map.delete(id);
       const deadline = Date.now() + 50;
       callback({ didTimeout: false, timeRemaining: () => Math.max(0, deadline - Date.now()) });
@@ -567,10 +600,35 @@ export class Window extends EventTarget {
   }
 
   cancelIdleCallback(handle: number): void {
-    const task = this[$idleCallbacks]?.get(handle);
+    const self = receiver(this, "cancelIdleCallback");
+    const task = self[$idleCallbacks]?.get(handle);
     if (task === undefined) return;
-    this[$idleCallbacks]!.delete(handle);
-    this._cancelTask(task);
+    self[$idleCallbacks]!.delete(handle);
+    self._cancelTask(task);
+  }
+
+  // --- timers (https://html.spec.whatwg.org/#timers) -------------------------------------------
+  // The current host's timers (looked up per call, so fake timers installed on the host apply;
+  // handles are the host's), owned by this window: close() clears the pending ones and a closed
+  // window schedules nothing, like jsdom (window/timers.ts). clearTimeout/clearInterval are host
+  // delegates (HOST_DELEGATES).
+
+  /** https://html.spec.whatwg.org/#dom-settimeout */
+  setTimeout(handler: unknown, timeout?: number, ...args: unknown[]): unknown {
+    const self = receiver(this, "setTimeout");
+    return startTimer(self, self._timerHost(), false, handler, timeout, args);
+  }
+
+  /** https://html.spec.whatwg.org/#dom-setinterval */
+  setInterval(handler: unknown, timeout?: number, ...args: unknown[]): unknown {
+    const self = receiver(this, "setInterval");
+    return startTimer(self, self._timerHost(), true, handler, timeout, args);
+  }
+
+  /** @internal The global whose timer functions this window uses right now. */
+  _timerHost(): Record<string, unknown> {
+    const host = this[$host];
+    return typeof host.setTimeout === "function" ? (host as unknown as Record<string, unknown>) : (globalThis as unknown as Record<string, unknown>);
   }
 
   /**
@@ -604,20 +662,21 @@ export class Window extends EventTarget {
 
   /** https://html.spec.whatwg.org/#dom-window-postmessage */
   postMessage(message: unknown, targetOrigin?: string | { targetOrigin?: string; transfer?: unknown[] }, transfer?: unknown[]): void {
+    const self = receiver(this, "postMessage");
     let origin = typeof targetOrigin === "object" && targetOrigin !== null ? (targetOrigin.targetOrigin ?? "/") : (targetOrigin ?? "/");
     origin = String(origin);
-    if (origin === "/") origin = this.origin;
+    if (origin === "/") origin = self.origin;
     else if (origin !== "*") {
       const parsed = URL.parse(origin);
       if (parsed === null) throw new DOMException(`Failed to execute 'postMessage' on 'Window': Invalid target origin '${origin}' in a call to 'postMessage'.`, "SyntaxError");
       origin = parsed.origin;
     }
-    if (origin !== "*" && origin !== this.origin) return;
+    if (origin !== "*" && origin !== self.origin) return;
     const transferList = Array.isArray(transfer) ? transfer : typeof targetOrigin === "object" && targetOrigin !== null ? targetOrigin.transfer : undefined;
     // Serialize synchronously (DataCloneError is thrown to the caller).
     const data = structuredClone(message, transferList === undefined ? undefined : { transfer: transferList as never[] });
-    const source = this.origin;
-    this._task(function (this: Window) {
+    const source = self.origin;
+    self._task(function (this: Window) {
       const MessageEvent = eventInterface("MessageEvent");
       this.dispatchEvent(new MessageEvent("message", { data, origin: source, source: this }) as never);
     }, 0);
@@ -629,7 +688,7 @@ export class Window extends EventTarget {
    * environments make that fail the test).
    */
   reportError(error: unknown): void {
-    reportException(error, this);
+    reportException(error, receiver(this, "reportError"));
   }
 
   // --- browser chrome no-ops (https://html.spec.whatwg.org/#user-prompts) ----------------------
@@ -653,13 +712,15 @@ export class Window extends EventTarget {
   releaseEvents(): void {}
 
   /**
-   * Close the window: cancels its pending animation frames, idle callbacks and tasks and marks
+   * Close the window: cancels its pending timers, animation frames, idle callbacks and tasks and marks
    * it closed (like jsdom's/happy-dom's `window.close()`; docs/deviations.md). Test
    * environments call this on teardown.
    */
   close(): void {
+    if (this == null || this[$closed] === undefined) return receiver(this, "close").close();
     if (this[$closed]) return;
     this[$closed] = true;
+    clearTimers(this);
     const tasks = this[$tasks];
     if (tasks !== null) {
       for (const task of tasks) task.clear(task.handle as never);
@@ -745,16 +806,16 @@ function normalizeScroll(value: unknown): number {
 
 // Host (Node) globals every window exposes by delegation rather than by copy. Reads go to the
 // current host global, so a faked `setTimeout` is what `window.setTimeout` returns.
+// setTimeout/setInterval are Window methods (tracked, see window/timers.ts). Not exposed, like
+// jsdom (docs/deviations.md): fetch, Request, Response — with them present fetch mocks such as
+// jest-fetch-mock skip their polyfill and resolve relative URLs differently.
 export const HOST_DELEGATES = [
-  "setTimeout",
   "clearTimeout",
-  "setInterval",
   "clearInterval",
   "queueMicrotask",
   "structuredClone",
   "atob",
   "btoa",
-  "fetch",
   "crypto",
   "performance",
   "console",
@@ -780,8 +841,6 @@ export const HOST_DELEGATES = [
   "CompressionStream",
   "DecompressionStream",
   "Headers",
-  "Request",
-  "Response",
   "FormData",
   "BroadcastChannel",
   "MessageChannel",

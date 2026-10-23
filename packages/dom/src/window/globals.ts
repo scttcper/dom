@@ -30,8 +30,8 @@
 // process. (FormData/MessageEvent/CloseEvent could be re-fetched synchronously at uninstall via
 // node:http and Response#formData; ErrorEvent has no synchronous public path.)
 
-import { recordHostOriginal } from "./host-originals.ts";
-import { Window, windowInterfaces, HOST_DELEGATES } from "./Window.ts";
+import { installedWindowMethods, recordHostOriginal } from "./host-originals.ts";
+import { Window, windowInterfaces, HOST_DELEGATES, installedWindows } from "./Window.ts";
 import { currentWindowOrNull, setCurrentWindow } from "./current.ts";
 import { $globalObject, $host } from "../keys.ts";
 
@@ -130,7 +130,9 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
 
   const w = window as unknown as Record<string, (...args: unknown[]) => unknown>;
   for (const key of METHODS) {
-    define(key, { value: w[key].bind(window), writable: true, enumerable: true, configurable: true });
+    const bound = w[key].bind(window);
+    installedWindowMethods.add(bound);
+    define(key, { value: bound, writable: true, enumerable: true, configurable: true });
   }
 
   const attributes = windowAttributes();
@@ -163,6 +165,9 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
   window[$host] = target as unknown as typeof globalThis;
   const previousGlobal = window[$globalObject];
   window[$globalObject] = target as unknown as Window;
+  // Window.prototype operations called with the host global as `this` act on this window.
+  const previousInstalled = installedWindows.get(target);
+  installedWindows.set(target, window);
 
   let installed = true;
   return function uninstall(): void {
@@ -176,6 +181,10 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
     saved.clear();
     window[$host] = previousHost;
     window[$globalObject] = previousGlobal;
+    if (installedWindows.get(target) === window) {
+      if (previousInstalled === undefined) installedWindows.delete(target);
+      else installedWindows.set(target, previousInstalled);
+    }
     if (currentWindowOrNull() === window) setCurrentWindow(previousWindow);
   };
 }
