@@ -12,7 +12,7 @@
  * uninstall() restores every replaced descriptor without invoking Node's lazy getters.
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, EventTarget as RtdEventTarget, Node as RtdNode, FormData as RtdFormData, type Window } from "@rtd/dom";
+import { createWindow, currentWindowOrNull, installGlobals, Event as RtdEvent, EventTarget as RtdEventTarget, Node as RtdNode, FormData as RtdFormData, type Window } from "@rtd/dom";
 
 type G = Record<string, unknown>;
 
@@ -69,7 +69,7 @@ describe("events at the window expose the WindowProxy — https://dom.spec.whatw
       },
       true,
     );
-    window.document.body.dispatchEvent(new (target.Event as typeof Event)("click", { bubbles: true }));
+    window.document.body!.dispatchEvent(new RtdEvent("click", { bubbles: true }));
     expect(seen).toEqual([[window.document.body, target, target, target]]);
   });
 
@@ -90,7 +90,7 @@ describe("events at the window expose the WindowProxy — https://dom.spec.whatw
     const window = createWindow();
     let got: unknown = null;
     window.addEventListener("focus", (e) => (got = e.target));
-    window.dispatchEvent(new (window as unknown as { Event: typeof Event }).Event("focus"));
+    window.dispatchEvent(new RtdEvent("focus"));
     expect(got).toBe(window);
     window.close();
   });
