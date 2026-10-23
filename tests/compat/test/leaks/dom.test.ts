@@ -162,6 +162,26 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
     expect(await tracker.alive()).toEqual({});
     w.close();
   });
+
+  test("a detached tree whose live collections were read is collectable without any later removal", async () => {
+    const w = createWindow({ html: HTML });
+    const d = w.document;
+    const tracker = new Tracker();
+    (() => {
+      const box = d.createElement("section");
+      box.innerHTML = "<div><label for=d>D</label><input id=d></div><div><span>s</span></div>";
+      const clone = box.cloneNode(true) as typeof box;
+      tracker.track("detached tree", box);
+      tracker.track("clone", clone);
+      // Snapshots of collections rooted in a detached node are not registered with the document.
+      void box.children.length;
+      void clone.children[0];
+      void clone.getElementsByTagName("span").length;
+      void (clone.querySelector("input") as unknown as { labels: { length: number } }).labels.length;
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
 });
 
 describe("heap slope", () => {

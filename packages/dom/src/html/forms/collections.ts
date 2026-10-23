@@ -52,6 +52,8 @@ abstract class ComputedNodeList extends NodeList {
 
   abstract _compute(): Node[];
   abstract _ownerDocument(): { [$version]: number };
+  /** The node whose tree the members come from (derived.ts holdSnapshot). */
+  abstract _root(): NodeImpl;
 
   _snapshot(): Node[] {
     const c = this[$cache];
@@ -61,7 +63,7 @@ abstract class ComputedNodeList extends NodeList {
     c.items = items;
     c.version = doc[$version];
     c.doc = doc;
-    if (items.length !== 0) holdSnapshot(doc as unknown as OwnerDocument, c);
+    if (items.length !== 0) holdSnapshot(doc as unknown as OwnerDocument, c, this._root());
     if (items.length > nodeListIndex.count) ensureIndexGetters(nodeListIndex, items.length);
     return items;
   }
@@ -96,6 +98,10 @@ export class LabelsNodeList extends ComputedNodeList {
     return this[$el].doc;
   }
 
+  _root(): NodeImpl {
+    return this[$el];
+  }
+
   _compute(): Node[] {
     const impls = labelsFor(this[$el], []);
     const items: Node[] = new Array(impls.length);
@@ -122,6 +128,10 @@ export class NameNodeList extends ComputedNodeList {
 
   _ownerDocument(): { [$version]: number } {
     return this[$el].doc;
+  }
+
+  _root(): NodeImpl {
+    return this[$el];
   }
 
   _compute(): Node[] {
@@ -151,6 +161,10 @@ export class RadioNodeList extends ComputedNodeList {
 
   _ownerDocument(): { [$version]: number } {
     return this[$form].doc;
+  }
+
+  _root(): NodeImpl {
+    return this[$form];
   }
 
   _compute(): Node[] {

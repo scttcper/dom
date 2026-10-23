@@ -117,7 +117,7 @@ export class HTMLFormElement extends HTMLElement {
     this[$controlsCache] = list;
     this[$controlsVersion] = doc[$version];
     this[$controlsDoc] = doc;
-    if (list.length !== 0) holdSnapshot(doc, this);
+    if (list.length !== 0) holdSnapshot(doc, this, this[$impl]);
     return list;
   }
 

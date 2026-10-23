@@ -128,7 +128,7 @@ export class HTMLCollection {
     s.items = items;
     s.doc = doc;
     s.version = doc[$version];
-    if (items.length !== 0) holdSnapshot(doc, s);
+    if (items.length !== 0) holdSnapshot(doc, s, s.root);
     if (items.length > table!.count) ensureIndexGetters(table!, items.length);
     return items;
   }

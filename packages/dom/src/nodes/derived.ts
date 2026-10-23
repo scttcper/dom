@@ -7,6 +7,8 @@
 // previous test's tree. Such caches live in Document[$derived] instead, which nodes/tree.ts
 // remove() drops (one null check + store per removal).
 import type { Document } from "./Document.ts";
+import type { NodeImpl } from "./NodeImpl.ts";
+import { F_CONNECTED } from "./constants.ts";
 import { $derived } from "../keys.ts";
 
 /** The `key`-owned cache of `doc`, created with `create()` when absent (or dropped since). */
@@ -28,6 +30,11 @@ export function peekDerivedCache<T>(doc: Document, key: object): T | undefined {
  * A version-stamped node snapshot owned by a long-lived object (a live collection's members, a
  * form's listed controls). Registered with `holdSnapshot` when filled; nodes/tree.ts remove()
  * calls `_dropSnapshot()` on every holder registered since the previous removal.
+ *
+ * Only snapshots rooted in a connected node are registered. A detached root's snapshot can only
+ * hold nodes of its own tree and lives exactly as long as its owner; registering it would let the
+ * document keep the whole detached tree alive until its next removal (a removed React container
+ * whose `children` were read, every clone a test inspects).
  */
 export interface SnapshotHolder {
   _dropSnapshot(): void;
@@ -36,8 +43,12 @@ export interface SnapshotHolder {
 const HOLDERS = {};
 const newHolders = (): Set<SnapshotHolder> => new Set();
 
-/** Register `holder` to have its snapshot dropped at the next removal from a tree of `doc`. */
-export function holdSnapshot(doc: Document, holder: SnapshotHolder): void {
+/**
+ * Register `holder`, whose snapshot was computed from the tree of `root`, to have its snapshot
+ * dropped at the next removal from a tree of `doc`; a no-op when `root` is not connected.
+ */
+export function holdSnapshot(doc: Document, holder: SnapshotHolder, root: NodeImpl): void {
+  if ((root.flags & F_CONNECTED) === 0) return;
   derivedCache(doc, HOLDERS, newHolders).add(holder);
 }
 
