@@ -23,7 +23,8 @@ import * as dom from "@rtd/dom";
 import { $mode } from "../../src/keys.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-export const FIXTURES = join(here, "fixtures");
+/** Vendored fixtures; `WPT_ROOT=<wpt checkout>` points surveys at a full upstream checkout instead. */
+export const FIXTURES = process.env.WPT_ROOT ?? join(here, "fixtures");
 
 const requireFromJsdom = createRequire(createRequire(import.meta.url).resolve("jsdom"));
 const parse5 = requireFromJsdom("parse5") as {
@@ -403,8 +404,54 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
     },
   };
 
+  /**
+   * https://web-platform-tests.org/writing-tests/testharness-api.html#eventwatcher — re-implemented
+   * from testharness.js: resolves `wait_for(types)` with the event (or every event with
+   * `{record: "all"}`) and fails the test on any event out of the expected order.
+   */
+  type StepTest = { step_func: (fn: (...a: never[]) => unknown) => (...a: unknown[]) => unknown; add_cleanup: (fn: () => void) => void };
+  function EventWatcher(this: Record<string, unknown>, t: StepTest, node: dom.EventTarget, eventTypes: string | string[], timeoutPromise?: () => Promise<unknown>) {
+    const types = typeof eventTypes === "string" ? [eventTypes] : eventTypes;
+    let waitingFor: { types: string[]; resolve: (v: unknown) => void; reject: (e: unknown) => void } | null = null;
+    let recorded: dom.Event[] | null = null;
+    const handler = t.step_func((evt: dom.Event) => {
+      asserts.assert_true(waitingFor !== null, `Not expecting event, but got ${evt.type} event`);
+      asserts.assert_equals(evt.type, waitingFor!.types[0], `Expected ${waitingFor!.types[0]} event, but got ${evt.type} event instead`);
+      recorded?.push(evt);
+      if (waitingFor!.types.length > 1) {
+        waitingFor!.types.shift();
+        return;
+      }
+      const { resolve } = waitingFor!;
+      waitingFor = null;
+      const result = recorded ?? evt;
+      recorded = null;
+      resolve(result);
+    }) as unknown as (e: dom.Event) => void;
+    for (const type of types) node.addEventListener(type, handler);
+    this.wait_for = (want: string | string[], options?: { record?: string }) => {
+      if (waitingFor !== null) return Promise.reject(new Error("Already waiting for an event or events"));
+      const list = typeof want === "string" ? [want] : [...want];
+      recorded = options?.record === "all" ? [] : null;
+      return new Promise((resolve, reject) => {
+        timeoutPromise?.().then(() => {
+          if (waitingFor?.resolve === resolve) {
+            waitingFor = null;
+            reject(new Error(`Timed out waiting for ${list.join(", ")}`));
+          }
+        });
+        waitingFor = { types: list, resolve, reject };
+      });
+    };
+    this.stop_watching = () => {
+      for (const type of types) node.removeEventListener(type, handler);
+    };
+    t.add_cleanup(this.stop_watching as () => void);
+  }
+
   return {
     ...asserts,
+    EventWatcher,
     test,
     async_test,
     promise_test,
@@ -480,6 +527,12 @@ function textOf(n: P5Node): string {
 export interface RunOptions {
   /** Extra source evaluated before the test scripts (e.g. polyfills for missing pieces). */
   prelude?: string;
+  /**
+   * `test_driver` (https://web-platform-tests.org/writing-tests/testdriver.html) for tests that
+   * use it, e.g. one backed by @rtd/aria (`get_computed_role`/`get_computed_label`) or
+   * @rtd/user-event (`click`, `send_keys`). Without one, every call rejects.
+   */
+  testdriver?: (window: dom.Window, document: dom.Document) => Record<string, unknown>;
   /** Milliseconds to wait for async tests. */
   timeout?: number;
 }
@@ -496,10 +549,10 @@ interface LoadedDocument {
  * Load a fixture into a fresh window + vm context and run its scripts. `harness` (null for
  * iframe documents) supplies the testharness functions.
  */
-function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | null, prelude?: string): LoadedDocument {
+function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | null, prelude?: string, testdriver?: RunOptions["testdriver"]): LoadedDocument {
   const file = fileWithQuery.replace(/[?#].*$/, "");
   const path = join(FIXTURES, file);
-  const html = readFileSync(path, "utf8");
+  const html = JS_TEST.test(file) ? jsTestPage(path) : readFileSync(path, "utf8");
   const tree = parse5.parse(html);
   const window = dom.createWindow({ url: "http://web-platform.test:8000/" + fileWithQuery });
   const doc = window.document as dom.Document;
@@ -515,7 +568,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     const src = s.attrs?.find((a) => a.name === "src")?.value;
     if (src === undefined) {
       sources.push(textOf(s));
-    } else if (!src.startsWith("/resources/testharness") && !src.startsWith("/resources/testdriver")) {
+    } else if (!src.startsWith("/resources/testharness") && !src.startsWith("/resources/testdriver") && !/\.py(\?|$)/.test(src)) {
       const resolved = src.startsWith("/") ? join(FIXTURES, src) : resolve(dirname(path), src);
       sources.push(readFileSync(resolved, "utf8"));
     }
@@ -557,6 +610,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     }
   }
   if (harness !== null) Object.assign(sandbox, harness);
+  sandbox.test_driver = testdriver?.(window, doc) ?? unsupportedTestDriver();
   Object.assign(sandbox, {
     window: windowProxy,
     self: windowProxy,
@@ -598,6 +652,31 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     }
   }, 0);
   return { window, windowProxy, doc, sandbox, errors };
+}
+
+/** `.any.js` / `.window.js` tests (https://web-platform-tests.org/writing-tests/testharness.html#tests-for-other-or-multiple-globals). */
+export const JS_TEST = /\.(any|window)\.js$/;
+
+/** Whether a `.any.js` test runs in a window global (`// META: global=` defaults to window + dedicatedworker). */
+export function jsTestRunsInWindow(source: string): boolean {
+  const globals = /^\/\/ META: global=(.*)$/m.exec(source)?.[1];
+  return globals === undefined || /\b(window|default)\b/.test(globals);
+}
+
+/** The page wptserve generates for a `.any.js`/`.window.js` test: testharness, META scripts, the test. */
+function jsTestPage(path: string): string {
+  const source = readFileSync(path, "utf8");
+  const title = /^\/\/ META: title=(.*)$/m.exec(source)?.[1] ?? "";
+  const scripts = [...source.matchAll(/^\/\/ META: script=(.*)$/gm)].map((m) => `<script src="${m[1].trim()}"></script>`);
+  const self = path.slice(path.lastIndexOf("/") + 1);
+  return `<!doctype html><meta charset=utf-8><title>${title}</title><script src="/resources/testharness.js"></script><script src="/resources/testharnessreport.js"></script>${scripts.join("")}<div id=log></div><script src="${self}"></script>`;
+}
+
+/** `test_driver` when the caller supplied none: every action rejects, so those subtests fail instead of hanging. */
+function unsupportedTestDriver(): Record<string, unknown> {
+  return new Proxy({}, {
+    get: (_t, k) => (k === "then" ? undefined : () => Promise.reject(new Error(`test_driver.${String(k)} is not supported here`))),
+  });
 }
 
 /**
@@ -660,7 +739,7 @@ export async function runWPT(file: string, options: RunOptions = {}): Promise<Su
   const results: Test[] = [];
   const pending: Promise<void>[] = [];
   const harness = createHarness(results, pending);
-  const loaded = loadDocument(file, harness as unknown as Record<string, unknown>, options.prelude);
+  const loaded = loadDocument(file, harness as unknown as Record<string, unknown>, options.prelude, options.testdriver);
   const fail = (message: string) =>
     results.push({ name: "(harness error)", status: "FAIL", message, done: true, cleanups: [], resolve() {}, promise: Promise.resolve() });
   for (const e of loaded.errors) fail(e);
@@ -685,7 +764,19 @@ export async function runWPT(file: string, options: RunOptions = {}): Promise<Su
 /** Known-failing subtests per WPT file (regenerate with test/wpt/survey.scratch.ts; duplicate subtest names get a ` (#n)` suffix). */
 const AGGREGATE_ABOVE = 150;
 
-const EXPECTATIONS = JSON.parse(readFileSync(join(here, "expectations.json"), "utf8")) as Record<string, string[]>;
+/**
+ * expectations.json plus one file per area in test/wpt/expectations/*.json (so areas never edit
+ * the same file): WPT path → known-failing subtest names.
+ */
+const EXPECTATIONS: Record<string, string[]> = Object.assign(
+  JSON.parse(readFileSync(join(here, "expectations.json"), "utf8")),
+  ...(existsSync(join(here, "expectations"))
+    ? readdirSync(join(here, "expectations"))
+        .filter((f) => f.endsWith(".json"))
+        .sort()
+        .map((f) => JSON.parse(readFileSync(join(here, "expectations", f), "utf8")))
+    : []),
+);
 
 /**
  * Register a vitest suite for one WPT file: one vitest test per WPT subtest, named after the
