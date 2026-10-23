@@ -8,6 +8,30 @@
     ".": "./src/index.ts",
     "./internal": "./src/internal.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "publishConfig": {
+    "main": "./dist/index.cjs",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./internal": {
+        "types": "./dist/types/internal.d.ts",
+        "require": "./dist/internal.cjs",
+        "default": "./dist/internal.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
   "dependencies": {
     "@rtd/dom": "workspace:*"
   },

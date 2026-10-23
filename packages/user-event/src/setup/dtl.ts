@@ -2,16 +2,15 @@
 // getElementError`), which framework adapters (@rtd/react, @testing-library/react) configure
 // with `act()` as a side effect of being imported.
 //
-// Upstream imports `getConfig` from `@testing-library/dom`. We resolve, in order:
-//   1. `@rtd/testing-library` (our drop-in for @testing-library/dom; used with @rtd/react),
-//   2. `@testing-library/dom` when it is installed (people swapping only user-event),
-//   3. a built-in default config (identity wrappers).
-// The specifiers are computed so TypeScript does not try to resolve them (the packages are
-// optional at type level and may still be in flight).
+// Upstream imports `getConfig` from `@testing-library/dom`; we import it from
+// `@rtd/testing-library` (our drop-in, a hard dependency), falling back to a built-in default
+// config (identity wrappers) only if that module does not provide getConfig/configure.
 //
-// TODO(testing-library): once @rtd/testing-library exports `getConfig`, consider making it a
-// static import; keep the @testing-library/dom fallback for mixed setups.
+// The import is static on purpose: a top-level `await import()` here made the package an
+// async ES module, which `require()` (Node's require(esm), Jest) cannot load and which cannot
+// be bundled to CommonJS (scripts/build.ts).
 
+import * as rtdTestingLibrary from '@rtd/testing-library'
 import type {Element} from '../dom-types.ts'
 
 export interface DTLConfig {
@@ -35,30 +34,17 @@ const defaultConfig: DTLConfig = {
   },
 }
 
-async function load(specifier: string): Promise<DTLModule | null> {
-  try {
-    const mod = (await import(specifier)) as Partial<DTLModule> & {default?: Partial<DTLModule>}
-    const getConfig = mod.getConfig ?? mod.default?.getConfig
-    const configure = mod.configure ?? mod.default?.configure
-    return typeof getConfig === 'function' && typeof configure === 'function'
-      ? {getConfig, configure}
-      : null
-  } catch {
-    return null
-  }
+function load(mod: Partial<DTLModule> & {default?: Partial<DTLModule>}): DTLModule | null {
+  const getConfig = mod.getConfig ?? mod.default?.getConfig
+  const configure = mod.configure ?? mod.default?.configure
+  return typeof getConfig === 'function' && typeof configure === 'function'
+    ? {getConfig, configure}
+    : null
 }
 
-const candidates = ['@rtd/testing-library', '@testing-library/dom']
-let dtl: DTLModule | null = null
+const dtl: DTLModule | null = load(rtdTestingLibrary as unknown as Partial<DTLModule>)
 /** Which module provides `getConfig` ('default' when none could be loaded). */
-export let dtlSource = 'default'
-for (const specifier of candidates) {
-  dtl = await load(specifier)
-  if (dtl) {
-    dtlSource = specifier
-    break
-  }
-}
+export const dtlSource: string = dtl ? '@rtd/testing-library' : 'default'
 
 const getConfigImpl: () => DTLConfig = dtl ? dtl.getConfig : () => defaultConfig
 

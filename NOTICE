@@ -1,0 +1,77 @@
+react-testing-dom
+Copyright (c) <YEAR> <COPYRIGHT HOLDER>   <-- TEMPLATE: fill in once the project license is chosen
+
+TEMPLATE — NOT LEGAL ADVICE. The project's own license has not been chosen yet (see LICENSE,
+which does not exist yet). This file lists third-party projects whose source code, data or
+tests were ported into this repository. Before publishing, verify each entry against the
+upstream LICENSE file at the ported revision and reproduce the required license texts and
+copyright notices below (MIT and BSD require the notice; Apache-2.0 requires the license text
+and any upstream NOTICE file contents).
+
+Source files carry per-file attribution comments naming the upstream file they were ported
+from ("Port of ...", "Ported from ...", "Copied from ...").
+
+------------------------------------------------------------------------------------------
+Code shipped in the published packages (dist/, types/)
+------------------------------------------------------------------------------------------
+
+@testing-library/dom 10.4.x — MIT
+  https://github.com/testing-library/dom-testing-library
+  Ported into: @rtd/testing-library (src/, types/ copied), parts of @rtd/aria
+
+@testing-library/react 16.3.x — MIT
+  https://github.com/testing-library/react-testing-library
+  Ported into: @rtd/react (src/, public types)
+
+@testing-library/user-event 14.6.x — MIT
+  https://github.com/testing-library/user-event
+  Ported into: @rtd/user-event
+
+@testing-library/jest-dom 7.0.x — MIT
+  https://github.com/testing-library/jest-dom
+  Ported into: @rtd/jest-dom (src/, types/ copied)
+
+dom-accessibility-api 0.5.x / 0.6.x — MIT
+  https://github.com/eps1lon/dom-accessibility-api
+  Ported into: @rtd/aria (accessible name / description computation)
+
+aria-query 5.3.x — Apache-2.0
+  https://github.com/A11yance/aria-query
+  Ported into: @rtd/aria (role data), @rtd/jest-dom (element roles)
+
+jsdom — MIT
+  https://github.com/jsdom/jsdom
+  Ported / referenced in: @rtd/dom (behaviour of several algorithms; see per-file comments)
+
+lz-string 1.5.0 — MIT, Copyright (c) 2013 Pieroxy
+  https://github.com/pieroxy/lz-string
+  Ported into: @rtd/testing-library (src/lz-string.ts, compressToEncodedURIComponent)
+
+happy-dom — MIT
+  https://github.com/capricorn86/happy-dom
+  Referenced for behavioural compatibility (verify whether any code was ported).
+
+------------------------------------------------------------------------------------------
+Tests and test data (repository only; not shipped in the packages)
+------------------------------------------------------------------------------------------
+
+web-platform-tests (WPT) — 3-Clause BSD (W3C)
+  https://github.com/web-platform-tests/wpt
+  Ported: dom, html, selectors, css, accname tests
+
+html5lib-tests — MIT
+  https://github.com/html5lib/html5lib-tests
+  Used: tokenizer and tree-construction suites
+
+css-tokenizer-tests — verify license (romainmenke)
+  https://github.com/romainmenke/css-tokenizer-tests
+
+Upstream test suites of @testing-library/dom, @testing-library/react,
+@testing-library/user-event, @testing-library/jest-dom, dom-accessibility-api and
+aria-query (licenses as above) were ported under packages/*/test/upstream.
+
+------------------------------------------------------------------------------------------
+License texts
+------------------------------------------------------------------------------------------
+
+<TEMPLATE: append the MIT, BSD-3-Clause and Apache-2.0 texts with each upstream copyright line.>

@@ -4,4 +4,7 @@
 import { expect } from "@jest/globals";
 import * as extensions from "./matchers.ts";
 
-expect.extend(extensions);
+// @jest/globals is an optional peer dependency (so pnpm resolves it from the published package),
+// which makes its types visible here; our MatcherContext types `isNot` as required, Jest's as
+// optional, so cast — upstream's JS has no types to disagree.
+expect.extend(extensions as Parameters<typeof expect.extend>[0]);

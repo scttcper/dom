@@ -14,10 +14,12 @@
 // - Tree/attribute reads (isElementType, isDisabled, getTreeDiff, focusability) walk NodeImpl.
 // - CSS reads (`pointer-events`, `display`, `visibility`) go through css/internal.ts.
 //
-// The module is loaded dynamically so a half-built @rtd/dom never breaks user-event on other
-// DOMs, and each hook is used only when @rtd/dom actually exports it. Expected contracts are
+// Each hook is used only when @rtd/dom/internal actually exports it (the import is static: a
+// top-level `await import()` would make the package an async ES module that `require()` and the
+// CommonJS build cannot load). Expected contracts are
 // documented on `RtdFormsUI` / `RtdCss`.
 
+import * as rtdInternal from '@rtd/dom/internal'
 import type {NodeImpl} from '@rtd/dom/internal'
 import type {Element, Node} from './dom-types.ts'
 
@@ -56,12 +58,7 @@ export interface RtdCss {
 
 type InternalModule = Record<string, unknown>
 
-let internal: InternalModule | null = null
-try {
-  internal = (await import('@rtd/dom/internal')) as unknown as InternalModule
-} catch {
-  internal = null
-}
+const internal: InternalModule | null = rtdInternal as unknown as InternalModule
 
 function pick<T>(names: Array<keyof T & string>): T | null {
   if (internal === null) return null

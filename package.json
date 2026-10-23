@@ -9,11 +9,12 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:pack": "node tests/pack/src/run.ts",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint",
     "bench": "pnpm --filter @rtd/bench run bench",
     "scriptc:check": "pnpm --filter @rtd/native run check",
-    "build": "node bench/bundle.ts",
+    "build": "node scripts/build.ts",
     "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
     "downstream:base-ui": "node downstream/base-ui/run.ts"
   },

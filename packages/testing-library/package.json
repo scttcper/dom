@@ -10,6 +10,26 @@
       "default": "./src/index.ts"
     }
   },
+  "files": [
+    "dist",
+    "types",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "publishConfig": {
+    "main": "./dist/index.cjs",
+    "types": "./types/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./types/index.d.ts",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
   "dependencies": {
     "@rtd/dom": "workspace:*",
     "@rtd/aria": "workspace:*",

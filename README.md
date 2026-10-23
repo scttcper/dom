@@ -10,7 +10,10 @@ You can swap only the environment (stock Testing Library on `@rtd/dom`) or the w
 
 ## Use it
 
-Vitest:
+Not published yet (`private: true`); `pnpm build` + `pnpm pack` produce installable tarballs,
+and `pnpm test:pack` installs them into a fresh project and runs every setup below.
+
+Vitest (>= 5) — swap only the environment; stock `@testing-library/*` keep working:
 
 ```ts
 // vitest.config.ts
@@ -21,7 +24,8 @@ export default defineConfig({
 });
 ```
 
-Whole stack (optional), with aliases so existing imports keep working:
+Whole stack: import `@rtd/react`, `@rtd/user-event`, `@rtd/jest-dom/vitest` directly, or keep
+your imports and alias them (each `@rtd/*` package you alias to must be installed):
 
 ```ts
 resolve: {
@@ -29,13 +33,26 @@ resolve: {
     "@testing-library/react": "@rtd/react",
     "@testing-library/dom": "@rtd/testing-library",
     "@testing-library/user-event": "@rtd/user-event",
-    "@testing-library/jest-dom": "@rtd/jest-dom",
+    "@testing-library/jest-dom": "@rtd/jest-dom", // also maps @testing-library/jest-dom/vitest
   },
 },
 ```
 
-Jest: `testEnvironment: "jest-environment-rtd"` with the package's `jest-preset.cjs` (maps
-`@rtd/dom` so test modules share the environment's instance).
+Jest (>= 30):
+
+```js
+// jest.config.js
+module.exports = {
+  testEnvironment: "jest-environment-rtd", // environment only, stock @testing-library/*
+  // preset: "jest-environment-rtd",       // required when test code uses any @rtd/* package
+};
+```
+
+The preset maps `@rtd/dom` to the environment's own instance so test modules share one DOM;
+`@rtd/react`, `@rtd/user-event`, `@rtd/testing-library`, `@rtd/jest-dom` and `@rtd/aria` ship
+CommonJS builds for Jest's module registry (Jest can only `require()` ES modules under
+`--experimental-vm-modules`). Packages need Node >= 26; TypeScript users need `lib: ["dom"]`
+as with upstream.
 
 ## Packages
 
@@ -122,6 +139,8 @@ default — see [packages/native/RESULTS.md](packages/native/RESULTS.md).
 pnpm install
 pnpm test                 # all packages + compat suites
 pnpm typecheck
+pnpm build               # dist/: ESM (+ CJS) bundles and .d.ts per package
+pnpm test:pack           # pack, install into a fresh project, run Vitest/Jest/tsc against the tarballs
 pnpm bench                # vs jsdom / happy-dom
 pnpm bench:suite          # 100-file Vitest suite under each environment
 pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom / rtd-full

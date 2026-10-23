@@ -130,10 +130,10 @@ diagnostics summed over files (`environmentSetupDuration`, setup files, collect/
 duration — CPU time across workers, not wall), and per-file worker RSS/heap recorded by the
 setup file. Only runs where every file passed are timed.
 
-## Bundling (`bundle.ts`, `pnpm build`)
+## Bundling (`pnpm build`, `scripts/build.ts`)
 
 One rolldown build per package from its `exports` entries into `packages/<pkg>/dist/`
-(`--minify` optional). Bare specifiers stay external, so `@rtd/react`'s bundle imports
+(`--minify` optional; see `scripts/build.ts` for the CJS builds and declarations it also writes). Bare specifiers stay external, so `@rtd/react`'s bundle imports
 `@rtd/dom` rather than embedding a second DOM; packages with several entries
 (`@rtd/dom` + `@rtd/dom/internal`) share chunks.
 
@@ -144,12 +144,12 @@ run.ts                 orchestrator (flags above), writes results/
 worker.ts              one sample in a fresh process
 lib/configs.ts         configurations: install DOM globals, load testing stack, matcher helper
 lib/dist-hooks.ts      resolve @rtd/* to dist/ for *-dist configs
-lib/packages.ts        workspace package/exports discovery (shared with bundle.ts)
+lib/packages.ts        workspace package/exports discovery (shared with scripts/build.ts)
 lib/report.ts          markdown + terminal tables
 lib/stats.ts           median/quantiles/formatting
 workloads/*.ts         startup, react, dom workloads
 suite/                 Vitest end-to-end suite benchmark
-bundle.ts              pnpm build
+bundle.ts              shim for scripts/build.ts (pnpm build)
 ```
 
 Package-level microbenchmarks written by the package owners (not duplicated here):
