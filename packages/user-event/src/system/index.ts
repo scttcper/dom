@@ -12,6 +12,23 @@ export class System {
   readonly keyboard = new KeyboardHost(this)
   readonly pointer = new PointerHost(this)
 
+  /** Write the modifier members into `init` (no intermediate object; see createEvent). */
+  assignUIEventModifiers(init: Record<string, unknown>): void {
+    const m = this.keyboard.modifiers
+    init.altKey = m.Alt
+    init.ctrlKey = m.Control
+    init.metaKey = m.Meta
+    init.shiftKey = m.Shift
+    init.modifierAltGraph = m.AltGraph
+    init.modifierCapsLock = m.CapsLock
+    init.modifierFn = m.Fn
+    init.modifierFnLock = m.FnLock
+    init.modifierNumLock = m.NumLock
+    init.modifierScrollLock = m.ScrollLock
+    init.modifierSymbol = m.Symbol
+    init.modifierSymbolLock = m.SymbolLock
+  }
+
   getUIEventModifiers(): EventModifierInit {
     return {
       altKey: this.keyboard.modifiers.Alt,

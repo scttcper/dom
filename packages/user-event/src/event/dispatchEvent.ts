@@ -16,14 +16,11 @@ export function dispatchUIEvent<K extends EventType>(
   init?: EventTypeInit<K>,
   preventDefault: boolean = false,
 ) {
-  if (isMouseEvent(type) || isKeyboardEvent(type)) {
-    init = {
-      ...init,
-      ...this.system.getUIEventModifiers(),
-    } as EventTypeInit<K>
-  }
+  // Upstream merges `{...init, ...getUIEventModifiers()}`; createEvent writes the modifiers into
+  // the init copy it makes anyway (same members, same precedence: modifiers win).
+  const modifiers = isMouseEvent(type) || isKeyboardEvent(type) ? this.system : undefined
 
-  const event = createEvent(type, target, init)
+  const event = createEvent(type, target, init, modifiers)
 
   return dispatchEvent.call(this, target, event, preventDefault)
 }

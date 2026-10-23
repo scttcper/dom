@@ -4,6 +4,25 @@
 import type {Element, HTMLElementTagNameMap} from '../../dom-types.ts'
 type tag = keyof HTMLElementTagNameMap
 
+const XHTML_NS = 'http://www.w3.org/1999/xhtml'
+const UPPERCASE = /[A-Z]/
+
+/**
+ * `element.tagName.toLowerCase()` without allocating a string per call: the tag name is the
+ * (in HTML documents uppercased) qualified name, which lowercases to `localName` unless the
+ * element has a prefix or a mixed-case local name.
+ */
+function lowerTagName(element: Element): string {
+  const localName = element.localName
+  if (element.prefix == null && typeof localName === 'string' && !UPPERCASE.test(localName)) {
+    return localName
+  }
+  return element.tagName.toLowerCase()
+}
+
+// Upstream wraps `tag` in an array and compares `Object.entries(props)` on every call; this is
+// called for every ancestor of every event target (isDisabled, pointer-events checks), so it
+// avoids allocating. Same results.
 export function isElementType<
   T extends tag,
   P extends {[k: string]: unknown} | undefined = undefined,
@@ -14,24 +33,22 @@ export function isElementType<
 ): element is P extends undefined
   ? HTMLElementTagNameMap[T]
   : HTMLElementTagNameMap[T] & P {
-  if (
-    element.namespaceURI &&
-    element.namespaceURI !== 'http://www.w3.org/1999/xhtml'
-  ) {
+  if (element.namespaceURI && element.namespaceURI !== XHTML_NS) {
     return false
   }
 
-  tag = Array.isArray(tag) ? tag : [tag]
-
   // tagName is uppercase in HTMLDocument and lowercase in XMLDocument
-  if (!tag.includes(element.tagName.toLowerCase() as T)) {
+  const name = lowerTagName(element)
+  if (typeof tag === 'string' ? name !== tag : !tag.includes(name as T)) {
     return false
   }
 
   if (props) {
-    return Object.entries(props).every(
-      ([k, v]) => element[k as keyof Element] === v,
-    )
+    for (const k in props) {
+      if (Object.hasOwn(props, k) && element[k as keyof Element] !== props[k]) {
+        return false
+      }
+    }
   }
 
   return true

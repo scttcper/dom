@@ -43,20 +43,34 @@ const eventInitializer: {
   KeyboardEvent: [initUIEvent, initUIEventModifiers, initKeyboardEvent],
 }
 
+/** Supplies the UIEvent modifier members (System.assignUIEventModifiers). */
+interface ModifierSource {
+  assignUIEventModifiers(init: Record<string, unknown>): void
+}
+
 export function createEvent<K extends EventType>(
   type: K,
   target: Element,
   init?: EventTypeInit<K>,
+  modifiers?: ModifierSource,
 ) {
   const window = getWindow(target)
   const {EventType, defaultInit} = eventMap[type]
   const constructors = getEventConstructors(window)
 
+  if (modifiers !== undefined && (implOf(target) === null || constructors.fallbacks.has(EventType))) {
+    // Upstream's path reads the members from `init`: merge like upstream's dispatchUIEvent.
+    const merged = {...init} as Record<string, unknown>
+    modifiers.assignUIEventModifiers(merged)
+    init = merged as unknown as EventTypeInit<K>
+    modifiers = undefined
+  }
+
   // A fallback class (the window lacks the interface, e.g. PointerEvent under
   // jest-environment-rtd's jsdom 26 parity) takes upstream's path: its native superclass
   // constructor would drop the members only the initializers set (pointerType, width, ...).
   if (implOf(target) !== null && !constructors.fallbacks.has(EventType)) {
-    return createNativeEvent(constructors[EventType], EventType, type, defaultInit, init) as FixedDocumentEventMap[K]
+    return createNativeEvent(constructors[EventType], EventType, type, defaultInit, init, modifiers) as FixedDocumentEventMap[K]
   }
 
   const event = new constructors[EventType](type, defaultInit)
@@ -92,6 +106,7 @@ function createNativeEvent(
   type: string,
   defaultInit: EventInit,
   init: object | undefined,
+  modifiers: ModifierSource | undefined,
 ): Event {
   const i = (init ?? {}) as PointerEventInit & KeyboardEventInit & InputEventInit & ClipboardEventInit & {
     x?: number
@@ -102,6 +117,7 @@ function createNativeEvent(
     pageY?: number
   }
   const dict: Record<string, unknown> = {...i}
+  modifiers?.assignUIEventModifiers(dict)
   dict.bubbles = defaultInit.bubbles
   dict.cancelable = defaultInit.cancelable
   dict.composed = defaultInit.composed

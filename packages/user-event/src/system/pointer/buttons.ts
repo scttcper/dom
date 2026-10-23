@@ -5,13 +5,11 @@ import {type pointerKey} from './shared.ts'
 
 export class Buttons {
   private readonly pressed: Record<string, pointerKey[]> = {}
+  /** `MouseEvent.buttons` of `pressed`, kept up to date instead of recomputed per event. */
+  private mask = 0
 
   getButtons() {
-    let v = 0
-    for (const button of Object.keys(this.pressed)) {
-      v |= 2 ** Number(button)
-    }
-    return v
+    return this.mask
   }
 
   down(keyDef: pointerKey) {
@@ -23,6 +21,7 @@ export class Buttons {
     }
 
     this.pressed[button] = [keyDef]
+    this.mask |= 2 ** button
     return button
   }
 
@@ -35,6 +34,7 @@ export class Buttons {
       )
       if (this.pressed[button].length === 0) {
         delete this.pressed[button]
+        this.mask &= ~(2 ** button)
         return button
       }
     }

@@ -63,9 +63,19 @@ let fallback: DTLModule | null = null
 let fallbackLoad: Promise<void> | null = null
 let fallbackSettled = false
 
-/** DTL's default `asyncWrapper` is `(cb) => cb()`; adapters replace it with an act() wrapper. */
+let lastWrapper: unknown = null
+let lastWrapperIsDefault = false
+
+/**
+ * DTL's default `asyncWrapper` is `(cb) => cb()`; adapters replace it with an act() wrapper.
+ * Checked at every API call, so the answer for the current function is memoized (it is
+ * replaced only by `configure()`).
+ */
 function isDefaultWrapper(fn: unknown): boolean {
-  return typeof fn === 'function' && /^\(?(\w+)\)?=>\1\(\)$/.test(String(fn).replace(/\s/g, ''))
+  if (fn === lastWrapper) return lastWrapperIsDefault
+  lastWrapper = fn
+  lastWrapperIsDefault = typeof fn === 'function' && /^\(?(\w+)\)?=>\1\(\)$/.test(String(fn).replace(/\s/g, ''))
+  return lastWrapperIsDefault
 }
 
 function ownConfigured(): boolean {

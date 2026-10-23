@@ -274,6 +274,7 @@ export interface Text extends Node {
 export interface Element extends Node, ParentNode {
   readonly tagName: string
   readonly localName: string
+  readonly prefix: string | null
   readonly namespaceURI: string | null
   id: string
   innerHTML: string
