@@ -16,6 +16,8 @@ const dist = benchEnv.endsWith("-dist");
 const env = dist ? benchEnv.slice(0, -"-dist".length) : benchEnv;
 const distPreload = new URL("./dist-preload.ts", import.meta.url).href;
 const workers = process.env.BENCH_WORKERS ? Number(process.env.BENCH_WORKERS) : undefined;
+// BENCH_POOL=vmForks|vmThreads|threads: Vitest pool (default: Vitest's, forks with per-file isolation).
+const pool = process.env.BENCH_POOL || undefined;
 const root = fileURLToPath(new URL(".", import.meta.url));
 
 // In dist mode the aliases must point straight at the bundles: Vite resolves a bare `@rtd/*`
@@ -43,5 +45,6 @@ export default defineConfig({
     ...(dist ? { execArgv: ["--import", distPreload] } : {}),
     reporters: ["default", "./reporter.ts"],
     ...(workers ? { maxWorkers: workers } : {}),
+    ...(pool ? { pool: pool as "forks" } : {}),
   },
 });

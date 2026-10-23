@@ -7,7 +7,7 @@ import { appendFileSync } from "node:fs";
 import { afterAll } from "vitest";
 
 // *-dist environments must really load the bundles (bench/suite/dist-preload.ts), not sources.
-if ((process.env.BENCH_ENV ?? "").endsWith("-dist") && !((globalThis as { __rtdDistResolutions?: number }).__rtdDistResolutions! > 0)) {
+if ((process.env.BENCH_ENV ?? "").endsWith("-dist") && !((process as { __rtdDistResolutions?: number }).__rtdDistResolutions! > 0)) {
   throw new Error(`BENCH_ENV=${process.env.BENCH_ENV}: no @rtd/* import was resolved to dist/ (is the preload active?)`);
 }
 
@@ -19,4 +19,18 @@ afterAll(() => {
     out,
     `${JSON.stringify({ pid: process.pid, rssMB: mu.rss / 2 ** 20, heapMB: mu.heapUsed / 2 ** 20 })}\n`,
   );
+});
+
+// BENCH_GC_HEAP=<file>: heap after a forced GC at the end of each file (retention per file in
+// long-lived workers, e.g. --pool vmForks).
+afterAll(async () => {
+  const out = process.env.BENCH_GC_HEAP;
+  if (!out) return;
+  const v8 = await import("node:v8");
+  const vm = await import("node:vm");
+  v8.setFlagsFromString("--expose-gc");
+  const gc = vm.runInNewContext("gc") as () => void;
+  gc();
+  gc();
+  appendFileSync(out, `${process.pid} ${process.memoryUsage().heapUsed}\n`);
 });

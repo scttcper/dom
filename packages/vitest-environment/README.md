@@ -14,6 +14,29 @@ export default defineConfig({
 
 Or per file: `// @vitest-environment rtd`. Peer dependency: `vitest` >= 5.
 
+## Fastest setup: a VM pool
+
+Vitest's default pool starts a fresh worker for every test file, and that spawn (~350 ms) is
+most of what a small test file costs. With `pool: "vmThreads"` (or `"vmForks"`) workers stay up
+and each file gets a fresh vm context instead. That is where this environment shines: its
+`setupVM` + teardown take ~1 ms per file (jsdom builds a whole new window, ~70 ms), and nothing
+is retained between files (0.03 MB/file after GC over 100 files; happy-dom 5.4 MB/file).
+
+```ts
+export default defineConfig({ test: { environment: "rtd", pool: "vmThreads" } });
+```
+
+100 small React test files (`pnpm bench:suite --pool …`, full stack bundled):
+
+| pool | jsdom | happy-dom | rtd (environment only) | rtd (full stack) |
+| --- | ---: | ---: | ---: | ---: |
+| default (forks, per-file isolation) | 11.7 s | 6.55 s | 5.94 s | 3.66 s |
+| vmForks | 2.12 s | 1.67 s | 1.66 s | 1.24 s |
+| vmThreads | 2.00 s | 1.44 s | 1.42 s | 1.00 s |
+
+VM pools have Vitest's usual caveats (Node built-ins come from another realm, so
+`instanceof` checks against them can fail); see https://vitest.dev/config/#vmthreads.
+
 ## Idle time skipping
 
 Timers run on a virtual clock. Whenever the test is only waiting for a timer (no pending

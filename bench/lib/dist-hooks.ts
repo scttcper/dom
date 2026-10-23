@@ -23,7 +23,7 @@ export function installDistResolution(): void {
         if (!existsSync(dist)) {
           throw new Error(`${specifier}: bundle ${dist} is missing (run \`pnpm build\`)`);
         }
-        (globalThis as { __rtdDistResolutions?: number }).__rtdDistResolutions = ((globalThis as { __rtdDistResolutions?: number }).__rtdDistResolutions ?? 0) + 1;
+        (process as { __rtdDistResolutions?: number }).__rtdDistResolutions = ((process as { __rtdDistResolutions?: number }).__rtdDistResolutions ?? 0) + 1;
         return { url: pathToFileURL(dist).href, format: "module", shortCircuit: true };
       }
       return nextResolve(specifier, context);
