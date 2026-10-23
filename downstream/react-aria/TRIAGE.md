@@ -1,33 +1,52 @@
 # React Aria downstream triage
 
 Pinned `adobe/react-spectrum@d5fb723a` (2026-10-23), Jest 30.4.2, React 19.3.0, upstream
-baseline `jest-environment-jsdom` 30.4.1 / jsdom **26.1.0**. Counts are from
-`results/2026-10-23-all.md` (rtd-dom: 297 failed + 68 missing of 3006; rtd-full: 266 failed + 92
-missing) and `results/2026-10-23-all-triage.md` (`--triage all`: rtd-dom 223 failed + 70 missing).
-Tests are attributed to a cluster by signature and by the triage shim that makes them pass
-(single-shim `all` runs on rtd-dom, passed vs 2632 without shims: `fake-raf` +38,
-`no-pointer-event` +60, `isolate` +34, `keep-globals` restores the files lost to worker crashes).
-Numbers move by a few tests between runs because two clusters (5, 8) are order dependent.
+baseline `jest-environment-jsdom` 30.4.1 / jsdom **26.1.0**.
+
+**Current** (`results/2026-10-23-all.md`, 3006 tests): rtd-dom 2996 passed, **1 failed**; rtd-full
+2989 passed, **8 failed**. Started at rtd-dom 297 failed + 68 missing, rtd-full 266 + 92.
+
+What is left:
+
+| mode | tests | cause | status |
+| --- | --: | --- | --- |
+| both | 1 | `useOverlayPosition` "at top": bottom 518 vs 350 | parked: jsdom 26 quirk (offsetParent and computed transform/filter match jsdom 30) |
+| rtd-full | 6 | Checkbox/Radio/Switch "press state with keyboard": `onPress` ×2 | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
+| rtd-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | open: only with @rtd/user-event (our RTL + DTL with stock user-event pass); React updates land in act's async microtask flush |
+
+Also seen once: `ariaHideOutside.test.js` failing to load in a full run ("Cannot read properties of
+undefined (reading 'doc')" in `inHTMLDocument`); passes alone and in later full runs.
+
+The sections below are the clusters from the first run, kept for the record; the table says where
+each one went. Clusters 12-21 were found while burning down cluster 11.
 
 Every cluster with a repro has a file in `repros/` (`pnpm vitest run --config
 downstream/vitest.config.ts react-aria`); each repro passes on the oracle (jsdom, upstream's
 jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 
-Sorted by failing-test count.
-
 | # | cluster | owner | tests | repro | status |
 | --: | --- | --- | --: | --- | --- |
 | 1 | `CSS` namespace is frozen (`CSS.supports = …` throws) | css | 63 (Sheet.test.js fails to load) | `repros/css-namespace-frozen.test.ts` | fixed (7c74ddf) |
-| 2 | `PointerEvent` exposed; upstream tests assume jsdom 26 (none) | window/events — fixture assumption | ~41–60 | `repros/window-pointerevent-exposed.test.ts` | fixture assumption |
+| 2 | `PointerEvent` exposed; upstream tests assume jsdom 26 (none) | jest-environment | ~41–60 | `repros/window-pointerevent-exposed.test.ts` | fixed: absent by default, `testEnvironmentOptions.pointerEvent` opts in (3633af5) |
 | 3 | `offsetParent` always null → overlay containing block resolves to the viewport | css | 54 | `repros/css-offsetparent-positioned-ancestor.test.ts` | fixed (7c74ddf) |
 | 4 | rAF frame task wedged by a dropped fake timer; `jest.useFakeTimers()` doesn't fake rAF | window + jest-environment | ~38 (≈20 in smoke) | `repros/window-raf-frame-task-lost-with-fake-timers.test.ts` | fixed (cf0a3f9) |
 | 5 | Interface prototypes shared across test files of a worker | jest-environment (+ window) | ~34–41, order dependent; 2 suite errors | `repros/jest-environment-prototype-state-shared-across-files.test.ts` | fixed (cf0a3f9) |
-| 6 | Wrapper internals are enumerable own props (`_impl` …) | dom-core | 26 masked failures + Jest `--json` crash | `repros/dom-core-wrapper-internals-enumerable.test.ts` | in progress (symbol-keyed internals) |
+| 6 | Wrapper internals are enumerable own props (`_impl` …) | dom-core | 26 masked failures + Jest `--json` crash | `repros/dom-core-wrapper-internals-enumerable.test.ts` | fixed: symbol-keyed internals (513052f), Window/Document internals hidden from Jest's diff printer (f5b3a69) |
 | 7 | `validationMessage` text differs from jsdom ("Constraints not satisfied") | html-forms | 19 | `repros/html-forms-validation-message-text.test.ts` | fixed (5a8c966) |
 | 8 | Teardown deletes `window` → late React work kills the Jest worker | jest-environment | 1 file + whatever the crashed worker had queued (5–29) | `repros/jest-environment-teardown-removes-window.test.ts` | fixed (cf0a3f9) |
-| 9 | iframe child window shares the parent's interface objects | window (+ html-elements) | 4 | `repros/window-iframe-shares-interface-objects.test.ts` | deviation (docs/deviations.md) |
-| 10 | rtd-full: keyboard Space press fires onPress twice | user-event 14.6.5 vs 14.6.8 | 4 (2 in smoke) | `packages/user-event/test/react/press.test.tsx` | upstream version pin (not ours) |
-| 11 | Unattributed (focus/selection in collections, dnd, act warnings, …) | needs investigation | ~120 | — | open |
+| 9 | iframe child window shares the parent's interface objects | window (+ html-elements) | 4 | `repros/window-iframe-shares-interface-objects.test.ts` | deviation (docs/deviations.md); the 4 tests pass since 87efa87 + 8c7dfa5 (clusters 15, 16) |
+| 10 | rtd-full: keyboard Space press fires onPress twice | user-event 14.6.5 vs 14.6.8 | 6 | `packages/user-event/test/react/press.test.tsx` | upstream version pin (not ours) |
+| 11 | Unattributed (focus/selection in collections, dnd, act warnings, …) | — | ~120 | — | resolved into 12-20 and the fixes above |
+| 12 | `inert` IDL attribute exposed: drag tests saw rows behind the drag (hide-outside used `inert`, jsdom has none) | html | Table/Tree/GridList DnD + masked failures | — | fixed (f5b3a69) |
+| 13 | `AbortSignal.timeout` on Node's real-time timer: fake timers never abort it (`runAfterKeyboard`) | window | 5 | — | fixed (12fda74) |
+| 14 | `screen.orientation` with a fixed angle hid rotation (keyboard "orientation changes") | window | 1 | — | fixed: removed like jsdom (12fda74) |
+| 15 | Focus into an iframe fired focus at the `<iframe>` (virtual modality in useFocusVisible) | html | 4 | — | fixed (87efa87) |
+| 16 | Events at the window reported the Window instance, not the global, as `target` | events | 1 (+ any `e.target === window` check) | — | fixed (8c7dfa5) |
+| 17 | Computed `background` in long form (`toHaveStyle({background})`) | css | 4 | — | fixed (d8fd2a1) |
+| 18 | `InputEvent.getTargetRanges` (native beforeinput path) / `hidden` returning "until-found" | events / html | 2 | — | fixed (99e97df) |
+| 19 | Canceled `invalid` events let a required form submit; blocked submit focused the invalid control | html-forms | 2 | — | fixed (1750669) |
+| 20 | `window.matchMedia` present, so mock-match-media never installed (`setMedia` did nothing) | environments | 3 | — | fixed: absent by default, `matchMedia: true` opts in (fe768ef) |
+| 21 | rtd-full: user-event's fallback `PointerEvent` lost `pointerType`/`width`/`pressure` | user-event | 29 | `packages/user-event/test/event/fallback-constructors.test.ts` | fixed (c8832bb) |
 
 ## 1. css: the `CSS` namespace object is frozen
 
@@ -170,25 +189,9 @@ Related (only with a `--shims` subset): substituting only `@testing-library/user
 act environment is active and @rtd/testing-library is unconfigured, user-event reads the project's
 stock `@testing-library/dom` config (Checkbox + RadioGroup with `--shims user-event`: 68/54 → 115/7).
 
-## 11. Unattributed (needs investigation)
+## 11. Unattributed (resolved)
 
-From `results/2026-10-23-all-triage.md` (rtd-dom, all shims applied):
-
-- Collections keyboard focus/selection: RAC Tree/Table/GridList/ListBox `aria-selected`
-  (17), "Current active element is not on any of the table rows" (4), "ActiveElement is not in
-  the tree" (3), Tree `aria-expanded` (4), tab navigation into cells (behind cluster 6's masked
-  messages). Likely one focus/tab-order or `selectionchange`/`focusin` difference; start with
-  `Table.test.js keyboardNavigationBehavior='tab'`.
-- dnd: drop indicator counts off by one (an extra root "Drop on" target, 14), "Cannot begin
-  dragging while already dragging" (10, without triage), drop target attributes. React Aria
-  installs DataTransfer/DragEvent mocks (`react-aria/test/dnd/mocks`) because jsdom 26 has
-  neither; we expose both — possibly another fixture assumption like cluster 2.
-- `act(...)` warnings (8): RAC Select/DatePicker/DateRangePicker/CheckboxGroup/Checkbox/Switch
-  "supports validation errors"/"required state" — a state update after `invalid`/`reset` outside
-  act (form validation events or our `requestSubmit`/`reset` timing).
-- `ariaTableResizing` / RAC Table column widths `toStrictEqual` (8), `usePress` / ColorSwatch /
-  useOverlayPosition `toHaveStyle` (4): computed style or width resolution differences.
-- aria-modal-polyfill (5): the separator outside the modal is not hidden (`watchModals`
-  MutationObserver path).
-- runAfterKeyboard (5), useNumberField, useDisclosure, Autocomplete "multiple textbox" (2),
-  Dialog "multiple dialog" (1), Table "Load more"/"Show Columns" text (3).
+The ~120 unattributed failures of the first run came down to clusters 12-21 plus the cluster 2
+and 6 fixes; see the table at the top. Most were jsdom-parity gaps where @rtd/dom implemented a
+newer spec feature that React Aria feature-detects (`inert`, `PointerEvent`, `screen.orientation`,
+`getTargetRanges`, `matchMedia`) and the jsdom-written suite never exercised that path.
