@@ -24,5 +24,10 @@ Differences from jest-environment-jsdom you may notice (see `docs/deviations.md`
 - `environment.dom` is a minimal stand-in for jsdom's `JSDOM` object: `window` and
   `reconfigure({ url })`.
 - Timers the test file leaves pending are cleared at teardown, as jsdom's `window.close()` does.
+- The test global is a plain, non-contextified vm global (as jsdom 30 creates its window), so
+  global lookups in test and app code are ordinary property loads. Node's globals
+  (`TextEncoder`, `structuredClone`, `setImmediate`, streams, ...) are installed lazily, as
+  jest-environment-node does. There is no `testEnvironmentOptions.globalsCleanup`: nothing
+  scrubs objects a test file left on the global (jsdom's environment doesn't either).
 
 Part of [react-testing-dom](../../README.md). Third-party notices: `dist/NOTICE`.

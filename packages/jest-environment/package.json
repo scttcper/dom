@@ -39,7 +39,7 @@
   "dependencies": {
     "@jest/environment": "30.4.1",
     "@rtd/dom": "workspace:*",
-    "jest-environment-node": "30.4.1",
+    "jest-mock": "30.4.1",
     "@jest/fake-timers": "30.4.1",
     "jest-util": "30.4.1"
   },

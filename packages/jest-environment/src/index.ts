@@ -1,10 +1,14 @@
 // Jest environment for @rtd/dom: `testEnvironment: "rtd"` (resolves `jest-environment-rtd`), or
 // `preset: "jest-environment-rtd"` to also get the module mapping below.
 //
-// Built on jest-environment-node (vm context, Node globals, legacy + modern fake timers); the
-// constructor creates one window and installs it on the test file's vm global. Jest keeps
-// workers alive across test files, so @rtd/dom is imported once per worker, here, in the
-// outer realm.
+// The test file's global is an ordinary, non-contextified vm global
+// (vm.constants.DONT_CONTEXTIFY), like jest-environment-jsdom 30's (jsdom creates its window that
+// way): every global read in test and app code is a plain property load. jest-environment-node
+// contextifies a Proxy instead, so each global lookup goes through V8's named-property
+// interceptors and the Proxy; that alone cost ~10% of Sentry's suite CPU. The constructor
+// creates one window and installs it on that global, plus the Node globals jest-environment-node
+// provides. Jest keeps workers alive across test files, so @rtd/dom is imported once per worker,
+// here, in the outer realm.
 //
 // One @rtd/dom per worker (the singleton strategy): Jest evaluates test-file modules in a
 // fresh module registry inside the vm context, so a plain `require("@rtd/dom")` from a test
@@ -15,10 +19,12 @@
 // those objects. Every module in the test registry therefore sees the same instance as the
 // environment.
 
-import type { EnvironmentContext, JestEnvironmentConfig } from "@jest/environment";
-import { TestEnvironment as NodeEnvironment } from "jest-environment-node";
+import { constants as vmConstants, createContext, type Context } from "node:vm";
+import type { EnvironmentContext, JestEnvironment, JestEnvironmentConfig } from "@jest/environment";
 import { LegacyFakeTimers, ModernFakeTimers } from "@jest/fake-timers";
-import { protectProperties } from "jest-util";
+import type { Global } from "@jest/types";
+import { ModuleMocker } from "jest-mock";
+import { installCommonGlobals } from "jest-util";
 import * as dom from "@rtd/dom";
 import * as internal from "@rtd/dom/internal";
 import type { Window, WindowOptions } from "@rtd/dom";
@@ -49,7 +55,71 @@ export interface RtdDom {
 
 // Node globals jest-environment-jsdom does not have and whose mere presence changes what
 // libraries do (feature detection). See docs/deviations.md for the full audit.
-const JSDOM_ABSENT_GLOBALS = ["fetch", "Request", "Response"] as const;
+const JSDOM_ABSENT_GLOBALS = new Set(["fetch", "Request", "Response"]);
+
+// The Node globals jest-environment-node copies onto the test global (same deny list; Buffer,
+// ArrayBuffer and Uint8Array are set explicitly below). localStorage/sessionStorage are the
+// window's. Computed once per worker.
+const NODE_GLOBAL_DENY = new Set(["GLOBAL", "root", "global", "globalThis", "Buffer", "ArrayBuffer", "Uint8Array", "jest-symbol-do-not-touch", "localStorage", "sessionStorage"]);
+
+// Node 26 defines these as lazy data properties: reading their value or descriptor loads undici
+// (~10-60 ms). Their shape is fixed (writable, configurable; only fetch enumerable), so they are
+// installed as lazy getters without ever reading them until a test does.
+const LAZY_NODE_GLOBALS = new Map([
+  ["fetch", true],
+  ["Request", false],
+  ["Response", false],
+  ["Headers", false],
+  ["FormData", false],
+  ["WebSocket", false],
+  ["EventSource", false],
+  ["MessageEvent", false],
+  ["CloseEvent", false],
+]);
+
+let nodeGlobals: [string, PropertyDescriptor | null][] | null = null;
+
+/** [name, descriptor] for Node's globals (descriptor null: lazy, see LAZY_NODE_GLOBALS). */
+function nodeGlobalDescriptors(): [string, PropertyDescriptor | null][] {
+  return (nodeGlobals ??= Object.getOwnPropertyNames(globalThis)
+    .filter((name) => !NODE_GLOBAL_DENY.has(name))
+    .map((name) => [name, LAZY_NODE_GLOBALS.has(name) ? null : Object.getOwnPropertyDescriptor(globalThis, name)!]));
+}
+
+/**
+ * Copy Node's globals onto the test global the way jest-environment-node does: configurable ones
+ * as getters that read the outer value on first use and replace themselves with a data property;
+ * names the new realm already defines (Object, Array, ...) keep the realm's own.
+ */
+function installNodeGlobals(global: Record<string, unknown>, skip: Set<string>): void {
+  const realmOwn = new Set(Object.getOwnPropertyNames(global));
+  const host = globalThis as unknown as Record<string, unknown>;
+  for (const [name, descriptor] of nodeGlobalDescriptors()) {
+    if (realmOwn.has(name) || skip.has(name)) continue;
+    const enumerable = descriptor === null ? LAZY_NODE_GLOBALS.get(name)! : descriptor.enumerable;
+    if (descriptor === null || descriptor.configurable) {
+      const settle = (value: unknown) => Object.defineProperty(global, name, { value, writable: true, enumerable, configurable: true });
+      Object.defineProperty(global, name, {
+        get() {
+          const value = host[name];
+          settle(value);
+          return value;
+        },
+        set: settle,
+        enumerable,
+        configurable: true,
+      });
+    } else {
+      Object.defineProperty(global, name, descriptor);
+    }
+  }
+  global.global = global;
+  global.Buffer = Buffer;
+  // TextEncoder/Buffer return the outer realm's typed arrays: the test realm sees the same
+  // constructors (jest-environment-node does the same).
+  global.ArrayBuffer = ArrayBuffer;
+  global.Uint8Array = Uint8Array;
+}
 
 /** Same default URL as jest-environment-jsdom. */
 const DEFAULT_URL = "http://localhost/";
@@ -100,28 +170,42 @@ function createDom(window: Window): RtdDom {
   };
 }
 
-export default class RtdEnvironment extends NodeEnvironment {
+export default class RtdEnvironment implements JestEnvironment<number> {
+  context: Context | null;
+  global: Global.Global;
+  fakeTimers: LegacyFakeTimers<number> | null;
+  fakeTimersModern: ModernFakeTimers | null;
+  moduleMocker: ModuleMocker | null;
+  customExportConditions: string[];
   rtdWindow: Window | null;
   /** jest-environment-jsdom's `dom`, reduced to what suites use (see RtdDom). */
   dom: RtdDom | null;
 
-  constructor(config: JestEnvironmentConfig, context: EnvironmentContext) {
-    super(config, context);
-    const { customExportConditions, nodeFetch, ...windowOptions } = (config.projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
+  constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
+    const { projectConfig } = config;
+    const { customExportConditions, nodeFetch, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
+
+    // https://nodejs.org/api/vm.html#vmconstantsdont_contextify: the returned object is the new
+    // realm's own global object, usable wherever a contextified object is (Script#runInContext).
+    const context = createContext(vmConstants.DONT_CONTEXTIFY);
+    this.context = context;
+    const global = context as unknown as Record<PropertyKey, unknown>;
+    this.global = global as unknown as Global.Global;
+    installNodeGlobals(global as Record<string, unknown>, nodeFetch === true ? new Set() : JSDOM_ABSENT_GLOBALS);
+    installCommonGlobals(this.global as unknown as typeof globalThis, projectConfig.globals);
+    const realmSymbol = global.Symbol as SymbolConstructor & { asyncDispose?: symbol; dispose?: symbol };
+    if (!("asyncDispose" in realmSymbol)) {
+      Object.defineProperty(realmSymbol, "asyncDispose", { value: Symbol.for("nodejs.asyncDispose") });
+      Object.defineProperty(realmSymbol, "dispose", { value: Symbol.for("nodejs.dispose") });
+    }
+    // Node's error-message stack size is limited at 10; more is useful when a test fails.
+    (global.Error as ErrorConstructor).stackTraceLimit = 100;
+
     const window = dom.createWindow({ ...windowOptions, url: windowOptions.url ?? DEFAULT_URL });
     this.rtdWindow = window;
     this.dom = createDom(window);
-    const global = this.global as unknown as Record<PropertyKey, unknown>;
-    // `delete` only: reading or redefining Node 26's lazy fetch globals would load undici.
-    if (nodeFetch !== true) for (const name of JSDOM_ABSENT_GLOBALS) delete global[name];
-    // The interface objects and the document are shared module objects (one @rtd/dom per worker):
-    // keep Jest's globals cleanup (testEnvironmentOptions.globalsCleanup, "soft" by default) from
-    // stripping their properties when it cleans the file's global at teardown.
-    const interfaces = internal.windowInterfaces();
-    for (const name in interfaces) protectProperties(interfaces[name], [], 0);
-    protectProperties(window.document, [], 0);
     dom.installGlobals(window, global);
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
@@ -129,26 +213,32 @@ export default class RtdEnvironment extends NodeEnvironment {
     // window.close() clears what is still pending, so a long app timer (TanStack Query GC,
     // polling) cannot keep this vm context and its module graph alive after the file ends.
     internal.trackGlobalTimers(window, global);
-    // jest-environment-node built its fake timers before the window existed: @sinonjs/fake-timers
-    // snapshots which timer functions the global has and legacy timers capture the real ones to
-    // restore. Rebuild both so jest.useFakeTimers() fakes requestAnimationFrame /
-    // requestIdleCallback like jsdom's env does and useRealTimers() restores the tracked timers.
-    this.fakeTimers?.dispose();
+
+    // Fake timers are built after the window is installed: @sinonjs/fake-timers snapshots which
+    // timer functions the global has (so jest.useFakeTimers() fakes requestAnimationFrame /
+    // requestIdleCallback like jsdom's env does), and legacy timers capture the tracked real ones
+    // to restore on useRealTimers().
+    this.moduleMocker = new ModuleMocker(this.global as unknown as typeof globalThis);
     this.fakeTimers = new LegacyFakeTimers({
-      config: config.projectConfig,
-      global: this.global,
-      moduleMocker: this.moduleMocker!,
-      timerConfig: { idToRef: (id: number) => ({ id, ref() { return this; }, unref() { return this; } }), refToId: (timer: { id?: number } | undefined) => timer?.id },
+      config: projectConfig,
+      global: this.global as unknown as typeof globalThis,
+      moduleMocker: this.moduleMocker,
+      timerConfig: { idToRef: (id: number) => id, refToId: (ref: number) => ref },
     });
-    this.fakeTimersModern?.dispose();
-    this.fakeTimersModern = new ModernFakeTimers({ config: config.projectConfig, global: this.global });
+    this.fakeTimersModern = new ModernFakeTimers({ config: projectConfig, global: this.global as unknown as typeof globalThis });
     // Baseline for undoing interface prototype patches at teardown (they are shared per worker).
     internal.captureInterfaceBaseline();
     internal.setUncaughtExceptionHandler(reportToHost);
   }
 
-  override exportConditions(): string[] {
+  async setup(): Promise<void> {}
+
+  exportConditions(): string[] {
     return this.customExportConditions;
+  }
+
+  getVmContext(): Context | null {
+    return this.context;
   }
 
   /**
@@ -158,13 +248,17 @@ export default class RtdEnvironment extends NodeEnvironment {
    * scheduler runs on Node's setImmediate) can still read `window`/`document` instead of
    * crashing the worker with a ReferenceError. The vm context is discarded with the file.
    */
-  override async teardown(): Promise<void> {
+  async teardown(): Promise<void> {
     internal.setUncaughtExceptionHandler(null);
+    this.fakeTimers?.dispose();
+    this.fakeTimersModern?.dispose();
     this.rtdWindow?.close();
     this.rtdWindow = null;
     this.dom = null;
     internal.restoreInterfaces();
-    await super.teardown();
+    this.context = null;
+    this.fakeTimers = null;
+    this.fakeTimersModern = null;
   }
 }
 
