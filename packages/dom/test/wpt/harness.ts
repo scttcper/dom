@@ -18,9 +18,10 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Script, createContext } from "node:vm";
-import { describe, test as vitestTest, expect } from "vitest";
+import { describe, test as vitestTest } from "vitest";
 import * as dom from "@rtd/dom";
 import { $mode } from "../../src/keys.ts";
+import { fireAnEvent } from "../../src/events/fire.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** Vendored fixtures; `WPT_ROOT=<wpt checkout>` points surveys at a full upstream checkout instead. */
@@ -119,18 +120,25 @@ function formatValue(v: unknown): string {
   }
   if (Array.isArray(v)) return "[" + v.map(formatValue).join(", ") + "]";
   const n = v as { nodeType?: number; nodeName?: string; constructor?: { name?: string } };
-  if (typeof n.nodeType === "number") return `${n.constructor?.name ?? "Node"} node ${n.nodeName}`;
   try {
+    // Interface prototypes (Node.prototype, ...) throw on nodeType like testharness.js's is_node() expects.
+    if (typeof n.nodeType === "number") return `${n.constructor?.name ?? "Node"} node ${n.nodeName}`;
     return String(v);
   } catch {
     return "[object]";
   }
 }
 
+/** Each document's `window` proxy → the Window it wraps (event targets/currentTargets are the Window). */
+const windowOfProxy = new WeakMap<object, object>();
+
 function sameValue(a: unknown, b: unknown): boolean {
   if (typeof a === "number" && typeof b === "number") {
     if (a !== a && b !== b) return true;
     if (a === 0 && b === 0) return Object.is(a, b);
+  }
+  if (a !== b && typeof a === "object" && typeof b === "object" && a !== null && b !== null) {
+    return (windowOfProxy.get(a) ?? a) === (windowOfProxy.get(b) ?? b);
   }
   return a === b;
 }
@@ -149,6 +157,7 @@ interface Test {
 function createHarness(results: Test[], pending: Promise<void>[]) {
   let current: Test | null = null;
   let explicitDone = false;
+  let singleTest: Test | null = null;
   let completionCallbacks: ((tests: unknown[], status: unknown) => void)[] = [];
 
   function newTest(name: string): Test {
@@ -219,8 +228,26 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       step_timeout(fn: () => void, ms: number) {
         return setTimeout(obj.step_func(fn), ms);
       },
+      // https://web-platform-tests.org/writing-tests/testharness-api.html#Test.step_wait
+      step_wait(cond: () => unknown, description?: string, timeout = 3000, interval = 100) {
+        return new Promise<void>((resolve, reject) => {
+          const start = Date.now();
+          const poll = () => {
+            if (cond()) resolve();
+            else if (Date.now() - start > timeout) reject(new AssertionError(`step_wait: Timed out waiting on condition${description ? ": " + description : ""}`));
+            else setTimeout(poll, interval);
+          };
+          poll();
+        });
+      },
       add_cleanup(fn: () => void) {
         t.cleanups.push(fn);
+      },
+      // An AbortSignal aborted when the test finishes (runs with the cleanups).
+      get_signal() {
+        const controller = new AbortController();
+        t.cleanups.push(() => controller.abort());
+        return controller.signal;
       },
       done() {
         finish(t, "PASS");
@@ -253,12 +280,25 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
   }
 
   let promiseChain = Promise.resolve();
+  let promiseSetupError: unknown = undefined;
+  // https://web-platform-tests.org/writing-tests/testharness-api.html#promise_setup — runs
+  // before the following promise_tests; if it rejects, they fail with its error.
+  function promise_setup(fn: () => Promise<unknown> | unknown) {
+    promiseChain = promiseChain.then(async () => {
+      try {
+        await fn();
+      } catch (e) {
+        promiseSetupError = e ?? new Error("promise_setup rejected");
+      }
+    });
+  }
   function promise_test(fn: (t: unknown) => Promise<unknown>, name?: string) {
     const t = newTest(name ?? "(unnamed promise test)");
     const obj = makeTestObject(t);
     pending.push(t.promise);
     promiseChain = promiseChain.then(async () => {
       try {
+        if (promiseSetupError !== undefined) throw promiseSetupError;
         await fn(obj);
         finish(t, "PASS");
       } catch (e) {
@@ -306,7 +346,25 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       }
     },
     assert_object_equals(actual: Record<string, unknown>, expected: Record<string, unknown>, desc?: string) {
-      expect(actual, desc).toStrictEqual(expected);
+      // Upstream's structural check (own enumerable properties, recursively; prototypes are not
+      // compared, so arrays our DOM creates in the main realm equal literals from the vm context).
+      const stack: unknown[] = [];
+      const check = (a: Record<string, unknown>, e: Record<string, unknown>, path: string): void => {
+        stack.push(a);
+        for (const p in a) {
+          assert(Object.hasOwn(e, p), "assert_object_equals", desc, `unexpected property ${path}.${p}`);
+          const av = a[p];
+          if (typeof av === "object" && av !== null && !stack.includes(av)) {
+            assert(typeof e[p] === "object" && e[p] !== null, "assert_object_equals", desc, `${path}.${p} expected ${formatValue(e[p])} got ${formatValue(av)}`);
+            check(av as Record<string, unknown>, e[p] as Record<string, unknown>, `${path}.${p}`);
+          } else {
+            assert(sameValue(av, e[p]), "assert_object_equals", desc, `property ${path}.${p} expected ${formatValue(e[p])} got ${formatValue(av)}`);
+          }
+        }
+        for (const p in e) assert(Object.hasOwn(a, p), "assert_object_equals", desc, `expected property ${path}.${p} missing`);
+        stack.pop();
+      };
+      check(actual, expected, "");
     },
     assert_approx_equals(actual: number, expected: number, epsilon: number, desc?: string) {
       assert(Math.abs(actual - expected) <= epsilon, "assert_approx_equals", desc, `expected ${expected} +/- ${epsilon} but got ${actual}`);
@@ -351,6 +409,13 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       }
       assert(sameValue(object[name], initial), "assert_readonly", desc, `changing property ${String(name)} succeeded`);
     },
+    // https://web-platform-tests.org/writing-tests/testharness-api.html#optional-features
+    assert_implements(condition: unknown, desc?: string) {
+      assert(!!condition, "assert_implements", desc, "");
+    },
+    assert_implements_optional(condition: unknown, desc?: string) {
+      assert(!!condition, "assert_implements_optional", desc, "");
+    },
     assert_unreached(desc?: string) {
       throw new AssertionError("assert_unreached: " + (desc ?? "reached unreachable code"));
     },
@@ -374,6 +439,26 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
         return;
       }
       assert(false, "assert_throws_js", desc, `${func} did not throw`);
+    },
+    // https://github.com/web-platform-tests/wpt/blob/master/resources/testharness.js (no-constructor form)
+    assert_throws_quotaexceedederror(func: () => void, requested: number | null | ((v: unknown) => boolean), quota: number | null | ((v: unknown) => boolean), desc?: string) {
+      try {
+        func.call(null);
+      } catch (e) {
+        if (e instanceof AssertionError) throw e;
+        const err = e as { name?: string; code?: number; requested?: unknown; quota?: unknown; constructor?: unknown };
+        assert(typeof e === "object" && e !== null, "assert_throws_quotaexceedederror", desc, `${formatValue(e)} is not an object`);
+        assert(err.name === "QuotaExceededError" && err.code === 22, "assert_throws_quotaexceedederror", desc, `expected QuotaExceededError but got ${err.name}`);
+        for (const [prop, expected] of [["requested", requested], ["quota", quota]] as const) {
+          const actual = err[prop];
+          if (typeof expected === "function") assert(expected(actual), "assert_throws_quotaexceedederror", desc, `${prop} ${formatValue(actual)} did not pass the predicate`);
+          else assert(prop in err && actual == expected, "assert_throws_quotaexceedederror", desc, `${prop} is ${formatValue(actual)}, expected ${formatValue(expected)}`);
+        }
+        const QuotaExceededError = (globalThis as Record<string, unknown>).QuotaExceededError;
+        assert(QuotaExceededError === undefined || err.constructor === QuotaExceededError, "assert_throws_quotaexceedederror", desc, "threw an exception from the wrong global");
+        return;
+      }
+      assert(false, "assert_throws_quotaexceedederror", desc, `${func} did not throw`);
     },
     assert_throws_exactly(value: unknown, func: () => void, desc?: string) {
       try {
@@ -401,6 +486,15 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
         return;
       }
       assert(false, "promise_rejects_js", desc, "promise did not reject");
+    },
+    async promise_rejects_exactly(_t: unknown, exception: unknown, promise: Promise<unknown>, desc?: string) {
+      try {
+        await promise;
+      } catch (e) {
+        assert(sameValue(e, exception), "promise_rejects_exactly", desc, `${formatValue(e)} is not ${formatValue(exception)}`);
+        return;
+      }
+      assert(false, "promise_rejects_exactly", desc, "promise did not reject");
     },
   };
 
@@ -452,16 +546,28 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
   return {
     ...asserts,
     EventWatcher,
+    on_event(object: dom.EventTarget, event: string, callback: (e: dom.Event) => void) {
+      object.addEventListener(event, callback as never, false);
+    },
     test,
     async_test,
     promise_test,
+    promise_setup,
     setup(fnOrOptions?: unknown, maybeOptions?: { explicit_done?: boolean }) {
-      const options = (typeof fnOrOptions === "object" ? fnOrOptions : maybeOptions) as { explicit_done?: boolean } | undefined;
+      const options = (typeof fnOrOptions === "object" ? fnOrOptions : maybeOptions) as { explicit_done?: boolean; single_test?: boolean } | undefined;
       if (options?.explicit_done) explicitDone = true;
+      // https://web-platform-tests.org/writing-tests/testharness-api.html#single-page-tests —
+      // one implicit test (named after the document title by runWPT), passed by done().
+      if (options?.single_test && singleTest === null) {
+        singleTest = newTest("(single test)");
+        singleTest.status = "PASS";
+        pending.push(singleTest.promise);
+      }
       if (typeof fnOrOptions === "function") fnOrOptions();
     },
     done() {
       explicitDone = false;
+      if (singleTest !== null) finish(singleTest, "PASS");
     },
     generate_tests(fn: (...args: unknown[]) => void, cases: unknown[][], _props?: unknown) {
       for (const c of cases) {
@@ -480,6 +586,14 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
     add_start_callback() {},
     get _explicitDone() {
       return explicitDone;
+    },
+    /** The single-page test (setup({ single_test: true })), if any. */
+    _singleTest(): Test | null {
+      return singleTest;
+    },
+    /** Fail the single-page test (an uncaught error in its script). */
+    _failSingleTest(message: string): void {
+      if (singleTest !== null) finish(singleTest, "FAIL", message);
     },
     _runCompletion() {
       const cbs = completionCallbacks;
@@ -535,6 +649,12 @@ export interface RunOptions {
   testdriver?: (window: dom.Window, document: dom.Document) => Record<string, unknown>;
   /** Milliseconds to wait for async tests. */
   timeout?: number;
+  /**
+   * Iframes whose `src` is never set (srcdoc / about:blank, e.g. custom-elements' `test_with_window`)
+   * use @rtd/dom's own nested windows instead of the fixture-loading emulation. Default true
+   * (WPT_NATIVE_FRAMES=0 turns it off).
+   */
+  nativeFrames?: boolean;
 }
 
 interface LoadedDocument {
@@ -549,12 +669,20 @@ interface LoadedDocument {
  * Load a fixture into a fresh window + vm context and run its scripts. `harness` (null for
  * iframe documents) supplies the testharness functions.
  */
-function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | null, prelude?: string, testdriver?: RunOptions["testdriver"]): LoadedDocument {
+function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | null, prelude?: string, testdriver?: RunOptions["testdriver"], parent?: FrameOwner): LoadedDocument {
   const file = fileWithQuery.replace(/[?#].*$/, "");
   const path = join(FIXTURES, file);
   const html = JS_TEST.test(file) ? jsTestPage(path) : readFileSync(path, "utf8");
   const tree = parse5.parse(html);
-  const window = dom.createWindow({ url: "http://web-platform.test:8000/" + fileWithQuery });
+  // WPT asserts spec serialization of computed colors (`rgb(255, 0, 0)`), not the
+  // jsdom-compatible default that keeps the author's spelling (docs/deviations.md).
+  const url = "http://web-platform.test:8000/" + fileWithQuery;
+  // An iframe's document gets a nested window of the parent (same storage shed, sessionStorage
+  // of the same top-level window, `parent`), like @rtd/dom's own iframes.
+  const window =
+    parent === undefined
+      ? dom.createWindow({ url, cssComputedColors: "rgb" })
+      : (new (dom.Window as unknown as new (o: object, n: object) => dom.Window)({ url }, { parent: parent.window, frameElement: parent.frame, srcdoc: null }));
   const doc = window.document as dom.Document;
   // Replace the default document content with the test's markup.
   for (let c = doc.firstChild; c !== null; c = doc.firstChild) doc.removeChild(c);
@@ -580,13 +708,22 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
   // functions and timers; `window` itself is a proxy that falls back to that global (so
   // `window.foo` sees script globals; identity with document.defaultView is lost).
   const sandbox: Record<string, unknown> = {};
+  // The context's real global, for JS builtins (`window.String`, `window.Promise`) that live
+  // on it rather than on the sandbox object.
+  let contextGlobal: Record<string, unknown> | undefined;
   const windowProxy = new Proxy(window as object, {
     get(t, k) {
+      // `window.window`/`window.self` are the WindowProxy itself (UIEvent `view` checks rely on it).
+      if (k === "window" || k === "self") return windowProxy;
+      if (k === "parent" && parent !== undefined) return parent.proxy;
+      // Indexed access to child browsing contexts (https://html.spec.whatwg.org/#windowproxy-getownproperty),
+      // which @rtd/dom's Window (not a Proxy) lacks: `frames[0]`, `self[0]`.
+      if (typeof k === "string" && /^\d+$/.test(k)) return (doc.querySelectorAll("iframe")[Number(k)] as unknown as { contentWindow?: unknown } | undefined)?.contentWindow ?? undefined;
       if (k in t) {
         const v = Reflect.get(t, k, t);
         return typeof v === "function" && typeof k === "string" && !/^[A-Z]/.test(k) ? (v as () => unknown).bind(t) : v;
       }
-      return sandbox[k as string];
+      return k in sandbox ? sandbox[k as string] : contextGlobal?.[k as string];
     },
     set(t, k, v) {
       if (k in t) return Reflect.set(t, k, v, t);
@@ -624,9 +761,24 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     clearInterval,
     queueMicrotask,
   });
-  instrumentIframes(doc, file);
+  windowOfProxy.set(windowProxy, window);
+  // `event` (https://dom.spec.whatwg.org/#ref-for-dom-window-event) is live, not a snapshot.
+  delete sandbox.event;
+  Object.defineProperty(sandbox, "event", { get: () => (window as unknown as { event: unknown }).event, configurable: true });
+  defineNamedProperties(sandbox, windowProxy, doc);
+  if (parent !== undefined) sandbox.parent = parent.proxy;
+  sandbox.frames = windowProxy;
+  instrumentIframes(doc, file, { window, proxy: windowProxy });
   const context = createContext(sandbox);
+  contextGlobal = new Script("this").runInContext(context) as Record<string, unknown>;
   const errors: string[] = [];
+  // Uncaught exceptions (e.g. an assert in an event listener) fail a single-page test.
+  if (harness !== null) {
+    (window as unknown as dom.EventTarget).addEventListener("error", (e) => {
+      const err = (e as unknown as { error?: { name?: string; message?: string } }).error;
+      (harness._failSingleTest as (m: string) => void)(`${err?.name}: ${err?.message}`);
+    });
+  }
   dom.setCurrentWindow(window);
   // Each <script> runs as its own classic Script; an exception aborts only that script.
   for (let i = 0; i < sources.length; i++) {
@@ -644,14 +796,46 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
   setTimeout(() => {
     dom.setCurrentWindow(window);
     try {
+      // https://html.spec.whatwg.org/#the-end steps 6 and 9: trusted DOMContentLoaded, then load.
+      fireAnEvent("DOMContentLoaded", doc as unknown as dom.EventTarget, undefined, { bubbles: true });
       if (inline) new Script(inline).runInContext(context);
       if (typeof sandbox.onload === "function") (sandbox.onload as () => void).call(windowProxy);
-      (window as unknown as dom.EventTarget).dispatchEvent(new dom.Event("load"));
+      fireAnEvent("load", window as unknown as dom.EventTarget);
     } catch (e) {
       errors.push(String((e as Error)?.stack ?? e));
     }
   }, 0);
   return { window, windowProxy, doc, sandbox, errors };
+}
+
+/**
+ * Window named properties (https://html.spec.whatwg.org/#named-access-on-the-window-object),
+ * which @rtd/dom's Window does not implement (it would need a Proxy global): tests use element
+ * ids as globals (`input.value`). Every id / applicable `name` in the markup at load time gets a
+ * lazy getter on the script global that looks the element up live; assigning replaces it.
+ */
+function defineNamedProperties(sandbox: Record<string, unknown>, windowProxy: object, doc: dom.Document): void {
+  const names = new Set<string>();
+  for (const el of doc.querySelectorAll("[id], embed[name], form[name], img[name], object[name], iframe[name]")) {
+    if (el.id) names.add(el.id);
+    const name = el.getAttribute("name");
+    if (name && /^(embed|form|img|object|iframe)$/.test(el.localName)) names.add(name);
+  }
+  for (const name of names) {
+    if (name in sandbox || name in windowProxy) continue;
+    Object.defineProperty(sandbox, name, {
+      configurable: true,
+      enumerable: false,
+      get() {
+        const byId = doc.getElementById(name);
+        if (byId !== null) return byId.localName === "iframe" ? ((byId as unknown as { contentWindow: unknown }).contentWindow ?? byId) : byId;
+        return doc.querySelector(`:is(embed, form, img, object, iframe)[name="${name.replace(/["\\]/g, "\\$&")}"]`) ?? undefined;
+      },
+      set(v) {
+        Object.defineProperty(sandbox, name, { value: v, writable: true, configurable: true, enumerable: true });
+      },
+    });
+  }
 }
 
 /** `.any.js` / `.window.js` tests (https://web-platform-tests.org/writing-tests/testharness.html#tests-for-other-or-multiple-globals). */
@@ -679,13 +863,24 @@ function unsupportedTestDriver(): Record<string, unknown> {
   });
 }
 
+/** The window (and its script-visible proxy) whose document contains an iframe. */
+interface FrameOwner {
+  window: dom.Window;
+  proxy: object;
+  frame?: dom.Element;
+}
+
 /**
  * Minimal <iframe src> emulation for tests that compare against a reference document in an
  * iframe (Range-test-iframe.html): when an iframe created by the test has a `src` and is
  * connected, the fixture is loaded into its own window/context, `contentWindow` /
  * `contentDocument` are exposed on the element, and `load` fires on it.
  */
-function instrumentIframes(doc: dom.Document, file: string): void {
+/** RunOptions.nativeFrames of the file being loaded (read when its iframes are instrumented). */
+let nativeFrames = false;
+
+function instrumentIframes(doc: dom.Document, file: string, owner?: FrameOwner): void {
+  const native = nativeFrames;
   const create = doc.createElement;
   doc.createElement = function (this: dom.Document, name: string, options?: unknown) {
     const el = create.call(this, name, options as never) as dom.Element & Record<string, unknown>;
@@ -698,7 +893,8 @@ function instrumentIframes(doc: dom.Document, file: string): void {
     el.addEventListener(
       "load",
       (e) => {
-        if (!ours) e.stopImmediatePropagation();
+        // With nativeFrames (default), frames whose `src` was never set (srcdoc / about:blank) use @rtd/dom's nested window.
+        if (!ours && !(native && src === "")) e.stopImmediatePropagation();
       },
       true,
     );
@@ -709,7 +905,7 @@ function instrumentIframes(doc: dom.Document, file: string): void {
       // and no emulated load fires (those subtests are expected failures), instead of throwing
       // an uncaught ENOENT from this timer after the test has finished.
       if (!existsSync(join(FIXTURES, target.replace(/[?#].*$/, "")))) return;
-      loaded = loadDocument(target, null);
+      loaded = loadDocument(target, null, undefined, undefined, owner && { ...owner, frame: el });
       setTimeout(() => {
         ours = true;
         el.dispatchEvent(new dom.Event("load"));
@@ -727,8 +923,17 @@ function instrumentIframes(doc: dom.Document, file: string): void {
         },
         configurable: true,
       },
-      contentWindow: { get: () => (loaded === null ? null : loaded.windowProxy), configurable: true },
-      contentDocument: { get: () => (loaded === null ? null : loaded.doc), configurable: true },
+      contentWindow: { get: () => (loaded !== null ? loaded.windowProxy : native && src === "" ? Reflect.get(Object.getPrototypeOf(el), "contentWindow", el) : null), configurable: true },
+      contentDocument: { get: () => (loaded !== null ? loaded.doc : native && src === "" ? Reflect.get(Object.getPrototypeOf(el), "contentDocument", el) : null), configurable: true },
+      // `setAttribute("src", url)` loads the fixture like the `src` setter does.
+      setAttribute: {
+        value(this: dom.Element, name: string, value: string) {
+          Object.getPrototypeOf(el).setAttribute.call(el, name, value);
+          if (String(name).toLowerCase() === "src") (el as Record<string, unknown>).src = value;
+        },
+        configurable: true,
+        writable: true,
+      },
     });
     return el;
   } as typeof doc.createElement;
@@ -739,15 +944,24 @@ export async function runWPT(file: string, options: RunOptions = {}): Promise<Su
   const results: Test[] = [];
   const pending: Promise<void>[] = [];
   const harness = createHarness(results, pending);
+  nativeFrames = options.nativeFrames ?? process.env.WPT_NATIVE_FRAMES !== "0";
   const loaded = loadDocument(file, harness as unknown as Record<string, unknown>, options.prelude, options.testdriver);
   const fail = (message: string) =>
     results.push({ name: "(harness error)", status: "FAIL", message, done: true, cleanups: [], resolve() {}, promise: Promise.resolve() });
   for (const e of loaded.errors) fail(e);
   const errorCount = loaded.errors.length;
+  const single = harness._singleTest();
+  if (single !== null) {
+    single.name = (loaded.doc as unknown as { title: string }).title || "Untitled";
+    if (errorCount !== 0) harness._failSingleTest(loaded.errors[0]);
+  }
   // Let async tests settle.
   const timeout = options.timeout ?? 2000;
   let timer: ReturnType<typeof setTimeout> | undefined;
   await new Promise((r) => setTimeout(r, 0));
+  // Files that define their tests from an iframe's load handler (the emulated load fires ~5 ms
+  // after `src` is set) have none yet: give them a moment to appear.
+  if (results.length === 0) await new Promise((r) => setTimeout(r, 20));
   await Promise.race([Promise.all(pending), new Promise<void>((r) => (timer = setTimeout(r, timeout)))]);
   clearTimeout(timer);
   for (const e of loaded.errors.slice(errorCount)) fail(e);

@@ -5,12 +5,13 @@
 //   WPT_SURVEY=1 WPT_ROOT=~/wpt WPT_DIRS=dom/events,html/semantics/forms \
 //     WPT_OUT=/tmp/survey.txt pnpm vitest run --config test/wpt/vitest.survey.config.ts
 //
+// WPT_TESTDRIVER=<module>#<export> (a RunOptions.testdriver factory),
 // WPT_FILTER / WPT_EXCLUDE (regexps on the path), WPT_VERBOSE=1 (failure messages),
 // WPT_JSON=<file> (failing subtest names per file, the expectations.json format).
 import { test } from "vitest";
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runWPT, FIXTURES, JS_TEST, jsTestRunsInWindow } from "./harness.ts";
+import { runWPT, FIXTURES, JS_TEST, jsTestRunsInWindow, type RunOptions } from "./harness.ts";
 
 const SKIP_DIRS = new Set(["support", "resources", "reference", "references", "crashtests", "tools"]);
 
@@ -36,6 +37,12 @@ test.skipIf(!process.env.WPT_SURVEY)("survey", async () => {
   const exclude = process.env.WPT_EXCLUDE ? new RegExp(process.env.WPT_EXCLUDE) : null;
   const lines: string[] = [];
   const json: Record<string, string[]> = {};
+  // WPT_TESTDRIVER=<module path>[#export]: a RunOptions.testdriver factory (e.g. the user-event one).
+  let testdriver: RunOptions["testdriver"];
+  if (process.env.WPT_TESTDRIVER) {
+    const [mod, name = "default"] = process.env.WPT_TESTDRIVER.split("#");
+    testdriver = (await import(mod))[name];
+  }
   const perDir = new Map<string, { files: number; pass: number; total: number; crashed: number }>();
   for (const d of dirs) {
     for (const file of testFiles(d)) {
@@ -48,7 +55,7 @@ test.skipIf(!process.env.WPT_SURVEY)("survey", async () => {
       const t0 = performance.now();
       let res;
       try {
-        res = await runWPT(file, { timeout: Number(process.env.WPT_TIMEOUT ?? 1000) });
+        res = await runWPT(file, { timeout: Number(process.env.WPT_TIMEOUT ?? 1000), testdriver });
       } catch (e) {
         agg.crashed++;
         lines.push(`${file}: CRASH ${String(e).slice(0, 200)}`);
