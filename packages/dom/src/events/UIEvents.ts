@@ -750,16 +750,19 @@ export interface InputEventInit extends UIEventInit {
   isComposing?: boolean;
   inputType?: string;
   dataTransfer?: DataTransfer | null;
-  targetRanges?: unknown[];
 }
 
-/** https://w3c.github.io/uievents/#interface-inputevent + https://w3c.github.io/input-events/ */
+/**
+ * https://w3c.github.io/uievents/#interface-inputevent + https://w3c.github.io/input-events/
+ * No `getTargetRanges()`, like jsdom and happy-dom: editors and React Aria feature-detect it to
+ * switch to native `beforeinput` handling, which suites written for jsdom do not exercise
+ * (docs/deviations.md). There is no editing model to produce target ranges anyway.
+ */
 export class InputEvent extends UIEvent {
   #data: string | null;
   #isComposing: boolean;
   #inputType: string;
   #dataTransfer: DataTransfer | null;
-  #targetRanges: unknown[];
 
   constructor(type: string, eventInitDict?: InputEventInit | null) {
     requireArgs(arguments.length, 1, new.target.name);
@@ -770,7 +773,6 @@ export class InputEvent extends UIEvent {
     this.#isComposing = bool(d, "isComposing");
     this.#inputType = str(d, "inputType", "");
     this.#dataTransfer = (d?.dataTransfer ?? null) as DataTransfer | null;
-    this.#targetRanges = d !== null && d.targetRanges != null ? Array.from(d.targetRanges as Iterable<unknown>) : [];
   }
 
   get data(): string | null {
@@ -784,10 +786,6 @@ export class InputEvent extends UIEvent {
   }
   get dataTransfer(): DataTransfer | null {
     return this.#dataTransfer;
-  }
-  /** https://w3c.github.io/input-events/#dom-inputevent-gettargetranges */
-  getTargetRanges(): unknown[] {
-    return this.#targetRanges.slice();
   }
 }
 setToStringTag(InputEvent, 1);

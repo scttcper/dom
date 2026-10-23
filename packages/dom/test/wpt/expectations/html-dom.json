@@ -66,5 +66,13 @@
  "html/editing/dnd/synthetic/001.html": [
   "window.DragEvent should be exposed",
   "DragEvent constructor with custom object as the dataTransfer parameter should throw TypeError"
+ ],
+ "html/editing/the-hidden-attribute/hidden-idl.html": [
+  "div.hidden = \"until-found\"",
+  "div.hidden = \"UNTIL-FOUND\"",
+  "div.hidden = \"UnTiL-FoUnD\""
+ ],
+ "html/editing/the-hidden-attribute/hidden-until-found-idl.html": [
+  "element.hidden should return \"until-found\" regardless of uppercase letters."
  ]
 }

@@ -39,14 +39,15 @@ beforeEach(() => {
 const nextTask = () => new Promise((r) => setTimeout(r, 1));
 
 describe("global attributes — https://html.spec.whatwg.org/#global-attributes", () => {
-  test("hidden: boolean or \"until-found\"", () => {
+  // Deviation (docs/deviations.md): the getter returns true for until-found, like jsdom/happy-dom.
+  test("hidden: the setter writes \"until-found\"; the getter is a boolean", () => {
     const d = document.createElement("div");
     expect(d.hidden).toBe(false);
     d.hidden = true;
     expect(d.getAttribute("hidden")).toBe("");
     d.hidden = "UNTIL-FOUND";
     expect(d.getAttribute("hidden")).toBe("until-found");
-    expect(d.hidden).toBe("until-found");
+    expect(d.hidden).toBe(true);
     d.hidden = 0;
     expect(d.hasAttribute("hidden")).toBe(false);
     d.hidden = "x";

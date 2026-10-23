@@ -48,7 +48,7 @@ const cases: [string, object?][] = [
 // https://w3c.github.io/input-events/#interface-InputEvent, https://html.spec.whatwg.org/#the-popstateevent-interface,
 // https://w3c.github.io/touch-events/#touchevent-interface (getModifierState)
 const SPEC_ADDITIONS: Record<string, string[]> = {
-  InputEvent: ["dataTransfer", "getTargetRanges"],
+  InputEvent: ["dataTransfer"],
   PopStateEvent: ["hasUAVisualTransition"],
   TouchEvent: ["getModifierState"],
 };

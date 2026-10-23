@@ -29,6 +29,7 @@ import { describe } from "vitest";
 import { defineWPT, defineWPTDirectory } from "../wpt/harness.ts";
 
 const DIRECTIONALITY = "directionality (`:dir()`) lives in selectors/state.ts: no flat-tree/slot propagation, no non-HTML dir=auto, bdi defaults, input types";
+const HIDDEN_GETTER = "the hidden getter returns true for until-found, like jsdom/happy-dom (docs/deviations.md)";
 const DATASET = "DOMStringMap edge cases (collections area) and dataset on non-HTML/SVG/MathML elements (nodes/Element.ts)";
 
 describe("HTML §3.1.4 DOM tree accessors (https://html.spec.whatwg.org/#dom-tree-accessors)", () => {
@@ -103,7 +104,7 @@ describe("HTML §6.8 Editing (https://html.spec.whatwg.org/#editing-2)", () => {
   defineWPTDirectory("html/editing/editing-0/contenteditable", {}, {});
   defineWPTDirectory("html/editing/editing-0/spelling-and-grammar-checking", {}, {});
   defineWPTDirectory("html/editing/editing-0/writing-suggestions", {}, {});
-  defineWPTDirectory("html/editing/the-hidden-attribute", {}, {});
+  defineWPTDirectory("html/editing/the-hidden-attribute", { "hidden-idl.html": HIDDEN_GETTER, "hidden-until-found-idl.html": HIDDEN_GETTER }, {});
   defineWPTDirectory("html/editing/activation", {}, {});
 });
 

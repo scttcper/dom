@@ -148,11 +148,13 @@ export class HTMLElement extends Element {
     setAttribute(this[$impl], "translate", value ? "yes" : "no");
   }
 
-  /** https://html.spec.whatwg.org/#dom-hidden */
+  /**
+   * https://html.spec.whatwg.org/#dom-hidden — returns true for `hidden="until-found"` too, like
+   * jsdom and happy-dom, where the spec returns "until-found" (React Aria's disclosure tests
+   * assert `panel.hidden === true`; docs/deviations.md). The setter follows the spec.
+   */
   get hidden(): boolean | string {
-    const v = contentAttr(this[$impl], "hidden");
-    if (v === null) return false;
-    return asciiLowercase(v) === "until-found" ? "until-found" : true;
+    return contentAttr(this[$impl], "hidden") !== null;
   }
 
   set hidden(value: boolean | string | number | null) {

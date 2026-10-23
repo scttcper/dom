@@ -328,7 +328,9 @@ describe("InputEvent — https://w3c.github.io/uievents/#interface-inputevent", 
     expect(e.isComposing).toBe(false);
     expect(e.inputType).toBe("");
     expect(e.dataTransfer).toBeNull();
-    expect(e.getTargetRanges()).toEqual([]);
+    // Deviation (docs/deviations.md): no getTargetRanges(), like jsdom/happy-dom (feature-detected
+    // by React Aria and editors to pick native beforeinput handling).
+    expect("getTargetRanges" in e).toBe(false);
   });
 
   test("data, isComposing, inputType from the dictionary", () => {
