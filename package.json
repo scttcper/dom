@@ -1,0 +1,27 @@
+{
+  "name": "react-testing-dom-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint",
+    "bench": "pnpm --filter @rtd/bench run bench",
+    "scriptc:check": "pnpm --filter @rtd/native run check",
+    "build": "node bench/bundle.ts",
+    "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
+    "downstream:base-ui": "node downstream/base-ui/run.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "oxlint": "1.89.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5",
+    "rolldown": "1.2.15"
+  }
+}

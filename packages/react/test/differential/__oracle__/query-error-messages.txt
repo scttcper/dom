@@ -1,0 +1,209 @@
+## getByText missing
+Unable to find an element with the text: Nope. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<p[39m
+        [33mdata-testid[39m=[32m"count"[39m
+      [36m>[39m
+        [0mCount: [0m
+        [0m0[0m
+      [36m</p>[39m
+      [36m<button>[39m
+        [0mIncrement[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m>[39m
+        [0mReset[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+## getByRole missing
+Unable to find an accessible element with the role "link" and name "Home"
+
+Here are the accessible roles:
+
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mdata-testid[39m=[32m"count"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Increment":
+  [36m<button />[39m
+
+  Name "Reset":
+  [36m<button[39m
+    [33mdisabled[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<p[39m
+        [33mdata-testid[39m=[32m"count"[39m
+      [36m>[39m
+        [0mCount: [0m
+        [0m0[0m
+      [36m</p>[39m
+      [36m<button>[39m
+        [0mIncrement[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m>[39m
+        [0mReset[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+## getByRole wrong name
+Unable to find an accessible element with the role "button" and name "Decrement"
+
+Here are the accessible roles:
+
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mdata-testid[39m=[32m"count"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Increment":
+  [36m<button />[39m
+
+  Name "Reset":
+  [36m<button[39m
+    [33mdisabled[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<p[39m
+        [33mdata-testid[39m=[32m"count"[39m
+      [36m>[39m
+        [0mCount: [0m
+        [0m0[0m
+      [36m</p>[39m
+      [36m<button>[39m
+        [0mIncrement[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m>[39m
+        [0mReset[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+## getByRole multiple
+Found multiple elements with the role "button"
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<button>[39m
+  [0mIncrement[0m
+[36m</button>[39m
+
+Ignored nodes: comments, script, style
+[36m<button[39m
+  [33mdisabled[39m=[32m""[39m
+[36m>[39m
+  [0mReset[0m
+[36m</button>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<p[39m
+        [33mdata-testid[39m=[32m"count"[39m
+      [36m>[39m
+        [0mCount: [0m
+        [0m0[0m
+      [36m</p>[39m
+      [36m<button>[39m
+        [0mIncrement[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m>[39m
+        [0mReset[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+## getByLabelText missing
+Unable to find a label with the text of: Username
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<p[39m
+        [33mdata-testid[39m=[32m"count"[39m
+      [36m>[39m
+        [0mCount: [0m
+        [0m0[0m
+      [36m</p>[39m
+      [36m<button>[39m
+        [0mIncrement[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m>[39m
+        [0mReset[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+## getByTestId missing
+Unable to find an element by: [data-testid="missing"]
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<p[39m
+        [33mdata-testid[39m=[32m"count"[39m
+      [36m>[39m
+        [0mCount: [0m
+        [0m0[0m
+      [36m</p>[39m
+      [36m<button>[39m
+        [0mIncrement[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m>[39m
+        [0mReset[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m

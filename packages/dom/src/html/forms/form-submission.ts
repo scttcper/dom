@@ -1,0 +1,320 @@
+// Form submission, reset and implicit submission.
+// https://html.spec.whatwg.org/#form-submission-algorithm
+// https://html.spec.whatwg.org/#concept-form-reset
+// https://html.spec.whatwg.org/#implicit-submission
+// https://html.spec.whatwg.org/#constructing-the-form-data-set
+//
+// No navigation ever happens (docs/deviations.md): a submission that is not canceled ends
+// after the `submit` event.
+
+import type { NodeImpl } from "../../nodes/NodeImpl.ts";
+import type { Element } from "../../nodes/Element.ts";
+import { F_CONNECTED } from "../../nodes/constants.ts";
+import { T } from "../../nodes/tags.ts";
+import { attr } from "../../nodes/attributes.ts";
+import { Event } from "../../events/Event.ts";
+import { SubmitEvent } from "../../events/events.ts";
+import type { EnumSpec } from "../reflect.ts";
+import { dispatchTrusted, fireEvent } from "./common.ts";
+import { formControls, hasDatalistAncestor, isActuallyDisabled, isResettable, isSubmittable } from "./form-associated.ts";
+import {
+  I_CHECKBOX,
+  I_DATE,
+  I_DATETIME_LOCAL,
+  I_EMAIL,
+  I_FILE,
+  I_HIDDEN,
+  I_IMAGE,
+  I_MONTH,
+  I_NUMBER,
+  I_PASSWORD,
+  I_RADIO,
+  I_RESET,
+  I_SEARCH,
+  I_SUBMIT,
+  I_TEL,
+  I_TEXT,
+  I_TIME,
+  I_URL,
+  I_WEEK,
+  I_BUTTON,
+  inputType,
+} from "./input-type.ts";
+import { isInvalidCandidate } from "./validation.ts";
+import { faceEntries, faceReset, isFACE, validatableOf } from "./face.ts";
+import { listOfOptions } from "./collections.ts";
+
+/** https://html.spec.whatwg.org/#attr-fs-enctype (formEnctype: missing → ""). */
+export const FORM_ENCTYPE: EnumSpec = {
+  keywords: ["application/x-www-form-urlencoded", "multipart/form-data", "text/plain"],
+  missing: "",
+  invalid: "application/x-www-form-urlencoded",
+};
+
+/** https://html.spec.whatwg.org/#attr-fs-method (formMethod: missing → ""). */
+export const FORM_METHOD: EnumSpec = { keywords: ["get", "post", "dialog"], missing: "", invalid: "get" };
+
+/** Internal shape of HTMLFormElement used here (avoids a value import cycle). */
+interface FormLike extends Element {
+  _firingSubmissionEvents: boolean;
+  _lockedForReset: boolean;
+  _constructingEntryList: boolean;
+  _controls(): NodeImpl[];
+}
+
+interface Resettable {
+  _reset(): void;
+}
+
+/** https://html.spec.whatwg.org/#concept-submit-button */
+export function isSubmitButton(el: NodeImpl): boolean {
+  if (el.tag === T.button) return buttonType(el) === "submit";
+  if (el.tag === T.input) {
+    const t = inputType(el);
+    return t === I_SUBMIT || t === I_IMAGE;
+  }
+  return false;
+}
+
+/** The button element's type state: https://html.spec.whatwg.org/#attr-button-type */
+export function buttonType(el: NodeImpl): "submit" | "reset" | "button" {
+  const v = attr(el, "type");
+  if (v === null) return "submit";
+  const lower = v.toLowerCase();
+  return lower === "reset" || lower === "button" ? lower : "submit";
+}
+
+/** https://html.spec.whatwg.org/#default-button — first submit button in tree order whose form owner is form. */
+export function defaultButton(form: NodeImpl): NodeImpl | null {
+  const controls = formControls(form, [], true);
+  for (let i = 0; i < controls.length; i++) if (isSubmitButton(controls[i])) return controls[i];
+  return null;
+}
+
+/** Static constraint validation: returns the invalid controls (after firing `invalid` on each). */
+export function staticallyValidate(form: NodeImpl): NodeImpl[] {
+  const controls = (form.node as unknown as FormLike)._controls();
+  const invalid: NodeImpl[] = [];
+  for (let i = 0; i < controls.length; i++) {
+    const c = controls[i];
+    if (!isSubmittable(c)) continue;
+    if (isInvalidCandidate(validatableOf(c))) invalid.push(c);
+  }
+  const unhandled: NodeImpl[] = [];
+  for (let i = 0; i < invalid.length; i++) {
+    if (fireEvent(invalid[i].node, "invalid", false, true)) unhandled.push(invalid[i]);
+  }
+  return unhandled;
+}
+
+/** https://html.spec.whatwg.org/#dom-form-checkvalidity */
+export function formCheckValidity(form: NodeImpl): boolean {
+  return staticallyValidate(form).length === 0;
+}
+
+/**
+ * https://html.spec.whatwg.org/#concept-form-submit
+ * `submitter` is the submit button or the form itself; `fromSubmit` is "submitted from submit() method".
+ */
+export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: boolean): void {
+  const f = form.node as unknown as FormLike;
+  // Step 2: if form cannot navigate (not connected), return.
+  if ((form.flags & F_CONNECTED) === 0) return;
+  // Step 3: if form's constructing entry list is true, return.
+  if (f._constructingEntryList) return;
+  // Step 6: if submitted from submit() is false:
+  if (!fromSubmit) {
+    if (f._firingSubmissionEvents) return;
+    f._firingSubmissionEvents = true;
+    try {
+      // 6.3: interactively validate constraints unless the submitter's no-validate state is true.
+      const noValidate =
+        submitter !== form && attr(submitter, "formnovalidate") !== null ? true : attr(form, "novalidate") !== null;
+      if (!noValidate) {
+        const unhandled = staticallyValidate(form);
+        if (unhandled.length !== 0) {
+          // "Report the problems": focus the first invalid control.
+          const first = unhandled[0].node as unknown as { focus?: () => void };
+          first.focus?.();
+          return;
+        }
+      }
+      // 6.5–6.7: fire submit (SubmitEvent) with submitter (null when the form submits itself).
+      const event = new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitter === form ? null : submitter.node });
+      if (!dispatchTrusted(f, event)) return;
+    } finally {
+      f._firingSubmissionEvents = false;
+    }
+    // Step 7: form may have been disconnected by a listener.
+    if ((form.flags & F_CONNECTED) === 0) return;
+  }
+  // Steps 8+: construct the entry list and navigate. We never navigate.
+}
+
+/** https://html.spec.whatwg.org/#concept-form-reset */
+export function resetForm(form: NodeImpl): void {
+  const f = form.node as unknown as FormLike;
+  if (f._lockedForReset) return;
+  f._lockedForReset = true;
+  try {
+    if (fireEvent(f, "reset", true, true)) {
+      const controls = formControls(form, [], true);
+      for (let i = 0; i < controls.length; i++) {
+        const c = controls[i];
+        if (isFACE(c)) faceReset(c);
+        else if (isResettable(c)) (c.node as unknown as Resettable)._reset();
+      }
+    }
+  } finally {
+    f._lockedForReset = false;
+  }
+}
+
+/** Input types whose fields block implicit submission: https://html.spec.whatwg.org/#field-that-blocks-implicit-submission */
+function blocksImplicitSubmission(type: number): boolean {
+  switch (type) {
+    case I_TEXT:
+    case I_SEARCH:
+    case I_URL:
+    case I_TEL:
+    case I_EMAIL:
+    case I_PASSWORD:
+    case I_DATE:
+    case I_MONTH:
+    case I_WEEK:
+    case I_TIME:
+    case I_DATETIME_LOCAL:
+    case I_NUMBER:
+      return true;
+  }
+  return false;
+}
+
+/**
+ * https://html.spec.whatwg.org/#implicit-submission — what pressing Enter in a field does.
+ * Exported for user-event's keyboard implementation.
+ */
+export function implicitSubmission(form: NodeImpl): void {
+  const button = defaultButton(form);
+  if (button !== null) {
+    // Fire a synthetic click at the default button (unless it is disabled).
+    if (isActuallyDisabled(button)) return;
+    syntheticClick(button.node as Element);
+    return;
+  }
+  const controls = (form.node as unknown as FormLike)._controls();
+  let blocking = 0;
+  for (let i = 0; i < controls.length; i++) {
+    const c = controls[i];
+    if (c.tag === T.input && blocksImplicitSubmission(inputType(c))) blocking++;
+  }
+  if (blocking > 1) return;
+  submitForm(form, form, false);
+}
+
+interface Activatable {
+  _activationBehavior(event: Event | null): void;
+}
+
+/**
+ * Run synthetic click activation steps on `el`. Uses HTMLElement.click() when the
+ * html-elements/events agents provide it; otherwise dispatches a click and runs the element's
+ * activation behavior directly.
+ */
+export function syntheticClick(el: Element): void {
+  const click = (el as unknown as { click?: () => void }).click;
+  if (typeof click === "function") {
+    click.call(el);
+    return;
+  }
+  // TODO(events): remove once HTMLElement.prototype.click runs the activation algorithm.
+  const event = new Event("click", { bubbles: true, cancelable: true, composed: true });
+  if (el.dispatchEvent(event)) (el as unknown as Activatable)._activationBehavior?.(event);
+}
+
+// --- entry list ------------------------------------------------------------------------------
+
+export type Entry = [name: string, value: string | File];
+
+interface InputLike {
+  value: string;
+  checked: boolean;
+  files: { length: number; item(i: number): File | null } | null;
+}
+
+/**
+ * https://html.spec.whatwg.org/#constructing-the-form-data-set — returns null when the form is
+ * already constructing its entry list.
+ */
+export function constructEntryList(
+  form: NodeImpl,
+  submitter: NodeImpl | null,
+  beforeUnlock: ((entries: Entry[]) => void) | null = null,
+): Entry[] | null {
+  const f = form.node as unknown as FormLike;
+  if (f._constructingEntryList) return null;
+  f._constructingEntryList = true;
+  const entries: Entry[] = [];
+  try {
+    const controls = formControls(form, [], true);
+    for (let i = 0; i < controls.length; i++) {
+      const field = controls[i];
+      if (!isSubmittable(field)) continue;
+      // Step 5.1: skip datalist descendants, disabled fields, non-submitter buttons,
+      // unchecked checkboxes/radios.
+      if (hasDatalistAncestor(field) || isActuallyDisabled(field)) continue;
+      const tag = field.tag;
+      const type = tag === T.input ? inputType(field) : -1;
+      const isButton = tag === T.button || type === I_SUBMIT || type === I_RESET || type === I_BUTTON || type === I_IMAGE;
+      if (isButton && field !== submitter) continue;
+      const w = field.node as unknown as InputLike;
+      if ((type === I_CHECKBOX || type === I_RADIO) && !w.checked) continue;
+      // Step 5.2: image buttons append name.x / name.y (we have no click coordinate: 0,0).
+      if (type === I_IMAGE) {
+        const n = attr(field, "name") ?? "";
+        const prefix = n === "" ? "" : n + ".";
+        entries.push([prefix + "x", "0"], [prefix + "y", "0"]);
+        continue;
+      }
+      // Step 5.4: form-associated custom elements run entry construction.
+      if (isFACE(field)) {
+        faceEntries(field, entries);
+        continue;
+      }
+      // Step 5.5: skip fields without a name or with an empty name.
+      const name = attr(field, "name");
+      if (name === null || name === "") continue;
+      if (tag === T.select) {
+        const options = listOfOptions(field, []);
+        for (let j = 0; j < options.length; j++) {
+          const o = options[j];
+          const ow = o.node as unknown as { selected: boolean; value: string };
+          if (ow.selected && !isActuallyDisabled(o)) entries.push([name, ow.value]);
+        }
+      } else if (type === I_CHECKBOX || type === I_RADIO) {
+        entries.push([name, attr(field, "value") ?? "on"]);
+      } else if (type === I_FILE) {
+        const files = w.files;
+        if (files === null || files.length === 0) {
+          entries.push([name, new File([], "", { type: "application/octet-stream" })]);
+        } else {
+          for (let j = 0; j < files.length; j++) entries.push([name, files.item(j)!]);
+        }
+      } else if (type === I_HIDDEN && name.toLowerCase() === "_charset_") {
+        entries.push([name, "UTF-8"]);
+      } else {
+        entries.push([name, w.value]);
+      }
+      // Step 5.12: dirname.
+      if (tag === T.textarea || (tag === T.input && (type === I_TEXT || type === I_SEARCH || type === I_HIDDEN || type === I_SUBMIT || type === I_RESET || type === I_TEL || type === I_URL || type === I_EMAIL || type === I_PASSWORD))) {
+        const dirname = attr(field, "dirname");
+        if (dirname !== null && dirname !== "") entries.push([dirname, "ltr"]);
+      }
+    }
+    // Steps 6–7 (the `formdata` event) run while the constructing flag is still set.
+    if (beforeUnlock !== null) beforeUnlock(entries);
+  } finally {
+    f._constructingEntryList = false;
+  }
+  return entries;
+}

@@ -1,0 +1,173 @@
+toBeRequired: pass
+
+.not.toBeRequired: FAIL
+expect(element).not.toBeRequired()
+
+Received element is required:
+  <input
+  aria-describedby="email-hint"
+  aria-errormessage="email-error"
+  aria-invalid="false"
+  id="email"
+  name="email"
+  required=""
+  type="email"
+  value=""
+/>
+
+toBeInvalid: pass
+
+.not.toBeInvalid: FAIL
+expect(element).not.toBeInvalid()
+
+Received element is currently invalid:
+  <input
+  aria-describedby="email-hint"
+  aria-errormessage="email-error"
+  aria-invalid="false"
+  id="email"
+  name="email"
+  required=""
+  type="email"
+  value=""
+/>
+
+toHaveAccessibleName: pass
+
+.not.toHaveAccessibleName: FAIL
+expect(element).not.toHaveAccessibleName()
+
+Expected element not to have accessible name:
+  Email
+Received:
+  Email
+
+toHaveAccessibleDescription: pass
+
+.not.toHaveAccessibleDescription: FAIL
+expect(element).not.toHaveAccessibleDescription()
+
+Expected element not to have accessible description:
+  We never share it
+Received:
+  We never share it
+
+toHaveRole: pass
+
+.not.toHaveRole: FAIL
+expect(element).not.toHaveRole()
+
+Expected element not to have role:
+  textbox
+Received:
+  textbox
+
+toHaveValue: pass
+
+.not.toHaveValue: FAIL
+expect(element).not.toHaveValue()
+
+Expected the element not to have value:
+
+Received:
+
+
+toHaveFormValues: pass
+
+.not.toHaveFormValues: FAIL
+expect(element).not.toHaveFormValues()
+
+Expected the element not to have form values
+
+Compared values have no visual difference.
+
+toHaveAccessibleErrorMessage: pass
+
+.not.toHaveAccessibleErrorMessage: FAIL
+expect(element).not.toHaveAccessibleErrorMessage(expected)
+
+Expected element not to have accessible error message:
+  Enter a valid email
+Received:
+  Enter a valid email
+
+toHaveValue: pass
+
+.not.toHaveValue: FAIL
+expect(element).not.toHaveValue(nope)
+
+Expected the element not to have value:
+  nope
+Received:
+  nope
+
+toHaveDisplayValue: pass
+
+.not.toHaveDisplayValue: FAIL
+expect(element).not.toHaveDisplayValue()
+
+Expected element not to have display value:
+  nope
+Received:
+  Array [
+    "nope",
+  ]
+
+toBeChecked: pass
+
+.not.toBeChecked: FAIL
+expect(element).not.toBeChecked()
+
+Received element is checked:
+  <input
+  name="agree"
+  type="checkbox"
+/>
+
+toHaveDisplayValue: pass
+
+.not.toHaveDisplayValue: FAIL
+expect(element).not.toHaveDisplayValue()
+
+Expected element not to have display value:
+  Pro
+Received:
+  Array [
+    "Pro",
+  ]
+
+toHaveFormValues: pass
+
+.not.toHaveFormValues: FAIL
+expect(element).not.toHaveFormValues()
+
+Expected the element not to have form values
+
+Compared values have no visual difference.
+
+## submitted
+[
+  [
+    {
+      "email": "a@b.co",
+      "agree": true
+    }
+  ]
+]
+
+toBeValid: FAIL
+expect(element).toBeValid()
+
+Received element is not currently valid:
+  <input
+  aria-describedby="email-hint"
+  aria-errormessage="email-error"
+  aria-invalid="true"
+  id="email"
+  name="email"
+  required=""
+  type="email"
+  value="a@b.co"
+/>
+
+.not.toBeValid: pass

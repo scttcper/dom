@@ -1,0 +1,40 @@
+toHaveClass: pass
+
+.not.toHaveClass: FAIL
+expect(element).not.toHaveClass("greeting greeting--ada")
+
+Expected the element not to have class:
+  greeting greeting--ada
+Received:
+  greeting greeting--ada
+
+toHaveClass: pass
+
+.not.toHaveClass: FAIL
+expect(element).not.toHaveClass("greeting greeting--linus")
+
+Expected the element not to have EXACTLY defined classes:
+  greeting greeting--linus
+Received:
+  greeting greeting--linus
+
+## fragment first child
+<h1
+  class="greeting greeting--linus"
+>
+  Hello Linus
+</h1>
+
+toBeEmptyDOMElement: pass
+
+.not.toBeEmptyDOMElement: FAIL
+expect(element).not.toBeEmptyDOMElement()
+
+Received:
+  ""
+
+## hook after inc
+6
+
+## hook after rerender
+6

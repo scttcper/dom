@@ -1,0 +1,91 @@
+## initial
+<div>
+  <div>
+    <p
+      data-testid="count"
+    >
+      Count: 
+      0
+    </p>
+    <button>
+      Increment
+    </button>
+    <button
+      disabled=""
+    >
+      Reset
+    </button>
+  </div>
+</div>
+
+toHaveTextContent: pass
+
+.not.toHaveTextContent: FAIL
+expect(element).not.toHaveTextContent()
+
+Expected element not to have text content:
+  Count: 0
+Received:
+  Count: 0
+
+toBeDisabled: pass
+
+.not.toBeDisabled: FAIL
+expect(element).not.toBeDisabled()
+
+Received element is disabled:
+  <button
+  disabled=""
+/>
+
+## after two clicks
+<div>
+  <div>
+    <p
+      data-testid="count"
+    >
+      Count: 
+      2
+    </p>
+    <button>
+      Increment
+    </button>
+    <button>
+      Reset
+    </button>
+  </div>
+</div>
+
+toHaveTextContent: pass
+
+.not.toHaveTextContent: FAIL
+expect(element).not.toHaveTextContent()
+
+Expected element not to have text content:
+  Count: 2
+Received:
+  Count: 2
+
+toBeEnabled: pass
+
+.not.toBeEnabled: FAIL
+expect(element).not.toBeEnabled()
+
+Received element is enabled:
+  <button />
+
+toHaveTextContent: pass
+
+.not.toHaveTextContent: FAIL
+expect(element).not.toHaveTextContent()
+
+Expected element not to have text content:
+  /Count: 0/
+Received:
+  Count: 0
+
+## roles
+[
+  "Increment",
+  "Reset"
+]

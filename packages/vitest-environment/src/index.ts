@@ -1,0 +1,130 @@
+// Vitest environment for @rtd/dom: `environment: "rtd"` (resolves `vitest-environment-rtd`).
+//
+//   // vitest.config.ts
+//   export default defineConfig({
+//     test: {
+//       environment: "rtd",
+//       environmentOptions: { rtd: { url: "http://localhost:3000/", width: 1280 } },
+//     },
+//   });
+//
+// or per file: `// @vitest-environment rtd`.
+//
+// Setup creates one window and makes it the worker's global (installGlobals); teardown closes
+// it (cancelling its pending animation frames, idle callbacks and tasks) and restores every
+// global it replaced. React's IS_REACT_ACT_ENVIRONMENT is left to the testing library.
+
+import { enableCompileCache } from "node:module";
+import { createContext, type Context } from "node:vm";
+import type { Environment } from "vitest/runtime";
+import type { WindowOptions } from "@rtd/dom";
+
+// Every Vitest worker pays the DOM import (jsdom-startup README: isolated forks start a fresh
+// worker per file). Node's on-disk compile cache keeps V8 code (and stripped TypeScript)
+// across workers: importing @rtd/dom drops from ~120 ms to ~50 ms after the first worker.
+// Set RTD_COMPILE_CACHE=0 to opt out. Must run before @rtd/dom is imported, hence the
+// dynamic import below.
+if (process.env.RTD_COMPILE_CACHE !== "0") enableCompileCache?.();
+const { createWindow, installGlobals } = await import("@rtd/dom");
+const { setUncaughtExceptionHandler } = await import("@rtd/dom/internal");
+
+/**
+ * Exceptions nobody handled (listener exceptions, reportError(), React's uncaught errors) go to
+ * the worker as `uncaughtException`, which Vitest reports as an unhandled error that fails the
+ * run — what Vitest's jsdom environment does with its window "error" listener.
+ * https://html.spec.whatwg.org/#report-an-exception
+ */
+function reportToHost(error: unknown): void {
+  process.emit("uncaughtException", error as Error, "uncaughtException");
+}
+
+export interface RtdEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {}
+
+/** Same default URL as Vitest's jsdom and happy-dom environments. */
+const DEFAULT_URL = "http://localhost:3000/";
+
+function windowOptions(options: Record<string, unknown>): WindowOptions {
+  const rtd = (options?.rtd ?? {}) as RtdEnvironmentOptions;
+  return { ...rtd, url: rtd.url ?? DEFAULT_URL };
+}
+
+// Host globals a fresh vm context needs (the window itself supplies the DOM).
+const VM_HOST_GLOBALS = [
+  "setTimeout",
+  "clearTimeout",
+  "setInterval",
+  "clearInterval",
+  "queueMicrotask",
+  "structuredClone",
+  "atob",
+  "btoa",
+  "fetch",
+  "crypto",
+  "performance",
+  "URL",
+  "URLSearchParams",
+  "AbortController",
+  "AbortSignal",
+  "Blob",
+  "File",
+  "TextEncoder",
+  "TextDecoder",
+  "ReadableStream",
+  "WritableStream",
+  "TransformStream",
+  "Headers",
+  "Request",
+  "Response",
+  "FormData",
+  "BroadcastChannel",
+  "MessageChannel",
+  "MessagePort",
+  "WebSocket",
+  "DOMException",
+  "Buffer",
+];
+
+const environment: Environment = {
+  name: "rtd",
+  viteEnvironment: "client",
+  // Setup takes well under a millisecond; prewarming would only compete with the worker.
+  prewarmModules: false,
+
+  setup(global, options) {
+    const window = createWindow(windowOptions(options));
+    const uninstall = installGlobals(window, global);
+    setUncaughtExceptionHandler(reportToHost);
+    return {
+      teardown() {
+        setUncaughtExceptionHandler(null);
+        window.close();
+        uninstall();
+      },
+    };
+  },
+
+  setupVM(options) {
+    const window = createWindow(windowOptions(options));
+    const context: Context = createContext();
+    const host = globalThis as unknown as Record<string, unknown>;
+    for (const name of VM_HOST_GLOBALS) {
+      if (host[name] !== undefined) {
+        Object.defineProperty(context, name, { value: host[name], writable: true, enumerable: false, configurable: true });
+      }
+    }
+    const uninstall = installGlobals(window, context as Record<PropertyKey, unknown>);
+    setUncaughtExceptionHandler(reportToHost);
+    return {
+      getVmContext() {
+        return context;
+      },
+      teardown() {
+        setUncaughtExceptionHandler(null);
+        window.close();
+        uninstall();
+      },
+    };
+  },
+};
+
+export default environment;

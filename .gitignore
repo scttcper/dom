@@ -1,0 +1,10 @@
+node_modules
+dist
+.scriptc
+*.node
+*.o
+coverage
+bench/results/*.json
+.DS_Store
+downstream/*/checkout
+downstream/*/output

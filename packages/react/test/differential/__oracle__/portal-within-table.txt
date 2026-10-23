@@ -1,0 +1,134 @@
+toBeInTheDocument: pass
+
+.not.toBeInTheDocument: FAIL
+expect(element).not.toBeInTheDocument()
+
+expected document not to contain element, found <p>
+  Portaled text
+</p> instead
+
+## rows
+[
+  [],
+  [
+    "Ada",
+    "10"
+  ],
+  [
+    "Linus",
+    "7"
+  ]
+]
+
+## columnheaders
+[
+  "Name",
+  "Score"
+]
+
+toHaveAccessibleName: pass
+
+.not.toHaveAccessibleName: FAIL
+expect(element).not.toHaveAccessibleName()
+
+Expected element not to have accessible name:
+  Scores
+Received:
+  Scores
+
+toContainElement: pass
+
+.not.toContainElement: FAIL
+expect(element).not.toContainElement(element)
+
+<table /> contains: <td />
+        
+
+toContainHTML: pass
+
+.not.toContainHTML: FAIL
+expect(element).not.toContainHTML()
+Expected:
+  <td>Ada</td>
+Received:
+  <table>
+  <caption>
+    Scores
+  </caption>
+  <thead>
+    <tr>
+      <th>
+        Name
+      </th>
+      <th>
+        Score
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        Ada
+      </td>
+      <td>
+        10
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Linus
+      </td>
+      <td>
+        7
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+## body
+<body>
+  <div>
+    <div>
+      <table>
+        <caption>
+          Scores
+        </caption>
+        <thead>
+          <tr>
+            <th>
+              Name
+            </th>
+            <th>
+              Score
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              Ada
+            </td>
+            <td>
+              10
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Linus
+            </td>
+            <td>
+              7
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div
+    data-testid="portal-root"
+  >
+    <p>
+      Portaled text
+    </p>
+  </div>
+</body>

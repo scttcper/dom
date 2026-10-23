@@ -1,0 +1,29 @@
+toBeInTheDocument: pass
+
+.not.toBeInTheDocument: FAIL
+expect(element).not.toBeInTheDocument()
+
+expected document not to contain element, found <div
+  role="status"
+>
+  Loading...
+</div> instead
+
+toHaveTextContent: pass
+
+.not.toHaveTextContent: FAIL
+expect(element).not.toHaveTextContent()
+
+Expected element not to have text content:
+  Loaded!
+Received:
+  Loaded!
+
+## loaded
+<body>
+  <div>
+    <h1>
+      Loaded!
+    </h1>
+  </div>
+</body>

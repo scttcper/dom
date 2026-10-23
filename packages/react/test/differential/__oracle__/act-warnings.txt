@@ -1,0 +1,2 @@
+## console.error before flush
+0

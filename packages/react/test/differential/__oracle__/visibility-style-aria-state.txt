@@ -1,0 +1,145 @@
+toBeVisible: FAIL
+expect(element).toBeVisible()
+
+Received element is not visible:
+  <div
+  hidden=""
+  id="panel"
+  style="color: rgb(255, 0, 0); display: none;"
+/>
+
+.not.toBeVisible: pass
+
+toHaveStyle: pass
+
+.not.toHaveStyle: FAIL
+expect(element).not.toHaveStyle()
+
+
+
+toHaveStyle: pass
+
+.not.toHaveStyle: FAIL
+expect(element).not.toHaveStyle()
+
+
+
+toBePressed: FAIL
+expect(element).toBePressed()
+
+Expected element to have:
+  aria-pressed="true"
+Received:
+  aria-pressed="false"
+
+.not.toBePressed: pass
+
+toHaveAttribute: pass
+
+.not.toHaveAttribute: FAIL
+expect(element).not.toHaveAttribute("aria-expanded", "false") // element.getAttribute("aria-expanded") === "false"
+
+Expected the element not to have attribute:
+  aria-expanded="false"
+Received:
+  aria-expanded="false"
+
+toBeVisible: FAIL
+expect(element).toBeVisible()
+
+Received element is not visible:
+  <span />
+
+.not.toBeVisible: pass
+
+toBeVisible: pass
+
+.not.toBeVisible: FAIL
+expect(element).not.toBeVisible()
+
+Received element is visible:
+  <summary />
+
+toBeVisible: pass
+
+.not.toBeVisible: FAIL
+expect(element).not.toBeVisible()
+
+Received element is visible:
+  <div
+  id="panel"
+  style="color: rgb(255, 0, 0); display: block;"
+/>
+
+toHaveStyle: pass
+
+.not.toHaveStyle: FAIL
+expect(element).not.toHaveStyle()
+
+
+
+toBePressed: pass
+
+.not.toBePressed: FAIL
+expect(element).not.toBePressed()
+
+Expected element to have:
+  aria-pressed="false"
+Received:
+  aria-pressed="true"
+
+toHaveRole: pass
+
+.not.toHaveRole: FAIL
+expect(element).not.toHaveRole()
+
+Expected element not to have role:
+  region
+Received:
+  region
+
+toHaveAccessibleName: pass
+
+.not.toHaveAccessibleName: FAIL
+expect(element).not.toHaveAccessibleName()
+
+Expected element not to have accessible name:
+  Details
+Received:
+  Details
+
+## open
+<body>
+  <div>
+    <section
+      aria-labelledby="disc-title"
+    >
+      <h2
+        id="disc-title"
+      >
+        Details
+      </h2>
+      <button
+        aria-controls="panel"
+        aria-expanded="true"
+        aria-pressed="true"
+      >
+        Toggle
+      </button>
+      <div
+        id="panel"
+        style="color: rgb(255, 0, 0); display: block;"
+      >
+        Secret content
+      </div>
+      <details>
+        <summary>
+          More
+        </summary>
+        <span>
+          Inside details
+        </span>
+      </details>
+    </section>
+  </div>
+</body>

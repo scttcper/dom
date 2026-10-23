@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - bench
+  - tests/*
+
+allowBuilds:
+  scriptc: true
+  unrs-resolver: false

@@ -1,0 +1,263 @@
+{
+ "dom/ranges/Range-extractContents-dynamic-end.html": [
+  "Range.extractContents should not extract out-of-bounds nodes if end container is removed during iframe unload"
+ ],
+ "dom/traversal/TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html": [
+  "(unnamed async test)"
+ ],
+ "dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html": [
+  "NodeFilter is cross-realm callable revoked Proxy",
+  "NodeFilter is cross-realm non-callable revoked Proxy",
+  "NodeFilter is cross-realm plain object with non-callable 'acceptNode' property",
+  "NodeFilter is cross-realm plain object with revoked Proxy as 'acceptNode' property",
+  "NodeFilter is cross-realm plain object without 'acceptNode' property"
+ ],
+ "dom/traversal/TreeWalker-realm.html": [
+  "Node returned by TreeWalker from different realm",
+  "Node returned by TreeWalker from different realm with acceptNode"
+ ],
+ "dom/collections/HTMLCollection-as-prototype.html": [
+  "HTMLCollection as a prototype and setting own properties",
+  "HTMLCollection as a prototype should not allow getting .length on the base object"
+ ],
+ "dom/collections/HTMLCollection-delete.html": [
+  "Loose name",
+  "Strict id",
+  "Strict name"
+ ],
+ "dom/collections/HTMLCollection-own-props.html": [
+  "Setting non-array index while named property exists (loose)",
+  "Setting non-array index while named property exists (strict)"
+ ],
+ "dom/collections/HTMLCollection-supported-property-indices.html": [
+  "Handling of property names that look like integers around 2^32",
+  "Handling of property names that look like negative integers",
+  "Trying to delete an indexed property name should never work",
+  "Trying to set an expando that would shadow an already-existing indexed property",
+  "Trying to set an expando with an indexed property name past the end of the list"
+ ],
+ "dom/collections/HTMLCollection-supported-property-names.html": [
+  "Object.getOwnPropertyNames on HTMLCollection",
+  "Object.getOwnPropertyNames on HTMLCollection with expando object",
+  "Object.getOwnPropertyNames on HTMLCollection with non-HTML namespace",
+  "Trying to set an expando that shadows a named property that gets added later",
+  "Trying to set an expando that would shadow an already-existing named property"
+ ],
+ "dom/collections/namednodemap-supported-property-names.html": [
+  "Object.getOwnPropertyNames on NamedNodeMap",
+  "Object.getOwnPropertyNames on NamedNodeMap after attribute removal",
+  "Object.getOwnPropertyNames on NamedNodeMap of input"
+ ],
+ "dom/nodes/Comment-constructor.html": [
+  "new Comment() should get the correct ownerDocument across globals",
+  "new Comment(): prototype chain",
+  "new Comment(): two arguments"
+ ],
+ "dom/nodes/DOMImplementation-createDocument.html": [
+  "createDocument test: \"\",null,null,null",
+  "createDocument test: \"/\",\"\",null,null",
+  "createDocument test: \"/\",\"f1oo\",null,null",
+  "createDocument test: \"/\",\"f:oo\",null,null",
+  "createDocument test: \"/\",\"foo\",null,null",
+  "createDocument test: \"/\",\"foo1\",null,null",
+  "createDocument test: \"/\",\"xml\",null,null",
+  "createDocument test: \"/\",\"xmlfoo\",null,null",
+  "createDocument test: \"/\",\"xmlfoo:bar\",null,null",
+  "createDocument test: \"/\",null,null,null",
+  "createDocument test: \"foo\",\"bar\",DocumentType node <!DOCTYPE foo>,null",
+  "createDocument test: \"foo\",null,DocumentType node <!DOCTYPE foo>,null",
+  "createDocument test: \"foo:\",\"\",null,null",
+  "createDocument test: \"foo:\",\"f1oo\",null,null",
+  "createDocument test: \"foo:\",\"f:oo\",null,null",
+  "createDocument test: \"foo:\",\"foo\",null,null",
+  "createDocument test: \"foo:\",\"foo1\",null,null",
+  "createDocument test: \"foo:\",\"xml\",null,null",
+  "createDocument test: \"foo:\",\"xmlfoo\",null,null",
+  "createDocument test: \"foo:\",\"xmlfoo:bar\",null,null",
+  "createDocument test: \"foo:\",null,null,null",
+  "createDocument test: \"http://example.com/\",\"\",null,null",
+  "createDocument test: \"http://example.com/\",\"0:a\",null,null",
+  "createDocument test: \"http://example.com/\",\"XML:foo\",null,null",
+  "createDocument test: \"http://example.com/\",\"XMLNS\",null,null",
+  "createDocument test: \"http://example.com/\",\"XMLNS:foo\",null,null",
+  "createDocument test: \"http://example.com/\",\"_:_\",null,null",
+  "createDocument test: \"http://example.com/\",\"_:h0\",null,null",
+  "createDocument test: \"http://example.com/\",\"_:test\",null,null",
+  "createDocument test: \"http://example.com/\",\"a-b:c\",null,null",
+  "createDocument test: \"http://example.com/\",\"a.b:c\",null,null",
+  "createDocument test: \"http://example.com/\",\"a:_\",null,null",
+  "createDocument test: \"http://example.com/\",\"a:aெ\",null,null",
+  "createDocument test: \"http://example.com/\",\"a:̀\",null,null",
+  "createDocument test: \"http://example.com/\",\"a:;\",null,null",
+  "createDocument test: \"http://example.com/\",\"a:ெ\",null,null",
+  "createDocument test: \"http://example.com/\",\"aெ:a\",null,null",
+  "createDocument test: \"http://example.com/\",\"f1oo\",null,null",
+  "createDocument test: \"http://example.com/\",\"f::oo\",null,null",
+  "createDocument test: \"http://example.com/\",\"f:o:o\",null,null",
+  "createDocument test: \"http://example.com/\",\"f:oo\",null,null",
+  "createDocument test: \"http://example.com/\",\"fo<o\",null,null",
+  "createDocument test: \"http://example.com/\",\"foo\",null,null",
+  "createDocument test: \"http://example.com/\",\"foo1\",null,null",
+  "createDocument test: \"http://example.com/\",\"l_:_\",null,null",
+  "createDocument test: \"http://example.com/\",\"ns0:test\",null,null",
+  "createDocument test: \"http://example.com/\",\"ns:_0\",null,null",
+  "createDocument test: \"http://example.com/\",\"ns:a0\",null,null",
+  "createDocument test: \"http://example.com/\",\"prefix::local\",null,null",
+  "createDocument test: \"http://example.com/\",\"test:xmlns\",null,null",
+  "createDocument test: \"http://example.com/\",\"xml\",null,null",
+  "createDocument test: \"http://example.com/\",\"xmlfoo\",null,null",
+  "createDocument test: \"http://example.com/\",\"xmlfoo:bar\",null,null",
+  "createDocument test: \"http://example.com/\",\"̀:a\",null,null",
+  "createDocument test: \"http://example.com/\",\";:a\",null,null",
+  "createDocument test: \"http://example.com/\",\"ெ:a\",null,null",
+  "createDocument test: \"http://example.com/\",null,null,null",
+  "createDocument test: \"http://www.w3.org/1998/Math/MathML\",\"\",null,null",
+  "createDocument test: \"http://www.w3.org/1999/xhtml\",\"\",null,null",
+  "createDocument test: \"http://www.w3.org/2000/svg\",\"\",null,null",
+  "createDocument test: \"http://www.w3.org/2000/xmlns/\",\"\",null,null",
+  "createDocument test: \"http://www.w3.org/2000/xmlns/\",\"xmlns\",null,null",
+  "createDocument test: \"http://www.w3.org/2000/xmlns/\",\"xmlns:foo\",null,null",
+  "createDocument test: \"http://www.w3.org/2000/xmlns/\",null,null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"f1oo\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"f:oo\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"foo\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"foo1\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"xml\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"xml:foo\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"xmlfoo\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",\"xmlfoo:bar\",null,null",
+  "createDocument test: \"http://www.w3.org/XML/1998/namespace\",null,null,null",
+  "createDocument test: null,\"\",DocumentType node <!DOCTYPE html -//W3C//DTD XHTML 1.0 Transitional//EN http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd>",
+  "createDocument test: null,\"\",DocumentType node <!DOCTYPE math -//W3C//DTD MathML 2.0//EN http://www.w3.org/Math/DTD/mathml2/mathml2.dtd>",
+  "createDocument test: null,\"\",DocumentType node <!DOCTYPE svg -//W3C//DTD SVG 1.1//EN http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd>",
+  "createDocument test: null,\"\",null,null",
+  "createDocument test: null,\"f1oo\",null,null",
+  "createDocument test: null,\"f<oo\",null,null",
+  "createDocument test: null,\"foo\",DocumentType node <!DOCTYPE foo>,null",
+  "createDocument test: null,\"foo\",null,null",
+  "createDocument test: null,\"foo1\",null,null",
+  "createDocument test: null,\"foo}\",null,null",
+  "createDocument test: null,\"foo￿\",null,null",
+  "createDocument test: null,\"f}oo\",null,null",
+  "createDocument test: null,\"f￿oo\",null,null",
+  "createDocument test: null,\"html\",null,null",
+  "createDocument test: null,\"math\",null,null",
+  "createDocument test: null,\"svg\",null,null",
+  "createDocument test: null,\"xml\",null,null",
+  "createDocument test: null,\"xmlfoo\",null,null",
+  "createDocument test: null,\";foo\",null,null",
+  "createDocument test: null,\"ெfoo\",null,null",
+  "createDocument test: null,\"￿foo\",null,null",
+  "createDocument test: null,null,DocumentType node <!DOCTYPE bar>,null",
+  "createDocument test: null,null,DocumentType node <!DOCTYPE baz>,null",
+  "createDocument test: null,null,DocumentType node <!DOCTYPE foo>,null",
+  "createDocument test: null,null,DocumentType node <!DOCTYPE html>,null",
+  "createDocument test: null,null,DocumentType node <!DOCTYPE quz>,null",
+  "createDocument test: null,null,null,null",
+  "createDocument test: null,undefined,null,null",
+  "createDocument test: undefined,\"\",undefined,null",
+  "createDocument test: undefined,\"f1oo\",null,null",
+  "createDocument test: undefined,\"foo\",null,null",
+  "createDocument test: undefined,\"foo1\",null,null",
+  "createDocument test: undefined,\"xml\",null,null",
+  "createDocument test: undefined,\"xmlfoo\",null,null",
+  "createDocument test: undefined,null,null,null",
+  "createDocument test: undefined,null,undefined,null",
+  "createDocument test: undefined,undefined,null,null",
+  "createDocument test: undefined,undefined,undefined,null",
+  "createDocument with missing arguments"
+ ],
+ "dom/nodes/DOMImplementation-createHTMLDocument-with-saved-implementation.html": [
+  "createHTMLDocument(): from a saved and detached implementation does not return null"
+ ],
+ "dom/nodes/Document-URL.html": [
+  "(unnamed async test)"
+ ],
+ "dom/nodes/Document-constructor.html": [
+  "new Document(): interfaces"
+ ],
+ "dom/nodes/Document-getElementsByTagName.html": [
+  "hasOwnProperty, getOwnPropertyDescriptor, getOwnPropertyNames"
+ ],
+ "dom/nodes/Element-getElementsByTagName-change-document-HTMLNess.html": [
+  "(harness error)"
+ ],
+ "dom/nodes/Element-getElementsByTagName.html": [
+  "hasOwnProperty, getOwnPropertyDescriptor, getOwnPropertyNames"
+ ],
+ "dom/nodes/MutationObserver-cross-realm-callback-report-exception.html": [
+  "(harness error)"
+ ],
+ "dom/nodes/MutationObserver-document.html": [
+  "parser insertion mutations",
+  "parser script insertion mutation",
+  "removal of parent during parsing"
+ ],
+ "dom/nodes/Node-appendChild.html": [
+  "Adopting a non-orphan",
+  "Adopting an orphan",
+  "Appending a document"
+ ],
+ "dom/nodes/Node-childNodes.html": [
+  "Iterator behavior of Node.childNodes"
+ ],
+ "dom/nodes/Node-cloneNode-XMLDocument.html": [
+  "Created with createDocument"
+ ],
+ "dom/nodes/Node-isConnected.html": [
+  "Test with iframes"
+ ],
+ "dom/nodes/Node-parentNode.html": [
+  "Removed iframe"
+ ],
+ "dom/nodes/Node-removeChild.html": [
+  "Calling removeChild on a comment from a frame document with no children should throw NOT_FOUND_ERR.",
+  "Calling removeChild on a element from a frame document with no children should throw NOT_FOUND_ERR.",
+  "Calling removeChild on a text from a frame document with no children should throw NOT_FOUND_ERR.",
+  "Passing a detached comment from a frame document to removeChild should not affect it.",
+  "Passing a detached element from a frame document to removeChild should not affect it.",
+  "Passing a detached text from a frame document to removeChild should not affect it.",
+  "Passing a non-detached comment from a frame document to removeChild should not affect it.",
+  "Passing a non-detached element from a frame document to removeChild should not affect it.",
+  "Passing a non-detached text from a frame document to removeChild should not affect it."
+ ],
+ "dom/nodes/Text-constructor.html": [
+  "new Text() should get the correct ownerDocument across globals",
+  "new Text(): prototype chain",
+  "new Text(): two arguments"
+ ],
+ "dom/nodes/attributes-namednodemap.html": [
+  "an attribute set by setAttribute should be accessible as a field on the `attributes` field of an Element",
+  "an attribute with a null namespace should be accessible as a field on the `attributes` field of an Element",
+  "an attribute with a set namespace should be accessible as a field on the `attributes` field of an Element",
+  "setNamedItem and removeNamedItem on `attributes` should add and remove fields from `attributes`",
+  "setNamedItem and removeNamedItem on `attributes` should not interfere with existing method names"
+ ],
+ "dom/nodes/attributes.html": [
+  "Own property correctness with basic attributes",
+  "Own property correctness with namespaced attribute before same-name non-namespaced one",
+  "Own property correctness with non-namespaced attribute before same-name namespaced one",
+  "Own property correctness with two namespaced attributes with the same name-with-prefix",
+  "Own property names should include all qualified names for a non-HTML element in an HTML document",
+  "Own property names should include all qualified names for an HTML element in a non-HTML document",
+  "Own property names should only include all-lowercase qualified names for an HTML element in an HTML document"
+ ],
+ "dom/nodes/namespaced-attribute-mutations.html": [
+  "A namespaced slot attribute does not assign a slot"
+ ],
+ "dom/nodes/remove-next-sibling-during-replace-with.html": [
+  "(unnamed test)"
+ ],
+ "dom/nodes/remove-unscopable.html": [
+  "after() should be unscopable",
+  "append() should be unscopable",
+  "before() should be unscopable",
+  "prepend() should be unscopable",
+  "remove() should be unscopable",
+  "replaceWith() should be unscopable"
+ ],
+ "dom/nodes/Element-children.html": [
+  "(unnamed test) (#2)"
+ ]
+}

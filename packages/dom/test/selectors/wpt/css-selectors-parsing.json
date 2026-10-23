@@ -1,0 +1,1907 @@
+[
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-internal-animating-full-screen-transition"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-internal-fullscreen-document"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-internal-html-document"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-internal-media-document"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-khtml-drag"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-webkit-animating-full-screen-transition"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-webkit-full-page-media"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-webkit-full-screen-ancestor"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-webkit-full-screen-controls-hidden"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": ":-webkit-full-screen-document"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": "::-apple-attachment-controls-container"
+ },
+ {
+  "file": "invalid-pseudos.html",
+  "valid": false,
+  "selector": "::-internal-loading-auto-fill-button"
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att]",
+  "serialized": "[att]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att=val]",
+  "serialized": "[att=\"val\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att~=val]",
+  "serialized": "[att~=\"val\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att|=val]",
+  "serialized": "[att|=\"val\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "h1[title]",
+  "serialized": "h1[title]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "span[class='example']",
+  "serialized": "span[class=\"example\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "a[hreflang=fr]",
+  "serialized": "a[hreflang=\"fr\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "a[hreflang|='en']",
+  "serialized": "a[hreflang|=\"en\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att^=val]",
+  "serialized": "[att^=\"val\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att$=val]",
+  "serialized": "[att$=\"val\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[att*=val]",
+  "serialized": "[att*=\"val\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "object[type^=\"image/\"]",
+  "serialized": "object[type^=\"image/\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "a[href$=\".html\"]",
+  "serialized": "a[href$=\".html\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "p[title*=\"hello\"]",
+  "serialized": "p[title*=\"hello\"]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[*|att]",
+  "serialized": "[*|att]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-attribute.html",
+  "valid": true,
+  "selector": "[|att]",
+  "serialized": "[att]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-child.html",
+  "valid": true,
+  "selector": "body > p",
+  "serialized": "body > p",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-child.html",
+  "valid": true,
+  "selector": "div ol>li p",
+  "serialized": "div ol > li p",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-class.html",
+  "valid": true,
+  "selector": "*.pastoral",
+  "serialized": [
+   "*.pastoral",
+   ".pastoral"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-class.html",
+  "valid": true,
+  "selector": ".pastoral",
+  "serialized": [
+   "*.pastoral",
+   ".pastoral"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-class.html",
+  "valid": true,
+  "selector": "h1.pastoral",
+  "serialized": "h1.pastoral",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-class.html",
+  "valid": true,
+  "selector": "p.pastoral.marine",
+  "serialized": "p.pastoral.marine",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-descendant.html",
+  "valid": true,
+  "selector": "h1 em",
+  "serialized": "h1 em",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-descendant.html",
+  "valid": true,
+  "selector": "div * p",
+  "serialized": "div * p",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-descendant.html",
+  "valid": true,
+  "selector": "div p *[href]",
+  "serialized": [
+   "div p *[href]",
+   "div p [href]"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-focus-visible.html",
+  "valid": true,
+  "selector": ":focus-visible",
+  "serialized": ":focus-visible",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-focus-visible.html",
+  "valid": true,
+  "selector": "a:focus-visible",
+  "serialized": "a:focus-visible",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-focus-visible.html",
+  "valid": true,
+  "selector": ":focus:not(:focus-visible)",
+  "serialized": ":focus:not(:focus-visible)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-disallow-nesting-has-inside-has.html",
+  "valid": false,
+  "selector": ".a:has(.b:has(.c))"
+ },
+ {
+  "file": "parse-has-forgiving-selector.html",
+  "valid": true,
+  "selector": ":has(:is(:has(*)))",
+  "serialized": ":has(:is(:has(*)))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-has-forgiving-selector.html",
+  "valid": true,
+  "selector": ":has(:where(:has(*)))",
+  "serialized": ":has(:where(:has(*)))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-has-forgiving-selector.html",
+  "valid": true,
+  "selector": ":has(:is(.a, 123))",
+  "serialized": ":has(:is(.a, 123))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(bar)",
+  "serialized": ":has-slotted(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted([attr=\"foo\"])",
+  "serialized": ":has-slotted([attr=\"foo\"])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(*)",
+  "serialized": ":has-slotted(*)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(.class)",
+  "serialized": ":has-slotted(.class)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(#id)",
+  "serialized": ":has-slotted(#id)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(:not(foo))",
+  "serialized": ":has-slotted(:not(foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(:not(:nth-last-of-type(2)):not([slot=\"foo\"]))",
+  "serialized": ":has-slotted(:not(:nth-last-of-type(2)):not([slot=\"foo\"]))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(:first-child)",
+  "serialized": ":has-slotted(:first-child)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(:hover)",
+  "serialized": ":has-slotted(:hover)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(foo):first-child",
+  "serialized": ":has-slotted(foo):first-child",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(foo):hover",
+  "serialized": ":has-slotted(foo):hover",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(foo):focus",
+  "serialized": ":has-slotted(foo):focus",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(foo):lang(en)",
+  "serialized": ":has-slotted(foo):lang(en)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(foo):dir(ltr)",
+  "serialized": ":has-slotted(foo):dir(ltr)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(foo) + :has-slotted(bar)",
+  "serialized": ":has-slotted(foo) + :has-slotted(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":not(:has-slotted(foo))",
+  "serialized": ":not(:has-slotted(foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(div + div)",
+  "serialized": ":has-slotted(div + div)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted(div:has(> span))",
+  "serialized": ":has-slotted(div:has(> span))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": true,
+  "selector": ":has-slotted",
+  "serialized": ":has-slotted",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": false,
+  "selector": "::has-slotted(foo)"
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": false,
+  "selector": ":has-slotted()"
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": false,
+  "selector": ":has-slotted(0)"
+ },
+ {
+  "file": "parse-has-slotted.tentative.html",
+  "valid": false,
+  "selector": ":has-slotted(div > span)"
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has(a)",
+  "serialized": ":has(a)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has(#a)",
+  "serialized": ":has(#a)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has(.a)",
+  "serialized": ":has(.a)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has([a])",
+  "serialized": ":has([a])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has([a=\"b\"])",
+  "serialized": ":has([a=\"b\"])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has([a|=\"b\"])",
+  "serialized": ":has([a|=\"b\"])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has(:hover)",
+  "serialized": ":has(:hover)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": "*:has(.a)",
+  "serialized": [
+   "*:has(.a)",
+   ":has(.a)"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(.b)",
+  "serialized": ".a:has(.b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(> .b)",
+  "serialized": ".a:has(> .b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(~ .b)",
+  "serialized": ".a:has(~ .b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(+ .b)",
+  "serialized": ".a:has(+ .b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(.b) .c",
+  "serialized": ".a:has(.b) .c",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a .b:has(.c)",
+  "serialized": ".a .b:has(.c)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a .b:has(.c .d)",
+  "serialized": ".a .b:has(.c .d)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a .b:has(.c .d) .e",
+  "serialized": ".a .b:has(.c .d) .e",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(.b:is(.c .d))",
+  "serialized": ".a:has(.b:is(.c .d))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:is(.b:has(.c) .d)",
+  "serialized": ".a:is(.b:has(.c) .d)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:not(:has(.b))",
+  "serialized": ".a:not(:has(.b))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(:not(.b))",
+  "serialized": ".a:has(:not(.b))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ".a:has(.b):has(.c)",
+  "serialized": ".a:has(.b):has(.c)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": "*|*:has(*)",
+  "serialized": ":has(*)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": true,
+  "selector": ":has(*|*)",
+  "serialized": ":has(*)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-has.html",
+  "valid": false,
+  "selector": ":has"
+ },
+ {
+  "file": "parse-has.html",
+  "valid": false,
+  "selector": ".a:has"
+ },
+ {
+  "file": "parse-has.html",
+  "valid": false,
+  "selector": ".a:has b"
+ },
+ {
+  "file": "parse-has.html",
+  "valid": false,
+  "selector": ":has()"
+ },
+ {
+  "file": "parse-has.html",
+  "valid": false,
+  "selector": ":has(123)"
+ },
+ {
+  "file": "parse-has.html",
+  "valid": false,
+  "selector": ":has(.a, 123)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading",
+  "serialized": ":heading",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading(2)",
+  "serialized": ":heading(2)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading(99999)",
+  "serialized": ":heading(99999)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading(0)",
+  "serialized": ":heading(0)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading(0, 1, 2)",
+  "serialized": ":heading(0, 1, 2)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)",
+  "serialized": ":heading(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": ":heading(-1)",
+  "serialized": ":heading(-1)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": "h1:heading",
+  "serialized": "h1:heading",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": "h1:heading(1)",
+  "serialized": "h1:heading(1)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": true,
+  "selector": "h1:heading(2)",
+  "serialized": "h1:heading(2)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading()"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(1.0)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(1.4)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(n)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(odd)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(even)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2n)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2n+1)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2n+2)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(-n+3)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2n, 3n)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2, 3n)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2 of .foo)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(2n of .foo)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(calc(1))"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(max(1, 2))"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(min(1, 2)"
+ },
+ {
+  "file": "parse-heading.html",
+  "valid": false,
+  "selector": ":heading(var(--level))"
+ },
+ {
+  "file": "parse-id.html",
+  "valid": true,
+  "selector": "h1#chapter1",
+  "serialized": "h1#chapter1",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-id.html",
+  "valid": true,
+  "selector": "#chapter1",
+  "serialized": "#chapter1",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-id.html",
+  "valid": true,
+  "selector": "*#z98y",
+  "serialized": [
+   "*#z98y",
+   "#z98y"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(div )",
+  "serialized": ":is(div)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(div )",
+  "serialized": ":where(div)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(div + bar, div ~ .baz)",
+  "serialized": ":is(div + bar, div ~ .baz)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(div + bar, div ~ .baz)",
+  "serialized": ":where(div + bar, div ~ .baz)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(:is(div))",
+  "serialized": ":is(:is(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(:is(div))",
+  "serialized": ":where(:is(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(:where(div))",
+  "serialized": ":is(:where(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(:where(div))",
+  "serialized": ":where(:where(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:is(div))",
+  "serialized": ":host(:is(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:where(div))",
+  "serialized": ":host(:where(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:is(div ))",
+  "serialized": ":host(:is(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:where(div ))",
+  "serialized": ":host(:where(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:is(div .foo))",
+  "serialized": ":host(:is(div .foo))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:where(div .foo))",
+  "serialized": ":host(:where(div .foo))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(:hover, :active)",
+  "serialized": ":is(:hover, :active)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(:hover, :active)",
+  "serialized": ":where(:hover, :active)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(div):hover",
+  "serialized": ":is(div):hover",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(div):hover",
+  "serialized": ":where(div):hover",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(div)::before",
+  "serialized": ":is(div)::before",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(div)::before",
+  "serialized": ":where(div)::before",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(::before)",
+  "serialized": ":is(::before)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(::before)",
+  "serialized": ":where(::before)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(div) + bar",
+  "serialized": ":is(div) + bar",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(div) + bar",
+  "serialized": ":where(div) + bar",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": "::part(foo):is(:hover)",
+  "serialized": "::part(foo):is(:hover)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": "::part(foo):where(:hover)",
+  "serialized": "::part(foo):where(:hover)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": "::part(foo):is([attr='value'])",
+  "serialized": "::part(foo):is([attr='value'])",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": "::part(foo):where([attr='value'])",
+  "serialized": "::part(foo):where([attr='value'])",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":not(:is(div))",
+  "serialized": ":not(:is(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":not(:where(div))",
+  "serialized": ":not(:where(div))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":not(:is(div .foo))",
+  "serialized": ":not(:is(div .foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":not(:where(div .foo))",
+  "serialized": ":not(:where(div .foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(,,,)",
+  "serialized": ":is(, , , )",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(,,,)",
+  "serialized": ":where(, , , )",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:is(,,,))",
+  "serialized": ":host(:is(, , , ))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:where(,,,))",
+  "serialized": ":host(:where(, , , ))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:is(.a, .b+.c, .d))",
+  "serialized": ":host(:is(.a, .b+.c, .d))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":host(:where(.a, .b+.c, .d))",
+  "serialized": ":host(:where(.a, .b+.c, .d))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(::before:HOVER, .a)",
+  "serialized": ":is(::before:HOVER, .a)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(::before:HOVER, .a)",
+  "serialized": ":where(::before:HOVER, .a)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":has(:is(:has(.a+.b)))",
+  "serialized": ":has(:is(:has(.a+.b)))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":has(:where(:has(.a+.b)))",
+  "serialized": ":has(:where(:has(.a+.b)))",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":is(::before:HOVER  )",
+  "serialized": ":is(::before:HOVER)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": true,
+  "selector": ":where(::before:HOVER  )",
+  "serialized": ":where(::before:HOVER)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-is-where.html",
+  "valid": false,
+  "selector": ":is(# C4єанйтж╕/┘ГЁжЮХєа▓┐ЁЭБМєаСеЁЭЖА%=[ямм0)"
+ },
+ {
+  "file": "parse-is.html",
+  "valid": true,
+  "selector": ":is(ul,ol,.list) > [hidden]",
+  "serialized": ":is(ul, ol, .list) > [hidden]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is.html",
+  "valid": true,
+  "selector": ":is(:hover,:focus)",
+  "serialized": ":is(:hover, :focus)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is.html",
+  "valid": true,
+  "selector": "a:is(:not(:hover))",
+  "serialized": "a:is(:not(:hover))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is.html",
+  "valid": true,
+  "selector": ":is(#a)",
+  "serialized": ":is(#a)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is.html",
+  "valid": true,
+  "selector": ".a.b ~ :is(.c.d ~ .e.f)",
+  "serialized": ".a.b ~ :is(.c.d ~ .e.f)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-is.html",
+  "valid": true,
+  "selector": ".a.b ~ .c.d:is(span.e + .f, .g.h > .i.j .k)",
+  "serialized": ".a.b ~ .c.d:is(span.e + .f, .g.h > .i.j .k)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": "button:not([disabled])",
+  "serialized": "button:not([disabled])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": "*:not(foo)",
+  "serialized": [
+   "*:not(foo)",
+   ":not(foo)"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(:link):not(:visited)",
+  "serialized": ":not(:link):not(:visited)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": "*|*:not(*)",
+  "serialized": ":not(*)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(:hover)",
+  "serialized": ":not(:hover)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(*|*)",
+  "serialized": ":not(*)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": "foo:not(bar)",
+  "serialized": "foo:not(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(:not(foo))",
+  "serialized": ":not(:not(foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(.a .b)",
+  "serialized": ":not(.a .b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(.a + .b)",
+  "serialized": ":not(.a + .b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(.a .b ~ c)",
+  "serialized": ":not(.a .b ~ c)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(span.a, div.b)",
+  "serialized": ":not(span.a, div.b)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(.a .b ~ c, .d .e)",
+  "serialized": ":not(.a .b ~ c, .d .e)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(:host)",
+  "serialized": ":not(:host)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(:host(.a))",
+  "serialized": ":not(:host(.a))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":host(:not(.a))",
+  "serialized": ":host(:not(.a))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not(:host(:not(.a)))",
+  "serialized": ":not(:host(:not(.a)))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not([disabled][selected])",
+  "serialized": ":not([disabled][selected])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": true,
+  "selector": ":not([disabled],[selected])",
+  "serialized": ":not([disabled], [selected])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":not()"
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":not(:not())"
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":not(::before)"
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":not(:unknownpseudo)"
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":not(.a, :unknownpseudo)"
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":not(:unknownpseudo, .a)"
+ },
+ {
+  "file": "parse-not.html",
+  "valid": false,
+  "selector": ":host(:not(.a .b))"
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(--foo)",
+  "serialized": "::part(--foo)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(bar)",
+  "serialized": "::part(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(--)",
+  "serialized": "::part(--)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(--0)",
+  "serialized": "::part(--0)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo bar)",
+  "serialized": "::part(foo bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(-foo bar)",
+  "serialized": "::part(-foo bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):focus",
+  "serialized": "::part(foo):focus",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):hover",
+  "serialized": "::part(foo):hover",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):focus-within",
+  "serialized": "::part(foo):focus-within",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo)::before",
+  "serialized": "::part(foo)::before",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo)::after",
+  "serialized": "::part(foo)::after",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo)::placeholder",
+  "serialized": "::part(foo)::placeholder",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo)::first-line",
+  "serialized": "::part(foo)::first-line",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo)::first-letter",
+  "serialized": "::part(foo)::first-letter",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo)::file-selector-button",
+  "serialized": "::part(foo)::file-selector-button",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):is(:focus)",
+  "serialized": "::part(foo):is(:focus)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": ":lang(en)::part(foo)",
+  "serialized": ":lang(en)::part(foo)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": ":dir(ltr)::part(foo)",
+  "serialized": ":dir(ltr)::part(foo)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):lang(en)",
+  "serialized": "::part(foo):lang(en)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):dir(ltr)",
+  "serialized": "::part(foo):dir(ltr)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):disabled",
+  "serialized": "::part(foo):disabled",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):checked",
+  "serialized": "::part(foo):checked",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-part.html",
+  "valid": false,
+  "selector": ":part()"
+ },
+ {
+  "file": "parse-part.html",
+  "valid": false,
+  "selector": ":part(0)"
+ },
+ {
+  "file": "parse-part.html",
+  "valid": false,
+  "selector": ":part('foo')"
+ },
+ {
+  "file": "parse-part.html",
+  "valid": false,
+  "selector": ":part([foo])"
+ },
+ {
+  "file": "parse-part.html",
+  "valid": false,
+  "selector": "::part(foo) + ::part(bar)"
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):is(ul)",
+  "serialized": "::part(foo):is(ul)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):is(nav ul)",
+  "serialized": "::part(foo):is(nav ul)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):where(ul)",
+  "serialized": "::part(foo):where(ul)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-part.html",
+  "valid": true,
+  "selector": "::part(foo):where(nav ul)",
+  "serialized": "::part(foo):where(nav ul)",
+  "forgivingOnly": true
+ },
+ {
+  "file": "parse-part.html",
+  "valid": false,
+  "selector": "::part(foo):has(li)"
+ },
+ {
+  "file": "parse-sibling.html",
+  "valid": true,
+  "selector": "math + p",
+  "serialized": "math + p",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-sibling.html",
+  "valid": true,
+  "selector": "h1.opener + h2",
+  "serialized": "h1.opener + h2",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-sibling.html",
+  "valid": true,
+  "selector": "h1 ~ pre",
+  "serialized": "h1 ~ pre",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(bar)",
+  "serialized": "::slotted(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted([attr=\"foo\"])",
+  "serialized": "::slotted([attr=\"foo\"])",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(*)",
+  "serialized": "::slotted(*)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(.class)",
+  "serialized": "::slotted(.class)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(:not(foo))",
+  "serialized": "::slotted(:not(foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(:not(:nth-last-of-type(2)):not([slot=\"foo\"]))",
+  "serialized": "::slotted(:not(:nth-last-of-type(2)):not([slot=\"foo\"]))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(:first-child)",
+  "serialized": "::slotted(:first-child)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(:hover)",
+  "serialized": "::slotted(:hover)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": true,
+  "selector": "::slotted(:has(:first-child:last-child))",
+  "serialized": "::slotted(:has(:first-child:last-child))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted()"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(0)"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": ":slotted(foo)"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(foo):first-child"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(foo):hover"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(foo):focus"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(foo):lang(en)"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(foo):dir(ltr)"
+ },
+ {
+  "file": "parse-slotted.html",
+  "valid": false,
+  "selector": "::slotted(foo) + ::slotted(bar)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": ":state(--foo)",
+  "serialized": ":state(--foo)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": ":state(bar)",
+  "serialized": ":state(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": ":state(--)",
+  "serialized": ":state(--)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": ":state(--0)",
+  "serialized": ":state(--0)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": ":host(:state(--foo))",
+  "serialized": ":host(:state(--foo))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": "my-input[type=\"foo\"]:state(checked)",
+  "serialized": "my-input[type=\"foo\"]:state(checked)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": "my-input[type=\"foo\"]:state(--0)::before",
+  "serialized": "my-input[type=\"foo\"]:state(--0)::before",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": "my-input[type=\"foo\"]:state(--0)::part(inner)",
+  "serialized": "my-input[type=\"foo\"]:state(--0)::part(inner)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": "my-input[type=\"foo\"]:state(--0)::part(inner):state(bar)",
+  "serialized": "my-input[type=\"foo\"]:state(--0)::part(inner):state(bar)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": "::part(inner):state(bar)::before",
+  "serialized": "::part(inner):state(bar)::before",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": true,
+  "selector": "::part(inner):state(bar)::after",
+  "serialized": "::part(inner):state(bar)::after",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state("
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state()"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state(0)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state(0rem)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state(url())"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state(foo(1))"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": ":state(:host)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": "my-input::after:state(foo)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": "::part(inner):state(bar)::before:state(foo)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": "::part(inner):state(bar)::after:state(foo)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": "my-input::first-letter:state(foo)"
+ },
+ {
+  "file": "parse-state.html",
+  "valid": false,
+  "selector": "::slotted(foo):state(foo)"
+ },
+ {
+  "file": "parse-universal.html",
+  "valid": true,
+  "selector": "*",
+  "serialized": "*",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-universal.html",
+  "valid": true,
+  "selector": "div :first-child",
+  "serialized": [
+   "div *:first-child",
+   "div :first-child"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-universal.html",
+  "valid": true,
+  "selector": "div *:first-child",
+  "serialized": [
+   "div *:first-child",
+   "div :first-child"
+  ],
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-where.html",
+  "valid": true,
+  "selector": ":where(ul,ol,.list) > [hidden]",
+  "serialized": ":where(ul, ol, .list) > [hidden]",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-where.html",
+  "valid": true,
+  "selector": ":where(:hover,:focus)",
+  "serialized": ":where(:hover, :focus)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-where.html",
+  "valid": true,
+  "selector": "a:where(:not(:hover))",
+  "serialized": "a:where(:not(:hover))",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-where.html",
+  "valid": true,
+  "selector": ":where(#a)",
+  "serialized": ":where(#a)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-where.html",
+  "valid": true,
+  "selector": ".a.b ~ :where(.c.d ~ .e.f)",
+  "serialized": ".a.b ~ :where(.c.d ~ .e.f)",
+  "forgivingOnly": false
+ },
+ {
+  "file": "parse-where.html",
+  "valid": true,
+  "selector": ".a.b ~ .c.d:where(span.e + .f, .g.h > .i.j .k)",
+  "serialized": ".a.b ~ .c.d:where(span.e + .f, .g.h > .i.j .k)",
+  "forgivingOnly": false
+ }
+]
