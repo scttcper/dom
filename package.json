@@ -18,6 +18,7 @@
     "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
     "downstream:base-ui": "node downstream/base-ui/run.ts",
     "downstream:radix": "node downstream/radix/run.ts",
+    "downstream:sentry": "node downstream/sentry/run.ts",
     "downstream:react-aria": "node downstream/react-aria/run.ts"
   },
   "devDependencies": {

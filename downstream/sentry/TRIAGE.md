@@ -1,0 +1,78 @@
+# Sentry downstream triage
+
+Pinned getsentry/sentry `503ad2e4` (2026-10-23), Jest 30.5.1, jsdom 30.1.1, React 19.3.0,
+RTL 16.3.2 / DTL 10.4.1 / user-event 14.6.7 / jest-dom 7.0.1. Repros live in `repros/` and run with
+`pnpm vitest run --config downstream/vitest.config.ts sentry/` (each passes on jsdom and fails on
+@rtd/dom until fixed). Counts are failing tests that pass on jsdom, from the 2026-10-23 runs of
+`components` (653 files, 6,432 tests) and `views` (9 areas, 1,818 tests) on the tree at that time
+(`results/2026-10-23-{components,views}{,-triage}.md`); `--triage` runs apply the workarounds
+marked "triage shim" to see what is behind them.
+
+Full suite with `--triage` (`results/2026-10-23-all-triage.md`): rtd-dom 177 failures, rtd-full
+404 (133 of them rtd-full-only, cluster 3); the as-is full-suite run hit a mid-edit @rtd/dom and
+was discarded.
+
+Sorted by failing tests (components + views, the mode where they first appear):
+
+| # | cluster | tests | mode | owner | repro |
+| --: | --- | --: | --- | --- | --- |
+| 1 | Interface isolation deletes lazily installed collection index getters: `el.children[0]`, `Array.from(el.children)` are `undefined` in every test file after the first in a worker | ~470 (256 + ~215) | rtd-dom | jest-environment (`window/isolation.ts`) + dom-core (`collections/indexed.ts`) | `jest-environment-isolation-drops-index-getters.test.ts` |
+| 2 | `navigator.clipboard` is a getter-only accessor: `Object.assign(navigator, {clipboard})` throws in strict mode (29 spec files use the idiom) | 133 (108 + 25) | rtd-dom | window | `window-navigator-clipboard-assignable.test.ts` |
+| 3 | @rtd/testing-library ignores a user-replaced `window.getComputedStyle` (Sentry: `el => el.style`), so elements hidden by Emotion stylesheet rules (`display: none` overflow tabs, `visibility: hidden` until measured, react-select inputs, collapsed breadcrumbs) are excluded from ByRole | ~91 (62 + 29) | rtd-full only | testing-library (+ aria / jest-dom equivalents) | `testing-library-honors-replaced-getcomputedstyle.test.ts` |
+| 4 | `Node.prototype` has no `nodeName` accessor (TS `abstract get`): DOMPurify's `lookupGetter(Node.prototype, 'nodeName')` returns null → "String.prototype.toLowerCase called on null or undefined" in every sanitize (markdown, autofix, seer embeds) | 59 (56 + 3); **137 in the full suite** (dashboards, discover, explore, trustedTypes, ...) | rtd-dom | dom-core | `dom-core-node-nodename-accessor-on-node-prototype.test.ts` |
+| 5 | `navigator.platform` follows the host OS ("MacIntel" on macOS, jsdom: ""): React Aria `isMac()` turns every Ctrl shortcut / ctrl-click test into its Meta variant on a Mac, while Linux CI passes | ~12 | rtd-dom | window | `window-navigator-platform-host-os.test.ts` |
+| 6 | Window methods taken from an iframe and bound to the page global (rrweb `getImplementation`: `contentWindow.requestAnimationFrame.bind(window)`) crash: the rtd global is the host global, not a Window | 6 (3 + 3); 6 in the full suite | rtd-dom | window | `window-methods-called-on-host-global.test.ts` |
+| 7 | Native `fetch`/`Request`/`Response` exposed on the window (jsdom has none): jest-fetch-mock 4 uses them instead of cross-fetch, and its string routes never match relative URLs (`request.url` is absolute) | 5 | rtd-dom | window (+ jest-environment option) | `window-fetch-primitives-exposed.test.ts` |
+| 8 | `Element.getAnimations` exists (always `[]`), so React Aria's `useDisclosure` takes its animated path and sets `hidden="until-found"` a microtask later; synchronous `not.toBeVisible()` after `rerender` fails | 2–3 | rtd-dom | html-elements (+ css) | `html-elements-getanimations-feature-probe.test.ts` |
+| 9 | Fixture assumption: tests assert jsdom's "Not implemented: navigation" console.error (DropdownMenu meta-key link, feature-flag override reload). @rtd/dom deliberately never navigates | 2 | rtd-dom | html-elements (deviation; recommend keep) | `html-elements-link-navigation-jsdom-diagnostic.test.ts` |
+| 10 | `element.style` keeps author color text (`#ff8700`, `currentColor`) instead of serializing the specified value (`rgb(255, 135, 0)`, `currentcolor`), also inside `color-mix()` | 1 | rtd-dom | css | `css-inline-color-serialization.test.ts` |
+| 11 | Unattributed: `conversationsQuery` embed renders its LoadingError (same API request is made on both engines; the block fails while rendering the response) | 3 | rtd-dom | ? (needs a closer look) | — |
+| 12 | Unattributed singles: views `userDropdown` "shows admin link" (menuitemradio missing), `passwordReset` success text `toBeVisible` (probably #8's timing) | 2 | rtd-dom | ? | — |
+
+Not failures, but blocking a fair comparison:
+
+| cluster | effect | owner | repro |
+| --- | --- | --- | --- |
+| **Window timers survive `window.close()`**: `window.setTimeout`/`setInterval` are the host's, so long timers left by app code (TanStack Query GC timers, debounces, polling intervals) keep each finished test file's vm context and module graph alive | worker heap grows **7.2 MiB per test file** after a forced GC (jsdom 0.26 MiB); ~1 GiB retained per worker after ~120 files; with timers cleared (triage shim) rtd grows 0.17 MiB/file and peak worker RSS drops from 1,695 MiB to 704 MiB (jsdom 1,084 MiB). Without a fix Sentry would need `workerIdleMemoryLimit` on rtd | window (timers) + jest-environment (teardown) | `window-timers-survive-close-leak.test.ts` |
+| **Worker crashes after teardown** (`ReferenceError: window is not defined` from React's scheduler / TanStack notifyManager after uninstall) | 125+ worker deaths per components run, 21 files lost, ~130 workers spawned instead of 6 | jest-environment | **fixed in `cf0a3f9`** during this run (teardown keeps the closed window's globals, like jsdom) |
+
+## Performance finding (jest-environment)
+
+`jest-environment-rtd` inherits jest-environment-node's contextified vm context around Jest's
+GlobalProxy; jsdom 30 uses `vm.constants.DONT_CONTEXTIFY`. The `rtd-direct` experiment
+(`harness/env-rtd.cjs`, swaps `vm.createContext` for the duration of the NodeEnvironment
+constructor) passes the same tests and cuts components CPU from ~348 s to ~315 s (jsdom ~375 s).
+Proposed: build the environment on a DONT_CONTEXTIFY context (as `~/gh/vibedom/downstream/sentry`
+found for React element creation).
+
+## Triage shims (`run.ts --triage`)
+
+Applied only to rtd modes, in `harness/env-rtd.cjs`; reports are labelled `-triage`:
+
+- `navigator.platform = ""` (cluster 5) via `testEnvironmentOptions.platform`;
+- `navigator.clipboard` made an own writable data property per window (cluster 2);
+- every lazily built index-getter table instantiated once, then the interface baseline taken
+  (cluster 1);
+- timers created through the file's global tracked and cleared at teardown (timer leak).
+
+## rtd-nohacks (experiment) — what Sentry's jsdom hacks are hiding
+
+Removing upstream's `getComputedStyle = el => el.style`, Floating UI mock, `matchMedia` stub and
+`IntersectionObserver` class on top of rtd-full (triage): components +16, views +47 failures.
+
+| signature | tests | why |
+| --- | --: | --- |
+| user-event "Unable to perform pointer interaction as the element has `pointer-events: none`" | 54 (10 + 44) | real cascade: overlays/menus are `pointer-events: none` until their (framer-motion) enter animation or positioning completes; with Sentry's hack user-event never sees author CSS. Test-side assumption, same in a browser. |
+| `toHaveStyle()` | 5 | assertions written against inline-style-only `getComputedStyle` |
+| `mql.addEventListener is not a function` | 2 | spec-local matchMedia stubs written for upstream's stub shape |
+
+Every other test passes with our real implementations: `matchMedia` and `IntersectionObserver`
+stubs are unnecessary on @rtd/dom, Floating UI runs unmocked without failures, and the real
+cascade costs no measurable time (see README "Status"). `getComputedStyle = el => el.style` is
+still needed **for test compatibility** (not speed) by the ~60 tests above.
+
+## Minor gaps seen while triaging (no Sentry test depends on them)
+
+- `Document.getElementsByName` is not implemented (dom-core / html-elements).
+- `GlobalModal does not close modal when pressing escape to close a select dropdown` is flaky on
+  jsdom too (failed once in four jsdom runs).

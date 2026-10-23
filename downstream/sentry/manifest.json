@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/getsentry/sentry.git",
+  "branch": "master",
+  "commit": "503ad2e4e2a208a87d768a3e91bcfb55a778e7ba",
+  "retrievedAt": "2026-10-23",
+  "packageManager": "pnpm@12.10.1",
+  "node": "26.12.1"
+}
