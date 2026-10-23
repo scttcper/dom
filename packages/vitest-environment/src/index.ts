@@ -26,7 +26,7 @@ import type { WindowOptions } from "@rtd/dom";
 // dynamic import below.
 if (process.env.RTD_COMPILE_CACHE !== "0") enableCompileCache?.();
 const { createWindow, installGlobals } = await import("@rtd/dom");
-const { setUncaughtExceptionHandler, captureInterfaceBaseline, restoreInterfaces, trackGlobalTimers } = await import("@rtd/dom/internal");
+const { setUncaughtExceptionHandler, captureInterfaceBaseline, restoreInterfaces, installClock, VirtualClock } = await import("@rtd/dom/internal");
 
 /**
  * Exceptions nobody handled (listener exceptions, reportError(), React's uncaught errors) go to
@@ -38,14 +38,29 @@ function reportToHost(error: unknown): void {
   process.emit("uncaughtException", error as Error, "uncaughtException");
 }
 
-export interface RtdEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {}
+export interface RtdEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
+  /**
+   * Skip idle time (default true): timers live on a virtual clock that jumps to the next timer
+   * whenever the event loop has nothing else to do (no pending immediates, no I/O), with Date and
+   * performance.now() advancing by the same amount. `false` keeps real-time timers. The
+   * RTD_TIME_SKIP environment variable ("0"/"1") overrides it. See @rtd/dom window/clock.ts.
+   */
+  timeSkip?: boolean;
+}
 
 /** Same default URL as Vitest's jsdom and happy-dom environments. */
 const DEFAULT_URL = "http://localhost:3000/";
 
 function windowOptions(options: Record<string, unknown>): WindowOptions {
-  const rtd = (options?.rtd ?? {}) as RtdEnvironmentOptions;
+  const { timeSkip: _timeSkip, ...rtd } = (options?.rtd ?? {}) as RtdEnvironmentOptions;
   return { ...rtd, url: rtd.url ?? DEFAULT_URL };
+}
+
+function timeSkip(options: Record<string, unknown>): boolean {
+  const env = process.env.RTD_TIME_SKIP;
+  if (env === "1") return true;
+  if (env === "0") return false;
+  return ((options?.rtd ?? {}) as RtdEnvironmentOptions).timeSkip !== false;
 }
 
 // Host globals a fresh vm context needs (the window itself supplies the DOM).
@@ -93,6 +108,9 @@ const environment: Environment = {
   setup(global, options) {
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
+    // The worker's timers, Date and performance move onto the virtual clock until teardown
+    // (Vitest's own runner keeps the timers it captured at startup).
+    const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), global);
     // No interface snapshot here: Vitest runs setup/teardown once per worker (on "start"/"stop"),
     // so a restore at teardown could never sit between two files — every file the worker runs
     // shares this window, as with jsdom's environment.
@@ -100,6 +118,7 @@ const environment: Environment = {
     return {
       teardown() {
         setUncaughtExceptionHandler(null);
+        clock.uninstall();
         window.close();
         uninstall();
       },
@@ -116,10 +135,9 @@ const environment: Environment = {
       }
     }
     const uninstall = installGlobals(window, context as Record<PropertyKey, unknown>);
-    // The file's setTimeout/setInterval belong to the window (jsdom parity): teardown's close()
-    // clears pending ones so they cannot keep the discarded context alive in the long-lived
-    // worker. (setup() needs no such thing: Vitest calls it once per worker, not per file.)
-    trackGlobalTimers(window, context as Record<PropertyKey, unknown>);
+    // The file's timers live on its own virtual clock: disposing it at teardown drops pending
+    // ones, so they cannot keep the discarded context alive in the long-lived worker.
+    const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), context as Record<PropertyKey, unknown>);
     // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared
     // module classes: snapshot once and undo each file's prototype patches at teardown.
     captureInterfaceBaseline();
@@ -130,6 +148,7 @@ const environment: Environment = {
       },
       teardown() {
         setUncaughtExceptionHandler(null);
+        clock.clock.dispose();
         window.close();
         uninstall();
         restoreInterfaces();

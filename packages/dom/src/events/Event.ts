@@ -11,6 +11,7 @@
 //   A dispatch pushes its structs at the top and pops them when done, so nested
 //   (re-entrant) dispatches stack naturally and steady-state dispatch allocates nothing.
 
+import { clockNow } from "../window/clock.ts";
 import { exposeMembers } from "../webidl-runtime.ts";
 import type { EventInit } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
@@ -63,7 +64,7 @@ export class EventState {
     this.pathStart = -1;
     this.pathLength = 0;
     this.touchTargets = null;
-    this.timeStamp = performance.now();
+    this.timeStamp = clockNow();
   }
 }
 

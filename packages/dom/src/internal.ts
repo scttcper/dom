@@ -48,6 +48,7 @@ export { evaluateMediaQueryList, mediaEnvironment } from "./window/media.ts";
 export { windowInterfaces } from "./window/Window.ts";
 export { captureInterfaceBaseline, restoreInterfaces } from "./window/isolation.ts";
 export { trackGlobalTimers } from "./window/timers.ts";
+export { VirtualClock, VirtualTimeout, installClock, clockNow, virtualDate, virtualPerformance, type InstalledClock, type VirtualClockOptions } from "./window/clock.ts";
 
 // --- events area ---
 export { dispatch, getCurrentEvent, retarget, nodeGetTheParent, setAssignedSlotLookup } from "./events/dispatch.ts";

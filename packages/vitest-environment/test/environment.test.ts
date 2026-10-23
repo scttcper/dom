@@ -44,21 +44,19 @@ describe("setup(global, options) / teardown", () => {
   });
 
   test("teardown cancels pending animation frames and tasks created by the window", async () => {
-    vi.useFakeTimers();
-    try {
-      const global: Record<string, unknown> = {};
-      const env = await environment.setup(global, {});
-      const spy = vi.fn();
-      (global.requestAnimationFrame as (cb: () => void) => void)(spy);
-      (global.postMessage as (m: unknown, o: string) => void)("x", "*");
-      expect(vi.getTimerCount()).toBe(2);
-      await env.teardown(global);
-      expect(vi.getTimerCount()).toBe(0);
-      vi.runAllTimers();
-      expect(spy).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
+    // The window's frames and tasks live on the environment's virtual clock (@rtd/dom
+    // window/clock.ts), which teardown disposes: nothing pending may run afterwards.
+    const global: Record<string, unknown> = {};
+    const env = await environment.setup(global, {});
+    const frame = vi.fn();
+    const message = vi.fn();
+    (global.requestAnimationFrame as (cb: () => void) => void)(frame);
+    (global.addEventListener as (t: string, cb: () => void) => void)("message", message);
+    (global.postMessage as (m: unknown, o: string) => void)("x", "*");
+    await env.teardown(global);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(frame).not.toHaveBeenCalled();
+    expect(message).not.toHaveBeenCalled();
   });
 });
 

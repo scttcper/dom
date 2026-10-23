@@ -29,7 +29,7 @@ describe("Jest integration — https://html.spec.whatwg.org/#the-window-object",
     expect(result.testResults.map((r) => r.message).join("").trim()).toBe("");
     const failures = result.testResults.flatMap((r) => r.assertionResults.filter((a) => a.status !== "passed"));
     expect(failures).toEqual([]);
-    expect(result.numPassedTests).toBe(12);
+    expect(result.numPassedTests).toBe(17);
   });
 
   test("an unhandled exception in a React onClick fails the test (https://html.spec.whatwg.org/#report-an-exception)", { timeout: 60_000 }, () => {

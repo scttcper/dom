@@ -40,6 +40,15 @@ export interface RtdTestEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * implementation when they exist (docs/deviations.md).
    */
   nodeFetch?: boolean;
+  /**
+   * Skip idle time (default true): timers live on a virtual clock, and whenever the event loop
+   * has nothing to do but wait for one (no pending immediates, no I/O), the clock jumps to it,
+   * with Date and performance.now() advancing by the same amount. findBy/waitFor, user-event
+   * delays, debounces and timeouts stop costing wall time; ordering and app-visible time are
+   * unchanged. `false` keeps real-time timers (waitFor polls in real time). The RTD_TIME_SKIP
+   * environment variable ("0"/"1") overrides it. See packages/dom/src/window/clock.ts.
+   */
+  timeSkip?: boolean;
 }
 
 /**
@@ -180,10 +189,12 @@ export default class RtdEnvironment implements JestEnvironment<number> {
   rtdWindow: Window | null;
   /** jest-environment-jsdom's `dom`, reduced to what suites use (see RtdDom). */
   dom: RtdDom | null;
+  /** The file's timers (see RtdTestEnvironmentOptions.timeSkip). */
+  clock: InstanceType<typeof internal.VirtualClock> | null;
 
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const { projectConfig } = config;
-    const { customExportConditions, nodeFetch, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as RtdTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
 
@@ -209,10 +220,12 @@ export default class RtdEnvironment implements JestEnvironment<number> {
     dom.installGlobals(window, global);
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
-    // The file's setTimeout/setInterval belong to the window, as under jsdom: teardown's
-    // window.close() clears what is still pending, so a long app timer (TanStack Query GC,
-    // polling) cannot keep this vm context and its module graph alive after the file ends.
-    internal.trackGlobalTimers(window, global);
+    // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):
+    // window.setTimeout & co. delegate to these globals, and teardown disposes the clock, so a
+    // long app timer (TanStack Query GC, polling) cannot keep this vm context alive.
+    const envSkip = process.env.RTD_TIME_SKIP;
+    const skip = envSkip === "1" ? true : envSkip === "0" ? false : timeSkip !== false;
+    this.clock = internal.installClock(new internal.VirtualClock({ skip }), global).clock;
 
     // Fake timers are built after the window is installed: @sinonjs/fake-timers snapshots which
     // timer functions the global has (so jest.useFakeTimers() fakes requestAnimationFrame /
@@ -254,6 +267,8 @@ export default class RtdEnvironment implements JestEnvironment<number> {
     this.fakeTimersModern?.dispose();
     this.rtdWindow?.close();
     this.rtdWindow = null;
+    this.clock?.dispose();
+    this.clock = null;
     this.dom = null;
     internal.restoreInterfaces();
     this.context = null;
