@@ -15,18 +15,27 @@
         "failed": 1,
         "skipped": 1578,
         "failing": [
-          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "flaky": []
+        "flaky": [
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+        ]
       },
       "rtd-full": {
-        "passed": 9198,
-        "failed": 1,
+        "passed": 9197,
+        "failed": 2,
         "skipped": 1578,
         "failing": [
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "flaky": []
+        "flaky": [
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+        ]
       }
     }
   },
@@ -105,32 +114,29 @@
         "skipped": 3,
         "failing": [],
         "flaky": [
+          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ]
       },
       "rtd-dom": {
-        "passed": 6425,
-        "failed": 4,
+        "passed": 6428,
+        "failed": 1,
         "skipped": 3,
         "failing": [
-          "static/app/components/commandPalette/ui/featureFlagCommandPaletteActions.spec.tsx::FeatureFlagCommandPaletteActions clears stored overrides from the command palette",
-          "static/app/components/core/dropdownMenu/dropdownMenu.spec.tsx::DropdownMenu navigates to link on meta key",
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown"
         ],
         "flaky": [
+          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ]
       },
       "rtd-full": {
-        "passed": 6426,
-        "failed": 3,
+        "passed": 6429,
+        "failed": 0,
         "skipped": 3,
-        "failing": [
-          "static/app/components/commandPalette/ui/featureFlagCommandPaletteActions.spec.tsx::FeatureFlagCommandPaletteActions clears stored overrides from the command palette",
-          "static/app/components/core/dropdownMenu/dropdownMenu.spec.tsx::DropdownMenu navigates to link on meta key",
-          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown"
-        ],
+        "failing": [],
         "flaky": [
+          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ]
       }

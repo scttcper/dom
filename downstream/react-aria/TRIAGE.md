@@ -10,7 +10,7 @@ What is left:
 
 | mode | tests | cause | status |
 | --- | --: | --- | --- |
-| both | 1 | `useOverlayPosition` "at top": bottom 518 vs 350 | parked: jsdom 26 quirk (offsetParent and computed transform/filter match jsdom 30) |
+| both | 1 | `useOverlayPosition` "at top": bottom 518 vs 350 | parked: passes only on jsdom 26, which returns `""` for unset computed properties. With `offsetParent` null (jsdom never implements it), React Aria's `getContainingBlock` walks up and counts `transform !== 'none'` as a containing block, so on jsdom 26 the 600 px container wins (600 − 250 = 350). jsdom 30 and we compute `none`, the walk ends at the 768 px viewport: 768 − 250 = 518 |
 | rtd-full | 6 | Checkbox/Radio/Switch "press state with keyboard": `onPress` ×2 | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
 | rtd-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
 

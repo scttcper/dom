@@ -24,7 +24,7 @@ Sorted by failing tests (components + views, the mode where they first appear):
 | 6 | Window methods taken from an iframe and bound to the page global (rrweb `getImplementation`: `contentWindow.requestAnimationFrame.bind(window)`) crash: the rtd global is the host global, not a Window | 6 (3 + 3); 6 in the full suite | rtd-dom | window | `window-methods-called-on-host-global.test.ts` |
 | 7 | Native `fetch`/`Request`/`Response` exposed on the window (jsdom has none): jest-fetch-mock 4 uses them instead of cross-fetch, and its string routes never match relative URLs (`request.url` is absolute) | 5 | rtd-dom | window (+ jest-environment option) | `window-fetch-primitives-exposed.test.ts` |
 | 8 | `Element.getAnimations` exists (always `[]`), so React Aria's `useDisclosure` takes its animated path and sets `hidden="until-found"` a microtask later; synchronous `not.toBeVisible()` after `rerender` fails | 2–3 | rtd-dom | html-elements (+ css) | `html-elements-getanimations-feature-probe.test.ts` |
-| 9 | Fixture assumption: tests assert jsdom's "Not implemented: navigation" console.error (DropdownMenu meta-key link, feature-flag override reload). @rtd/dom deliberately never navigates | 2 | rtd-dom | html-elements (deviation; recommend keep) | `html-elements-link-navigation-jsdom-diagnostic.test.ts` |
+| 9 | Tests assert jsdom's "Not implemented: navigation" console.error (DropdownMenu meta-key link, feature-flag override reload). @rtd/dom never navigates | 2 | rtd-dom | window | `html-elements-link-navigation-jsdom-diagnostic.test.ts`; **fixed (aeb8f19)**: the jsdom profiles report jsdom's "Not implemented" errors where jsdom does (docs/deviations.md), still without navigating |
 | 10 | `element.style` keeps author color text (`#ff8700`, `currentColor`) instead of serializing the specified value (`rgb(255, 135, 0)`, `currentcolor`), also inside `color-mix()` | 1 | rtd-dom | css | `css-inline-color-serialization.test.ts` |
 | 11 | Unattributed: `conversationsQuery` embed renders its LoadingError (same API request is made on both engines; the block fails while rendering the response) | 3 | rtd-dom | ? (needs a closer look) | — |
 | 12 | Unattributed singles: views `userDropdown` "shows admin link" (menuitemradio missing), `passwordReset` success text `toBeVisible` (probably #8's timing) | 2 | rtd-dom | ? | — |
@@ -75,4 +75,6 @@ still needed **for test compatibility** (not speed) by the ~60 tests above.
 
 - `Document.getElementsByName` is not implemented (dom-core / html-elements).
 - `GlobalModal does not close modal when pressing escape to close a select dropdown` is flaky on
-  jsdom too (failed once in four jsdom runs).
+  jsdom too (failed once in four jsdom runs). On @rtd/dom it always passes alone and fails in
+  about half the runs of the whole file (Escape reaches the modal instead of the open select), so
+  the baseline lists it as flaky in every mode.
