@@ -12,6 +12,9 @@ export { EventTarget } from "./events/EventTarget.ts";
 export { Node } from "./nodes/Node.ts";
 export { Element } from "./nodes/Element.ts";
 export { Document, DOMImplementation, XMLDocument } from "./nodes/Document.ts";
+// https://html.spec.whatwg.org/#the-document-object: "Window objects must also have a writable,
+// configurable, non-enumerable property named HTMLDocument whose value is the Document interface object."
+export { Document as HTMLDocument } from "./nodes/Document.ts";
 export { DocumentFragment } from "./nodes/DocumentFragment.ts";
 export { DocumentType } from "./nodes/DocumentType.ts";
 export { CharacterData, Text, CDATASection, Comment, ProcessingInstruction } from "./nodes/CharacterData.ts";
@@ -33,6 +36,7 @@ export { Navigator, Clipboard, ClipboardItem } from "./window/Navigator.ts";
 export { Screen, VisualViewport } from "./window/Screen.ts";
 export { Storage } from "./window/Storage.ts";
 export { MediaQueryList } from "./window/media.ts";
+export { XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload } from "./window/xhr.ts";
 export { FileReader } from "./window/FileReader.ts";
 export { FileList } from "./window/FileList.ts";
 export { MediaQueryListEvent } from "./window/events.ts";

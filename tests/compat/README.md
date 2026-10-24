@@ -28,6 +28,7 @@ Current deviations from jsdom (all follow the HTML Standard and what browsers sh
 | :valid / :invalid | match barred controls | only candidates for constraint validation |
 | checkbox activation `input` event | `composed: false` | `composed: true` |
 | reflection | missing `formAction/formMethod/formEnctype`, `input.width/height`, `enterKeyHint`, `form.encoding/autocomplete/rel/relList`, `select.autocomplete`; `inputMode` not limited to known values; `button.type` setter rewrites the attribute | as specified |
+| XMLHttpRequest | response headers in arrival order, one line per field; `responseURL` kept after `abort()`; a timeout fires an extra `progress` and resets to UNSENT; `URLSearchParams` body sent as `text/plain`; XML `responseXML.contentType` always `application/xml` | sorted and combined headers; `""`; no `progress`, state DONE; `application/x-www-form-urlencoded`; the response's MIME type |
 
 Files (`test/forms/`): `input-value` (value modes, sanitization per type, type changes,
 valueAs*, stepUp/Down, file inputs), `checkedness` (dirty checkedness, indeterminate, radio
@@ -37,6 +38,12 @@ form.elements, RadioNodeList, named properties, fieldset disabling, labels), `va
 (barring, every validity flag, custom validity, invalid events), `form-data` (entry list
 construction, submitter, formdata event), `submission-activation` (requestSubmit/submit/reset,
 activation behavior, label activation), `pseudo-classes`, `reflection`.
+
+`test/xhr/`: `xhr` (XMLHttpRequest against a local server: events, response types, headers,
+bodies, redirects, abort, timeout, network errors, `data:` URLs; asynchronous scenarios use
+`differentialAsync`, with both windows at the server's origin) and `msw` (MSW 3 and MSW 2
+mocking our XHR, and axios's XHR adapter). `test/surface/`: each compat profile's installed API
+surface against jsdom 26 and 30 (packages/dom/src/window/compat.ts).
 
 ```bash
 pnpm vitest run --project @rtd/compat                 # compare @rtd/dom with the oracle

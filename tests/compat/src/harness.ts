@@ -46,9 +46,9 @@ export interface DifferentialOptions {
   knownGap?: string;
 }
 
-export function makeJsdomWindow(body = ""): AnyWindow {
+export function makeJsdomWindow(body = "", url = "http://localhost/"): AnyWindow {
   const dom = new JSDOM(`<!DOCTYPE html><html><head></head><body>${body}</body></html>`, {
-    url: "http://localhost/",
+    url,
     // Silence "Not implemented: HTMLFormElement.prototype.submit" and friends.
     virtualConsole: new VirtualConsole(),
     pretendToBeVisual: true,
@@ -56,9 +56,9 @@ export function makeJsdomWindow(body = ""): AnyWindow {
   return dom.window;
 }
 
-export function makeRtdWindow(body = ""): AnyWindow {
+export function makeRtdWindow(body = "", url = "http://localhost/"): AnyWindow {
   if (rtdCreateWindow === null) throw rtdLoadError;
-  const window = rtdCreateWindow({ url: "http://localhost/" }) as AnyWindow;
+  const window = rtdCreateWindow({ url }) as AnyWindow;
   if (body !== "") window.document.body.innerHTML = body;
   return window;
 }
@@ -150,6 +150,43 @@ export function differential(name: string, scenario: Scenario, options: Differen
   const run = () => {
     const actual = observe(scenario, makeRtdWindow(options.body));
     expect(actual).toEqual(expectedObservation(scenario, options));
+  };
+  if (options.knownGap) test.fails(`${name} [known gap: ${options.knownGap}]`, run);
+  else test(name, run);
+}
+
+export type AsyncScenario = (window: AnyWindow) => Promise<unknown>;
+
+/** Run an asynchronous scenario, capturing a rejection as `{ threw: name }`. */
+export async function observeAsync(scenario: AsyncScenario, window: AnyWindow): Promise<unknown> {
+  try {
+    return normalize(await scenario(window));
+  } catch (error) {
+    const e = error as { name?: string; constructor?: { name?: string } };
+    return { threw: e?.name ?? e?.constructor?.name ?? String(error) };
+  } finally {
+    window.close();
+  }
+}
+
+/**
+ * Register a differential test of an asynchronous scenario (networking): jsdom first, then
+ * @rtd/dom, one after the other. `url` (or a function returning it, for servers started in
+ * beforeAll) is both windows' document URL.
+ */
+export function differentialAsync(name: string, scenario: AsyncScenario, options: Omit<DifferentialOptions, "jsdomDeviation"> & { url?: string | (() => string) } = {}): void {
+  const url = () => (typeof options.url === "function" ? options.url() : (options.url ?? "http://localhost/"));
+  const expected = async () => {
+    const observed = await observeAsync(scenario, makeJsdomWindow(options.body, url()));
+    return options.jsdomFix ? normalize(options.jsdomFix.fix(structuredClone(observed))) : observed;
+  };
+  if (ORACLE_ONLY) {
+    test(name, async () => console.log(`ORACLE ${name} => ${JSON.stringify(await expected())}`));
+    return;
+  }
+  const run = async () => {
+    const want = await expected();
+    expect(await observeAsync(scenario, makeRtdWindow(options.body, url()))).toEqual(want);
   };
   if (options.knownGap) test.fails(`${name} [known gap: ${options.knownGap}]`, run);
   else test(name, run);

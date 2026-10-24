@@ -50,7 +50,7 @@ defineWPTDirectory(
   {
     "Body-FrameSet-Event-Handlers.html": INLINE_HANDLERS,
     "EventTarget-dispatchEvent.html": "DeviceMotionEvent / DeviceOrientationEvent are not implemented (no device sensors)",
-    "event-global.html": "window.event is a prototype accessor, not an own property, and there is no XMLHttpRequest (window area)",
+    "event-global.html": "window.event is a prototype accessor, not an own property (window area)",
     "event-global-event-targets.html": NODE_EVENT_TARGETS,
     "passive-by-default-non-node.html": NODE_EVENT_TARGETS,
   },

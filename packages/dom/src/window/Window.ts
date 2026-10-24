@@ -666,6 +666,22 @@ export class Window extends EventTarget {
     return task;
   }
 
+  /**
+   * @internal Run `abort` when the window closes (in-flight XMLHttpRequests): returns the entry
+   * to pass to _releaseCloseable once the work is done, or null if the window is already closed.
+   */
+  _closeable(abort: () => void): PendingTask | null {
+    if (this[$closed]) return null;
+    const task: PendingTask = { handle: undefined, clear: abort as PendingTask["clear"], scheduledWith: null };
+    (this[$tasks] ??= new Set()).add(task);
+    return task;
+  }
+
+  /** @internal Forget a _closeable entry without running it. */
+  _releaseCloseable(task: PendingTask): void {
+    this[$tasks]?.delete(task);
+  }
+
   _hostSetTimeout(): unknown {
     const set = this[$host].setTimeout;
     return typeof set === "function" ? set : globalThis.setTimeout;

@@ -6,3 +6,5 @@ packages:
 allowBuilds:
   scriptc: true
   unrs-resolver: false
+  # Its postinstall copies the browser service worker; tests/compat only uses msw/node.
+  msw: false

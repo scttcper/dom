@@ -1,7 +1,4 @@
 {
- "html/semantics/interactive-elements/contextmenu-historical.html": [
-  "onshow must not be present on the GlobalEventHandlers locations"
- ],
  "html/semantics/interactive-elements/the-details-element/details-toggle-source.html": [
   "ToggleEvent.source on <details> elements: click details."
  ],

@@ -11,7 +11,11 @@
  *     fetch/Request/Response; jest-environment-jsdom adds none)
  *   jsdom — JSDOM#reconfigure: https://github.com/jsdom/jsdom#reconfiguring-the-jsdom-with-reconfiguresettings
  *     (jest-environment-jsdom exposes the JSDOM object as `environment.dom`)
+ *   XMLHttpRequest Standard — https://xhr.spec.whatwg.org/#the-send()-method (jsdom's window
+ *     has XMLHttpRequest; axios's browser build, which the "browser" export condition selects,
+ *     needs it since fetch is absent)
  */
+import { createServer } from "node:http";
 import { describe, expect, test } from "vitest";
 import RtdEnvironment from "../src/index.ts";
 
@@ -128,6 +132,26 @@ describe("timers belong to the window — https://html.spec.whatwg.org/#close-a-
       expect(global.setTimeout).toBe(real.setTimeout);
       expect(global.setInterval).toBe(real.setInterval);
     });
+  });
+});
+
+describe("XMLHttpRequest — https://xhr.spec.whatwg.org/#the-send()-method", () => {
+  test("the test global's XMLHttpRequest completes a request against the environment's window URL", async () => {
+    const server = createServer((req, res) => res.end(`got ${req.url}`));
+    await new Promise<void>((resolve) => server.listen(0, "localhost", resolve));
+    const url = `http://localhost:${(server.address() as { port: number }).port}/app/`;
+    try {
+      await withEnvironment({ url }, async (_env, global) => {
+        const xhr = new global.XMLHttpRequest();
+        const done = new Promise((resolve) => xhr.addEventListener("loadend", resolve));
+        xhr.open("GET", "data.json");
+        xhr.send();
+        await done;
+        expect([xhr.readyState, xhr.status, xhr.responseText]).toEqual([4, 200, "got /app/data.json"]);
+      });
+    } finally {
+      server.close();
+    }
   });
 });
 

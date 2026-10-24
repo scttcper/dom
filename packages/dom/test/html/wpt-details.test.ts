@@ -9,7 +9,7 @@
  */
 import { defineWPT } from "../wpt/harness.ts";
 
-defineWPT("html/semantics/interactive-elements/contextmenu-historical.html", "HTMLDocument is not exposed (window area)");
+defineWPT("html/semantics/interactive-elements/contextmenu-historical.html");
 defineWPT("html/semantics/interactive-elements/the-details-element/details-name-exclusivity-fragment-insertion.html");
 defineWPT("html/semantics/interactive-elements/the-details-element/details.html");
 defineWPT("html/semantics/interactive-elements/the-summary-element/activation-behavior.html");

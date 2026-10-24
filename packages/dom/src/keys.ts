@@ -213,5 +213,6 @@ export const $width: unique symbol = Symbol.for("rtd.width");
 export const $window: unique symbol = Symbol.for("rtd.window");
 export const $writeBuffer: unique symbol = Symbol.for("rtd.writeBuffer");
 export const $x: unique symbol = Symbol.for("rtd.x");
+export const $xhr: unique symbol = Symbol.for("rtd.xhr");
 export const $y: unique symbol = Symbol.for("rtd.y");
 export const $z: unique symbol = Symbol.for("rtd.z");

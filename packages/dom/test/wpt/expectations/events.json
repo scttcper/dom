@@ -33,8 +33,7 @@
     "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceOrientationEvent)."
   ],
   "dom/events/event-global.html": [
-    "event exists on window, which is initially set to undefined",
-    "window.event is set to the current event, which is the event passed to dispatch (2)"
+    "event exists on window, which is initially set to undefined"
   ],
   "dom/events/event-global-event-targets.html": [
     "window.event is set when dispatching on AbortSignal",
