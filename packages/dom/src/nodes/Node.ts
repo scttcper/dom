@@ -91,6 +91,11 @@ export abstract class Node extends EventTarget {
 
   /** @internal Wrappers are created by the document/parser, never directly by users. */
   constructor(type: number, doc: Document | null) {
+    // Node, CharacterData, Element, Attr and DocumentType have no constructor in their IDL, so
+    // `new Element()` & co. throw (https://webidl.spec.whatwg.org/#es-interface-call step 1;
+    // https://dom.spec.whatwg.org/#interface-node). Internal callers always pass a document
+    // (null for a Document, which is its own node document).
+    if (doc === undefined) throw new TypeError("Illegal constructor");
     super();
     // A Document passes null and becomes its own node document.
     this[$impl] = new NodeImpl(this, type, doc ?? (this as unknown as Document));
