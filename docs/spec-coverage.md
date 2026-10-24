@@ -52,12 +52,12 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-display](#css-css-display) | 4 | 2 | 0 | 2 |
 | [CSS: css-nesting](#css-css-nesting) | 4 | 2 | 1 | 1 |
 | [CSS: css-position](#css-css-position) | 4 | 1 | 0 | 3 |
+| [CSS: css-variables](#css-css-variables) | 4 | 4 | 0 | 0 |
 | [W3C: touch-events](#w3c-touch-events) | 4 | 1 | 0 | 3 |
 | [CSS: css-fonts](#css-css-fonts) | 3 | 1 | 2 | 0 |
 | [CSS: css-properties-values-api](#css-css-properties-values-api) | 3 | 0 | 0 | 3 |
 | [CSS: css-scoping](#css-css-scoping) | 3 | 0 | 1 | 2 |
 | [CSS: css-transitions](#css-css-transitions) | 3 | 1 | 0 | 2 |
-| [CSS: css-variables](#css-css-variables) | 3 | 3 | 0 | 0 |
 | [ECMAScript](#ecmascript) | 3 | 2 | 0 | 1 |
 | [Compatibility Standard](#compatibility-standard) | 2 | 1 | 0 | 1 |
 | [CSS: css-flexbox](#css-css-flexbox) | 2 | 2 | 0 | 0 |
@@ -89,7 +89,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1542 | 736 | 120 | 686 |
+| **All** | 1543 | 737 | 120 | 686 |
 
 ## Web-platform-tests fixtures
 
@@ -737,7 +737,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [rendered-text-collection-steps](https://html.spec.whatwg.org/#rendered-text-collection-steps) | `dom/html/innerText.ts` | WPT: `html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html` |
 | [rendered-text-fragment](https://html.spec.whatwg.org/#rendered-text-fragment) | `dom/html/innerText.ts` | **untested** |
 | [rendering](https://html.spec.whatwg.org/#rendering) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts` |
-| [report-an-exception](https://html.spec.whatwg.org/#report-an-exception) | `dom/events/report.ts`, `dom/html/custom-elements.ts`, `jest-environment/index.ts` +1 | `dom/events/dispatch.test.ts`, `jest-environment/jest.test.ts`, `vitest-environment/react.test.tsx` |
+| [report-an-exception](https://html.spec.whatwg.org/#report-an-exception) | `dom/events/report.ts`, `dom/html/custom-elements.ts`, `jest-environment/index.ts` +2 | `dom/events/dispatch.test.ts`, `jest-environment/jest.test.ts`, `register/register.test.ts`, `vitest-environment/react.test.tsx` |
 | [report-the-error](https://html.spec.whatwg.org/#report-the-error) | `dom/events/report.ts` | **untested** |
 | [request-close-return-value](https://html.spec.whatwg.org/#request-close-return-value) | `dom/html/interactive.ts` | **untested** |
 | [request-close-source-element](https://html.spec.whatwg.org/#request-close-source-element) | `dom/html/interactive.ts` | **untested** |
@@ -897,7 +897,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-title-element-2](https://html.spec.whatwg.org/#the-title-element-2) | `dom/html/resources.ts` | **untested** |
 | [the-toggleevent-interface](https://html.spec.whatwg.org/#the-toggleevent-interface) | `dom/events/events.ts`, `dom/html/events.ts` | **untested** |
 | [the-useractivation-interface](https://html.spec.whatwg.org/#the-useractivation-interface) | `dom/window/Navigator.ts` | **untested** |
-| [the-window-object](https://html.spec.whatwg.org/#the-window-object) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts`, `jest-environment/jest.test.ts`, `vitest-environment/environment.test.ts` +1 |
+| [the-window-object](https://html.spec.whatwg.org/#the-window-object) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts`, `jest-environment/jest.test.ts`, `register/register.test.ts` +2 |
 | [timer-initialisation-steps](https://html.spec.whatwg.org/#timer-initialisation-steps) | `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/wpt-timers.test.ts` |
 | [timeranges](https://html.spec.whatwg.org/#timeranges) | `dom/html/media.ts` | **untested** |
 | [timers](https://html.spec.whatwg.org/#timers) | `dom/window/Window.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/wpt-timers.test.ts`, `jest-environment/environment.test.ts` |
@@ -1840,6 +1840,17 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [remove-an-element-from-the-top-layer-immediately](https://drafts.csswg.org/css-position/#remove-an-element-from-the-top-layer-immediately) | `dom/html/top-layer.ts` | **untested** |
 | [top-styling](https://drafts.csswg.org/css-position/#top-styling) | `dom/html/top-layer.ts` | **untested** |
 
+## CSS: css-variables
+
+<https://drafts.csswg.org/css-variables/> — 4 sections implemented, 4 tested, 0 by WPT only, 0 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [cycles](https://drafts.csswg.org/css-variables/#cycles) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
+| [invalid-at-computed-value-time](https://drafts.csswg.org/css-variables/#invalid-at-computed-value-time) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
+| [serializing-custom-props](https://drafts.csswg.org/css-variables/#serializing-custom-props) | `dom/css/values.ts` | `dom/css/computed-values.test.ts`; WPT: `css/cssom/serialize-variable-reference.html`, `css/cssom/variable-names.html` |
+| [substitute-a-var](https://drafts.csswg.org/css-variables/#substitute-a-var) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
+
 ## W3C: touch-events
 
 <https://w3c.github.io/touch-events/> — 4 sections implemented, 1 tested, 0 by WPT only, 3 untested.
@@ -1890,16 +1901,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-transitions/#interface-globaleventhandlers-idl) | `dom/events/handlers.ts` | **untested** |
 | [interface-transitionevent](https://drafts.csswg.org/css-transitions/#interface-transitionevent) | `dom/events/events.ts` | **untested** |
 | [the-cssstartingstylerule-interface](https://drafts.csswg.org/css-transitions/#the-cssstartingstylerule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
-
-## CSS: css-variables
-
-<https://drafts.csswg.org/css-variables/> — 3 sections implemented, 3 tested, 0 by WPT only, 0 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [cycles](https://drafts.csswg.org/css-variables/#cycles) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
-| [serializing-custom-props](https://drafts.csswg.org/css-variables/#serializing-custom-props) | `dom/css/values.ts` | `dom/css/computed-values.test.ts`; WPT: `css/cssom/serialize-variable-reference.html`, `css/cssom/variable-names.html` |
-| [substitute-a-var](https://drafts.csswg.org/css-variables/#substitute-a-var) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 
 ## ECMAScript
 
