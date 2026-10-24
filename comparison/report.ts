@@ -232,7 +232,7 @@ export function report(options: { readme?: boolean } = {}): void {
     return [row.note === "virtual" ? `${row.label}¹` : row.label, ...out];
   }).filter((r) => r !== null);
   const jest = suites.get("jest");
-  const jestNote = jest?.labels ? ` ² Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
+  const jestNote = jest?.labels ? ` ² Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "").replace(/ \+ its Testing Library$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
   const section = [
     START,
     table(header(contenders), rows),
