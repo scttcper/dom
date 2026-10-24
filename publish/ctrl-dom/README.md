@@ -33,7 +33,9 @@ import { ctrlDom } from "@ctrl/dom/vitest";
 
 export default defineConfig({
   plugins: [ctrlDom()],
-  test: { pool: "vmThreads" }, // optional: per-file setup drops to about 1 ms
+  // Optional and faster: each test file gets a fresh context in a reused worker instead of a
+  // new worker, so per-file setup drops from about 23 ms to about 2 ms.
+  test: { pool: "vmThreads" },
 });
 ```
 

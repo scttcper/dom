@@ -1,12 +1,14 @@
 # ctrl-dom
 
-`@ctrl/dom` is a DOM for testing React components. It replaces jsdom or happy-dom in Vitest and
-Jest, and it also ships its own `@testing-library/react`, `/dom`, `/user-event` and `/jest-dom`,
-`aria-query` and `dom-accessibility-api`, built on that DOM.
+`@ctrl/dom` is a faster replacement for jsdom and happy-dom when testing React components with
+Vitest or Jest. It also comes with its own Testing Library (`@testing-library/react`, `/dom`,
+`/user-event` and `/jest-dom`), built on the same DOM, which makes queries and user events
+faster still.
 
-Each one keeps upstream's exports, behavior, error messages and `prettyDOM` output, so existing
-tests run unchanged. You can swap only the DOM and keep stock Testing Library, or swap the whole
-stack, which is faster. The [Performance](#performance) table has the numbers.
+It matches what it replaces: jsdom's globals, and Testing Library's exports, behavior, error
+messages and `prettyDOM` output, so existing tests run unchanged. Swap only the DOM and keep
+stock Testing Library, or swap the whole stack for the biggest speedup;
+[Performance](#performance) has the numbers.
 
 ## Use it
 
@@ -21,7 +23,12 @@ Vitest (>= 5), whole stack: the environment plus your `@testing-library/*` impor
 import { defineConfig } from "vitest/config";
 import { ctrlDom } from "@ctrl/dom/vitest";
 
-export default defineConfig({ plugins: [ctrlDom()], test: { pool: "vmThreads" } });
+export default defineConfig({
+  plugins: [ctrlDom()],
+  // Optional and faster: each test file gets a fresh context in a reused worker instead of a
+  // new worker, so per-file setup drops from about 23 ms to about 2 ms.
+  test: { pool: "vmThreads" },
+});
 ```
 
 Vitest, DOM only (`pnpm add -D @ctrl/dom vitest-environment-ctrl-dom`):
