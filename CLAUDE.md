@@ -45,6 +45,11 @@ before changing anything.
   original assertions; note any intentional difference inline with the reason.
 - Prefer differential tests where an oracle exists: run the same scenario on jsdom (+ stock
   testing-library) and on our stack and compare observable results.
+- Debugging a failing React/Testing Library test: rerun just that test with `CTRL_DOM_DEBUG=aria`
+  for accessibility snapshots and closest matches instead of HTML dumps (docs/agent-debugging.md).
+  Never set it for whole-suite runs: differential tests compare upstream's exact messages.
+- Adding or removing a spec link in src or test files changes `docs/spec-coverage.md`: rerun
+  `pnpm docs:spec` (tests/compat/test/docs/spec-coverage.test.ts fails when it is stale).
 
 ## Benchmarks
 
@@ -83,6 +88,7 @@ pnpm typecheck                          # tsc -b over everything
 pnpm bench                              # benchmarks (bench/)
 pnpm bench:compare --base ../base --head .  # regression check between two clean checkouts
 pnpm docs:compat                        # regenerate the compat profile table in docs/deviations.md
+pnpm docs:spec                          # regenerate docs/spec-coverage.md (spec sections vs tests)
 node downstream/track.ts                # latest downstream runs vs downstream/baseline.json
 pnpm scriptc:check                      # scriptc compiles every @scriptc-compatible module
 ```
