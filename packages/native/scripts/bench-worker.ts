@@ -1,6 +1,6 @@
 // One native-vs-JS sample in a fresh process (spawned by scripts/bench.ts).
 //
-//   node scripts/bench-worker.ts <js|native> <op> <warm|cold>
+//   node scripts/bench-worker.ts <js|native|wasm> <op> <warm|cold>
 //
 // cold: time of the FIRST call in this process (no JIT warmup; for native, addon load is
 // reported separately and also included in `coldWithLoadMs`). warm: median of timed
@@ -52,7 +52,7 @@ const ops: Record<string, Op> = {
   "html-tokens-large": {
     iterations: 15,
     // JS: the pull tokenizer consumed in place. Native: serialized stream decoded by JS.
-    run: (lib) => (impl === "native" ? decodeTokenStream(lib.htmlTokens(inputs.htmlLarge)) : lib.htmlTokenCount(inputs.htmlLarge)),
+    run: (lib) => (impl !== "js" ? decodeTokenStream(lib.htmlTokens(inputs.htmlLarge)) : lib.htmlTokenCount(inputs.htmlLarge)),
   },
   "css-large": { iterations: 15, run: (lib) => lib.cssChecksum(inputs.cssLarge) },
   "css-inline-x10k": {
@@ -92,6 +92,9 @@ if (impl === "native") {
   const require = createRequire(import.meta.url);
   // Node-API properties are non-enumerable: use the addon object itself, not a spread copy.
   lib = require("../dist/rtd-native.node");
+} else if (impl === "wasm") {
+  const { loadWasm } = await import("../src/wasm.ts");
+  lib = loadWasm();
 } else {
   const m = await import("../src/lib/rtd.ts");
   const { Tokenizer, TK_EOF } = await import("../../dom/src/parser/tokenizer.ts");
@@ -113,7 +116,7 @@ if (impl === "native") {
 }
 const loadMs = performance.now() - tLoad0;
 
-const collect = impl === "native" ? () => lib.collect() : () => {};
+const collect = impl !== "js" ? () => lib.collect() : () => {};
 let result: unknown;
 let ms: number;
 const extra: Record<string, number> = { loadMs };

@@ -6,7 +6,12 @@
 //   3. Generate a Node-API C shim from the profile (dist/build/rtd-shim.c).
 //   4. clang the shim + archive into dist/rtd-native.node (against Node's own headers).
 //
-// Flags: --optimization <release|speed|dev> (default release), --entry <file> (default src/lib/rtd.ts).
+// With --target wasm32-wasi, step 2 builds a WASI reactor instead (dist/rtd.wasm, loaded by
+// src/wasm.ts with the profile from step 1) and steps 3–4 are skipped. Needs zig and
+// @scriptc/runtime-wasm32-wasi at scriptc's version.
+//
+// Flags: --optimization <release|speed|dev> (default release), --entry <file> (default src/lib/rtd.ts),
+// --target <native|wasm32-wasi> (default native).
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
@@ -23,6 +28,7 @@ const { values: flags } = parseArgs({
     optimization: { type: "string", default: "release" },
     entry: { type: "string", default: "src/lib/rtd.ts" },
     name: { type: "string", default: "rtd" },
+    target: { type: "string", default: "native" },
   },
 });
 
@@ -226,6 +232,15 @@ if (import.meta.main) {
   };
   const profilePath = join(buildDir, `${name}.profile.json`);
   writeFileSync(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
+
+  if (flags.target === "wasm32-wasi") {
+    const wasm = join(nativeDir, "dist", `${name}.wasm`);
+    const t = performance.now();
+    execFileSync(scriptc, ["build", "--lib", "--profile", profilePath, "-o", wasm], { stdio: "inherit", env: { ...process.env, SCRIPTC_TARGET: "wasm32-wasi" } });
+    console.log(`scriptc wasm32-wasi reactor: ${relative(nativeDir, wasm)} (${((performance.now() - t) / 1000).toFixed(1)} s)`);
+    process.exit(0);
+  }
+  if (flags.target !== "native") throw new Error(`--target: native or wasm32-wasi, got ${flags.target}`);
 
   const archive = join(buildDir, `${name}.lib.a`);
   let t = performance.now();

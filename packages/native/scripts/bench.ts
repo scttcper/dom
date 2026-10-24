@@ -1,9 +1,11 @@
-// Native (scriptc + Node-API) vs JS (same TypeScript on V8) per module, warm and cold, one fresh
-// process per sample, implementations interleaved. Results are checked equal across impls.
+// Native (scriptc + Node-API) and wasm (scriptc wasm32-wasi reactor) vs JS (same TypeScript on V8)
+// per module, warm and cold, one fresh process per sample, implementations interleaved (rotated
+// per sample). Results are checked equal across impls.
 //
-//   node scripts/bench.ts [--samples 5] [--ops html-large,css-large] [--modes warm,cold]
+//   node scripts/bench.ts [--samples 5] [--ops html-large,css-large] [--modes warm,cold] [--impls js,native,wasm]
 //
-// Requires dist/rtd-native.node (`node scripts/build.ts`).
+// Requires dist/rtd-native.node (`node scripts/build.ts`) and, for wasm, dist/rtd.wasm
+// (`node scripts/build.ts --target wasm32-wasi`).
 
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
@@ -20,6 +22,7 @@ const { values: flags } = parseArgs({
         "noop,html-large,html-fragment-x200,html-tokens-large,css-large,css-inline-x10k,selector-x10k,selector-batch-10k,entities-attr-x100k,entities-text-1mb",
     },
     modes: { type: "string", default: "warm,cold" },
+    impls: { type: "string", default: "js,native" },
   },
 });
 
@@ -40,7 +43,8 @@ const results: R[] = [];
 for (let s = 0; s < samples; s++) {
   for (const op of flags.ops.split(",")) {
     for (const mode of flags.modes.split(",")) {
-      const impls = s % 2 ? ["native", "js"] : ["js", "native"];
+      const list = flags.impls.split(",");
+      const impls = list.map((_, i) => list[(i + s) % list.length]);
       for (const impl of impls) {
         const p = spawnSync(process.execPath, ["--no-warnings", join(here, "bench-worker.ts"), impl, op, mode], {
           encoding: "utf8",
@@ -64,22 +68,22 @@ const med = (xs: number[]) => {
 };
 const f = (x: number) => (Number.isFinite(x) ? (x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1) : x.toFixed(2)) : "–");
 
-console.log("| op | mode | JS ms | native ms | native/JS | incl. module load JS / native | JS RSS MB | native RSS MB | same result |");
-console.log("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+const list = flags.impls.split(",");
+const others = list.filter((x) => x !== "js");
+const range = (rs: R[]) => `${f(med(rs.map((r) => r.ms)))} [${f(Math.min(...rs.map((r) => r.ms)))}–${f(Math.max(...rs.map((r) => r.ms)))}]`;
+console.log(`| op | mode | ${list.map((x) => `${x} ms`).join(" | ")} | ${others.map((x) => `${x}/JS`).join(" | ")} | cold incl. load ${list.join(" / ")} | ${list.map((x) => `${x} RSS MB`).join(" | ")} | same result |`);
+console.log(`| --- | --- | ${[...list, ...others, "load", ...list].map(() => "---:").join(" | ")} | --- |`);
 for (const op of flags.ops.split(",")) {
   for (const mode of flags.modes.split(",")) {
     const pick = (impl: string) => results.filter((r) => r.op === op && r.mode === mode && r.impl === impl);
-    const j = pick("js");
-    const n = pick("native");
-    const jm = med(j.map((r) => r.ms));
-    const nm = med(n.map((r) => r.ms));
-    const same = j.length && n.length && j.every((r) => JSON.stringify(r.result) === JSON.stringify(n[0].result));
-    const err = [...j, ...n].find((r) => r.error)?.error;
+    const by = list.map(pick);
+    const jm = med(pick("js").map((r) => r.ms));
+    const first = by.flat().find((r) => !r.error);
+    const same = by.every((rs) => rs.length && rs.every((r) => JSON.stringify(r.result) === JSON.stringify(first?.result)));
+    const err = by.flat().find((r) => r.error)?.error;
     console.log(
-      `| ${op} | ${mode} | ${f(jm)} [${f(Math.min(...j.map((r) => r.ms)))}–${f(Math.max(...j.map((r) => r.ms)))}] | ${f(nm)} [${f(Math.min(...n.map((r) => r.ms)))}–${f(Math.max(...n.map((r) => r.ms)))}] | ${f(nm / jm)}× | ${mode === "cold" ? `${f(med(j.map((r) => r.coldWithLoadMs ?? NaN)))} / ${f(med(n.map((r) => r.coldWithLoadMs ?? NaN)))}` : ""} | ${f(med(j.map((r) => r.rssMB)))} | ${f(med(n.map((r) => r.rssMB)))} | ${same ? "yes" : err ? `error: ${err.slice(0, 80)}` : "NO"} |`,
+      `| ${op} | ${mode} | ${by.map(range).join(" | ")} | ${others.map((x) => `${f(med(pick(x).map((r) => r.ms)) / jm)}×`).join(" | ")} | ${mode === "cold" ? by.map((rs) => f(med(rs.map((r) => r.coldWithLoadMs ?? NaN)))).join(" / ") : ""} | ${by.map((rs) => f(med(rs.map((r) => r.rssMB)))).join(" | ")} | ${same ? "yes" : err ? `error: ${err.slice(0, 80)}` : "NO"} |`,
     );
   }
 }
-const loads = results.filter((r) => r.impl === "native").map((r) => r.loadMs);
-const jsLoads = results.filter((r) => r.impl === "js").map((r) => r.loadMs);
-console.log(`\naddon load (dlopen + init) median ${f(med(loads))} ms; JS module import median ${f(med(jsLoads))} ms`);
+console.log(`\nload (module import / dlopen + init / wasm compile + instantiate): ${list.map((x) => `${x} ${f(med(results.filter((r) => r.impl === x).map((r) => r.loadMs)))} ms`).join("; ")}`);
