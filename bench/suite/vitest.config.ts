@@ -9,12 +9,12 @@
 
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
-import { workspacePackages } from "../lib/packages.ts";
+import { distMapEnv, workspacePackages } from "../lib/packages.ts";
 
 const benchEnv = process.env.BENCH_ENV ?? "jsdom";
 const dist = benchEnv.endsWith("-dist");
 const env = dist ? benchEnv.slice(0, -"-dist".length) : benchEnv;
-const distPreload = new URL("./dist-preload.ts", import.meta.url).href;
+const distPreload = new URL("../lib/dist-preload.js", import.meta.url).href;
 const workers = process.env.BENCH_WORKERS ? Number(process.env.BENCH_WORKERS) : undefined;
 // BENCH_POOL=vmForks|vmThreads|threads: Vitest pool (default: Vitest's, forks with per-file isolation).
 const pool = process.env.BENCH_POOL || undefined;
@@ -42,7 +42,7 @@ export default defineConfig({
     // Load @rtd/* and the environment through Node (type stripping) instead of Vite's module
     // runner, as a user installing the packages would get them.
     server: { deps: { external: [/@rtd\//, /vitest-environment-rtd/, /packages\/(dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)\//] } },
-    ...(dist ? { execArgv: ["--import", distPreload] } : {}),
+    ...(dist ? { execArgv: ["--import", distPreload], env: distMapEnv() } : {}),
     reporters: ["default", "./reporter.ts"],
     ...(workers ? { maxWorkers: workers } : {}),
     ...(pool ? { pool: pool as "forks" } : {}),

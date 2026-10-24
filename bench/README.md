@@ -36,8 +36,9 @@ directory is git-ignored; copy numbers you want to keep into a doc.
 | `rtd-dom-dist`, `rtd-dist` | as above, but every `@rtd/*` import resolves to the bundled `packages/*/dist/*.js` | |
 
 The `*-dist` configurations exist so startup can be measured without Node's TypeScript type
-stripping. They are redirected with a `module.registerHooks` resolve hook
-(`lib/dist-hooks.ts`); packages' `exports` still point at `src/`. The runner warns when a
+stripping. They are redirected with a `module.registerHooks` resolve hook (`lib/dist-hooks.ts`
+in-process; `lib/dist-preload.js`, plain JavaScript so workers never load the type stripper, in
+the suite's Vitest workers); packages' `exports` still point at `src/`. The runner warns when a
 bundle is older than its sources.
 
 DOM-only workloads (`dom/*`) run `jsdom`, `happy-dom`, `rtd-dom` (the testing stack is
@@ -163,6 +164,7 @@ run.ts                 orchestrator (flags above), writes results/
 worker.ts              one sample in a fresh process
 lib/configs.ts         configurations: install DOM globals, load testing stack, matcher helper
 lib/dist-hooks.ts      resolve @rtd/* to dist/ for *-dist configs
+lib/dist-preload.js    the same, as an --import preload for Vitest workers (RTD_DIST_MAP)
 lib/packages.ts        workspace package/exports discovery (shared with scripts/build.ts)
 lib/report.ts          markdown + terminal tables
 lib/stats.ts           median/quantiles/formatting

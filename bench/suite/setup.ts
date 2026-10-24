@@ -6,7 +6,7 @@ import "@testing-library/jest-dom/vitest";
 import { appendFileSync } from "node:fs";
 import { afterAll } from "vitest";
 
-// *-dist environments must really load the bundles (bench/suite/dist-preload.ts), not sources.
+// *-dist environments must really load the bundles (bench/lib/dist-preload.js), not sources.
 if ((process.env.BENCH_ENV ?? "").endsWith("-dist") && !((process as { __rtdDistResolutions?: number }).__rtdDistResolutions! > 0)) {
   throw new Error(`BENCH_ENV=${process.env.BENCH_ENV}: no @rtd/* import was resolved to dist/ (is the preload active?)`);
 }

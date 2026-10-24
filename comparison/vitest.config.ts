@@ -26,6 +26,7 @@ export default defineConfig({
         environmentOptions: c.environmentOptions ?? {},
         provide: { contender: c.id, sameDomAs: c.sameDomAs ?? null },
         execArgv: (c.preload ?? []).flatMap((p) => ["--import", p]),
+        env: c.env,
         server: { deps: { external: c.external ?? [] } },
         testTimeout: 120_000,
       },

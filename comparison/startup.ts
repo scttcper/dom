@@ -23,7 +23,7 @@ export async function startup(contenders: Contender[], samples: number): Promise
   for (let s = 0; s < samples; s++) {
     for (const c of interleave(contenders, s)) {
       const args = ["--expose-gc", "--no-warnings", ...(c.preload ?? []).flatMap((p) => ["--import", p]), `${here}lib/startup-worker.ts`, c.id];
-      const exit = await run(process.execPath, args, { cwd: here, timeoutMs: 120_000 });
+      const exit = await run(process.execPath, args, { cwd: here, env: { ...process.env, ...c.env }, timeoutMs: 120_000 });
       const line = exit.stdout.split("\n").findLast((l) => l.startsWith("@@RESULT "));
       if (line === undefined) throw new Error(`startup ${c.id} failed (exit ${exit.code}):\n${exit.stderr.trim().split("\n").slice(-8).join("\n")}`);
       raw.get(c.id)!.push(JSON.parse(line.slice("@@RESULT ".length)));

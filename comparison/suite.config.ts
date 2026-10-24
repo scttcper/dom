@@ -22,6 +22,7 @@ export default defineConfig({
         environmentOptions: c.environmentOptions ?? {},
         setupFiles: ["./lib/suite-setup.ts"],
         execArgv: (c.preload ?? []).flatMap((p) => ["--import", p]),
+        env: c.env,
         server: { deps: { external: c.external ?? [] } },
       },
     })),

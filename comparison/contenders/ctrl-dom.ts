@@ -5,14 +5,14 @@
 //   ctrl-dom        the environment alone; stock @testing-library/* (swap only the DOM)
 //   ctrl-dom-stack  plus @ctrl/dom's Testing Library, user-event and jest-dom (the whole stack)
 //
-// The resolve hook in bench/lib/dist-hooks.ts sends bare `@rtd/*` imports (the bundles' own) to
+// The preload (bench/lib/dist-preload.js) sends bare `@rtd/*` imports (the bundles' own) to
 // dist/; the aliases send test files' imports straight to the bundles.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { workspacePackages, repoRoot } from "../../bench/lib/packages.ts";
+import { distMapEnv, workspacePackages, repoRoot } from "../../bench/lib/packages.ts";
 import type { Contender } from "./types.ts";
 
 const dist = new Map(workspacePackages().flatMap((p) => p.exports.map((e) => [e.specifier, e.dist] as const)));
@@ -23,7 +23,8 @@ const bundle = (specifier: string): string => {
 };
 
 const environment = bundle("vitest-environment-rtd");
-const preload = [new URL("../lib/dist-preload.ts", import.meta.url).pathname];
+const preload = [new URL("../../bench/lib/dist-preload.js", import.meta.url).pathname];
+const env = distMapEnv();
 const external = [/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)[\\/]dist[\\/]/];
 
 function version(): string {
@@ -52,6 +53,7 @@ export const ctrlDom: Contender = {
   version,
   environment,
   preload,
+  env,
   external,
   loadEnvironment,
   imports: { react: "@testing-library/react", userEvent: "@testing-library/user-event" },
@@ -64,6 +66,7 @@ export const ctrlDomStack: Contender = {
   version,
   environment,
   preload,
+  env,
   external,
   // What `ctrlDom()` (@ctrl/dom/vitest) configures when it routes Testing Library to @ctrl/dom.
   environmentOptions: { "ctrl-dom": { compileCache: true } },

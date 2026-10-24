@@ -66,3 +66,10 @@ export function workspacePackages(): WorkspacePackage[] {
   }
   return out;
 }
+
+/** RTD_DIST_MAP for lib/dist-preload.js: every workspace export's specifier → its bundle. */
+export function distMapEnv(): { RTD_DIST_MAP: string } {
+  const map: Record<string, string> = {};
+  for (const pkg of workspacePackages()) for (const e of pkg.exports) map[e.specifier] = e.dist;
+  return { RTD_DIST_MAP: JSON.stringify(map) };
+}
