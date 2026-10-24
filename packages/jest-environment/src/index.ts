@@ -14,10 +14,11 @@
 // fresh module registry inside the vm context, so a plain `require("@rtd/dom")` from a test
 // (or from @rtd/react, @rtd/user-event, ...) would load a second copy whose NodeImpl, current
 // window and caches are unrelated to the window installed here. Instead the environment puts
-// the modules it loaded on the vm global under `Symbol.for("rtd.dom.modules")`, and the preset
-// maps `@rtd/dom` / `@rtd/dom/internal` to tiny CommonJS shims (src/shims/*.cjs) that return
-// those objects. Every module in the test registry therefore sees the same instance as the
-// environment.
+// the modules it loaded on the vm global under `Symbol.for("rtd.dom.modules")`. Published
+// `@ctrl/dom` / `@ctrl/dom/internal` resolve to bridges that return those objects
+// (scripts/release.ts, writeBridges); in this workspace the preset maps `@rtd/dom` /
+// `@rtd/dom/internal` to tiny CommonJS shims (src/shims/*.cjs) that do the same. Every module in
+// the test registry therefore sees the same instance as the environment.
 
 import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { EnvironmentContext, JestEnvironment, JestEnvironmentConfig } from "@jest/environment";

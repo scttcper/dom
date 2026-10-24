@@ -39,8 +39,10 @@ bench and downstream runners use them. What ships is assembled by `pnpm build`
 
 Each workspace bundle keeps cross-package imports as bare specifiers (scripts/build.ts), and the
 assembly rewrites them to published ones (`@rtd/aria` → `@ctrl/dom/aria`): inside `@ctrl/dom` they
-are self-references, so every internal package exists once and the environments still share
-one DOM instance with test code (Jest maps `@ctrl/dom` to the environment's instance).
+are self-references, so every internal package exists once. `@ctrl/dom` and `@ctrl/dom/internal`
+resolve to generated bridges that return the DOM instance the running environment published on
+the test global, so test code and the bundles share it even where a test file's modules are
+evaluated in a vm context (Jest, Vitest's VM pools); with no environment they load the DOM.
 `pnpm test:pack` installs the three tarballs into a fresh project and runs every documented
 setup against them.
 

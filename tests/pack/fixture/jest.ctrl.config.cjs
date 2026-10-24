@@ -1,8 +1,7 @@
-// (d3) `preset: "jest-environment-ctrl-dom"` (environment + @ctrl/dom mapping), @ctrl/dom subpaths
-// required directly.
+// (d3) `testEnvironment: "ctrl-dom"`, @ctrl/dom subpaths required directly (their CJS builds).
 "use strict";
 module.exports = {
-  preset: "jest-environment-ctrl-dom",
+  testEnvironment: "ctrl-dom",
   testMatch: ["<rootDir>/ctrl.jest.test.cjs"],
   setupFilesAfterEnv: ["@ctrl/dom/jest-dom"],
   transform: { "\\.[cm]?js$": "<rootDir>/record-transform.cjs" },

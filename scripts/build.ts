@@ -42,9 +42,10 @@ const { values: flags } = parseArgs({
  * Packages that also get CommonJS bundles. Jest (without `--experimental-vm-modules`) cannot
  * `require()` an ES module from a test file: its runtime implements `require(esm)` only on top
  * of `vm.SourceTextModule`, which Node 26 still hides behind that flag. So everything a Jest
- * test file `require`s needs a CJS build. @rtd/dom does not: jest-environment-rtd's preset maps
- * it to a CJS shim returning the environment's own (ESM) instance. The environments themselves
- * are loaded by Node in the outer realm, where `require(esm)` works.
+ * test file `require`s needs a CJS build. @rtd/dom does not: published, its CommonJS entry is a
+ * bridge returning the environment's own (ESM) instance (scripts/release.ts, writeBridges), and
+ * in the workspace jest-environment-rtd's preset maps it to an equivalent shim. The environments
+ * themselves are loaded by Node in the outer realm, where `require(esm)` works.
  */
 const CJS_PACKAGES = new Set(["@rtd/aria", "@rtd/testing-library", "@rtd/react", "@rtd/user-event", "@rtd/jest-dom"]);
 
@@ -196,6 +197,6 @@ if (emitRoot) rmSync(dirname(emitRoot), { recursive: true, force: true });
 // from the dist/ directories above (scripts/release.ts).
 if (!failed && !flags.filter) {
   const { assembleRelease } = await import("./release.ts");
-  for (const dir of assembleRelease()) console.log(`${"release".padEnd(24)} ${relative(repoRoot, dir)}`);
+  for (const dir of await assembleRelease()) console.log(`${"release".padEnd(24)} ${relative(repoRoot, dir)}`);
 }
 if (failed) process.exitCode = 1;

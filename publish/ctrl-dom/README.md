@@ -64,10 +64,8 @@ module.exports = {
 };
 ```
 
-DOM only: `testEnvironment: "ctrl-dom"` (stock Testing Library keeps working). If test code
-imports `@ctrl/dom` itself, use `preset: "jest-environment-ctrl-dom"`, which maps it to the
-environment's instance. Options go in `testEnvironmentOptions`. Per file:
-`/** @jest-environment ctrl-dom */`.
+DOM only: `testEnvironment: "ctrl-dom"` (stock Testing Library keeps working). Options go in
+`testEnvironmentOptions`. Per file: `/** @jest-environment ctrl-dom */`.
 
 ## Direct imports
 
@@ -79,6 +77,10 @@ environment's instance. Options go in `testEnvironmentOptions`. Per file:
 | `@testing-library/jest-dom` | `@ctrl/dom/jest-dom` (also `/jest-dom/vitest`, `/jest-dom/matchers`, `/jest-dom/jest-globals`) |
 | `aria-query` + `dom-accessibility-api` | `@ctrl/dom/aria` |
 | `jsdom` / `happy-dom` | `@ctrl/dom` (`createWindow()`, `installGlobals(window)`) |
+
+Under either environment, `@ctrl/dom` and every subpath share the environment's DOM instance,
+in Jest and in every Vitest pool (including `vmThreads`/`vmForks`), so `instanceof` checks against
+`@ctrl/dom`'s classes hold.
 
 ## Options
 

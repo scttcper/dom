@@ -9,14 +9,17 @@
 // 3. Runs, from tests/pack/fixture:
 //    (a)  Vitest, environment "ctrl-dom", stock @testing-library/react + user-event + jest-dom/vitest
 //    (b)  Vitest, the same test importing @ctrl/dom/react, /user-event, /jest-dom/vitest
+//    (bv) (b) with `--pool vmThreads`: modules evaluate in a vm context per file
 //    (c)  Vitest, the stock test file under the ctrlDom() plugin (README's whole-stack setup)
+//    (cv) (c) with `--pool vmThreads`
 //    (d1) Jest, testEnvironment "ctrl-dom", stock Testing Library
 //    (d2) Jest, preset "@ctrl/dom", the stock test file routed to @ctrl/dom's CJS builds (README)
-//    (d3) Jest, preset "jest-environment-ctrl-dom", @ctrl/dom/react + /user-event required directly
+//    (d3) Jest, testEnvironment "ctrl-dom", @ctrl/dom/react + /user-event required directly
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
 //    Every run records the files it loads (Node loader hook, Vite transform hook, Jest
 //    transformer) and must load our packages only from their published files (no .ts source,
-//    nothing from the repository) with a single @ctrl/dom DOM instance.
+//    nothing from the repository) with a single @ctrl/dom DOM instance, and every test asserts the
+//    @ctrl/dom it imports is the instance the environment installed.
 //
 // Flags: --no-build, --keep (leave the temp directory), --dir <path> (reuse a project dir).
 
@@ -68,7 +71,7 @@ for (const dir of PUBLISHED) {
   const out = run("pnpm", ["pack", "--json", "--pack-destination", tarballs], { cwd: pkgDir, quiet: true });
   const info = JSON.parse(out.stdout as string) as { filename: string; files: { path: string }[] };
   const tgz = info.filename.startsWith("/") ? info.filename : join(tarballs, info.filename);
-  // The tarball carries bundles, declarations and plain CJS shims only — never TypeScript sources.
+  // The tarball carries bundles, declarations and plain JS only — never TypeScript sources.
   const sources = info.files.map((f) => f.path).filter((p) => /\.[cm]?tsx?$/.test(p) && !/\.d\.[cm]?ts$/.test(p));
   if (sources.length > 0) throw new Error(`${name}: tarball contains TypeScript sources: ${sources.join(", ")}`);
   packed.set(name, tgz);
@@ -162,11 +165,26 @@ const checks: Check[] = [
     mustNotLoad: /\/node_modules\/@testing-library\//,
   },
   {
+    // VM pools load externals inside the vm context, outside Node's loader: only the environment's
+    // own (outer realm) loads are logged, and the test's instanceof checks do the work.
+    id: "bv",
+    title: "(b) under --pool vmThreads",
+    cmd: ["vitest", "run", "--config", "vitest.ctrl.config.ts", "--pool", "vmThreads"],
+    mustLoad: ["@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/dom/index.js"],
+  },
+  {
     id: "c",
     title: "Vitest, ctrlDom() plugin + the stock test file",
     cmd: ["vitest", "run", "--config", "vitest.plugin.config.ts"],
     mustLoad: ["@ctrl/dom/vitest.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/react/index.js", "@ctrl/dom/dist/user-event/index.js", "@ctrl/dom/dist/jest-dom/vitest.js"],
     mustNotLoad: /\/node_modules\/(@testing-library|vitest-environment-ctrl-dom)\//,
+  },
+  {
+    id: "cv",
+    title: "(c) under --pool vmThreads",
+    cmd: ["vitest", "run", "--config", "vitest.plugin.config.ts", "--pool", "vmThreads"],
+    mustLoad: ["@ctrl/dom/vitest.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/dom/index.js"],
+    mustNotLoad: /\/node_modules\/vitest-environment-ctrl-dom\//,
   },
   {
     id: "d1",
@@ -181,7 +199,7 @@ const checks: Check[] = [
     mustLoad: [
       "jest-environment-ctrl-dom/dist/index.js",
       "@ctrl/dom/jest-preset.cjs",
-      "@ctrl/dom/jest/dom-internal.cjs",
+      "@ctrl/dom/dist/bridge/internal.cjs",
       "@ctrl/dom/dist/react/index.cjs",
       "@ctrl/dom/dist/user-event/index.cjs",
       "@ctrl/dom/dist/jest-dom/index.cjs",
@@ -191,11 +209,11 @@ const checks: Check[] = [
   },
   {
     id: "d3",
-    title: 'Jest, preset "jest-environment-ctrl-dom" + @ctrl/dom subpaths (CJS)',
-    cmd: ["jest", "--config", "jest.env-preset.config.cjs"],
+    title: 'Jest, testEnvironment "ctrl-dom" + @ctrl/dom subpaths (CJS)',
+    cmd: ["jest", "--config", "jest.ctrl.config.cjs"],
     mustLoad: [
       "jest-environment-ctrl-dom/dist/index.js",
-      "jest-environment-ctrl-dom/shims/dom.cjs",
+      "@ctrl/dom/dist/bridge/index.cjs",
       "@ctrl/dom/dist/react/index.cjs",
       "@ctrl/dom/dist/user-event/index.cjs",
       "@ctrl/dom/dist/jest-dom/index.cjs",
@@ -211,7 +229,7 @@ const checks: Check[] = [
 ];
 
 const OURS = /\/node_modules\/(@ctrl\/dom|vitest-environment-ctrl-dom|jest-environment-ctrl-dom)\/(.*)$/;
-const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|(?:jest|shims)\/[^/]+\.cjs|jest-preset\.cjs|vitest\.js|index\.js|package\.json)$/;
+const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|jest-preset\.cjs|vitest\.js|index\.js|package\.json)$/;
 
 function verifyLoads(check: Check, log: string): string[] {
   const problems: string[] = [];

@@ -1,5 +1,5 @@
-// (d3) `preset: "jest-environment-ctrl-dom"` with @ctrl/dom/react and @ctrl/dom/user-event
-// required from a CommonJS test file (their CJS builds), sharing the environment's @ctrl/dom.
+// (d3) `testEnvironment: "ctrl-dom"` with @ctrl/dom/react and @ctrl/dom/user-event required from
+// a CommonJS test file (their CJS builds), sharing the environment's @ctrl/dom.
 "use strict";
 const { render, screen } = require("@ctrl/dom/react");
 const userEvent = require("@ctrl/dom/user-event").default;

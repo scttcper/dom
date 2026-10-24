@@ -4,8 +4,8 @@
 // the DOM.
 //
 // The targets are @ctrl/dom's CommonJS builds: Jest can only `require()` ES modules under
-// `--experimental-vm-modules`. `@ctrl/dom` itself maps to the instance the environment loaded, so
-// the test file and the environment share one DOM.
+// `--experimental-vm-modules`. `@ctrl/dom` itself needs no mapping: its CommonJS entry returns the
+// instance the environment loaded, so the test file and the environment share one DOM.
 //
 // Setup files are resolved without moduleNameMapper: list "@ctrl/dom/jest-dom" in
 // `setupFilesAfterEnv` instead of "@testing-library/jest-dom".
@@ -17,8 +17,6 @@ const dist = (file) => path.join(__dirname, "dist", file);
 module.exports = {
   testEnvironment: "ctrl-dom",
   moduleNameMapper: {
-    "^@ctrl/dom$": path.join(__dirname, "jest/dom.cjs"),
-    "^@ctrl/dom/internal$": path.join(__dirname, "jest/dom-internal.cjs"),
     "^@testing-library/dom$": dist("testing-library/index.cjs"),
     "^@testing-library/react$": dist("react/index.cjs"),
     "^@testing-library/react/pure$": dist("react/pure.cjs"),

@@ -9,15 +9,15 @@ Jest environment that installs an `@ctrl/dom` window as the test globals.
 module.exports = {
   // Environment only (stock @testing-library/* packages):
   testEnvironment: "ctrl-dom",
-  // or, when test code imports @ctrl/dom (or its subpaths) directly:
-  preset: "jest-environment-ctrl-dom",
   // or the whole stack, stock @testing-library/* imports routed to @ctrl/dom:
   preset: "@ctrl/dom",
 };
 ```
 
-The presets map `@ctrl/dom` and `@ctrl/dom/internal` to shims that return the environment's own
-instance, so every module in a test file shares one DOM (publish/*/jest-preset.cjs). Peer
+The environment publishes the DOM modules it loaded on the test global, and published
+`@ctrl/dom` / `@ctrl/dom/internal` resolve to bridges that return them, so every module in a test
+file shares one DOM (scripts/release.ts, writeBridges). In this workspace, `preset:
+"jest-environment-rtd"` maps `@rtd/dom` to the shims in src/shims/ for the same effect. Peer
 dependencies: `jest` >= 30, `@ctrl/dom`.
 
 Differences from jest-environment-jsdom you may notice (see `docs/deviations.md`):

@@ -28,8 +28,25 @@ import type { WindowOptions } from "@rtd/dom";
 // Set RTD_COMPILE_CACHE=0 to opt out. Must run before @rtd/dom is imported, hence the
 // dynamic import below.
 if (process.env.RTD_COMPILE_CACHE !== "0") enableCompileCache?.();
-const { createWindow, installGlobals } = await import("@rtd/dom");
-const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = await import("@rtd/dom/internal");
+const dom = await import("@rtd/dom");
+const internal = await import("@rtd/dom/internal");
+const { createWindow, installGlobals } = dom;
+const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = internal;
+
+/**
+ * The global key under which the environment publishes the DOM modules it loaded (the same one
+ * jest-environment-rtd uses). In VM pools Vitest evaluates a test file's modules inside the vm
+ * context, so an import of @rtd/dom from test code (or from our Testing Library bundles) would
+ * otherwise evaluate a second DOM: its classes fail `instanceof` against the installed globals and
+ * every file pays for the evaluation. Published `@ctrl/dom` and `@ctrl/dom/internal` resolve to
+ * bridges that return these objects (scripts/release.ts, writeBridges).
+ */
+const DOM_MODULES = Symbol.for("rtd.dom.modules");
+
+function publishModules(global: object): void {
+  Object.defineProperty(global, DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+}
+
 
 /**
  * Exceptions nobody handled (listener exceptions, reportError(), React's uncaught errors) go to
@@ -130,6 +147,7 @@ const environment: Environment = {
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
     hideMatchMedia(global, options);
+    publishModules(global);
     // The worker's timers, Date and performance move onto the virtual clock until teardown
     // (Vitest's own runner keeps the timers it captured at startup).
     const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), global);
@@ -143,6 +161,7 @@ const environment: Environment = {
         clock.uninstall();
         window.close();
         uninstall();
+        delete (global as Record<PropertyKey, unknown>)[DOM_MODULES];
       },
     };
   },
@@ -161,6 +180,7 @@ const environment: Environment = {
     }
     const uninstall = installGlobals(window, context as Record<PropertyKey, unknown>);
     hideMatchMedia(context as Record<PropertyKey, unknown>, options);
+    publishModules(context);
     // The file's timers live on its own virtual clock: disposing it at teardown drops pending
     // ones, so they cannot keep the discarded context alive in the long-lived worker.
     const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), context as Record<PropertyKey, unknown>);
