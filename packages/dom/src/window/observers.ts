@@ -5,12 +5,21 @@
 // well-behaved no-ops (argument validation, observe/unobserve/disconnect bookkeeping,
 // takeRecords) for the many component libraries that construct them unconditionally.
 // Callbacks are never invoked (docs/deviations.md). Tests that need entries mock them.
+// Exception: with `layout: "lite"` (docs/layout.md) css/resize-observer.ts registers
+// `resizeObserverHooks` and delivers ResizeObserver entries from layout-lite boxes.
 
 import type { Element } from "../nodes/Element.ts";
 import { $callback, $targets } from "../keys.ts";
 
 type ResizeObserverCallback = (entries: unknown[], observer: ResizeObserver) => void;
 type IntersectionObserverCallback = (entries: unknown[], observer: IntersectionObserver) => void;
+
+/** @internal Set by css/resize-observer.ts (layout-lite delivery); null hooks mean "no layout". */
+export const resizeObserverHooks: {
+  observe: ((observer: ResizeObserver, target: Element, box: string) => void) | null;
+  unobserve: ((observer: ResizeObserver, target: Element) => void) | null;
+  disconnect: ((observer: ResizeObserver) => void) | null;
+} = { observe: null, unobserve: null, disconnect: null };
 
 export class ResizeObserver {
   [$callback]: ResizeObserverCallback;
@@ -24,19 +33,22 @@ export class ResizeObserver {
     this[$targets] = new Set();
   }
 
-  observe(target: Element, _options?: { box?: string }): void {
+  observe(target: Element, options?: { box?: string }): void {
     if (target === null || typeof target !== "object") {
       throw new TypeError("Failed to execute 'observe' on 'ResizeObserver': parameter 1 is not of type 'Element'.");
     }
     this[$targets].add(target);
+    resizeObserverHooks.observe?.(this, target, options?.box === undefined ? "content-box" : String(options.box));
   }
 
   unobserve(target: Element): void {
     this[$targets].delete(target);
+    resizeObserverHooks.unobserve?.(this, target);
   }
 
   disconnect(): void {
     this[$targets].clear();
+    resizeObserverHooks.disconnect?.(this);
   }
 
   get [Symbol.toStringTag](): string {

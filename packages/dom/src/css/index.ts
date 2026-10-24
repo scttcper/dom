@@ -13,6 +13,7 @@ import { createLinkSheet, createOwnerSheet, removeOwnerSheet, styleSheetsOf, ado
 import { getComputedStyle } from "./computed.ts";
 import { matchMediaText } from "./media.ts";
 import { installElementView, installHTMLElementView } from "./view.ts";
+import "./resize-observer.ts";
 import { HTMLElement as HTMLElementClass } from "../html/HTMLElement.ts";
 import { Element as ElementClass } from "../nodes/Element.ts";
 import { setComputedColorMode } from "./cascade.ts";

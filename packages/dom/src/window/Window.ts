@@ -38,6 +38,7 @@ import { setNestedWindowFactory } from "./browsing-context.ts";
 import { windowOrigin } from "./origin.ts";
 import { type TimerList, clearTimers, startTimer } from "./timers.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
+import { type LayoutMode, enableLayout } from "../css/layout-mode.ts";
 import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
 import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
 
@@ -89,6 +90,14 @@ export interface WindowOptions {
    * messages (docs/deviations.md). Custom validity messages are never affected.
    */
   validationMessages?: "jsdom" | "browser";
+  /**
+   * Geometry model: "none" (default, every profile) returns zeros from getBoundingClientRect,
+   * offset*, client* and scroll* like jsdom; "lite" computes a deliberately simple box model
+   * (block stacking, simple flex, absolute/fixed positioning, overflow scrolling) on the first
+   * geometry read after a DOM/style change, and ResizeObserver delivers observations. An
+   * approximation for virtualizers and positioning libraries, not a browser: docs/layout.md.
+   */
+  layout?: LayoutMode;
 }
 
 /** @internal Resolved, per-window constant options. */
@@ -104,6 +113,8 @@ export interface ResolvedWindowOptions {
   validationMessages: "jsdom" | "browser";
   /** window/globals.ts reads this at installation. */
   compat: CompatProfile;
+  /** css/layout.ts reads this (docs/layout.md). */
+  layout: LayoutMode;
 }
 
 // Host-independent defaults, so a suite behaves the same on a developer's Mac and on Linux CI.
@@ -238,7 +249,9 @@ export class Window extends EventTarget {
       mediaFeatures: options.mediaFeatures,
       validationMessages: options.validationMessages === "browser" ? "browser" : "jsdom",
       compat: resolveCompat(options.compat),
+      layout: options.layout === "lite" ? "lite" : "none",
     };
+    if (options.layout === "lite") enableLayout();
     this[$url] = url;
     this[$location] = null;
     this[$history] = null;
@@ -1015,7 +1028,7 @@ function createNestedWindow(frameElement: Element, parent: Window, src: string |
   if (srcdoc !== null) url = "about:srcdoc";
   else if (src !== null && src !== "") url = URL.parse(src, parent.document.baseURI)?.href ?? "about:blank";
   const win = new Window(
-    { url, width: parent[$innerWidth], height: parent[$innerHeight], devicePixelRatio: parent[$devicePixelRatio], userAgent: parent[$options].userAgent },
+    { url, width: parent[$innerWidth], height: parent[$innerHeight], devicePixelRatio: parent[$devicePixelRatio], userAgent: parent[$options].userAgent, layout: parent[$options].layout },
     { parent, frameElement, srcdoc },
   );
   // https://html.spec.whatwg.org/#concept-document-about-base-url: an about:blank or about:srcdoc
