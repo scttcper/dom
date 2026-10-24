@@ -8,11 +8,14 @@
  *   - ARIA roles:                      https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings
  *   - UI events dispatched by user-event: https://w3c.github.io/uievents/
  *   - timers (findBy* waits):          https://html.spec.whatwg.org/#timers
+ *   - style resolution (ByRole's hidden check reads getComputedStyle per ancestor):
+ *                                      https://drafts.csswg.org/css-cascade-5/#cascading
  */
 import { cleanup, render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { Counter, DelayedGreeting, KeyedList, NameInput, OrdersTable, SignupForm } from "../fixtures/components.tsx";
+import { Counter, DelayedGreeting, KeyedList, NameInput, OrdersTable, SignupForm, StyledForm } from "../fixtures/components.tsx";
+import { cssInJsSheet } from "../fixtures/css-in-js.ts";
 import { measure } from "../lib/bench.ts";
 
 describe("React + Testing Library", () => {
@@ -62,6 +65,22 @@ describe("React + Testing Library", () => {
     let i = 0;
     await measure(ctx, "getByText among 200 table rows", () => screen.getByText(`Order ${i++ % 200}`));
     cleanup();
+  });
+
+  test("styled render and query", async (ctx) => {
+    // ≈1,200 CSS-in-JS rules in the document, as Emotion/MUI leave them: every ByRole query
+    // checks visibility through getComputedStyle, so style resolution is most of the work.
+    const style = document.createElement("style");
+    style.textContent = cssInJsSheet(200);
+    document.head.append(style);
+    await measure(ctx, "Render a 40-field form under a 1,200-rule CSS-in-JS sheet, 5 getByRole queries", () => {
+      render(<StyledForm />);
+      screen.getByRole("heading", { name: "Profile" });
+      for (const i of [0, 20, 39]) screen.getByRole("textbox", { name: `Field ${i}` });
+      screen.getByRole("button", { name: "Submit" });
+      cleanup();
+    });
+    style.remove();
   });
 
   test("findBy", async (ctx) => {

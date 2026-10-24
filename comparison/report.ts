@@ -34,6 +34,8 @@ const README_ROWS: Array<{ label: string; suite?: "wall" | "setup" | "rss"; kind
   { label: "Parse a 220 KB page", bench: "Parse a 220 KB page (body.innerHTML =)" },
   { label: "Mutate, then `querySelectorAll`", bench: "Mutate an attribute, then querySelectorAll('[aria-label]')" },
   { label: "`getComputedStyle` × 100", bench: "getComputedStyle of 100 elements (display, visibility)" },
+  { label: "Styled form + 5 `getByRole`, 1,200-rule CSS-in-JS sheet", bench: "Render a 40-field form under a 1,200-rule CSS-in-JS sheet, 5 getByRole queries" },
+  { label: "`getComputedStyle` × 100, same sheet", bench: "getComputedStyle of 100 elements under a 1,200-rule CSS-in-JS sheet" },
 ];
 
 interface BenchRow {

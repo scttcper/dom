@@ -14,6 +14,7 @@
  * Contenders that share another's DOM (`sameDomAs`) skip this file.
  */
 import { describe, expect, test } from "vitest";
+import { cssInJsSheet, styledFormHTML } from "../fixtures/css-in-js.ts";
 import { PAGE } from "../fixtures/page.ts";
 import { measure, sharesDom } from "../lib/bench.ts";
 
@@ -111,6 +112,25 @@ describe.skipIf(sharesDom)("more DOM work component tests do", () => {
     await measure(ctx, "getComputedStyle of 100 elements (display, visibility)", () => {
       let visible = 0;
       for (const el of cards) {
+        const style = getComputedStyle(el);
+        if (style.display !== "none" && style.visibility !== "hidden") visible++;
+      }
+      return visible;
+    });
+    document.head.innerHTML = "";
+  });
+
+  test("getComputedStyle, CSS-in-JS", async (ctx) => {
+    document.head.innerHTML = `<style>${cssInJsSheet(200)}</style>`;
+    document.body.innerHTML = styledFormHTML(40);
+    const elements = [...document.querySelectorAll(".field, .field > label, .field > input")].slice(0, 100);
+    expect(elements).toHaveLength(100);
+    let i = 0;
+    await measure(ctx, "getComputedStyle of 100 elements under a 1,200-rule CSS-in-JS sheet", () => {
+      // A class change between reads, as a rerender would make: caches must not answer everything.
+      elements[i++ % 100].classList.toggle("theme-dark");
+      let visible = 0;
+      for (const el of elements) {
         const style = getComputedStyle(el);
         if (style.display !== "none" && style.visibility !== "hidden") visible++;
       }

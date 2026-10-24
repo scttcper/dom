@@ -52,11 +52,14 @@ benchmark; the report uses median time per iteration, with the margin of error.
   `querySelectorAll` by tag, class, attribute and `:nth-child`, custom elements with shadow
   roots), measured over many warm iterations instead of one cold call, on a generated 220 KB app
   page (`fixtures/page.ts`), plus work component tests lean on: building a form, dispatching
-  events through deep trees, `getComputedStyle`, and a query after a mutation. Query results are
-  consumed (`Array.from`), as Testing Library and app code do.
+  events through deep trees, `getComputedStyle` (plain, and under a 1,200-rule CSS-in-JS sheet
+  with a class change between reads), and a query after a mutation. Query results are consumed
+  (`Array.from`), as Testing Library and app code do.
 - `react.bench.tsx`: what component tests do with `@testing-library/react` and user-event:
   render and query by role, type, click, rerender a keyed list, query text, `findByRole` after a
-  timer.
+  timer, and render + query by role under a CSS-in-JS sheet (`fixtures/css-in-js.ts`: ≈1,200
+  rules shaped like Emotion/MUI output, where ByRole's visibility checks spend their time in
+  style resolution).
 
 Things to keep in mind when reading the numbers:
 
