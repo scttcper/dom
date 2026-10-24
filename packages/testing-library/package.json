@@ -8,6 +8,10 @@
     ".": {
       "types": "./types/index.d.ts",
       "default": "./src/index.ts"
+    },
+    "./agent": {
+      "types": "./types/agent.d.ts",
+      "default": "./src/agent.ts"
     }
   },
   "files": [
@@ -26,6 +30,11 @@
         "types": "./types/index.d.ts",
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
+      },
+      "./agent": {
+        "types": "./types/agent.d.ts",
+        "require": "./dist/agent.cjs",
+        "default": "./dist/agent.js"
       },
       "./package.json": "./package.json"
     }

@@ -47,7 +47,7 @@ export function diffAriaSnapshots(before: string, after: string): string {
   return out.join("\n");
 }
 
-interface Op {
+export interface Op {
   kind: "=" | "-" | "+";
   text: string;
 }
@@ -59,7 +59,7 @@ function indentOf(line: string): number {
 }
 
 /** LCS line diff; the common prefix and suffix are trimmed first, so typical edits stay small. */
-function diffLines(a: string[], b: string[]): Op[] {
+export function diffLines(a: string[], b: string[]): Op[] {
   let start = 0;
   while (start < a.length && start < b.length && a[start] === b[start]) start++;
   let endA = a.length;

@@ -49,6 +49,7 @@ import {
   tlRole,
 } from "@rtd/aria/internal";
 import { getDocument } from "./helpers.ts";
+import { envDebugFormat } from "./agent-debug.ts";
 
 declare const process: any;
 
@@ -94,9 +95,23 @@ export function envMaxLines(): number | undefined {
  * YAML. A body, document or fragment prints its children; any other element prints itself.
  */
 export function ariaSnapshot(container?: any, options: AriaSnapshotOptions = {}): string {
+  const { header, lines, empty } = ariaSnapshotLines(container, options);
+  if (empty !== null) return header + empty;
+  return header + budgetLines(lines, options.maxLines ?? envMaxLines() ?? DEFAULT_MAX_LINES).join("\n");
+}
+
+interface BuiltTree {
+  root: NodeImpl;
+  ctx: SnapshotContext;
+  children: Array<SnapshotNode | string>;
+  /** `# hidden from the accessibility tree: …` line for a root inside an excluded subtree, else "" */
+  header: string;
+}
+
+function buildTree(container: any, options: AriaSnapshotOptions): BuiltTree {
   const root = rootImpl(container);
   const ctx = new SnapshotContext(root, options);
-  const top: Array<SnapshotNode | string> = [];
+  const children: Array<SnapshotNode | string> = [];
   let header = "";
   // A root inside an excluded subtree (e.g. the element of a "multiple elements" error) still
   // prints, with the reason it is hidden from ByRole.
@@ -105,21 +120,56 @@ export function ariaSnapshot(container?: any, options: AriaSnapshotOptions = {})
     ctx.includeHidden = true;
     ctx.forceHidden = true;
   }
-  if (root.type === ELEMENT_NODE && root !== bodyOf(root)) ctx.visitElement(root, top, ctx.forceHidden);
-  else ctx.visitChildren(root, top, false, false);
-  finishChildren(top, null);
+  if (root.type === ELEMENT_NODE && root !== bodyOf(root)) ctx.visitElement(root, children, ctx.forceHidden);
+  else ctx.visitChildren(root, children, false, false);
+  finishChildren(children, null);
+  return { root, ctx, children, header };
+}
+
+/** The tree of `container` as nodes and text runs, before rendering (no budget, no collapsing). */
+export function ariaSnapshotTree(container: any, options: AriaSnapshotOptions = {}): Array<SnapshotNode | string> {
+  return buildTree(container, options).children;
+}
+
+/**
+ * The rendered snapshot before the line budget: the `# hidden …` header (or ""), the lines, and
+ * the `# no accessible content` text when there are none.
+ */
+export function ariaSnapshotLines(container: any, options: AriaSnapshotOptions = {}): { header: string; lines: string[]; empty: string | null } {
+  const { root, ctx, children, header } = buildTree(container, options);
   const lines: string[] = [];
-  ctx.renderList(top, "", lines);
-  if (lines.length === 0) {
-    return header + (ctx.sawHidden ? "# no accessible content (hidden elements exist: pass { hidden: true })" : "# no accessible content");
-  }
-  const maxLines = options.maxLines ?? envMaxLines() ?? DEFAULT_MAX_LINES;
-  if (lines.length > maxLines) {
-    const rest = lines.length - maxLines;
-    lines.length = maxLines;
-    lines.push(`# … ${rest} more line${rest === 1 ? "" : "s"} (raise maxLines or CTRL_DOM_DEBUG_LINES)`);
-  }
-  return header + lines.join("\n");
+  ctx.renderList(children, "", lines);
+  const empty = lines.length > 0 ? null : ctx.sawHidden ? "# no accessible content (hidden elements exist: pass { hidden: true })" : "# no accessible content";
+  // Agent mode remembers the last whole-page snapshot, so a failing test can show what changed
+  // since then (./agent.ts). It is kept on the document: Jest's environment reads it from another
+  // realm than the test's.
+  if (root === bodyOf(root) && envDebugFormat() !== null) recordBodySnapshot(root.doc, empty ?? lines.join("\n"));
+  return { header, lines, empty };
+}
+
+/** `lines` cut to `maxLines`, ending with a `# … N more lines` comment. */
+export function budgetLines(lines: string[], maxLines: number): string[] {
+  if (lines.length <= maxLines) return lines;
+  const rest = lines.length - maxLines;
+  const out = lines.slice(0, maxLines);
+  out.push(`# … ${rest} more line${rest === 1 ? "" : "s"} (raise maxLines or CTRL_DOM_DEBUG_LINES)`);
+  return out;
+}
+
+const LAST_BODY_SNAPSHOT = Symbol.for("ctrl-dom.agent.lastBodySnapshot");
+
+function recordBodySnapshot(doc: any, text: string): void {
+  if (doc != null) Object.defineProperty(doc, LAST_BODY_SNAPSHOT, { value: text, configurable: true, writable: true, enumerable: false });
+}
+
+/** The last whole-page snapshot taken in agent mode since `resetBodySnapshot`, or undefined. */
+export function lastBodySnapshot(doc: any): string | undefined {
+  return doc?.[LAST_BODY_SNAPSHOT];
+}
+
+/** Forget the last whole-page snapshot (at the start of each test). */
+export function resetBodySnapshot(doc: any): void {
+  if (doc != null && Object.hasOwn(doc, LAST_BODY_SNAPSHOT)) delete doc[LAST_BODY_SNAPSHOT];
 }
 
 function rootImpl(container: any): NodeImpl {
