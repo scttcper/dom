@@ -37,15 +37,21 @@ Vitest, DOM only (`pnpm add -D @ctrl/dom vitest-environment-ctrl-dom`):
 export default defineConfig({ test: { environment: "ctrl-dom" } });
 ```
 
-Jest (>= 30) (`pnpm add -D @ctrl/dom jest-environment-ctrl-dom`):
+Jest (>= 30), whole stack (`pnpm add -D @ctrl/dom jest-environment-ctrl-dom`): the environment
+plus your `@testing-library/*` imports routed to `@ctrl/dom`:
 
 ```js
 // jest.config.js
 module.exports = {
-  preset: "@ctrl/dom", // whole stack: @testing-library/* routed to @ctrl/dom's CommonJS builds
-  setupFilesAfterEnv: ["@ctrl/dom/jest-dom"],
-  // testEnvironment: "ctrl-dom", // DOM only, stock @testing-library/*
+  preset: "@ctrl/dom",
+  setupFilesAfterEnv: ["@ctrl/dom/jest-dom"], // instead of "@testing-library/jest-dom"
 };
+```
+
+Jest, DOM only (same install):
+
+```js
+module.exports = { testEnvironment: "ctrl-dom" };
 ```
 
 Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
