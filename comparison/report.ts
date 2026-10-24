@@ -19,8 +19,12 @@ const END = "<!-- comparison:end -->";
  * The README's rows, picked for what component suites spend time on (not for who wins): the
  * whole-suite numbers, then benchmark labels exactly as the bench files register them.
  */
-const README_ROWS: Array<{ label: string; suite?: "wall" | "setup" | "rss"; bench?: string; note?: string }> = [
+type SuiteKind = "vitest" | "vm" | "jest";
+
+const README_ROWS: Array<{ label: string; suite?: "wall" | "setup" | "rss"; kind?: SuiteKind; bench?: string; note?: string }> = [
   { label: "`vitest run`, 100 React test files", suite: "wall" },
+  { label: "… with `--pool vmForks`", suite: "wall", kind: "vm" },
+  { label: "`jest`, the same 100 files²", suite: "wall", kind: "jest" },
   { label: "Environment setup per test file", suite: "setup" },
   { label: "Worker memory (RSS)", suite: "rss" },
   { label: "Render a 20-field form + 10 `getByRole`", bench: "Render a 20-field form, 10 getByRole({ name }) queries" },
@@ -97,11 +101,46 @@ function machine(): string {
   return `${cpu}, ${cpus().length} cores, ${(totalmem() / 2 ** 30).toFixed(0)} GB, ${platform()} ${arch()}, Node ${process.versions.node}`;
 }
 
+/** One `results/suite*.json`: what suite.ts and jest-suite.ts write. */
+interface SuiteData {
+  files: number;
+  samples: number;
+  workers: number;
+  /** jest-suite.ts: each contender's Jest environment, for the column headers. */
+  labels?: Record<string, string>;
+  results: Record<string, Record<"wallMs" | "environmentSetupMs" | "workerRssMB", Spread>>;
+}
+
+const SUITES: Array<{ kind: SuiteKind; file: string; title: (d: SuiteData) => string; about: (d: SuiteData) => string; setupLabel: string }> = [
+  {
+    kind: "vitest",
+    file: "suite.json",
+    title: (d) => `\`vitest run\`, ${d.files} React test files`,
+    about: (d) => `${d.samples} runs per contender, ${d.workers} workers, Vitest's default pool (a fresh worker per file): median [min–max] over runs, speedup vs jsdom in parentheses.`,
+    setupLabel: "Environment setup per file (Vitest's mean)",
+  },
+  {
+    kind: "vm",
+    file: "suite-vm.json",
+    title: (d) => `\`vitest run --pool vmForks\`, ${d.files} React test files`,
+    about: (d) => `The same files in Vitest's VM pool: ${d.workers} long-lived workers, a fresh vm context and environment per file. ${d.samples} runs per contender, median [min–max], speedup vs jsdom in parentheses.`,
+    setupLabel: "Environment setup per file (Vitest's mean)",
+  },
+  {
+    kind: "jest",
+    file: "suite-jest.json",
+    title: (d) => `\`jest\`, ${d.files} React test files`,
+    about: (d) => `The same tests as plain CommonJS (no transform), each DOM's Jest environment, ${d.workers} workers, after one untimed run (warm haste map). ${d.samples} runs per contender, median [min–max], speedup vs jest-environment-jsdom in parentheses.`,
+    setupLabel: "Environment load per file (Jest's perfStats)",
+  },
+];
+
 export function report(options: { readme?: boolean } = {}): void {
   const bench = loadBench();
   const startup = readJson(`${here}results/startup.json`);
-  const suite = readJson(`${here}results/suite.json`);
-  const contenders = CONTENDERS.filter((c) => bench.has(c.id) || startup?.results[c.id] || suite?.results[c.id]);
+  const suites = new Map<SuiteKind, SuiteData>(SUITES.flatMap((s) => (readJson(`${here}results/${s.file}`) ? [[s.kind, readJson(`${here}results/${s.file}`) as SuiteData]] : [])));
+  const suite = suites.get("vitest") ?? null;
+  const contenders = CONTENDERS.filter((c) => bench.has(c.id) || startup?.results[c.id] || [...suites.values()].some((d) => d.results[c.id]));
   if (contenders.length === 0) throw new Error("no results in comparison/results/ — run `pnpm compare` first");
   const header = (cs: readonly Contender[]) => ["", ...cs.map((c) => `${c.label} ${c.version()}`)];
   const domOf = (c: Contender) => c.sameDomAs ?? c.id;
@@ -116,15 +155,18 @@ export function report(options: { readme?: boolean } = {}): void {
     `Generated ${date} by \`pnpm compare\` (comparison/report.ts) on ${machine()}. How each number is measured: [README.md](README.md).`,
     "",
   ];
-  if (suite) {
-    md.push(`## \`vitest run\`, ${suite.files} React test files`, "", `${suite.samples} runs per contender, ${suite.workers} workers, Vitest's default pool (a fresh worker per file): median [min–max] over runs, speedup vs jsdom in parentheses.`, "");
+  for (const s of SUITES) {
+    const data = suites.get(s.kind);
+    if (data === undefined) continue;
+    md.push(`## ${s.title(data)}`, "", s.about(data), "");
     const rows: Array<[string, "wallMs" | "environmentSetupMs" | "workerRssMB", (v: number) => string]> = [
       ["Wall time", "wallMs", ms],
-      ["Environment setup per file (Vitest's mean)", "environmentSetupMs", ms],
+      [s.setupLabel, "environmentSetupMs", ms],
       ["Worker RSS after a file (median)", "workerRssMB", mb],
     ];
-    const cs = contenders.filter((c) => suite.results[c.id]);
-    md.push(table(header(cs), rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => suite.results[c.id][key]), format, format === ms)])), "");
+    const cs = contenders.filter((c) => data.results[c.id]);
+    const head = data.labels ? ["", ...cs.map((c) => data.labels![c.id] ?? c.label)] : header(cs);
+    md.push(table(head, rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => data.results[c.id][key]), format, format === ms)])), "");
   }
   if (startup) {
     md.push("## Cold start", "", `A fresh process per sample (${startup.samples} each, interleaved): the environment's \`setup()\` (importing the DOM included), then the first test (import React and Testing Library, render, \`getByRole\`). Median [min–max].`, "");
@@ -159,7 +201,7 @@ export function report(options: { readme?: boolean } = {}): void {
       );
     }
     md.push(
-      "Notes: happy-dom caches `querySelectorAll` results until the document changes, which is why the warm query rows are near zero for it; the mutate-then-query row measures a query after a change. ctrl-dom's environment skips idle time on a virtual clock, so `findByRole` after a timer does not wait it out in real time. Contenders sharing a DOM (`sameDomAs`) run the DOM benchmarks once.",
+      "Notes: the query rows consume the result (`Array.from`), as Testing Library does; happy-dom returns the same cached NodeList until the document changes, and the mutate-then-query row measures a query after a change. ctrl-dom's environment skips idle time on a virtual clock, so `findByRole` after a timer does not wait it out in real time. Contenders sharing a DOM (`sameDomAs`) run the DOM benchmarks once.",
       "",
     );
   }
@@ -173,7 +215,9 @@ export function report(options: { readme?: boolean } = {}): void {
     let format = ms;
     if (row.suite) {
       const key = row.suite === "wall" ? "wallMs" : row.suite === "setup" ? "environmentSetupMs" : "workerRssMB";
-      values = contenders.map((c) => suite.results[c.id]?.[key].median);
+      const data = suites.get(row.kind ?? "vitest");
+      if (data === undefined) return null;
+      values = contenders.map((c) => data.results[c.id]?.[key].median);
       if (row.suite === "rss") format = mb;
     } else {
       values = contenders.map((c) => benchValue(c, row.bench!));
@@ -186,12 +230,14 @@ export function report(options: { readme?: boolean } = {}): void {
       });
     }
     return [row.note === "virtual" ? `${row.label}¹` : row.label, ...out];
-  });
+  }).filter((r) => r !== null);
+  const jest = suites.get("jest");
+  const jestNote = jest?.labels ? ` ² Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
   const section = [
     START,
     table(header(contenders), rows),
     "",
-    `<sub>Medians, ${date}, ${machine()}. Suite: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration. ¹ ctrl-dom skips idle time on a virtual clock instead of waiting it out. 〃 same DOM as the column before. Everything measured, and how: [comparison/](comparison/README.md) ([full results](comparison/RESULTS.md)).</sub>`,
+    `<sub>Medians, ${date}, ${machine()}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration. ¹ ctrl-dom skips idle time on a virtual clock instead of waiting it out.${jestNote} 〃 same DOM as the column before. Everything measured, and how: [comparison/](comparison/README.md) ([full results](comparison/RESULTS.md)).</sub>`,
     END,
   ].join("\n");
   const readme = readFileSync(README, "utf8");

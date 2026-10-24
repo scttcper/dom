@@ -9,3 +9,5 @@ allowBuilds:
   unrs-resolver: false
   # Its postinstall copies the browser service worker; tests/compat only uses msw/node.
   msw: false
+  # jest-haste-map's optional native watcher (Jest 30.5); the comparison runs Jest without watch.
+  "@parcel/watcher": false

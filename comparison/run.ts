@@ -1,11 +1,13 @@
 // `pnpm compare`: every comparison, then the report.
 //
-//   pnpm compare [--contenders jsdom,ctrl-dom] [--only bench,startup,suite] [--time 1000]
+//   pnpm compare [--contenders jsdom,ctrl-dom] [--only bench,startup,suite,vm,jest] [--time 1000]
 //                [--samples 10] [--suite-samples 3] [--files 100] [--workers 4] [--readme]
 //
 //   bench     Vitest bench (vitest.config.ts): DOM and React benchmarks, one project per contender
 //   startup   cold start in fresh processes (startup.ts)
 //   suite     `vitest run` over generated React test files (suite.ts)
+//   vm        the same with `--pool vmForks` (suite.ts)
+//   jest      `jest` over the same tests, each DOM's Jest environment (jest-suite.ts)
 //
 // ctrl-dom runs from its bundles: `pnpm build` first (the contender checks). --readme also
 // rewrites the README's benchmark table.
@@ -19,6 +21,7 @@ import { parseArgs } from "node:util";
 import { selectContenders } from "./contenders/index.ts";
 import { report } from "./report.ts";
 import { startup } from "./startup.ts";
+import { jestSuite } from "./jest-suite.ts";
 import { suite } from "./suite.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
@@ -26,7 +29,7 @@ const here = fileURLToPath(new URL(".", import.meta.url));
 const { values } = parseArgs({
   options: {
     contenders: { type: "string" },
-    only: { type: "string", default: "bench,startup,suite" },
+    only: { type: "string", default: "bench,startup,suite,vm,jest" },
     time: { type: "string", default: "1000" },
     samples: { type: "string", default: "10" },
     "suite-samples": { type: "string", default: "3" },
@@ -51,7 +54,10 @@ if (only.has("bench")) {
   if (result.status !== 0) throw new Error(`vitest bench exited ${result.status}`);
 }
 if (only.has("startup")) await startup(contenders, Number(values.samples));
-if (only.has("suite")) await suite(contenders, { samples: Number(values["suite-samples"]), files: Number(values.files), workers: Number(values.workers) });
+const suiteOptions = { samples: Number(values["suite-samples"]), files: Number(values.files), workers: Number(values.workers) };
+if (only.has("suite")) await suite(contenders, suiteOptions);
+if (only.has("vm")) await suite(contenders, { ...suiteOptions, pool: "vmForks" });
+if (only.has("jest")) await jestSuite(contenders, suiteOptions);
 
 report({ readme: values.readme });
 console.log(`\nwrote comparison/RESULTS.md${values.readme ? " and the README table" : ""}`);

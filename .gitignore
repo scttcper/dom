@@ -13,3 +13,4 @@ downstream/*/output
 comparison/results/raw
 comparison/results/*.json
 comparison/.generated
+comparison/.generated-jest

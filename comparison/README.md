@@ -6,7 +6,7 @@ generates the benchmark table in the repository README and [RESULTS.md](RESULTS.
 
 ```sh
 pnpm build                    # ctrl-dom is measured from its bundles, as installed
-pnpm compare                  # everything (~5 min), then RESULTS.md
+pnpm compare                  # everything (~8 min), then RESULTS.md
 pnpm compare --readme         # … and the README table
 pnpm compare --only bench --contenders jsdom,ctrl-dom --time 500
 pnpm compare:report           # rewrite RESULTS.md from the last results
@@ -24,6 +24,19 @@ pool, a fresh worker per file) and 4 workers, a fresh `vitest` process per run, 
 interleaved, 3 runs each. Reported: wall time, Vitest's own per-file environment setup
 (`TestModule.diagnostic()`), and worker RSS at the end of each file. Every run must pass.
 
+**The same files with `--pool vmForks`** (`suite.ts --pool vmForks`): Vitest's VM pool keeps
+workers alive and gives each file a fresh vm context and environment instead of a fresh process,
+which is where per-file environment cost shows most. vmForks rather than vmThreads so the ctrl-dom
+contenders' `--import` preload applies in the workers.
+
+**`jest` over the same tests** (`jest-suite.ts`): written as plain CommonJS with
+`React.createElement` (`lib/jest-files.ts`) and run with `transform: {}`, so nobody pays for a
+transformer, on each DOM's own Jest environment: jest-environment-jsdom (with the jsdom 26 it
+ships), `@happy-dom/jest-environment`, jest-environment-ctrl-dom (stock Testing Library, or mapped
+to @ctrl/dom's). One untimed run per contender first (Jest's haste map), then 3 interleaved runs
+of a fresh Jest process with 4 workers. Reported: wall time, Jest's per-file environment load
+(`perfStats`), worker RSS.
+
 **Cold start** (`startup.ts`): a fresh Node process per sample (10, interleaved) runs the
 contender's real Vitest environment `setup()` (its import of the DOM included), then a first
 test: import React and the Testing Library stack, render, `getByRole`. Heap after two forced GCs
@@ -39,15 +52,17 @@ benchmark; the report uses median time per iteration, with the margin of error.
   `querySelectorAll` by tag, class, attribute and `:nth-child`, custom elements with shadow
   roots), measured over many warm iterations instead of one cold call, on a generated 220 KB app
   page (`fixtures/page.ts`), plus work component tests lean on: building a form, dispatching
-  events through deep trees, `getComputedStyle`, and a query after a mutation.
+  events through deep trees, `getComputedStyle`, and a query after a mutation. Query results are
+  consumed (`Array.from`), as Testing Library and app code do.
 - `react.bench.tsx`: what component tests do with `@testing-library/react` and user-event:
   render and query by role, type, click, rerender a keyed list, query text, `findByRole` after a
   timer.
 
 Things to keep in mind when reading the numbers:
 
-- happy-dom caches `querySelectorAll` results until the document changes, so its warm query
-  rows are near zero; "mutate, then query" measures a query after a change.
+- happy-dom returns the same cached `querySelectorAll` NodeList until the document changes, so a
+  bare `.length` would measure that cache; the query rows iterate the result, and "mutate, then
+  query" measures a query after a change.
 - ctrl-dom's environment skips idle time on a virtual clock, so `findByRole` after a timer, and
   user-event's delays, do not wait in real time. That is a feature users get, but it is not DOM
   speed.
@@ -81,8 +96,9 @@ export const linkedom: Contender = {
 Optional fields: `environmentOptions`, `alias` (route the stock `@testing-library/*` imports
 elsewhere, as `ctrl-dom-stack` does), `preload` and `external` (how its modules load in Vitest
 workers), `sameDomAs` (only the Testing Library stack differs from another contender), and
-`check` (fail early with instructions, e.g. "run `pnpm build`"). Add the package to this
-package's dependencies.
+`check` (fail early with instructions, e.g. "run `pnpm build`"), `env` (variables for its workers),
+and `jest` (its Jest environment, `moduleNameMapper` entries, and the column label: without it the
+contender has no Jest row). Add the package to this package's dependencies.
 
 ## Adding a benchmark
 

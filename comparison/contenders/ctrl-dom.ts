@@ -27,6 +27,13 @@ const preload = [new URL("../../bench/lib/dist-preload.js", import.meta.url).pat
 const env = distMapEnv();
 const external = [/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)[\\/]dist[\\/]/];
 
+// Jest: the environment bundle (its own `@rtd/dom` imports go to dist/ through the preload), and
+// test files' `@rtd/dom` to the environment's instance (jest-environment-rtd's shims, as its
+// preset maps them). The full stack maps stock Testing Library to the CommonJS bundles.
+const cjs = (pkg: string, entry: string) => join(repoRoot, "packages", pkg, "dist", `${entry}.cjs`);
+const shim = (file: string) => join(repoRoot, "packages/jest-environment/src/shims", file);
+const domShims = { "^@rtd/dom$": shim("dom.cjs"), "^@rtd/dom/internal$": shim("dom-internal.cjs") };
+
 function version(): string {
   const sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
   const dirty = execFileSync("git", ["status", "--porcelain", "--", "packages"], { cwd: repoRoot, encoding: "utf8" }).trim() !== "";
@@ -37,7 +44,7 @@ function version(): string {
 function check(): void {
   for (const pkg of workspacePackages()) {
     const entry = pkg.exports[0]?.dist;
-    if (entry === undefined || !/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)[\\/]/.test(entry)) continue;
+    if (entry === undefined || !/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment|jest-environment)[\\/]/.test(entry)) continue;
     if (!existsSync(entry)) throw new Error(`${pkg.name}: ${entry} is missing — run \`pnpm build\` first`);
     const src = join(pkg.dir, "src");
     const newest = Math.max(...readdirSync(src, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => statSync(join(e.parentPath, e.name)).mtimeMs));
@@ -58,6 +65,7 @@ export const ctrlDom: Contender = {
   loadEnvironment,
   imports: { react: "@testing-library/react", userEvent: "@testing-library/user-event" },
   check,
+  jest: { label: () => `jest-environment-ctrl-dom ${version()}`, testEnvironment: bundle("jest-environment-rtd"), moduleNameMapper: domShims },
 };
 
 export const ctrlDomStack: Contender = {
@@ -80,4 +88,18 @@ export const ctrlDomStack: Contender = {
   imports: { react: "@rtd/react", userEvent: "@rtd/user-event" },
   sameDomAs: "ctrl-dom",
   check,
+  jest: {
+    label: () => `jest-environment-ctrl-dom + its Testing Library ${version()}`,
+    testEnvironment: bundle("jest-environment-rtd"),
+    moduleNameMapper: {
+      ...domShims,
+      "^@rtd/aria$": cjs("aria", "index"),
+      "^@rtd/aria/internal$": cjs("aria", "internal"),
+      "^@rtd/testing-library$": cjs("testing-library", "index"),
+      "^@testing-library/react$": cjs("react", "index"),
+      "^@testing-library/dom$": cjs("testing-library", "index"),
+      "^@testing-library/user-event$": cjs("user-event", "index"),
+      "^@testing-library/jest-dom$": cjs("jest-dom", "index"),
+    },
+  },
 };

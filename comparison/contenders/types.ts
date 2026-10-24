@@ -36,4 +36,19 @@ export interface Contender {
   sameDomAs?: string;
   /** Checked before a run: throw with instructions when something is missing (e.g. `pnpm build`). */
   check?: () => void;
+  /**
+   * For the Jest suite (jest-suite.ts): the Jest environment this DOM ships, and where test
+   * files' imports go. `preload` and `env` apply to Jest's workers too. Absent: no Jest row.
+   */
+  jest?: JestSetup;
+}
+
+export interface JestSetup {
+  /** Column header in the Jest table, e.g. "jest-environment-jsdom 30.5.2 (jsdom 26.1.0)". */
+  label: () => string;
+  /** `testEnvironment`: a package name or an absolute path. */
+  testEnvironment: string;
+  testEnvironmentOptions?: Record<string, unknown>;
+  /** Extra `moduleNameMapper` entries (e.g. stock `@testing-library/*` to another implementation). */
+  moduleNameMapper?: Record<string, string>;
 }

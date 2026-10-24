@@ -11,4 +11,8 @@ export const happyDom: Contender = {
   environment: "happy-dom",
   loadEnvironment: async () => (await import("vitest/runtime")).builtinEnvironments["happy-dom"],
   imports: { react: "@testing-library/react", userEvent: "@testing-library/user-event" },
+  jest: {
+    testEnvironment: require.resolve("@happy-dom/jest-environment"),
+    label: () => `@happy-dom/jest-environment ${require("@happy-dom/jest-environment/package.json").version}`,
+  },
 };

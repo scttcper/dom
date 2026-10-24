@@ -30,11 +30,14 @@ describe.skipIf(sharesDom)("happy-dom's comparison, warm", () => {
     await measure(ctx, "Serialize the page (body.innerHTML)", () => document.body.innerHTML.length);
   });
 
+  // Queries the way code consumes them: Testing Library and app code Array.from() / spread the
+  // result. (A bare `.length` mostly measures a result cache: happy-dom returns the same NodeList
+  // until the document changes.)
   for (const [selector, count] of [["li", 612], [".card", 180], ["[aria-label]", 419], ['[class~="card"]', 180], [":nth-child(2n+1)", null]] as const) {
     test(`querySelectorAll ${selector}`, async (ctx) => {
       document.body.innerHTML = PAGE;
       if (count !== null) expect(document.querySelectorAll(selector)).toHaveLength(count);
-      await measure(ctx, `querySelectorAll('${selector}')`, () => document.querySelectorAll(selector).length);
+      await measure(ctx, `Array.from(querySelectorAll('${selector}'))`, () => Array.from(document.querySelectorAll(selector)).length);
     });
   }
 
