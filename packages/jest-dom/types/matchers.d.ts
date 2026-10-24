@@ -1048,6 +1048,27 @@ declare namespace matchers {
      * [testing-library/jest-dom#tocontainanyby--tocontainoneby](https://github.com/testing-library/jest-dom#tocontainanyby--tocontainoneby)
      */
     toContainOneByTitle(...args: DomQueryByBoundAttributeArgs): R
+
+    // @ctrl/dom addition (not in upstream jest-dom).
+    /**
+     * @description
+     * Assert that the accessibility tree of an element (or of `document.body`'s children, for the
+     * body, a document or a fragment) matches an aria snapshot template, with Playwright's
+     * semantics: the template lists a subset of the nodes in order (partial matching), names are
+     * strings or `/regex/`, states like `[checked]` or `[level=2]` must match when listed,
+     * `- text: …` matches text, and children nest by indentation.
+     * @example
+     * <form aria-label="Payment"><h2>Pay</h2><input aria-label="Email"><button disabled>Pay 42 €</button></form>
+     *
+     * expect(screen.getByRole('form')).toMatchAriaSnapshot(`
+     *   - form "Payment":
+     *     - heading "Pay" [level=2]
+     *     - button /Pay \d+ €/ [disabled]
+     * `)
+     * @see
+     * [Playwright aria snapshots](https://playwright.dev/docs/aria-snapshots)
+     */
+    toMatchAriaSnapshot(template: string): R
   }
 }
 

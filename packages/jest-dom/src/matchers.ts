@@ -54,3 +54,6 @@ export const {
   toContainAnyByTitle,
   toContainOneByTitle,
 } = queryMatchers;
+
+// @ctrl/dom addition (not in upstream jest-dom): Playwright-style aria snapshot assertions.
+export { toMatchAriaSnapshot } from "./matchers/aria-snapshot.ts";
