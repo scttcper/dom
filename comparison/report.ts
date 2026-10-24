@@ -17,25 +17,20 @@ const END = "<!-- comparison:end -->";
 
 /**
  * The README's rows, picked for what component suites spend time on (not for who wins): the
- * whole-suite numbers, then benchmark labels exactly as the bench files register them.
+ * whole-suite numbers, then benchmark labels exactly as the bench files register them. Every
+ * benchmark, the DOM-only ones included, is in RESULTS.md.
  */
 type SuiteKind = "vitest" | "vm" | "jest";
 
 const README_ROWS: Array<{ label: string; suite?: "wall" | "setup" | "rss"; kind?: SuiteKind; bench?: string; note?: string }> = [
   { label: "`vitest run`, 100 React test files", suite: "wall" },
   { label: "… with `--pool vmForks`", suite: "wall", kind: "vm" },
-  { label: "`jest`, the same 100 files²", suite: "wall", kind: "jest" },
+  { label: "`jest`, the same 100 files¹", suite: "wall", kind: "jest" },
   { label: "Environment setup per test file", suite: "setup" },
   { label: "Worker memory (RSS)", suite: "rss" },
   { label: "Render a 20-field form + 10 `getByRole`", bench: "Render a 20-field form, 10 getByRole({ name }) queries" },
   { label: "`user.type('hello world')`", bench: "user.type('hello world') into a controlled input" },
-  { label: "`user.click` × 10", bench: "user.click a button 10 times (state updates)" },
-  { label: "`findByRole` after a 20 ms timer", bench: "findByRole after a 20 ms timer", note: "virtual" },
-  { label: "Parse a 220 KB page", bench: "Parse a 220 KB page (body.innerHTML =)" },
-  { label: "Mutate, then `querySelectorAll`", bench: "Mutate an attribute, then querySelectorAll('[aria-label]')" },
-  { label: "`getComputedStyle` × 100", bench: "getComputedStyle of 100 elements (display, visibility)" },
   { label: "Styled form + 5 `getByRole`, 1,200-rule CSS-in-JS sheet", bench: "Render a 40-field form under a 1,200-rule CSS-in-JS sheet, 5 getByRole queries" },
-  { label: "`getComputedStyle` × 100, same sheet", bench: "getComputedStyle of 100 elements under a 1,200-rule CSS-in-JS sheet" },
 ];
 
 interface BenchRow {
@@ -231,15 +226,17 @@ export function report(options: { readme?: boolean } = {}): void {
         if (c.sameDomAs !== undefined) out[i] = "〃";
       });
     }
-    return [row.note === "virtual" ? `${row.label}¹` : row.label, ...out];
+    return [row.note === "virtual" ? `${row.label}²` : row.label, ...out];
   }).filter((r) => r !== null);
   const jest = suites.get("jest");
-  const jestNote = jest?.labels ? ` ² Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "").replace(/ \+ its Testing Library$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
+  const jestNote = jest?.labels ? ` ¹ Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "").replace(/ \+ its Testing Library$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
+  const virtualNote = README_ROWS.some((r) => r.note === "virtual") ? " ² ctrl-dom skips idle time on a virtual clock instead of waiting it out." : "";
+  const sameNote = rows.some((r) => r.includes("〃")) ? " 〃 same DOM as the column before." : "";
   const section = [
     START,
     table(header(contenders), rows),
     "",
-    `<sub>Medians, ${date}, ${machine()}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration. ¹ ctrl-dom skips idle time on a virtual clock instead of waiting it out.${jestNote} 〃 same DOM as the column before. Everything measured, and how: [comparison/](comparison/README.md) ([full results](comparison/RESULTS.md)).</sub>`,
+    `<sub>Medians, ${date}, ${machine()}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration.${jestNote}${virtualNote}${sameNote}</sub>`,
     END,
   ].join("\n");
   const readme = readFileSync(README, "utf8");

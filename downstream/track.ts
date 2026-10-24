@@ -6,8 +6,8 @@
 //
 //   node downstream/track.ts [--suites base-ui,radix,...] [--markdown out.md]
 //   node downstream/track.ts --update [--suites ...]    rewrite the baseline from the latest runs
-//   node downstream/track.ts --readme                   regenerate README.md's "Tested against"
-//                                                       table from the baseline (no runs needed)
+//   node downstream/track.ts --readme                   regenerate the pass-count tables in README.md
+//                                                       and docs/compatibility.md from the baseline
 //
 // Exits 1 when a test that passed in the baseline no longer passes (in any mode: a jsdom
 // regression means the upstream run itself is broken), when a mode the baseline tracks has no
@@ -110,17 +110,14 @@ const suites = flags.suites.split(",").filter(Boolean);
 for (const suite of suites) if (!(suite in SUITES)) throw new Error(`unknown suite ${suite} (have: ${Object.keys(SUITES).join(", ")})`);
 
 if (flags.readme) {
-  // README.md's "Tested against" table, between the downstream:start/end markers. Generated from
-  // the baseline alone, so it always shows what the tracked runs recorded.
-  const README = join(here, "../README.md");
-  const START = /<!-- downstream:start[^>]*-->\n/;
-  const END = "<!-- downstream:end -->";
-  const readme = readFileSync(README, "utf8");
-  const start = START.exec(readme);
-  const end = readme.indexOf(END);
-  if (start === null || end < start.index) throw new Error("README.md has no <!-- downstream:start --> … <!-- downstream:end --> markers");
+  // The pass-count tables, generated from the baseline alone so they always show what the
+  // tracked runs recorded: a short one in README.md and the detailed one (what each suite covers,
+  // its runner and pinned upstream commit) in docs/compatibility.md, each between the
+  // downstream:start/end markers.
   const n = (x: number) => x.toLocaleString("en-US");
-  const rows = ["| Suite | Upstream | Tests | jsdom | ctrl-dom environment | ctrl-dom + its Testing Library | Differences |", "| --- | --- | ---: | ---: | ---: | ---: | --- |"];
+  const short = ["| Project | Tests | jsdom | ctrl-dom | ctrl-dom + its Testing Library |", "| --- | ---: | ---: | ---: | ---: |"];
+  const detailed = ["| Suite | Upstream | Tests | jsdom | ctrl-dom environment | ctrl-dom + its Testing Library |", "| --- | --- | ---: | ---: | ---: | ---: |"];
+  let anyIntermittent = false;
   for (const [suite, meta] of Object.entries(SUITES)) {
     const tracked = baseline[suite];
     if (tracked === undefined) throw new Error(`${suite}: not in downstream/baseline.json (run with --update)`);
@@ -128,26 +125,44 @@ if (flags.readme) {
     const repoUrl = manifest.repository.replace(/\.git$/, "");
     const slug = repoUrl.replace(/^https:\/\/github\.com\//, "");
     const jsdom = tracked.modes.jsdom;
-    const cell = (mode: string): string => {
+    const cell = (mode: string, long: boolean): string => {
       const c = tracked.modes[mode];
       if (c === undefined) return "—";
       const flaky = new Set(c.flaky ?? []);
       const intermittent = c.failing.filter((k) => flaky.has(k)).length;
-      return n(c.passed) + (intermittent ? ` (${intermittent} intermittent)` : "");
+      if (intermittent === 0) return n(c.passed);
+      anyIntermittent = true;
+      return n(c.passed) + (long ? ` (${intermittent} intermittent)` : "\\*");
     };
-    rows.push(
-      `| ${meta.title} (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${n(jsdom.passed + jsdom.failed)} | ${cell("jsdom")} | ${cell("rtd-dom")} | ${cell("rtd-full")} | [TRIAGE.md](downstream/${suite}/TRIAGE.md) |`,
+    const total = n(jsdom.passed + jsdom.failed);
+    short.push(`| [${meta.title}](downstream/${suite}/TRIAGE.md) | ${total} | ${cell("jsdom", false)} | ${cell("rtd-dom", false)} | ${cell("rtd-full", false)} |`);
+    detailed.push(
+      `| [${meta.title}](../downstream/${suite}/TRIAGE.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom", true)} | ${cell("rtd-dom", true)} | ${cell("rtd-full", true)} |`,
     );
   }
-  const table = [
-    "Each suite is the project's own unmodified tests at a pinned commit, run three ways: on **jsdom** (the project's own setup), on the **ctrl-dom environment** (only the test environment swapped; stock Testing Library), and on **ctrl-dom + its Testing Library** (`@testing-library/*` replaced by ours too). Columns count passing tests; skipped tests are left out. Each TRIAGE.md says what still differs and why.",
-    "",
-    ...rows,
-    "",
-  ].join("\n");
-  writeFileSync(README, readme.slice(0, start.index + start[0].length) + table + readme.slice(end));
-  console.log(`wrote ${relative(process.cwd(), README)} (${Object.keys(SUITES).length} suites)`);
+  writeSection(join(here, "../README.md"), [...short, ...(anyIntermittent ? ["", "<sub>\\* includes tests that fail intermittently.</sub>"] : []), ""].join("\n"));
+  writeSection(
+    join(here, "../docs/compatibility.md"),
+    [
+      "Each suite is the project's own unmodified tests at a pinned commit, run three ways: on **jsdom** (the project's own setup), on the **ctrl-dom environment** (only the test environment swapped; stock Testing Library), and on **ctrl-dom + its Testing Library** (`@testing-library/*` replaced by ours too). Columns count passing tests; skipped tests are left out. Each suite's TRIAGE.md (linked from its name) says what still differs and why.",
+      "",
+      ...detailed,
+      "",
+    ].join("\n"),
+  );
   process.exit(0);
+}
+
+/** Replace what is between a file's downstream:start and downstream:end markers. */
+function writeSection(path: string, body: string): void {
+  const START = /<!-- downstream:start[^>]*-->\n/;
+  const END = "<!-- downstream:end -->";
+  const text = readFileSync(path, "utf8");
+  const start = START.exec(text);
+  const end = text.indexOf(END);
+  if (start === null || end < start.index) throw new Error(`${relative(process.cwd(), path)} has no <!-- downstream:start --> … <!-- downstream:end --> markers`);
+  writeFileSync(path, text.slice(0, start.index + start[0].length) + body + text.slice(end));
+  console.log(`wrote ${relative(process.cwd(), path)}`);
 }
 
 if (flags.update) {
