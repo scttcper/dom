@@ -1,7 +1,7 @@
 // Release the published packages with semantic-release, each on its own version line
 // (.github/workflows/release.yml runs this on every push to main, after `pnpm build`).
 //
-//   node tools/release/release.ts [--package all|@ctrl/dom|jest-environment-ctrl-dom|vitest-environment-ctrl-dom]
+//   node tools/release/release.ts [--package all|@ctrl/dom|@ctrl/dom-jest-environment]
 //        [--dry-run] [--no-ci]
 //
 // Each package's next version comes from the conventional commits since its last tag

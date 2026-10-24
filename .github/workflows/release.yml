@@ -1,8 +1,8 @@
 name: Release
 
 # semantic-release, one version line per published package (tools/release): on every push to
-# main, each of @ctrl/dom, jest-environment-ctrl-dom and vitest-environment-ctrl-dom is released
-# when conventional commits since its last tag touch the files it is built from (feat → minor;
+# main, each of @ctrl/dom and @ctrl/dom-jest-environment is released when
+# conventional commits since its last tag touch the files it is built from (feat → minor;
 # fix, perf, deps → patch; breaking change → major). Run it by hand to release one package or to
 # preview (dry run).
 #
@@ -23,8 +23,7 @@ on:
         options:
           - all
           - "@ctrl/dom"
-          - jest-environment-ctrl-dom
-          - vitest-environment-ctrl-dom
+          - "@ctrl/dom-jest-environment"
       dry-run:
         description: Only report what would be released
         type: boolean

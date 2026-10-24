@@ -74,7 +74,7 @@ export const ctrlDom: Contender = {
   loadEnvironment,
   imports: { react: "@testing-library/react", userEvent: "@testing-library/user-event" },
   check,
-  jest: { label: () => `jest-environment-ctrl-dom ${version()}`, testEnvironment: bundle("jest-environment-rtd"), moduleNameMapper: domShims },
+  jest: { label: () => `@ctrl/dom-jest-environment ${version()}`, testEnvironment: bundle("jest-environment-rtd"), moduleNameMapper: domShims },
 };
 
 export const ctrlDomStack: Contender = {
@@ -101,7 +101,7 @@ export const ctrlDomStack: Contender = {
   sameDomAs: "ctrl-dom",
   check,
   jest: {
-    label: () => `jest-environment-ctrl-dom + its Testing Library ${version()}`,
+    label: () => `@ctrl/dom-jest-environment + its Testing Library ${version()}`,
     testEnvironment: bundle("jest-environment-rtd"),
     moduleNameMapper: {
       ...domShims,

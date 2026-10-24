@@ -41,17 +41,12 @@ export default defineConfig({
 
 DOM only (stock Testing Library packages keep working):
 
-```sh
-pnpm add -D @ctrl/dom vitest-environment-ctrl-dom
-```
-
 ```ts
-export default defineConfig({ test: { environment: "ctrl-dom" } });
+export default defineConfig({ plugins: [ctrlDom({ testingLibrary: false })] });
 ```
 
-Per file: `// @vitest-environment ctrl-dom`. Options go under the environment's name:
-`environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/", width: 1280 } }`, or
-`ctrlDom({ url, width })` with the plugin.
+Options go to the plugin: `ctrlDom({ url: "http://localhost:3000/", width: 1280 })`. With the
+plugin installed, a file can also pick the environment itself: `// @vitest-environment ctrl-dom`.
 
 The plugin also adds a Node flag to Vitest's workers, since the default pool starts one per test
 file: with its Testing Library it turns the compile cache on as each worker starts, so Vitest's
@@ -60,7 +55,7 @@ own worker modules load from it too, not only the DOM.
 ## Jest
 
 ```sh
-pnpm add -D @ctrl/dom jest-environment-ctrl-dom
+pnpm add -D @ctrl/dom @ctrl/dom-jest-environment
 ```
 
 ```js
@@ -71,8 +66,8 @@ module.exports = {
 };
 ```
 
-DOM only: `testEnvironment: "ctrl-dom"` (stock Testing Library keeps working). Options go in
-`testEnvironmentOptions`. Per file: `/** @jest-environment ctrl-dom */`.
+DOM only: `testEnvironment: "@ctrl/dom-jest-environment"` (stock Testing Library keeps working).
+Options go in `testEnvironmentOptions`. Per file: `/** @jest-environment @ctrl/dom-jest-environment */`.
 
 ## Other test runners
 

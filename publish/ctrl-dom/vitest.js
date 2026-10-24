@@ -1,8 +1,8 @@
 // `plugins: [ctrlDom()]` in vitest.config.ts: @ctrl/dom's Vitest environment, plus every stock
 // Testing Library import routed to @ctrl/dom's implementation, so existing tests run on the
 // whole stack unchanged. Only @ctrl/dom needs to be installed: the environment is referenced by
-// path (vitest-environment-ctrl-dom exists for `environment: "ctrl-dom"` and docblocks). Works in
-// every pool: under VM pools, `@ctrl/dom` itself resolves to a bridge returning the environment's
+// path, and the plugin answers for the name "ctrl-dom" too (per-file docblocks). Works in every
+// pool: under VM pools, `@ctrl/dom` itself resolves to a bridge returning the environment's
 // DOM instance (scripts/release.ts, writeBridges), so nothing here needs to be inlined.
 import { fileURLToPath } from "node:url";
 
@@ -11,6 +11,7 @@ const environment = fileURLToPath(new URL("./dist/vitest-environment/index.js", 
 // snapshot of document.body to every failing test's error.
 const failureSnapshot = fileURLToPath(new URL("./dist/vitest-environment/failure-snapshot.js", import.meta.url));
 const DEBUG_FORMATS = new Set(["aria", "compact", "html"]);
+const ENVIRONMENT_PACKAGE = "vitest-environment-ctrl-dom";
 
 const TESTING_LIBRARY = [
   { find: /^@testing-library\/react(\/.*)?$/, replacement: "@ctrl/dom/react$1" },
@@ -58,6 +59,13 @@ export function ctrlDom(options = {}) {
   const agentMode = DEBUG_FORMATS.has(String(shellDebug ?? debug ?? "").trim().toLowerCase());
   return {
     name: "@ctrl/dom",
+    // Before Vite's own resolver, which would look for the package in node_modules.
+    enforce: "pre",
+    // `// @vitest-environment ctrl-dom` (and `environment: "ctrl-dom"`): Vitest looks a custom
+    // environment name up as the package `vitest-environment-<name>`, through Vite's resolver.
+    resolveId(id) {
+      return id === ENVIRONMENT_PACKAGE ? environment : null;
+    },
     config() {
       return {
         ...(testingLibrary ? { resolve: { alias: TESTING_LIBRARY } } : {}),

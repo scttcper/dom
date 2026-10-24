@@ -1,5 +1,5 @@
-// (a) stock Testing Library on `environment: "ctrl-dom"`; (c) the same file under the
-// `ctrlDom()` plugin, which routes @testing-library/* to @ctrl/dom (vitest.plugin.config.ts).
+// (a) stock Testing Library under `ctrlDom({ testingLibrary: false })`; (c) the same file under
+// `ctrlDom()`, which routes @testing-library/* to @ctrl/dom (vitest.plugin.config.ts).
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";

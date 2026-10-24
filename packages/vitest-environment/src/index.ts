@@ -1,13 +1,9 @@
-// Vitest environment for @rtd/dom, published as `@ctrl/dom/vitest-environment` (and
-// `vitest-environment-ctrl-dom`, which Vitest resolves for `environment: "ctrl-dom"`).
+// Vitest environment for @rtd/dom, published as `@ctrl/dom/vitest-environment` and loaded by path
+// by the `ctrlDom()` plugin (publish/ctrl-dom/vitest.js), which also answers for the name
+// "ctrl-dom":
 //
 //   // vitest.config.ts
-//   export default defineConfig({
-//     test: {
-//       environment: "ctrl-dom",
-//       environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/", width: 1280 } },
-//     },
-//   });
+//   export default defineConfig({ plugins: [ctrlDom({ url: "http://localhost:3000/", width: 1280 })] });
 //
 // or per file: `// @vitest-environment ctrl-dom`. Vitest passes a docblock's
 // `@vitest-environment-options` under the environment's name, hence the "ctrl-dom" key; `ctrlDom`

@@ -1,3 +1,4 @@
+// @vitest-environment ctrl-dom
 // (b) @ctrl/dom's Testing Library subpaths imported directly (also checked by `tsc --noEmit`, (e)).
 import { render, screen } from "@ctrl/dom/react";
 import userEvent from "@ctrl/dom/user-event";

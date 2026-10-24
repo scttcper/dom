@@ -38,7 +38,7 @@ Not failures, but blocking a fair comparison:
 
 ## Performance finding (jest-environment)
 
-`jest-environment-ctrl-dom` inherits jest-environment-node's contextified vm context around Jest's
+`@ctrl/dom-jest-environment` inherits jest-environment-node's contextified vm context around Jest's
 GlobalProxy; jsdom 30 uses `vm.constants.DONT_CONTEXTIFY`. The `rtd-direct` experiment
 (`harness/env-rtd.cjs`, swaps `vm.createContext` for the duration of the NodeEnvironment
 constructor) passes the same tests and cuts components CPU from ~348 s to ~315 s (jsdom ~375 s).

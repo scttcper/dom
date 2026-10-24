@@ -110,5 +110,5 @@ export function missingSnapshotHint(failures, runner) {
   if (runner === "vitest") {
     return 'Note: no failure snapshots. Use ctrlDom() from "@ctrl/dom/vitest", or add "@ctrl/dom/vitest-environment/failure-snapshot" to test.setupFiles (the ctrl-dom environment is required).\n';
   }
-  return 'Note: no failure snapshots. They need testEnvironment "ctrl-dom" (jest-environment-ctrl-dom) or preset "@ctrl/dom".\n';
+  return 'Note: no failure snapshots. They need testEnvironment "@ctrl/dom-jest-environment" or preset "@ctrl/dom".\n';
 }

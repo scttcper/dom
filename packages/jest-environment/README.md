@@ -1,15 +1,15 @@
-# jest-environment-ctrl-dom
+# @ctrl/dom-jest-environment
 
 Jest environment that installs an `@ctrl/dom` window as the test globals.
 
 ```js
-// jest.config.js
-module.exports = {
-  // Environment only (stock @testing-library/* packages):
-  testEnvironment: "ctrl-dom",
-  // or the whole stack, stock @testing-library/* imports routed to @ctrl/dom:
-  preset: "@ctrl/dom",
-};
+// jest.config.js: the whole stack, stock @testing-library/* imports routed to @ctrl/dom
+module.exports = { preset: "@ctrl/dom" };
+```
+
+```js
+// the environment only, with stock @testing-library/* packages
+module.exports = { testEnvironment: "@ctrl/dom-jest-environment" };
 ```
 
 The environment publishes the DOM modules it loaded on the test global, and published

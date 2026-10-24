@@ -11,8 +11,8 @@
 //                          typings under types/ (their dev `exports` carry a `types` condition).
 //   dist/NOTICE, LICENSE   copies of the repository NOTICE and LICENSE.
 //
-// Then release/: the published packages (@ctrl/dom, jest-environment-ctrl-dom,
-// vitest-environment-ctrl-dom) assembled from these builds by scripts/release.ts.
+// Then release/: the published packages (@ctrl/dom, @ctrl/dom-jest-environment) assembled from
+// these builds by scripts/release.ts.
 //
 // Every bare specifier (other workspace packages, react, node builtins) stays external, so two
 // bundles never carry two copies of the DOM. Packages' development `exports` keep pointing at

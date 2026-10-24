@@ -115,7 +115,7 @@ in a rAF and tests flush it with `act(() => jest.runAllTimers())`.
 ## 5. jest-environment: interface prototypes are shared across test files of a worker
 
 jest-environment-jsdom builds a new JSDOM — new interface objects and prototypes — per test file.
-jest-environment-ctrl-dom loads @ctrl/dom once per worker (singleton strategy) and every window reuses
+@ctrl/dom-jest-environment loads @ctrl/dom once per worker (singleton strategy) and every window reuses
 the module's interfaces, so prototype patches leak into later files of the same worker. Examples:
 `useLandmark.test.tsx` (41 tests, "Property `clientWidth` does not have access type get"; passes
 alone — an earlier file spied on `HTMLElement.prototype.clientHeight` and only `mockReset()` it),

@@ -23,13 +23,13 @@ pnpm docs:spec            # regenerate docs/spec-coverage.md
 
 ## Packages
 
-Published, assembled by [scripts/release.ts](scripts/release.ts) from the workspace builds:
+Published, assembled by [scripts/release.ts](scripts/release.ts) from the workspace builds. Vitest
+needs no package of its own: the `ctrlDom()` plugin loads the environment by path.
 
 | Package | Replaces |
 | --- | --- |
 | `@ctrl/dom` | jsdom / happy-dom, plus the Testing Library stack under subpaths |
-| `jest-environment-ctrl-dom` | jest-environment-jsdom (`testEnvironment: "ctrl-dom"`) |
-| `vitest-environment-ctrl-dom` | `environment: "ctrl-dom"` (re-exports `@ctrl/dom/vitest-environment`) |
+| `@ctrl/dom-jest-environment` | jest-environment-jsdom (`preset: "@ctrl/dom"` uses it) |
 
 What each import is and where its source lives:
 
@@ -43,7 +43,7 @@ What each import is and where its source lives:
 | `@ctrl/dom/jest-dom` | [packages/jest-dom](packages/jest-dom) | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
 | `@ctrl/dom/vitest-environment` | [packages/vitest-environment](packages/vitest-environment) | Vitest's jsdom environment | |
 | `@ctrl/dom/register` | [packages/register](packages/register) | `@happy-dom/global-registrator` | DOM globals for `node --test` and `bun test` |
-| `jest-environment-ctrl-dom` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
+| `@ctrl/dom-jest-environment` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
 
 Inside the repository each directory under `packages/` is a workspace package named after it
 (`packages/react` is `@rtd/react`, the environments are `vitest-environment-rtd` and
@@ -62,7 +62,7 @@ published ones, and no `@rtd/` name ships.
   baseline (`node downstream/track.ts --update`, then `--readme`) in the PR that makes them.
 - `Release` (every push to main, or by hand for one package or a dry run): semantic-release
   with one version line per published package (`tools/release`). A package is released only when
-  conventional commits since its last tag (`@ctrl/dom@1.2.0`, `jest-environment-ctrl-dom@1.0.3`)
+  conventional commits since its last tag (`@ctrl/dom@1.2.0`, `@ctrl/dom-jest-environment@1.0.3`)
   touch the files it is built from: `feat` → minor; `fix`, `perf`, `deps` → patch; a breaking
   change → major; `ref`, `docs`, `test`, `chore`… release nothing. Publishing is npm trusted
   publishing (OIDC, with provenance): each package's trusted publisher on npmjs.com names this

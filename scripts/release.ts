@@ -6,10 +6,12 @@
 //                                        /jest-dom, /testing-library, /aria, /vitest-environment,
 //                                        /register),
 //                                        plus the Jest preset and the Vitest plugin (publish/ctrl-dom)
-//   release/jest-environment-ctrl-dom    packages/jest-environment (Jest's dependencies stay out of
-//                                        @ctrl/dom for Vitest users)
-//   release/vitest-environment-ctrl-dom  re-exports @ctrl/dom/vitest-environment, so Vitest finds
-//                                        `environment: "ctrl-dom"` by name
+//   release/dom-jest-environment         @ctrl/dom-jest-environment: packages/jest-environment
+//                                        (Jest's dependencies stay out of @ctrl/dom for Vitest users)
+//
+// Every published package is under @ctrl. Vitest has no separate environment package: it can only
+// look a custom environment up by name as an unscoped `vitest-environment-<name>` package, so the
+// ctrlDom() plugin references the environment by path and answers for the name itself.
 //
 // The workspace names (@rtd/*, *-environment-rtd) are internal. Every bundle and declaration
 // keeps its cross-package imports as bare specifiers (scripts/build.ts), and they are rewritten
@@ -61,8 +63,8 @@ export function rewriteNames(text: string): string {
       const sub = SUBPATHS[`@rtd/${pkg}`];
       return `@ctrl/dom${sub ? `/${sub}` : ""}${rest}`;
     })
-    .replaceAll("vitest-environment-rtd", "vitest-environment-ctrl-dom")
-    .replaceAll("jest-environment-rtd", "jest-environment-ctrl-dom");
+    .replaceAll("vitest-environment-rtd", "@ctrl/dom/vitest-environment")
+    .replaceAll("jest-environment-rtd", "@ctrl/dom-jest-environment");
 }
 
 type Json = Record<string, any>;
@@ -187,7 +189,7 @@ function sorted<T>(record: Record<string, T>): Record<string, T> {
 export async function assembleRelease(): Promise<string[]> {
   rmSync(releaseDir, { recursive: true, force: true });
   const templates = Object.fromEntries(
-    ["ctrl-dom", "jest-environment-ctrl-dom", "vitest-environment-ctrl-dom"].map((name) => [name, readJson(join(publishDir, name, "package.template.json"))]),
+    ["ctrl-dom", "dom-jest-environment"].map((name) => [name, readJson(join(publishDir, name, "package.template.json"))]),
   );
   // Each package is released on its own version line (tools/release): templates hold a
   // placeholder version that semantic-release replaces at publish time.
@@ -234,13 +236,13 @@ export async function assembleRelease(): Promise<string[]> {
     peerDependenciesMeta: sorted(Object.fromEntries(Object.keys(peerDependencies).map((name) => [name, { optional: true }]))),
   });
 
-  // ── jest-environment-ctrl-dom ──
-  const jestEnv = join(releaseDir, "jest-environment-ctrl-dom");
+  // ── @ctrl/dom-jest-environment ──
+  const jestEnv = join(releaseDir, "dom-jest-environment");
   const jestPkg = readJson(join(repoRoot, "packages/jest-environment/package.json"));
   copyTree(join(repoRoot, "packages/jest-environment/dist"), join(jestEnv, "dist"));
-  copyPublishFiles("jest-environment-ctrl-dom", jestEnv, ["README.md"]);
+  copyPublishFiles("dom-jest-environment", jestEnv, ["README.md"]);
   writeJson(join(jestEnv, "package.json"), {
-    ...templates["jest-environment-ctrl-dom"],
+    ...templates["dom-jest-environment"],
     main: "./dist/index.js",
     types: "./dist/types/index.d.ts",
     exports: { ".": { types: "./dist/types/index.d.ts", default: "./dist/index.js" }, "./package.json": "./package.json" },
@@ -251,20 +253,7 @@ export async function assembleRelease(): Promise<string[]> {
     peerDependencies: { "@ctrl/dom": `^${version}`, jest: PEER_OVERRIDES.jest },
   });
 
-  // ── vitest-environment-ctrl-dom ──
-  const vitestEnv = join(releaseDir, "vitest-environment-ctrl-dom");
-  mkdirSync(vitestEnv, { recursive: true });
-  copyPublishFiles("vitest-environment-ctrl-dom", vitestEnv, ["README.md", "index.js", "index.d.ts"]);
-  writeJson(join(vitestEnv, "package.json"), {
-    ...templates["vitest-environment-ctrl-dom"],
-    main: "./index.js",
-    types: "./index.d.ts",
-    exports: { ".": { types: "./index.d.ts", default: "./index.js" }, "./package.json": "./package.json" },
-    files: ["index.js", "index.d.ts", "README.md", "NOTICE", "LICENSE"],
-    peerDependencies: { "@ctrl/dom": `^${version}`, vitest: PEER_OVERRIDES.vitest },
-  });
-
-  return [ctrlDom, jestEnv, vitestEnv];
+  return [ctrlDom, jestEnv];
 }
 
 if (import.meta.main) {

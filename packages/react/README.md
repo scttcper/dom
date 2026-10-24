@@ -10,7 +10,7 @@ render(<button>Save</button>);
 screen.getByRole("button", { name: "Save" });
 ```
 
-Requires the ctrl-dom test environment (`vitest-environment-ctrl-dom` or `jest-environment-ctrl-dom` with
+Requires the ctrl-dom test environment (the `ctrlDom()` Vitest plugin, or `@ctrl/dom-jest-environment` with
 its preset). ESM and CommonJS builds.
 
 Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).

@@ -24,15 +24,9 @@ export const PACKAGES: ReleasePackage[] = [
     peersOnCtrlDom: false,
   },
   {
-    name: "jest-environment-ctrl-dom",
-    pkgRoot: "release/jest-environment-ctrl-dom",
-    paths: [...member("jest-environment"), "publish/jest-environment-ctrl-dom"],
-    peersOnCtrlDom: true,
-  },
-  {
-    name: "vitest-environment-ctrl-dom",
-    pkgRoot: "release/vitest-environment-ctrl-dom",
-    paths: ["publish/vitest-environment-ctrl-dom"],
+    name: "@ctrl/dom-jest-environment",
+    pkgRoot: "release/dom-jest-environment",
+    paths: [...member("jest-environment"), "publish/dom-jest-environment"],
     peersOnCtrlDom: true,
   },
 ];

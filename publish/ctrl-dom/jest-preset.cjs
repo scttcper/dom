@@ -1,7 +1,7 @@
-// `preset: "@ctrl/dom"`: the ctrl-dom Jest environment (install jest-environment-ctrl-dom next to
+// `preset: "@ctrl/dom"`: the ctrl-dom Jest environment (install @ctrl/dom-jest-environment next to
 // @ctrl/dom) with every stock Testing Library import routed to @ctrl/dom's implementation, so
-// existing tests run on the whole stack unchanged. `testEnvironment: "ctrl-dom"` alone swaps only
-// the DOM.
+// existing tests run on the whole stack unchanged. `testEnvironment: "@ctrl/dom-jest-environment"`
+// alone swaps only the DOM.
 //
 // The targets are @ctrl/dom's CommonJS builds: Jest can only `require()` ES modules under
 // `--experimental-vm-modules`. `@ctrl/dom` itself needs no mapping: its CommonJS entry returns the
@@ -15,7 +15,7 @@ const path = require("node:path");
 const dist = (file) => path.join(__dirname, "dist", file);
 
 module.exports = {
-  testEnvironment: "ctrl-dom",
+  testEnvironment: "@ctrl/dom-jest-environment",
   moduleNameMapper: {
     "^@testing-library/dom$": dist("testing-library/index.cjs"),
     "^@testing-library/react$": dist("react/index.cjs"),

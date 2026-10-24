@@ -15,8 +15,8 @@ stock Testing Library, or swap the whole stack for the biggest speedup;
 Not published yet. `pnpm build` assembles the publishable packages under `release/`, and
 `pnpm test:pack` installs their tarballs into a fresh project and runs every setup below.
 
-Vitest (>= 5), whole stack: the environment plus your `@testing-library/*` imports routed to
-`@ctrl/dom`, with only `@ctrl/dom` installed:
+Vitest (>= 5) needs only `pnpm add -D @ctrl/dom`. Whole stack: the environment plus your
+`@testing-library/*` imports routed to `@ctrl/dom`:
 
 ```ts
 // vitest.config.ts
@@ -31,14 +31,14 @@ export default defineConfig({
 });
 ```
 
-Vitest, DOM only (`pnpm add -D @ctrl/dom vitest-environment-ctrl-dom`):
+Vitest, DOM only, with stock Testing Library:
 
 ```ts
-export default defineConfig({ test: { environment: "ctrl-dom" } });
+export default defineConfig({ plugins: [ctrlDom({ testingLibrary: false })] });
 ```
 
-Jest (>= 30), whole stack (`pnpm add -D @ctrl/dom jest-environment-ctrl-dom`): the environment
-plus your `@testing-library/*` imports routed to `@ctrl/dom`:
+Jest (>= 30) also needs the environment: `pnpm add -D @ctrl/dom @ctrl/dom-jest-environment`.
+Whole stack:
 
 ```js
 // jest.config.js
@@ -48,10 +48,10 @@ module.exports = {
 };
 ```
 
-Jest, DOM only (same install):
+Jest, DOM only:
 
 ```js
-module.exports = { testEnvironment: "ctrl-dom" };
+module.exports = { testEnvironment: "@ctrl/dom-jest-environment" };
 ```
 
 Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
@@ -77,7 +77,7 @@ on each DOM. [comparison/](comparison/README.md) explains each measurement and h
 | `user.type('hello world')` | 19.0 ms | 18.3 ms | 1.18 ms | **677 µs** |
 | Styled form + 5 `getByRole`, 1,200-rule CSS-in-JS sheet | 78.0 ms | 87.3 ms | 1.67 ms | **834 µs** |
 
-<sub>Medians, 2026-10-23, Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1. Suites: 100 files, 3 runs each, 4 workers; other rows: Vitest bench, time per iteration. ¹ Each DOM's Jest environment: jest-environment-jsdom 30.5.2 (jsdom 26.1.0), @happy-dom/jest-environment 21.0.4, jest-environment-ctrl-dom.</sub>
+<sub>Medians, 2026-10-23, Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1. Suites: 100 files, 3 runs each, 4 workers; other rows: Vitest bench, time per iteration. ¹ Each DOM's Jest environment: jest-environment-jsdom 30.5.2 (jsdom 26.1.0), @happy-dom/jest-environment 21.0.4, @ctrl/dom-jest-environment.</sub>
 <!-- comparison:end -->
 
 ## Compatibility

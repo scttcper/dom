@@ -281,7 +281,7 @@ Changes since the previous snapshot in this test:
 
 How it is hooked:
 
-- **Jest** (`testEnvironment: "ctrl-dom"` or `preset: "@ctrl/dom"`): the environment's
+- **Jest** (`testEnvironment: "@ctrl/dom-jest-environment"` or `preset: "@ctrl/dom"`): the environment's
   `handleTestEvent` takes the snapshot on `test_fn_failure`, which jest-circus dispatches before
   `afterEach` hooks run, and appends it to the thrown error. Nothing to configure. Without
   `CTRL_DOM_DEBUG` the environment does not define `handleTestEvent` at all.
@@ -291,12 +291,6 @@ How it is hooked:
   first `afterEach` that runs after a failure (it wraps hooks registered through the global
   `afterEach`, which is how Testing Library registers its auto-cleanup) and appends it in
   `onTestFailed`.
-- **Vitest with the bare environment**: add the setup file yourself (it does nothing unless
-  `CTRL_DOM_DEBUG` is set):
-
-  ```ts
-  test: { environment: "ctrl-dom", setupFiles: ["@ctrl/dom/vitest-environment/failure-snapshot"] }
-  ```
 
   With `globals: false` and a hand-written `afterEach(cleanup)` in an earlier setup file, the
   snapshot is still taken first (hooks run in reverse order of registration). A cleanup
@@ -397,8 +391,8 @@ FAIL  signs up
 1 failed · vitest · src/Signup.test.tsx · 0.4 s
 ```
 
-Failure snapshots need the ctrl-dom environment: Jest's (`testEnvironment: "ctrl-dom"` or the
-preset), or under Vitest the `ctrlDom()` plugin or the setup file line above. The report ends with
+Failure snapshots need the ctrl-dom environment: Jest's (`testEnvironment:
+"@ctrl/dom-jest-environment"` or the preset), or the `ctrlDom()` plugin under Vitest. The report ends with
 a note when failures came without one.
 
 Sizes for the 5-test fixtures in packages/vitest-environment/test/failure-snapshot and

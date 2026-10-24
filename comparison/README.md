@@ -39,7 +39,7 @@ contenders' `--import` preload applies in the workers.
 **`jest` over the same tests** (`jest-suite.ts`): written as plain CommonJS with
 `React.createElement` (`lib/jest-files.ts`) and run with `transform: {}`, so nobody pays for a
 transformer, on each DOM's own Jest environment: jest-environment-jsdom (with the jsdom 26 it
-ships), `@happy-dom/jest-environment`, jest-environment-ctrl-dom (stock Testing Library, or mapped
+ships), `@happy-dom/jest-environment`, @ctrl/dom-jest-environment (stock Testing Library, or mapped
 to @ctrl/dom's). One untimed run per contender first (Jest's haste map), then 3 interleaved runs
 of a fresh Jest process with 4 workers. Reported: wall time, Jest's per-file environment load
 (`perfStats`), worker RSS.

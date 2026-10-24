@@ -64,7 +64,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 - Cause: the test is a regression test for an ordering race between a `values` prop update and
   `remove()`; the final state sometimes keeps a trailing empty row (`[{ name: 'Bob', … }, {}]`).
   jest-environment-jsdom has neither `setImmediate` nor `MessageChannel`, so React's scheduler
-  falls back to `setTimeout(0)`; jest-environment-ctrl-dom keeps Node's `setImmediate`
+  falls back to `setTimeout(0)`; @ctrl/dom-jest-environment keeps Node's `setImmediate`
   (docs/deviations.md, "Window": React's scheduler already prefers it under Node), which runs
   React's work earlier relative to `waitFor`'s polling and the test's effects. Evidence: with
   `setImmediate` and `MessageChannel` deleted from the rtd global it passed 8/8. Not time skipping:
@@ -75,5 +75,5 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 ## Notes
 
 - jest-fixed-jsdom puts Node's `fetch`/`Request`/`Response`/`Blob`/streams on the jsdom global;
-  the rtd modes use jest-environment-ctrl-dom's equivalent, `testEnvironmentOptions.nodeFetch: true`.
+  the rtd modes use @ctrl/dom-jest-environment's equivalent, `testEnvironmentOptions.nodeFetch: true`.
 - `Server` project (`*.server.test.tsx`, testEnvironment node) is not run: it never touches a DOM.

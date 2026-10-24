@@ -26,7 +26,7 @@ The same files in Vitest's VM pool: 4 long-lived workers, a fresh vm context and
 
 The same tests as plain CommonJS (no transform), each DOM's Jest environment, 4 workers, after one untimed run (warm haste map). 3 runs per contender, median [min–max], speedup vs jest-environment-jsdom in parentheses.
 
-|  | jest-environment-jsdom 30.5.2 (jsdom 26.1.0) | @happy-dom/jest-environment 21.0.4 | jest-environment-ctrl-dom 645af7a | jest-environment-ctrl-dom + its Testing Library 645af7a |
+|  | jest-environment-jsdom 30.5.2 (jsdom 26.1.0) | @happy-dom/jest-environment 21.0.4 | @ctrl/dom-jest-environment 645af7a | @ctrl/dom-jest-environment + its Testing Library 645af7a |
 | --- | ---: | ---: | ---: | ---: |
 | Wall time | 2.52 s [2.49 s–2.58 s] | 2.47 s (1.0×) [2.32 s–2.52 s] | 2.06 s (1.2×) [1.97 s–2.22 s] | **902 ms** (2.8×) [862 ms–963 ms] |
 | Environment load per file (Jest's perfStats) | 10.5 ms [10.4 ms–11.3 ms] | 7.38 ms (1.4×) [7.12 ms–7.73 ms] | 3.60 ms (2.9×) [3.48 ms–3.92 ms] | **3.56 ms** (2.9×) [3.42 ms–3.61 ms] |

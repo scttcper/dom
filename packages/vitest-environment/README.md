@@ -1,21 +1,22 @@
 # @ctrl/dom/vitest-environment
 
-Vitest environment that installs an `@ctrl/dom` window as the test globals. Also published on
-its own as `vitest-environment-ctrl-dom`, so Vitest resolves `environment: "ctrl-dom"`.
+Vitest environment that installs an `@ctrl/dom` window as the test globals. The `ctrlDom()` plugin
+loads it (Vitest has no way to find a scoped package by environment name, so there is no
+separate environment package):
 
 ```ts
 // vitest.config.ts
+import { ctrlDom } from "@ctrl/dom/vitest";
+
 export default defineConfig({
-  test: {
-    environment: "ctrl-dom",
-    environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/" } },
-  },
+  plugins: [ctrlDom({ testingLibrary: false, url: "http://localhost:3000/" })],
 });
 ```
 
-Or per file: `// @vitest-environment ctrl-dom`. Peer dependency: `vitest` >= 5.
+With the plugin installed, a file can pick it with `// @vitest-environment ctrl-dom`. Peer
+dependency: `vitest` >= 5.
 
-`environmentOptions["ctrl-dom"]` takes `createWindow` options (`url`, `width`, `height`, ...),
+The plugin's options (or `environmentOptions["ctrl-dom"]`) take `createWindow` options (`url`, `width`, `height`, ...),
 `timeSkip` (below) and `compileCache` (enable Node's compile cache before importing the DOM: on
 for this repository's tests and with the `ctrlDom()` plugin's Testing Library; off by default
 because it then applies to every module the worker loads, and stock Testing Library's hundreds
@@ -31,11 +32,11 @@ most of what a small test file costs. With `pool: "vmThreads"` (or `"vmForks"`) 
 and each file gets a fresh vm context instead. This environment's `setupVM` + teardown take
 ~1 ms per file (jsdom builds a whole new window, ~70 ms), and nothing
 is retained between files (0.03 MB/file after GC over 100 files; happy-dom 5.4 MB/file). The
-context is a plain (non-contextified) vm global, as in jest-environment-ctrl-dom, so global lookups
+context is a plain (non-contextified) vm global, as in @ctrl/dom-jest-environment, so global lookups
 in test and app code are ordinary property loads.
 
 ```ts
-export default defineConfig({ test: { environment: "ctrl-dom", pool: "vmThreads" } });
+export default defineConfig({ plugins: [ctrlDom()], test: { pool: "vmThreads" } });
 ```
 
 100 small React test files (`pnpm bench:suite --pool …`, full stack bundled):

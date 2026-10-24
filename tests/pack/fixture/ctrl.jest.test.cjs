@@ -1,4 +1,5 @@
-// (d3) `testEnvironment: "ctrl-dom"` with @ctrl/dom/react and @ctrl/dom/user-event required from
+/** @jest-environment @ctrl/dom-jest-environment */
+// (d3) the docblock environment with @ctrl/dom/react and @ctrl/dom/user-event required from
 // a CommonJS test file (their CJS builds), sharing the environment's @ctrl/dom.
 "use strict";
 const { render, screen } = require("@ctrl/dom/react");

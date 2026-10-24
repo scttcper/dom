@@ -10,7 +10,7 @@ Library stack, for testing React components on Node.js:
 @ctrl/dom/testing-library     drop-in for @testing-library/dom             queries, waitFor, fireEvent, prettyDOM
 @ctrl/dom/aria                replaces aria-query + dom-accessibility-api  roles, names, states, hidden
 @ctrl/dom                     replaces jsdom / happy-dom                   nodes, parser, selectors, css, events, window
-@ctrl/dom/vitest-environment  installs the DOM as Vitest's test globals (jest-environment-ctrl-dom: Jest's)
+@ctrl/dom/vitest-environment  installs the DOM as Vitest's test globals (@ctrl/dom-jest-environment: Jest's)
 @ctrl/dom/register            the same for node:test / bun test (no environment)
 bench/                        benchmarks vs jsdom and happy-dom
 ```
@@ -37,9 +37,13 @@ What ships is assembled by `pnpm build` (scripts/release.ts) into `release/`:
   (`@ctrl/dom/aria`, `/testing-library`, `/react`, `/user-event`, `/jest-dom`,
   `/vitest-environment`, `/register`), plus the Jest preset and the Vitest plugin from
   publish/ctrl-dom/.
-- `jest-environment-ctrl-dom`: `jest-environment-rtd`, a package of its own so Vitest users do not
+- `@ctrl/dom-jest-environment`: `jest-environment-rtd`, a package of its own so Vitest users do not
   install Jest's dependencies.
-- `vitest-environment-ctrl-dom`: a re-export, so Vitest resolves `environment: "ctrl-dom"`.
+
+Every published package is under `@ctrl`. Vitest gets no environment package: it looks a custom
+environment name up only as an unscoped `vitest-environment-<name>` package, so the `ctrlDom()`
+plugin loads the environment by path and answers for the name "ctrl-dom" itself (per-file
+docblocks).
 
 Each workspace bundle keeps cross-package imports as bare specifiers (scripts/build.ts), and the
 assembly rewrites them to published ones (`@rtd/aria` → `@ctrl/dom/aria`): inside `@ctrl/dom` they

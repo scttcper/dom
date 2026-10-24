@@ -1,7 +1,7 @@
 # @ctrl/dom
 
 A DOM for testing React components, replacing jsdom or happy-dom. Usually
-installed through `vitest-environment-ctrl-dom` or `jest-environment-ctrl-dom` rather than used directly.
+used through the `ctrlDom()` Vitest plugin or `@ctrl/dom-jest-environment` rather than directly.
 
 ```ts
 import { createWindow, installGlobals } from "@ctrl/dom";

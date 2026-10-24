@@ -30,10 +30,10 @@ Off by default in every compat profile (`jsdom-26`, `jsdom-30`, `modern`).
 | Where | Option |
 | --- | --- |
 | `createWindow` | `createWindow({ layout: "lite" })` |
-| Vitest (`environment: "ctrl-dom"` / `"rtd"`) | `environmentOptions: { "ctrl-dom": { layout: "lite" } }` |
+| Vitest config | `environmentOptions: { "ctrl-dom": { layout: "lite" } }` |
 | Vitest plugin | `plugins: [ctrlDom({ layout: "lite" })]` |
 | Vitest, one file | `// @vitest-environment-options {"layout":"lite"}` (Vitest files docblock options under the environment's name and replaces the config's) |
-| Jest (`jest-environment-ctrl-dom`) | `testEnvironmentOptions: { layout: "lite" }` |
+| Jest (`@ctrl/dom-jest-environment`) | `testEnvironmentOptions: { layout: "lite" }` |
 
 `layout: "none"` (or leaving it out) is the default. Iframes inherit their parent window's mode.
 ResizeObserver delivery needs a ResizeObserver global: the `modern` profile exposes one; under the
