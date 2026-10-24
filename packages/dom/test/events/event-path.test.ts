@@ -11,6 +11,7 @@
  *   - legacy-pre-activation behavior: https://dom.spec.whatwg.org/#eventtarget-legacy-pre-activation-behavior
  *   - fire an event: https://dom.spec.whatwg.org/#concept-event-fire
  *   - long / short / unsigned / double / float conversions: https://webidl.spec.whatwg.org/#es-type-mapping
+ *     (short: https://webidl.spec.whatwg.org/#es-short, unsigned long: https://webidl.spec.whatwg.org/#es-unsigned-long)
  */
 import { describe, expect, test } from "vitest";
 import { createWindow } from "@rtd/dom";

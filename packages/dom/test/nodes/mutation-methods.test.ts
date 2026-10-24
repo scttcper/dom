@@ -7,6 +7,7 @@
  * Spec: DOM Standard §4.2.3 "Mutation algorithms", §4.2.6 "Mixin ParentNode", §4.2.8 "Mixin ChildNode"
  *   - ensure pre-insertion validity: https://dom.spec.whatwg.org/#concept-node-ensure-pre-insertion-validity
  *   - pre-insert / append: https://dom.spec.whatwg.org/#concept-node-pre-insert
+ *     (append: https://dom.spec.whatwg.org/#concept-node-append)
  *   - replace all: https://dom.spec.whatwg.org/#concept-node-replace-all
  *   - converting nodes into a node: https://dom.spec.whatwg.org/#converting-nodes-into-a-node
  *   - ParentNode: https://dom.spec.whatwg.org/#interface-parentnode

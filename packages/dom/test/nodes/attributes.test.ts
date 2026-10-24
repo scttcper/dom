@@ -10,6 +10,10 @@
  *   - set an attribute / set an attribute value: https://dom.spec.whatwg.org/#concept-element-attributes-set
  *   - set an existing attribute value: https://dom.spec.whatwg.org/#set-an-existing-attribute-value
  *   - valid names: https://dom.spec.whatwg.org/#valid-element-local-name
+ *   - remove an attribute: https://dom.spec.whatwg.org/#concept-element-attributes-remove
+ *   - setAttributeNode / removeAttributeNode / getAttributeNodeNS: https://dom.spec.whatwg.org/#dom-element-setattributenode,
+ *     https://dom.spec.whatwg.org/#dom-element-removeattributenode, https://dom.spec.whatwg.org/#dom-element-getattributenodens
+ *   - NamedNodeMap getNamedItem: https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@rtd/dom";

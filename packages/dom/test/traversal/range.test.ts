@@ -12,6 +12,9 @@
  *   - compareBoundaryPoints / comparePoint / isPointInRange / intersectsNode
  *   - contained / partially contained: https://dom.spec.whatwg.org/#contained
  *   - extract / clone / insert / surround: https://dom.spec.whatwg.org/#concept-range-extract
+ *     (insertNode: https://dom.spec.whatwg.org/#dom-range-insertnode)
+ *   - isPointInRange: https://dom.spec.whatwg.org/#dom-range-ispointinrange; detach: https://dom.spec.whatwg.org/#dom-range-detach
+ *   - document.createRange: https://dom.spec.whatwg.org/#dom-document-createrange
  */
 import { describe, expect, test } from "vitest";
 import { createWindow } from "@rtd/dom";

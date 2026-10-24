@@ -5,6 +5,7 @@
  *
  * Spec: DOM Standard §7.1 "Interface DOMTokenList", §4.2.10 "Old-style collections"
  *   - token set / update steps / attribute change steps: https://dom.spec.whatwg.org/#concept-dtl-tokens
+ *   - Element.classList: https://dom.spec.whatwg.org/#dom-element-classlist
  *   - item / contains / add / remove / toggle / replace / supports / value:
  *     https://dom.spec.whatwg.org/#dom-domtokenlist-item and following
  *   - HTMLCollection item / namedItem: https://dom.spec.whatwg.org/#interface-htmlcollection

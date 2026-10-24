@@ -9,6 +9,7 @@
  *   - find slottables / find flattened slottables: https://dom.spec.whatwg.org/#find-slotables
  *   - assign slottables (for a tree) / assign a slot: https://dom.spec.whatwg.org/#assign-slotables-for-a-tree
  *   - assigned nodes / assigned slot / manual slot assignment: https://dom.spec.whatwg.org/#slot-assigned-nodes
+ *     (assigned slot: https://dom.spec.whatwg.org/#slotable-assigned-slot)
  */
 import { describe, expect, test } from "vitest";
 import { createWindow } from "@rtd/dom";

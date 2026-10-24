@@ -6,6 +6,7 @@
  * Spec: DOM Standard §4.3 "Mutation observers"
  *   - interface MutationObserver / callback / record queue: https://dom.spec.whatwg.org/#interface-mutationobserver
  *   - registered observer / registered observer list: https://dom.spec.whatwg.org/#registered-observer
+ *   - node list (what disconnect walks): https://dom.spec.whatwg.org/#mutationobserver-node-list
  *   - queue a mutation record: https://dom.spec.whatwg.org/#queueing-a-mutation-record
  *   - queue a mutation observer microtask: https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask
  *   - notify mutation observers: https://dom.spec.whatwg.org/#notify-mutation-observers

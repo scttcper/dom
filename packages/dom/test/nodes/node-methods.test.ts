@@ -8,11 +8,15 @@
  *   - contains: https://dom.spec.whatwg.org/#dom-node-contains
  *   - isEqualNode / "equals": https://dom.spec.whatwg.org/#concept-node-equals
  *   - namespace lookups: https://dom.spec.whatwg.org/#locate-a-namespace-prefix
+ *     (lookupNamespaceURI: https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri,
+ *     isDefaultNamespace: https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace)
  *   - normalize: https://dom.spec.whatwg.org/#dom-node-normalize
  *   - textContent: https://dom.spec.whatwg.org/#concept-descendant-text-content
  *   - getRootNode: https://dom.spec.whatwg.org/#concept-shadow-including-root
  *   - CharacterData "replace data": https://dom.spec.whatwg.org/#concept-cd-replace
  *   - Text "split": https://dom.spec.whatwg.org/#concept-text-split
+ *     (splitText: https://dom.spec.whatwg.org/#dom-text-splittext)
+ *   - Comment constructor: https://dom.spec.whatwg.org/#interface-comment
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@rtd/dom";

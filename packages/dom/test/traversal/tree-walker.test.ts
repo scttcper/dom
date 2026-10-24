@@ -5,11 +5,13 @@
  *
  * Spec: DOM Standard §6 "Traversal"
  *   - filter: https://dom.spec.whatwg.org/#concept-node-filter
+ *   - document.createTreeWalker: https://dom.spec.whatwg.org/#dom-document-createtreewalker
  *   - TreeWalker parentNode / traverse children / traverse siblings / previousNode / nextNode:
  *     https://dom.spec.whatwg.org/#dom-treewalker-parentnode, https://dom.spec.whatwg.org/#concept-traverse-children,
  *     https://dom.spec.whatwg.org/#concept-traverse-siblings, https://dom.spec.whatwg.org/#dom-treewalker-previousnode,
  *     https://dom.spec.whatwg.org/#dom-treewalker-nextnode
  *   - NodeIterator traverse, reference, pointer before reference, pre-removing steps:
+ *     https://dom.spec.whatwg.org/#nodeiterator-pointer-before-reference,
  *     https://dom.spec.whatwg.org/#concept-nodeiterator-traverse
  */
 import { describe } from "vitest";
