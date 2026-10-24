@@ -419,3 +419,20 @@ describe("node length — https://dom.spec.whatwg.org/#concept-node-length", () 
     };
   });
 });
+
+describe("clone a node: document base URL override — https://dom.spec.whatwg.org/#document-base-url-override", () => {
+  test("concept-node-clone step 2.1: a cloned document keeps the original's base URL even without its <base> element", () => {
+    const window = createWindow({ url: "https://example.com/dir/page.html" });
+    const original = window.document;
+    original.head!.innerHTML = '<base href="/assets/">';
+    expect(original.baseURI).toBe("https://example.com/assets/");
+    const shallow = original.cloneNode(false) as Document;
+    expect(shallow.firstChild).toBeNull();
+    expect(shallow.URL).toBe("https://example.com/dir/page.html");
+    expect(shallow.baseURI).toBe("https://example.com/assets/");
+    // A <base> in the clone still wins over the override (document base URL step 1).
+    const deep = original.cloneNode(true) as Document;
+    deep.querySelector("base")!.setAttribute("href", "/elsewhere/");
+    expect(deep.baseURI).toBe("https://example.com/elsewhere/");
+  });
+});

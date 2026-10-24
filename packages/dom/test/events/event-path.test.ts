@@ -36,7 +36,7 @@ function shadowSetup(w: AnyWindow, mode: "open" | "closed") {
 }
 
 describe("append to an event path — https://dom.spec.whatwg.org/#concept-event-path-append", () => {
-  differential("a slotted node's event goes through its slot and the shadow tree before reaching the host (open)", (w) => {
+  differential("a slotted node's event goes through its slot and the shadow tree before reaching the host (step 6.9.5: the target's root is a shadow-including inclusive ancestor of the slot, https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor)", (w) => {
     const { slotted } = shadowSetup(w, "open");
     let path: string[] = [];
     slotted.addEventListener("x", (e: AnyWindow) => (path = e.composedPath().map(name)));

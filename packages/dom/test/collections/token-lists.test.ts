@@ -11,6 +11,7 @@
  *   - HTMLCollection item / namedItem: https://dom.spec.whatwg.org/#interface-htmlcollection
  *   - NodeList item: https://dom.spec.whatwg.org/#dom-nodelist-item
  *   - list of elements with namespace and local name: https://dom.spec.whatwg.org/#concept-getelementsbytagnamens
+ *   - indexed properties: https://webidl.spec.whatwg.org/#dfn-support-indexed-properties
  */
 import { describe, expect, test } from "vitest";
 import { createWindow } from "@rtd/dom";
@@ -160,5 +161,42 @@ describe("NodeList — https://dom.spec.whatwg.org/#dom-nodelist-item", () => {
     const before = [describeNode(live.item(0)), describeNode(live.item(1)), live.item(2), live.item(-1)];
     p.append(d.createElement("i"));
     return { before, liveAfter: live.length, staticAfter: fixed.length, index: describeNode(live[2]) };
+  });
+});
+
+describe("indexed properties — https://webidl.spec.whatwg.org/#dfn-support-indexed-properties", () => {
+  differential("list[i] is item(i) for supported indices and undefined past the end, for every collection kind", (w) => {
+    const d = w.document;
+    d.body.innerHTML = "<p class='a b' title='t'></p><p></p>";
+    const p = d.body.firstChild;
+    const lists: Record<string, AnyWindow> = { htmlCollection: d.getElementsByTagName("p"), children: d.body.children, tokens: p.classList, attributes: p.attributes, childNodes: d.body.childNodes, static: d.querySelectorAll("p") };
+    return Object.fromEntries(Object.entries(lists).map(([k, list]) => [k, [list[0] === list.item(0), list[list.length - 1] === list.item(list.length - 1), list[list.length], list.length]]));
+  });
+
+  differential("writing a supported index throws TypeError in strict code (no indexed setter: [[DefineOwnProperty]] returns false)", (w) => {
+    "use strict";
+    const d = w.document;
+    d.body.innerHTML = "<p class='a b' title='t'></p><p></p>";
+    const p = d.body.firstChild;
+    const lists: Record<string, AnyWindow> = { htmlCollection: d.getElementsByTagName("p"), tokens: p.classList, attributes: p.attributes };
+    return Object.fromEntries(
+      Object.entries(lists).map(([k, list]) => {
+        const before = list[0];
+        return [k, [tryName(() => (list[0] = "x")), list[0] === before]];
+      }),
+    );
+  });
+
+  // TODO(collections): NodeList stores items as plain writable own data properties (the fast path
+  // described in collections/NodeList.ts), so `childNodes[0] = x` silently replaces the entry until
+  // the next mutation rebuilds the list. jsdom (and browsers) throw in strict code. Making the
+  // properties non-writable costs a defineProperty per eager update on a hot path.
+  test.fails("NodeList indices are read-only too: childNodes[0] = x throws in strict code and leaves the list intact [known gap: writable own index properties]", () => {
+    const document = createWindow().document;
+    document.body!.innerHTML = "<p></p>";
+    const list = document.body!.childNodes as unknown as Record<number, unknown>;
+    const first = list[0];
+    expect(() => (list[0] = "x")).toThrow(TypeError);
+    expect(list[0]).toBe(first);
   });
 });

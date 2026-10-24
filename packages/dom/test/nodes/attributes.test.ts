@@ -62,7 +62,7 @@ describe("attribute list algorithms — https://dom.spec.whatwg.org/#concept-ele
     el.setAttribute("a", "same");
     const mo = watch(w, el);
     el.setAttribute("a", "same");
-    el.id = el.id; // reflects through set an attribute value
+    el.id = el.id; // reflects through set an attribute value (https://dom.spec.whatwg.org/#concept-element-attributes-set-value)
     return attrRecords(mo);
   });
 
@@ -163,6 +163,7 @@ describe("toggleAttribute — https://dom.spec.whatwg.org/#dom-element-toggleatt
 
 describe("Attr value — https://dom.spec.whatwg.org/#dom-attr-value", () => {
   differential("setting value on an owned Attr runs change an attribute (record with old value); on an unowned Attr just stores it (https://dom.spec.whatwg.org/#set-an-existing-attribute-value)", (w) => {
+    // An Attr's value is its attribute's while attached, its own otherwise: https://dom.spec.whatwg.org/#concept-attribute-value
     const d = w.document;
     const el = d.createElement("div");
     el.setAttribute("title", "old");
