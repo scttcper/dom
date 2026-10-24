@@ -136,6 +136,19 @@ diagnostics summed over files (`environmentSetupDuration`, setup files, collect/
 duration — CPU time across workers, not wall), and per-file worker RSS/heap recorded by the
 setup file. Only runs where every file passed are timed.
 
+## Regression check (`compare.ts`)
+
+`pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`rtd` for React
+rows, `rtd-dom` for DOM rows, the bundles for startup) from two checkouts of the repository and
+fails when head regresses. Both must be clean checkouts with dependencies installed and `pnpm
+build` run: the main working tree times about 10% differently from a fresh checkout of the same
+commit. For each sample index every workload runs base then head (head first on odd samples), a
+fresh process each, and a metric regresses when the median of the per-sample head/base ratios
+exceeds 1.10 (`--threshold`) and the medians differ by more than 0.5 ms / 0.25 MB (sub-millisecond
+rows are per-call overhead). Median time and allocation per iteration gate; heap after GC and
+peak RSS are reported next to them. CI runs it on pull requests with 9 samples
+(.github/workflows/bench.yml) and writes the table to the job summary.
+
 ## Bundling (`pnpm build`, `scripts/build.ts`)
 
 One rolldown build per package from its `exports` entries into `packages/<pkg>/dist/`
@@ -155,6 +168,7 @@ lib/report.ts          markdown + terminal tables
 lib/stats.ts           median/quantiles/formatting
 workloads/*.ts         startup, react, dom workloads
 suite/                 Vitest end-to-end suite benchmark
+compare.ts             regression check between two checkouts (CI)
 bundle.ts              shim for scripts/build.ts (pnpm build)
 ```
 

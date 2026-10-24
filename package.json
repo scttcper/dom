@@ -17,6 +17,7 @@
     "build": "node scripts/build.ts",
     "docs:compat": "node scripts/compat-doc.ts",
     "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
+    "bench:compare": "node bench/compare.ts",
     "downstream:base-ui": "node downstream/base-ui/run.ts",
     "downstream:radix": "node downstream/radix/run.ts",
     "downstream:sentry": "node downstream/sentry/run.ts",

@@ -81,5 +81,8 @@ pnpm test                               # all packages
 pnpm vitest run --project @rtd/dom      # one package
 pnpm typecheck                          # tsc -b over everything
 pnpm bench                              # benchmarks (bench/)
+pnpm bench:compare --base ../base --head .  # regression check between two clean checkouts
+pnpm docs:compat                        # regenerate the compat profile table in docs/deviations.md
+node downstream/track.ts                # latest downstream runs vs downstream/baseline.json
 pnpm scriptc:check                      # scriptc compiles every @scriptc-compatible module
 ```

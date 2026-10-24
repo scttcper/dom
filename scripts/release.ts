@@ -185,10 +185,9 @@ export async function assembleRelease(): Promise<string[]> {
   const templates = Object.fromEntries(
     ["ctrl-dom", "jest-environment-ctrl-dom", "vitest-environment-ctrl-dom"].map((name) => [name, readJson(join(publishDir, name, "package.template.json"))]),
   );
+  // Each package is released on its own version line (tools/release): templates hold a
+  // placeholder version that semantic-release replaces at publish time.
   const version: string = templates["ctrl-dom"].version;
-  for (const [name, t] of Object.entries(templates)) {
-    if (t.version !== version) throw new Error(`publish/${name}: version ${t.version} differs from @ctrl/dom's ${version}`);
-  }
 
   // ── @ctrl/dom ──
   const ctrlDom = join(releaseDir, "ctrl-dom");
@@ -255,7 +254,7 @@ export async function assembleRelease(): Promise<string[]> {
     types: "./index.d.ts",
     exports: { ".": { types: "./index.d.ts", default: "./index.js" }, "./package.json": "./package.json" },
     files: ["index.js", "index.d.ts", "README.md", "NOTICE", "LICENSE"],
-    peerDependencies: { "@ctrl/dom": version, vitest: PEER_OVERRIDES.vitest },
+    peerDependencies: { "@ctrl/dom": `^${version}`, vitest: PEER_OVERRIDES.vitest },
   });
 
   return [ctrlDom, jestEnv, vitestEnv];

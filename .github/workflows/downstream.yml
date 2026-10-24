@@ -1,0 +1,55 @@
+name: Downstream
+
+# On demand (Actions → Downstream → Run workflow): every downstream suite (unmodified upstream
+# tests at the commit pinned in downstream/<suite>/manifest.json) on jsdom, our DOM, and our whole
+# stack, compared with the pass counts and failing tests tracked in downstream/baseline.json
+# (downstream/track.ts). A test that stops passing fails the run and shows up in the job summary;
+# tests that start passing are listed as fixed (update the baseline with
+# `node downstream/track.ts --update`).
+
+on:
+  workflow_dispatch:
+    inputs:
+      suites:
+        description: Suites to run (JSON array)
+        default: '["base-ui","radix","react-aria","sentry"]'
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(inputs.suites) }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Run ${{ matrix.suite }}
+        run: |
+          case "${{ matrix.suite }}" in
+            sentry) preset=components ;;
+            *) preset=all ;;
+          esac
+          node downstream/${{ matrix.suite }}/run.ts --install --preset "$preset" --modes jsdom,rtd-dom,rtd-full --workers 4 --no-report
+      - name: Compare with downstream/baseline.json
+        if: always()
+        run: node downstream/track.ts --suites ${{ matrix.suite }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: downstream-${{ matrix.suite }}
+          path: |
+            downstream/${{ matrix.suite }}/output/**/summary.json
+            downstream/${{ matrix.suite }}/output/**/report.json
+          if-no-files-found: ignore

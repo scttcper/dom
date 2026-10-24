@@ -1,0 +1,62 @@
+name: Benchmarks
+
+# Regression check for pull requests: the PR head against its base, both as clean checkouts
+# (the main working tree times differently from a fresh checkout of the same commit), every
+# sample a fresh process, base and head interleaved. Fails on a >10% regression in median time
+# or allocation per iteration (bench/compare.ts).
+
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+      - "bench/**"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Base ref to compare against
+        default: main
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: head
+      - uses: actions/checkout@v5
+        with:
+          path: base
+          ref: ${{ github.event.pull_request.base.sha || inputs.base }}
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: head/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: |
+            head/pnpm-lock.yaml
+            base/pnpm-lock.yaml
+      - name: Install and build base
+        working-directory: base
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Install and build head
+        working-directory: head
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Compare
+        run: node head/bench/compare.ts --base base --head head --samples 9 --json bench-compare.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-compare
+          path: bench-compare.json
+          if-no-files-found: ignore

@@ -1,0 +1,73 @@
+name: Release
+
+# semantic-release, one version line per published package (tools/release): on every push to
+# main, each of @ctrl/dom, jest-environment-ctrl-dom and vitest-environment-ctrl-dom is released
+# when conventional commits since its last tag touch the files it is built from (feat → minor;
+# fix, perf, deps → patch; breaking change → major). Run it by hand to release one package or to
+# preview (dry run).
+#
+# npm: trusted publishing only (OIDC, no token). Each package's trusted publisher on npmjs.com
+# names this repository and the workflow file `release.yml`; npm requires the package to exist
+# before one can be configured, so a package's very first version is published by hand. Provenance
+# is generated automatically (public repository and package).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to release
+        type: choice
+        default: all
+        options:
+          - all
+          - "@ctrl/dom"
+          - jest-environment-ctrl-dom
+          - vitest-environment-ctrl-dom
+      dry-run:
+        description: Only report what would be released
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # tags and GitHub releases
+      issues: write
+      pull-requests: write
+      id-token: write # npm trusted publishing and provenance
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # semantic-release reads every tag and commit since the last release
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            tools/release/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm install --dir tools/release --ignore-workspace --frozen-lockfile
+      - name: semantic-release
+        run: node tools/release/release.ts --package "$PACKAGE" $DRY_RUN
+        env:
+          PACKAGE: ${{ inputs.package || 'all' }}
+          DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

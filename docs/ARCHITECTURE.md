@@ -46,6 +46,11 @@ evaluated in a vm context (Jest, Vitest's VM pools); with no environment they lo
 `pnpm test:pack` installs the three tarballs into a fresh project and runs every documented
 setup against them.
 
+The three packages are versioned independently by semantic-release (`tools/release`, run by
+.github/workflows/release.yml): each one's commits are the conventional commits that touch the
+paths it is built from (tools/release/packages.ts), and the environments peer-depend on
+`^<latest @ctrl/dom>`. Versions live in git tags and on npm; nothing is committed back.
+
 ## Why not "everything native" (scriptc)?
 
 Measured on this machine (Node 26.12, scriptc 0.4.2), calling a scriptc-compiled library

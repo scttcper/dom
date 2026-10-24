@@ -146,9 +146,29 @@ pnpm build               # dist/: ESM (+ CJS) bundles and .d.ts per package
 pnpm test:pack           # pack, install into a fresh project, run Vitest/Jest/tsc against the tarballs
 pnpm bench                # vs jsdom / happy-dom
 pnpm bench:suite          # 100-file Vitest suite under each environment
+pnpm bench:compare --base ../base --head .   # regression check between two clean checkouts
 pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom / rtd-full
+node downstream/track.ts  # compare the latest downstream runs with downstream/baseline.json
 pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
 pnpm scriptc:check
 ```
 
 Read [CLAUDE.md](CLAUDE.md) for conventions (spec links in tests, performance rules).
+
+### CI and releases
+
+- `CI` (every push and pull request): typecheck, lint, tests, build, and the packed-tarball
+  checks (`pnpm test:pack`).
+- `Benchmarks` (pull requests touching packages or bench): `bench/compare.ts` on clean checkouts
+  of the PR's base and head; fails on a >10% regression in median time or allocation.
+- `Downstream` (run by hand): Base UI, Radix, React Aria and Sentry's own suites, compared with
+  the pass counts and failing tests in `downstream/baseline.json`. Fixes show up as "fixed":
+  update the baseline (`node downstream/track.ts --update`) in the PR that makes them.
+- `Release` (every push to main, or by hand for one package or a dry run): semantic-release
+  with one version line per published package (`tools/release`). A package is released only when
+  conventional commits since its last tag (`@ctrl/dom@1.2.0`, `jest-environment-ctrl-dom@1.0.3`)
+  touch the files it is built from: `feat` → minor; `fix`, `perf`, `deps` → patch; a breaking
+  change → major; `ref`, `docs`, `test`, `chore`… release nothing. Publishing is npm trusted
+  publishing (OIDC, with provenance): each package's trusted publisher on npmjs.com names this
+  repository and `release.yml`. npm only allows that once a package exists, so each package's
+  first version is published by hand.

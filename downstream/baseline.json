@@ -1,0 +1,139 @@
+{
+  "base-ui": {
+    "preset": "all",
+    "commit": "205831caa12125f8e81f1af02a013239b27d752a",
+    "modes": {
+      "jsdom": {
+        "passed": 9199,
+        "failed": 0,
+        "skipped": 1578,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-dom": {
+        "passed": 9198,
+        "failed": 1,
+        "skipped": 1578,
+        "failing": [
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+        ],
+        "flaky": []
+      },
+      "rtd-full": {
+        "passed": 9198,
+        "failed": 1,
+        "skipped": 1578,
+        "failing": [
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+        ],
+        "flaky": []
+      }
+    }
+  },
+  "radix": {
+    "preset": "all",
+    "commit": "eb3a2b7091293e27df8f9ba906632d8daa3d81a3",
+    "modes": {
+      "jsdom": {
+        "passed": 1134,
+        "failed": 0,
+        "skipped": 9,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-dom": {
+        "passed": 1134,
+        "failed": 0,
+        "skipped": 9,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-full": {
+        "passed": 1134,
+        "failed": 0,
+        "skipped": 9,
+        "failing": [],
+        "flaky": []
+      }
+    }
+  },
+  "react-aria": {
+    "preset": "all",
+    "commit": "d5fb723a1c192e3a1a25c8cfdd4e26b900995307",
+    "modes": {
+      "jsdom": {
+        "passed": 2997,
+        "failed": 0,
+        "skipped": 9,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-dom": {
+        "passed": 2996,
+        "failed": 1,
+        "skipped": 9,
+        "failing": [
+          "packages/react-aria/test/overlays/useOverlayPosition.test.tsx::useOverlayPosition should position the overlay relative to the trigger at top"
+        ],
+        "flaky": []
+      },
+      "rtd-full": {
+        "passed": 2989,
+        "failed": 8,
+        "skipped": 9,
+        "failing": [
+          "packages/react-aria-components/test/Autocomplete.test.tsx::rac-dynamic-menu AriaAutocomplete async filtering performed outside the autocomplete should properly filter and autofocus the first item when typing forward",
+          "packages/react-aria-components/test/Checkbox.test.js::Checkbox should support press state with keyboard",
+          "packages/react-aria-components/test/Checkbox.test.js::CheckboxField should support press state with keyboard",
+          "packages/react-aria-components/test/RadioGroup.test.js::RadioField should support press state with keyboard",
+          "packages/react-aria-components/test/RadioGroup.test.js::RadioGroup should support press state with keyboard",
+          "packages/react-aria-components/test/Switch.test.js::Switch should support press state with keyboard",
+          "packages/react-aria-components/test/Switch.test.js::SwitchField should support press state with keyboard",
+          "packages/react-aria/test/overlays/useOverlayPosition.test.tsx::useOverlayPosition should position the overlay relative to the trigger at top"
+        ],
+        "flaky": []
+      }
+    }
+  },
+  "sentry": {
+    "preset": "components",
+    "commit": "503ad2e4e2a208a87d768a3e91bcfb55a778e7ba",
+    "modes": {
+      "jsdom": {
+        "passed": 6429,
+        "failed": 0,
+        "skipped": 3,
+        "failing": [],
+        "flaky": [
+          "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
+        ]
+      },
+      "rtd-dom": {
+        "passed": 6425,
+        "failed": 4,
+        "skipped": 3,
+        "failing": [
+          "static/app/components/commandPalette/ui/featureFlagCommandPaletteActions.spec.tsx::FeatureFlagCommandPaletteActions clears stored overrides from the command palette",
+          "static/app/components/core/dropdownMenu/dropdownMenu.spec.tsx::DropdownMenu navigates to link on meta key",
+          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown"
+        ],
+        "flaky": [
+          "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
+        ]
+      },
+      "rtd-full": {
+        "passed": 6426,
+        "failed": 3,
+        "skipped": 3,
+        "failing": [
+          "static/app/components/commandPalette/ui/featureFlagCommandPaletteActions.spec.tsx::FeatureFlagCommandPaletteActions clears stored overrides from the command palette",
+          "static/app/components/core/dropdownMenu/dropdownMenu.spec.tsx::DropdownMenu navigates to link on meta key",
+          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown"
+        ],
+        "flaky": [
+          "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
+        ]
+      }
+    }
+  }
+}
