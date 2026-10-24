@@ -199,6 +199,15 @@ describe("shadow roots — https://dom.spec.whatwg.org/#valid-shadow-host-name",
     expect(() => h.attachShadow({ mode: "open" })).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
   });
 
+  test("setHTMLUnsafe never attaches a top-level declarative shadow root to the element itself: the host is the current node (the fragment's root), deliberately not the adjusted current node (https://html.spec.whatwg.org/#parsing-main-inhead)", () => {
+    const { document } = createWindow();
+    const el = document.createElement("div") as unknown as { setHTMLUnsafe(html: string): void; shadowRoot: unknown; innerHTML: string };
+    el.setHTMLUnsafe('<template shadowrootmode="open"><p>inside</p></template><span>light</span>');
+    // hostIsRoot: inserted as a plain template element (WPT declarative-shadow-dom-attachment.html relies on this).
+    expect(el.shadowRoot).toBeNull();
+    expect(el.innerHTML).toBe('<template shadowrootmode="open"><p>inside</p></template><span>light</span>');
+  });
+
   test("ElementInternals.shadowRoot exposes only roots available to element internals (https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals)", () => {
     const window = createWindow() as unknown as Record<string, any>;
     const document = window.document;
