@@ -4,10 +4,10 @@
 //   node comparison/report.ts [--readme]
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { arch, cpus, platform, totalmem } from "node:os";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { CONTENDERS, type Contender } from "./contenders/index.ts";
+import { dateRange, distinct, runOf, type RunInfo } from "./lib/run-info.ts";
 import type { Spread } from "./lib/spawn.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
@@ -49,13 +49,18 @@ function loadBench(): Map<string, Map<string, BenchRow>> {
   if (!existsSync(dir)) return out;
   for (const id of readdirSync(dir)) {
     const rows = new Map<string, BenchRow>();
-    for (const f of readdirSync(`${dir}/${id}`)) if (f.endsWith(".json")) {
+    for (const f of readdirSync(`${dir}/${id}`)) if (f.endsWith(".json") && f !== "_run.json") {
       const row = readJson(`${dir}/${id}/${f}`) as BenchRow;
       rows.set(row.name, row);
     }
     out.set(id, rows);
   }
   return out;
+}
+
+/** A contender's benchmark run (written by lib/bench-run.ts next to its results). */
+function benchRun(id: string): RunInfo {
+  return runOf({ run: readJson(`${here}results/raw/${id}/_run.json`) ?? undefined }, `raw/${id}/_run.json`);
 }
 
 function ms(v: number): string {
@@ -93,11 +98,6 @@ function table(header: string[], rows: string[][]): string {
   return [`| ${header.join(" | ")} |`, `| --- | ${header.slice(1).map(() => "---:").join(" | ")} |`, ...rows.map((r) => `| ${r.join(" | ")} |`)].join("\n");
 }
 
-function machine(): string {
-  const cpu = cpus()[0]?.model.replace(/\s+/g, " ").trim() ?? "unknown CPU";
-  return `${cpu}, ${cpus().length} cores, ${(totalmem() / 2 ** 30).toFixed(0)} GB, ${platform()} ${arch()}, Node ${process.versions.node}`;
-}
-
 /** One `results/suite*.json`: what suite.ts and jest-suite.ts write. */
 interface SuiteData {
   files: number;
@@ -105,6 +105,7 @@ interface SuiteData {
   workers: number;
   /** jest-suite.ts: each contender's Jest environment, for the column headers. */
   labels?: Record<string, string>;
+  run?: RunInfo;
   results: Record<string, Record<"wallMs" | "environmentSetupMs" | "workerRssMB", Spread>>;
 }
 
@@ -139,17 +140,20 @@ export function report(options: { readme?: boolean } = {}): void {
   const suite = suites.get("vitest") ?? null;
   const contenders = CONTENDERS.filter((c) => bench.has(c.id) || startup?.results[c.id] || [...suites.values()].some((d) => d.results[c.id]));
   if (contenders.length === 0) throw new Error("no results in comparison/results/ — run `pnpm compare` first");
-  const header = (cs: readonly Contender[]) => ["", ...cs.map((c) => `${c.label} ${c.version()}`)];
+  // Every label (date, machine, versions) comes from the runs that measured the numbers.
+  const suiteRuns = new Map([...suites].map(([kind, data]) => [kind, runOf(data, SUITES.find((s) => s.kind === kind)!.file)] as const));
+  const startupRun = startup ? runOf(startup, "startup.json") : null;
+  const benchRuns = new Map([...bench.keys()].map((id) => [id, benchRun(id)] as const));
+  const allRuns = [...suiteRuns.values(), ...(startupRun ? [startupRun] : []), ...benchRuns.values()];
+  const header = (cs: readonly Contender[], versionOf: (c: Contender) => string) => ["", ...cs.map((c) => `${c.label} ${versionOf(c) || "?"}`)];
   const domOf = (c: Contender) => c.sameDomAs ?? c.id;
   const benchValue = (c: Contender, name: string) => bench.get(c.id)?.get(name)?.latency.p50 ?? bench.get(domOf(c))?.get(name)?.latency.p50;
-  // The local date (an evening run is not "tomorrow" in UTC).
-  const date = Temporal.Now.plainDateISO().toString();
 
   // ── RESULTS.md ──
   const md: string[] = [
     "# Comparison results",
     "",
-    `Generated ${date} by \`pnpm compare\` (comparison/report.ts) on ${machine()}. How each number is measured: [README.md](README.md).`,
+    `Measured ${dateRange(allRuns)} on ${distinct(allRuns.map((r) => r.machine), "; ")} by \`pnpm compare\` (comparison/report.ts). How each number is measured: [README.md](README.md).`,
     "",
   ];
   for (const s of SUITES) {
@@ -162,7 +166,7 @@ export function report(options: { readme?: boolean } = {}): void {
       ["Worker RSS after a file (median)", "workerRssMB", mb],
     ];
     const cs = contenders.filter((c) => data.results[c.id]);
-    const head = data.labels ? ["", ...cs.map((c) => data.labels![c.id] ?? c.label)] : header(cs);
+    const head = data.labels ? ["", ...cs.map((c) => data.labels![c.id] ?? c.label)] : header(cs, (c) => suiteRuns.get(s.kind)!.versions[c.id]);
     md.push(table(head, rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => data.results[c.id][key]), format, format === ms)])), "");
   }
   if (startup) {
@@ -175,7 +179,7 @@ export function report(options: { readme?: boolean } = {}): void {
       ["Heap after GC", "heapMB", mb],
       ["RSS", "rssMB", mb],
     ];
-    md.push(table(header(cs), rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => startup.results[c.id][key]), format, format === ms)])), "");
+    md.push(table(header(cs, (c) => startupRun!.versions[c.id]), rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => startup.results[c.id][key]), format, format === ms)])), "");
   }
   if (bench.size > 0) {
     const all = new Map<string, BenchRow>();
@@ -188,7 +192,7 @@ export function report(options: { readme?: boolean } = {}): void {
       md.push(`## Benchmarks: ${file}`, "", "Median time per iteration (Vitest bench, warm; ± relative margin of error at 95%), speedup vs jsdom in parentheses.", "");
       md.push(
         table(
-          header(cs),
+          header(cs, (c) => benchRuns.get(c.id)!.versions[c.id]),
           rows.map((r) => {
             const values = cs.map((c) => benchValue(c, r.name));
             return [r.name, ...cells(values, ms, true).map((cell, i) => (cell === "–" ? cell : `${cell} ±${(bench.get(cs[i].id)?.get(r.name)?.latency.rme ?? 0).toFixed(1)}%`))];
@@ -230,13 +234,16 @@ export function report(options: { readme?: boolean } = {}): void {
   }).filter((r) => r !== null);
   const jest = suites.get("jest");
   const jestNote = jest?.labels ? ` ¹ Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "").replace(/ \+ its Testing Library$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
+  // The runs behind the README's rows: the suites it shows and every contender's benchmarks.
+  const readmeSuiteRuns = [...new Set(README_ROWS.flatMap((r) => (r.suite ? [r.kind ?? "vitest"] : [])))].flatMap((kind) => suiteRuns.get(kind) ?? []);
+  const readmeRuns = [...readmeSuiteRuns, ...contenders.flatMap((c) => benchRuns.get(c.id) ?? [])];
   const virtualNote = README_ROWS.some((r) => r.note === "virtual") ? " ² ctrl-dom skips idle time on a virtual clock instead of waiting it out." : "";
   const sameNote = rows.some((r) => r.includes("〃")) ? " 〃 same DOM as the column before." : "";
   const section = [
     START,
-    table(header(contenders), rows),
+    table(header(contenders, (c) => distinct([...readmeSuiteRuns.map((r) => r.versions[c.id]), (benchRuns.get(c.id) ?? benchRuns.get(domOf(c)))?.versions[c.id]])), rows),
     "",
-    `<sub>Medians, ${date}, ${machine()}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration.${jestNote}${virtualNote}${sameNote}</sub>`,
+    `<sub>Medians, ${dateRange(readmeRuns)}, ${distinct(readmeRuns.map((r) => r.machine), "; ")}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration.${jestNote}${virtualNote}${sameNote}</sub>`,
     END,
   ].join("\n");
   const readme = readFileSync(README, "utf8");

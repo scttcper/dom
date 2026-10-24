@@ -7,6 +7,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { selectContenders, type Contender } from "./contenders/index.ts";
+import { runInfo } from "./lib/run-info.ts";
 import { interleave, run, spread } from "./lib/spawn.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
@@ -43,7 +44,7 @@ export async function startup(contenders: Contender[], samples: number): Promise
     ]),
   );
   mkdirSync(`${here}results`, { recursive: true });
-  writeFileSync(`${here}results/startup.json`, `${JSON.stringify({ samples, results }, null, 2)}\n`);
+  writeFileSync(`${here}results/startup.json`, `${JSON.stringify({ samples, run: runInfo(contenders), results }, null, 2)}\n`);
 }
 
 if (import.meta.main) {

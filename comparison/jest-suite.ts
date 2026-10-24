@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { selectContenders, type Contender } from "./contenders/index.ts";
 import { generateJest, jestGeneratedDir } from "./lib/jest-files.ts";
+import { runInfo } from "./lib/run-info.ts";
 import { interleave, median, run, spread } from "./lib/spawn.ts";
 import type { SuiteResult } from "./suite.ts";
 
@@ -104,7 +105,7 @@ export async function jestSuite(contenders: Contender[], options: { samples: num
     [...raw].map(([id, r]) => [id, { wallMs: spread(r.wall), environmentSetupMs: spread(r.setup), workerRssMB: spread(r.rss) }]),
   );
   const labels = Object.fromEntries(cs.map((c) => [c.id, c.jest!.label()]));
-  writeFileSync(`${here}results/suite-jest.json`, `${JSON.stringify({ ...options, labels, results }, null, 2)}\n`);
+  writeFileSync(`${here}results/suite-jest.json`, `${JSON.stringify({ ...options, run: runInfo(cs), labels, results }, null, 2)}\n`);
 }
 
 if (import.meta.main) {

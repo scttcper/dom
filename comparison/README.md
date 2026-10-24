@@ -12,6 +12,10 @@ pnpm compare --only bench --contenders jsdom,ctrl-dom --time 500
 pnpm compare:report           # rewrite RESULTS.md from the last results
 ```
 
+Each results file records the date, machine and contender versions of the run that wrote it,
+and the report labels its tables with those, so regenerating it later (or after a run of only
+some contenders) never relabels old numbers with today's date or commit.
+
 The deeper, per-package harness (allocation and GC per iteration, source vs bundle, the CI
 regression check) is `bench/` (`pnpm bench`). This package is the side-by-side view.
 

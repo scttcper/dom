@@ -1,6 +1,7 @@
 // The number users feel: `vitest run` over N small React test files, once per contender per
 // sample (fresh `vitest` process each, contenders interleaved). Writes results/suite.json with
-// wall time, Vitest's per-file environment setup and worker memory. Every run must pass.
+// wall time, Vitest's per-file environment setup and worker memory (and the run's date, machine
+// and versions). Every run must pass.
 // With `--pool vmForks` the same files run in Vitest's VM pool (long-lived workers, a fresh vm
 // context and environment per file; vmForks rather than vmThreads so contenders' `--import`
 // preloads apply) and the results go to results/suite-vm.json.
@@ -14,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { selectContenders, type Contender } from "./contenders/index.ts";
 import { generate } from "./lib/suite-files.ts";
+import { runInfo } from "./lib/run-info.ts";
 import { interleave, median, run, spread, type Spread } from "./lib/spawn.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
@@ -66,7 +68,7 @@ export async function suite(contenders: Contender[], options: { samples: number;
   const results: Record<string, SuiteResult> = Object.fromEntries(
     [...raw].map(([id, r]) => [id, { wallMs: spread(r.wall), environmentSetupMs: spread(r.setup), workerRssMB: spread(r.rss) }]),
   );
-  writeFileSync(`${here}results/${options.pool ? "suite-vm" : "suite"}.json`, `${JSON.stringify({ ...options, results }, null, 2)}\n`);
+  writeFileSync(`${here}results/${options.pool ? "suite-vm" : "suite"}.json`, `${JSON.stringify({ ...options, run: runInfo(contenders), results }, null, 2)}\n`);
 }
 
 if (import.meta.main) {

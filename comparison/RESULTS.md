@@ -1,6 +1,6 @@
 # Comparison results
 
-Generated 2026-10-23 by `pnpm compare` (comparison/report.ts) on Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1. How each number is measured: [README.md](README.md).
+Measured 2026-10-23 on Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1 by `pnpm compare` (comparison/report.ts). How each number is measured: [README.md](README.md).
 
 ## `vitest run`, 100 React test files
 

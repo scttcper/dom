@@ -1,6 +1,6 @@
 // One Vitest project per contender (contenders/index.ts), all running the same benchmark files:
 // `vitest bench` prints a cross-project table per benchmark, and report.ts reads the results
-// each project writes to results/raw/<project>/.
+// each project writes to results/raw/<project>/ (with the run's date, machine and versions).
 //
 //   COMPARE_CONTENDERS=jsdom,ctrl-dom   only these contenders
 //   COMPARE_TIME=1000                   time budget per benchmark, ms (after warmup)
@@ -33,5 +33,7 @@ export default defineConfig({
     })),
     fileParallelism: false,
     maxWorkers: 1,
+    // Records the run's date, machine and versions with the results (lib/bench-run.ts).
+    globalSetup: ["./lib/bench-run.ts"],
   },
 });
