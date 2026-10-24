@@ -34,10 +34,18 @@ const external = [/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|
 const cjs = (pkg: string, entry: string) => join(repoRoot, "packages", pkg, "dist", `${entry}.cjs`);
 const shim = (file: string) => join(repoRoot, "packages/jest-environment/src/shims", file);
 const domShims = { "^@rtd/dom$": shim("dom.cjs"), "^@rtd/dom/internal$": shim("dom-internal.cjs") };
+/** Every other `@rtd/*` entry our bundles require, to its CommonJS bundle (derived, so a new entry cannot be missed). */
+const rtdCjs: Record<string, string> = Object.fromEntries(
+  workspacePackages()
+    .flatMap((p) => p.exports)
+    .filter((e) => e.specifier.startsWith("@rtd/") && !e.specifier.startsWith("@rtd/dom"))
+    .map((e) => [`^${e.specifier}$`, e.dist.replace(/\.js$/, ".cjs")] as const)
+    .filter(([, path]) => existsSync(path)),
+);
 
 function version(): string {
   const sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
-  const dirty = execFileSync("git", ["status", "--porcelain", "--", "packages"], { cwd: repoRoot, encoding: "utf8" }).trim() !== "";
+  const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=no", "--", "packages"], { cwd: repoRoot, encoding: "utf8" }).trim() !== "";
   return `${sha}${dirty ? "+changes" : ""}`;
 }
 
@@ -97,9 +105,7 @@ export const ctrlDomStack: Contender = {
     testEnvironment: bundle("jest-environment-rtd"),
     moduleNameMapper: {
       ...domShims,
-      "^@rtd/aria$": cjs("aria", "index"),
-      "^@rtd/aria/internal$": cjs("aria", "internal"),
-      "^@rtd/testing-library$": cjs("testing-library", "index"),
+      ...rtdCjs,
       "^@testing-library/react$": cjs("react", "index"),
       "^@testing-library/dom$": cjs("testing-library", "index"),
       "^@testing-library/user-event$": cjs("user-event", "index"),

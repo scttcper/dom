@@ -12,6 +12,8 @@ downstream/*/output
 
 comparison/results/raw
 comparison/results/*.json
+comparison/results/.jest-tmp
+comparison/results/.suite-tmp
 comparison/.generated
 comparison/.generated-jest
 
