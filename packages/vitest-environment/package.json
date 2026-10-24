@@ -5,7 +5,8 @@
   "description": "Vitest environment that installs the @rtd/dom window as globals (environment: 'rtd').",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./failure-snapshot": "./src/failure-snapshot.ts"
   },
   "files": [
     "dist",
@@ -22,11 +23,16 @@
         "types": "./dist/types/index.d.ts",
         "default": "./dist/index.js"
       },
+      "./failure-snapshot": {
+        "types": "./dist/types/failure-snapshot.d.ts",
+        "default": "./dist/failure-snapshot.js"
+      },
       "./package.json": "./package.json"
     }
   },
   "dependencies": {
-    "@rtd/dom": "workspace:*"
+    "@rtd/dom": "workspace:*",
+    "@rtd/testing-library": "workspace:*"
   },
   "peerDependencies": {
     "vitest": ">=5.0.0"

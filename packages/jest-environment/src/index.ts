@@ -23,12 +23,13 @@
 import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { EnvironmentContext, JestEnvironment, JestEnvironmentConfig } from "@jest/environment";
 import { LegacyFakeTimers, ModernFakeTimers } from "@jest/fake-timers";
-import type { Global } from "@jest/types";
+import type { Circus, Global } from "@jest/types";
 import { ModuleMocker } from "jest-mock";
 import { installCommonGlobals } from "jest-util";
 import * as dom from "@rtd/dom";
 import * as internal from "@rtd/dom/internal";
 import type { CompatProfile, Window, WindowOptions } from "@rtd/dom";
+import { failureSnapshotHandler } from "./failure-snapshot.ts";
 
 /** The vm-global key the bridges and shims read. */
 export const RTD_MODULES = Symbol.for("rtd.dom.modules");
@@ -216,6 +217,8 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
   dom: RtdDom | null;
   /** The file's timers (see CtrlDomTestEnvironmentOptions.timeSkip). */
   clock: InstanceType<typeof internal.VirtualClock> | null;
+  /** Only with CTRL_DOM_DEBUG set: failure snapshots (./failure-snapshot.ts). */
+  declare handleTestEvent?: (event: Circus.Event) => Promise<void> | void;
 
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const { projectConfig } = config;
@@ -271,6 +274,8 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     internal.guardInterfaceDefinitions(global as never);
     internal.setUncaughtExceptionHandler(reportToHost);
     internal.setNotImplementedHandler(forwardNotImplemented(global));
+    const onTestEvent = failureSnapshotHandler(() => this.rtdWindow?.document);
+    if (onTestEvent !== undefined) this.handleTestEvent = onTestEvent;
   }
 
   async setup(): Promise<void> {}

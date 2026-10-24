@@ -7,6 +7,10 @@
 import { fileURLToPath } from "node:url";
 
 const environment = fileURLToPath(new URL("./dist/vitest-environment/index.js", import.meta.url));
+// Agent debug mode's failure snapshots (docs/agent-debugging.md): a setup file that appends an aria
+// snapshot of document.body to every failing test's error.
+const failureSnapshot = fileURLToPath(new URL("./dist/vitest-environment/failure-snapshot.js", import.meta.url));
+const DEBUG_FORMATS = new Set(["aria", "compact", "html"]);
 
 const TESTING_LIBRARY = [
   { find: /^@testing-library\/react(\/.*)?$/, replacement: "@ctrl/dom/react$1" },
@@ -24,6 +28,10 @@ export function ctrlDom(options = {}) {
   // The compile cache pays off for @ctrl/dom's few large bundles, not for stock Testing Library's
   // many small files (CtrlDomEnvironmentOptions.compileCache).
   const environmentOptions = { compileCache: testingLibrary, ...rest };
+  // Agent debug output (docs/agent-debugging.md); a CTRL_DOM_DEBUG set in the shell wins (it is
+  // how `npx ctrl-dom debug` turns it on).
+  const shellDebug = process.env.CTRL_DOM_DEBUG;
+  const agentMode = DEBUG_FORMATS.has(String(shellDebug ?? debug ?? "").trim().toLowerCase());
   return {
     name: "@ctrl/dom",
     config() {
@@ -32,8 +40,9 @@ export function ctrlDom(options = {}) {
         test: {
           environment,
           environmentOptions: { "ctrl-dom": environmentOptions },
-          // Agent debug output (docs/agent-debugging.md); a CTRL_DOM_DEBUG set in the shell wins.
-          ...(debug && process.env.CTRL_DOM_DEBUG === undefined ? { env: { CTRL_DOM_DEBUG: debug } } : {}),
+          ...(debug && shellDebug === undefined ? { env: { CTRL_DOM_DEBUG: debug } } : {}),
+          // Added after the project's own setup files, so its afterEach runs before theirs.
+          ...(agentMode ? { setupFiles: [failureSnapshot] } : {}),
         },
       };
     },

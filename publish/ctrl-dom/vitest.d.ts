@@ -14,6 +14,9 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
    * `"aria"` prints accessibility snapshots instead of HTML in `screen.debug()`, `prettyDOM` and
    * failing query errors (with the closest matching elements); `"compact"` prints HTML without
    * class/style attributes and SVG internals. Default: upstream output.
+   *
+   * When on (here or through `CTRL_DOM_DEBUG`), the plugin also adds a setup file that appends a
+   * snapshot of `document.body` to every failing test's error, taken before cleanup.
    */
   debug?: "aria" | "compact";
 }
