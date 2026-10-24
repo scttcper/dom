@@ -544,14 +544,13 @@ export class BeforeUnloadEvent extends Event {
     this.#returnValue = "";
   }
 
-  // The legacy string returnValue shadows Event#returnValue (boolean).
-  // @ts-expect-error — different type than the base accessor, as in the IDL.
-  override get returnValue(): string {
+  // The legacy string returnValue shadows Event#returnValue (boolean). Typed `any`, as in
+  // TypeScript's lib.dom, so the emitted declarations stay valid against the base accessor.
+  override get returnValue(): any {
     return this.#returnValue;
   }
 
-  // @ts-expect-error — see above.
-  override set returnValue(value: string) {
+  override set returnValue(value: any) {
     this.#returnValue = toDOMString(value);
   }
 }

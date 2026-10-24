@@ -16,6 +16,8 @@
 //    (d2) Jest, preset "@ctrl/dom", the stock test file routed to @ctrl/dom's CJS builds (README)
 //    (d3) Jest, testEnvironment "ctrl-dom", @ctrl/dom/react + /user-event required directly
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
+//    (es) (e) without skipLibCheck: our .d.ts files (and the module augmentations they make to
+//         vitest and jest) type-check too
 //    Every run records the files it loads (Node loader hook, Vite transform hook, Jest
 //    transformer) and must load our packages only from their published files (no .ts source,
 //    nothing from the repository) with a single @ctrl/dom DOM instance, and every test asserts the
@@ -226,6 +228,12 @@ const checks: Check[] = [
     cmd: ["tsc", "--noEmit", "-p", "tsconfig.json"],
     mustLoad: [],
   },
+  {
+    id: "es",
+    title: "(e) without skipLibCheck",
+    cmd: ["tsc", "--noEmit", "-p", "tsconfig.json", "--skipLibCheck", "false"],
+    mustLoad: [],
+  },
 ];
 
 const OURS = /\/node_modules\/(@ctrl\/dom|vitest-environment-ctrl-dom|jest-environment-ctrl-dom)\/(.*)$/;
@@ -284,11 +292,6 @@ for (const check of checks) {
   console.log(`${problems.length === 0 ? "PASS" : "FAIL"} (${check.id}) ${check.title}  ${(ms / 1000).toFixed(1)} s`);
   for (const p of problems) console.log(`       ${p.replaceAll("\n", "\n       ")}`);
 }
-
-// Informational: the same type check without skipLibCheck (our .d.ts files checked too).
-const strict = spawnSync("pnpm", ["exec", "tsc", "--noEmit", "-p", "tsconfig.json", "--skipLibCheck", "false"], { cwd: project, encoding: "utf8" });
-const strictErrors = (strict.stdout.match(/error TS\d+/g) ?? []).length;
-console.log(`info  tsc without skipLibCheck: ${strictErrors} error(s)${strictErrors ? " (see --keep project)" : ""}`);
 
 if (flags.keep || flags.dir) console.log(`\nproject kept at ${project}`);
 else rmSync(root, { recursive: true, force: true });

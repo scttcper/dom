@@ -3,15 +3,14 @@
 import 'vitest'
 import {type TestingLibraryMatchers} from './matchers'
 
+// Intentional difference: Vitest 5 declares `Assertion<R, T>` and routes custom matchers
+// through `Matchers<R, T>`, which `Assertion` and `AsymmetricMatchersContaining` both extend.
+// Upstream's `Assertion<T = any>` no longer merges with it ("All declarations of 'Assertion' must
+// have identical type parameters" for projects without skipLibCheck), so the matchers go on
+// `Matchers`, returning R (`void`, or `Promise<void>` after .resolves/.rejects).
 declare module 'vitest' {
-  interface Assertion<T = any>
-    extends TestingLibraryMatchers<
-      any,
-      T
-    > {}
-  interface AsymmetricMatchersContaining
-    extends TestingLibraryMatchers<
-      any,
-      any
-    > {}
+  interface Matchers<
+    R extends void | Promise<void> = void | Promise<void>,
+    T = unknown,
+  > extends TestingLibraryMatchers<any, R> {}
 }

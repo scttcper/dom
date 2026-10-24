@@ -15,6 +15,9 @@ expectTypeOf(screen.getByRole).returns.toEqualTypeOf<HTMLElement>();
 
 expect(screen.getByRole("button")).toBeInTheDocument();
 expect(screen.getByRole("button")).toHaveAttribute("type", "submit");
+// Matchers return Vitest's R: void, and a promise after .resolves.
+expectTypeOf(expect(screen.getByRole("button")).toBeVisible()).toEqualTypeOf<void>();
+expectTypeOf(expect(Promise.resolve(screen.getByRole("button"))).resolves.toBeVisible()).toEqualTypeOf<Promise<void>>();
 // @ts-expect-error -- matcher augmentation is typed, unknown matchers are errors
 expect(screen.getByRole("button")).toBeInTheDocumentt();
 // @ts-expect-error -- render takes a ReactNode
