@@ -34,6 +34,15 @@ const members: PropertyDescriptorMap = {
       return windowOf(this)?.[$options].referrer ?? "";
     },
   },
+  /**
+   * https://html.spec.whatwg.org/#dom-document-currentscript — the script element being executed,
+   * which is always null here: scripts never run (docs/deviations.md).
+   */
+  currentScript: {
+    get(): null {
+      return null;
+    },
+  },
   /** https://html.spec.whatwg.org/#dom-document-readystate — documents are fully loaded. */
   readyState: {
     get(): string {
@@ -102,6 +111,7 @@ declare module "../nodes/Document.ts" {
   interface Document {
     cookie: string;
     readonly referrer: string;
+    readonly currentScript: null;
     readonly readyState: DocumentReadyState;
     readonly visibilityState: DocumentVisibilityState;
     readonly hidden: boolean;
