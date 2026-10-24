@@ -176,7 +176,7 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
   });
 
   test("shadow trees that come and go leave no style bookkeeping behind (https://drafts.csswg.org/cssom/#remove-a-css-style-sheet)", () => {
-    const shadows = () => (document[$css] as { shadows: Map<unknown, unknown> | null }).shadows?.size ?? 0;
+    const shadows = () => (document[$css] as { shadows: { refs: Set<unknown> } | null }).shadows?.refs.size ?? 0;
     const render = () => {
       const host = document.createElement("div");
       document.body!.appendChild(host);

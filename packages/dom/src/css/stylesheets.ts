@@ -27,6 +27,10 @@ export class RootStyles {
   list: StyleSheetList | null;
   /** `adopted` was handed to script, which may mutate it in place (validateAdopted watches it). */
   adoptedExposed: boolean;
+  /** Listed in its document's DocCSS.shadows index. */
+  indexed: boolean;
+  /** The weak reference the document's RootRefs hold (created on first use). */
+  ref: WeakRef<RootStyles> | null;
   /** Rule index cache (built by cascade.ts). */
   index: RuleIndex | null;
 
@@ -38,6 +42,8 @@ export class RootStyles {
     this.adoptedSnapshot = [];
     this.list = null;
     this.adoptedExposed = false;
+    this.indexed = false;
+    this.ref = null;
     this.index = null;
   }
 
@@ -47,17 +53,46 @@ export class RootStyles {
 }
 
 /** Document-wide CSS state, hung on `Document._css`. */
+/**
+ * Weak references to shadow roots' RootStyles. Collected entries are pruned whenever the set
+ * doubles since the last prune (amortized O(1) per add), so a document that sees thousands of
+ * short-lived shadow roots keeps a small index. Walkers deref each entry and delete the collected.
+ */
+export class RootRefs {
+  readonly refs: Set<WeakRef<RootStyles>>;
+  pruneAt: number;
+
+  constructor() {
+    this.refs = new Set();
+    this.pruneAt = 64;
+  }
+
+  add(rs: RootStyles): void {
+    const refs = this.refs;
+    refs.add((rs.ref ??= new WeakRef(rs)));
+    if (refs.size < this.pruneAt) return;
+    for (const ref of refs) if (ref.deref() === undefined) refs.delete(ref);
+    this.pruneAt = Math.max(64, refs.size * 2);
+  }
+
+  delete(rs: RootStyles): void {
+    if (rs.ref !== null) this.refs.delete(rs.ref);
+  }
+}
+
 export class DocCSS {
   doc: Document;
   main: RootStyles;
   /**
-   * Shadow roots with sheets, or whose `styleSheets` / `adoptedStyleSheets` script holds. An
-   * entry is dropped when neither is true any more (releaseIfUnused), so shadow trees that come
-   * and go (custom elements rendered per test) are not retained or walked forever.
+   * Shadow roots with sheets, or whose `styleSheets` / `adoptedStyleSheets` script holds, for the
+   * "does any sheet apply?" fast paths. Weak: each shadow root owns its RootStyles (shadowStyles),
+   * so a shadow tree that goes away (custom elements rendered per test, Lit components adopting a
+   * shared sheet) is collected with its host. Entries leave when unused (releaseIfUnused) or
+   * collected (RootRefs prunes them).
    */
-  shadows: Map<NodeImpl, RootStyles> | null;
+  shadows: RootRefs | null;
   /** Shadow roots whose adoptedStyleSheets array script holds (validateAdopted checks only these). */
-  watched: Set<RootStyles> | null;
+  watched: RootRefs | null;
   /** Viewport the rule index was last validated against. */
   envWidth: number;
   envHeight: number;
@@ -91,24 +126,31 @@ export function existingDocCSS(doc: Document): DocCSS | null {
   return doc[$css] as DocCSS | null;
 }
 
-/** RootStyles for a tree root (document or shadow root impl), created on demand. */
+/** Each shadow root's RootStyles, owned by the shadow root (collected with it). */
+const shadowStyles = new WeakMap<NodeImpl, RootStyles>();
+
+/** RootStyles for a tree root (document or shadow root impl), created (and indexed) on demand. */
 export function rootStylesFor(root: NodeImpl, create: boolean): RootStyles | null {
   const doc = root.doc;
   const css = create ? docCSS(doc) : existingDocCSS(doc);
   if (css === null) return null;
   if (root.type === DOCUMENT_NODE) return css.main;
-  let s = css.shadows?.get(root) ?? null;
-  if (s === null && create) {
-    s = new RootStyles(root);
-    (css.shadows ??= new Map()).set(root, s);
+  let s = shadowStyles.get(root) ?? null;
+  if (create) {
+    if (s === null) shadowStyles.set(root, (s = new RootStyles(root)));
+    if (!s.indexed) {
+      (css.shadows ??= new RootRefs()).add(s);
+      s.indexed = true;
+    }
   }
   return s;
 }
 
-/** Forget a shadow root's entry once it has no sheets and script holds none of its collections. */
+/** Unlist a shadow root once it has no sheets and script holds none of its collections. */
 function releaseIfUnused(css: DocCSS, rs: RootStyles): void {
-  if (rs === css.main || rs.hasSheets() || rs.list !== null || rs.adoptedExposed) return;
-  css.shadows?.delete(rs.root);
+  if (rs === css.main || rs.hasSheets() || rs.list !== null || rs.adoptedExposed || !rs.indexed) return;
+  css.shadows?.delete(rs);
+  rs.indexed = false;
 }
 
 /** The tree each registered owner sheet belongs to (its owner may have moved since). */
@@ -229,7 +271,7 @@ export function adoptedStyleSheetsOf(root: NodeImpl): CSSStyleSheet[] {
   if (!rs.adoptedExposed) {
     rs.adoptedExposed = true;
     const css = docCSS(root.doc);
-    if (rs !== css.main) (css.watched ??= new Set()).add(rs);
+    if (rs !== css.main) (css.watched ??= new RootRefs()).add(rs);
   }
   return rs.adopted;
 }
@@ -270,7 +312,13 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
  */
 export function validateAdopted(css: DocCSS): void {
   if (checkAdopted(css.main)) css.doc[$styleVersion]++;
-  if (css.watched !== null) for (const rs of css.watched) if (checkAdopted(rs)) css.doc[$styleVersion]++;
+  if (css.watched === null) return;
+  const refs = css.watched.refs;
+  for (const ref of refs) {
+    const rs = ref.deref();
+    if (rs === undefined) refs.delete(ref);
+    else if (checkAdopted(rs)) css.doc[$styleVersion]++;
+  }
 }
 
 function checkAdopted(rs: RootStyles): boolean {

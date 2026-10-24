@@ -5,11 +5,13 @@
  * Specs: ECMAScript WeakRef liveness (https://tc39.es/ecma262/#sec-weak-ref-objects);
  * HTML window.close() (https://html.spec.whatwg.org/#dom-window-close) — @rtd/dom closes the
  * window for good (docs/deviations.md), cancelling its animation frames, idle callbacks and tasks;
- * DOM remove (https://dom.spec.whatwg.org/#concept-node-remove).
+ * DOM remove (https://dom.spec.whatwg.org/#concept-node-remove); CSSOM adoptedStyleSheets
+ * (https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets).
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, type Window } from "@rtd/dom";
-import { Tracker, heapSlope } from "./gc.ts";
+import { createWindow, currentWindowOrNull, installGlobals, type ShadowRoot, type Window } from "@rtd/dom";
+import { $css } from "@rtd/dom/internal";
+import { Tracker, collectGarbage, heapSlope } from "./gc.ts";
 
 const HTML = `<!doctype html><html><head><style>.a { color: red } @media (min-width: 10px) { .b { display: none } }</style></head>
 <body><div id=root><p class=a>hi</p><iframe srcdoc="<p>nested</p>"></iframe><label for=i>Name</label><input id=i>
@@ -180,6 +182,59 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
       void (clone.querySelector("input") as unknown as { labels: { length: number } }).labels.length;
     })();
     expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+});
+
+describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets", () => {
+  test("shadow roots that adopted a shared sheet (set, or read and pushed) are collectable once their hosts are removed", async () => {
+    const w = createWindow({ html: HTML });
+    const d = w.document;
+    const win = w as unknown as Record<string, any>;
+    const tracker = new Tracker();
+    // Lit's pattern: one constructed sheet per component class, adopted by every instance.
+    const shared = new win.CSSStyleSheet();
+    shared.replaceSync(":host { display: block } .x { color: red }");
+    (() => {
+      for (let i = 0; i < 20; i++) {
+        const host = d.createElement("div");
+        const root = host.attachShadow({ mode: "open" }) as unknown as ShadowRoot & { adoptedStyleSheets: object[] };
+        if (i % 2 === 0) root.adoptedStyleSheets = [shared];
+        else root.adoptedStyleSheets.push(shared);
+        root.innerHTML = "<span class=x>x</span>";
+        d.body!.append(host);
+        expect(w.getComputedStyle(root.querySelector("span")!).color).toBe("red");
+        tracker.track("host", host);
+        tracker.track("shadow root", root);
+        host.remove();
+      }
+    })();
+    expect(await tracker.alive()).toEqual({});
+    // The document still styles itself, and the dead entries are pruned on the way.
+    expect(w.getComputedStyle(d.querySelector("p")!).color).toBe("red");
+    w.close();
+  });
+
+  test("the document's index of styled shadow roots stays bounded as they come and go", async () => {
+    const w = createWindow({ html: HTML });
+    const d = w.document;
+    const shared = new (w as unknown as Record<string, any>).CSSStyleSheet();
+    shared.replaceSync(".x { color: red }");
+    const indexed = () => (d as unknown as Record<symbol, { shadows: { refs: Set<unknown> } | null }>)[$css].shadows?.refs.size ?? 0;
+    const churn = () => {
+      for (let i = 0; i < 200; i++) {
+        const host = d.createElement("div");
+        const root = host.attachShadow({ mode: "open" }) as unknown as { adoptedStyleSheets: object[] };
+        root.adoptedStyleSheets = [shared];
+        d.body!.append(host);
+        host.remove();
+      }
+    };
+    churn();
+    await collectGarbage();
+    churn();
+    // Adding prunes collected entries whenever the index doubles: well under 2 × 200 entries.
+    expect(indexed()).toBeLessThanOrEqual(264);
     w.close();
   });
 });

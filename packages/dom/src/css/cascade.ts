@@ -1019,7 +1019,14 @@ export function hasAuthorStyles(doc: Document): boolean {
     const sv = currentStyleVersion(doc);
     if (css.authorVersion === doc[$version] && css.authorStyleVersion === sv) return css.authorResult;
     let result = sheetsHaveRules(css.main);
-    if (!result && css.shadows !== null) for (const rs of css.shadows.values()) if (sheetsHaveRules(rs)) result = true;
+    if (!result && css.shadows !== null) {
+      const refs = css.shadows.refs;
+      for (const ref of refs) {
+        const rs = ref.deref();
+        if (rs === undefined) refs.delete(ref);
+        else if (sheetsHaveRules(rs)) result = true;
+      }
+    }
     if (!result && inlineStyleCount(doc) > 0) result = hasConnectedInlineStyle(doc);
     css.authorVersion = doc[$version];
     css.authorStyleVersion = sv;
@@ -1049,7 +1056,7 @@ function sheetsApply(el: NodeImpl): boolean {
   const css = el.doc[$css] as DocCSS | null;
   if (css === null) return false;
   if (css.main.hasSheets()) return true;
-  return css.shadows !== null && css.shadows.size !== 0;
+  return css.shadows !== null && css.shadows.refs.size !== 0;
 }
 
 /** Fast path is valid: no sheets anywhere and no inline style on this element. */
