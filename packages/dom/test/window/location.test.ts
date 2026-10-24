@@ -153,3 +153,54 @@ describe("fragment navigation — https://html.spec.whatwg.org/#scroll-to-fragid
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-fragid", () => {
+  test("update document for history step application step 6.3: popstate fires synchronously with the new entry's null state", () => {
+    window.history.replaceState({ old: true }, "");
+    const order: string[] = [];
+    window.addEventListener("popstate", (e) => order.push(`popstate:${JSON.stringify((e as unknown as { state: unknown }).state)}:${window.location.hash}`));
+    window.addEventListener("hashchange", () => order.push("hashchange"));
+    window.location.hash = "next";
+    order.push("after setter");
+    expect(order).toEqual(["popstate:null:#next", "after setter"]);
+    expect(window.history.state).toBeNull();
+  });
+
+  test("step 6.3.5: hashchange is queued after popstate only when the fragment changed", () => {
+    vi.useFakeTimers();
+    const order: string[] = [];
+    window.addEventListener("popstate", () => order.push("popstate"));
+    window.addEventListener("hashchange", () => order.push("hashchange"));
+    // Navigating to the current URL (fragment included) is a replacing fragment navigation.
+    window.location.href = window.location.href;
+    vi.runAllTimers();
+    expect(order).toEqual(["popstate"]);
+    window.location.replace("#other");
+    vi.runAllTimers();
+    expect(order).toEqual(["popstate", "popstate", "hashchange"]);
+  });
+
+  test("navigations that change more than the fragment fire neither popstate nor hashchange", () => {
+    vi.useFakeTimers();
+    const spy = vi.fn();
+    window.addEventListener("popstate", spy);
+    window.addEventListener("hashchange", spy);
+    window.location.assign("/elsewhere#x");
+    window.location.search = "?z=1";
+    vi.runAllTimers();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test("activating a same-document fragment link fires popstate then hashchange", () => {
+    vi.useFakeTimers();
+    const order: string[] = [];
+    window.addEventListener("popstate", () => order.push("popstate"));
+    window.addEventListener("hashchange", () => order.push("hashchange"));
+    const a: any = window.document.body!.appendChild(window.document.createElement("a"));
+    a.setAttribute("href", "#link");
+    a.click();
+    vi.runAllTimers();
+    expect(window.location.hash).toBe("#link");
+    expect(order).toEqual(["popstate", "hashchange"]);
+  });
+});
