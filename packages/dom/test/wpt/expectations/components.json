@@ -115,9 +115,6 @@
   "shadow-dom/focus/blur-on-shadow-host-delegatesFocus.html": [
     "Calling blur() on shadow host with delegatesFocus when the focus is on a slotted element should not remove the focus."
   ],
-  "shadow-dom/focus/focus-method-delegatesFocus.html": [
-    "focus() on host with delegatesFocus & tabindex=0, #outside with tabindex=0"
-  ],
   "shadow-dom/imperative-slot-api-cross-shadow-root.html": [
     "HTMLSlotElement.assign drops DidSlotChange for previous_slot in different shadow root"
   ],

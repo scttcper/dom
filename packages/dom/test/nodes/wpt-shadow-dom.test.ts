@@ -81,7 +81,7 @@ describe("Shadow DOM — shadow-dom/focus (https://github.com/web-platform-tests
   defineWPT("shadow-dom/focus/delegatesFocus-tabindex-change.html");
   defineWPT("shadow-dom/focus/focus-autofocus.html");
   defineWPT("shadow-dom/focus/focus-method-delegatesFocus-nested-browsing-context.html");
-  defineWPT("shadow-dom/focus/focus-method-delegatesFocus.html", "focus() on a tabindex host with delegatesFocus (html focus)");
+  defineWPT("shadow-dom/focus/focus-method-delegatesFocus.html");
   defineWPT("shadow-dom/focus/focus-preserved-on-slot-reorder.html");
   defineWPT("shadow-dom/focus/focus-selector-delegatesFocus.html");
 });
