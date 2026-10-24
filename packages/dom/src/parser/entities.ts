@@ -1,4 +1,3 @@
-// @scriptc-compatible
 // Named character reference lookup for the tokenizer.
 // https://html.spec.whatwg.org/#named-character-reference-state
 //

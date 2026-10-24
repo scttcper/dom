@@ -1,9 +1,8 @@
-// @scriptc-compatible
 // Tag ids used by the HTML tokenizer and tree builder.
 // https://html.spec.whatwg.org/#parsing
 //
-// These are PARSER-LOCAL ids (independent of nodes/tags.ts, which is not in the scriptc
-// subset): the tokenizer interns known lowercase tag names and reports their id so the tree
+// These are PARSER-LOCAL ids (independent of nodes/tags.ts, so the parser does not depend on
+// the DOM): the tokenizer interns known lowercase tag names and reports their id so the tree
 // builder can switch on small integers. Foreign elements that matter to the tree builder
 // (MathML text integration points, annotation-xml, SVG HTML integration points) get the
 // separate F_* ids below once they are inserted with their namespace.

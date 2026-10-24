@@ -4,6 +4,8 @@
  * Spec: HTML Standard §13.2.5 "Tokenization"
  *   https://html.spec.whatwg.org/#tokenization
  *   https://html.spec.whatwg.org/#character-references (§13.2.5.77–84)
+ *   https://html.spec.whatwg.org/#character-reference-state (entities, namedEntities and
+ *   numericEntities.test)
  *   https://html.spec.whatwg.org/#named-character-references (§13.5)
  *
  * Runs the vendored html5lib-tests tokenizer suite (fixtures/html5lib/tokenizer, MIT) against

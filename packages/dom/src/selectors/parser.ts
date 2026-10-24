@@ -1,4 +1,3 @@
-// @scriptc-compatible
 //
 // Selector parser: CSS Syntax 3 tokenization + Selectors 4 grammar → compact AST.
 //
@@ -6,9 +5,9 @@
 // https://drafts.csswg.org/selectors-4/#grammar
 // https://drafts.csswg.org/cssom/#parse-a-selector
 //
-// This module is pure (no DOM access) and written in scriptc's compiled subset: classes with
-// fields initialized in constructors, integer constants instead of enums, plain loops, no
-// closures/regexes. Errors are reported through `SelectorParser.error` (the caller turns them
+// This module is pure (no DOM access) and written for V8's fast paths: classes with fields
+// initialized in constructors (stable shapes), integer constants instead of enums, plain loops,
+// no closures/regexes. Errors are reported through `SelectorParser.error` (the caller turns them
 // into SyntaxError DOMExceptions); the parser never throws.
 //
 // Namespace prefixes are recorded verbatim (`Simple.nsPrefix`) and resolved by the compiler,
@@ -625,7 +624,7 @@ export const PE_FUNCTION = 4; // other functional pseudo-elements (::highlight()
 
 /**
  * One simple selector (or pseudo-element). A single class for every kind keeps the AST
- * monomorphic for both V8 and scriptc.
+ * monomorphic.
  */
 export class Simple {
   kind: number;

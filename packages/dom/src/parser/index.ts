@@ -2,8 +2,8 @@
 // https://html.spec.whatwg.org/#parsing
 // https://html.spec.whatwg.org/#html-fragment-parsing-algorithm
 //
-// The tokenizer (tokenizer.ts) and tree builder (treebuilder.ts) are pure scriptc-compatible
-// modules; this file is the DOM side: `DomSink` turns tree-builder operations on integer
+// The tokenizer (tokenizer.ts) and tree builder (treebuilder.ts) are pure (no DOM access);
+// this file is the DOM side: `DomSink` turns tree-builder operations on integer
 // handles into NodeImpl operations. Trees are always built DETACHED (into a DocumentFragment)
 // with the fast `appendDetached` / `appendAttributeDetached` paths — no mutation records,
 // hooks or version bumps — and then inserted with the normal DOM algorithms by the caller

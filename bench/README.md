@@ -284,6 +284,3 @@ Package-level microbenchmarks written by the package owners (not duplicated here
 `packages/react/bench`, `packages/user-event/bench`, `packages/jest-dom/bench`, and
 `packages/vitest-environment/bench` (environment setup inside Vitest). This harness covers
 cross-stack, user-visible workloads.
-
-Native (scriptc) per-module measurements live in `packages/native` (`pnpm --filter
-@rtd/native bench`, results in `packages/native/RESULTS.md`).

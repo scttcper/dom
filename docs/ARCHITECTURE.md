@@ -12,7 +12,6 @@ Library stack, for testing React components on Node.js:
 @ctrl/dom                     replaces jsdom / happy-dom                   nodes, parser, selectors, css, events, window
 @ctrl/dom/vitest-environment  installs the DOM as Vitest's test globals (jest-environment-ctrl-dom: Jest's)
 @ctrl/dom/register            the same for node:test / bun test (no environment)
-packages/native               not published: scriptc experiments + the scriptc:check gate
 bench/                        benchmarks vs jsdom and happy-dom
 ```
 
@@ -56,28 +55,25 @@ The three packages are versioned independently by semantic-release (`tools/relea
 paths it is built from (tools/release/packages.ts), and the environments peer-depend on
 `^<latest @ctrl/dom>`. Versions live in git tags and on npm; nothing is committed back.
 
-## Why not "everything native" (scriptc)?
+## Why not native code?
 
-Measured on this machine (Node 26.12, scriptc 0.4.2), calling a scriptc-compiled library
-through Node-API costs ~14 ns per call vs ~4 ns for a JS call, string arguments/results are
-copied and UTF-8 transcoded on every crossing, and compiled code was not faster than V8's
-JIT on DOM-shaped work (tree walk ≈ equal; HTML tokenizing 4.5 ms native vs 3.8 ms JS on
-2.5 MB, including marshaling). React touches the DOM through millions of tiny calls
+The DOM is plain TypeScript run by V8, and that was measured, not assumed. A compiled library
+called through Node-API (tried with scriptc, Node 26.12) costs ~12–14 ns per call against well
+under 1 ns for an inlined JS call, copies and transcodes every string that crosses, and was not
+faster than V8's JIT on DOM-shaped work. React touches the DOM through millions of tiny calls
 (`createElement`, `setAttribute`, `appendChild`, property reads), and every node must be a JS
-object anyway (React stores fibers/props as expando properties on it). Putting the node store
-behind a native boundary therefore makes the hot path slower; the author's earlier
-scriptc-native DOM (`~/gh/vibedom`) reached rough parity with happy-dom for that reason.
+object anyway (React stores fibers and props as expando properties on it), so a node store
+behind a native boundary makes the hot path slower; the author's earlier native DOM
+(`~/gh/vibedom`) reached only rough parity with happy-dom for that reason.
 
-So the node graph lives in V8, written to be as fast as V8 allows, and scriptc is limited to the
-modules where it could win:
-
-- Pure algorithmic modules (HTML tokenizer, CSS tokenizer/parser, selector parser, entity
-  decoding) are written in the scriptc-compilable subset of TypeScript and marked
-  `// @scriptc-compatible` at the top. `pnpm scriptc:check` (owned by `@rtd/native`) compiles
-  them with scriptc so they never drift out of the subset.
-- `@rtd/native` builds them as a scriptc library + Node-API shim and benchmarks native vs JS
-  per module. A module switches to native only when the benchmark shows a win (cold start
-  included). Results are recorded in `packages/native/RESULTS.md`.
+The pure parsers (HTML tokenizer, CSS tokenizer and parser, selector parser, entity decoding)
+were the best case for native code, since one call does a lot of work. Compiled natively they
+were still 1.1–3.4× slower warm (WebAssembly builds lost too), because V8's strings (ropes, slices, one-byte
+strings) beat a UTF-8 runtime at slicing and concatenating, and the one realistic end-to-end path
+(HTML tokens handed to the JS tree builder) was 2.4× slower even cold. The only win was a cold
+parse of a large stylesheet, about 3 ms once per file, not worth shipping per-platform binaries.
+So nothing native ships, and the experiment was removed; its measurements are in git history
+(`packages/native/RESULTS.md`, deleted along with scriptc).
 
 ## The node layer (`packages/dom/src/nodes`)
 

@@ -26,8 +26,6 @@ before changing anything.
   over arrays/linked lists rather than iterator protocols or closures.
 - Every algorithm that implements a spec algorithm has a comment linking the exact section
   (e.g. `// https://dom.spec.whatwg.org/#concept-node-insert`), and step numbers where useful.
-- Pure algorithmic modules (tokenizers, parsers, decoders) are written in scriptc's compiled
-  subset and start with `// @scriptc-compatible`; `pnpm scriptc:check` verifies them.
 - A window global or interface member that jsdom 26 or 30 lacks needs an entry in `COMPAT`
   (`packages/dom/src/window/compat.ts`) saying which compat profiles expose it and why;
   `tests/compat/test/surface/` enforces it against the real jsdom, and `pnpm docs:compat`
@@ -73,7 +71,7 @@ always report memory (heap after GC, RSS) next to time. See `bench/README.md`.
 
 `~/gh/jsdom`, `~/gh/testing-library-dom`, `~/gh/dom-accessibility-api`, `~/gh/domSelector`,
 `~/gh/jest-dom`, `~/gh/dom-bench`, `~/gh/jsdom-startup`, `~/gh/webidl2js`, and
-`~/gh/vibedom` (the author's earlier scriptc-native DOM — its `docs/` and `bench/README.md`
+`~/gh/vibedom` (the author's earlier native DOM — its `docs/` and `bench/README.md`
 record what did and did not pay off). Installed packages (`happy-dom`,
 `@testing-library/*`, `aria-query`, `dom-accessibility-api`, `jsdom`) are in `node_modules`.
 Other upstream repos (e.g. user-event, WPT) may be cloned into a scratch directory outside the
@@ -90,5 +88,4 @@ pnpm bench:compare --base ../base --head .  # regression check between two clean
 pnpm docs:compat                        # regenerate the compat profile table in docs/deviations.md
 pnpm docs:spec                          # regenerate docs/spec-coverage.md (spec sections vs tests)
 node downstream/track.ts                # latest downstream runs vs downstream/baseline.json
-pnpm scriptc:check                      # scriptc compiles every @scriptc-compatible module
 ```

@@ -22,7 +22,6 @@
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint",
     "bench": "pnpm --filter @rtd/bench run bench",
-    "scriptc:check": "pnpm --filter @rtd/native run check",
     "build": "node scripts/build.ts",
     "docs:compat": "node scripts/compat-doc.ts",
     "docs:spec": "node scripts/spec-coverage.ts",

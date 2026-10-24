@@ -25,9 +25,6 @@ export interface WorkspacePackage {
   exports: WorkspaceExport[];
 }
 
-/** Packages that are bundled. `@rtd/native` is a build tool + optional loader, not a runtime dep. */
-const SKIP = new Set(["@rtd/native"]);
-
 /** A string target, or the `import`/`default` branch of a conditional export. */
 function resolveTarget(raw: unknown): string | undefined {
   if (typeof raw === "string") return raw;
@@ -46,7 +43,6 @@ export function workspacePackages(): WorkspacePackage[] {
     const pkgPath = join(dir, "package.json");
     if (!existsSync(pkgPath)) continue;
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-    if (SKIP.has(pkg.name)) continue;
     const exportsField: Record<string, unknown> =
       typeof pkg.exports === "string" ? { ".": pkg.exports } : (pkg.exports ?? {});
     const exports: WorkspaceExport[] = [];

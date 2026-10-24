@@ -1,4 +1,3 @@
-// @scriptc-compatible
 //
 // CSS Syntax Module Level 3 — parsing.
 // https://drafts.csswg.org/css-syntax-3/#parsing

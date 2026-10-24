@@ -1,4 +1,3 @@
-// @scriptc-compatible
 // HTML tree construction.
 // https://html.spec.whatwg.org/#tree-construction
 //
@@ -229,9 +228,9 @@ function removeNulls(s: string): string {
 
 /**
  * The DOM side of the parser. Every method has a do-nothing default so subclasses override
- * only what they need (and so the class is concrete for scriptc). Handles are allocated by the
- * sink, sequentially from 0 per parse; `parent === -1` in an insertion location means "the
- * parent of `ref`" (foster parenting before a table whose parent the builder does not track).
+ * only what they need. Handles are allocated by the sink, sequentially from 0 per parse;
+ * `parent === -1` in an insertion location means "the parent of `ref`" (foster parenting before
+ * a table whose parent the builder does not track).
  */
 export class TreeSink {
   /**

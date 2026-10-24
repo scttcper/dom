@@ -18,7 +18,7 @@ pnpm compare --readme     # the README's performance table (comparison/)
 pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom / rtd-full
 node downstream/track.ts  # compare the latest downstream runs with downstream/baseline.json
 pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
-pnpm scriptc:check
+pnpm docs:spec            # regenerate docs/spec-coverage.md
 ```
 
 ## Packages
@@ -49,12 +49,6 @@ Inside the repository each directory under `packages/` is a workspace package na
 (`packages/react` is `@rtd/react`, the environments are `vitest-environment-rtd` and
 `jest-environment-rtd`), and code imports those names. `pnpm build` renames them to the
 published ones, and no `@rtd/` name ships.
-
-[packages/native](packages/native) is not published. The HTML, CSS and selector parsers are
-written in scriptc's compilable subset, checked by `pnpm scriptc:check`. Compiled natively, they
-don't beat V8 running the same TypeScript (calls across the boundary and string copies cost more
-than they save), so nothing native ships; the measurements are in
-[packages/native/RESULTS.md](packages/native/RESULTS.md).
 
 ## CI and releases
 

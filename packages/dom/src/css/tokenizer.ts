@@ -1,4 +1,3 @@
-// @scriptc-compatible
 //
 // CSS Syntax Module Level 3 — tokenization.
 // https://drafts.csswg.org/css-syntax-3/#tokenization

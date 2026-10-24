@@ -1,4 +1,3 @@
-// @scriptc-compatible
 //
 // Selector serialization (CSSStyleRule.selectorText and friends).
 // https://drafts.csswg.org/cssom/#serialize-a-selector

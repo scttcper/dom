@@ -6,8 +6,8 @@
 // https://dom.spec.whatwg.org/#dom-element-closest
 // https://drafts.csswg.org/selectors-4/
 //
-// Pipeline: selector string → parser.ts (CSS Syntax 3 tokens + Selectors 4 grammar, pure and
-// scriptc-compatible) → compile.ts (right-to-left program over NodeImpl) → cached by string in a
+// Pipeline: selector string → parser.ts (CSS Syntax 3 tokens + Selectors 4 grammar, pure)
+// → compile.ts (right-to-left program over NodeImpl) → cached by string in a
 // bounded map. querySelector(All) take allocation-free tree walks with specialized loops for the
 // shapes Testing Library and React apps hammer (`*`, `#id`, `.class`, `tag`, `[attr]`,
 // `[attr="v"]`); everything else runs the generic matcher per element.

@@ -430,15 +430,6 @@ importers:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
 
-  packages/native:
-    devDependencies:
-      '@scriptc/types':
-        specifier: 0.4.4
-        version: 0.4.4
-      scriptc:
-        specifier: 0.4.4
-        version: 0.4.4
-
   packages/react:
     dependencies:
       '@rtd/dom':
@@ -1562,49 +1553,6 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
-
-  '@scriptc/cli-darwin-arm64@0.4.4':
-    resolution: {integrity: sha512-jn1yzbXcsu/4J9lVbZTyg1hQaq6I4KB7tu8Gez+aW6hTqXYlusDWtzjvxKuO/I0thokI79PdFU8OeTNDCnv/Yw==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@scriptc/cli-darwin-x64@0.4.4':
-    resolution: {integrity: sha512-UnjiiWfljD01/NkI/DWwUHhMoB0NNIrtiZ+hq2KZB2taNbEL86bMwVQt41BLEWVjuMUecSANf7nHr0iZ8RW8Mw==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@scriptc/cli-linux-arm64-gnu@0.4.4':
-    resolution: {integrity: sha512-CTk+WxR3ecNz1e5zCxvTAcnssEVgHCpwHbcL3j6E5cAYXd9nW1MZec+I+o0tVacujJAqxkqIYcndJCQimVpc6w==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@scriptc/cli-linux-arm64-musl@0.4.4':
-    resolution: {integrity: sha512-lsxWknOblf6DwupYs/bqynBAn7kliQNHsWF5rsoIhox2NOwMDk9vHnx2BQdS55Sjl/edpWBNpnC3EOhCCcqQ1A==}
-    cpu: [arm64]
-    os: [linux]
-    libc: [musl]
-
-  '@scriptc/cli-linux-x64-gnu@0.4.4':
-    resolution: {integrity: sha512-gDaN5kP3S73z0sufLTdyazwGVLGcTH/eW3UBcvN8qcBDMiSnjxGdixIc/L8GDAbLE2w4BX/tikFi3ZWMBfkooQ==}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
-  '@scriptc/cli-linux-x64-musl@0.4.4':
-    resolution: {integrity: sha512-6hA1YX0Ko1beXoi1O+uMUOg7qiSJePv0PSsLVc6e6lwJZCDU+pzkCZKX/vNVDGtK1mXj3T8RBZq4EUpIMtJUJA==}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
-
-  '@scriptc/cli-win32-x64-msvc@0.4.4':
-    resolution: {integrity: sha512-VpX2lS6xZUdeZCHiJ1+RGlhJY97AV0ZgkOOVxewIBWrlo6zyz/vsylxtiLAmFgpfz0ts3mDkd0cFmFdFVgS7cg==}
-    cpu: [x64]
-    os: [win32]
-
-  '@scriptc/types@0.4.4':
-    resolution: {integrity: sha512-xU3Wdez8JGb13yj0n8i39jND4jZfJeai3F5gxmOU3K9f1oYi8eoIIrqdWpj/GPzgo20VBhSWA2H8jn7K4y6oiw==}
-    engines: {node: '>=24.0.0'}
 
   '@sinclair/typebox@0.34.52':
     resolution: {integrity: sha512-XiMQh7qqVlxZzcVD+kkGMNGMzcTrDMLWI7S4x7z1MkCkbDPrekpZXEUK0eZqZFMuHQg2a2DZOcDIh9o5v3Gonw==}
@@ -3316,11 +3264,6 @@ packages:
   scheduler@0.28.0:
     resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
-  scriptc@0.4.4:
-    resolution: {integrity: sha512-KqAuR6C7vWFohgic6p259uHE8mEK5avkcfDeAbFOaZveuHvLENAVSpuC/w+NCGQQ2Fgtz41Y5f6oAL/cM2DXnw==}
-    engines: {node: '>=24'}
-    hasBin: true
-
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
@@ -4679,29 +4622,6 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
-
-  '@scriptc/cli-darwin-arm64@0.4.4':
-    optional: true
-
-  '@scriptc/cli-darwin-x64@0.4.4':
-    optional: true
-
-  '@scriptc/cli-linux-arm64-gnu@0.4.4':
-    optional: true
-
-  '@scriptc/cli-linux-arm64-musl@0.4.4':
-    optional: true
-
-  '@scriptc/cli-linux-x64-gnu@0.4.4':
-    optional: true
-
-  '@scriptc/cli-linux-x64-musl@0.4.4':
-    optional: true
-
-  '@scriptc/cli-win32-x64-msvc@0.4.4':
-    optional: true
-
-  '@scriptc/types@0.4.4': {}
 
   '@sinclair/typebox@0.34.52': {}
 
@@ -6698,16 +6618,6 @@ snapshots:
       xmlchars: 2.2.0
 
   scheduler@0.28.0: {}
-
-  scriptc@0.4.4:
-    optionalDependencies:
-      '@scriptc/cli-darwin-arm64': 0.4.4
-      '@scriptc/cli-darwin-x64': 0.4.4
-      '@scriptc/cli-linux-arm64-gnu': 0.4.4
-      '@scriptc/cli-linux-arm64-musl': 0.4.4
-      '@scriptc/cli-linux-x64-gnu': 0.4.4
-      '@scriptc/cli-linux-x64-musl': 0.4.4
-      '@scriptc/cli-win32-x64-msvc': 0.4.4
 
   semver@6.3.1: {}
 

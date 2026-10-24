@@ -1,4 +1,3 @@
-// @scriptc-compatible
 // The HTML tokenizer.
 // https://html.spec.whatwg.org/#tokenization
 //

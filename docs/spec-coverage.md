@@ -212,7 +212,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [category-reset](https://html.spec.whatwg.org/#category-reset) | `dom/html/forms/form-associated.ts` | WPT: `html/semantics/forms/resetting-a-form/reset-form.html` |
 | [category-submit](https://html.spec.whatwg.org/#category-submit) | `dom/html/forms/form-associated.ts` | `compat/forms/form-algorithms.test.ts` |
 | [cdata-section-state](https://html.spec.whatwg.org/#cdata-section-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [character-reference-state](https://html.spec.whatwg.org/#character-reference-state) | `dom/parser/tokenizer.ts`, `native/lib/rtd.ts` | `native/native.test.ts` |
+| [character-reference-state](https://html.spec.whatwg.org/#character-reference-state) | `dom/parser/tokenizer.ts` | `dom/parser/html5lib-tokenizer.test.ts` |
 | [check-popover-validity](https://html.spec.whatwg.org/#check-popover-validity) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`; WPT: `html/semantics/popovers/popover-removal-hides.html` |
 | [check-validity-steps](https://html.spec.whatwg.org/#check-validity-steps) | `dom/html/forms/validation.ts` | `compat/forms/form-algorithms.test.ts` |
 | [checkbox-state-(type=checkbox](https://html.spec.whatwg.org/#checkbox-state-(type=checkbox) | `dom/html/forms/HTMLInputElement.ts` | `dom/events/event-path.test.ts`, `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/the-input-element/checkbox-click-events.html`, `html/semantics/forms/the-input-element/checkbox.html` +1 |
@@ -910,7 +910,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [timer-initialisation-steps](https://html.spec.whatwg.org/#timer-initialisation-steps) | `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts`, `dom/window/wpt-timers.test.ts` |
 | [timeranges](https://html.spec.whatwg.org/#timeranges) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
 | [timers](https://html.spec.whatwg.org/#timers) | `dom/window/Window.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts`, `dom/window/wpt-timers.test.ts` +1 |
-| [tokenization](https://html.spec.whatwg.org/#tokenization) | `dom/parser/tokenizer.ts` | `dom/parser/html5lib-tokenizer.test.ts`, `native/native.test.ts` |
+| [tokenization](https://html.spec.whatwg.org/#tokenization) | `dom/parser/tokenizer.ts` | `dom/parser/html5lib-tokenizer.test.ts` |
 | [top-layer](https://html.spec.whatwg.org/#top-layer) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [topmost-auto-or-hint-popover](https://html.spec.whatwg.org/#topmost-auto-or-hint-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [topmost-clicked-popover](https://html.spec.whatwg.org/#topmost-clicked-popover) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
@@ -1419,7 +1419,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [starts-with-a-number](https://drafts.csswg.org/css-syntax/#starts-with-a-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [starts-with-a-valid-escape](https://drafts.csswg.org/css-syntax/#starts-with-a-valid-escape) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [style-rules](https://drafts.csswg.org/css-syntax/#style-rules) | `dom/selectors/internal.ts` | **untested** |
-| [tokenization](https://drafts.csswg.org/css-syntax/#tokenization) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts`, `native/native.test.ts` |
+| [tokenization](https://drafts.csswg.org/css-syntax/#tokenization) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
 | [tokenizer-definitions](https://drafts.csswg.org/css-syntax/#tokenizer-definitions) | `dom/selectors/parser.ts` | **untested** |
 | [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 
@@ -1476,7 +1476,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [compound](https://drafts.csswg.org/selectors/#compound) | `dom/selectors/parser.ts` | **untested** |
 | [featureless](https://drafts.csswg.org/selectors/#featureless) | `dom/selectors/compile.ts` | `dom/selectors/wpt-selectors.test.ts`; WPT: `css/selectors/featureless-006.html`, `css/selectors/featureless-007.html` |
 | [forgiving-selector](https://drafts.csswg.org/selectors/#forgiving-selector) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`, `dom/selectors/wpt-selectors.test.ts` |
-| [grammar](https://drafts.csswg.org/selectors/#grammar) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`, `native/native.test.ts` |
+| [grammar](https://drafts.csswg.org/selectors/#grammar) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts` |
 | [headings](https://drafts.csswg.org/selectors/#headings) | `dom/selectors/compile.ts`, `dom/selectors/parser.ts` | `dom/selectors/matching.test.ts`; WPT: `css/selectors/heading-prefixed.html`, `css/selectors/invalidation/heading-pseudo-class-in-has-with-headingoffset.html` +2 |
 | [input-pseudos](https://drafts.csswg.org/selectors/#input-pseudos) | `dom/selectors/state.ts` | `dom/selectors/pseudo-classes.test.ts`, `compat/forms/pseudo-classes.test.ts` |
 | [match-a-selector-against-a-pseudo-element](https://drafts.csswg.org/selectors/#match-a-selector-against-a-pseudo-element) | `dom/selectors/internal.ts` | **untested** |
