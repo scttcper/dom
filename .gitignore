@@ -9,3 +9,7 @@ bench/results/*.json
 downstream/*/checkout
 downstream/*/output
 /release
+
+comparison/results/raw
+comparison/results/*.json
+comparison/.generated
