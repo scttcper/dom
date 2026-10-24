@@ -38,7 +38,7 @@ describe("ctrl-dom debug with Vitest", () => {
         '      - textbox "Email"',
         '      - button "Options" [expanded=false]',
         "",
-        "  at test/failure-snapshot/checkout.fixture.tsx:34:9",
+        "  at test/failure-snapshot/checkout.fixture.tsx:35:9",
       ].join("\n"),
     );
     expect(out).toContain("FAIL  a failed query that printed the snapshot already\n  TestingLibraryElementError: Unable to find an accessible element");
