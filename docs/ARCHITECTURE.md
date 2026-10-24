@@ -11,6 +11,7 @@ cohesive stack for testing React components on Node.js:
 @rtd/aria           (replaces aria-query + dom-accessibility-api) roles, names, states, hidden
 @rtd/dom            (replaces jsdom / happy-dom)                nodes, parser, selectors, css, events, window
 vitest-environment-rtd                                          installs @rtd/dom as globals
+@rtd/register                                                   the same for node:test / bun test (no environment)
 @rtd/native         scriptc-compiled accelerators + scriptc compatibility gate
 bench/              benchmarks vs jsdom and happy-dom
 ```
@@ -32,7 +33,8 @@ bench and downstream runners use them. What ships is assembled by `pnpm build`
 
 - `@ctrl/dom`: `@rtd/dom` at the root and every other runtime package under a subpath
   (`@ctrl/dom/aria`, `/testing-library`, `/react`, `/user-event`, `/jest-dom`,
-  `/vitest-environment`), plus the Jest preset and the Vitest plugin from publish/ctrl-dom/.
+  `/vitest-environment`, `/register`), plus the Jest preset and the Vitest plugin from
+  publish/ctrl-dom/.
 - `jest-environment-ctrl-dom`: `jest-environment-rtd`, a package of its own so Vitest users do not
   install Jest's dependencies.
 - `vitest-environment-ctrl-dom`: a re-export, so Vitest resolves `environment: "ctrl-dom"`.
