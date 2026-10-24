@@ -12,4 +12,4 @@ const uninstall = installGlobals(window, globalThis);
 `@ctrl/dom/internal` is the internal API the other `@ctrl/dom` subpaths build on; it has no
 stability guarantees. ESM only (`require()` works through Node's require(esm)).
 
-Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).

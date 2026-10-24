@@ -15,3 +15,7 @@ export default defineConfig({ test: { environment: "ctrl-dom" } });
 
 For the whole stack (your `@testing-library/*` imports routed to @ctrl/dom), use the plugin
 instead, which needs only @ctrl/dom: `plugins: [ctrlDom()]` from `@ctrl/dom/vitest`.
+
+## License
+
+MIT. Third-party notices are in the package's `NOTICE` file.

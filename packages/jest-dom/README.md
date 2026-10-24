@@ -10,4 +10,4 @@ import "@ctrl/dom/jest-dom/jest-globals";  // Jest with @jest/globals
 import * as matchers from "@ctrl/dom/jest-dom/matchers";
 ```
 
-Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).

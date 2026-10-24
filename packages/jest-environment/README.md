@@ -45,4 +45,4 @@ time, in the same order and with the same app-visible elapsed time. A `findBy` t
 matches fails after 1 s of virtual time instead of 1 s of real time. Set `testEnvironmentOptions.timeSkip` to `false` (or
 `CTRL_DOM_TIME_SKIP=0`) for real-time timers.
 
-Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).

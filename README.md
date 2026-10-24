@@ -201,3 +201,8 @@ Read [CLAUDE.md](CLAUDE.md) for conventions (spec links in tests, performance ru
   publishing (OIDC, with provenance): each package's trusted publisher on npmjs.com names this
   repository and `release.yml`. npm only allows that once a package exists, so each package's
   first version is published by hand.
+
+## License
+
+MIT. `@ctrl/dom` includes code ported from Testing Library, dom-accessibility-api, aria-query,
+Playwright, jsdom and others; their copyright notices and licenses are in [NOTICE](NOTICE).

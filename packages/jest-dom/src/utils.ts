@@ -304,8 +304,8 @@ export function cssEscape(value: string): string {
   return result;
 }
 
-// picocolors@1.1.1 `red` (MIT, Alexey Raspopov): same color detection, so toHaveStyle strips
-// exactly what upstream strips from the diff header.
+// picocolors@1.1.1 `red` (ISC, Oleksii Raspopov, Kostiantyn Denysov, Anton Verinov; NOTICE): same
+// color detection, so toHaveStyle strips exactly what upstream strips from the diff header.
 const env = process.env;
 const argv = process.argv;
 const isColorSupported =

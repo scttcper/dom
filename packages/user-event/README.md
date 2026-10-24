@@ -10,4 +10,4 @@ await user.type(screen.getByRole("textbox"), "hello");
 
 ESM and CommonJS builds.
 
-Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).

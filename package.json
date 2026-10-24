@@ -1,6 +1,7 @@
 {
   "name": "ctrl-dom-monorepo",
   "private": true,
+  "license": "MIT",
   "homepage": "https://github.com/scttcper/dom#readme",
   "bugs": {
     "url": "https://github.com/scttcper/dom/issues"

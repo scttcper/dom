@@ -315,3 +315,8 @@ Details: [docs/agent-debugging.md](https://github.com/scttcper/dom/blob/main/doc
 There is no script execution, no navigation and no network, as in jsdom and happy-dom, and no
 layout unless you turn on `layout: "lite"` (otherwise geometry is zeros, as in jsdom). Every
 intentional difference is listed, with the reason, in [docs/deviations.md](https://github.com/scttcper/dom/blob/main/docs/deviations.md).
+
+## License
+
+MIT. Includes code ported from Testing Library, dom-accessibility-api, aria-query, Playwright,
+jsdom and others; their copyright notices and licenses are in the package's `NOTICE` file.

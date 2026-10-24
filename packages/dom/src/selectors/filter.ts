@@ -1,6 +1,6 @@
 // Ancestor filter: fast rejection of descendant / child combinator selectors.
 //
-// Port of WebKit's SelectorFilter
+// The technique of WebKit's SelectorFilter
 // (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/SelectorFilter.h,
 // SelectorFilter.cpp; Blink has the same idea in core/css/selector_filter.h): every complex
 // selector carries up to four hashes of the type / id / class names that some ANCESTOR of the

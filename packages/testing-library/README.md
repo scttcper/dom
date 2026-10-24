@@ -10,4 +10,4 @@ import { screen, within, waitFor, fireEvent } from "@ctrl/dom/testing-library";
 Or keep your imports and alias `@testing-library/dom` to `@ctrl/dom/testing-library` (see the
 repository README). Requires the ctrl-dom test environment. ESM and CommonJS builds.
 
-Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).

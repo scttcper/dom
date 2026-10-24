@@ -9,7 +9,7 @@
 //   dist/types/**.d.ts     declarations emitted from the sources (tsc --emitDeclarationOnly),
 //                          except for packages that ship hand-maintained, upstream-identical
 //                          typings under types/ (their dev `exports` carry a `types` condition).
-//   dist/NOTICE            copy of the repository NOTICE (and LICENSE once there is one).
+//   dist/NOTICE, LICENSE   copies of the repository NOTICE and LICENSE.
 //
 // Then release/: the published packages (@ctrl/dom, jest-environment-ctrl-dom,
 // vitest-environment-ctrl-dom) assembled from these builds by scripts/release.ts.

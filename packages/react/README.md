@@ -13,4 +13,4 @@ screen.getByRole("button", { name: "Save" });
 Requires the ctrl-dom test environment (`vitest-environment-ctrl-dom` or `jest-environment-ctrl-dom` with
 its preset). ESM and CommonJS builds.
 
-Part of [ctrl-dom](../../README.md). Third-party notices: `dist/NOTICE`.
+Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).
