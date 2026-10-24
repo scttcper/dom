@@ -9,6 +9,13 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
    * @ctrl/dom's implementations (default true). `false` swaps only the DOM.
    */
   testingLibrary?: boolean;
+  /**
+   * Agent-oriented debug output, the same as the `CTRL_DOM_DEBUG` env var (which wins when set):
+   * `"aria"` prints accessibility snapshots instead of HTML in `screen.debug()`, `prettyDOM` and
+   * failing query errors (with the closest matching elements); `"compact"` prints HTML without
+   * class/style attributes and SVG internals. Default: upstream output.
+   */
+  debug?: "aria" | "compact";
 }
 
 /** @ctrl/dom's Vitest environment plus (by default) the Testing Library aliases. */
