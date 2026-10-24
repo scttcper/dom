@@ -22,23 +22,23 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 776 | 212 | 66 | 498 |
+| [HTML Standard](#html-standard) | 776 | 222 | 65 | 489 |
 | [DOM Standard](#dom-standard) | 273 | 236 | 28 | 9 |
-| [CSS: cssom](#css-cssom) | 73 | 9 | 31 | 33 |
+| [CSS: cssom](#css-cssom) | 73 | 37 | 22 | 14 |
 | [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
-| [CSS: css-syntax](#css-css-syntax) | 32 | 5 | 0 | 27 |
+| [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
 | [CSS: selectors](#css-selectors) | 28 | 10 | 5 | 13 |
-| [CSS: cssom-view](#css-cssom-view) | 25 | 13 | 0 | 12 |
+| [CSS: cssom-view](#css-cssom-view) | 25 | 14 | 0 | 11 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 5 | 1 | 15 |
-| [W3C: aria](#w3c-aria) | 20 | 7 | 0 | 13 |
+| [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
-| [CSS: css-color](#css-css-color) | 16 | 6 | 1 | 9 |
-| [W3C: html-aam](#w3c-html-aam) | 15 | 7 | 0 | 8 |
-| [W3C: accname](#w3c-accname) | 11 | 6 | 0 | 5 |
-| [CSS: css-cascade](#css-css-cascade) | 10 | 3 | 0 | 7 |
+| [CSS: css-color](#css-css-color) | 16 | 12 | 1 | 3 |
+| [W3C: html-aam](#w3c-html-aam) | 15 | 8 | 0 | 7 |
+| [CSS: css-cascade](#css-css-cascade) | 12 | 10 | 0 | 2 |
+| [W3C: accname](#w3c-accname) | 11 | 7 | 0 | 4 |
 | [Infra Standard](#infra-standard) | 10 | 0 | 0 | 10 |
-| [CSS: css-conditional](#css-css-conditional) | 9 | 1 | 1 | 7 |
+| [CSS: css-conditional](#css-css-conditional) | 9 | 8 | 1 | 0 |
 | [SVG 2](#svg-2) | 9 | 1 | 0 | 8 |
 | [W3C: DOM-Parsing](#w3c-dom-parsing) | 9 | 2 | 0 | 7 |
 | [W3C: FileAPI](#w3c-fileapi) | 7 | 2 | 0 | 5 |
@@ -48,33 +48,33 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: mediaqueries](#css-mediaqueries) | 5 | 1 | 0 | 4 |
 | [Fetch Standard](#fetch-standard) | 5 | 3 | 0 | 2 |
 | [W3C: xml](#w3c-xml) | 5 | 0 | 0 | 5 |
-| [CSS: css-display](#css-css-display) | 4 | 1 | 0 | 3 |
-| [CSS: css-position](#css-css-position) | 4 | 0 | 0 | 4 |
+| [CSS: css-display](#css-css-display) | 4 | 2 | 0 | 2 |
+| [CSS: css-nesting](#css-css-nesting) | 4 | 2 | 1 | 1 |
+| [CSS: css-position](#css-css-position) | 4 | 1 | 0 | 3 |
 | [RFC6265](#rfc6265) | 4 | 1 | 0 | 3 |
 | [W3C: touch-events](#w3c-touch-events) | 4 | 1 | 0 | 3 |
-| [CSS: css-fonts](#css-css-fonts) | 3 | 0 | 2 | 1 |
-| [CSS: css-nesting](#css-css-nesting) | 3 | 1 | 0 | 2 |
+| [CSS: css-fonts](#css-css-fonts) | 3 | 1 | 2 | 0 |
 | [CSS: css-properties-values-api](#css-css-properties-values-api) | 3 | 0 | 0 | 3 |
 | [CSS: css-scoping](#css-css-scoping) | 3 | 0 | 1 | 2 |
-| [CSS: css-transitions](#css-css-transitions) | 3 | 0 | 0 | 3 |
-| [CSS: css-variables](#css-css-variables) | 3 | 0 | 1 | 2 |
+| [CSS: css-transitions](#css-css-transitions) | 3 | 1 | 0 | 2 |
+| [CSS: css-variables](#css-css-variables) | 3 | 3 | 0 | 0 |
 | [ECMAScript](#ecmascript) | 3 | 2 | 0 | 1 |
-| [CSS: css-flexbox](#css-css-flexbox) | 2 | 0 | 0 | 2 |
+| [Compatibility Standard](#compatibility-standard) | 2 | 1 | 0 | 1 |
+| [CSS: css-flexbox](#css-css-flexbox) | 2 | 2 | 0 | 0 |
 | [CSS: css-namespaces](#css-css-namespaces) | 2 | 1 | 0 | 1 |
 | [CSS: css-shadow-parts](#css-css-shadow-parts) | 2 | 0 | 1 | 1 |
 | [CSS: css-text](#css-css-text) | 2 | 0 | 1 | 1 |
 | [CSS: geometry](#css-geometry) | 2 | 0 | 0 | 2 |
 | [URL Standard](#url-standard) | 2 | 0 | 0 | 2 |
 | [W3C: IntersectionObserver](#w3c-intersectionobserver) | 2 | 1 | 0 | 1 |
-| [Compatibility Standard](#compatibility-standard) | 1 | 0 | 0 | 1 |
-| [CSS: css-align](#css-css-align) | 1 | 0 | 0 | 1 |
+| [CSS: css-align](#css-css-align) | 1 | 1 | 0 | 0 |
 | [CSS: css-backgrounds](#css-css-backgrounds) | 1 | 0 | 0 | 1 |
-| [CSS: css-contain](#css-css-contain) | 1 | 0 | 0 | 1 |
+| [CSS: css-contain](#css-css-contain) | 1 | 1 | 0 | 0 |
 | [CSS: css-content](#css-css-content) | 1 | 0 | 0 | 1 |
 | [CSS: css-images](#css-css-images) | 1 | 1 | 0 | 0 |
-| [CSS: css-lists](#css-css-lists) | 1 | 0 | 0 | 1 |
-| [CSS: css-overflow](#css-css-overflow) | 1 | 0 | 0 | 1 |
-| [CSS: css-ui](#css-css-ui) | 1 | 0 | 0 | 1 |
+| [CSS: css-lists](#css-css-lists) | 1 | 1 | 0 | 0 |
+| [CSS: css-overflow](#css-css-overflow) | 1 | 1 | 0 | 0 |
+| [CSS: css-ui](#css-css-ui) | 1 | 1 | 0 | 0 |
 | [CSS: resize-observer](#css-resize-observer) | 1 | 1 | 0 | 0 |
 | [Encoding Standard](#encoding-standard) | 1 | 0 | 0 | 1 |
 | [RFC9110](#rfc9110) | 1 | 0 | 0 | 1 |
@@ -89,7 +89,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1533 | 582 | 141 | 810 |
+| **All** | 1537 | 668 | 131 | 738 |
 
 ## Web-platform-tests fixtures
 
@@ -150,7 +150,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 776 sections implemented, 212 tested, 66 by WPT only, 498 untested.
+<https://html.spec.whatwg.org/> — 776 sections implemented, 222 tested, 65 by WPT only, 489 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -244,7 +244,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | **untested** |
 | [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | **untested** |
 | [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts` |
-| [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
+| [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | **untested** |
 | [concept-fe-value](https://html.spec.whatwg.org/#concept-fe-value) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
 | [concept-fieldset-disabled](https://html.spec.whatwg.org/#concept-fieldset-disabled) | `jest-dom/matchers/state.ts` | **untested** |
@@ -604,7 +604,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [has-an-element-in-the-specific-scope](https://html.spec.whatwg.org/#has-an-element-in-the-specific-scope) | `dom/parser/treebuilder.ts` | **untested** |
 | [heading-levels-and-offsets](https://html.spec.whatwg.org/#heading-levels-and-offsets) | `dom/selectors/compile.ts` | **untested** |
 | [heading-offset](https://html.spec.whatwg.org/#heading-offset) | `dom/selectors/compile.ts` | **untested** |
-| [hidden-elements](https://html.spec.whatwg.org/#hidden-elements) | `dom/css/cascade.ts` | **untested** |
+| [hidden-elements](https://html.spec.whatwg.org/#hidden-elements) | `dom/css/cascade.ts` | `aria/accname-steps.test.ts`, `aria/tree-exclusion.test.ts` |
 | [hide-all-popovers-until](https://html.spec.whatwg.org/#hide-all-popovers-until) | `dom/html/top-layer.ts` | **untested** |
 | [hide-popover-algorithm](https://html.spec.whatwg.org/#hide-popover-algorithm) | `dom/html/top-layer.ts` | WPT: `html/semantics/popovers/popover-manual-hide-does-not-close-auto.html` |
 | [hide-popover-stack-until](https://html.spec.whatwg.org/#hide-popover-stack-until) | `dom/html/top-layer.ts` | `dom/html/wpt-popover.test.ts` |
@@ -717,7 +717,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [process-close-watchers](https://html.spec.whatwg.org/#process-close-watchers) | `dom/html/top-layer.ts` | **untested** |
 | [processing-instruction-open-state](https://html.spec.whatwg.org/#processing-instruction-open-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [prod-potentialcustomelementname](https://html.spec.whatwg.org/#prod-potentialcustomelementname) | `dom/html/custom-elements.ts` | **untested** |
-| [pseudo-classes](https://html.spec.whatwg.org/#pseudo-classes) | `dom/html/forms/state.ts`, `dom/selectors/html-predicates.ts`, `dom/selectors/state.ts` | `dom/html/forms/validation.test.ts`, `dom/selectors/matching.test.ts`, `dom/selectors/wpt-runner.test.ts`, `compat/forms/pseudo-classes.test.ts`; WPT: `html/semantics/selectors/pseudo-classes/autofill.html`, `html/semantics/selectors/pseudo-classes/checked-002.html` +17 |
+| [pseudo-classes](https://html.spec.whatwg.org/#pseudo-classes) | `dom/html/forms/state.ts`, `dom/selectors/html-predicates.ts`, `dom/selectors/state.ts` | `dom/html/forms/validation.test.ts`, `dom/selectors/matching.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `dom/selectors/wpt-runner.test.ts` +1; WPT: `html/semantics/selectors/pseudo-classes/autofill.html`, `html/semantics/selectors/pseudo-classes/checked-002.html` +17 |
 | [push-onto-the-list-of-active-formatting-elements](https://html.spec.whatwg.org/#push-onto-the-list-of-active-formatting-elements) | `dom/parser/treebuilder.ts` | **untested** |
 | [queue-a-details-toggle-event-task](https://html.spec.whatwg.org/#queue-a-details-toggle-event-task) | `dom/html/interactive.ts` | `dom/html/element-tasks.test.ts` |
 | [queue-a-dialog-toggle-event-task](https://html.spec.whatwg.org/#queue-a-dialog-toggle-event-task) | `dom/html/interactive.ts` | **untested** |
@@ -754,25 +754,25 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [scroll-to-fragid](https://html.spec.whatwg.org/#scroll-to-fragid) | `dom/window/History.ts` | `dom/window/location.test.ts` |
 | [selectedness-setting-algorithm](https://html.spec.whatwg.org/#selectedness-setting-algorithm) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/select-textarea.test.ts`, `compat/forms/select-option.test.ts` |
 | [selector-checked](https://html.spec.whatwg.org/#selector-checked) | `dom/html/forms/state.ts` | `dom/selectors/matching.test.ts` |
-| [selector-custom](https://html.spec.whatwg.org/#selector-custom) | `dom/selectors/state.ts` | **untested** |
-| [selector-default](https://html.spec.whatwg.org/#selector-default) | `dom/html/forms/state.ts` | **untested** |
-| [selector-defined](https://html.spec.whatwg.org/#selector-defined) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`; WPT: `css/selectors/invalidation/defined-in-has.html`, `css/selectors/invalidation/defined.html` |
+| [selector-custom](https://html.spec.whatwg.org/#selector-custom) | `dom/selectors/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [selector-default](https://html.spec.whatwg.org/#selector-default) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [selector-defined](https://html.spec.whatwg.org/#selector-defined) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `dom/selectors/pseudo-classes.test.ts`; WPT: `css/selectors/invalidation/defined-in-has.html`, `css/selectors/invalidation/defined.html` |
 | [selector-disabled](https://html.spec.whatwg.org/#selector-disabled) | `dom/html/forms/state.ts` | **untested** |
 | [selector-focus](https://html.spec.whatwg.org/#selector-focus) | `dom/html/focus.ts` | WPT: `shadow-dom/focus/focus-selector-delegatesFocus.html` |
-| [selector-in-range](https://html.spec.whatwg.org/#selector-in-range) | `dom/html/forms/state.ts` | WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html`, `html/semantics/selectors/pseudo-classes/inrange-outofrange.html` |
-| [selector-indeterminate](https://html.spec.whatwg.org/#selector-indeterminate) | `dom/html/forms/state.ts` | **untested** |
+| [selector-in-range](https://html.spec.whatwg.org/#selector-in-range) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts`; WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html`, `html/semantics/selectors/pseudo-classes/inrange-outofrange.html` |
+| [selector-indeterminate](https://html.spec.whatwg.org/#selector-indeterminate) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-invalid](https://html.spec.whatwg.org/#selector-invalid) | `dom/html/forms/state.ts` | **untested** |
 | [selector-link](https://html.spec.whatwg.org/#selector-link) | `dom/selectors/state.ts` | **untested** |
 | [selector-muted](https://html.spec.whatwg.org/#selector-muted) | `dom/selectors/state.ts` | **untested** |
-| [selector-open](https://html.spec.whatwg.org/#selector-open) | `dom/selectors/state.ts` | **untested** |
+| [selector-open](https://html.spec.whatwg.org/#selector-open) | `dom/selectors/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-out-of-range](https://html.spec.whatwg.org/#selector-out-of-range) | `dom/html/forms/state.ts` | WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html`, `html/semantics/selectors/pseudo-classes/inrange-outofrange.html` |
 | [selector-paused](https://html.spec.whatwg.org/#selector-paused) | `dom/selectors/state.ts` | **untested** |
-| [selector-placeholder-shown](https://html.spec.whatwg.org/#selector-placeholder-shown) | `dom/html/forms/state.ts` | **untested** |
+| [selector-placeholder-shown](https://html.spec.whatwg.org/#selector-placeholder-shown) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-playing](https://html.spec.whatwg.org/#selector-playing) | `dom/selectors/state.ts` | **untested** |
-| [selector-popover-open](https://html.spec.whatwg.org/#selector-popover-open) | `dom/html/top-layer.ts` | **untested** |
-| [selector-read-write](https://html.spec.whatwg.org/#selector-read-write) | `dom/html/forms/state.ts` | **untested** |
-| [selector-required](https://html.spec.whatwg.org/#selector-required) | `dom/html/forms/state.ts` | **untested** |
-| [selector-valid](https://html.spec.whatwg.org/#selector-valid) | `dom/html/forms/state.ts` | `compat/forms/pseudo-classes.test.ts`; WPT: `html/semantics/selectors/pseudo-classes/valid-invalid-fieldset-disconnected.html` |
+| [selector-popover-open](https://html.spec.whatwg.org/#selector-popover-open) | `dom/html/top-layer.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [selector-read-write](https://html.spec.whatwg.org/#selector-read-write) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [selector-required](https://html.spec.whatwg.org/#selector-required) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [selector-valid](https://html.spec.whatwg.org/#selector-valid) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts`, `compat/forms/pseudo-classes.test.ts`; WPT: `html/semantics/selectors/pseudo-classes/valid-invalid-fieldset-disconnected.html` |
 | [self-closing-start-tag-state](https://html.spec.whatwg.org/#self-closing-start-tag-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [semantics](https://html.spec.whatwg.org/#semantics) | `dom/html/elements.ts` | **untested** |
 | [sequential-focus-navigation](https://html.spec.whatwg.org/#sequential-focus-navigation) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts` |
@@ -1213,49 +1213,49 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: cssom
 
-<https://drafts.csswg.org/cssom/> — 73 sections implemented, 9 tested, 31 by WPT only, 33 untested.
+<https://drafts.csswg.org/cssom/> — 73 sections implemented, 37 tested, 22 by WPT only, 14 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [common-serializing-idioms](https://drafts.csswg.org/cssom/#common-serializing-idioms) | `dom/selectors/serialize.ts` | **untested** |
-| [concept-css-style-sheet-constructed-flag](https://drafts.csswg.org/cssom/#concept-css-style-sheet-constructed-flag) | `dom/css/cssom.ts` | **untested** |
-| [concept-css-style-sheet-disallow-modification-flag](https://drafts.csswg.org/cssom/#concept-css-style-sheet-disallow-modification-flag) | `dom/css/cssom.ts` | **untested** |
-| [concept-shorthands-preferred-order](https://drafts.csswg.org/cssom/#concept-shorthands-preferred-order) | `dom/css/shorthands.ts` | **untested** |
-| [css-declaration-blocks](https://drafts.csswg.org/cssom/#css-declaration-blocks) | `dom/css/declarations.ts` | WPT: `css/cssom/css-style-attr-decl-block.html` |
+| [concept-css-style-sheet-constructed-flag](https://drafts.csswg.org/cssom/#concept-css-style-sheet-constructed-flag) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [concept-css-style-sheet-disallow-modification-flag](https://drafts.csswg.org/cssom/#concept-css-style-sheet-disallow-modification-flag) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [concept-shorthands-preferred-order](https://drafts.csswg.org/cssom/#concept-shorthands-preferred-order) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
+| [css-declaration-blocks](https://drafts.csswg.org/cssom/#css-declaration-blocks) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/css-style-attr-decl-block.html` |
 | [css-object-model](https://drafts.csswg.org/cssom/#css-object-model) | `dom/css/cssom.ts` | **untested** |
-| [css-property-to-idl-attribute](https://drafts.csswg.org/cssom/#css-property-to-idl-attribute) | `dom/css/properties.ts` | **untested** |
+| [css-property-to-idl-attribute](https://drafts.csswg.org/cssom/#css-property-to-idl-attribute) | `dom/css/properties.ts` | `dom/css/cssom-declaration.test.ts` |
 | [css-style-sheet-collections](https://drafts.csswg.org/cssom/#css-style-sheet-collections) | `dom/css/stylesheets.ts` | WPT: `css/cssom/StyleSheetList-constructable-shadow-with-style-recalc.html`, `css/cssom/StyleSheetList-constructable-shadow.html` +2 |
-| [dom-cssgroupingrule-deleterule](https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule) | `dom/css/cssom.ts` | **untested** |
+| [dom-cssgroupingrule-deleterule](https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [dom-cssgroupingrule-insertrule](https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSGroupingRule-insertRule-computed.html` |
-| [dom-cssrule-csstext](https://drafts.csswg.org/cssom/#dom-cssrule-csstext) | `dom/css/cssom.ts` | **untested** |
+| [dom-cssrule-csstext](https://drafts.csswg.org/cssom/#dom-cssrule-csstext) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [dom-cssstyledeclaration-camel-cased-attribute](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-camel-cased-attribute) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/declaration.test.ts`; WPT: `css/cssom/style-attr-update-across-documents.html` |
-| [dom-cssstyledeclaration-cssfloat](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-cssfloat) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
-| [dom-cssstyledeclaration-csstext](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext) | `dom/css/CSSStyleDeclaration.ts` | WPT: `css/cssom/cssstyledeclaration-csstext-all-shorthand.html`, `css/cssom/style-cssText-mutations.html` +1 |
-| [dom-cssstyledeclaration-getpropertypriority](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority) | `dom/css/CSSStyleDeclaration.ts`, `dom/css/declarations.ts` | **untested** |
+| [dom-cssstyledeclaration-cssfloat](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-cssfloat) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts` |
+| [dom-cssstyledeclaration-csstext](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/cssstyledeclaration-csstext-all-shorthand.html`, `css/cssom/style-cssText-mutations.html` +1 |
+| [dom-cssstyledeclaration-getpropertypriority](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority) | `dom/css/CSSStyleDeclaration.ts`, `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts` |
 | [dom-cssstyledeclaration-getpropertyvalue](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue) | `dom/css/CSSStyleDeclaration.ts`, `dom/css/declarations.ts` | WPT: `css/cssom/cssom-getPropertyValue-common-checks.html`, `css/cssom/serialize-all-longhands.html` |
-| [dom-cssstyledeclaration-item](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
+| [dom-cssstyledeclaration-item](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts` |
 | [dom-cssstyledeclaration-length](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
-| [dom-cssstyledeclaration-parentrule](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
-| [dom-cssstyledeclaration-removeproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty) | `dom/css/CSSStyleDeclaration.ts` | WPT: `css/cssom/cssstyledeclaration-removeProperty-all.html` |
-| [dom-cssstyledeclaration-setproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty) | `dom/css/CSSStyleDeclaration.ts` | WPT: `css/cssom/MutationObserver-style.html`, `css/cssom/cssstyledeclaration-mutationrecord-002.html` +6 |
+| [dom-cssstyledeclaration-parentrule](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts` |
+| [dom-cssstyledeclaration-removeproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/cssstyledeclaration-removeProperty-all.html` |
+| [dom-cssstyledeclaration-setproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/MutationObserver-style.html`, `css/cssom/cssstyledeclaration-mutationrecord-002.html` +6 |
 | [dom-cssstylerule-selectortext](https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleRule-selectorText-setter.html`, `css/cssom/CSSStyleRule-set-selectorText-namespace.html` +2 |
-| [dom-cssstylesheet-addrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule) | `dom/css/cssom.ts` | **untested** |
-| [dom-cssstylesheet-cssrules](https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules) | `dom/css/cssom.ts` | **untested** |
-| [dom-cssstylesheet-deleterule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule) | `dom/css/cssom.ts` | **untested** |
-| [dom-cssstylesheet-insertrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleSheet-insertRule-computed.html`, `css/cssom/insertRule-font-face.html` +1 |
-| [dom-cssstylesheet-removerule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-removerule) | `dom/css/cssom.ts` | **untested** |
+| [dom-cssstylesheet-addrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [dom-cssstylesheet-cssrules](https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [dom-cssstylesheet-deleterule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [dom-cssstylesheet-insertrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/CSSStyleSheet-insertRule-computed.html`, `css/cssom/insertRule-font-face.html` +1 |
+| [dom-cssstylesheet-removerule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-removerule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [dom-cssstylesheet-replace](https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-replace-cssRules.html`, `css/cssom/CSSStyleSheet-replace-detach-old-rules.html` +1 |
 | [dom-cssstylesheet-replacesync](https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleSheet-replace-detach-old-rules.html`, `css/cssom/CSSStyleSheet-replace-parse-errors.html` |
-| [dom-documentorshadowroot-adoptedstylesheets](https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets) | `dom/css/stylesheets.ts` | `dom/css/cascade.test.ts`, `compat/leaks/dom.test.ts` |
-| [dom-documentorshadowroot-stylesheets](https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets) | `dom/css/stylesheets.ts` | **untested** |
+| [dom-documentorshadowroot-adoptedstylesheets](https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets) | `dom/css/stylesheets.ts` | `dom/css/cascade.test.ts`, `dom/css/cssom-stylesheet.test.ts`, `compat/leaks/dom.test.ts` |
+| [dom-documentorshadowroot-stylesheets](https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets) | `dom/css/stylesheets.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [dom-medialist-appendmedium](https://drafts.csswg.org/cssom/#dom-medialist-appendmedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-appendmedium-parse-single-and-dedup.html` |
 | [dom-medialist-deletemedium](https://drafts.csswg.org/cssom/#dom-medialist-deletemedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-deletemedium-parse-and-remove-all.html` |
 | [dom-stylesheet-title](https://drafts.csswg.org/cssom/#dom-stylesheet-title) | `dom/css/cssom.ts` | WPT: `css/cssom/link-element-stylesheet-title.html` |
-| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `testing-library/differential/replaced-getcomputedstyle.test.ts` +1; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
+| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +2; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
 | [extensions-to-the-document-or-shadow-root-interface](https://drafts.csswg.org/cssom/#extensions-to-the-document-or-shadow-root-interface) | `dom/css/index.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-cssRules.html`, `css/cssom/CSSStyleSheet-constructable-invalidation.html` +4 |
-| [insert-a-css-rule](https://drafts.csswg.org/cssom/#insert-a-css-rule) | `dom/css/cssom.ts` | WPT: `css/cssom/at-namespace.html` |
+| [insert-a-css-rule](https://drafts.csswg.org/cssom/#insert-a-css-rule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/at-namespace.html` |
 | [namespacedef-css](https://drafts.csswg.org/cssom/#namespacedef-css) | `dom/css/CSS.ts`, `dom/window/fallbacks.ts` | WPT: `css/cssom/CSS-namespace-object-class-string.html` |
-| [parse-a-css-declaration-block](https://drafts.csswg.org/cssom/#parse-a-css-declaration-block) | `dom/css/declarations.ts` | **untested** |
+| [parse-a-css-declaration-block](https://drafts.csswg.org/cssom/#parse-a-css-declaration-block) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts` |
 | [parse-a-css-rule](https://drafts.csswg.org/cssom/#parse-a-css-rule) | `dom/css/cssom.ts` | **untested** |
 | [parse-a-css-value](https://drafts.csswg.org/cssom/#parse-a-css-value) | `dom/css/values.ts` | **untested** |
 | [parse-a-media-query-list](https://drafts.csswg.org/cssom/#parse-a-media-query-list) | `dom/css/media.ts` | **untested** |
@@ -1263,11 +1263,11 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [ref-for-concept-element-attributes-change-ext](https://drafts.csswg.org/cssom/#ref-for-concept-element-attributes-change-ext) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [resolved-values](https://drafts.csswg.org/cssom/#resolved-values) | `dom/css/cascade.ts`, `dom/css/computed.ts` | WPT: `css/cssom/computed-style-001.html`, `css/cssom/getComputedStyle-line-height.html` +4 |
 | [serialize-a-css-component-value](https://drafts.csswg.org/cssom/#serialize-a-css-component-value) | `dom/css/values.ts` | WPT: `css/cssom/serialize-custom-props.html` |
-| [serialize-a-css-declaration-block](https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block) | `dom/css/declarations.ts` | WPT: `css/cssom/font-shorthand-serialization.html`, `css/cssom/shorthand-serialization.html` +1 |
+| [serialize-a-css-declaration-block](https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/font-shorthand-serialization.html`, `css/cssom/shorthand-serialization.html` +1 |
 | [serialize-a-css-value](https://drafts.csswg.org/cssom/#serialize-a-css-value) | `dom/css/shorthands.ts`, `dom/css/values.ts` | `dom/css/declaration.test.ts` |
 | [serialize-a-group-of-selectors](https://drafts.csswg.org/cssom/#serialize-a-group-of-selectors) | `dom/selectors/internal.ts`, `dom/selectors/serialize.ts` | **untested** |
 | [serialize-a-media-query](https://drafts.csswg.org/cssom/#serialize-a-media-query) | `dom/css/media.ts` | **untested** |
-| [serialize-a-media-query-list](https://drafts.csswg.org/cssom/#serialize-a-media-query-list) | `dom/css/media.ts` | **untested** |
+| [serialize-a-media-query-list](https://drafts.csswg.org/cssom/#serialize-a-media-query-list) | `dom/css/media.ts` | `dom/css/media-queries.test.ts` |
 | [serialize-a-selector](https://drafts.csswg.org/cssom/#serialize-a-selector) | `dom/selectors/serialize.ts` | `dom/selectors/matching.test.ts` |
 | [serialize-a-simple-selector](https://drafts.csswg.org/cssom/#serialize-a-simple-selector) | `dom/selectors/serialize.ts` | **untested** |
 | [serialize-a-string](https://drafts.csswg.org/cssom/#serialize-a-string) | `dom/css/values.ts`, `dom/selectors/serialize.ts` | **untested** |
@@ -1275,19 +1275,19 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [serialize-an-identifier](https://drafts.csswg.org/cssom/#serialize-an-identifier) | `dom/css/CSS.ts`, `dom/selectors/serialize.ts`, `dom/window/fallbacks.ts` +2 | `dom/selectors/parser.test.ts` |
 | [serializing-media-queries](https://drafts.csswg.org/cssom/#serializing-media-queries) | `dom/css/media.ts` | WPT: `css/cssom/mediaquery-sort-dedup.html` |
 | [set-a-css-declaration](https://drafts.csswg.org/cssom/#set-a-css-declaration) | `dom/css/declarations.ts` | WPT: `css/cssom/setproperty-custom-property-override-important.html` |
-| [synchronously-replace-the-rules-of-a-cssstylesheet](https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet) | `dom/css/cssom.ts` | **untested** |
-| [the-cssgroupingrule-interface](https://drafts.csswg.org/cssom/#the-cssgroupingrule-interface) | `dom/css/cssom.ts` | **untested** |
-| [the-cssimportrule-interface](https://drafts.csswg.org/cssom/#the-cssimportrule-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/cssimportrule.html`, `css/cssom/style-sheet-interfaces-001.html` |
+| [synchronously-replace-the-rules-of-a-cssstylesheet](https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [the-cssgroupingrule-interface](https://drafts.csswg.org/cssom/#the-cssgroupingrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [the-cssimportrule-interface](https://drafts.csswg.org/cssom/#the-cssimportrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/cssimportrule.html`, `css/cssom/style-sheet-interfaces-001.html` |
 | [the-cssnamespacerule-interface](https://drafts.csswg.org/cssom/#the-cssnamespacerule-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSNamespaceRule.html` |
 | [the-csspagerule-interface](https://drafts.csswg.org/cssom/#the-csspagerule-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/cssom-pagerule.html` |
 | [the-cssrule-interface](https://drafts.csswg.org/cssom/#the-cssrule-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSRule-type.html`, `css/cssom/CSSStyleRule.html` +4 |
 | [the-cssrulelist-interface](https://drafts.csswg.org/cssom/#the-cssrulelist-interface) | `dom/css/cssom.ts` | **untested** |
-| [the-cssstyledeclaration-interface](https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/declaration.test.ts`, `dom/css/wpt-cssom.test.ts`, `dom/css/wpt.test.ts`; WPT: `css/cssom/CSSStyleDeclaration-indexed-properties.html`, `css/cssom/computed-style-001.html` +2 |
+| [the-cssstyledeclaration-interface](https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/declaration.test.ts`, `dom/css/wpt-cssom.test.ts`, `dom/css/wpt.test.ts`; WPT: `css/cssom/CSSStyleDeclaration-indexed-properties.html`, `css/cssom/computed-style-001.html` +2 |
 | [the-cssstylerule-interface](https://drafts.csswg.org/cssom/#the-cssstylerule-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleRule.html`, `css/cssom/style-set-property.html` |
-| [the-cssstylesheet-interface](https://drafts.csswg.org/cssom/#the-cssstylesheet-interface) | `dom/css/cssom.ts` | `dom/css/cascade.test.ts`, `dom/css/wpt-cssom.test.ts`, `dom/css/wpt.test.ts`; WPT: `css/cssom/StyleSheet-properties.html`, `css/cssom/shadow-dom-style-sheet.html` +1 |
+| [the-cssstylesheet-interface](https://drafts.csswg.org/cssom/#the-cssstylesheet-interface) | `dom/css/cssom.ts` | `dom/css/cascade.test.ts`, `dom/css/cssom-stylesheet.test.ts`, `dom/css/wpt-cssom.test.ts`, `dom/css/wpt.test.ts`; WPT: `css/cssom/StyleSheet-properties.html`, `css/cssom/shadow-dom-style-sheet.html` +1 |
 | [the-elementcssinlinestyle-mixin](https://drafts.csswg.org/cssom/#the-elementcssinlinestyle-mixin) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/declaration.test.ts`; WPT: `css/cssom/style-backgroundcolor-table-row.html`, `css/cssom/style-backgroundimage-lineargradient.html` +5 |
 | [the-medialist-interface](https://drafts.csswg.org/cssom/#the-medialist-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/MediaList-parsing.html`, `css/cssom/MediaList.html` +2 |
-| [the-stylesheet-interface](https://drafts.csswg.org/cssom/#the-stylesheet-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/StyleSheet-properties.html` |
+| [the-stylesheet-interface](https://drafts.csswg.org/cssom/#the-stylesheet-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/StyleSheet-properties.html` |
 | [the-stylesheetlist-interface](https://drafts.csswg.org/cssom/#the-stylesheetlist-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/StyleSheetList.html`, `css/cssom/ttwf-cssom-doc-ext-load-tree-order.html` +1 |
 | [update-style-attribute-for](https://drafts.csswg.org/cssom/#update-style-attribute-for) | `dom/css/CSSStyleDeclaration.ts` | WPT: `css/cssom/cssstyledeclaration-mutationrecord-001.html` |
 
@@ -1373,13 +1373,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-syntax
 
-<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 5 tested, 0 by WPT only, 27 untested.
+<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 6 tested, 0 by WPT only, 26 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [anb-microsyntax](https://drafts.csswg.org/css-syntax/#anb-microsyntax) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts` |
 | [consume-at-rule](https://drafts.csswg.org/css-syntax/#consume-at-rule) | `dom/css/parser.ts` | **untested** |
-| [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | **untested** |
+| [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-declaration](https://drafts.csswg.org/css-syntax/#consume-declaration) | `dom/css/parser.ts` | **untested** |
 | [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
@@ -1387,7 +1387,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/parser.ts` | **untested** |
+| [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | **untested** |
 | [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-simple-block](https://drafts.csswg.org/css-syntax/#consume-simple-block) | `dom/css/values.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
@@ -1426,13 +1426,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [forgiving-selector](https://drafts.csswg.org/selectors/#forgiving-selector) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`, `dom/selectors/wpt-selectors.test.ts` |
 | [grammar](https://drafts.csswg.org/selectors/#grammar) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`, `native/native.test.ts` |
 | [headings](https://drafts.csswg.org/selectors/#headings) | `dom/selectors/compile.ts`, `dom/selectors/parser.ts` | `dom/selectors/matching.test.ts`; WPT: `css/selectors/heading-prefixed.html`, `css/selectors/invalidation/heading-pseudo-class-in-has-with-headingoffset.html` +2 |
-| [input-pseudos](https://drafts.csswg.org/selectors/#input-pseudos) | `dom/selectors/state.ts` | `compat/forms/pseudo-classes.test.ts` |
+| [input-pseudos](https://drafts.csswg.org/selectors/#input-pseudos) | `dom/selectors/state.ts` | `dom/selectors/pseudo-classes.test.ts`, `compat/forms/pseudo-classes.test.ts` |
 | [match-a-selector-against-a-pseudo-element](https://drafts.csswg.org/selectors/#match-a-selector-against-a-pseudo-element) | `dom/selectors/internal.ts` | **untested** |
 | [match-a-selector-against-an-element](https://drafts.csswg.org/selectors/#match-a-selector-against-an-element) | `dom/selectors/compile.ts` | **untested** |
 | [modal-state](https://drafts.csswg.org/selectors/#modal-state) | `dom/html/top-layer.ts` | WPT: `css/selectors/modal-pseudo-class.html` |
 | [parse-selector](https://drafts.csswg.org/selectors/#parse-selector) | `dom/selectors/parser.ts` | **untested** |
 | [pseudo-element-states](https://drafts.csswg.org/selectors/#pseudo-element-states) | `dom/selectors/parser.ts` | **untested** |
-| [relational](https://drafts.csswg.org/selectors/#relational) | `dom/selectors/compile.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/wpt-selectors.test.ts`; WPT: `css/selectors/invalidation/child-indexed-pseudo-classes-in-has.html`, `css/selectors/invalidation/defined-in-has.html` +38 |
+| [relational](https://drafts.csswg.org/selectors/#relational) | `dom/selectors/compile.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `dom/selectors/wpt-selectors.test.ts`; WPT: `css/selectors/invalidation/child-indexed-pseudo-classes-in-has.html`, `css/selectors/invalidation/defined-in-has.html` +38 |
 | [scope-element](https://drafts.csswg.org/selectors/#scope-element) | `dom/selectors/compile.ts` | **untested** |
 | [scoping-root](https://drafts.csswg.org/selectors/#scoping-root) | `dom/selectors/index.ts` | **untested** |
 | [specificity-rules](https://drafts.csswg.org/selectors/#specificity-rules) | `dom/selectors/compile.ts`, `dom/selectors/internal.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/parser.test.ts`; WPT: `css/selectors/has-specificity.html`, `css/selectors/selector-specificity.html` |
@@ -1447,7 +1447,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: cssom-view
 
-<https://drafts.csswg.org/cssom-view/> — 25 sections implemented, 13 tested, 0 by WPT only, 12 untested.
+<https://drafts.csswg.org/cssom-view/> — 25 sections implemented, 14 tested, 0 by WPT only, 11 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1459,20 +1459,20 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-htmlelement-offsetparent](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent) | `dom/css/view.ts` | `dom/css/view.test.ts` |
 | [dom-mediaquerylist-addlistener](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener) | `dom/window/media.ts` | **untested** |
 | [dom-mediaquerylist-matches](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches) | `dom/window/media.ts` | **untested** |
-| [dom-mediaquerylist-media](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media) | `dom/window/media.ts` | **untested** |
+| [dom-mediaquerylist-media](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media) | `dom/window/media.ts` | `dom/css/media-queries.test.ts` |
 | [dom-mouseevent-offsetx](https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx) | `dom/events/UIEvents.ts` | **untested** |
 | [dom-mouseevent-pagex](https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex) | `dom/events/UIEvents.ts` | **untested** |
 | [dom-mouseevent-x](https://drafts.csswg.org/cssom-view/#dom-mouseevent-x) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-window-matchmedia](https://drafts.csswg.org/cssom-view/#dom-window-matchmedia) | `dom/css/media.ts`, `dom/window/Window.ts` | `dom/window/matchMedia.test.ts` |
+| [dom-window-matchmedia](https://drafts.csswg.org/cssom-view/#dom-window-matchmedia) | `dom/css/media.ts`, `dom/window/Window.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
 | [dom-window-screen](https://drafts.csswg.org/cssom-view/#dom-window-screen) | `dom/window/Window.ts` | **untested** |
 | [dom-window-scroll](https://drafts.csswg.org/cssom-view/#dom-window-scroll) | `dom/window/Window.ts` | `dom/window/window.test.ts` |
 | [dom-window-scrollby](https://drafts.csswg.org/cssom-view/#dom-window-scrollby) | `dom/window/Window.ts` | **untested** |
 | [dom-window-visualviewport](https://drafts.csswg.org/cssom-view/#dom-window-visualviewport) | `dom/window/Window.ts` | **untested** |
-| [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/window/matchMedia.test.ts` |
+| [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
 | [extensions-to-the-htmlelement-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface) | `dom/html/HTMLElement.ts` | **untested** |
 | [extensions-to-the-mouseevent-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
 | [extensions-to-the-window-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts` |
-| [the-mediaquerylist-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface) | `dom/window/media.ts` | `dom/window/matchMedia.test.ts` |
+| [the-mediaquerylist-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface) | `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
 | [the-mediaquerylistevent-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylistevent-interface) | `dom/window/events.ts` | **untested** |
 | [the-screen-interface](https://drafts.csswg.org/cssom-view/#the-screen-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts`; WPT: `css/cssom-view/cssom-view-window-screen-interface.html`, `css/cssom-view/window-screen-height-immutable.html` +3 |
 | [the-visualviewport-interface](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts` |
@@ -1507,29 +1507,29 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## W3C: aria
 
-<https://w3c.github.io/aria/> — 20 sections implemented, 7 tested, 0 by WPT only, 13 untested.
+<https://w3c.github.io/aria/> — 20 sections implemented, 15 tested, 0 by WPT only, 5 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [ARIAMixin](https://w3c.github.io/aria/#ARIAMixin) | `dom/html/HTMLElement.ts`, `dom/html/aria-reflection.ts` | `dom/html/wpt-html-dom.test.ts` |
-| [aria-busy](https://w3c.github.io/aria/#aria-busy) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
-| [aria-checked](https://w3c.github.io/aria/#aria-checked) | `aria/states.ts` | **untested** |
-| [aria-current](https://w3c.github.io/aria/#aria-current) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
+| [aria-busy](https://w3c.github.io/aria/#aria-busy) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
+| [aria-checked](https://w3c.github.io/aria/#aria-checked) | `aria/states.ts` | `aria/html-aam-roles.test.ts` |
+| [aria-current](https://w3c.github.io/aria/#aria-current) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
 | [aria-description](https://w3c.github.io/aria/#aria-description) | `aria/accname.ts` | `aria/accessible-description.test.ts` |
-| [aria-disabled](https://w3c.github.io/aria/#aria-disabled) | `aria/states.ts` | **untested** |
+| [aria-disabled](https://w3c.github.io/aria/#aria-disabled) | `aria/states.ts` | `aria/html-aam-roles.test.ts` |
 | [aria-errormessage](https://w3c.github.io/aria/#aria-errormessage) | `jest-dom/matchers/aria.ts` | **untested** |
 | [aria-expanded](https://w3c.github.io/aria/#aria-expanded) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
 | [aria-invalid](https://w3c.github.io/aria/#aria-invalid) | `jest-dom/matchers/aria.ts` | **untested** |
-| [aria-level](https://w3c.github.io/aria/#aria-level) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
-| [aria-pressed](https://w3c.github.io/aria/#aria-pressed) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
-| [aria-selected](https://w3c.github.io/aria/#aria-selected) | `aria/states.ts` | **untested** |
-| [aria-valuenow](https://w3c.github.io/aria/#aria-valuenow) | `aria/states.ts` | **untested** |
-| [conflict_resolution_presentation_none](https://w3c.github.io/aria/#conflict_resolution_presentation_none) | `aria/role.ts` | `aria/getRole.test.ts`, `aria/wpt-aria.test.ts` |
-| [document-handling_author-errors_roles](https://w3c.github.io/aria/#document-handling_author-errors_roles) | `aria/role.ts` | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/internal.test.ts`, `aria/wpt-aria.test.ts` +1 |
+| [aria-level](https://w3c.github.io/aria/#aria-level) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
+| [aria-pressed](https://w3c.github.io/aria/#aria-pressed) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
+| [aria-selected](https://w3c.github.io/aria/#aria-selected) | `aria/states.ts` | `aria/html-aam-roles.test.ts` |
+| [aria-valuenow](https://w3c.github.io/aria/#aria-valuenow) | `aria/states.ts` | `aria/html-aam-roles.test.ts` |
+| [conflict_resolution_presentation_none](https://w3c.github.io/aria/#conflict_resolution_presentation_none) | `aria/role.ts` | `aria/accname-steps.test.ts`, `aria/getRole.test.ts`, `aria/wpt-aria.test.ts` |
+| [document-handling_author-errors_roles](https://w3c.github.io/aria/#document-handling_author-errors_roles) | `aria/role.ts` | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/html-aam-roles.test.ts`, `aria/internal.test.ts` +2 |
 | [namefromcontent](https://w3c.github.io/aria/#namefromcontent) | `aria/accname.ts` | **untested** |
-| [namefromprohibited](https://w3c.github.io/aria/#namefromprohibited) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
+| [namefromprohibited](https://w3c.github.io/aria/#namefromprohibited) | `aria/accname.ts` | `aria/accessible-name.test.ts`, `aria/accname-steps.test.ts` |
 | [role_definitions](https://w3c.github.io/aria/#role_definitions) | `aria/data/aria-query.ts` | `aria/differential.test.ts`, `aria/internal.test.ts`, `aria/wpt-aria.test.ts`, `vitest-environment/react.test.tsx` |
-| [tree_exclusion](https://w3c.github.io/aria/#tree_exclusion) | `aria/hidden.ts`, `aria/roles-list.ts`, `testing-library/role-helpers.ts` | `aria/differential.test.ts`, `aria/internal.test.ts`, `aria/is-inaccessible.test.ts`, `aria/replaced-getcomputedstyle.test.ts` +1 |
+| [tree_exclusion](https://w3c.github.io/aria/#tree_exclusion) | `aria/hidden.ts`, `aria/roles-list.ts`, `testing-library/aria-snapshot.ts` +1 | `aria/differential.test.ts`, `aria/internal.test.ts`, `aria/is-inaccessible.test.ts`, `aria/replaced-getcomputedstyle.test.ts` +3 |
 | [valuetype_idref_list](https://w3c.github.io/aria/#valuetype_idref_list) | `aria/tree.ts` | **untested** |
 
 ## W3C: uievents
@@ -1558,22 +1558,22 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-color
 
-<https://drafts.csswg.org/css-color/> — 16 sections implemented, 6 tested, 1 by WPT only, 9 untested.
+<https://drafts.csswg.org/css-color/> — 16 sections implemented, 12 tested, 1 by WPT only, 3 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [color-mix](https://drafts.csswg.org/css-color/#color-mix) | `dom/css/colors.ts` | **untested** |
 | [color-syntax](https://drafts.csswg.org/css-color/#color-syntax) | `dom/css/colors.ts`, `jest-dom/color.ts` | `jest-dom/to-have-style-colors.test.ts` |
 | [css-system-colors](https://drafts.csswg.org/css-color/#css-system-colors) | `dom/css/colors.ts` | WPT: `css/cssom/system-color-inherit.html`, `css/cssom/system-color-lowercase.html` |
-| [hex-notation](https://drafts.csswg.org/css-color/#hex-notation) | `dom/css/colors.ts` | **untested** |
-| [hsl-to-rgb](https://drafts.csswg.org/css-color/#hsl-to-rgb) | `dom/css/colors.ts`, `jest-dom/color.ts` | **untested** |
-| [hwb-to-rgb](https://drafts.csswg.org/css-color/#hwb-to-rgb) | `dom/css/colors.ts` | **untested** |
+| [hex-notation](https://drafts.csswg.org/css-color/#hex-notation) | `dom/css/colors.ts` | `dom/css/computed-values.test.ts` |
+| [hsl-to-rgb](https://drafts.csswg.org/css-color/#hsl-to-rgb) | `dom/css/colors.ts`, `jest-dom/color.ts` | `dom/css/computed-values.test.ts` |
+| [hwb-to-rgb](https://drafts.csswg.org/css-color/#hwb-to-rgb) | `dom/css/colors.ts` | `dom/css/computed-values.test.ts` |
 | [light-dark](https://drafts.csswg.org/css-color/#light-dark) | `dom/css/colors.ts` | `dom/css/color-serialization.test.ts` |
-| [named-colors](https://drafts.csswg.org/css-color/#named-colors) | `dom/css/colors.ts`, `jest-dom/color.ts` | **untested** |
+| [named-colors](https://drafts.csswg.org/css-color/#named-colors) | `dom/css/colors.ts`, `jest-dom/color.ts` | `dom/css/computed-values.test.ts` |
 | [predefined](https://drafts.csswg.org/css-color/#predefined) | `dom/css/colors.ts` | **untested** |
 | [relative-colors](https://drafts.csswg.org/css-color/#relative-colors) | `dom/css/colors.ts` | `dom/css/color-serialization.test.ts` |
-| [resolving-color-values](https://drafts.csswg.org/css-color/#resolving-color-values) | `dom/css/colors.ts` | **untested** |
-| [serializing-alpha-values](https://drafts.csswg.org/css-color/#serializing-alpha-values) | `dom/css/colors.ts` | **untested** |
+| [resolving-color-values](https://drafts.csswg.org/css-color/#resolving-color-values) | `dom/css/colors.ts` | `dom/css/computed-values.test.ts` |
+| [serializing-alpha-values](https://drafts.csswg.org/css-color/#serializing-alpha-values) | `dom/css/colors.ts` | `dom/css/computed-values.test.ts` |
 | [serializing-color-function-values](https://drafts.csswg.org/css-color/#serializing-color-function-values) | `dom/css/colors.ts` | `dom/css/color-serialization.test.ts` |
 | [serializing-lab-lch](https://drafts.csswg.org/css-color/#serializing-lab-lch) | `dom/css/colors.ts` | `dom/css/color-serialization.test.ts` |
 | [serializing-sRGB-values](https://drafts.csswg.org/css-color/#serializing-sRGB-values) | `dom/css/colors.ts` | `dom/css/color-serialization.test.ts` |
@@ -1581,35 +1581,54 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## W3C: html-aam
 
-<https://w3c.github.io/html-aam/> — 15 sections implemented, 7 tested, 0 by WPT only, 8 untested.
+<https://w3c.github.io/html-aam/> — 15 sections implemented, 8 tested, 0 by WPT only, 7 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [accessible-name-and-description-computation](https://w3c.github.io/html-aam/#accessible-name-and-description-computation) | `aria/accname.ts` | `aria/accessible-description.test.ts` |
-| [accessible-name-computations-by-html-element](https://w3c.github.io/html-aam/#accessible-name-computations-by-html-element) | `aria/accname.ts` | `aria/accessible-name.test.ts`, `aria/wpt-aria.test.ts` |
+| [accessible-name-computations-by-html-element](https://w3c.github.io/html-aam/#accessible-name-computations-by-html-element) | `aria/accname.ts` | `aria/accessible-name.test.ts`, `aria/html-aam-names.test.ts`, `aria/wpt-aria.test.ts` |
 | [area-element](https://w3c.github.io/html-aam/#area-element) | `aria/accname.ts` | **untested** |
 | [button-element](https://w3c.github.io/html-aam/#button-element) | `aria/accname.ts` | **untested** |
 | [details-id-56](https://w3c.github.io/html-aam/#details-id-56) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
 | [details-id-67](https://w3c.github.io/html-aam/#details-id-67) | `testing-library/role-helpers.ts` | **untested** |
 | [details-id-97](https://w3c.github.io/html-aam/#details-id-97) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
-| [el-h1-h6](https://w3c.github.io/html-aam/#el-h1-h6) | `aria/states.ts`, `testing-library/role-helpers.ts` | **untested** |
+| [el-h1-h6](https://w3c.github.io/html-aam/#el-h1-h6) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
 | [fieldset-and-legend-elements](https://w3c.github.io/html-aam/#fieldset-and-legend-elements) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
-| [html-attribute-state-and-property-mappings](https://w3c.github.io/html-aam/#html-attribute-state-and-property-mappings) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/accessible-description.test.ts` |
-| [html-element-role-mappings](https://w3c.github.io/html-aam/#html-element-role-mappings) | `aria/role.ts`, `aria/roles-list.ts` | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/wpt-aria.test.ts` |
+| [html-attribute-state-and-property-mappings](https://w3c.github.io/html-aam/#html-attribute-state-and-property-mappings) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/accessible-description.test.ts`, `aria/html-aam-roles.test.ts`, `testing-library/unit/aria-snapshot.test.ts` |
+| [html-element-role-mappings](https://w3c.github.io/html-aam/#html-element-role-mappings) | `aria/role.ts`, `aria/roles-list.ts`, `testing-library/aria-snapshot.ts` +1 | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/html-aam-roles.test.ts`, `aria/wpt-aria.test.ts` +3 |
 | [img-element](https://w3c.github.io/html-aam/#img-element) | `aria/accname.ts` | **untested** |
 | [input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation](https://w3c.github.io/html-aam/#input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [input-type-image-accessible-name-computation](https://w3c.github.io/html-aam/#input-type-image-accessible-name-computation) | `aria/accname.ts` | **untested** |
 | [table-element](https://w3c.github.io/html-aam/#table-element) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 
-## W3C: accname
+## CSS: css-cascade
 
-<https://w3c.github.io/accname/> — 11 sections implemented, 6 tested, 0 by WPT only, 5 untested.
+<https://drafts.csswg.org/css-cascade/> — 12 sections implemented, 10 tested, 0 by WPT only, 2 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [computation-steps](https://w3c.github.io/accname/#computation-steps) | `aria/accname.ts` | `aria/accessible-name.test.ts`, `aria/differential.test.ts`, `aria/internal.test.ts`, `aria/wpt-accname.test.ts` +1 |
+| [cascade-sort](https://drafts.csswg.org/css-cascade/#cascade-sort) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts`, `dom/css/computed-values.test.ts` |
+| [cascading](https://drafts.csswg.org/css-cascade/#cascading) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts` |
+| [computed](https://drafts.csswg.org/css-cascade/#computed) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
+| [defaulting-keywords](https://drafts.csswg.org/css-cascade/#defaulting-keywords) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
+| [dom-cssscoperule-end](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-end) | `dom/css/cssom.ts` | **untested** |
+| [dom-cssscoperule-start](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-start) | `dom/css/cssom.ts` | **untested** |
+| [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/computed-values.test.ts` |
+| [layer-apis](https://drafts.csswg.org/css-cascade/#layer-apis) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [shorthand](https://drafts.csswg.org/css-cascade/#shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/wpt-cssom.test.ts` |
+| [the-csslayerblockrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerblockrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [the-csslayerstatementrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerstatementrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [the-cssscoperule-interface](https://drafts.csswg.org/css-cascade/#the-cssscoperule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+
+## W3C: accname
+
+<https://w3c.github.io/accname/> — 11 sections implemented, 7 tested, 0 by WPT only, 4 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [computation-steps](https://w3c.github.io/accname/#computation-steps) | `aria/accname.ts` | `aria/accessible-name.test.ts`, `aria/accname-steps.test.ts`, `aria/differential.test.ts`, `aria/internal.test.ts` +2 |
 | [mapping_additional_nd_description](https://w3c.github.io/accname/#mapping_additional_nd_description) | `aria/accname.ts`, `aria/index.ts`, `jest-dom/matchers/aria.ts` | `aria/accessible-description.test.ts`, `aria/wpt-accname.test.ts` |
-| [mapping_additional_nd_name](https://w3c.github.io/accname/#mapping_additional_nd_name) | `aria/accname.ts`, `aria/index.ts` | **untested** |
+| [mapping_additional_nd_name](https://w3c.github.io/accname/#mapping_additional_nd_name) | `aria/accname.ts`, `aria/index.ts`, `testing-library/aria-snapshot.ts` +1 | `testing-library/unit/agent-debug-size.test.ts`, `testing-library/unit/agent-debug.test.ts`, `testing-library/unit/aria-snapshot.test.ts` |
 | [mapping_additional_nd_te](https://w3c.github.io/accname/#mapping_additional_nd_te) | `aria/accname.ts` | `aria/wpt-testdriver.ts` |
 | [step2A](https://w3c.github.io/accname/#step2A) | `aria/accname.ts` | `aria/accessible-name.test.ts`, `aria/replaced-getcomputedstyle.test.ts`, `testing-library/differential/replaced-getcomputedstyle.test.ts` |
 | [step2B](https://w3c.github.io/accname/#step2B) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
@@ -1618,23 +1637,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [step2E](https://w3c.github.io/accname/#step2E) | `aria/accname.ts` | **untested** |
 | [step2F](https://w3c.github.io/accname/#step2F) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [step2I](https://w3c.github.io/accname/#step2I) | `aria/accname.ts` | **untested** |
-
-## CSS: css-cascade
-
-<https://drafts.csswg.org/css-cascade/> — 10 sections implemented, 3 tested, 0 by WPT only, 7 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [cascade-sort](https://drafts.csswg.org/css-cascade/#cascade-sort) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts` |
-| [cascading](https://drafts.csswg.org/css-cascade/#cascading) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts` |
-| [computed](https://drafts.csswg.org/css-cascade/#computed) | `dom/css/cascade.ts` | **untested** |
-| [defaulting-keywords](https://drafts.csswg.org/css-cascade/#defaulting-keywords) | `dom/css/cascade.ts` | **untested** |
-| [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | **untested** |
-| [layer-apis](https://drafts.csswg.org/css-cascade/#layer-apis) | `dom/css/cssom.ts` | **untested** |
-| [shorthand](https://drafts.csswg.org/css-cascade/#shorthand) | `dom/css/shorthands.ts` | `dom/css/wpt-cssom.test.ts` |
-| [the-csslayerblockrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerblockrule-interface) | `dom/css/cssom.ts` | **untested** |
-| [the-csslayerstatementrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerstatementrule-interface) | `dom/css/cssom.ts` | **untested** |
-| [the-cssscoperule-interface](https://drafts.csswg.org/css-cascade/#the-cssscoperule-interface) | `dom/css/cssom.ts` | **untested** |
 
 ## Infra Standard
 
@@ -1655,19 +1657,19 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-conditional
 
-<https://drafts.csswg.org/css-conditional/> — 9 sections implemented, 1 tested, 1 by WPT only, 7 untested.
+<https://drafts.csswg.org/css-conditional/> — 9 sections implemented, 8 tested, 1 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [at-supports](https://drafts.csswg.org/css-conditional/#at-supports) | `dom/css/supports.ts` | **untested** |
-| [at-supports-ext](https://drafts.csswg.org/css-conditional/#at-supports-ext) | `dom/css/supports.ts` | **untested** |
-| [dom-css-supports](https://drafts.csswg.org/css-conditional/#dom-css-supports) | `dom/css/CSS.ts`, `dom/css/supports.ts` | **untested** |
-| [dom-css-supports-conditiontext](https://drafts.csswg.org/css-conditional/#dom-css-supports-conditiontext) | `dom/css/supports.ts` | **untested** |
+| [at-supports](https://drafts.csswg.org/css-conditional/#at-supports) | `dom/css/supports.ts` | `dom/css/cssom-stylesheet.test.ts`, `dom/css/supports.test.ts` |
+| [at-supports-ext](https://drafts.csswg.org/css-conditional/#at-supports-ext) | `dom/css/supports.ts` | `dom/css/supports.test.ts` |
+| [dom-css-supports](https://drafts.csswg.org/css-conditional/#dom-css-supports) | `dom/css/CSS.ts`, `dom/css/supports.ts` | `dom/css/supports.test.ts` |
+| [dom-css-supports-conditiontext](https://drafts.csswg.org/css-conditional/#dom-css-supports-conditiontext) | `dom/css/supports.ts` | `dom/css/supports.test.ts` |
 | [support-definition-ext](https://drafts.csswg.org/css-conditional/#support-definition-ext) | `dom/selectors/compile.ts`, `dom/selectors/internal.ts` | `dom/selectors/wpt-selectors.test.ts` |
 | [the-css-namespace](https://drafts.csswg.org/css-conditional/#the-css-namespace) | `dom/css/CSS.ts` | WPT: `css/cssom/CSS-supports.html` |
-| [the-cssconditionrule-interface](https://drafts.csswg.org/css-conditional/#the-cssconditionrule-interface) | `dom/css/cssom.ts` | **untested** |
-| [the-cssmediarule-interface](https://drafts.csswg.org/css-conditional/#the-cssmediarule-interface) | `dom/css/cssom.ts` | **untested** |
-| [the-csssupportsrule-interface](https://drafts.csswg.org/css-conditional/#the-csssupportsrule-interface) | `dom/css/cssom.ts` | **untested** |
+| [the-cssconditionrule-interface](https://drafts.csswg.org/css-conditional/#the-cssconditionrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [the-cssmediarule-interface](https://drafts.csswg.org/css-conditional/#the-cssmediarule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [the-csssupportsrule-interface](https://drafts.csswg.org/css-conditional/#the-csssupportsrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 
 ## SVG 2
 
@@ -1759,7 +1761,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [evaluating](https://drafts.csswg.org/mediaqueries/#evaluating) | `dom/css/media.ts`, `dom/window/hooks.ts` | `dom/css/cascade.test.ts` |
+| [evaluating](https://drafts.csswg.org/mediaqueries/#evaluating) | `dom/css/media.ts`, `dom/window/hooks.ts` | `dom/css/cascade.test.ts`, `dom/css/media-queries.test.ts` |
 | [mq-features](https://drafts.csswg.org/mediaqueries/#mq-features) | `dom/window/media.ts` | **untested** |
 | [mq-list](https://drafts.csswg.org/mediaqueries/#mq-list) | `dom/window/media.ts` | **untested** |
 | [typedef-media-condition](https://drafts.csswg.org/mediaqueries/#typedef-media-condition) | `dom/window/media.ts` | **untested** |
@@ -1791,23 +1793,34 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-display
 
-<https://drafts.csswg.org/css-display/> — 4 sections implemented, 1 tested, 0 by WPT only, 3 untested.
+<https://drafts.csswg.org/css-display/> — 4 sections implemented, 2 tested, 0 by WPT only, 2 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [blockify](https://drafts.csswg.org/css-display/#blockify) | `dom/css/cascade.ts`, `dom/html/innerText.ts` | **untested** |
+| [blockify](https://drafts.csswg.org/css-display/#blockify) | `dom/css/cascade.ts`, `dom/html/innerText.ts` | `dom/css/computed-values.test.ts` |
 | [the-display-properties](https://drafts.csswg.org/css-display/#the-display-properties) | `aria/style.ts`, `dom/css/values.ts` | **untested** |
 | [valdef-display-none](https://drafts.csswg.org/css-display/#valdef-display-none) | `dom/css/cascade.ts` | **untested** |
-| [visibility](https://drafts.csswg.org/css-display/#visibility) | `aria/style.ts` | `aria/is-inaccessible.test.ts` |
+| [visibility](https://drafts.csswg.org/css-display/#visibility) | `aria/style.ts` | `aria/is-inaccessible.test.ts`, `aria/tree-exclusion.test.ts` |
+
+## CSS: css-nesting
+
+<https://drafts.csswg.org/css-nesting/> — 4 sections implemented, 2 tested, 1 by WPT only, 1 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [cssnesteddeclarations](https://drafts.csswg.org/css-nesting/#cssnesteddeclarations) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [cssom](https://drafts.csswg.org/css-nesting/#cssom) | `dom/css/cssom.ts` | **untested** |
+| [nest-selector](https://drafts.csswg.org/css-nesting/#nest-selector) | `dom/css/cssom.ts`, `dom/css/selector-info.ts` | `dom/selectors/wpt-selectors.test.ts` |
+| [nested-declarations-rule](https://drafts.csswg.org/css-nesting/#nested-declarations-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | WPT: `css/cssom/grouping-rule-no-nested-declarations.html` |
 
 ## CSS: css-position
 
-<https://drafts.csswg.org/css-position/> — 4 sections implemented, 0 tested, 0 by WPT only, 4 untested.
+<https://drafts.csswg.org/css-position/> — 4 sections implemented, 1 tested, 0 by WPT only, 3 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [add-an-element-to-the-top-layer](https://drafts.csswg.org/css-position/#add-an-element-to-the-top-layer) | `dom/html/top-layer.ts` | **untested** |
-| [inset-shorthands](https://drafts.csswg.org/css-position/#inset-shorthands) | `dom/css/shorthands.ts` | **untested** |
+| [inset-shorthands](https://drafts.csswg.org/css-position/#inset-shorthands) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 | [remove-an-element-from-the-top-layer-immediately](https://drafts.csswg.org/css-position/#remove-an-element-from-the-top-layer-immediately) | `dom/html/top-layer.ts` | **untested** |
 | [top-styling](https://drafts.csswg.org/css-position/#top-styling) | `dom/html/top-layer.ts` | **untested** |
 
@@ -1835,23 +1848,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-fonts
 
-<https://drafts.csswg.org/css-fonts/> — 3 sections implemented, 0 tested, 2 by WPT only, 1 untested.
+<https://drafts.csswg.org/css-fonts/> — 3 sections implemented, 1 tested, 2 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [absolute-size-mapping](https://drafts.csswg.org/css-fonts/#absolute-size-mapping) | `dom/css/cascade.ts` | **untested** |
+| [absolute-size-mapping](https://drafts.csswg.org/css-fonts/#absolute-size-mapping) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [cssfontfacerule](https://drafts.csswg.org/css-fonts/#cssfontfacerule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSFontFaceRule.html` |
 | [font-prop](https://drafts.csswg.org/css-fonts/#font-prop) | `dom/css/shorthands.ts` | WPT: `css/cssom/style-font-shorthand.html` |
-
-## CSS: css-nesting
-
-<https://drafts.csswg.org/css-nesting/> — 3 sections implemented, 1 tested, 0 by WPT only, 2 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [cssnesteddeclarations](https://drafts.csswg.org/css-nesting/#cssnesteddeclarations) | `dom/css/cssom.ts` | **untested** |
-| [cssom](https://drafts.csswg.org/css-nesting/#cssom) | `dom/css/cssom.ts` | **untested** |
-| [nest-selector](https://drafts.csswg.org/css-nesting/#nest-selector) | `dom/css/cssom.ts`, `dom/css/selector-info.ts` | `dom/selectors/wpt-selectors.test.ts` |
 
 ## CSS: css-properties-values-api
 
@@ -1875,23 +1878,23 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-transitions
 
-<https://drafts.csswg.org/css-transitions/> — 3 sections implemented, 0 tested, 0 by WPT only, 3 untested.
+<https://drafts.csswg.org/css-transitions/> — 3 sections implemented, 1 tested, 0 by WPT only, 2 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-transitions/#interface-globaleventhandlers-idl) | `dom/events/handlers.ts` | **untested** |
 | [interface-transitionevent](https://drafts.csswg.org/css-transitions/#interface-transitionevent) | `dom/events/events.ts` | **untested** |
-| [the-cssstartingstylerule-interface](https://drafts.csswg.org/css-transitions/#the-cssstartingstylerule-interface) | `dom/css/cssom.ts` | **untested** |
+| [the-cssstartingstylerule-interface](https://drafts.csswg.org/css-transitions/#the-cssstartingstylerule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 
 ## CSS: css-variables
 
-<https://drafts.csswg.org/css-variables/> — 3 sections implemented, 0 tested, 1 by WPT only, 2 untested.
+<https://drafts.csswg.org/css-variables/> — 3 sections implemented, 3 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [cycles](https://drafts.csswg.org/css-variables/#cycles) | `dom/css/cascade.ts` | **untested** |
-| [serializing-custom-props](https://drafts.csswg.org/css-variables/#serializing-custom-props) | `dom/css/values.ts` | WPT: `css/cssom/serialize-variable-reference.html`, `css/cssom/variable-names.html` |
-| [substitute-a-var](https://drafts.csswg.org/css-variables/#substitute-a-var) | `dom/css/cascade.ts` | **untested** |
+| [cycles](https://drafts.csswg.org/css-variables/#cycles) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
+| [serializing-custom-props](https://drafts.csswg.org/css-variables/#serializing-custom-props) | `dom/css/values.ts` | `dom/css/computed-values.test.ts`; WPT: `css/cssom/serialize-variable-reference.html`, `css/cssom/variable-names.html` |
+| [substitute-a-var](https://drafts.csswg.org/css-variables/#substitute-a-var) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 
 ## ECMAScript
 
@@ -1903,14 +1906,23 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [sec-%arrayiteratorprototype%.next](https://tc39.es/ecma262/#sec-%25arrayiteratorprototype%25.next) | `dom/collections/iterator.ts` | `dom/collections/collections.test.ts` |
 | [sec-compiletocharset](https://tc39.es/ecma262/#sec-compiletocharset) | `testing-library/matches.ts` | `testing-library/unit/default-normalizer.test.ts` |
 
-## CSS: css-flexbox
+## Compatibility Standard
 
-<https://drafts.csswg.org/css-flexbox/> — 2 sections implemented, 0 tested, 0 by WPT only, 2 untested.
+<https://compat.spec.whatwg.org/> — 2 sections implemented, 1 tested, 0 by WPT only, 1 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [flex-flow-property](https://drafts.csswg.org/css-flexbox/#flex-flow-property) | `dom/css/shorthands.ts` | **untested** |
-| [flex-property](https://drafts.csswg.org/css-flexbox/#flex-property) | `dom/css/shorthands.ts` | **untested** |
+| [css-media-queries-webkit-device-pixel-ratio](https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio) | `dom/css/media.ts` | `dom/css/media-queries.test.ts` |
+| [css-simple-aliases](https://compat.spec.whatwg.org/#css-simple-aliases) | `dom/css/properties.ts` | **untested** |
+
+## CSS: css-flexbox
+
+<https://drafts.csswg.org/css-flexbox/> — 2 sections implemented, 2 tested, 0 by WPT only, 0 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [flex-flow-property](https://drafts.csswg.org/css-flexbox/#flex-flow-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
+| [flex-property](https://drafts.csswg.org/css-flexbox/#flex-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
 ## CSS: css-namespaces
 
@@ -1966,21 +1978,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [intersection-observer-interface](https://w3c.github.io/IntersectionObserver/#intersection-observer-interface) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
 | [parse-a-margin](https://w3c.github.io/IntersectionObserver/#parse-a-margin) | `dom/window/observers.ts` | **untested** |
 
-## Compatibility Standard
-
-<https://compat.spec.whatwg.org/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [css-simple-aliases](https://compat.spec.whatwg.org/#css-simple-aliases) | `dom/css/properties.ts` | **untested** |
-
 ## CSS: css-align
 
-<https://drafts.csswg.org/css-align/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+<https://drafts.csswg.org/css-align/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [gap-shorthand](https://drafts.csswg.org/css-align/#gap-shorthand) | `dom/css/shorthands.ts` | **untested** |
+| [gap-shorthand](https://drafts.csswg.org/css-align/#gap-shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
 ## CSS: css-backgrounds
 
@@ -1992,11 +1996,11 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-contain
 
-<https://drafts.csswg.org/css-contain/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+<https://drafts.csswg.org/css-contain/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [the-csscontainerrule-interface](https://drafts.csswg.org/css-contain/#the-csscontainerrule-interface) | `dom/css/cssom.ts` | **untested** |
+| [the-csscontainerrule-interface](https://drafts.csswg.org/css-contain/#the-csscontainerrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 
 ## CSS: css-content
 
@@ -2016,27 +2020,27 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-lists
 
-<https://drafts.csswg.org/css-lists/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+<https://drafts.csswg.org/css-lists/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [list-style-property](https://drafts.csswg.org/css-lists/#list-style-property) | `dom/css/shorthands.ts` | **untested** |
+| [list-style-property](https://drafts.csswg.org/css-lists/#list-style-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
 ## CSS: css-overflow
 
-<https://drafts.csswg.org/css-overflow/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+<https://drafts.csswg.org/css-overflow/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [propdef-overflow](https://drafts.csswg.org/css-overflow/#propdef-overflow) | `dom/css/shorthands.ts` | **untested** |
+| [propdef-overflow](https://drafts.csswg.org/css-overflow/#propdef-overflow) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
 ## CSS: css-ui
 
-<https://drafts.csswg.org/css-ui/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+<https://drafts.csswg.org/css-ui/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [outline](https://drafts.csswg.org/css-ui/#outline) | `dom/css/shorthands.ts` | **untested** |
+| [outline](https://drafts.csswg.org/css-ui/#outline) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
 ## CSS: resize-observer
 
