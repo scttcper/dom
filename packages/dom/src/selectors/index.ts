@@ -29,6 +29,7 @@ import {
   resetMemos,
   fastShape,
   fastTest,
+  idRootOf,
   FAST_NONE,
   FAST_ALL,
   FAST_ID,
@@ -47,6 +48,8 @@ class Query {
   fastT: Test | null;
   /** Nonzero when the selector has :nth-* memos to reset after each top-level call. */
   hasMemos: boolean;
+  /** Id every match must descend from (compile.ts idRootOf), or "". */
+  idRoot: string;
 
   constructor(list: CList, info: CompileInfo) {
     const domList = new CListClass();
@@ -59,6 +62,7 @@ class Query {
     this.fast = info.usesScope ? FAST_NONE : fastShape(domList);
     this.fastT = this.fast === FAST_NONE || this.fast === FAST_ALL ? null : fastTest(domList);
     this.hasMemos = info.nthTests.length !== 0;
+    this.idRoot = this.fast === FAST_NONE && !info.usesScope ? idRootOf(domList) : "";
   }
 }
 
@@ -227,9 +231,15 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
   }
   const list = q.list;
   if (list.items.length === 0) return null;
+  let walkRoot = root;
+  if (q.idRoot !== "") {
+    const r = idRootFor(root, q.idRoot);
+    if (r === null) return null;
+    walkRoot = r;
+  }
   const prevScope = setScope(q.info.usesScope ? scopeFor(root) : null);
   try {
-    for (let n = root.first; n !== null; n = next(n, root)) {
+    for (let n = walkRoot.first; n !== null; n = next(n, walkRoot)) {
       if (n.type === ELEMENT_NODE && matchList(list, n)) {
         if (first) return n;
         out.push(n);
@@ -240,6 +250,29 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
     setScope(prevScope);
     if (q.hasMemos) resetMemos(q.info);
   }
+}
+
+/**
+ * Subtree to search for a selector whose matches all descend from the element with id `id`
+ * (Query.idRoot): that element when it lies inside `root`, `root` itself when the element
+ * contains it, null when no match is possible. Only answered from the document's id index for a
+ * root in a document tree (not a shadow tree or a detached subtree), in no-quirks mode, with a
+ * unique id; otherwise `root` (the full walk).
+ */
+function idRootFor(root: NodeImpl, id: string): NodeImpl | null {
+  if ((root.flags & F_CONNECTED) === 0 || isQuirks(root)) return root;
+  if (root.type !== DOCUMENT_NODE) {
+    let top = root;
+    while (top.parent !== null) top = top.parent;
+    if (top.type !== DOCUMENT_NODE) return root;
+  }
+  const found = root.doc[$ids].get(id);
+  if (found === undefined) return null;
+  if (Array.isArray(found)) return root;
+  if (found === root) return root;
+  for (let p = found.parent; p !== null; p = p.parent) if (p === root) return found;
+  for (let p = root.parent; p !== null; p = p.parent) if (p === found) return root;
+  return null;
 }
 
 const NO_OUT: NodeImpl[] = [];
@@ -354,6 +387,9 @@ export function querySelectorAllImpls(root: NodeImpl, selectors: string, out: No
 export function matches(el: NodeImpl, selectors: string): boolean {
   const q = getQuery(selectors, "matches", el);
   const list = q.list;
+  // No :scope and no :nth-* memos: nothing to set up or reset (stock Testing Library calls this
+  // ~80 times per element in getImplicitAriaRoles).
+  if (!q.info.usesScope && !q.hasMemos) return list.fn(el);
   if (list.items.length === 0) return false;
   const prevScope = setScope(el);
   try {

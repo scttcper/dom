@@ -788,8 +788,71 @@ function listFn(list: CList): Matcher {
     const cx = items[0];
     return (el) => cx.fn(el);
   }
+  const byTag = tagDispatch(items);
+  if (byTag !== null) return byTag;
   return (el) => {
     for (let i = 0; i < items.length; i++) if (items[i].fn(el)) return true;
+    return false;
+  };
+}
+
+/** Type test of a subject compound usable for tag dispatch: no namespace constraint, a known HTML tag. */
+function subjectTagTest(cx: CComplex): Test | null {
+  if (cx.leading !== C_NONE) return null;
+  const tests = cx.comps[0];
+  for (let i = 0; i < tests.length; i++) {
+    const t = tests[i];
+    if (t.op === O_TYPE) return !t.nsCheck && t.a !== 0 ? t : null;
+  }
+  return null;
+}
+
+/**
+ * Selector lists dispatched on the element's tag id, after Blink's RuleSet buckets
+ * (https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/core/css/rule_set.h,
+ * "TagRules") and WebKit's SelectorQuery per-selector shortcuts
+ * (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/dom/SelectorQuery.cpp). Testing
+ * Library's role queries are lists like `*[role~="heading"],h1,h2,h3,h4,h5,h6`: bare tag items
+ * become one table lookup, and items whose subject has a type selector are only tried on
+ * elements of that tag. For an HTML element in an HTML document (F_HTML), a type selector with a
+ * known tag matches exactly when `el.tag` is that tag's id (Element.ts sets `tag = tagId(localName)`
+ * for HTML-namespace elements); every other element falls back to trying each item.
+ * https://drafts.csswg.org/selectors-4/#match-a-selector-against-an-element (a list matches if any item does).
+ */
+function tagDispatch(items: CComplex[]): Matcher | null {
+  let maxTag = 0;
+  let keyed = 0;
+  for (let i = 0; i < items.length; i++) {
+    const t = subjectTagTest(items[i]);
+    if (t !== null) {
+      keyed++;
+      if (t.a > maxTag) maxTag = t.a;
+    }
+  }
+  if (keyed === 0) return null;
+  /** 1 = an item that is just this tag (`h1`): the element matches. */
+  const bare = new Uint8Array(maxTag + 1);
+  const buckets: (CComplex[] | undefined)[] = new Array(maxTag + 1).fill(undefined);
+  const rest: CComplex[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const cx = items[i];
+    const t = subjectTagTest(cx);
+    if (t === null) rest.push(cx);
+    else if (cx.last === 0 && cx.comps[0].length === 1) bare[t.a] = 1;
+    else (buckets[t.a] ??= []).push(cx);
+  }
+  return (el) => {
+    if ((el.flags & F_HTML) === 0) {
+      for (let i = 0; i < items.length; i++) if (items[i].fn(el)) return true;
+      return false;
+    }
+    const tag = el.tag;
+    if (tag !== 0 && tag <= maxTag) {
+      if (bare[tag] === 1) return true;
+      const b = buckets[tag];
+      if (b !== undefined) for (let i = 0; i < b.length; i++) if (b[i].fn(el)) return true;
+    }
+    for (let i = 0; i < rest.length; i++) if (rest[i].fn(el)) return true;
     return false;
   };
 }
@@ -808,12 +871,14 @@ function testFn(t: Test): Matcher {
       return (el) => {
         const tokens = classTokens(el);
         for (let i = 0; i < tokens.length; i++) if (tokens[i] === name) return true;
-        return tokens.length !== 0 && matchTest(t, el); // quirks-mode fallback
+        // Quirks-mode fallback without matchTest's second scan of the tokens.
+        return tokens.length !== 0 && isQuirks(el.doc) && quirksClassMatch(tokens, t.lower);
       };
     }
     case O_ID: {
       const name = t.name;
-      return (el) => el.id === name || (el.id !== "" && matchTest(t, el));
+      const lower = t.lower;
+      return (el) => el.id === name || (el.id !== "" && isQuirks(el.doc) && asciiLowercase(el.id) === lower);
     }
     case O_ATTR: {
       if (t.nsCheck || t.valueCase !== VC_SENSITIVE || (t.attrOp !== OP_EXISTS && t.attrOp !== OP_EQUALS)) return (el) => matchAttribute(t, el);
@@ -1068,6 +1133,12 @@ function isQuirks(doc: Document): boolean {
   return doc[$mode] === "quirks";
 }
 
+/** https://html.spec.whatwg.org/#case-sensitivity-of-selectors — class names in quirks mode match ASCII case-insensitively. */
+function quirksClassMatch(tokens: string[], lower: string): boolean {
+  for (let i = 0; i < tokens.length; i++) if (asciiLowercase(tokens[i]) === lower) return true;
+  return false;
+}
+
 function matchTest(t: Test, el: NodeImpl): boolean {
   switch (t.op) {
     case O_TYPE:
@@ -1077,10 +1148,7 @@ function matchTest(t: Test, el: NodeImpl): boolean {
       const tokens = classTokens(el);
       const name = t.name;
       for (let i = 0; i < tokens.length; i++) if (tokens[i] === name) return true;
-      if (tokens.length !== 0 && isQuirks(el.doc)) {
-        for (let i = 0; i < tokens.length; i++) if (asciiLowercase(tokens[i]) === t.lower) return true;
-      }
-      return false;
+      return tokens.length !== 0 && isQuirks(el.doc) && quirksClassMatch(tokens, t.lower);
     }
     case O_ID:
       if (el.id === t.name) return true;
@@ -1444,6 +1512,26 @@ export function ancestorHashes(cx: CComplex): number[] {
     }
   }
   return out;
+}
+
+/**
+ * WebKit SelectorQuery's id-rooted traversal
+ * (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/dom/SelectorQuery.cpp,
+ * "selectorForIdLookup" / filterRootById): for a single complex selector, the id of a compound
+ * joined to the subject only by descendant / child combinators (`#app li`, `#form > div input`).
+ * Every match is then a descendant of the element with that id. "" when there is none.
+ */
+export function idRootOf(list: CList): string {
+  if (list.items.length !== 1) return "";
+  const cx = list.items[0];
+  if (cx.leading !== C_NONE) return "";
+  for (let k = 1; k <= cx.last; k++) {
+    const comb = cx.combs[k - 1];
+    if (comb !== C_DESCENDANT && comb !== C_CHILD) return "";
+    const tests = cx.comps[k];
+    for (let i = 0; i < tests.length; i++) if (tests[i].op === O_ID) return tests[i].name;
+  }
+  return "";
 }
 
 /** Fast-path shapes for querySelector(All): a single complex with one compound of one test. */
