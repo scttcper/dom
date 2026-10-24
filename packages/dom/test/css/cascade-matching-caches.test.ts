@@ -37,9 +37,13 @@ function setup(css: string, markup: string): void {
 const color = (id: string, w: Window = window, d: Document = document) => w.getComputedStyle(d.getElementById(id) as Element).color;
 
 describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/selectors-4/#combinators", () => {
+  // Rules that never match, so every element has more candidate rules with ancestor hashes than
+  // the cascade's threshold for building the filter (FILTER_AFTER) and the filter path runs.
+  const filler = ["span", "b", "em", "i"].map((t) => Array.from({ length: 6 }, (_, k) => `.no${k} ${t}, #no${k} > ${t}`).join(", ") + " { color: rgb(0, 0, 99) }").join("\n");
+
   test("descendant and child rules apply exactly when the ancestors carry the names", () => {
     setup(
-      `.theme .card span { color: rgb(1, 0, 0) } #main > div > b { color: rgb(2, 0, 0) } section em { color: rgb(3, 0, 0) } .a.b i { color: rgb(4, 0, 0) }`,
+      `${filler}\n.theme .card span { color: rgb(1, 0, 0) } #main > div > b { color: rgb(2, 0, 0) } section em { color: rgb(3, 0, 0) } .a.b i { color: rgb(4, 0, 0) }`,
       `<div class=theme><div class=card><span id=s1></span></div></div><div class=card><span id=s2></span></div>
        <div id=main><div><b id=b1></b></div><p><b id=b2></b></p></div>
        <section><div><em id=e1></em></div></section><em id=e2></em>
@@ -57,7 +61,7 @@ describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/s
   });
 
   test("results follow class changes on an ancestor (the filter is rebuilt per element and version)", () => {
-    setup(`.on span { color: rgb(9, 0, 0) }`, `<div id=p><span id=s></span></div>`);
+    setup(`${filler}\n.on span { color: rgb(9, 0, 0) }`, `<div id=p><span id=s></span></div>`);
     expect(color("s")).not.toBe("rgb(9, 0, 0)");
     document.getElementById("p")!.className = "on";
     expect(color("s")).toBe("rgb(9, 0, 0)");
@@ -82,7 +86,7 @@ describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/s
   test("shadow trees: descendant rules do not reach outer ancestors; :host rules still apply", () => {
     document.body!.innerHTML = `<div class=outer><div id=host></div></div>`;
     const sr = (document.getElementById("host") as AnyEl).attachShadow({ mode: "open" });
-    sr.innerHTML = `<style>.outer span { color: rgb(1, 1, 1) } :host span { color: rgb(2, 2, 2) } .in span { color: rgb(3, 3, 3) }</style><span id=a></span><div class=in><span id=b></span></div>`;
+    sr.innerHTML = `<style>${filler}\n.outer span { color: rgb(1, 1, 1) } :host span { color: rgb(2, 2, 2) } .in span { color: rgb(3, 3, 3) }</style><span id=a></span><div class=in><span id=b></span></div>`;
     expect(window.getComputedStyle(sr.getElementById("a")).color).toBe("rgb(2, 2, 2)");
     expect(window.getComputedStyle(sr.getElementById("b")).color).toBe("rgb(3, 3, 3)");
   });

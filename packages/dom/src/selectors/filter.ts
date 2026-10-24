@@ -71,6 +71,10 @@ let generation = 0;
  * up to the first non-element: a descendant / child combinator never crosses further, except
  * into a featureless shadow host, whose compound carries no hashes).
  * Not for quirks-mode documents (their ids and classes match case-insensitively).
+ *
+ * Not reused across elements: keeping the last parent to reuse the set for its siblings needs a
+ * reference to it, and a WeakRef keeps its target alive until the end of the current job (every
+ * tree a test file renders, measured +5.8 MB heap on react/styled-form-rerender).
  */
 export function buildAncestorFilter(el: NodeImpl): void {
   if (++generation === 0x7fffffff || slots.length === 0) {

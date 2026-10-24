@@ -448,9 +448,9 @@ export class StyleRecord {
    */
   deps: StateDeps | null;
   /**
-   * An ancestor's record (the parent's, or the originating element's for a pseudo-element) is
-   * volatile, has `deps`, or itself inherits from one: inherited computed values may change
-   * without a version bump, so they are not kept across reuses.
+   * A computed value was derived from another record (parent, originating element, root) that is
+   * volatile, has `deps`, or itself has this flag: such values may change without a version
+   * bump, so they are not kept across reuses. Set by `dependOn` when that record is read.
    */
   inheritsVolatile: boolean;
   before: StyleRecord | null;
@@ -543,10 +543,15 @@ class Matched {
 
 /**
  * Element the ancestor filter (selectors/filter.ts) was last built for in this computeRecord, or
- * null. Rebuilt lazily when the first rule with ancestor hashes is tested, so elements whose
- * candidate rules have no descendant / child combinators never pay for it.
+ * null. Built lazily, once the element has more than FILTER_AFTER candidate rules with ancestor
+ * hashes: for one or two such rules the matcher's own ancestor walk is cheaper than building (or
+ * revalidating) the filter, which WebKit amortizes over its tree walk and random-access
+ * getComputedStyle cannot.
  */
 let filterFor: NodeImpl | null = null;
+/** Candidate rules with ancestor hashes seen in this computeRecord. */
+let hashedSeen = 0;
+const FILTER_AFTER = 2;
 
 function testRules(list: IndexedRule[] | undefined, el: NodeImpl, pseudo: string, opts: MatchOptions | undefined, filter: boolean, context: number, out: Matched[]): void {
   if (list === undefined) return;
@@ -554,11 +559,11 @@ function testRules(list: IndexedRule[] | undefined, el: NodeImpl, pseudo: string
     const r = list[i];
     if (filter && r.h0 >= 0) {
       // WebKit SelectorFilter fast reject (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/SelectorFilter.h).
-      if (filterFor !== el) {
+      if (filterFor !== el && ++hashedSeen > FILTER_AFTER) {
         buildAncestorFilter(el);
         filterFor = el;
       }
-      if (!mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) continue;
+      if (filterFor === el && !mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) continue;
     }
     if (opts === undefined ? matchesSelectorDirect(r.sel, el, pseudo) : matchesSelector(r.sel, el, pseudo, opts)) out.push(new Matched(r, context));
   }
@@ -643,11 +648,9 @@ function importantOrder(a: Matched, b: Matched): number {
 }
 
 function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): StyleRecord {
-  const parent = pseudo === PSEUDO_NONE ? inheritanceParent(el) : el;
-  const parentRec = parent === null ? null : styleRecord(parent);
   filterFor = null;
+  hashedSeen = 0;
   const rec = new StyleRecord(el, pseudo);
-  if (parentRec !== null) rec.inheritsVolatile = parentRec.volatile || parentRec.deps !== null || parentRec.inheritsVolatile;
   const doc = el.doc;
   const rs = rootOf(el);
   rec.root = rs;
@@ -741,10 +744,16 @@ export function recordFor(el: NodeImpl, pseudo: number): StyleRecord {
 
 // --- computed values -----------------------------------------------------------------------------
 
+/** `src` is about to feed one of `rec`'s computed values: carry over its volatility (StyleRecord.inheritsVolatile). */
+function dependOn(rec: StyleRecord, src: StyleRecord): StyleRecord {
+  if (src.volatile || src.deps !== null || src.inheritsVolatile) rec.inheritsVolatile = true;
+  return src;
+}
+
 function parentRecord(rec: StyleRecord): StyleRecord | null {
-  if (rec.pseudo !== PSEUDO_NONE) return styleRecord(rec.el);
+  if (rec.pseudo !== PSEUDO_NONE) return dependOn(rec, styleRecord(rec.el));
   const p = inheritanceParent(rec.el);
-  return p === null ? null : styleRecord(p);
+  return p === null ? null : dependOn(rec, styleRecord(p));
 }
 
 /** Computed custom properties: parent's, overlaid with own declarations (var() substituted). */
@@ -855,7 +864,7 @@ function rootFontSize(rec: StyleRecord): number {
   let root: NodeImpl | null = null;
   for (let c = doc[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) root = c;
   if (root === null || root === rec.el) return 16;
-  return parseFloat(computedValueOf(styleRecord(root), "font-size")) || 16;
+  return parseFloat(computedValueOf(dependOn(rec, styleRecord(root)), "font-size")) || 16;
 }
 
 /** Absolute length in px for a single dimension token, given font metrics (null if not absolute). */
@@ -1082,7 +1091,7 @@ function computeDisplay(rec: StyleRecord): string {
   // Pseudo-elements of flex/grid containers are flex/grid items: blockify
   // (https://drafts.csswg.org/css-display-3/#blockify).
   if (rec.pseudo !== PSEUDO_NONE && d !== "none" && d !== "contents") {
-    const owner = computeDisplay(styleRecord(rec.el));
+    const owner = computeDisplay(dependOn(rec, styleRecord(rec.el)));
     if (owner === "flex" || owner === "inline-flex" || owner === "grid" || owner === "inline-grid") d = blockify(d);
   }
   rec.display = d;
