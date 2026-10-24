@@ -136,3 +136,37 @@ describe("child navigable — https://html.spec.whatwg.org/#create-a-new-child-n
     expect(outerSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("about base URL — https://html.spec.whatwg.org/#concept-document-about-base-url", () => {
+  test("fallback base URL: about:blank and about:srcdoc documents use their creator's base URL", () => {
+    const blank = frame();
+    const srcdoc = frame({ srcdoc: "<a href=rel>x</a>" });
+    window.document.body!.append(blank as never, srcdoc as never);
+    expect(blank.contentDocument!.baseURI).toBe("http://localhost/app/");
+    expect(srcdoc.contentDocument!.baseURI).toBe("http://localhost/app/");
+    expect((srcdoc.contentDocument!.querySelector("a") as unknown as { href: string }).href).toBe("http://localhost/app/rel");
+  });
+
+  test("the about base URL is a snapshot taken at creation, not a live view of the container's base URL", () => {
+    const base = window.document.createElement("base");
+    base.setAttribute("href", "http://example.com/first/");
+    window.document.head!.appendChild(base);
+    const f = frame();
+    window.document.body!.append(f as never);
+    base.setAttribute("href", "http://example.com/changed/");
+    expect(window.document.baseURI).toBe("http://example.com/changed/");
+    expect(f.contentDocument!.baseURI).toBe("http://example.com/first/");
+  });
+
+  test("a <base> inside the nested document still wins over the about base URL", () => {
+    const f = frame({ srcdoc: '<base href="http://example.org/dir/">' });
+    window.document.body!.append(f as never);
+    expect(f.contentDocument!.baseURI).toBe("http://example.org/dir/");
+  });
+
+  test("a src URL (not about:) is its own base URL", () => {
+    const f = frame({ src: "sub/page.html" });
+    window.document.body!.append(f as never);
+    expect(f.contentDocument!.baseURI).toBe("http://localhost/app/sub/page.html");
+  });
+});
