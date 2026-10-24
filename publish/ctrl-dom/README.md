@@ -275,7 +275,35 @@ That error is 468 characters; upstream prints 2,476 for the same small form, and
 for a large page. `ariaSnapshot(el?)` / `screen.ariaSnapshot()`, `prettyDOM(el, max, { format: "aria" })`
 and `diffAriaSnapshots(before, after)` are available directly. `CTRL_DOM_DEBUG=compact` prints
 HTML without class/style attributes and SVG internals. Without the variable, output is identical
-to Testing Library's. Details: the repository's `docs/agent-debugging.md`.
+to Testing Library's.
+
+In the same mode, **every failing test** (a failed `toBe`, a thrown error, not just queries) ends
+with a snapshot of the page as it was when it failed, before cleanup, plus what changed since the
+test's previous snapshot. Jest's environment does this on its own; with Vitest, `ctrlDom()` adds
+the setup file, or add `"@ctrl/dom/vitest-environment/failure-snapshot"` to `setupFiles` with the
+bare environment.
+
+`npx ctrl-dom debug <test file> [-t name]` does all of it in one command: it finds Vitest or Jest,
+runs just that file in agent mode and prints a compact report (failures with their snapshot and
+closest matches, one stack frame, console output), exiting with the test's status.
+
+To assert structure the way the snapshot prints it, jest-dom gets
+`expect(el).toMatchAriaSnapshot(template)`, with
+[Playwright's](https://playwright.dev/docs/aria-snapshots) partial matching:
+
+```ts
+expect(screen.getByRole("form")).toMatchAriaSnapshot(`
+  - textbox "Email"
+  - button /Pay \\d+ €/ [disabled]
+`);
+```
+
+A line for your `CLAUDE.md` / `AGENTS.md`:
+
+> When a component test fails, rerun it with `npx ctrl-dom debug <file> [-t <name>]` and read the
+> accessibility snapshot and closest matches instead of adding `screen.debug()`.
+
+Details: the repository's `docs/agent-debugging.md`.
 
 ## Differences from jsdom
 
