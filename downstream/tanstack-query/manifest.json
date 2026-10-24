@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/TanStack/query.git",
+  "branch": "main",
+  "commit": "9e4253766f8015d1372bcd515f50103fd067a42d",
+  "packages": ["packages/react-query", "packages/react-query-persist-client", "packages/react-query-devtools"],
+  "note": "Pinned 2026-10-23 (upstream main, committed 2026-10-23). Vitest 4.1 + jsdom 27 + stock @testing-library/{react,dom,jest-dom} and @testing-library/react-render-stream. react-query-next-experimental has no tests."
+}
