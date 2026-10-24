@@ -3,7 +3,14 @@
 // (https://playwright.dev/docs/aria-snapshots) over ./aria-snapshot.ts's tree, for jest-dom's
 // `toMatchAriaSnapshot` matcher.
 //
-// Ported from Playwright 1.56 (Apache-2.0):
+// Ported from Playwright 1.56, and changed from it as described below. The ported code is
+// Copyright (c) Microsoft Corporation, licensed under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance with the License. You may obtain a
+// copy of the License at http://www.apache.org/licenses/LICENSE-2.0 (also in NOTICE). Unless
+// required by applicable law or agreed to in writing, software distributed under the License is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+// implied. See the License for the specific language governing permissions and limitations under
+// the License.
 // - template parsing: packages/playwright-core/src/utils/isomorphic/ariaSnapshot.ts
 //   (`parseAriaSnapshot`, `KeyParser`), with a line-based parser for the YAML subset templates
 //   use instead of the `yaml` package;

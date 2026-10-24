@@ -369,6 +369,8 @@ function uaDisplayImportant(el: NodeImpl): boolean {
 /**
  * UA style sheet subset for properties other than display
  * (https://html.spec.whatwg.org/#rendering — phrasing content, links, headings, tables).
+ * Adapted from the HTML Standard, © WHATWG (Apple, Google, Mozilla, Microsoft), licensed under
+ * CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
  * Rules tested against every element must not use volatile pseudo-classes (:dir(),
  * :focus-visible, ...): testing one marks the style record volatile and disables its cache.
  * The bidi rules are applied on read instead (uaDirection).

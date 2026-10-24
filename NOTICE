@@ -36,7 +36,7 @@ dom-accessibility-api 0.5.16 / 0.6.3 (MIT)
   https://github.com/eps1lon/dom-accessibility-api
   In @ctrl/dom/aria (accessible name and description computation)
 
-aria-query 5.3.0 (Apache-2.0)
+aria-query 5.3.0 / 5.3.2 (Apache-2.0)
   Copyright 2020 A11yance
   https://github.com/A11yance/aria-query
   In @ctrl/dom/aria (role data) and @ctrl/dom/jest-dom (element roles)
@@ -72,6 +72,17 @@ picocolors 1.1.1 (ISC)
   Copyright (c) 2021-2024 Oleksii Raspopov, Kostiantyn Denysov, Anton Verinov
   https://github.com/alexeyraspopov/picocolors
   In @ctrl/dom/jest-dom (terminal color detection)
+
+HTML Standard (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)
+  © WHATWG (Apple, Google, Mozilla, Microsoft)
+  https://html.spec.whatwg.org/
+  In @ctrl/dom: the named character references table, converted from
+  https://html.spec.whatwg.org/entities.json, and user-agent style sheet rules adapted from
+  https://html.spec.whatwg.org/#rendering
+
+Source comments throughout quote the specifications they implement (WHATWG, W3C, CSSWG and
+others), with a link to each section. Quoted text is © its authors; WHATWG specifications are
+licensed under CC BY 4.0, W3C specifications under the W3C Software and Document License.
 
 ==================================================================================================
 Tests and test data (in the repository only, not in the published packages)
