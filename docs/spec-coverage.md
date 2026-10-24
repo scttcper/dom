@@ -23,9 +23,9 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
 | [HTML Standard](#html-standard) | 776 | 212 | 66 | 498 |
-| [DOM Standard](#dom-standard) | 273 | 78 | 33 | 162 |
-| [CSS: cssom](#css-cssom) | 73 | 10 | 30 | 33 |
-| [Web IDL](#web-idl) | 33 | 13 | 1 | 19 |
+| [DOM Standard](#dom-standard) | 273 | 236 | 28 | 9 |
+| [CSS: cssom](#css-cssom) | 73 | 9 | 31 | 33 |
+| [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 5 | 0 | 27 |
 | [CSS: selectors](#css-selectors) | 28 | 10 | 5 | 13 |
@@ -89,7 +89,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1533 | 416 | 146 | 971 |
+| **All** | 1533 | 582 | 141 | 810 |
 
 ## Web-platform-tests fixtures
 
@@ -211,7 +211,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [character-reference-state](https://html.spec.whatwg.org/#character-reference-state) | `dom/parser/tokenizer.ts`, `native/lib/rtd.ts` | `native/native.test.ts` |
 | [check-popover-validity](https://html.spec.whatwg.org/#check-popover-validity) | `dom/html/top-layer.ts` | WPT: `html/semantics/popovers/popover-removal-hides.html` |
 | [check-validity-steps](https://html.spec.whatwg.org/#check-validity-steps) | `dom/html/forms/validation.ts` | **untested** |
-| [checkbox-state-(type=checkbox](https://html.spec.whatwg.org/#checkbox-state-(type=checkbox) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/the-input-element/checkbox-click-events.html`, `html/semantics/forms/the-input-element/checkbox.html` +1 |
+| [checkbox-state-(type=checkbox](https://html.spec.whatwg.org/#checkbox-state-(type=checkbox) | `dom/html/forms/HTMLInputElement.ts` | `dom/events/event-path.test.ts`, `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/the-input-element/checkbox-click-events.html`, `html/semantics/forms/the-input-element/checkbox.html` +1 |
 | [child-text-content](https://html.spec.whatwg.org/#child-text-content) | `dom/html/resources.ts` | **untested** |
 | [clear-the-list-of-active-formatting-elements-up-to-the-last-marker](https://html.spec.whatwg.org/#clear-the-list-of-active-formatting-elements-up-to-the-last-marker) | `dom/parser/treebuilder.ts` | **untested** |
 | [clear-the-stack-back-to-a-table-context](https://html.spec.whatwg.org/#clear-the-stack-back-to-a-table-context) | `dom/parser/treebuilder.ts` | **untested** |
@@ -844,7 +844,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-indicated-part-of-the-document](https://html.spec.whatwg.org/#the-indicated-part-of-the-document) | `dom/selectors/state.ts` | **untested** |
 | [the-initial-insertion-mode](https://html.spec.whatwg.org/#the-initial-insertion-mode) | `dom/parser/index.ts`, `dom/parser/treebuilder.ts` | **untested** |
 | [the-innertext-idl-attribute](https://html.spec.whatwg.org/#the-innertext-idl-attribute) | `dom/html/innerText.ts` | `dom/html/elements.test.ts`, `dom/html/wpt-html-dom.test.ts`; WPT: `html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html` |
-| [the-input-element](https://html.spec.whatwg.org/#the-input-element) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/wpt-forms.test.ts`, `compat/docs/spec-coverage.test.ts`; WPT: `html/semantics/forms/attributes-common-to-form-controls/formAction_document_address.html`, `html/semantics/forms/the-input-element/datetime-weekmonth.html` +6 |
+| [the-input-element](https://html.spec.whatwg.org/#the-input-element) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/wpt-forms.test.ts`; WPT: `html/semantics/forms/attributes-common-to-form-controls/formAction_document_address.html`, `html/semantics/forms/the-input-element/datetime-weekmonth.html` +6 |
 | [the-input-element:activation-behaviour](https://html.spec.whatwg.org/#the-input-element:activation-behaviour) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/activation.test.ts`, `dom/html/forms/react.test.tsx` |
 | [the-input-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
 | [the-input-element:concept-input-checked-dirty-flag-2](https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
@@ -933,287 +933,287 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## DOM Standard
 
-<https://dom.spec.whatwg.org/> — 273 sections implemented, 78 tested, 33 by WPT only, 162 untested.
+<https://dom.spec.whatwg.org/> — 273 sections implemented, 236 tested, 28 by WPT only, 9 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [add-an-event-listener](https://dom.spec.whatwg.org/#add-an-event-listener) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts`, `dom/events/wpt-events.test.ts` |
 | [add-transient-registered-observers](https://dom.spec.whatwg.org/#add-transient-registered-observers) | `dom/observers/queue.ts` | `dom/observers/wpt-mutation-observer.test.ts` |
-| [assign-a-slot](https://dom.spec.whatwg.org/#assign-a-slot) | `dom/nodes/slots.ts` | **untested** |
+| [assign-a-slot](https://dom.spec.whatwg.org/#assign-a-slot) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [assign-slotables](https://dom.spec.whatwg.org/#assign-slotables) | `dom/nodes/slots.ts` | `dom/nodes/shadow-dom.test.ts` |
-| [assign-slotables-for-a-tree](https://dom.spec.whatwg.org/#assign-slotables-for-a-tree) | `dom/nodes/slots.ts` | **untested** |
+| [assign-slotables-for-a-tree](https://dom.spec.whatwg.org/#assign-slotables-for-a-tree) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [concept-attach-a-shadow-root](https://dom.spec.whatwg.org/#concept-attach-a-shadow-root) | `dom/html/custom-elements.ts`, `dom/nodes/Element.ts`, `dom/nodes/ShadowRoot.ts` | `dom/nodes/shadow-dom.test.ts`, `dom/nodes/wpt-shadow-dom.test.ts`; WPT: `dom/nodes/attach-shadow-realm-after-adoption.html` |
-| [concept-attribute-value](https://dom.spec.whatwg.org/#concept-attribute-value) | `dom/nodes/Node.ts` | **untested** |
-| [concept-cd-replace](https://dom.spec.whatwg.org/#concept-cd-replace) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | **untested** |
+| [concept-attribute-value](https://dom.spec.whatwg.org/#concept-attribute-value) | `dom/nodes/Node.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-cd-replace](https://dom.spec.whatwg.org/#concept-cd-replace) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts` |
 | [concept-child-text-content](https://dom.spec.whatwg.org/#concept-child-text-content) | `aria/forms.ts` | **untested** |
 | [concept-create-element](https://dom.spec.whatwg.org/#concept-create-element) | `dom/html/custom-elements.ts`, `dom/nodes/create.ts` | `dom/html/custom-elements.test.ts`, `dom/html/interfaces.wpt.test.ts`, `dom/html/wpt-custom-elements.test.ts`; WPT: `custom-elements/microtasks-and-constructors.html`, `custom-elements/parser/parser-constructs-custom-element-in-document-write.html` +7 |
-| [concept-descendant-text-content](https://dom.spec.whatwg.org/#concept-descendant-text-content) | `dom/nodes/Node.ts` | **untested** |
+| [concept-descendant-text-content](https://dom.spec.whatwg.org/#concept-descendant-text-content) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
 | [concept-document-url](https://dom.spec.whatwg.org/#concept-document-url) | `dom/window/Window.ts` | **untested** |
-| [concept-documentfragment-host](https://dom.spec.whatwg.org/#concept-documentfragment-host) | `dom/nodes/DocumentFragment.ts` | **untested** |
-| [concept-dtl-tokens](https://dom.spec.whatwg.org/#concept-dtl-tokens) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [concept-dtl-update](https://dom.spec.whatwg.org/#concept-dtl-update) | `dom/collections/DOMTokenList.ts` | `dom/collections/collections.test.ts` |
+| [concept-documentfragment-host](https://dom.spec.whatwg.org/#concept-documentfragment-host) | `dom/nodes/DocumentFragment.ts` | `dom/nodes/mutation-methods.test.ts` |
+| [concept-dtl-tokens](https://dom.spec.whatwg.org/#concept-dtl-tokens) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [concept-dtl-update](https://dom.spec.whatwg.org/#concept-dtl-update) | `dom/collections/DOMTokenList.ts` | `dom/collections/collections.test.ts`, `dom/collections/token-lists.test.ts` |
 | [concept-element-attribute](https://dom.spec.whatwg.org/#concept-element-attribute) | `dom/nodes/NodeImpl.ts`, `dom/nodes/attributes.ts` | **untested** |
-| [concept-element-attributes-append](https://dom.spec.whatwg.org/#concept-element-attributes-append) | `dom/nodes/attributes.ts` | **untested** |
-| [concept-element-attributes-change](https://dom.spec.whatwg.org/#concept-element-attributes-change) | `dom/nodes/attributes.ts` | **untested** |
-| [concept-element-attributes-change-ext](https://dom.spec.whatwg.org/#concept-element-attributes-change-ext) | `dom/nodes/Element.ts` | **untested** |
-| [concept-element-attributes-get-by-name](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-name) | `dom/nodes/attributes.ts` | **untested** |
-| [concept-element-attributes-get-by-namespace](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-namespace) | `dom/nodes/attributes.ts` | **untested** |
-| [concept-element-attributes-remove](https://dom.spec.whatwg.org/#concept-element-attributes-remove) | `dom/nodes/attributes.ts` | **untested** |
-| [concept-element-attributes-replace](https://dom.spec.whatwg.org/#concept-element-attributes-replace) | `dom/nodes/attr-nodes.ts` | **untested** |
-| [concept-element-attributes-set](https://dom.spec.whatwg.org/#concept-element-attributes-set) | `dom/nodes/attr-nodes.ts` | **untested** |
-| [concept-element-attributes-set-value](https://dom.spec.whatwg.org/#concept-element-attributes-set-value) | `dom/html/reflect.ts`, `dom/nodes/Element.ts` | **untested** |
+| [concept-element-attributes-append](https://dom.spec.whatwg.org/#concept-element-attributes-append) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-change](https://dom.spec.whatwg.org/#concept-element-attributes-change) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-change-ext](https://dom.spec.whatwg.org/#concept-element-attributes-change-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [concept-element-attributes-get-by-name](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-name) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-get-by-namespace](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-namespace) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-remove](https://dom.spec.whatwg.org/#concept-element-attributes-remove) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-replace](https://dom.spec.whatwg.org/#concept-element-attributes-replace) | `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-set](https://dom.spec.whatwg.org/#concept-element-attributes-set) | `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-set-value](https://dom.spec.whatwg.org/#concept-element-attributes-set-value) | `dom/html/reflect.ts`, `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-custom-element-state](https://dom.spec.whatwg.org/#concept-element-custom-element-state) | `dom/html/custom-elements.ts`, `dom/nodes/constants.ts` | **untested** |
 | [concept-event-dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) | `dom/events/dispatch.ts`, `dom/html/forms/HTMLInputElement.ts` | `dom/events/activation.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` +4; WPT: `dom/events/Event-dispatch-bubbles-false.html`, `dom/events/Event-dispatch-bubbles-true.html` +8 |
-| [concept-event-fire](https://dom.spec.whatwg.org/#concept-event-fire) | `dom/events/fire.ts`, `dom/html/events.ts`, `dom/html/forms/common.ts` | **untested** |
+| [concept-event-fire](https://dom.spec.whatwg.org/#concept-event-fire) | `dom/events/fire.ts`, `dom/html/events.ts`, `dom/html/forms/common.ts` | `dom/events/event-path.test.ts` |
 | [concept-event-initialize](https://dom.spec.whatwg.org/#concept-event-initialize) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
-| [concept-event-listener](https://dom.spec.whatwg.org/#concept-event-listener) | `dom/events/listeners.ts` | **untested** |
+| [concept-event-listener](https://dom.spec.whatwg.org/#concept-event-listener) | `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
 | [concept-event-listener-inner-invoke](https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke) | `dom/events/dispatch.ts`, `dom/events/report.ts` | `dom/events/EventTarget.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/wpt-events.test.ts`; WPT: `dom/events/event-global-event-targets.html`, `dom/events/window-event-restored-after-throwing-onerror.html` |
 | [concept-event-listener-invoke](https://dom.spec.whatwg.org/#concept-event-listener-invoke) | `dom/events/dispatch.ts` | `dom/events/dispatch.test.ts`; WPT: `dom/events/EventTarget-this-of-listener.html` |
 | [concept-event-listener-remove-all](https://dom.spec.whatwg.org/#concept-event-listener-remove-all) | `dom/events/listeners.ts` | **untested** |
-| [concept-event-path-append](https://dom.spec.whatwg.org/#concept-event-path-append) | `dom/events/Event.ts`, `dom/events/dispatch.ts` | **untested** |
+| [concept-event-path-append](https://dom.spec.whatwg.org/#concept-event-path-append) | `dom/events/Event.ts`, `dom/events/dispatch.ts` | `dom/events/event-path.test.ts` |
 | [concept-flatten-options](https://dom.spec.whatwg.org/#concept-flatten-options) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts` |
 | [concept-getelementsbyclassname](https://dom.spec.whatwg.org/#concept-getelementsbyclassname) | `dom/nodes/Element.ts` | WPT: `dom/nodes/getElementsByClassName-14.htm` |
 | [concept-getelementsbytagname](https://dom.spec.whatwg.org/#concept-getelementsbytagname) | `dom/nodes/Element.ts` | `dom/collections/collections.test.ts` |
-| [concept-getelementsbytagnamens](https://dom.spec.whatwg.org/#concept-getelementsbytagnamens) | `dom/nodes/Element.ts` | **untested** |
-| [concept-live-range](https://dom.spec.whatwg.org/#concept-live-range) | `dom/traversal/live.ts` | `dom/traversal/selection.test.ts`, `dom/traversal/wpt-ranges.test.ts` |
-| [concept-mo-callback](https://dom.spec.whatwg.org/#concept-mo-callback) | `dom/observers/MutationObserver.ts` | **untested** |
-| [concept-mo-queue](https://dom.spec.whatwg.org/#concept-mo-queue) | `dom/observers/MutationObserver.ts` | **untested** |
+| [concept-getelementsbytagnamens](https://dom.spec.whatwg.org/#concept-getelementsbytagnamens) | `dom/nodes/Element.ts` | `dom/collections/token-lists.test.ts` |
+| [concept-live-range](https://dom.spec.whatwg.org/#concept-live-range) | `dom/traversal/live.ts` | `dom/traversal/range.test.ts`, `dom/traversal/selection.test.ts`, `dom/traversal/wpt-ranges.test.ts` |
+| [concept-mo-callback](https://dom.spec.whatwg.org/#concept-mo-callback) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
+| [concept-mo-queue](https://dom.spec.whatwg.org/#concept-mo-queue) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
 | [concept-node-adopt](https://dom.spec.whatwg.org/#concept-node-adopt) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/nodes/tree.ts` | `dom/nodes/element-node-misc.test.ts`; WPT: `dom/nodes/node-realm-adoption-after-frame-removal.html`, `dom/nodes/node-realm-mixed-across-adoption.html` +2 |
-| [concept-node-adopt-ext](https://dom.spec.whatwg.org/#concept-node-adopt-ext) | `dom/nodes/Element.ts`, `dom/nodes/constants.ts` | **untested** |
-| [concept-node-append](https://dom.spec.whatwg.org/#concept-node-append) | `dom/nodes/tree.ts` | **untested** |
-| [concept-node-children-changed-ext](https://dom.spec.whatwg.org/#concept-node-children-changed-ext) | `dom/nodes/Element.ts` | **untested** |
+| [concept-node-adopt-ext](https://dom.spec.whatwg.org/#concept-node-adopt-ext) | `dom/nodes/Element.ts`, `dom/nodes/constants.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [concept-node-append](https://dom.spec.whatwg.org/#concept-node-append) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
+| [concept-node-children-changed-ext](https://dom.spec.whatwg.org/#concept-node-children-changed-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [concept-node-clone](https://dom.spec.whatwg.org/#concept-node-clone) | `dom/html/custom-elements.ts`, `dom/nodes/Document.ts`, `dom/nodes/clone.ts` +2 | `dom/nodes/shadow-dom.test.ts`; WPT: `dom/nodes/Node-cloneNode-XMLDocument.html`, `dom/nodes/Node-cloneNode-document-with-doctype.html` +2 |
 | [concept-node-clone-ext](https://dom.spec.whatwg.org/#concept-node-clone-ext) | `dom/nodes/Element.ts` | WPT: `html/semantics/forms/the-textarea-element/cloning-steps.html` |
-| [concept-node-ensure-pre-insertion-validity](https://dom.spec.whatwg.org/#concept-node-ensure-pre-insertion-validity) | `dom/nodes/tree.ts` | `dom/nodes/tree.test.ts` |
-| [concept-node-equals](https://dom.spec.whatwg.org/#concept-node-equals) | `dom/nodes/clone.ts` | **untested** |
-| [concept-node-filter](https://dom.spec.whatwg.org/#concept-node-filter) | `dom/traversal/TreeWalker.ts` | **untested** |
+| [concept-node-ensure-pre-insertion-validity](https://dom.spec.whatwg.org/#concept-node-ensure-pre-insertion-validity) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts`, `dom/nodes/tree.test.ts` |
+| [concept-node-equals](https://dom.spec.whatwg.org/#concept-node-equals) | `dom/nodes/clone.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-node-filter](https://dom.spec.whatwg.org/#concept-node-filter) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [concept-node-insert](https://dom.spec.whatwg.org/#concept-node-insert) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/traversal/live.ts` | `dom/nodes/tree.test.ts`; WPT: `dom/nodes/post-connection-steps-shadow-tree.html` |
-| [concept-node-length](https://dom.spec.whatwg.org/#concept-node-length) | `dom/traversal/Range.ts` | **untested** |
-| [concept-node-move-ext](https://dom.spec.whatwg.org/#concept-node-move-ext) | `dom/nodes/Element.ts` | **untested** |
-| [concept-node-pre-insert](https://dom.spec.whatwg.org/#concept-node-pre-insert) | `dom/nodes/tree.ts` | **untested** |
+| [concept-node-length](https://dom.spec.whatwg.org/#concept-node-length) | `dom/traversal/Range.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-node-move-ext](https://dom.spec.whatwg.org/#concept-node-move-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [concept-node-pre-insert](https://dom.spec.whatwg.org/#concept-node-pre-insert) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [concept-node-pre-remove](https://dom.spec.whatwg.org/#concept-node-pre-remove) | `dom/nodes/tree.ts` | `dom/nodes/tree.test.ts` |
 | [concept-node-remove](https://dom.spec.whatwg.org/#concept-node-remove) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/observers/queue.ts` +1 | `dom/nodes/tree.test.ts`, `dom/observers/mutation-observer.test.ts`, `compat/leaks/dom.test.ts` |
 | [concept-node-replace](https://dom.spec.whatwg.org/#concept-node-replace) | `dom/nodes/tree.ts` | `dom/nodes/element-node-misc.test.ts`, `dom/nodes/tree.test.ts` |
-| [concept-node-replace-all](https://dom.spec.whatwg.org/#concept-node-replace-all) | `dom/nodes/tree.ts` | **untested** |
-| [concept-nodeiterator-traverse](https://dom.spec.whatwg.org/#concept-nodeiterator-traverse) | `dom/traversal/TreeWalker.ts` | WPT: `dom/traversal/NodeIterator-removal-during-filtering.html` |
+| [concept-node-replace-all](https://dom.spec.whatwg.org/#concept-node-replace-all) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
+| [concept-nodeiterator-traverse](https://dom.spec.whatwg.org/#concept-nodeiterator-traverse) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts`; WPT: `dom/traversal/NodeIterator-removal-during-filtering.html` |
 | [concept-range-bp-position](https://dom.spec.whatwg.org/#concept-range-bp-position) | `dom/traversal/Range.ts` | `dom/traversal/wpt-ranges.test.ts` |
-| [concept-range-bp-set](https://dom.spec.whatwg.org/#concept-range-bp-set) | `dom/traversal/Range.ts` | **untested** |
+| [concept-range-bp-set](https://dom.spec.whatwg.org/#concept-range-bp-set) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [concept-range-clone](https://dom.spec.whatwg.org/#concept-range-clone) | `dom/traversal/Range.ts` | WPT: `custom-elements/range-and-constructors.html` |
-| [concept-range-extract](https://dom.spec.whatwg.org/#concept-range-extract) | `dom/traversal/Range.ts` | `dom/traversal/wpt-ranges.test.ts`; WPT: `custom-elements/range-and-constructors.html` |
-| [concept-range-insert](https://dom.spec.whatwg.org/#concept-range-insert) | `dom/traversal/Range.ts` | **untested** |
-| [concept-range-root](https://dom.spec.whatwg.org/#concept-range-root) | `dom/traversal/Range.ts` | **untested** |
-| [concept-range-select](https://dom.spec.whatwg.org/#concept-range-select) | `dom/traversal/Range.ts` | **untested** |
-| [concept-shadow-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor) | `dom/events/dispatch.ts` | **untested** |
-| [concept-shadow-including-root](https://dom.spec.whatwg.org/#concept-shadow-including-root) | `dom/nodes/Node.ts`, `dom/nodes/tree.ts` | **untested** |
-| [concept-text-split](https://dom.spec.whatwg.org/#concept-text-split) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | **untested** |
-| [concept-traverse-children](https://dom.spec.whatwg.org/#concept-traverse-children) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [concept-traverse-siblings](https://dom.spec.whatwg.org/#concept-traverse-siblings) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [concept-tree-host-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-tree-host-including-inclusive-ancestor) | `dom/nodes/tree.ts` | **untested** |
-| [concept-tree-index](https://dom.spec.whatwg.org/#concept-tree-index) | `dom/nodes/traverse.ts` | **untested** |
-| [concept-tree-order](https://dom.spec.whatwg.org/#concept-tree-order) | `dom/nodes/traverse.ts` | **untested** |
-| [concept-tree-root](https://dom.spec.whatwg.org/#concept-tree-root) | `dom/nodes/traverse.ts` | **untested** |
-| [contained](https://dom.spec.whatwg.org/#contained) | `dom/traversal/Range.ts` | **untested** |
-| [converting-nodes-into-a-node](https://dom.spec.whatwg.org/#converting-nodes-into-a-node) | `dom/nodes/mixins.ts` | **untested** |
+| [concept-range-extract](https://dom.spec.whatwg.org/#concept-range-extract) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts`, `dom/traversal/wpt-ranges.test.ts`; WPT: `custom-elements/range-and-constructors.html` |
+| [concept-range-insert](https://dom.spec.whatwg.org/#concept-range-insert) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [concept-range-root](https://dom.spec.whatwg.org/#concept-range-root) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [concept-range-select](https://dom.spec.whatwg.org/#concept-range-select) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [concept-shadow-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor) | `dom/events/dispatch.ts` | `dom/events/event-path.test.ts` |
+| [concept-shadow-including-root](https://dom.spec.whatwg.org/#concept-shadow-including-root) | `dom/nodes/Node.ts`, `dom/nodes/tree.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-text-split](https://dom.spec.whatwg.org/#concept-text-split) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-traverse-children](https://dom.spec.whatwg.org/#concept-traverse-children) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [concept-traverse-siblings](https://dom.spec.whatwg.org/#concept-traverse-siblings) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [concept-tree-host-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-tree-host-including-inclusive-ancestor) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
+| [concept-tree-index](https://dom.spec.whatwg.org/#concept-tree-index) | `dom/nodes/traverse.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-tree-order](https://dom.spec.whatwg.org/#concept-tree-order) | `dom/nodes/traverse.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-tree-root](https://dom.spec.whatwg.org/#concept-tree-root) | `dom/nodes/traverse.ts` | `dom/nodes/node-methods.test.ts` |
+| [contained](https://dom.spec.whatwg.org/#contained) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [converting-nodes-into-a-node](https://dom.spec.whatwg.org/#converting-nodes-into-a-node) | `dom/nodes/mixins.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [default-passive-value](https://dom.spec.whatwg.org/#default-passive-value) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts`; WPT: `dom/events/passive-by-default-non-node.html`, `dom/events/passive-by-default.html` |
-| [document-base-url-override](https://dom.spec.whatwg.org/#document-base-url-override) | `dom/nodes/Document.ts` | **untested** |
+| [document-base-url-override](https://dom.spec.whatwg.org/#document-base-url-override) | `dom/nodes/Document.ts` | `dom/nodes/node-methods.test.ts` |
 | [dom-abortsignal-timeout](https://dom.spec.whatwg.org/#dom-abortsignal-timeout) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
-| [dom-attr-value](https://dom.spec.whatwg.org/#dom-attr-value) | `dom/nodes/Attr.ts` | **untested** |
+| [dom-attr-value](https://dom.spec.whatwg.org/#dom-attr-value) | `dom/nodes/Attr.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-childnode-before](https://dom.spec.whatwg.org/#dom-childnode-before) | `dom/nodes/mixins.ts` | WPT: `dom/nodes/ChildNode-before.html` |
-| [dom-customevent-initcustomevent](https://dom.spec.whatwg.org/#dom-customevent-initcustomevent) | `dom/events/events.ts` | **untested** |
+| [dom-customevent-initcustomevent](https://dom.spec.whatwg.org/#dom-customevent-initcustomevent) | `dom/events/events.ts` | `dom/events/event-path.test.ts` |
 | [dom-document-adoptnode](https://dom.spec.whatwg.org/#dom-document-adoptnode) | `dom/nodes/Document.ts` | WPT: `dom/nodes/Document-adoptNode.html`, `shadow-dom/Document-prototype-adoptNode.html` |
 | [dom-document-createelement](https://dom.spec.whatwg.org/#dom-document-createelement) | `dom/nodes/Document.ts` | WPT: `dom/nodes/Document-createElement.html`, `dom/nodes/case.html` |
 | [dom-document-createelementns](https://dom.spec.whatwg.org/#dom-document-createelementns) | `dom/nodes/Document.ts` | WPT: `dom/nodes/DOMImplementation-createDocument.html`, `dom/nodes/Document-createElementNS.html` +1 |
 | [dom-document-createevent](https://dom.spec.whatwg.org/#dom-document-createevent) | `dom/events/createEvent.ts`, `dom/nodes/Document.ts` | `dom/events/Event.test.ts`; WPT: `dom/nodes/Document-createEvent.https.html` |
-| [dom-document-createnodeiterator](https://dom.spec.whatwg.org/#dom-document-createnodeiterator) | `dom/nodes/Document.ts` | **untested** |
+| [dom-document-createnodeiterator](https://dom.spec.whatwg.org/#dom-document-createnodeiterator) | `dom/nodes/Document.ts` | `dom/traversal/tree-walker.test.ts` |
 | [dom-document-createprocessinginstruction](https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction) | `dom/nodes/Document.ts` | WPT: `dom/nodes/Document-createProcessingInstruction.html` |
-| [dom-document-createrange](https://dom.spec.whatwg.org/#dom-document-createrange) | `dom/nodes/Document.ts` | **untested** |
-| [dom-document-createtreewalker](https://dom.spec.whatwg.org/#dom-document-createtreewalker) | `dom/nodes/Document.ts` | **untested** |
+| [dom-document-createrange](https://dom.spec.whatwg.org/#dom-document-createrange) | `dom/nodes/Document.ts` | `dom/traversal/range.test.ts` |
+| [dom-document-createtreewalker](https://dom.spec.whatwg.org/#dom-document-createtreewalker) | `dom/nodes/Document.ts` | `dom/traversal/tree-walker.test.ts` |
 | [dom-document-importnode](https://dom.spec.whatwg.org/#dom-document-importnode) | `dom/nodes/Document.ts` | WPT: `custom-elements/upgrading/Document-importNode-customized-builtins.html`, `dom/nodes/Document-importNode.html` +1 |
 | [dom-documenttype-name](https://dom.spec.whatwg.org/#dom-documenttype-name) | `dom/nodes/DocumentType.ts` | WPT: `dom/nodes/DOMImplementation-createDocumentType.html`, `dom/nodes/DOMImplementation-createHTMLDocument.html` +1 |
 | [dom-documenttype-publicid](https://dom.spec.whatwg.org/#dom-documenttype-publicid) | `dom/nodes/DocumentType.ts` | WPT: `dom/nodes/DOMImplementation-createDocumentType.html`, `dom/nodes/DOMImplementation-createHTMLDocument.html` +1 |
 | [dom-documenttype-systemid](https://dom.spec.whatwg.org/#dom-documenttype-systemid) | `dom/nodes/DocumentType.ts` | WPT: `dom/nodes/DOMImplementation-createDocumentType.html`, `dom/nodes/DOMImplementation-createHTMLDocument.html` +1 |
 | [dom-domimplementation-createdocument](https://dom.spec.whatwg.org/#dom-domimplementation-createdocument) | `dom/nodes/Document.ts` | WPT: `dom/nodes/DOMImplementation-createDocument-no-browsing-context.html`, `dom/nodes/DOMImplementation-createDocument-with-null-browsing-context-crash.html` +1 |
 | [dom-domimplementation-createdocumenttype](https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype) | `dom/nodes/Document.ts` | WPT: `dom/nodes/DOMImplementation-createDocumentType.html` |
-| [dom-domtokenlist-add](https://dom.spec.whatwg.org/#dom-domtokenlist-add) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-contains](https://dom.spec.whatwg.org/#dom-domtokenlist-contains) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-item](https://dom.spec.whatwg.org/#dom-domtokenlist-item) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-remove](https://dom.spec.whatwg.org/#dom-domtokenlist-remove) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-replace](https://dom.spec.whatwg.org/#dom-domtokenlist-replace) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-supports](https://dom.spec.whatwg.org/#dom-domtokenlist-supports) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-toggle](https://dom.spec.whatwg.org/#dom-domtokenlist-toggle) | `dom/collections/DOMTokenList.ts` | **untested** |
-| [dom-domtokenlist-value](https://dom.spec.whatwg.org/#dom-domtokenlist-value) | `dom/collections/DOMTokenList.ts` | `dom/collections/wpt-lists.test.ts`; WPT: `dom/lists/DOMTokenList-value.html` |
+| [dom-domtokenlist-add](https://dom.spec.whatwg.org/#dom-domtokenlist-add) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-contains](https://dom.spec.whatwg.org/#dom-domtokenlist-contains) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-item](https://dom.spec.whatwg.org/#dom-domtokenlist-item) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-remove](https://dom.spec.whatwg.org/#dom-domtokenlist-remove) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-replace](https://dom.spec.whatwg.org/#dom-domtokenlist-replace) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-supports](https://dom.spec.whatwg.org/#dom-domtokenlist-supports) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-toggle](https://dom.spec.whatwg.org/#dom-domtokenlist-toggle) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-domtokenlist-value](https://dom.spec.whatwg.org/#dom-domtokenlist-value) | `dom/collections/DOMTokenList.ts` | `dom/collections/token-lists.test.ts`, `dom/collections/wpt-lists.test.ts`; WPT: `dom/lists/DOMTokenList-value.html` |
 | [dom-element-attachshadow](https://dom.spec.whatwg.org/#dom-element-attachshadow) | `dom/nodes/Element.ts` | WPT: `shadow-dom/Element-interface-attachShadow-custom-element.html` |
 | [dom-element-attributes](https://dom.spec.whatwg.org/#dom-element-attributes) | `dom/nodes/Element.ts` | WPT: `dom/nodes/attributes-namednodemap.html` |
-| [dom-element-classlist](https://dom.spec.whatwg.org/#dom-element-classlist) | `dom/nodes/Element.ts` | **untested** |
+| [dom-element-classlist](https://dom.spec.whatwg.org/#dom-element-classlist) | `dom/nodes/Element.ts` | `dom/collections/token-lists.test.ts` |
 | [dom-element-closest](https://dom.spec.whatwg.org/#dom-element-closest) | `dom/selectors/index.ts` | **untested** |
-| [dom-element-getattributenode](https://dom.spec.whatwg.org/#dom-element-getattributenode) | `dom/nodes/Element.ts` | **untested** |
-| [dom-element-getattributenodens](https://dom.spec.whatwg.org/#dom-element-getattributenodens) | `dom/nodes/Element.ts` | **untested** |
+| [dom-element-getattributenode](https://dom.spec.whatwg.org/#dom-element-getattributenode) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
+| [dom-element-getattributenodens](https://dom.spec.whatwg.org/#dom-element-getattributenodens) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-element-matches](https://dom.spec.whatwg.org/#dom-element-matches) | `dom/selectors/index.ts` | `dom/selectors/wpt-query-selector-all.test.ts`, `dom/selectors/wpt-runner.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-matches.html` |
-| [dom-element-removeattributenode](https://dom.spec.whatwg.org/#dom-element-removeattributenode) | `dom/nodes/Element.ts`, `dom/nodes/attr-nodes.ts` | **untested** |
+| [dom-element-removeattributenode](https://dom.spec.whatwg.org/#dom-element-removeattributenode) | `dom/nodes/Element.ts`, `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-element-setattribute](https://dom.spec.whatwg.org/#dom-element-setattribute) | `dom/nodes/attributes.ts` | WPT: `dom/nodes/Element-setAttribute.html`, `dom/nodes/attributes.html` +1 |
-| [dom-element-setattributenode](https://dom.spec.whatwg.org/#dom-element-setattributenode) | `dom/nodes/Element.ts` | **untested** |
+| [dom-element-setattributenode](https://dom.spec.whatwg.org/#dom-element-setattributenode) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-element-setattributens](https://dom.spec.whatwg.org/#dom-element-setattributens) | `dom/nodes/Element.ts` | WPT: `dom/nodes/attributes.html`, `dom/nodes/case.html` +1 |
-| [dom-element-slot](https://dom.spec.whatwg.org/#dom-element-slot) | `dom/nodes/Element.ts` | **untested** |
+| [dom-element-slot](https://dom.spec.whatwg.org/#dom-element-slot) | `dom/nodes/Element.ts` | `dom/nodes/slots.test.ts` |
 | [dom-element-tagname](https://dom.spec.whatwg.org/#dom-element-tagname) | `dom/nodes/Element.ts` | WPT: `dom/nodes/Document-createElement.html` |
-| [dom-element-toggleattribute](https://dom.spec.whatwg.org/#dom-element-toggleattribute) | `dom/nodes/Element.ts` | **untested** |
+| [dom-element-toggleattribute](https://dom.spec.whatwg.org/#dom-element-toggleattribute) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-event-cancelbubble](https://dom.spec.whatwg.org/#dom-event-cancelbubble) | `dom/events/Event.ts` | WPT: `dom/events/Event-cancelBubble.html` |
-| [dom-event-composedpath](https://dom.spec.whatwg.org/#dom-event-composedpath) | `dom/events/Event.ts` | `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` |
+| [dom-event-composedpath](https://dom.spec.whatwg.org/#dom-event-composedpath) | `dom/events/Event.ts` | `dom/events/dispatch.test.ts`, `dom/events/event-path.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` |
 | [dom-event-event](https://dom.spec.whatwg.org/#dom-event-event) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
 | [dom-event-initevent](https://dom.spec.whatwg.org/#dom-event-initevent) | `dom/events/Event.ts` | `dom/events/Event.test.ts`; WPT: `dom/events/Event-dispatch-bubbles-false.html`, `dom/events/Event-dispatch-bubbles-true.html` |
 | [dom-event-istrusted](https://dom.spec.whatwg.org/#dom-event-istrusted) | `dom/events/Event.ts` | `dom/events/shape.test.ts` |
 | [dom-event-preventdefault](https://dom.spec.whatwg.org/#dom-event-preventdefault) | `dom/events/Event.ts` | WPT: `dom/events/EventTarget-dispatchEvent-returnvalue.html` |
 | [dom-event-returnvalue](https://dom.spec.whatwg.org/#dom-event-returnvalue) | `dom/events/Event.ts` | WPT: `dom/events/Event-returnValue.html`, `dom/events/EventTarget-dispatchEvent-returnvalue.html` |
-| [dom-event-srcelement](https://dom.spec.whatwg.org/#dom-event-srcelement) | `dom/events/Event.ts` | **untested** |
+| [dom-event-srcelement](https://dom.spec.whatwg.org/#dom-event-srcelement) | `dom/events/Event.ts` | `dom/events/event-path.test.ts` |
 | [dom-event-stopimmediatepropagation](https://dom.spec.whatwg.org/#dom-event-stopimmediatepropagation) | `dom/events/Event.ts` | WPT: `dom/events/Event-stopImmediatePropagation.html` |
-| [dom-event-stoppropagation](https://dom.spec.whatwg.org/#dom-event-stoppropagation) | `dom/events/Event.ts` | **untested** |
+| [dom-event-stoppropagation](https://dom.spec.whatwg.org/#dom-event-stoppropagation) | `dom/events/Event.ts` | `dom/events/event-path.test.ts` |
 | [dom-event-timestamp](https://dom.spec.whatwg.org/#dom-event-timestamp) | `dom/events/Event.ts`, `dom/window/clock.ts` | `dom/events/Event.test.ts` |
 | [dom-eventtarget-addeventlistener](https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener) | `dom/events/EventTarget.ts` | `dom/events/EventTarget.test.ts`; WPT: `dom/events/Event-dispatch-omitted-capture.html`, `dom/events/event-handler-attribute-replace-preserves-passive.html` |
 | [dom-eventtarget-dispatchevent](https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent) | `dom/events/EventTarget.ts` | `dom/events/dispatch.test.ts`; WPT: `dom/events/EventTarget-dispatchEvent.html` |
 | [dom-eventtarget-eventtarget](https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget) | `dom/events/EventTarget.ts` | `dom/events/EventTarget.test.ts` |
-| [dom-eventtarget-removeeventlistener](https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener) | `dom/events/EventTarget.ts`, `dom/events/listeners.ts` | **untested** |
-| [dom-htmlcollection-item](https://dom.spec.whatwg.org/#dom-htmlcollection-item) | `dom/collections/HTMLCollection.ts` | **untested** |
-| [dom-htmlcollection-nameditem-key](https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem-key) | `dom/collections/HTMLCollection.ts` | **untested** |
-| [dom-mutationobserver-disconnect](https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect) | `dom/observers/MutationObserver.ts` | **untested** |
+| [dom-eventtarget-removeeventlistener](https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener) | `dom/events/EventTarget.ts`, `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
+| [dom-htmlcollection-item](https://dom.spec.whatwg.org/#dom-htmlcollection-item) | `dom/collections/HTMLCollection.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-htmlcollection-nameditem-key](https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem-key) | `dom/collections/HTMLCollection.ts` | `dom/collections/token-lists.test.ts` |
+| [dom-mutationobserver-disconnect](https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
 | [dom-mutationobserver-observe](https://dom.spec.whatwg.org/#dom-mutationobserver-observe) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-observer.test.ts`, `dom/observers/wpt-mutation-observer.test.ts` |
-| [dom-mutationobserver-takerecords](https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords) | `dom/observers/MutationObserver.ts` | **untested** |
-| [dom-namednodemap-getnameditem](https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem) | `dom/collections/NamedNodeMap.ts` | **untested** |
-| [dom-namednodemap-item](https://dom.spec.whatwg.org/#dom-namednodemap-item) | `dom/collections/NamedNodeMap.ts` | **untested** |
-| [dom-namednodemap-removenameditem](https://dom.spec.whatwg.org/#dom-namednodemap-removenameditem) | `dom/collections/NamedNodeMap.ts` | **untested** |
-| [dom-node-comparedocumentposition](https://dom.spec.whatwg.org/#dom-node-comparedocumentposition) | `dom/nodes/Node.ts`, `dom/nodes/constants.ts` | **untested** |
-| [dom-node-contains](https://dom.spec.whatwg.org/#dom-node-contains) | `dom/nodes/Node.ts` | **untested** |
+| [dom-mutationobserver-takerecords](https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
+| [dom-namednodemap-getnameditem](https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem) | `dom/collections/NamedNodeMap.ts` | `dom/nodes/attributes.test.ts` |
+| [dom-namednodemap-item](https://dom.spec.whatwg.org/#dom-namednodemap-item) | `dom/collections/NamedNodeMap.ts` | `dom/nodes/attributes.test.ts` |
+| [dom-namednodemap-removenameditem](https://dom.spec.whatwg.org/#dom-namednodemap-removenameditem) | `dom/collections/NamedNodeMap.ts` | `dom/nodes/attributes.test.ts` |
+| [dom-node-comparedocumentposition](https://dom.spec.whatwg.org/#dom-node-comparedocumentposition) | `dom/nodes/Node.ts`, `dom/nodes/constants.ts` | `dom/nodes/node-methods.test.ts` |
+| [dom-node-contains](https://dom.spec.whatwg.org/#dom-node-contains) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
 | [dom-node-document_position_disconnected](https://dom.spec.whatwg.org/#dom-node-document_position_disconnected) | `jest-dom/matchers/document.ts` | **untested** |
 | [dom-node-getrootnode](https://dom.spec.whatwg.org/#dom-node-getrootnode) | `dom/nodes/Node.ts` | `dom/nodes/shadow-dom.test.ts`; WPT: `dom/nodes/rootNode.html` |
-| [dom-node-isdefaultnamespace](https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace) | `dom/nodes/Node.ts` | **untested** |
-| [dom-node-lookupnamespaceuri](https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri) | `dom/nodes/Node.ts` | **untested** |
+| [dom-node-isdefaultnamespace](https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
+| [dom-node-lookupnamespaceuri](https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
 | [dom-node-lookupprefix](https://dom.spec.whatwg.org/#dom-node-lookupprefix) | `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
 | [dom-node-nodename](https://dom.spec.whatwg.org/#dom-node-nodename) | `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts` |
 | [dom-node-nodetype](https://dom.spec.whatwg.org/#dom-node-nodetype) | `dom/nodes/NodeImpl.ts`, `dom/nodes/constants.ts` | WPT: `dom/nodes/DOMImplementation-createDocument.html`, `dom/nodes/Document-createComment.html` +1 |
 | [dom-node-nodevalue](https://dom.spec.whatwg.org/#dom-node-nodevalue) | `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts`; WPT: `dom/nodes/Document-createComment.html`, `dom/nodes/Document-createTextNode.html` +1 |
-| [dom-node-normalize](https://dom.spec.whatwg.org/#dom-node-normalize) | `dom/nodes/Node.ts`, `dom/traversal/live.ts` | WPT: `dom/ranges/Range-mutations-normalize.html` |
+| [dom-node-normalize](https://dom.spec.whatwg.org/#dom-node-normalize) | `dom/nodes/Node.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts`; WPT: `dom/ranges/Range-mutations-normalize.html` |
 | [dom-node-textcontent](https://dom.spec.whatwg.org/#dom-node-textcontent) | `aria/tree.ts`, `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts`; WPT: `dom/nodes/Document-createComment.html`, `dom/nodes/Document-createTextNode.html` |
-| [dom-nodeiterator-detach](https://dom.spec.whatwg.org/#dom-nodeiterator-detach) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [dom-nodelist-item](https://dom.spec.whatwg.org/#dom-nodelist-item) | `dom/collections/NodeList.ts` | **untested** |
+| [dom-nodeiterator-detach](https://dom.spec.whatwg.org/#dom-nodeiterator-detach) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [dom-nodelist-item](https://dom.spec.whatwg.org/#dom-nodelist-item) | `dom/collections/NodeList.ts` | `dom/collections/token-lists.test.ts` |
 | [dom-nonelementparentnode-getelementbyid](https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid) | `aria/tree.ts` | WPT: `dom/nodes/DocumentFragment-getElementById.html`, `shadow-dom/getElementById-dynamic-001.html` +1 |
 | [dom-parentnode-movebefore](https://dom.spec.whatwg.org/#dom-parentnode-movebefore) | `dom/nodes/mixins.ts` | WPT: `dom/nodes/moveBefore/moveBefore-optgroup.html`, `dom/nodes/moveBefore/moveBefore-option-recalc-style.html` +1 |
 | [dom-parentnode-queryselector](https://dom.spec.whatwg.org/#dom-parentnode-queryselector) | `dom/nodes/mixins.ts`, `dom/selectors/index.ts` | WPT: `dom/nodes/ParentNode-querySelector-argument-stringification.html`, `dom/nodes/ParentNode-querySelector-dupe-id.html` +2 |
 | [dom-parentnode-queryselectorall](https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall) | `dom/nodes/mixins.ts`, `dom/selectors/index.ts` | `dom/selectors/wpt-query-selector-all.test.ts`, `dom/selectors/wpt-runner.test.ts`; WPT: `dom/nodes/Element-querySelectorAll-context-element.html`, `dom/nodes/ParentNode-querySelector-argument-stringification.html` +3 |
-| [dom-range-clonecontents](https://dom.spec.whatwg.org/#dom-range-clonecontents) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-clonerange](https://dom.spec.whatwg.org/#dom-range-clonerange) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-collapse](https://dom.spec.whatwg.org/#dom-range-collapse) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-commonancestorcontainer](https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-compareboundarypoints](https://dom.spec.whatwg.org/#dom-range-compareboundarypoints) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-comparepoint](https://dom.spec.whatwg.org/#dom-range-comparepoint) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-deletecontents](https://dom.spec.whatwg.org/#dom-range-deletecontents) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-detach](https://dom.spec.whatwg.org/#dom-range-detach) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-extractcontents](https://dom.spec.whatwg.org/#dom-range-extractcontents) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-insertnode](https://dom.spec.whatwg.org/#dom-range-insertnode) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-intersectsnode](https://dom.spec.whatwg.org/#dom-range-intersectsnode) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-ispointinrange](https://dom.spec.whatwg.org/#dom-range-ispointinrange) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-range](https://dom.spec.whatwg.org/#dom-range-range) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-selectnodecontents](https://dom.spec.whatwg.org/#dom-range-selectnodecontents) | `dom/traversal/Range.ts` | **untested** |
-| [dom-range-stringifier](https://dom.spec.whatwg.org/#dom-range-stringifier) | `dom/traversal/Range.ts` | `dom/traversal/selection.test.ts` |
-| [dom-range-surroundcontents](https://dom.spec.whatwg.org/#dom-range-surroundcontents) | `dom/traversal/Range.ts` | **untested** |
-| [dom-slotable-assignedslot](https://dom.spec.whatwg.org/#dom-slotable-assignedslot) | `dom/nodes/CharacterData.ts`, `dom/nodes/Element.ts` | **untested** |
-| [dom-text-splittext](https://dom.spec.whatwg.org/#dom-text-splittext) | `dom/nodes/CharacterData.ts` | **untested** |
-| [dom-text-text](https://dom.spec.whatwg.org/#dom-text-text) | `dom/nodes/CharacterData.ts` | **untested** |
-| [dom-text-wholetext](https://dom.spec.whatwg.org/#dom-text-wholetext) | `dom/nodes/CharacterData.ts` | WPT: `dom/nodes/Text-wholeText.html` |
-| [dom-treewalker-nextnode](https://dom.spec.whatwg.org/#dom-treewalker-nextnode) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [dom-treewalker-parentnode](https://dom.spec.whatwg.org/#dom-treewalker-parentnode) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [dom-treewalker-previousnode](https://dom.spec.whatwg.org/#dom-treewalker-previousnode) | `dom/traversal/TreeWalker.ts` | **untested** |
+| [dom-range-clonecontents](https://dom.spec.whatwg.org/#dom-range-clonecontents) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-clonerange](https://dom.spec.whatwg.org/#dom-range-clonerange) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-collapse](https://dom.spec.whatwg.org/#dom-range-collapse) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-commonancestorcontainer](https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-compareboundarypoints](https://dom.spec.whatwg.org/#dom-range-compareboundarypoints) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-comparepoint](https://dom.spec.whatwg.org/#dom-range-comparepoint) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-deletecontents](https://dom.spec.whatwg.org/#dom-range-deletecontents) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-detach](https://dom.spec.whatwg.org/#dom-range-detach) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-extractcontents](https://dom.spec.whatwg.org/#dom-range-extractcontents) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-insertnode](https://dom.spec.whatwg.org/#dom-range-insertnode) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-intersectsnode](https://dom.spec.whatwg.org/#dom-range-intersectsnode) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-ispointinrange](https://dom.spec.whatwg.org/#dom-range-ispointinrange) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-range](https://dom.spec.whatwg.org/#dom-range-range) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-selectnodecontents](https://dom.spec.whatwg.org/#dom-range-selectnodecontents) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-range-stringifier](https://dom.spec.whatwg.org/#dom-range-stringifier) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts`, `dom/traversal/selection.test.ts` |
+| [dom-range-surroundcontents](https://dom.spec.whatwg.org/#dom-range-surroundcontents) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
+| [dom-slotable-assignedslot](https://dom.spec.whatwg.org/#dom-slotable-assignedslot) | `dom/nodes/CharacterData.ts`, `dom/nodes/Element.ts` | `dom/nodes/slots.test.ts` |
+| [dom-text-splittext](https://dom.spec.whatwg.org/#dom-text-splittext) | `dom/nodes/CharacterData.ts` | `dom/nodes/node-methods.test.ts` |
+| [dom-text-text](https://dom.spec.whatwg.org/#dom-text-text) | `dom/nodes/CharacterData.ts` | `dom/nodes/node-methods.test.ts` |
+| [dom-text-wholetext](https://dom.spec.whatwg.org/#dom-text-wholetext) | `dom/nodes/CharacterData.ts` | `dom/nodes/node-methods.test.ts`; WPT: `dom/nodes/Text-wholeText.html` |
+| [dom-treewalker-nextnode](https://dom.spec.whatwg.org/#dom-treewalker-nextnode) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [dom-treewalker-parentnode](https://dom.spec.whatwg.org/#dom-treewalker-parentnode) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [dom-treewalker-previousnode](https://dom.spec.whatwg.org/#dom-treewalker-previousnode) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [dom-window-event](https://dom.spec.whatwg.org/#dom-window-event) | `dom/window/Window.ts` | `dom/events/wpt-events.test.ts` |
 | [element-html-uppercased-qualified-name](https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name) | `dom/nodes/Element.ts`, `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
-| [event-flatten-more](https://dom.spec.whatwg.org/#event-flatten-more) | `dom/events/listeners.ts` | **untested** |
-| [event-path](https://dom.spec.whatwg.org/#event-path) | `dom/events/Event.ts` | **untested** |
-| [event-touch-target-list](https://dom.spec.whatwg.org/#event-touch-target-list) | `dom/events/Event.ts`, `dom/events/UIEvents.ts` | **untested** |
+| [event-flatten-more](https://dom.spec.whatwg.org/#event-flatten-more) | `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
+| [event-path](https://dom.spec.whatwg.org/#event-path) | `dom/events/Event.ts` | `dom/events/event-path.test.ts` |
+| [event-touch-target-list](https://dom.spec.whatwg.org/#event-touch-target-list) | `dom/events/Event.ts`, `dom/events/UIEvents.ts` | `dom/events/event-path.test.ts` |
 | [eventtarget-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-activation-behavior) | `dom/events/activation.ts` | `dom/events/activation.test.ts` |
-| [eventtarget-legacy-canceled-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-legacy-canceled-activation-behavior) | `dom/events/activation.ts` | **untested** |
-| [eventtarget-legacy-pre-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-legacy-pre-activation-behavior) | `dom/events/activation.ts` | **untested** |
-| [find-a-slot](https://dom.spec.whatwg.org/#find-a-slot) | `dom/nodes/slots.ts` | **untested** |
-| [find-flattened-slotables](https://dom.spec.whatwg.org/#find-flattened-slotables) | `dom/nodes/slots.ts` | **untested** |
-| [find-slotables](https://dom.spec.whatwg.org/#find-slotables) | `dom/nodes/slots.ts` | **untested** |
+| [eventtarget-legacy-canceled-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-legacy-canceled-activation-behavior) | `dom/events/activation.ts` | `dom/events/event-path.test.ts` |
+| [eventtarget-legacy-pre-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-legacy-pre-activation-behavior) | `dom/events/activation.ts` | `dom/events/event-path.test.ts` |
+| [find-a-slot](https://dom.spec.whatwg.org/#find-a-slot) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [find-flattened-slotables](https://dom.spec.whatwg.org/#find-flattened-slotables) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [find-slotables](https://dom.spec.whatwg.org/#find-slotables) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [get-the-parent](https://dom.spec.whatwg.org/#get-the-parent) | `dom/events/EventTarget.ts`, `dom/events/dispatch.ts`, `dom/nodes/Document.ts` +2 | `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts`, `dom/nodes/shadow-dom.test.ts` |
-| [handle-attribute-changes](https://dom.spec.whatwg.org/#handle-attribute-changes) | `dom/nodes/attributes.ts` | **untested** |
+| [handle-attribute-changes](https://dom.spec.whatwg.org/#handle-attribute-changes) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [interface-AbortSignal](https://dom.spec.whatwg.org/#interface-AbortSignal) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
-| [interface-abstractrange](https://dom.spec.whatwg.org/#interface-abstractrange) | `dom/traversal/Range.ts` | **untested** |
+| [interface-abstractrange](https://dom.spec.whatwg.org/#interface-abstractrange) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [interface-attr](https://dom.spec.whatwg.org/#interface-attr) | `dom/nodes/Attr.ts` | `dom/nodes/wpt-dom-misc.test.ts` |
-| [interface-characterdata](https://dom.spec.whatwg.org/#interface-characterdata) | `dom/nodes/CharacterData.ts` | **untested** |
-| [interface-childnode](https://dom.spec.whatwg.org/#interface-childnode) | `dom/nodes/mixins.ts` | **untested** |
-| [interface-comment](https://dom.spec.whatwg.org/#interface-comment) | `dom/nodes/CharacterData.ts` | **untested** |
+| [interface-characterdata](https://dom.spec.whatwg.org/#interface-characterdata) | `dom/nodes/CharacterData.ts` | `dom/nodes/node-methods.test.ts` |
+| [interface-childnode](https://dom.spec.whatwg.org/#interface-childnode) | `dom/nodes/mixins.ts` | `dom/nodes/mutation-methods.test.ts` |
+| [interface-comment](https://dom.spec.whatwg.org/#interface-comment) | `dom/nodes/CharacterData.ts` | `dom/nodes/node-methods.test.ts` |
 | [interface-customevent](https://dom.spec.whatwg.org/#interface-customevent) | `dom/events/events.ts` | `dom/events/Event.test.ts`, `dom/events/uievents.test.ts` |
-| [interface-document](https://dom.spec.whatwg.org/#interface-document) | `dom/nodes/Document.ts` | **untested** |
-| [interface-documentfragment](https://dom.spec.whatwg.org/#interface-documentfragment) | `dom/nodes/DocumentFragment.ts` | **untested** |
+| [interface-document](https://dom.spec.whatwg.org/#interface-document) | `dom/nodes/Document.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [interface-documentfragment](https://dom.spec.whatwg.org/#interface-documentfragment) | `dom/nodes/DocumentFragment.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [interface-documenttype](https://dom.spec.whatwg.org/#interface-documenttype) | `dom/nodes/DocumentType.ts` | `dom/nodes/node-accessors.test.ts` |
-| [interface-domimplementation](https://dom.spec.whatwg.org/#interface-domimplementation) | `dom/nodes/Document.ts` | **untested** |
-| [interface-domtokenlist](https://dom.spec.whatwg.org/#interface-domtokenlist) | `dom/collections/DOMTokenList.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts` |
-| [interface-element](https://dom.spec.whatwg.org/#interface-element) | `dom/nodes/Element.ts` | **untested** |
+| [interface-domimplementation](https://dom.spec.whatwg.org/#interface-domimplementation) | `dom/nodes/Document.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [interface-domtokenlist](https://dom.spec.whatwg.org/#interface-domtokenlist) | `dom/collections/DOMTokenList.ts` | `dom/collections/collections.test.ts`, `dom/collections/token-lists.test.ts`, `dom/collections/wpt-lists.test.ts` |
+| [interface-element](https://dom.spec.whatwg.org/#interface-element) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [interface-event](https://dom.spec.whatwg.org/#interface-event) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
 | [interface-eventtarget](https://dom.spec.whatwg.org/#interface-eventtarget) | `dom/events/EventTarget.ts` | `dom/events/EventTarget.test.ts` |
-| [interface-htmlcollection](https://dom.spec.whatwg.org/#interface-htmlcollection) | `dom/collections/HTMLCollection.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-collections.test.ts`; WPT: `dom/collections/HTMLCollection-iterator.html`, `dom/collections/HTMLCollection-supported-property-names.html` |
-| [interface-mutationobserver](https://dom.spec.whatwg.org/#interface-mutationobserver) | `dom/observers/MutationObserver.ts` | **untested** |
-| [interface-mutationrecord](https://dom.spec.whatwg.org/#interface-mutationrecord) | `dom/observers/MutationRecord.ts` | **untested** |
-| [interface-namednodemap](https://dom.spec.whatwg.org/#interface-namednodemap) | `dom/collections/NamedNodeMap.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-collections.test.ts`; WPT: `dom/nodes/attributes-namednodemap.html` |
+| [interface-htmlcollection](https://dom.spec.whatwg.org/#interface-htmlcollection) | `dom/collections/HTMLCollection.ts` | `dom/collections/collections.test.ts`, `dom/collections/token-lists.test.ts`, `dom/collections/wpt-collections.test.ts`; WPT: `dom/collections/HTMLCollection-iterator.html`, `dom/collections/HTMLCollection-supported-property-names.html` |
+| [interface-mutationobserver](https://dom.spec.whatwg.org/#interface-mutationobserver) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
+| [interface-mutationrecord](https://dom.spec.whatwg.org/#interface-mutationrecord) | `dom/observers/MutationRecord.ts` | `dom/observers/mutation-records.test.ts` |
+| [interface-namednodemap](https://dom.spec.whatwg.org/#interface-namednodemap) | `dom/collections/NamedNodeMap.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-collections.test.ts`, `dom/nodes/attributes.test.ts`; WPT: `dom/nodes/attributes-namednodemap.html` |
 | [interface-node](https://dom.spec.whatwg.org/#interface-node) | `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts`, `dom/nodes/wpt-nodes.test.ts` |
 | [interface-nodefilter](https://dom.spec.whatwg.org/#interface-nodefilter) | `dom/traversal/TreeWalker.ts` | `dom/traversal/wpt-traversal.test.ts` |
 | [interface-nodeiterator](https://dom.spec.whatwg.org/#interface-nodeiterator) | `dom/traversal/TreeWalker.ts` | `dom/traversal/wpt-traversal.test.ts` |
 | [interface-nodelist](https://dom.spec.whatwg.org/#interface-nodelist) | `dom/collections/NodeList.ts` | `dom/collections/collections.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
 | [interface-nondocumenttypechildnode](https://dom.spec.whatwg.org/#interface-nondocumenttypechildnode) | `dom/nodes/mixins.ts` | WPT: `dom/nodes/NonDocumentTypeChildNode-sibling-element.html` |
-| [interface-nonelementparentnode](https://dom.spec.whatwg.org/#interface-nonelementparentnode) | `dom/nodes/mixins.ts` | **untested** |
-| [interface-parentnode](https://dom.spec.whatwg.org/#interface-parentnode) | `dom/nodes/mixins.ts` | WPT: `dom/nodes/ParentNode-properties.html`, `dom/nodes/ParentNode-querySelector-attribute-change.html` +2 |
-| [interface-range](https://dom.spec.whatwg.org/#interface-range) | `dom/traversal/Range.ts` | WPT: `dom/ranges/Range-attribute-nodes.html` |
+| [interface-nonelementparentnode](https://dom.spec.whatwg.org/#interface-nonelementparentnode) | `dom/nodes/mixins.ts` | `dom/nodes/mutation-methods.test.ts` |
+| [interface-parentnode](https://dom.spec.whatwg.org/#interface-parentnode) | `dom/nodes/mixins.ts` | `dom/nodes/mutation-methods.test.ts`; WPT: `dom/nodes/ParentNode-properties.html`, `dom/nodes/ParentNode-querySelector-attribute-change.html` +2 |
+| [interface-range](https://dom.spec.whatwg.org/#interface-range) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts`; WPT: `dom/ranges/Range-attribute-nodes.html` |
 | [interface-shadowroot](https://dom.spec.whatwg.org/#interface-shadowroot) | `dom/nodes/ShadowRoot.ts` | `dom/nodes/shadow-dom.test.ts` |
-| [interface-staticrange](https://dom.spec.whatwg.org/#interface-staticrange) | `dom/traversal/Range.ts` | `dom/traversal/wpt-ranges.test.ts` |
-| [interface-text](https://dom.spec.whatwg.org/#interface-text) | `dom/nodes/CharacterData.ts` | **untested** |
-| [interface-treewalker](https://dom.spec.whatwg.org/#interface-treewalker) | `dom/traversal/TreeWalker.ts` | `dom/traversal/wpt-traversal.test.ts` |
+| [interface-staticrange](https://dom.spec.whatwg.org/#interface-staticrange) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts`, `dom/traversal/wpt-ranges.test.ts` |
+| [interface-text](https://dom.spec.whatwg.org/#interface-text) | `dom/nodes/CharacterData.ts` | `dom/nodes/node-methods.test.ts` |
+| [interface-treewalker](https://dom.spec.whatwg.org/#interface-treewalker) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts`, `dom/traversal/wpt-traversal.test.ts` |
 | [light-tree-slotables](https://dom.spec.whatwg.org/#light-tree-slotables) | `dom/nodes/slots.ts` | **untested** |
 | [locate-a-namespace](https://dom.spec.whatwg.org/#locate-a-namespace) | `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
-| [locate-a-namespace-prefix](https://dom.spec.whatwg.org/#locate-a-namespace-prefix) | `dom/nodes/Node.ts` | **untested** |
+| [locate-a-namespace-prefix](https://dom.spec.whatwg.org/#locate-a-namespace-prefix) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
 | [move](https://dom.spec.whatwg.org/#move) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/nodes/tree.ts` | `dom/nodes/wpt-nodes.test.ts`; WPT: `dom/nodes/moveBefore/moveBefore-child-list-selector-invalidation.html`, `dom/nodes/moveBefore/moveBefore-disconnected-id-map.html` +1 |
 | [mutation-algorithms](https://dom.spec.whatwg.org/#mutation-algorithms) | `dom/nodes/tree.ts` | `dom/nodes/tree.test.ts`, `dom/nodes/wpt-nodes.test.ts`; WPT: `dom/nodes/Node-mutation-adoptNode.html` |
-| [mutation-observer-microtask-queued](https://dom.spec.whatwg.org/#mutation-observer-microtask-queued) | `dom/observers/queue.ts` | **untested** |
+| [mutation-observer-microtask-queued](https://dom.spec.whatwg.org/#mutation-observer-microtask-queued) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
 | [mutation-observers](https://dom.spec.whatwg.org/#mutation-observers) | `dom/observers/queue.ts` | `dom/nodes/wpt-dom-misc.test.ts`, `dom/observers/mutation-observer.test.ts`, `dom/observers/wpt-mutation-observer.test.ts` |
-| [mutationobserver-node-list](https://dom.spec.whatwg.org/#mutationobserver-node-list) | `dom/observers/MutationObserver.ts` | **untested** |
+| [mutationobserver-node-list](https://dom.spec.whatwg.org/#mutationobserver-node-list) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
 | [namespaces](https://dom.spec.whatwg.org/#namespaces) | `dom/nodes/names.ts` | `dom/nodes/wpt-nodes.test.ts` |
-| [nodeiterator-pointer-before-reference](https://dom.spec.whatwg.org/#nodeiterator-pointer-before-reference) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [nodeiterator-pre-removing-steps](https://dom.spec.whatwg.org/#nodeiterator-pre-removing-steps) | `dom/traversal/live.ts` | **untested** |
-| [nodeiterator-reference](https://dom.spec.whatwg.org/#nodeiterator-reference) | `dom/traversal/TreeWalker.ts` | **untested** |
-| [notify-mutation-observers](https://dom.spec.whatwg.org/#notify-mutation-observers) | `dom/observers/queue.ts` | `dom/observers/mutation-observer.test.ts`, `dom/observers/wpt-mutation-observer.test.ts`; WPT: `dom/nodes/MutationObserver-callback-arguments.html` |
-| [queue-a-mutation-observer-compound-microtask](https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask) | `dom/observers/queue.ts` | **untested** |
-| [queueing-a-mutation-record](https://dom.spec.whatwg.org/#queueing-a-mutation-record) | `dom/observers/queue.ts` | `dom/observers/mutation-observer.test.ts`, `dom/observers/wpt-mutation-observer.test.ts` |
-| [range-collapsed](https://dom.spec.whatwg.org/#range-collapsed) | `dom/traversal/Range.ts` | **untested** |
+| [nodeiterator-pointer-before-reference](https://dom.spec.whatwg.org/#nodeiterator-pointer-before-reference) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [nodeiterator-pre-removing-steps](https://dom.spec.whatwg.org/#nodeiterator-pre-removing-steps) | `dom/traversal/live.ts` | `dom/traversal/tree-walker.test.ts` |
+| [nodeiterator-reference](https://dom.spec.whatwg.org/#nodeiterator-reference) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
+| [notify-mutation-observers](https://dom.spec.whatwg.org/#notify-mutation-observers) | `dom/observers/queue.ts` | `dom/observers/mutation-observer.test.ts`, `dom/observers/mutation-records.test.ts`, `dom/observers/wpt-mutation-observer.test.ts`; WPT: `dom/nodes/MutationObserver-callback-arguments.html` |
+| [queue-a-mutation-observer-compound-microtask](https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
+| [queueing-a-mutation-record](https://dom.spec.whatwg.org/#queueing-a-mutation-record) | `dom/observers/queue.ts` | `dom/observers/mutation-observer.test.ts`, `dom/observers/mutation-records.test.ts`, `dom/observers/wpt-mutation-observer.test.ts` |
+| [range-collapsed](https://dom.spec.whatwg.org/#range-collapsed) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [ranges](https://dom.spec.whatwg.org/#ranges) | `dom/traversal/Range.ts` | `dom/traversal/wpt-ranges.test.ts` |
 | [ref-for-dfn-supported-property-names](https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names) | `dom/collections/HTMLCollection.ts` | **untested** |
-| [registered-observer](https://dom.spec.whatwg.org/#registered-observer) | `dom/observers/queue.ts` | **untested** |
-| [registered-observer-list](https://dom.spec.whatwg.org/#registered-observer-list) | `dom/observers/queue.ts` | **untested** |
+| [registered-observer](https://dom.spec.whatwg.org/#registered-observer) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
+| [registered-observer-list](https://dom.spec.whatwg.org/#registered-observer-list) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
 | [remove-an-event-listener](https://dom.spec.whatwg.org/#remove-an-event-listener) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts` |
 | [retarget](https://dom.spec.whatwg.org/#retarget) | `dom/events/dispatch.ts` | `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` |
 | [scope-match-a-selectors-string](https://dom.spec.whatwg.org/#scope-match-a-selectors-string) | `dom/selectors/index.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/wpt-query-selector-all.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-namespace-tagname-attribute.html`, `dom/nodes/ParentNode-querySelectorAll-namespace.html` |
-| [set-an-existing-attribute-value](https://dom.spec.whatwg.org/#set-an-existing-attribute-value) | `dom/nodes/Node.ts` | **untested** |
+| [set-an-existing-attribute-value](https://dom.spec.whatwg.org/#set-an-existing-attribute-value) | `dom/nodes/Node.ts` | `dom/nodes/attributes.test.ts` |
 | [set-the-canceled-flag](https://dom.spec.whatwg.org/#set-the-canceled-flag) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
-| [shadowroot-available-to-element-internals](https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals) | `dom/nodes/ShadowRoot.ts` | **untested** |
-| [shadowroot-declarative](https://dom.spec.whatwg.org/#shadowroot-declarative) | `dom/nodes/ShadowRoot.ts` | **untested** |
-| [shadowroot-mode](https://dom.spec.whatwg.org/#shadowroot-mode) | `dom/nodes/ShadowRoot.ts` | **untested** |
-| [signal-a-slot-change](https://dom.spec.whatwg.org/#signal-a-slot-change) | `dom/observers/queue.ts` | **untested** |
-| [signal-slots](https://dom.spec.whatwg.org/#signal-slots) | `dom/observers/queue.ts` | **untested** |
-| [slot-assigned-nodes](https://dom.spec.whatwg.org/#slot-assigned-nodes) | `dom/nodes/slots.ts` | **untested** |
-| [slot-manually-assigned-nodes](https://dom.spec.whatwg.org/#slot-manually-assigned-nodes) | `dom/nodes/slots.ts` | **untested** |
-| [slot-name](https://dom.spec.whatwg.org/#slot-name) | `dom/nodes/slots.ts` | **untested** |
-| [slotable-assigned-slot](https://dom.spec.whatwg.org/#slotable-assigned-slot) | `dom/events/dispatch.ts`, `dom/nodes/slots.ts` | **untested** |
-| [slotable-name](https://dom.spec.whatwg.org/#slotable-name) | `dom/nodes/slots.ts` | **untested** |
-| [slottable-manual-slot-assignment](https://dom.spec.whatwg.org/#slottable-manual-slot-assignment) | `dom/nodes/slots.ts` | **untested** |
+| [shadowroot-available-to-element-internals](https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals) | `dom/nodes/ShadowRoot.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [shadowroot-declarative](https://dom.spec.whatwg.org/#shadowroot-declarative) | `dom/nodes/ShadowRoot.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
+| [shadowroot-mode](https://dom.spec.whatwg.org/#shadowroot-mode) | `dom/nodes/ShadowRoot.ts` | `dom/nodes/slots.test.ts` |
+| [signal-a-slot-change](https://dom.spec.whatwg.org/#signal-a-slot-change) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
+| [signal-slots](https://dom.spec.whatwg.org/#signal-slots) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
+| [slot-assigned-nodes](https://dom.spec.whatwg.org/#slot-assigned-nodes) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [slot-manually-assigned-nodes](https://dom.spec.whatwg.org/#slot-manually-assigned-nodes) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [slot-name](https://dom.spec.whatwg.org/#slot-name) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [slotable-assigned-slot](https://dom.spec.whatwg.org/#slotable-assigned-slot) | `dom/events/dispatch.ts`, `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [slotable-name](https://dom.spec.whatwg.org/#slotable-name) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
+| [slottable-manual-slot-assignment](https://dom.spec.whatwg.org/#slottable-manual-slot-assignment) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [stop-propagation-flag](https://dom.spec.whatwg.org/#stop-propagation-flag) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
-| [string-replace-all](https://dom.spec.whatwg.org/#string-replace-all) | `dom/nodes/Node.ts` | **untested** |
+| [string-replace-all](https://dom.spec.whatwg.org/#string-replace-all) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
 | [traversal](https://dom.spec.whatwg.org/#traversal) | `dom/traversal/TreeWalker.ts` | `dom/traversal/wpt-traversal.test.ts` |
-| [valid-attribute-local-name](https://dom.spec.whatwg.org/#valid-attribute-local-name) | `dom/nodes/attributes.ts` | **untested** |
-| [valid-doctype-name](https://dom.spec.whatwg.org/#valid-doctype-name) | `dom/nodes/names.ts` | **untested** |
-| [valid-element-local-name](https://dom.spec.whatwg.org/#valid-element-local-name) | `dom/nodes/names.ts` | **untested** |
-| [valid-namespace-prefix](https://dom.spec.whatwg.org/#valid-namespace-prefix) | `dom/nodes/names.ts` | **untested** |
-| [valid-shadow-host-name](https://dom.spec.whatwg.org/#valid-shadow-host-name) | `dom/nodes/Element.ts` | **untested** |
+| [valid-attribute-local-name](https://dom.spec.whatwg.org/#valid-attribute-local-name) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [valid-doctype-name](https://dom.spec.whatwg.org/#valid-doctype-name) | `dom/nodes/names.ts` | `dom/nodes/attributes.test.ts` |
+| [valid-element-local-name](https://dom.spec.whatwg.org/#valid-element-local-name) | `dom/nodes/names.ts` | `dom/nodes/attributes.test.ts` |
+| [valid-namespace-prefix](https://dom.spec.whatwg.org/#valid-namespace-prefix) | `dom/nodes/names.ts` | `dom/nodes/attributes.test.ts` |
+| [valid-shadow-host-name](https://dom.spec.whatwg.org/#valid-shadow-host-name) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [validate-and-extract](https://dom.spec.whatwg.org/#validate-and-extract) | `dom/nodes/names.ts` | `dom/nodes/element-node-misc.test.ts` |
-| [xmldocument](https://dom.spec.whatwg.org/#xmldocument) | `dom/nodes/Document.ts` | **untested** |
+| [xmldocument](https://dom.spec.whatwg.org/#xmldocument) | `dom/nodes/Document.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 
 ## CSS: cssom
 
-<https://drafts.csswg.org/cssom/> — 73 sections implemented, 10 tested, 30 by WPT only, 33 untested.
+<https://drafts.csswg.org/cssom/> — 73 sections implemented, 9 tested, 31 by WPT only, 33 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1242,7 +1242,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-cssstylesheet-addrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule) | `dom/css/cssom.ts` | **untested** |
 | [dom-cssstylesheet-cssrules](https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules) | `dom/css/cssom.ts` | **untested** |
 | [dom-cssstylesheet-deleterule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule) | `dom/css/cssom.ts` | **untested** |
-| [dom-cssstylesheet-insertrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule) | `dom/css/cssom.ts` | `compat/docs/spec-coverage.test.ts`; WPT: `css/cssom/CSSStyleSheet-insertRule-computed.html`, `css/cssom/insertRule-font-face.html` +1 |
+| [dom-cssstylesheet-insertrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleSheet-insertRule-computed.html`, `css/cssom/insertRule-font-face.html` +1 |
 | [dom-cssstylesheet-removerule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-removerule) | `dom/css/cssom.ts` | **untested** |
 | [dom-cssstylesheet-replace](https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-replace-cssRules.html`, `css/cssom/CSSStyleSheet-replace-detach-old-rules.html` +1 |
 | [dom-cssstylesheet-replacesync](https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleSheet-replace-detach-old-rules.html`, `css/cssom/CSSStyleSheet-replace-parse-errors.html` |
@@ -1293,7 +1293,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## Web IDL
 
-<https://webidl.spec.whatwg.org/> — 33 sections implemented, 13 tested, 1 by WPT only, 19 untested.
+<https://webidl.spec.whatwg.org/> — 33 sections implemented, 22 tested, 0 by WPT only, 11 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1303,23 +1303,23 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts` | `dom/html/interfaces.wpt.test.ts` |
 | [dfn-create-operation-function](https://webidl.spec.whatwg.org/#dfn-create-operation-function) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dfn-overload-resolution-algorithm](https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm) | `dom/webidl-runtime.ts`, `dom/window/Storage.ts` | **untested** |
-| [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | **untested** |
-| [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/events/convert.ts` | WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
+| [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | `dom/collections/token-lists.test.ts` |
+| [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/events/convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
 | [es-attributes](https://webidl.spec.whatwg.org/#es-attributes) | `dom/nodes/DocumentType.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/nodes/node-accessors.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
-| [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/events/convert.ts` | **untested** |
-| [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts` | **untested** |
-| [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts` | `dom/events/wpt-uievents.test.ts` |
+| [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
+| [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
+| [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts` | `dom/events/wpt-uievents.test.ts` |
 | [es-interfaces](https://webidl.spec.whatwg.org/#es-interfaces) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts`, `dom/window/isolation.test.ts`, `vitest-environment/environment.test.ts`, `compat/surface/profiles.test.ts` |
 | [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
 | [es-legacy-platform-objects](https://webidl.spec.whatwg.org/#es-legacy-platform-objects) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
-| [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts` | **untested** |
+| [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-namespaces](https://webidl.spec.whatwg.org/#es-namespaces) | `dom/css/CSS.ts` | `dom/css/view.test.ts`; WPT: `css/cssom/CSS-namespace-object-class-string.html` |
 | [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/webidl-enumeration.test.ts` |
-| [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/events/convert.ts` | **untested** |
-| [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/events/convert.ts` | **untested** |
-| [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/events/convert.ts`, `dom/window/Storage.ts` | **untested** |
-| [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts` | **untested** |
+| [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
+| [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
+| [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/events/convert.ts`, `dom/window/Storage.ts` | `dom/events/event-path.test.ts` |
+| [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [js-DOMString](https://webidl.spec.whatwg.org/#js-DOMString) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [legacy-callback-interface-object](https://webidl.spec.whatwg.org/#legacy-callback-interface-object) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts` |
 | [legacy-platform-object-defineownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |

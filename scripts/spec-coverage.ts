@@ -18,6 +18,7 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 export const SPEC_COVERAGE = fileURLToPath(new URL("../docs/spec-coverage.md", import.meta.url));
 const WPT = "packages/dom/test/wpt";
 const FIXTURES = `${WPT}/fixtures`;
+const FRESHNESS_TEST = "tests/compat/test/docs/spec-coverage.test.ts";
 
 // ---------------------------------------------------------------------------------------------
 // URL normalization
@@ -199,8 +200,9 @@ interface Scan {
 
 function scan(): Scan {
   const srcFiles = files(["packages/*/src/**/*.ts", "packages/*/src/**/*.tsx"]);
+  // The freshness test cites sample URLs to pin the normalization; it tests no spec section.
   const testFiles = files(["packages/*/test/**/*.ts", "packages/*/test/**/*.tsx", "tests/compat/test/**/*.ts", "tests/compat/test/**/*.tsx"]).filter(
-    (f) => !f.startsWith(`${FIXTURES}/`),
+    (f) => !f.startsWith(`${FIXTURES}/`) && f !== FRESHNESS_TEST,
   );
   const runs = runner(testFiles);
   const fixtureFiles = files([`${FIXTURES}/**/*.html`, `${FIXTURES}/**/*.htm`, `${FIXTURES}/**/*.js`])
