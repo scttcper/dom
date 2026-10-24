@@ -19,6 +19,8 @@
 //         node:assert and with /jest-dom/matchers on Jest's standalone `expect`
 //    (u)  bun test with bunfig.toml's `preload = ["@ctrl/dom/register"]` and bun's expect.extend
 //         (skipped when bun is not installed; no loader hook, the test's instanceof checks remain)
+//    (f1) `ctrl-dom debug` (the bin) on a failing Vitest test under the ctrlDom() plugin
+//    (f2) `ctrl-dom debug` on a failing Jest test under the preset
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
 //    (es) (e) without skipLibCheck: our .d.ts files (and the module augmentations they make to
 //         vitest and jest) type-check too
@@ -122,6 +124,8 @@ writeFileSync(
         ["jest", jestEnvPkg.devDependencies.jest],
         // Jest's standalone expect, for the node:test check (n).
         ["expect", registerPkg.devDependencies.expect],
+        // For (e)'s Jest typings (types.jest.check.ts); released with @jest/environment.
+        ["@jest/globals", jestEnvPkg.dependencies["@jest/environment"]],
         ["typescript", rootPkg.devDependencies.typescript],
       ]),
     },
@@ -157,6 +161,10 @@ interface Check {
   recordLoads?: boolean;
   /** Reason the check cannot run on this machine. */
   skip?: string;
+  /** Expected exit status (default 0). */
+  status?: number;
+  /** Text stdout must contain. */
+  stdout?: string[];
 }
 
 /**
@@ -168,6 +176,14 @@ function findBun(): string | null {
   return result.status === 0 ? result.stdout.trim() : null;
 }
 const bun = findBun();
+
+// What `ctrl-dom debug` prints for the failing fixtures (f1, f2): the form before cleanup.
+const DEBUG_REPORT = [
+  "FAIL  signs up",
+  "Accessibility snapshot of <body> when the test failed (CTRL_DOM_DEBUG=aria):",
+  '- textbox "Name"',
+  '- button "Sign up" [disabled]',
+];
 
 const checks: Check[] = [
   {
@@ -270,6 +286,22 @@ const checks: Check[] = [
     skip: bun === null ? "bun is not installed" : undefined,
   },
   {
+    id: "f1",
+    title: "`ctrl-dom debug` (bin) on a failing Vitest test, ctrlDom() plugin",
+    cmd: ["ctrl-dom", "debug", "debug.vitest.fixture.tsx", "--config", "vitest.debug.config.ts"],
+    mustLoad: ["@ctrl/dom/cli/ctrl-dom.js", "@ctrl/dom/cli/vitest-reporter.js", "@ctrl/dom/dist/vitest-environment/failure-snapshot.js"],
+    status: 1,
+    stdout: ["ctrl-dom debug: vitest debug.vitest.fixture.tsx (CTRL_DOM_DEBUG=aria)", ...DEBUG_REPORT, "1 failed · vitest · debug.vitest.fixture.tsx"],
+  },
+  {
+    id: "f2",
+    title: "`ctrl-dom debug` (bin) on a failing Jest test, preset",
+    cmd: ["ctrl-dom", "debug", "debug.jest.fixture.cjs", "--config", "jest.debug.config.cjs"],
+    mustLoad: ["@ctrl/dom/cli/ctrl-dom.js", "@ctrl/dom/cli/jest-reporter.js", "@ctrl/dom/dist/testing-library/agent.js"],
+    status: 1,
+    stdout: ["ctrl-dom debug: jest debug.jest.fixture.cjs (CTRL_DOM_DEBUG=aria)", ...DEBUG_REPORT, "1 failed · jest · debug.jest.fixture.cjs"],
+  },
+  {
     id: "e",
     title: "tsc --noEmit with our declarations",
     cmd: ["tsc", "--noEmit", "-p", "tsconfig.json"],
@@ -284,7 +316,7 @@ const checks: Check[] = [
 ];
 
 const OURS = /\/node_modules\/(@ctrl\/dom|vitest-environment-ctrl-dom|jest-environment-ctrl-dom)\/(.*)$/;
-const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|jest-preset\.cjs|vitest\.js|index\.js|package\.json)$/;
+const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|cli\/[\w-]+\.js|jest-preset\.cjs|vitest\.js|index\.js|package\.json)$/;
 
 function verifyLoads(check: Check, log: string): string[] {
   const problems: string[] = [];
@@ -338,7 +370,8 @@ for (const check of checks) {
     },
   });
   const ms = performance.now() - t0;
-  const problems = proc.status === 0 ? [] : [`exit ${proc.status}\n${proc.stdout}${proc.stderr}`];
+  const problems = proc.status === (check.status ?? 0) ? [] : [`exit ${proc.status}\n${proc.stdout}${proc.stderr}`];
+  for (const text of check.stdout ?? []) if (!proc.stdout.includes(text)) problems.push(`stdout lacks ${JSON.stringify(text)}\n${proc.stdout}${proc.stderr}`);
   problems.push(...verifyLoads(check, log));
   results.push({ check, ok: problems.length === 0, problems, ms });
   console.log(`${problems.length === 0 ? "PASS" : "FAIL"} (${check.id}) ${check.title}  ${(ms / 1000).toFixed(1)} s`);

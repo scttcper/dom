@@ -64,6 +64,20 @@ describe("failure snapshots under CTRL_DOM_DEBUG (handleTestEvent, test_fn_failu
     expect(thrown).toContain(`Error: boom\n\n${SNAPSHOT}\n    at `);
   });
 
+  test("`ctrl-dom debug` runs the file with Jest and prints the compact report", { timeout: 60_000 }, () => {
+    const cli = fileURLToPath(new URL("../../../publish/ctrl-dom/cli/ctrl-dom.js", import.meta.url));
+    const env: Record<string, string | undefined> = { ...process.env };
+    delete env.CTRL_DOM_DEBUG;
+    const run = spawnSync(
+      process.execPath,
+      [cli, "debug", "jest/failure-snapshot.fixture.cjs", "--config", "jest/jest.config.cjs", "--", "--testMatch", "<rootDir>/failure-snapshot.fixture.cjs"],
+      { cwd: pkg, encoding: "utf8", env },
+    );
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain(`FAIL  a thrown error\n  Error: boom\n\n${SNAPSHOT.replace(/^/gm, "  ")}\n\n  at jest/failure-snapshot.fixture.cjs:28:9\n`);
+    expect(run.stdout).toMatch(/\n2 failed, 1 passed · jest · jest\/failure-snapshot\.fixture\.cjs · [\d.]+ s\n$/);
+  });
+
   test("without CTRL_DOM_DEBUG the messages are Jest's own", { timeout: 60_000 }, () => {
     const result = jestWith({ CTRL_DOM_DEBUG: undefined }, "--testMatch", "<rootDir>/failure-snapshot.fixture.cjs");
     expect(result.numFailedTests).toBe(2);

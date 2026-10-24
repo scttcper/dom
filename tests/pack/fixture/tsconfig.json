@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["app.tsx", "single-dom.ts", "ctrl.test.tsx", "types.check.ts", "plugin.check.ts"]
+  "include": ["app.tsx", "single-dom.ts", "ctrl.test.tsx", "types.check.ts", "types.jest.check.ts", "plugin.check.ts"]
 }

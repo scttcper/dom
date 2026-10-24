@@ -219,13 +219,15 @@ export async function assembleRelease(): Promise<string[]> {
   exportsMap["./jest-preset"] = "./jest-preset.cjs";
   exportsMap["./package.json"] = "./package.json";
   const { dependencies, peerDependencies } = mergeDependencies(members);
-  copyPublishFiles("ctrl-dom", ctrlDom, ["README.md", "jest-preset.cjs", "vitest.js", "vitest.d.ts"]);
+  // cli/: `npx ctrl-dom debug <test file>` and its reporters (docs/agent-debugging.md).
+  copyPublishFiles("ctrl-dom", ctrlDom, ["README.md", "jest-preset.cjs", "vitest.js", "vitest.d.ts", "cli"]);
   writeJson(join(ctrlDom, "package.json"), {
     ...templates["ctrl-dom"],
     main: "./dist/bridge/index.js",
     types: "./dist/dom/types/index.d.ts",
+    bin: { "ctrl-dom": "./cli/ctrl-dom.js" },
     exports: exportsMap,
-    files: ["dist", "jest-preset.cjs", "vitest.js", "vitest.d.ts", "README.md", "NOTICE", "LICENSE"],
+    files: ["dist", "cli", "jest-preset.cjs", "vitest.js", "vitest.d.ts", "README.md", "NOTICE", "LICENSE"],
     dependencies: sorted(dependencies),
     // Nothing is required to use the DOM alone: React for @ctrl/dom/react, Vitest or Jest for theirs.
     peerDependencies: sorted(peerDependencies),

@@ -12,6 +12,11 @@ test("render, type, click, assert", async () => {
   render(<Signup />);
   const button = screen.getByRole("button", { name: "Sign up" });
   expect(button).toBeDisabled();
+  expect(document.body).toMatchAriaSnapshot(`
+    - textbox "Name"
+    - checkbox "Subscribe"
+    - button /Sign/ [disabled]
+  `);
   await user.type(screen.getByLabelText("Name"), "Ada");
   expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Ada");
   await user.click(screen.getByRole("checkbox", { name: "Subscribe" }));

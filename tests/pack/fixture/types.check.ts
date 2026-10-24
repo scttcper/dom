@@ -20,6 +20,10 @@ expectTypeOf(expect(screen.getByRole("button")).toBeVisible()).toEqualTypeOf<voi
 expectTypeOf(expect(Promise.resolve(screen.getByRole("button"))).resolves.toBeVisible()).toEqualTypeOf<Promise<void>>();
 // @ts-expect-error -- matcher augmentation is typed, unknown matchers are errors
 expect(screen.getByRole("button")).toBeInTheDocumentt();
+// @ctrl/dom's addition: aria snapshot templates.
+expectTypeOf(expect(document.body).toMatchAriaSnapshot(`- button "Go"`)).toEqualTypeOf<void>();
+// @ts-expect-error -- the template is a string
+expect(document.body).toMatchAriaSnapshot({ role: "button" });
 // @ts-expect-error -- render takes a ReactNode
 render(Symbol("not a node"), { container: 1 });
 // @ts-expect-error -- user-event options are typed
