@@ -94,3 +94,29 @@ order of magnitude end to end (`dom/innerhtml-250`: 0.31 ms vs jsdom 2.36 / happ
 At these sizes tokenizing is a fraction of a millisecond per call, so a native tokenizer could
 save at most tens of microseconds per `innerHTML` — less than the boundary + materialization
 cost measured above.
+
+## scriptc contracts (`@scriptc/types`), 2026-10-24
+
+Tried on the CSS tokenizer (`packages/dom/src/css/tokenizer.ts`), the module where native came
+closest. Same bench as above, `css-large` (600 KB), 7 fresh processes per cell, median [min–max];
+two other agents were running on the machine, so JS moved by a few percent between runs.
+
+| variant | JS warm | native warm | native cold |
+| --- | ---: | ---: | ---: |
+| no contracts (baseline) | 3.70–3.77 | 4.55 [4.52–4.64] | 4.79 [4.62–5.09] |
+| `NoThrow<boolean>` on the 8 character-class helpers | 4.08 | 4.79 [4.64–4.95] | 5.04 [4.80–5.90] |
+| + `Int32` on `len`/`pos`/`type`/`start`/`end` and the `TK_*` constants (writes need `\| 0`) | 3.86–4.00 | 6.28–6.58 | 6.68–6.73 |
+
+- `NoThrow` changes nothing measurable: the helpers are leaf predicates scriptc already inlines.
+- `Int32` makes native ~40% slower. Positions flow into and out of doubles everywhere
+  (`charCodeAt` indices, `indexOf` results, `slice` bounds, comparisons with `len`), so the int32
+  slots add conversions instead of removing them. Proving every write also needs `(x + 1) | 0`
+  noise at ~130 sites in this file alone.
+- `pnpm scriptc:check` (scripts/check.ts) compiled the annotated module cleanly: it does not
+  verify contracts. Only the library build (`pnpm --filter @rtd/native build`) reports SC7002.
+  If contracts are ever adopted, the gate has to run the library build.
+- Not applicable here: `ProgramLifetime` (rejected for library builds), `Acyclic` (the tokenizers
+  allocate no object graphs), `Immutable` on the entity table (data is built once per process
+  either way, and V8 owns it on the JS path we ship).
+
+**Recommendation: no contracts.** The modules stay in the plain scriptc subset.
