@@ -167,7 +167,18 @@ export class VirtualClock {
     this.driverScheduled = false;
     this.idleTurns = 0;
     this.disposed = false;
-    this.baseline = this.skip ? countIO() : null;
+    if (this.skip) {
+      // Node opens stdout/stderr lazily, on first access. A clock installed before anything has
+      // logged (a --import preload, a setup file) would otherwise count the reporter's first
+      // write as pending I/O and stop skipping for the rest of the run.
+      if (typeof process === "object") {
+        void process.stdout;
+        void process.stderr;
+      }
+      this.baseline = countIO();
+    } else {
+      this.baseline = null;
+    }
   }
 
   /** Monotonic ms (performance.now() origin) including skipped time. */

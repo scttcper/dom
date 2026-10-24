@@ -90,12 +90,6 @@ export function register(options: RegisterOptions = {}): Registration {
   const window = dom.createWindow({ ...rest, compat: rest.compat ?? "jsdom-30", url: rest.url ?? DEFAULT_URL });
   const uninstall = dom.installGlobals(window, host);
   Object.defineProperty(host, DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
-  // The skipping clock treats I/O handles beyond the ones open at its creation as pending I/O.
-  // Node opens stdout/stderr lazily, on first access, and a preload runs before anything has
-  // written: open them now, or the first console.log (or node:test's reporter, which writes to
-  // stdout) would stop skipping for the rest of the run.
-  void process.stdout;
-  void process.stderr;
   const clock = internal.installClock(new internal.VirtualClock({ skip: timeSkip(skip) }), host);
   internal.setUncaughtExceptionHandler(reportToHost);
   internal.setNotImplementedHandler((error: Error & { detail?: unknown }) => console.error(error.stack, error.detail));
