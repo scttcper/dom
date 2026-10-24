@@ -232,11 +232,15 @@ export function focusElement(impl: NodeImpl, options?: FocusElementOptions): boo
   } else {
     const shadow = shadowRootOf(target);
     if (shadow !== null && shadow.delegatesFocus) {
+      // A host whose shadow root delegates focus is never a focusable area itself, even with a
+      // tabindex (https://html.spec.whatwg.org/#focusable-area, second criterion): focus goes to
+      // its focus delegate (https://html.spec.whatwg.org/#get-the-focusable-area), or nowhere.
       // A focused element inside the host's shadow tree already satisfies focus().
       const current = target.doc[$focused];
       if (current !== null && isShadowIncludingInclusiveAncestor(target, current)) return true;
       const d = focusDelegate(target);
-      if (d !== null) target = d;
+      if (d === null) return false;
+      target = d;
     }
   }
   const doc = target.doc;
