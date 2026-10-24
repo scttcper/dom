@@ -22,7 +22,7 @@ import {
   pseudoContent,
   NodeCache,
 } from "@rtd/dom/internal";
-import { $impl, $styleVersion } from "../../src/keys.ts";
+import { $css, $impl, $styleVersion } from "../../src/keys.ts";
 
 let window: Window;
 let document: Document;
@@ -173,6 +173,45 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
     other.replaceSync(".a{width:20px}");
     d.adoptedStyleSheets.push(other);
     expect(cs("#e").width).toBe("20px");
+  });
+
+  test("shadow trees that come and go leave no style bookkeeping behind (https://drafts.csswg.org/cssom/#remove-a-css-style-sheet)", () => {
+    const shadows = () => (document[$css] as { shadows: Map<unknown, unknown> | null }).shadows?.size ?? 0;
+    const render = () => {
+      const host = document.createElement("div");
+      document.body!.appendChild(host);
+      const root = (host as unknown as { attachShadow(init: object): { innerHTML: string } }).attachShadow({ mode: "open" });
+      root.innerHTML = "<style>p { color: red }</style><p>x</p>";
+      return host;
+    };
+    const live = render();
+    for (let i = 0; i < 50; i++) render().remove();
+    // Only the connected shadow tree still has a sheet; the removed ones were released.
+    expect(shadows()).toBe(1);
+    expect(window.getComputedStyle(live).display).toBe("block");
+    live.remove();
+    expect(shadows()).toBe(0);
+  });
+
+  test("a shadow root's adoptedStyleSheets array, once read, is watched for push (https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets)", () => {
+    html(`<div id=host></div>`);
+    const root = (document.getElementById("host") as unknown as { attachShadow(init: object): ShadowRoot }).attachShadow({ mode: "open" }) as unknown as {
+      innerHTML: string;
+      adoptedStyleSheets: CSSStyleSheet[];
+      querySelector(s: string): Element;
+    };
+    root.innerHTML = "<p class=a>x</p>";
+    const p = root.querySelector("p");
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(".a{width:10px}");
+    root.adoptedStyleSheets.push(sheet);
+    expect(window.getComputedStyle(p).width).toBe("10px");
+    const other = new CSSStyleSheet();
+    other.replaceSync(".a{width:20px}");
+    root.adoptedStyleSheets = [other];
+    expect(window.getComputedStyle(p).width).toBe("20px");
+    root.adoptedStyleSheets.push(sheet);
+    expect(window.getComputedStyle(p).width).toBe("10px");
   });
 
   test("document.styleSheets is live and in tree order", () => {

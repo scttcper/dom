@@ -25,6 +25,8 @@ export class RootStyles {
   /** Copy of `adopted` at the last validation (detects push/splice). */
   adoptedSnapshot: CSSStyleSheet[];
   list: StyleSheetList | null;
+  /** `adopted` was handed to script, which may mutate it in place (validateAdopted watches it). */
+  adoptedExposed: boolean;
   /** Rule index cache (built by cascade.ts). */
   index: RuleIndex | null;
 
@@ -35,6 +37,7 @@ export class RootStyles {
     this.adopted = [];
     this.adoptedSnapshot = [];
     this.list = null;
+    this.adoptedExposed = false;
     this.index = null;
   }
 
@@ -47,8 +50,14 @@ export class RootStyles {
 export class DocCSS {
   doc: Document;
   main: RootStyles;
-  /** Shadow roots that have (or had) sheets. */
+  /**
+   * Shadow roots with sheets, or whose `styleSheets` / `adoptedStyleSheets` script holds. An
+   * entry is dropped when neither is true any more (releaseIfUnused), so shadow trees that come
+   * and go (custom elements rendered per test) are not retained or walked forever.
+   */
   shadows: Map<NodeImpl, RootStyles> | null;
+  /** Shadow roots whose adoptedStyleSheets array script holds (validateAdopted checks only these). */
+  watched: Set<RootStyles> | null;
   /** Viewport the rule index was last validated against. */
   envWidth: number;
   envHeight: number;
@@ -62,6 +71,7 @@ export class DocCSS {
     this.doc = doc;
     this.main = new RootStyles(doc[$impl]);
     this.shadows = null;
+    this.watched = null;
     this.envWidth = -1;
     this.envHeight = -1;
     this.envDpr = -1;
@@ -94,6 +104,15 @@ export function rootStylesFor(root: NodeImpl, create: boolean): RootStyles | nul
   }
   return s;
 }
+
+/** Forget a shadow root's entry once it has no sheets and script holds none of its collections. */
+function releaseIfUnused(css: DocCSS, rs: RootStyles): void {
+  if (rs === css.main || rs.hasSheets() || rs.list !== null || rs.adoptedExposed) return;
+  css.shadows?.delete(rs.root);
+}
+
+/** The tree each registered owner sheet belongs to (its owner may have moved since). */
+const sheetRoots = new WeakMap<CSSStyleSheet, RootStyles>();
 
 /** Top of the (shadow-scoped) tree containing `n`. */
 export function treeTop(n: NodeImpl): NodeImpl {
@@ -150,6 +169,7 @@ export function registerOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): void 
   while (i > 0 && compareTreeOrder(rs.ownerNodes[i - 1], owner) > 0) i--;
   rs.ownerNodes.splice(i, 0, owner);
   rs.owners.splice(i, 0, sheet);
+  sheetRoots.set(sheet, rs);
   syncList(rs);
   owner.doc[$styleVersion]++;
 }
@@ -157,18 +177,16 @@ export function registerOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): void 
 /** Removes an owner sheet (element disconnected, emptied or retyped). */
 export function unregisterOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): void {
   const css = existingDocCSS(owner.doc);
-  if (css !== null) {
-    const roots: RootStyles[] = [css.main];
-    if (css.shadows !== null) for (const r of css.shadows.values()) roots.push(r);
-    for (const rs of roots) {
-      const i = rs.owners.indexOf(sheet);
-      if (i !== -1) {
-        rs.owners.splice(i, 1);
-        rs.ownerNodes.splice(i, 1);
-        syncList(rs);
-        break;
-      }
+  const rs = sheetRoots.get(sheet);
+  if (css !== null && rs !== undefined) {
+    const i = rs.owners.indexOf(sheet);
+    if (i !== -1) {
+      rs.owners.splice(i, 1);
+      rs.ownerNodes.splice(i, 1);
+      syncList(rs);
     }
+    sheetRoots.delete(sheet);
+    releaseIfUnused(css, rs);
   }
   sheet[$ownerNode] = null;
   owner.doc[$styleVersion]++;
@@ -207,7 +225,13 @@ export function styleSheetsOf(root: NodeImpl): StyleSheetList {
 
 /** https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets (getter) */
 export function adoptedStyleSheetsOf(root: NodeImpl): CSSStyleSheet[] {
-  return rootStylesFor(root, true)!.adopted;
+  const rs = rootStylesFor(root, true)!;
+  if (!rs.adoptedExposed) {
+    rs.adoptedExposed = true;
+    const css = docCSS(root.doc);
+    if (rs !== css.main) (css.watched ??= new Set()).add(rs);
+  }
+  return rs.adopted;
 }
 
 /** Setter: every entry must be a constructed sheet of the same document. */
@@ -229,8 +253,15 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
   }
   const rs = rootStylesFor(root, true)!;
   rs.adopted = list as CSSStyleSheet[];
+  rs.adoptedSnapshot = rs.adopted.slice();
+  // The new array is ours until the getter hands it out.
+  if (rs.adoptedExposed && rs !== docCSS(root.doc).main) {
+    rs.adoptedExposed = false;
+    docCSS(root.doc).watched?.delete(rs);
+  }
   for (const s of rs.adopted) if (s[$doc] === null) s[$doc] = root.doc;
   root.doc[$styleVersion]++;
+  releaseIfUnused(docCSS(root.doc), rs);
 }
 
 /**
@@ -239,7 +270,7 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
  */
 export function validateAdopted(css: DocCSS): void {
   if (checkAdopted(css.main)) css.doc[$styleVersion]++;
-  if (css.shadows !== null) for (const rs of css.shadows.values()) if (checkAdopted(rs)) css.doc[$styleVersion]++;
+  if (css.watched !== null) for (const rs of css.watched) if (checkAdopted(rs)) css.doc[$styleVersion]++;
 }
 
 function checkAdopted(rs: RootStyles): boolean {
