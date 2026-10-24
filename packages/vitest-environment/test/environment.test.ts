@@ -36,15 +36,30 @@ describe("setup(global, options) / teardown", () => {
     expect(global.setTimeout).toBe(setTimeout);
   });
 
-  test("matchMedia is absent unless environmentOptions.rtd.matchMedia (jsdom parity); teardown restores the global", async () => {
+  test('the jsdom-30 compat profile by default (no matchMedia); compat: "modern" exposes it; teardown restores the global', async () => {
     const global: Record<string, unknown> = {};
     let env = await environment.setup(global, {});
     expect("matchMedia" in global).toBe(false);
+    expect(typeof global.PointerEvent).toBe("function");
     await env.teardown(global);
-    env = await environment.setup(global, { rtd: { matchMedia: true, width: 1200 } });
+    env = await environment.setup(global, { "ctrl-dom": { compat: "modern", width: 1200 } });
     expect((global.matchMedia as (q: string) => { matches: boolean })("(min-width: 1000px)").matches).toBe(true);
     await env.teardown(global);
     expect("matchMedia" in global).toBe(false);
+  });
+
+  test("setupVM: files with different profiles each see their own prototypes", async () => {
+    const proto = () => (vm.getVmContext() as { HTMLElement: { prototype: object } }).HTMLElement.prototype;
+    let vm = await environment.setupVM!({ "ctrl-dom": { compat: "modern" } });
+    expect("inert" in proto()).toBe(true);
+    await vm.teardown();
+    vm = await environment.setupVM!({ "ctrl-dom": { compat: "jsdom-26" } });
+    expect("inert" in proto()).toBe(false);
+    expect("onpointerdown" in proto()).toBe(false);
+    await vm.teardown();
+    vm = await environment.setupVM!({});
+    expect("onpointerdown" in proto()).toBe(true);
+    await vm.teardown();
   });
 
   test("defaults to Vitest's jsdom/happy-dom URL", async () => {

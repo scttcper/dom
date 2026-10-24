@@ -93,14 +93,25 @@ Jest):
 | `width`, `height` | 1024 × 768 | `innerWidth` / `innerHeight`, drives `matchMedia` |
 | `userAgent`, `platform`, `languages`, `devicePixelRatio`, `referrer` | jsdom-like | navigator / window values |
 | `timeSkip` | `true` | skip idle time on a virtual clock; `false` keeps real-time timers. `CTRL_DOM_TIME_SKIP=0/1` overrides |
-| `matchMedia` | `false` | expose `window.matchMedia` (no jsdom has it, so suites mock it) |
-| `pointerEvent` (Jest) | `false` | expose `PointerEvent` (jest-environment-jsdom's jsdom has none) |
+| `compat` | `"jsdom-30"` (Vitest), `"jsdom-26"` (Jest) | which APIs beyond jsdom's are exposed: see below |
 | `nodeFetch` (Jest) | `false` | keep Node's `fetch`/`Request`/`Response` (absent under jest-environment-jsdom) |
+
+## Compat profiles
+
+Suites written for jsdom feature-detect: a library that finds `PointerEvent`, `matchMedia` or
+`ResizeObserver` takes its browser path, and a polyfill that installs itself only when an API is
+missing leaves ours in place instead of its mock. `compat` picks what the test global exposes:
+
+| `compat` | Matches | Exposes beyond jsdom 30 |
+| --- | --- | --- |
+| `"jsdom-26"` | jest-environment-jsdom 30 (jsdom 26.1); the Jest default | no `PointerEvent` or `onpointer*` handlers |
+| `"jsdom-30"` | Vitest's jsdom environment; the Vitest default | nothing libraries feature-detect |
+| `"modern"` | everything @ctrl/dom implements | `matchMedia`, `ResizeObserver`, the `inert` IDL attribute, `visualViewport` |
+
+The repository's `docs/deviations.md` lists every API in each profile, with the reason.
 
 ## Differences from jsdom
 
 There is no layout (geometry is zero unless mocked), no script execution, no navigation and no
-network, as in jsdom and happy-dom. APIs that jsdom lacks and libraries feature-detect
-(`PointerEvent` under Jest, `matchMedia`, `ResizeObserver`, `inert`, `screen.orientation`) are
-absent by default so suites written for jsdom take the code paths they were written for. Every
-intentional difference is listed, with the reason, in the repository's `docs/deviations.md`.
+network, as in jsdom and happy-dom. Every intentional difference is listed, with the reason, in
+the repository's `docs/deviations.md`.

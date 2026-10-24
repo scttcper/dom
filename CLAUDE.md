@@ -28,6 +28,10 @@ before changing anything.
   (e.g. `// https://dom.spec.whatwg.org/#concept-node-insert`), and step numbers where useful.
 - Pure algorithmic modules (tokenizers, parsers, decoders) are written in scriptc's compiled
   subset and start with `// @scriptc-compatible`; `pnpm scriptc:check` verifies them.
+- A window global or interface member that jsdom 26 or 30 lacks needs an entry in `COMPAT`
+  (`packages/dom/src/window/compat.ts`) saying which compat profiles expose it and why;
+  `tests/compat/test/surface/` enforces it against the real jsdom, and `pnpm docs:compat`
+  regenerates the table in `docs/deviations.md`.
 
 ## Tests
 

@@ -20,7 +20,7 @@
 import { enableCompileCache } from "node:module";
 import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { Environment } from "vitest/runtime";
-import type { WindowOptions } from "@rtd/dom";
+import type { CompatProfile, WindowOptions } from "@rtd/dom";
 
 // Every Vitest worker pays the DOM import (jsdom-startup README: isolated forks start a fresh
 // worker per file). Node's on-disk compile cache keeps V8 code (and stripped TypeScript)
@@ -47,7 +47,6 @@ function publishModules(global: object): void {
   Object.defineProperty(global, DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
 }
 
-
 /**
  * Exceptions nobody handled (listener exceptions, reportError(), React's uncaught errors) go to
  * the worker as `uncaughtException`, which Vitest reports as an unhandled error that fails the
@@ -68,12 +67,11 @@ export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareSto
    */
   timeSkip?: boolean;
   /**
-   * Expose `window.matchMedia` (default false). No jsdom version has it, and suites written for
-   * jsdom install their own: helpers such as mock-match-media only polyfill it when it is
-   * missing, and components feature-detect it. Set it to drive responsive components through
-   * @rtd/dom's matchMedia (createWindow({ mediaFeatures }), innerWidth assignment) without a mock.
+   * APIs beyond jsdom's (@rtd/dom window/compat.ts): "jsdom-30" (default, what Vitest's jsdom
+   * environment exposes), "jsdom-26" (jest-environment-jsdom 30's) or "modern" (everything,
+   * including matchMedia, ResizeObserver and the `inert` IDL attribute).
    */
-  matchMedia?: boolean;
+  compat?: CompatProfile;
 }
 
 /** Same default URL as Vitest's jsdom and happy-dom environments. */
@@ -85,13 +83,8 @@ function ownOptions(options: Record<string, unknown> | undefined): CtrlDomEnviro
 }
 
 function windowOptions(options: Record<string, unknown>): WindowOptions {
-  const { timeSkip: _timeSkip, matchMedia: _matchMedia, ...rest } = ownOptions(options);
-  return { ...rest, url: rest.url ?? DEFAULT_URL };
-}
-
-/** Remove matchMedia from the installed global unless the `matchMedia` option is set (jsdom parity). */
-function hideMatchMedia(global: Record<PropertyKey, unknown>, options: Record<string, unknown>): void {
-  if (ownOptions(options).matchMedia !== true) delete global.matchMedia;
+  const { timeSkip: _timeSkip, ...rest } = ownOptions(options);
+  return { ...rest, compat: rest.compat ?? "jsdom-30", url: rest.url ?? DEFAULT_URL };
 }
 
 function timeSkip(options: Record<string, unknown>): boolean {
@@ -146,7 +139,6 @@ const environment: Environment = {
   setup(global, options) {
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
-    hideMatchMedia(global, options);
     publishModules(global);
     // The worker's timers, Date and performance move onto the virtual clock until teardown
     // (Vitest's own runner keeps the timers it captured at startup).
@@ -178,15 +170,15 @@ const environment: Environment = {
         Object.defineProperty(context, name, { value: host[name], writable: true, enumerable: false, configurable: true });
       }
     }
+    // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared
+    // module classes: snapshot once (before the compat profile adjusts prototype members) and
+    // undo each file's prototype patches at teardown.
+    captureInterfaceBaseline();
     const uninstall = installGlobals(window, context as Record<PropertyKey, unknown>);
-    hideMatchMedia(context as Record<PropertyKey, unknown>, options);
     publishModules(context);
     // The file's timers live on its own virtual clock: disposing it at teardown drops pending
     // ones, so they cannot keep the discarded context alive in the long-lived worker.
     const clock = installClock(new VirtualClock({ skip: timeSkip(options) }), context as Record<PropertyKey, unknown>);
-    // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared
-    // module classes: snapshot once and undo each file's prototype patches at teardown.
-    captureInterfaceBaseline();
     // Definitions on interface objects stay configurable, so teardown can undo them.
     guardInterfaceDefinitions(context as never);
     setUncaughtExceptionHandler(reportToHost);

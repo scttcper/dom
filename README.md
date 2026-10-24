@@ -147,6 +147,7 @@ pnpm test:pack           # pack, install into a fresh project, run Vitest/Jest/t
 pnpm bench                # vs jsdom / happy-dom
 pnpm bench:suite          # 100-file Vitest suite under each environment
 pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom / rtd-full
+pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
 pnpm scriptc:check
 ```
 

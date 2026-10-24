@@ -82,9 +82,9 @@ export default {
   transformIgnorePatterns: [...upstream.transformIgnorePatterns, `^${repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/packages/`],
   testEnvironmentOptions: {
     ...upstream.testEnvironmentOptions,
-    // Sentry's environment is built on jsdom 30, which has PointerEvent (jest-environment-rtd
-    // otherwise matches jest-environment-jsdom 30 / jsdom 26 and leaves it out).
-    pointerEvent: true,
+    // Sentry's environment is built on jsdom 30 (jest-environment-rtd otherwise defaults to the
+    // jsdom-26 profile of jest-environment-jsdom 30, which has no PointerEvent).
+    compat: 'jsdom-30',
     // Local harness: never send telemetry.
     sentryConfig: {
       ...upstream.testEnvironmentOptions?.sentryConfig,

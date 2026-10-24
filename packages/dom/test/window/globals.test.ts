@@ -9,7 +9,9 @@
  *
  * Contract (src/window/globals.ts): the host global becomes the window; DOM interface objects
  * replace Node's DOM-ish globals while installed; Node's timers/URL/fetch/DOMException stay;
- * uninstall() restores every replaced descriptor without invoking Node's lazy getters.
+ * uninstall() restores every replaced descriptor without invoking Node's lazy getters. The
+ * window's compat profile (src/window/compat.ts) decides which APIs beyond jsdom's are installed;
+ * tests/compat/test/surface/ checks each profile against the real jsdom.
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createWindow, currentWindowOrNull, installGlobals, Event as RtdEvent, EventTarget as RtdEventTarget, Node as RtdNode, FormData as RtdFormData, type Window } from "@rtd/dom";
@@ -101,11 +103,9 @@ describe("interface objects — https://webidl.spec.whatwg.org/#es-interfaces", 
     const { target } = installOn();
     expect(target.Node).toBe(RtdNode);
     expect(target.EventTarget).toBe(RtdEventTarget);
-    for (const name of ["Element", "HTMLElement", "Document", "Text", "Event", "CustomEvent", "Storage", "Location", "History", "MediaQueryList", "DOMRect", "IntersectionObserver", "FileReader", "FileList", "DOMParser", "XMLSerializer", "MessageEvent"]) {
+    for (const name of ["Element", "HTMLElement", "Document", "Text", "Event", "CustomEvent", "Storage", "Location", "History", "DOMRect", "IntersectionObserver", "FileReader", "FileList", "DOMParser", "XMLSerializer", "MessageEvent"]) {
       expect(typeof target[name], name).toBe("function");
     }
-    // Not exposed, like jsdom: libraries feature-detect it (docs/deviations.md).
-    expect("ResizeObserver" in target).toBe(false);
     const d = Object.getOwnPropertyDescriptor(target, "Node")!;
     expect(d.enumerable).toBe(false);
     expect(d.writable).toBe(true);
@@ -187,7 +187,7 @@ describe("installing on globalThis", () => {
 
 describe("methods — https://html.spec.whatwg.org/#the-window-object", () => {
   test("methods are bound to the window", () => {
-    const { target, window } = installOn();
+    const { target, window } = installOn({}, createWindow({ compat: "modern" }));
     const spy = vi.fn();
     (target.addEventListener as (t: string, l: () => void) => void)("custom", spy);
     window.dispatchEvent(new (target.Event as new (t: string) => never)("custom"));
@@ -227,7 +227,7 @@ describe("methods — https://html.spec.whatwg.org/#the-window-object", () => {
 
 describe("attributes — https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface", () => {
   test("innerWidth assignments reach the window (and matchMedia)", () => {
-    const { target, window } = installOn();
+    const { target, window } = installOn({}, createWindow({ compat: "modern" }));
     target.innerWidth = 500;
     expect(window.innerWidth).toBe(500);
     expect((target.matchMedia as (q: string) => { matches: boolean })("(max-width: 600px)").matches).toBe(true);
@@ -267,5 +267,51 @@ describe("window creation cost", () => {
     const a = createWindow() as unknown as G;
     expect(Object.hasOwn(a, "HTMLElement")).toBe(false);
     expect(Object.hasOwn(a, "location")).toBe(false);
+  });
+});
+
+describe("compat profiles — src/window/compat.ts (jsdom parity, docs/deviations.md)", () => {
+  test("jsdom-30 (the default) leaves out matchMedia, MediaQueryList, ResizeObserver and the inert IDL attribute", () => {
+    const { target } = installOn();
+    for (const name of ["matchMedia", "MediaQueryList", "MediaQueryListEvent", "ResizeObserver", "visualViewport"]) expect(name in target, name).toBe(false);
+    expect(typeof target.PointerEvent).toBe("function");
+    expect("onpointerdown" in target).toBe(true);
+    expect("inert" in (target.HTMLElement as { prototype: object }).prototype).toBe(false);
+  });
+
+  test("modern installs everything, and uninstall() takes the modern-only members off the shared prototypes again", () => {
+    const window = createWindow({ compat: "modern" });
+    const target: G = {};
+    const uninstall = installGlobals(window, target);
+    for (const name of ["matchMedia", "MediaQueryList", "ResizeObserver", "visualViewport", "PointerEvent"]) expect(name in target, name).toBe(true);
+    const el = window.document.createElement("div");
+    expect((el as unknown as { inert: boolean }).inert).toBe(false);
+    (el as unknown as { inert: boolean }).inert = true;
+    // https://html.spec.whatwg.org/#dom-inert reflects the content attribute.
+    expect(el.getAttribute("inert")).toBe("");
+    uninstall();
+    window.close();
+    expect("inert" in el).toBe(false);
+    expect(el.hasAttribute("inert")).toBe(true);
+  });
+
+  test("jsdom-26 leaves out PointerEvent and every onpointer* handler (global and prototypes); uninstall() restores them", () => {
+    const window = createWindow({ compat: "jsdom-26" });
+    const target: G = {};
+    const uninstall = installGlobals(window, target);
+    expect("PointerEvent" in target).toBe(false);
+    expect("onpointerdown" in target).toBe(false);
+    expect("ongotpointercapture" in target).toBe(false);
+    for (const iface of ["HTMLElement", "SVGElement", "Document"]) {
+      expect("onpointerup" in (target[iface] as { prototype: object }).prototype, iface).toBe(false);
+    }
+    expect("onclick" in window.document.body!).toBe(true);
+    uninstall();
+    window.close();
+    expect("onpointerup" in createWindow().document.body!).toBe(true);
+  });
+
+  test("an unknown profile is a TypeError naming the valid ones", () => {
+    expect(() => createWindow({ compat: "jsdom-99" as never })).toThrow(new TypeError('Unknown compat profile "jsdom-99": expected "jsdom-26", "jsdom-30", "modern".'));
   });
 });

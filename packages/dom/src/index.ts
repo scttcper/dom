@@ -6,6 +6,7 @@ import "./nodes/Node.ts";
 import "./html/registry.ts";
 
 export { createWindow, Window, type WindowOptions } from "./window/Window.ts";
+export type { CompatProfile } from "./window/compat.ts";
 export { setCurrentWindow, currentWindow, currentDocument } from "./window/current.ts";
 export { EventTarget } from "./events/EventTarget.ts";
 export { Node } from "./nodes/Node.ts";

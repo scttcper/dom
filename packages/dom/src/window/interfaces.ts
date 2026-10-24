@@ -33,12 +33,17 @@ function isInterfaceName(name: string): boolean {
  * that `installGlobals` exposes on the host global.
  */
 /**
- * Exported from @rtd/dom but not exposed on the window. jsdom has no ResizeObserver, and
- * libraries feature-detect it to pick their browser path: Base UI's ScrollArea then calls
- * Web Animations' getAnimations(), which neither jsdom nor we implement. Suites written for
- * jsdom install their own (Sentry's MockResizeObserver). docs/deviations.md.
+ * Exported from @rtd/dom but not on Window.prototype: installGlobals defines them on the global
+ * only for compat profiles that expose them (window/compat.ts: ResizeObserver is "modern" only).
  */
 const NOT_ON_WINDOW = new Set(["ResizeObserver"]);
+
+/** The NOT_ON_WINDOW interface objects, for installGlobals. */
+export function optInInterfaces(): InterfaceMap {
+  const map: InterfaceMap = Object.create(null);
+  for (const name of NOT_ON_WINDOW) if (dom[name] !== undefined) map[name] = dom[name];
+  return map;
+}
 
 export function ensureInterfaces(proto: object, fallbacks: InterfaceMap = {}): InterfaceMap {
   if (interfaces !== null) return interfaces;

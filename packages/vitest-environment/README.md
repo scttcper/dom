@@ -16,10 +16,11 @@ export default defineConfig({
 
 Or per file: `// @vitest-environment ctrl-dom`. Peer dependency: `vitest` >= 5.
 
-`environmentOptions["ctrl-dom"]` takes `createWindow` options (`url`, `width`, `height`, ...), `timeSkip`
-(below) and `matchMedia: true` to expose `window.matchMedia`. It is absent by default, as under
-jsdom: suites written for jsdom mock it, and helpers such as mock-match-media only install
-themselves when it is missing.
+`environmentOptions["ctrl-dom"]` takes `createWindow` options (`url`, `width`, `height`, ...) and
+`timeSkip` (below). `compat` defaults to `"jsdom-30"`, what Vitest's jsdom environment exposes:
+no `matchMedia` (suites written for jsdom mock it, and helpers such as mock-match-media only
+install themselves when it is missing) and no `ResizeObserver`. `"modern"` exposes everything,
+`"jsdom-26"` matches jest-environment-jsdom 30. See `docs/deviations.md`.
 
 ## Fastest setup: a VM pool
 

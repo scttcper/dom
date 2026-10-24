@@ -1,5 +1,5 @@
 // @vitest-environment rtd
-// @vitest-environment-options { "url": "http://localhost:3000/app?x=1", "width": 1280, "matchMedia": true }
+// @vitest-environment-options { "url": "http://localhost:3000/app?x=1", "width": 1280, "compat": "modern" }
 /**
  * Integration: stock React 19 + @testing-library/react + @testing-library/dom from
  * node_modules running on vitest-environment-rtd (the drop-in path: swap only the environment).

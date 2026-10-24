@@ -33,7 +33,9 @@
 import { installedWindowMethods, recordHostOriginal } from "./host-originals.ts";
 import { Window, windowInterfaces, HOST_DELEGATES, installedWindows } from "./Window.ts";
 import { currentWindowOrNull, setCurrentWindow } from "./current.ts";
-import { $globalObject, $host } from "../keys.ts";
+import { $globalObject, $host, $options } from "../keys.ts";
+import { hiddenGlobals, installCompatMembers } from "./compat.ts";
+import { optInInterfaces } from "./interfaces.ts";
 
 const SELF_REFERENCES = ["window", "self", "frames", "parent", "top"];
 
@@ -104,8 +106,9 @@ function hasSetter(window: Window, key: string): boolean {
 }
 
 /**
- * Make `window` the host global. Returns `uninstall()`, which restores every property it
- * replaced (and the previously current window).
+ * Make `window` the host global, exposing what its compat profile allows (window/compat.ts).
+ * Returns `uninstall()`, which restores every property it replaced, the shared prototypes'
+ * profile-gated members and the previously current window.
  */
 export function installGlobals(window: Window, target: Record<PropertyKey, unknown> = globalThis as never): () => void {
   const saved = new Map<string, PropertyDescriptor | undefined>();
@@ -123,13 +126,23 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
 
   define("document", { value: window.document, writable: true, enumerable: true, configurable: true });
 
+  const profile = window[$options].compat;
+  const hidden = hiddenGlobals(profile);
   const interfaces = windowInterfaces();
   for (const name in interfaces) {
+    if (hidden.has(name)) continue;
     define(name, { value: interfaces[name], writable: true, enumerable: false, configurable: true });
   }
+  const optIn = optInInterfaces();
+  for (const name in optIn) {
+    if (hidden.has(name)) continue;
+    define(name, { value: optIn[name], writable: true, enumerable: false, configurable: true });
+  }
+  const restoreMembers = installCompatMembers(profile, interfaces);
 
   const w = window as unknown as Record<string, (...args: unknown[]) => unknown>;
   for (const key of METHODS) {
+    if (hidden.has(key)) continue;
     const bound = w[key].bind(window);
     installedWindowMethods.add(bound);
     define(key, { value: bound, writable: true, enumerable: true, configurable: true });
@@ -139,6 +152,8 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
   // Opt-in own accessors (createWindow({ visualViewport: true })).
   const keys = Object.hasOwn(window, "visualViewport") ? [...attributes, "visualViewport"] : attributes;
   for (const key of keys) {
+    // An own accessor (createWindow({ visualViewport: true })) was asked for explicitly.
+    if (hidden.has(key) && !Object.hasOwn(window, key)) continue;
     const forwardSet = hasSetter(window, key);
     define(key, {
       get() {
@@ -179,6 +194,7 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
       else Object.defineProperty(target, key, descriptor);
     }
     saved.clear();
+    restoreMembers();
     window[$host] = previousHost;
     window[$globalObject] = previousGlobal;
     if (installedWindows.get(target) === window) {

@@ -37,6 +37,7 @@ import "./document.ts";
 import { setNestedWindowFactory } from "./browsing-context.ts";
 import { windowOrigin } from "./origin.ts";
 import { type TimerList, clearTimers, startTimer } from "./timers.ts";
+import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
@@ -68,9 +69,15 @@ export interface WindowOptions {
    */
   cssComputedColors?: "specified" | "rgb";
   /**
-   * Expose `window.visualViewport`. Off by default for jsdom parity: without layout its numbers
-   * mislead positioning libraries (Floating UI), which fall back to the document element when it
-   * is absent (docs/deviations.md).
+   * Which APIs beyond jsdom's the window exposes once installed as the global (installGlobals):
+   * "jsdom-26" (jest-environment-jsdom 30), "jsdom-30" (default) or "modern" (everything). See
+   * window/compat.ts and docs/deviations.md.
+   */
+  compat?: CompatProfile;
+  /**
+   * Expose `window.visualViewport`. Defaults to the `compat` profile (only "modern"): without
+   * layout its numbers mislead positioning libraries (Floating UI), which fall back to the
+   * document element when it is absent (docs/deviations.md).
    */
   visualViewport?: boolean;
   /** Share localStorage (and `storage` events) with another window, like two same-origin tabs. */
@@ -94,6 +101,8 @@ export interface ResolvedWindowOptions {
   mediaFeatures: Record<string, string | number> | undefined;
   /** html/forms/validation.ts reads this. */
   validationMessages: "jsdom" | "browser";
+  /** window/globals.ts reads this at installation. */
+  compat: CompatProfile;
 }
 
 // Host-independent defaults, so a suite behaves the same on a developer's Mac and on Linux CI.
@@ -227,6 +236,7 @@ export class Window extends EventTarget {
       screenHeight: options.screenHeight ?? height,
       mediaFeatures: options.mediaFeatures,
       validationMessages: options.validationMessages === "browser" ? "browser" : "jsdom",
+      compat: resolveCompat(options.compat),
     };
     this[$url] = url;
     this[$location] = null;
@@ -260,7 +270,7 @@ export class Window extends EventTarget {
     this[$childWindows] = null;
     this[$globalObject] = null;
     if (this[$shed] !== null) this[$shed].windows.add(this);
-    if (options.visualViewport === true) {
+    if (options.visualViewport ?? compatExposes(this[$options].compat, "visualViewport")) {
       Object.defineProperty(this, "visualViewport", { get: visualViewportGetter, enumerable: true, configurable: true });
     }
     if (nested !== undefined) {

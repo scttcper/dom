@@ -47,6 +47,7 @@ export { createFileList } from "./window/FileList.ts";
 export { evaluateMediaQueryList, mediaEnvironment } from "./window/media.ts";
 export { windowInterfaces } from "./window/Window.ts";
 export { captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces } from "./window/isolation.ts";
+export { COMPAT, COMPAT_PROFILES, DEFAULT_COMPAT, compatExposes, deferredCompatMembers, hiddenGlobals, resolveCompat, type CompatEntry, type CompatProfile } from "./window/compat.ts";
 export { trackGlobalTimers } from "./window/timers.ts";
 export { VirtualClock, VirtualTimeout, installClock, clockNow, virtualDate, virtualPerformance, type InstalledClock, type VirtualClockOptions } from "./window/clock.ts";
 

@@ -34,7 +34,7 @@ describe("vitest-environment-rtd setup/teardown ×N", () => {
     // Each cycle in its own async function: a suspended async frame keeps its locals.
     const cycle = async () => {
       const global: AnyGlobal = { setTimeout, clearTimeout };
-      const env = await environment.setup(global, { rtd: { matchMedia: true } });
+      const env = await environment.setup(global, { rtd: { compat: "modern" } });
       useDocument(global, tracker);
       await env.teardown(global);
       expect(global.document).toBeUndefined();
@@ -48,7 +48,7 @@ describe("vitest-environment-rtd setup/teardown ×N", () => {
     const { bytesPerCycle, points } = await heapSlope(
       async () => {
         const global: AnyGlobal = { setTimeout, clearTimeout };
-        const env = await environment.setup(global, { rtd: { matchMedia: true } });
+        const env = await environment.setup(global, { rtd: { compat: "modern" } });
         useDocument(global, null);
         await env.teardown(global);
       },
@@ -69,7 +69,7 @@ describe("installGlobals / uninstall ×N on the real global", () => {
     const before = new Map(keys.map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]));
     const tracker = new Tracker();
     const cycle = () => {
-      const w = createWindow();
+      const w = createWindow({ compat: "modern" });
       tracker.track("window", w);
       const uninstall = installGlobals(w);
       useDocument(g, tracker);
@@ -99,7 +99,7 @@ describe("jest-environment-rtd constructor/setup/teardown ×N", () => {
     const tracker = new Tracker();
     const cycle = async () => {
       const env = new RtdEnvironment(
-        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { matchMedia: true }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();
@@ -125,7 +125,7 @@ describe("jest-environment-rtd constructor/setup/teardown ×N", () => {
     const tracker = new Tracker();
     const cycle = async () => {
       const env = new RtdEnvironment(
-        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { matchMedia: true }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();

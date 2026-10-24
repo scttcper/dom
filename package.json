@@ -15,6 +15,7 @@
     "bench": "pnpm --filter @rtd/bench run bench",
     "scriptc:check": "pnpm --filter @rtd/native run check",
     "build": "node scripts/build.ts",
+    "docs:compat": "node scripts/compat-doc.ts",
     "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
     "downstream:base-ui": "node downstream/base-ui/run.ts",
     "downstream:radix": "node downstream/radix/run.ts",

@@ -28,9 +28,9 @@ import { ModuleMocker } from "jest-mock";
 import { installCommonGlobals } from "jest-util";
 import * as dom from "@rtd/dom";
 import * as internal from "@rtd/dom/internal";
-import type { Window, WindowOptions } from "@rtd/dom";
+import type { CompatProfile, Window, WindowOptions } from "@rtd/dom";
 
-/** The vm-global key the shims read. */
+/** The vm-global key the bridges and shims read. */
 export const RTD_MODULES = Symbol.for("rtd.dom.modules");
 
 export interface CtrlDomTestEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
@@ -52,21 +52,12 @@ export interface CtrlDomTestEnvironmentOptions extends Omit<WindowOptions, "shar
    */
   timeSkip?: boolean;
   /**
-   * Expose `PointerEvent` (default false). jest-environment-jsdom 30 ships jsdom 26, which has
-   * none, and libraries pick their pointer vs mouse/touch code paths by feature detection (React
-   * Aria caches the choice at import), so suites written against it break when it exists — and
-   * again when they `delete global.PointerEvent` after installing a fake. Set it when replacing an
-   * environment built on jsdom >= 27 (which has PointerEvent).
+   * APIs beyond jsdom's (@rtd/dom window/compat.ts): "jsdom-26" (default: jest-environment-jsdom
+   * 30 ships jsdom 26, so no PointerEvent), "jsdom-30" (for suites written for an environment built
+   * on jsdom >= 27, which has PointerEvent) or "modern" (everything, including matchMedia,
+   * ResizeObserver and the `inert` IDL attribute).
    */
-  pointerEvent?: boolean;
-  /**
-   * Expose `window.matchMedia` (default false). No jsdom version has it, and suites written for
-   * jsdom install their own: helpers such as mock-match-media only polyfill it when it is
-   * missing (React Aria's `setMedia({pointer: 'coarse'})` did nothing with ours present), and
-   * components feature-detect it. Set it to drive responsive components through @rtd/dom's
-   * matchMedia (createWindow({ mediaFeatures }), innerWidth assignment) without a mock.
-   */
-  matchMedia?: boolean;
+  compat?: CompatProfile;
 }
 
 /**
@@ -212,7 +203,7 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
 
   constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
     const { projectConfig } = config;
-    const { customExportConditions, nodeFetch, timeSkip, pointerEvent, matchMedia, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as CtrlDomTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as CtrlDomTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
 
@@ -232,14 +223,13 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     // Node's error-message stack size is limited at 10; more is useful when a test fails.
     (global.Error as ErrorConstructor).stackTraceLimit = 100;
 
-    const window = dom.createWindow({ ...windowOptions, url: windowOptions.url ?? DEFAULT_URL });
+    const window = dom.createWindow({ ...windowOptions, compat: windowOptions.compat ?? "jsdom-26", url: windowOptions.url ?? DEFAULT_URL });
     this.rtdWindow = window;
     this.dom = createDom(window);
+    // Baseline for undoing interface prototype patches at teardown (they are shared per worker),
+    // taken before the compat profile adjusts prototype members so teardown also undoes that.
+    internal.captureInterfaceBaseline();
     dom.installGlobals(window, global);
-    // jest-environment-jsdom 30 (jsdom 26) parity; see CtrlDomTestEnvironmentOptions.pointerEvent.
-    if (pointerEvent !== true) delete global.PointerEvent;
-    // jsdom parity; see CtrlDomTestEnvironmentOptions.matchMedia.
-    if (matchMedia !== true) delete global.matchMedia;
     Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
     // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):
@@ -261,8 +251,6 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
       timerConfig: { idToRef: (id: number) => id, refToId: (ref: number) => ref },
     });
     this.fakeTimersModern = new ModernFakeTimers({ config: projectConfig, global: this.global as unknown as typeof globalThis });
-    // Baseline for undoing interface prototype patches at teardown (they are shared per worker).
-    internal.captureInterfaceBaseline();
     // Definitions on interface objects stay configurable, so teardown can undo them.
     internal.guardInterfaceDefinitions(global as never);
     internal.setUncaughtExceptionHandler(reportToHost);

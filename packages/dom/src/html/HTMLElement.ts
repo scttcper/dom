@@ -28,6 +28,7 @@ import type { ValidityState } from "./forms/validation.ts";
 import { T } from "../nodes/tags.ts";
 import { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
 import { bool, contentAttr, defineAccessor, enumerated, str } from "./reflect.ts";
+import { deferCompatMember } from "../window/compat.ts";
 import {
   ceAdopted,
   ceAttributeChanged,
@@ -453,12 +454,14 @@ function mergeWithPrevious(text: { previousSibling: { nodeType: number; data?: s
 
 // Reflected global attributes — https://html.spec.whatwg.org/#global-attributes
 str(HTMLElement, "title lang accessKey=accesskey");
-// No `inert` IDL attribute (https://html.spec.whatwg.org/#dom-inert), like jsdom: libraries
-// feature-detect `'inert' in HTMLElement.prototype` (React Aria's ariaHideOutside, Radix's
-// hideOthers) and then mark outside content `inert` instead of `aria-hidden="true"`, which
-// Testing Library's isInaccessible (dom-accessibility-api) does not honor — getByRole would
-// find elements behind an open modal or an active drag. The `inert` content attribute keeps its
-// effects (focus/hit testing, html/focus.ts). docs/deviations.md.
+// https://html.spec.whatwg.org/#dom-inert — only in the "modern" compat profile (window/compat.ts),
+// like jsdom otherwise: libraries feature-detect `'inert' in HTMLElement.prototype` (React Aria's
+// ariaHideOutside, Radix's hideOthers) and then mark outside content `inert` instead of
+// `aria-hidden="true"`, which stock Testing Library's isInaccessible (dom-accessibility-api)
+// does not honor — getByRole would find elements behind an open modal or an active drag. The
+// `inert` content attribute keeps its effects in every profile (focus/hit testing, html/focus.ts).
+bool(HTMLElement, "inert");
+deferCompatMember(HTMLElement.prototype, "HTMLElement", "inert");
 enumerated(HTMLElement, "dir", { keywords: ["ltr", "rtl", "auto"] });
 defineAccessor(
   HTMLElement,

@@ -131,31 +131,42 @@ describe("timers belong to the window — https://html.spec.whatwg.org/#close-a-
   });
 });
 
-describe("PointerEvent — https://w3c.github.io/pointerevents/#pointerevent-interface", () => {
-  test("absent by default, like jest-environment-jsdom 30 (jsdom 26)", async () => {
+describe("compat profiles — @rtd/dom src/window/compat.ts", () => {
+  test("jsdom-26 by default, like jest-environment-jsdom 30: no PointerEvent or onpointer* handlers, no matchMedia", async () => {
     await withEnvironment({}, (_env, global) => {
       expect(typeof global.PointerEvent).toBe("undefined");
+      expect("onpointerdown" in global).toBe(false);
+      expect("onpointerdown" in global.document.body).toBe(false);
       expect(typeof global.MouseEvent).toBe("function");
-    });
-  });
-
-  test("testEnvironmentOptions.pointerEvent exposes it (environments built on jsdom >= 27)", async () => {
-    await withEnvironment({ pointerEvent: true }, (_env, global) => {
-      expect(new global.PointerEvent("pointerdown", { pointerType: "touch" }).pointerType).toBe("touch");
-    });
-  });
-});
-
-describe("matchMedia — https://drafts.csswg.org/cssom-view/#dom-window-matchmedia", () => {
-  test("absent by default, like every jsdom (mock-match-media and similar install theirs only when missing)", async () => {
-    await withEnvironment({}, (_env, global) => {
       expect("matchMedia" in global).toBe(false);
     });
   });
 
-  test("testEnvironmentOptions.matchMedia exposes @rtd/dom's", async () => {
-    await withEnvironment({ matchMedia: true, width: 1200 }, (_env, global) => {
+  test('compat: "jsdom-30" exposes PointerEvent (environments built on jsdom >= 27)', async () => {
+    await withEnvironment({ compat: "jsdom-30" }, (_env, global) => {
+      expect(new global.PointerEvent("pointerdown", { pointerType: "touch" }).pointerType).toBe("touch");
+      expect("onpointerdown" in global.document.body).toBe(true);
+    });
+  });
+
+  test('compat: "modern" exposes matchMedia and the inert IDL attribute', async () => {
+    await withEnvironment({ compat: "modern", width: 1200 }, (_env, global) => {
       expect(global.matchMedia("(min-width: 1000px)").matches).toBe(true);
+      expect(global.document.createElement("div").inert).toBe(false);
+    });
+  });
+
+  test("files with different profiles in one worker each see their own prototypes (teardown restores the baseline)", async () => {
+    await withEnvironment({ compat: "modern" }, (_env, global) => {
+      expect("inert" in global.HTMLElement.prototype).toBe(true);
+    });
+    await withEnvironment({}, (_env, global) => {
+      expect("inert" in global.HTMLElement.prototype).toBe(false);
+      expect("onpointerdown" in global.HTMLElement.prototype).toBe(false);
+    });
+    await withEnvironment({ compat: "jsdom-30" }, (_env, global) => {
+      expect("inert" in global.HTMLElement.prototype).toBe(false);
+      expect("onpointerdown" in global.HTMLElement.prototype).toBe(true);
     });
   });
 });

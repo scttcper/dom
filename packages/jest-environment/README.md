@@ -24,9 +24,10 @@ Differences from jest-environment-jsdom you may notice (see `docs/deviations.md`
 
 - `testEnvironmentOptions` takes `createWindow` options (`url`, `width`, `platform`, ...) plus
   `nodeFetch: true` to keep Node's `fetch`/`Request`/`Response` (absent by default, as under
-  jsdom), `pointerEvent: true` to expose `PointerEvent` (jsdom 26, which jest-environment-jsdom 30
-  ships, has none) and `matchMedia: true` to expose `window.matchMedia` (no jsdom has it, so
-  suites mock it; mock-match-media only installs itself when it is missing).
+  jsdom). `compat` defaults to `"jsdom-26"`, the surface of jsdom 26 that jest-environment-jsdom
+  30 ships (no `PointerEvent`); `"jsdom-30"` matches environments built on newer jsdom and
+  `"modern"` adds what no jsdom has (`matchMedia`, `ResizeObserver`, `inert`). See
+  `docs/deviations.md`.
 - `environment.dom` is a minimal stand-in for jsdom's `JSDOM` object: `window` and
   `reconfigure({ url })`.
 - Timers the test file leaves pending are cleared at teardown, as jsdom's `window.close()` does.
