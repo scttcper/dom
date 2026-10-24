@@ -36,7 +36,6 @@ defineWPTDirectory(
     "Document-getElementsByTagName.html": PROXY_FREE,
     "Element-getElementsByTagName.html": PROXY_FREE,
     "attributes.html": PROXY_FREE,
-    "attributes-namednodemap.html": PROXY_FREE,
     "Element-children.html": PROXY_FREE,
     "Document-createElement.html": "XML/XHTML documents loaded through iframes (harness only loads HTML test iframes)",
     "Document-createElementNS.html": "XML/XHTML documents loaded through iframes (harness only loads HTML test iframes)",

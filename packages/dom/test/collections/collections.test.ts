@@ -237,6 +237,46 @@ describe("NamedNodeMap and Attr nodes — https://dom.spec.whatwg.org/#interface
     expect(Array.from(attrs, (a) => a.name)).toEqual(["id", "title"]);
   });
 
+  // https://webidl.spec.whatwg.org/#LegacyUnenumerableNamedProperties and
+  // https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names. react-hook-form's
+  // getCheckboxValue reads a checked checkbox's value only when `'value' in option.attributes`
+  // (downstream/react-hook-form/repros/namednodemap-named-properties.test.ts).
+  test("named properties: supported names are the attributes' qualified names, unenumerable, shadowed by members", () => {
+    const el = document.createElement("input");
+    el.setAttribute("value", "test");
+    el.setAttribute("data-x", "1");
+    el.setAttribute("length", "9");
+    const attrs = el.attributes as unknown as Record<string, any>;
+    expect("value" in attrs).toBe(true);
+    expect(attrs.value).toBe(el.getAttributeNode("value"));
+    expect(attrs["data-x"].value).toBe("1");
+    expect("type" in attrs).toBe(false);
+    expect(attrs.type).toBeUndefined();
+    // Names with ASCII upper alpha are not supported on HTML elements in HTML documents.
+    expect("VALUE" in attrs).toBe(false);
+    // Visibility: interface members win over a same-named attribute.
+    expect(attrs.length).toBe(3);
+    expect(typeof attrs.item).toBe("function");
+    // Unenumerable: for…in / Object.keys see neither names nor the internal element slot.
+    expect(Object.keys(attrs)).toEqual([]);
+    expect(Object.getOwnPropertyNames(attrs)).toEqual(["value", "data-x"]);
+    expect(Object.getOwnPropertyDescriptor(attrs, "value")).toMatchObject({ writable: false, enumerable: false, configurable: true });
+    // Live: follows attribute changes; methods still work through the named-property layer.
+    el.removeAttribute("value");
+    expect("value" in attrs).toBe(false);
+    expect(attrs.getNamedItem("data-x")?.value).toBe("1");
+    expect(attrs.item(0)?.name).toBe("data-x");
+    expect(el.attributes).toBe(attrs);
+    expect(Object.prototype.toString.call(attrs)).toBe("[object NamedNodeMap]");
+  });
+
+  test("named properties keep case on non-HTML elements", () => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 1 1");
+    expect("viewBox" in svg.attributes).toBe(true);
+    expect((svg.attributes as any).viewBox.value).toBe("0 0 1 1");
+  });
+
   test("removing an attribute detaches its Attr node, keeping the value", () => {
     const el = document.createElement("div");
     el.setAttribute("x", "1");

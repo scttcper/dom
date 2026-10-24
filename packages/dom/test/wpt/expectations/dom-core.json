@@ -1328,13 +1328,6 @@
  "dom/nodes/Text-constructor.html": [
   "new Text() should get the correct ownerDocument across globals"
  ],
- "dom/nodes/attributes-namednodemap.html": [
-  "an attribute set by setAttribute should be accessible as a field on the `attributes` field of an Element",
-  "setNamedItem and removeNamedItem on `attributes` should add and remove fields from `attributes`",
-  "setNamedItem and removeNamedItem on `attributes` should not interfere with existing method names",
-  "an attribute with a null namespace should be accessible as a field on the `attributes` field of an Element",
-  "an attribute with a set namespace should be accessible as a field on the `attributes` field of an Element"
- ],
  "dom/nodes/attributes.html": [
   "Own property correctness with basic attributes",
   "Own property correctness with non-namespaced attribute before same-name namespaced one",
