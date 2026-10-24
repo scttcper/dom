@@ -3,7 +3,8 @@
 //
 //   release/ctrl-dom                     @ctrl/dom: packages/dom at the root, the other runtime
 //                                        packages under subpaths (@ctrl/dom/react, /user-event,
-//                                        /jest-dom, /testing-library, /aria, /vitest-environment),
+//                                        /jest-dom, /testing-library, /aria, /vitest-environment,
+//                                        /register),
 //                                        plus the Jest preset and the Vitest plugin (publish/ctrl-dom)
 //   release/jest-environment-ctrl-dom    packages/jest-environment (Jest's dependencies stay out of
 //                                        @ctrl/dom for Vitest users)
@@ -35,6 +36,7 @@ const SUBPATHS: Record<string, string> = {
   "@rtd/user-event": "user-event",
   "@rtd/jest-dom": "jest-dom",
   "vitest-environment-rtd": "vitest-environment",
+  "@rtd/register": "register",
 };
 
 /** packages/<dir> for each @ctrl/dom member, in SUBPATHS order. */
@@ -46,6 +48,7 @@ const MEMBER_DIRS: Record<string, string> = {
   "@rtd/user-event": "user-event",
   "@rtd/jest-dom": "jest-dom",
   "vitest-environment-rtd": "vitest-environment",
+  "@rtd/register": "register",
 };
 
 /** Peer ranges where members disagree (jest-dom alone allows older Vitest/Jest than the environments). */
@@ -54,7 +57,7 @@ const PEER_OVERRIDES: Record<string, string> = { vitest: ">=5.0.0", jest: ">=30.
 /** Rewrite workspace package names to the published ones (specifiers, messages, docs). */
 export function rewriteNames(text: string): string {
   return text
-    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
+    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom|register)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
       const sub = SUBPATHS[`@rtd/${pkg}`];
       return `@ctrl/dom${sub ? `/${sub}` : ""}${rest}`;
     })
@@ -162,9 +165,10 @@ async function writeBridges(ctrlDom: string): Promise<void> {
  * The Vitest environment is what loads the DOM, so it imports the DOM's entries rather than the
  * bridges: with nothing published yet a bridge falls back to `require(esm)`, which made every
  * forked Vitest worker start ~15 ms slower than a native import (60-file suite, `isolate`).
+ * `@ctrl/dom/register` (node:test, bun test) is what loads the DOM there, so it is pinned too.
  */
-function pinEnvironmentDom(ctrlDom: string): void {
-  const envDir = join(ctrlDom, "dist", "vitest-environment");
+function pinEnvironmentDom(ctrlDom: string, member = "vitest-environment"): void {
+  const envDir = join(ctrlDom, "dist", member);
   for (const e of readdirSync(envDir, { withFileTypes: true, recursive: true })) {
     if (!e.isFile() || !e.name.endsWith(".js")) continue;
     const path = join(e.parentPath, e.name);
@@ -206,6 +210,7 @@ export async function assembleRelease(): Promise<string[]> {
   }
   await writeBridges(ctrlDom);
   pinEnvironmentDom(ctrlDom);
+  pinEnvironmentDom(ctrlDom, "register");
   for (const key of [".", "./internal"]) {
     const entry = key === "." ? "index" : "internal";
     exportsMap[key] = { types: exportsMap[key].types, require: `./dist/bridge/${entry}.cjs`, default: `./dist/bridge/${entry}.js` };
