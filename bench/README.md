@@ -44,10 +44,6 @@ bundle is older than its sources.
 DOM-only workloads (`dom/*`) run `jsdom`, `happy-dom`, `rtd-dom` (the testing stack is
 irrelevant there). React workloads run the first four. Startup runs all six.
 
-Until `vitest-environment-rtd` is usable, the `rtd*` configs fall back to `@rtd/dom`'s
-`createWindow()` + `installGlobals()` (or Vitest's `populateGlobal`); the result's
-`setupPath` says which path was used.
-
 ## Workloads
 
 Startup (one cold measurement per fresh process, timed from before the first import):

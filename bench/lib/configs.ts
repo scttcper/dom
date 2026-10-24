@@ -85,7 +85,7 @@ export async function prepare(c: ConfigName): Promise<void> {
  */
 export async function installDom(c: ConfigName): Promise<StartupTimings> {
   const t0 = performance.now();
-  const domModule: any = await import(domSpecifier(c));
+  await import(domSpecifier(c));
   const t1 = performance.now();
   let setupPath: string;
   if (!isRtd(c)) {
@@ -93,40 +93,16 @@ export async function installDom(c: ConfigName): Promise<StartupTimings> {
     await env.setup(globalThis, {});
     setupPath = `vitest builtin ${c} environment`;
   } else {
-    setupPath = await installRtd(domModule);
+    setupPath = await installRtd();
   }
   const t2 = performance.now();
   return { importMs: t1 - t0, setupMs: t2 - t1, totalMs: t2 - t0, setupPath };
 }
 
-async function installRtd(domModule: any): Promise<string> {
-  let envModule: any = null;
-  let envError: unknown = null;
-  try {
-    envModule = await dynamicImport("vitest-environment-rtd");
-  } catch (error) {
-    envError = error;
-  }
-  const env = envModule?.default;
-  if (env && typeof env.setup === "function") {
-    await env.setup(globalThis, {});
-    return "vitest-environment-rtd";
-  }
-  // Fallback while vitest-environment-rtd is incomplete: createWindow + installGlobals, or
-  // Vitest's generic populateGlobal over the window.
-  if (typeof domModule.createWindow !== "function") {
-    throw new Error(
-      `@rtd/dom has no createWindow and vitest-environment-rtd is unusable: ${String((envError as Error)?.message ?? "no default export with setup()")}`,
-    );
-  }
-  const win = domModule.createWindow({ url: "http://localhost:3000/" });
-  if (typeof domModule.installGlobals === "function") {
-    domModule.installGlobals(win, globalThis);
-    return "fallback: @rtd/dom createWindow + installGlobals";
-  }
-  const { populateGlobal } = await import("vitest/runtime");
-  populateGlobal(globalThis, win, { bindFunctions: true });
-  return "fallback: @rtd/dom createWindow + vitest populateGlobal";
+async function installRtd(): Promise<string> {
+  const env = (await dynamicImport("vitest-environment-rtd")).default;
+  await env.setup(globalThis, {});
+  return "vitest-environment-rtd";
 }
 
 /** Install the DOM and load React + the configuration's testing-library stack. */
