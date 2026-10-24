@@ -68,10 +68,7 @@ for (const f of ["Comment-constructor.html", "Text-constructor.html"]) defineWPT
 // .window.js tests (wptFiles() only lists .html).
 defineWPT("dom/nodes/adoption.window.js");
 defineWPT("dom/nodes/attributes-namednodemap-cross-document.window.js");
-defineWPT(
-  "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js",
-  "<template> adopting steps never run: HTMLTemplateElement does not set F_ADOPT_HOOK (TODO(html) in html/template.ts)",
-);
+defineWPT("dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js");
 defineWPT("dom/nodes/Document-cloneNode-base-url-xml.window.js");
 defineWPT("dom/nodes/Document-cloneNode-base-url.window.js", "blob: URL documents need a fetch (out of scope: network)", { timeout: 300 });
 defineWPT("dom/nodes/live-collections-batched-mutations.window.js", PROXY_FREE);

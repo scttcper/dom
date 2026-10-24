@@ -49,9 +49,6 @@
  "dom/nodes/Document-URL.html": [
   "(unnamed async test)"
  ],
- "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js": [
-  "adoptNode() <template> element: content follows via template adopting steps"
- ],
  "dom/nodes/Document-base-url-not-live.window.js": [
   "about:blank base URL is not live",
   "about:srcdoc base URL is not live"
