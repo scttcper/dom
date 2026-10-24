@@ -713,12 +713,24 @@ export class Window extends EventTarget {
     }
     if (origin !== "*" && origin !== self.origin) return;
     const transferList = Array.isArray(transfer) ? transfer : typeof targetOrigin === "object" && targetOrigin !== null ? targetOrigin.transfer : undefined;
-    // Serialize synchronously (DataCloneError is thrown to the caller).
-    const data = structuredClone(message, transferList === undefined ? undefined : { transfer: transferList as never[] });
+    // Step 5: StructuredSerializeWithTransfer, synchronously (DataCloneError is thrown to the
+    // caller). The transfer list rides along in the clone so the deserialized transferred values
+    // come back even when the message does not reference them.
+    let data: unknown;
+    let ports: unknown[] | undefined;
+    if (transferList === undefined || transferList.length === 0) data = structuredClone(message);
+    else {
+      const record = structuredClone({ message, transferred: transferList }, { transfer: transferList as never[] });
+      data = record.message;
+      // Step 8.3: newPorts is the MessagePorts among the deserialized transferred values.
+      const MessagePortClass = (globalThis as { MessagePort?: abstract new () => unknown }).MessagePort;
+      ports = MessagePortClass === undefined ? [] : record.transferred.filter((v) => v instanceof MessagePortClass);
+    }
     const source = self.origin;
     self._task(function (this: Window) {
       const MessageEvent = eventInterface("MessageEvent");
-      this.dispatchEvent(new MessageEvent("message", { data, origin: source, source: this }) as never);
+      // Step 8.4.
+      this.dispatchEvent(new MessageEvent("message", { data, origin: source, source: this, ports }) as never);
     }, 0);
   }
 
