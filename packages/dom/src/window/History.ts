@@ -164,9 +164,15 @@ export class History {
       this[$index]++;
     }
     window._setURL(url);
-    // https://html.spec.whatwg.org/#scroll-to-fragid — fragment navigations fire hashchange.
-    if (url.hash !== "" || newURL.endsWith("#")) {
-      if (withoutFragment(oldURL) === withoutFragment(newURL) && oldURL !== newURL) this._queueHashChange(oldURL, newURL);
+    // https://html.spec.whatwg.org/#navigate step 15: a URL with a fragment that equals the
+    // document's URL apart from it is a fragment navigation (https://html.spec.whatwg.org/#navigate-fragid).
+    if ((url.hash !== "" || newURL.endsWith("#")) && withoutFragment(oldURL) === withoutFragment(newURL)) {
+      // Navigate to a fragment → https://html.spec.whatwg.org/#update-document-for-history-step-application
+      // step 6.3: the document's entry changed, so popstate fires synchronously with the new
+      // entry's (null) state, then step 6.3.5 queues hashchange when the fragment differs.
+      const PopStateEvent = eventInterface("PopStateEvent");
+      window.dispatchEvent(new PopStateEvent("popstate", { state: null }) as never);
+      if (oldURL !== newURL) this._queueHashChange(oldURL, newURL);
     }
   }
 
