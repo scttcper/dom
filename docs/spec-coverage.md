@@ -22,20 +22,20 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 778 | 284 | 55 | 439 |
+| [HTML Standard](#html-standard) | 783 | 602 | 54 | 127 |
 | [DOM Standard](#dom-standard) | 273 | 236 | 28 | 9 |
 | [CSS: cssom](#css-cssom) | 73 | 37 | 22 | 14 |
 | [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
 | [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
-| [CSS: selectors](#css-selectors) | 28 | 12 | 4 | 12 |
+| [CSS: selectors](#css-selectors) | 29 | 13 | 4 | 12 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 5 | 1 | 15 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
 | [CSS: css-color](#css-css-color) | 16 | 12 | 1 | 3 |
 | [W3C: html-aam](#w3c-html-aam) | 15 | 8 | 0 | 7 |
-| [CSS: css-cascade](#css-css-cascade) | 12 | 10 | 0 | 2 |
+| [CSS: css-cascade](#css-css-cascade) | 13 | 11 | 0 | 2 |
 | [W3C: accname](#w3c-accname) | 11 | 7 | 0 | 4 |
 | [CSS: resize-observer](#css-resize-observer) | 10 | 2 | 0 | 8 |
 | [Infra Standard](#infra-standard) | 10 | 0 | 0 | 10 |
@@ -93,7 +93,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1572 | 746 | 121 | 705 |
+| **All** | 1579 | 1066 | 120 | 393 |
 
 ## Web-platform-tests fixtures
 
@@ -137,7 +137,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | `selection` | 44 | 44 | 0 |  |
 | `shadow-dom` | 44 | 44 | 2 | `expectations/components.json` |
 | `shadow-dom/declarative` | 9 | 9 | 8 | `expectations/components.json` |
-| `shadow-dom/focus` | 9 | 9 | 2 | `expectations/components.json` |
+| `shadow-dom/focus` | 9 | 9 | 1 | `expectations/components.json` |
 | `shadow-dom/leaktests` | 2 | 2 | 1 | `expectations/components.json` |
 | `shadow-dom/untriaged` | 46 | 46 | 2 | `expectations/components.json` |
 | `uievents` | 2 | 2 | 0 |  |
@@ -154,11 +154,11 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 778 sections implemented, 284 tested, 55 by WPT only, 439 untested.
+<https://html.spec.whatwg.org/> — 783 sections implemented, 602 tested, 54 by WPT only, 127 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [accessibility-semantics](https://html.spec.whatwg.org/#accessibility-semantics) | `dom/html/HTMLElement.ts` | **untested** |
+| [accessibility-semantics](https://html.spec.whatwg.org/#accessibility-semantics) | `dom/html/HTMLElement.ts` | `dom/html/forms/controls-details.test.ts` |
 | [activate-an-event-handler](https://html.spec.whatwg.org/#activate-an-event-handler) | `dom/events/handlers.ts` | **untested** |
 | [activation-behavior](https://html.spec.whatwg.org/#activation-behavior) | `dom/events/activation.ts` | **untested** |
 | [adjust-foreign-attributes](https://html.spec.whatwg.org/#adjust-foreign-attributes) | `dom/parser/treebuilder.ts` | **untested** |
@@ -167,40 +167,40 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [adoption-agency-algorithm](https://html.spec.whatwg.org/#adoption-agency-algorithm) | `dom/parser/treebuilder.ts` | WPT: `custom-elements/append-children-to-new-parent-cycle.html` |
 | [after-attribute-name-state](https://html.spec.whatwg.org/#after-attribute-name-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [after-attribute-value-(quoted](https://html.spec.whatwg.org/#after-attribute-value-(quoted) | `dom/parser/tokenizer.ts` | **untested** |
-| [animationframeprovider-cancelanimationframe](https://html.spec.whatwg.org/#animationframeprovider-cancelanimationframe) | `dom/window/Window.ts` | **untested** |
+| [animationframeprovider-cancelanimationframe](https://html.spec.whatwg.org/#animationframeprovider-cancelanimationframe) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
 | [appropriate-place-for-inserting-a-node](https://html.spec.whatwg.org/#appropriate-place-for-inserting-a-node) | `dom/parser/treebuilder.ts` | **untested** |
 | [appropriate-template-contents-owner-document](https://html.spec.whatwg.org/#appropriate-template-contents-owner-document) | `dom/html/template.ts` | `dom/html/template.test.ts` |
-| [assigned-access-key](https://html.spec.whatwg.org/#assigned-access-key) | `dom/html/HTMLElement.ts` | **untested** |
+| [assigned-access-key](https://html.spec.whatwg.org/#assigned-access-key) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [association-of-controls-and-forms](https://html.spec.whatwg.org/#association-of-controls-and-forms) | `dom/html/forms/form-associated.ts` | `dom/html/forms/face-parser-selectedcontent.test.ts` |
 | [attr-associated-element](https://html.spec.whatwg.org/#attr-associated-element) | `dom/html/aria-reflection.ts`, `dom/html/invokers.ts` | WPT: `html/dom/aria-element-reflection-disconnected.html` |
-| [attr-associated-elements](https://html.spec.whatwg.org/#attr-associated-elements) | `dom/html/aria-reflection.ts` | **untested** |
+| [attr-associated-elements](https://html.spec.whatwg.org/#attr-associated-elements) | `dom/html/aria-reflection.ts` | `dom/html/forms/controls-details.test.ts` |
 | [attr-button-type](https://html.spec.whatwg.org/#attr-button-type) | `dom/html/forms/form-submission.ts` | WPT: `html/semantics/forms/the-button-element/button-type-enumerated-ascii-case-insensitive.html` |
-| [attr-button-type-auto-state](https://html.spec.whatwg.org/#attr-button-type-auto-state) | `dom/html/forms/form-submission.ts` | **untested** |
+| [attr-button-type-auto-state](https://html.spec.whatwg.org/#attr-button-type-auto-state) | `dom/html/forms/form-submission.ts` | `dom/html/forms/controls-details.test.ts` |
 | [attr-contenteditable](https://html.spec.whatwg.org/#attr-contenteditable) | `dom/html/shared.ts` | `dom/html/editing.test.ts`; WPT: `html/editing/editing-0/contenteditable/contenteditable-enumerated-ascii-case-insensitive.html` |
-| [attr-fs-enctype](https://html.spec.whatwg.org/#attr-fs-enctype) | `dom/html/forms/form-submission.ts` | **untested** |
-| [attr-fs-method](https://html.spec.whatwg.org/#attr-fs-method) | `dom/html/forms/form-submission.ts` | **untested** |
+| [attr-fs-enctype](https://html.spec.whatwg.org/#attr-fs-enctype) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
+| [attr-fs-method](https://html.spec.whatwg.org/#attr-fs-method) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
 | [attr-input-pattern](https://html.spec.whatwg.org/#attr-input-pattern) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/validation.test.ts`; WPT: `html/semantics/forms/the-input-element/pattern_attribute.html`, `html/semantics/forms/the-input-element/pattern_attribute_v_flag.html` |
 | [attr-input-type](https://html.spec.whatwg.org/#attr-input-type) | `aria/forms.ts`, `dom/html/forms/input-type.ts`, `dom/selectors/state.ts` | `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/default-type.html` |
-| [attr-popover](https://html.spec.whatwg.org/#attr-popover) | `dom/html/top-layer.ts` | **untested** |
-| [attr-tabindex](https://html.spec.whatwg.org/#attr-tabindex) | `dom/html/focus.ts` | **untested** |
+| [attr-popover](https://html.spec.whatwg.org/#attr-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [attr-tabindex](https://html.spec.whatwg.org/#attr-tabindex) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [attribute](https://html.spec.whatwg.org/#attribute) | `dom/serializer/index.ts` | **untested** |
 | [attribute-name-state](https://html.spec.whatwg.org/#attribute-name-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [attribute-value-(double-quoted](https://html.spec.whatwg.org/#attribute-value-(double-quoted) | `dom/parser/tokenizer.ts` | **untested** |
 | [attribute-value-(unquoted](https://html.spec.whatwg.org/#attribute-value-(unquoted) | `dom/parser/tokenizer.ts` | **untested** |
-| [auto-directionality](https://html.spec.whatwg.org/#auto-directionality) | `dom/selectors/state.ts` | **untested** |
-| [auto-directionality-form-associated-elements](https://html.spec.whatwg.org/#auto-directionality-form-associated-elements) | `dom/selectors/state.ts` | **untested** |
-| [autocapitalize-and-autocorrect-inheriting-elements](https://html.spec.whatwg.org/#autocapitalize-and-autocorrect-inheriting-elements) | `dom/html/HTMLElement.ts` | **untested** |
-| [autofill-field](https://html.spec.whatwg.org/#autofill-field) | `dom/html/forms/autofill.ts` | **untested** |
-| [autofill-processing-model](https://html.spec.whatwg.org/#autofill-processing-model) | `dom/html/forms/autofill.ts` | **untested** |
-| [autofocus-delegate](https://html.spec.whatwg.org/#autofocus-delegate) | `dom/html/focus.ts` | **untested** |
-| [backup-element-queue](https://html.spec.whatwg.org/#backup-element-queue) | `dom/html/custom-elements.ts` | **untested** |
-| [barprop](https://html.spec.whatwg.org/#barprop) | `dom/window/Window.ts` | **untested** |
+| [auto-directionality](https://html.spec.whatwg.org/#auto-directionality) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
+| [auto-directionality-form-associated-elements](https://html.spec.whatwg.org/#auto-directionality-form-associated-elements) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
+| [autocapitalize-and-autocorrect-inheriting-elements](https://html.spec.whatwg.org/#autocapitalize-and-autocorrect-inheriting-elements) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [autofill-field](https://html.spec.whatwg.org/#autofill-field) | `dom/html/forms/autofill.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [autofill-processing-model](https://html.spec.whatwg.org/#autofill-processing-model) | `dom/html/forms/autofill.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [autofocus-delegate](https://html.spec.whatwg.org/#autofocus-delegate) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [backup-element-queue](https://html.spec.whatwg.org/#backup-element-queue) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
+| [barprop](https://html.spec.whatwg.org/#barprop) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
 | [barred-from-constraint-validation](https://html.spec.whatwg.org/#barred-from-constraint-validation) | `dom/html/forms/face.ts`, `dom/html/forms/validation.ts` | `dom/html/forms/element-internals.test.ts`, `dom/html/forms/validation.test.ts`, `compat/forms/validation.test.ts` |
 | [before-attribute-name-state](https://html.spec.whatwg.org/#before-attribute-name-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [before-attribute-value-state](https://html.spec.whatwg.org/#before-attribute-value-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [being-rendered](https://html.spec.whatwg.org/#being-rendered) | `dom/html/shared.ts` | `dom/html/focus.test.ts` |
 | [best-representation-of-the-number-as-a-floating-point-number](https://html.spec.whatwg.org/#best-representation-of-the-number-as-a-floating-point-number) | `dom/html/forms/microsyntaxes.ts` | WPT: `html/semantics/forms/the-input-element/range.html` |
-| [bidi-rendering](https://html.spec.whatwg.org/#bidi-rendering) | `dom/css/cascade.ts` | **untested** |
+| [bidi-rendering](https://html.spec.whatwg.org/#bidi-rendering) | `dom/css/cascade.ts` | `dom/selectors/html-state.test.ts` |
 | [blocked-by-a-modal-dialog](https://html.spec.whatwg.org/#blocked-by-a-modal-dialog) | `dom/html/top-layer.ts` | `dom/html/focus.test.ts`; WPT: `html/semantics/interactive-elements/the-dialog-element/inert-node-is-unfocusable.html` |
 | [bogus-comment-state](https://html.spec.whatwg.org/#bogus-comment-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [bogus-doctype-state](https://html.spec.whatwg.org/#bogus-doctype-state) | `dom/parser/tokenizer.ts` | **untested** |
@@ -208,82 +208,83 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [case-sensitivity-of-selectors](https://html.spec.whatwg.org/#case-sensitivity-of-selectors) | `dom/css/cascade.ts`, `dom/selectors/compile.ts`, `jest-dom/matchers/aria.ts` +1 | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/matching.test.ts`; WPT: `css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html` |
 | [categories](https://html.spec.whatwg.org/#categories) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
 | [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` +1 | `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
-| [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | **untested** |
+| [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
 | [category-reset](https://html.spec.whatwg.org/#category-reset) | `dom/html/forms/form-associated.ts` | WPT: `html/semantics/forms/resetting-a-form/reset-form.html` |
-| [category-submit](https://html.spec.whatwg.org/#category-submit) | `dom/html/forms/form-associated.ts` | **untested** |
+| [category-submit](https://html.spec.whatwg.org/#category-submit) | `dom/html/forms/form-associated.ts` | `compat/forms/form-algorithms.test.ts` |
 | [cdata-section-state](https://html.spec.whatwg.org/#cdata-section-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [character-reference-state](https://html.spec.whatwg.org/#character-reference-state) | `dom/parser/tokenizer.ts`, `native/lib/rtd.ts` | `native/native.test.ts` |
 | [check-popover-validity](https://html.spec.whatwg.org/#check-popover-validity) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`; WPT: `html/semantics/popovers/popover-removal-hides.html` |
-| [check-validity-steps](https://html.spec.whatwg.org/#check-validity-steps) | `dom/html/forms/validation.ts` | **untested** |
+| [check-validity-steps](https://html.spec.whatwg.org/#check-validity-steps) | `dom/html/forms/validation.ts` | `compat/forms/form-algorithms.test.ts` |
 | [checkbox-state-(type=checkbox](https://html.spec.whatwg.org/#checkbox-state-(type=checkbox) | `dom/html/forms/HTMLInputElement.ts` | `dom/events/event-path.test.ts`, `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/the-input-element/checkbox-click-events.html`, `html/semantics/forms/the-input-element/checkbox.html` +1 |
-| [child-text-content](https://html.spec.whatwg.org/#child-text-content) | `dom/html/resources.ts` | **untested** |
+| [child-text-content](https://html.spec.whatwg.org/#child-text-content) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [clear-the-list-of-active-formatting-elements-up-to-the-last-marker](https://html.spec.whatwg.org/#clear-the-list-of-active-formatting-elements-up-to-the-last-marker) | `dom/parser/treebuilder.ts` | **untested** |
 | [clear-the-stack-back-to-a-table-context](https://html.spec.whatwg.org/#clear-the-stack-back-to-a-table-context) | `dom/parser/treebuilder.ts` | **untested** |
 | [click-in-progress-flag](https://html.spec.whatwg.org/#click-in-progress-flag) | `dom/html/HTMLElement.ts` | `compat/html/activation.test.ts` |
-| [clone-an-option-into-a-selectedcontent](https://html.spec.whatwg.org/#clone-an-option-into-a-selectedcontent) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
+| [clone-an-option-into-a-selectedcontent](https://html.spec.whatwg.org/#clone-an-option-into-a-selectedcontent) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/controls-details.test.ts` |
 | [close-a-browsing-context](https://html.spec.whatwg.org/#close-a-browsing-context) | `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/html/element-tasks.test.ts`, `dom/window/timers.test.ts`, `jest-environment/environment.test.ts`, `compat/leaks/environment.test.ts` |
 | [close-a-p-element](https://html.spec.whatwg.org/#close-a-p-element) | `dom/parser/treebuilder.ts` | **untested** |
 | [close-requests](https://html.spec.whatwg.org/#close-requests) | `dom/events/dispatch.ts`, `dom/html/top-layer.ts` | `dom/html/top-layer.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts` |
-| [close-requests-and-close-watchers](https://html.spec.whatwg.org/#close-requests-and-close-watchers) | `dom/html/top-layer.ts` | **untested** |
+| [close-requests-and-close-watchers](https://html.spec.whatwg.org/#close-requests-and-close-watchers) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [close-the-cell](https://html.spec.whatwg.org/#close-the-cell) | `dom/parser/treebuilder.ts` | **untested** |
 | [close-the-dialog](https://html.spec.whatwg.org/#close-the-dialog) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/element-tasks.test.ts`, `dom/html/wpt-dialog.test.ts` |
-| [close-watcher](https://html.spec.whatwg.org/#close-watcher) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-cancel-action](https://html.spec.whatwg.org/#close-watcher-cancel-action) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-close](https://html.spec.whatwg.org/#close-watcher-close) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-close-action](https://html.spec.whatwg.org/#close-watcher-close-action) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-destroy](https://html.spec.whatwg.org/#close-watcher-destroy) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-get-enabled-state](https://html.spec.whatwg.org/#close-watcher-get-enabled-state) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-is-running-cancel-action](https://html.spec.whatwg.org/#close-watcher-is-running-cancel-action) | `dom/html/top-layer.ts` | **untested** |
-| [close-watcher-manager](https://html.spec.whatwg.org/#close-watcher-manager) | `dom/html/top-layer.ts` | **untested** |
+| [close-watcher](https://html.spec.whatwg.org/#close-watcher) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [close-watcher-cancel-action](https://html.spec.whatwg.org/#close-watcher-cancel-action) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [close-watcher-close](https://html.spec.whatwg.org/#close-watcher-close) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [close-watcher-close-action](https://html.spec.whatwg.org/#close-watcher-close-action) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [close-watcher-destroy](https://html.spec.whatwg.org/#close-watcher-destroy) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [close-watcher-get-enabled-state](https://html.spec.whatwg.org/#close-watcher-get-enabled-state) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [close-watcher-is-running-cancel-action](https://html.spec.whatwg.org/#close-watcher-is-running-cancel-action) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [close-watcher-manager](https://html.spec.whatwg.org/#close-watcher-manager) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [close-watcher-request-close](https://html.spec.whatwg.org/#close-watcher-request-close) | `dom/html/top-layer.ts` | `dom/html/wpt-dialog.test.ts` |
 | [comment-end-state](https://html.spec.whatwg.org/#comment-end-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [comment-start-state](https://html.spec.whatwg.org/#comment-start-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [comment-state](https://html.spec.whatwg.org/#comment-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [common-microsyntaxes](https://html.spec.whatwg.org/#common-microsyntaxes) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [compiled-pattern-regular-expression](https://html.spec.whatwg.org/#compiled-pattern-regular-expression) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [common-input-element-events](https://html.spec.whatwg.org/#common-input-element-events) | `dom/html/forms/user-validity.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [common-microsyntaxes](https://html.spec.whatwg.org/#common-microsyntaxes) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [compiled-pattern-regular-expression](https://html.spec.whatwg.org/#compiled-pattern-regular-expression) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [computed-closed-by-state](https://html.spec.whatwg.org/#computed-closed-by-state) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
-| [computed-writing-suggestions-value](https://html.spec.whatwg.org/#computed-writing-suggestions-value) | `dom/html/HTMLElement.ts` | **untested** |
-| [concept-button](https://html.spec.whatwg.org/#concept-button) | `dom/html/invokers.ts` | **untested** |
-| [concept-custom-element-definition-construction-stack](https://html.spec.whatwg.org/#concept-custom-element-definition-construction-stack) | `dom/html/custom-elements.ts` | **untested** |
+| [computed-writing-suggestions-value](https://html.spec.whatwg.org/#computed-writing-suggestions-value) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [concept-button](https://html.spec.whatwg.org/#concept-button) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
+| [concept-custom-element-definition-construction-stack](https://html.spec.whatwg.org/#concept-custom-element-definition-construction-stack) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | `dom/nodes/wpt-nodes.test.ts`, `dom/window/iframe.test.ts` |
-| [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | **untested** |
+| [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts` |
 | [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`, `compat/html/focus.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
-| [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | **untested** |
-| [concept-fe-value](https://html.spec.whatwg.org/#concept-fe-value) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-fe-value](https://html.spec.whatwg.org/#concept-fe-value) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-fieldset-disabled](https://html.spec.whatwg.org/#concept-fieldset-disabled) | `jest-dom/matchers/state.ts` | **untested** |
-| [concept-form-reset](https://html.spec.whatwg.org/#concept-form-reset) | `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts`, `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/resetting-a-form/reset-form-2.html`, `html/semantics/forms/resetting-a-form/reset-form.html` |
-| [concept-form-submit](https://html.spec.whatwg.org/#concept-form-submit) | `dom/html/forms/form-submission.ts`, `dom/html/interactive.ts` | `dom/html/forms/form.test.ts`, `dom/html/wpt-dialog.test.ts`, `compat/forms/submission-activation.test.ts`, `compat/not-implemented/not-implemented.test.ts` |
-| [concept-fs-method](https://html.spec.whatwg.org/#concept-fs-method) | `dom/html/interactive.ts` | **untested** |
-| [concept-hyperlink-url-set](https://html.spec.whatwg.org/#concept-hyperlink-url-set) | `dom/html/anchor.ts` | **untested** |
+| [concept-form-reset](https://html.spec.whatwg.org/#concept-form-reset) | `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `compat/forms/form-algorithms.test.ts`, `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/resetting-a-form/reset-form-2.html`, `html/semantics/forms/resetting-a-form/reset-form.html` |
+| [concept-form-submit](https://html.spec.whatwg.org/#concept-form-submit) | `dom/html/forms/form-submission.ts`, `dom/html/forms/user-validity.ts`, `dom/html/interactive.ts` | `dom/html/forms/form.test.ts`, `dom/html/wpt-dialog.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `compat/forms/form-algorithms.test.ts` +2 |
+| [concept-fs-method](https://html.spec.whatwg.org/#concept-fs-method) | `dom/html/interactive.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [concept-hyperlink-url-set](https://html.spec.whatwg.org/#concept-hyperlink-url-set) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
 | [concept-input-checked-dirty-flag](https://html.spec.whatwg.org/#concept-input-checked-dirty-flag) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/checkedness.test.ts`; WPT: `html/semantics/forms/the-input-element/input-value-dirty-flag.html` |
-| [concept-input-min-zero](https://html.spec.whatwg.org/#concept-input-min-zero) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [concept-input-step](https://html.spec.whatwg.org/#concept-input-step) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [concept-input-value-dirty-flag](https://html.spec.whatwg.org/#concept-input-value-dirty-flag) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [concept-input-value-number-string](https://html.spec.whatwg.org/#concept-input-value-number-string) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [concept-input-value-string-number](https://html.spec.whatwg.org/#concept-input-value-string-number) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [concept-location-ancestor-origins-list](https://html.spec.whatwg.org/#concept-location-ancestor-origins-list) | `dom/window/Location.ts` | **untested** |
+| [concept-input-min-zero](https://html.spec.whatwg.org/#concept-input-min-zero) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-input-step](https://html.spec.whatwg.org/#concept-input-step) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-input-value-dirty-flag](https://html.spec.whatwg.org/#concept-input-value-dirty-flag) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-input-value-number-string](https://html.spec.whatwg.org/#concept-input-value-number-string) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-input-value-string-number](https://html.spec.whatwg.org/#concept-input-value-string-number) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-location-ancestor-origins-list](https://html.spec.whatwg.org/#concept-location-ancestor-origins-list) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
 | [concept-option-dirtiness](https://html.spec.whatwg.org/#concept-option-dirtiness) | `dom/html/forms/HTMLOptionElement.ts` | WPT: `html/semantics/forms/the-select-element/select-setter-dirtiness.html` |
-| [concept-option-disabled](https://html.spec.whatwg.org/#concept-option-disabled) | `dom/html/forms/form-associated.ts` | **untested** |
+| [concept-option-disabled](https://html.spec.whatwg.org/#concept-option-disabled) | `dom/html/forms/form-associated.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-option-selectedness](https://html.spec.whatwg.org/#concept-option-selectedness) | `aria/forms.ts`, `dom/html/forms/HTMLOptionElement.ts` | WPT: `html/semantics/forms/the-select-element/option-selectedness-script-mutation.html` |
 | [concept-output-default-value-override](https://html.spec.whatwg.org/#concept-output-default-value-override) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
-| [concept-select-option-list](https://html.spec.whatwg.org/#concept-select-option-list) | `aria/forms.ts`, `dom/html/forms/collections.ts` | **untested** |
+| [concept-select-option-list](https://html.spec.whatwg.org/#concept-select-option-list) | `aria/forms.ts`, `dom/html/forms/collections.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-select-size](https://html.spec.whatwg.org/#concept-select-size) | `aria/forms.ts`, `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/select-option.test.ts` |
-| [concept-settings-object-origin](https://html.spec.whatwg.org/#concept-settings-object-origin) | `dom/window/origin.ts` | **untested** |
+| [concept-settings-object-origin](https://html.spec.whatwg.org/#concept-settings-object-origin) | `dom/window/origin.ts` | `dom/window/window-apis.test.ts` |
 | [concept-storage-broadcast](https://html.spec.whatwg.org/#concept-storage-broadcast) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
-| [concept-submit-button](https://html.spec.whatwg.org/#concept-submit-button) | `dom/html/forms/form-submission.ts` | **untested** |
-| [concept-textarea-dirty](https://html.spec.whatwg.org/#concept-textarea-dirty) | `dom/html/forms/HTMLTextAreaElement.ts` | **untested** |
+| [concept-submit-button](https://html.spec.whatwg.org/#concept-submit-button) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
+| [concept-textarea-dirty](https://html.spec.whatwg.org/#concept-textarea-dirty) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-textarea-raw-value](https://html.spec.whatwg.org/#concept-textarea-raw-value) | `dom/html/forms/HTMLTextAreaElement.ts` | `dom/html/forms/select-textarea.test.ts` |
 | [concept-try-upgrade](https://html.spec.whatwg.org/#concept-try-upgrade) | `dom/html/custom-elements.ts` | WPT: `custom-elements/upgrading.html` |
-| [concept-upgrade-an-element](https://html.spec.whatwg.org/#concept-upgrade-an-element) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `compat/html/custom-elements.test.ts`; WPT: `custom-elements/microtasks-and-constructors.html`, `custom-elements/range-and-constructors.html` |
-| [constructing-entry-list](https://html.spec.whatwg.org/#constructing-entry-list) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
+| [concept-upgrade-an-element](https://html.spec.whatwg.org/#concept-upgrade-an-element) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `compat/html/custom-element-reactions.test.ts`, `compat/html/custom-elements.test.ts`; WPT: `custom-elements/microtasks-and-constructors.html`, `custom-elements/range-and-constructors.html` |
+| [constructing-entry-list](https://html.spec.whatwg.org/#constructing-entry-list) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [constructing-the-form-data-set](https://html.spec.whatwg.org/#constructing-the-form-data-set) | `dom/html/forms/FormData.ts`, `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-data.test.ts` |
-| [contained-text-auto-directionality](https://html.spec.whatwg.org/#contained-text-auto-directionality) | `dom/selectors/state.ts` | **untested** |
+| [contained-text-auto-directionality](https://html.spec.whatwg.org/#contained-text-auto-directionality) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [create-a-new-child-navigable](https://html.spec.whatwg.org/#create-a-new-child-navigable) | `dom/window/Window.ts`, `dom/window/browsing-context.ts` | `dom/window/iframe.test.ts` |
 | [create-an-element-for-the-token](https://html.spec.whatwg.org/#create-an-element-for-the-token) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/nodes/create.ts` +2 | `dom/html/custom-elements.test.ts`, `dom/html/forms/face-parser-selectedcontent.test.ts`; WPT: `custom-elements/connected-callbacks-html-fragment-parsing.html`, `custom-elements/parser/parser-constructs-custom-element-in-document-write.html` +4 |
-| [current-element-queue](https://html.spec.whatwg.org/#current-element-queue) | `dom/html/custom-elements.ts` | **untested** |
+| [current-element-queue](https://html.spec.whatwg.org/#current-element-queue) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [current-event](https://html.spec.whatwg.org/#current-event) | `dom/events/dispatch.ts` | **untested** |
-| [custom-element-reaction-queue](https://html.spec.whatwg.org/#custom-element-reaction-queue) | `dom/html/custom-elements.ts` | **untested** |
+| [custom-element-reaction-queue](https://html.spec.whatwg.org/#custom-element-reaction-queue) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [custom-element-reactions](https://html.spec.whatwg.org/#custom-element-reactions) | `dom/html/custom-elements.ts`, `dom/nodes/create.ts` | `dom/html/custom-elements.test.ts`, `dom/html/wpt-custom-elements.test.ts`, `compat/html/custom-elements.test.ts` |
 | [custom-elements](https://html.spec.whatwg.org/#custom-elements) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `dom/html/wpt-custom-elements.test.ts` |
 | [custom-state-pseudo-class](https://html.spec.whatwg.org/#custom-state-pseudo-class) | `dom/selectors/state.ts` | `dom/html/wpt-custom-elements.test.ts`; WPT: `custom-elements/state/ElementInternals-states.html`, `custom-elements/state/state-css-selector-nth-of.html` +3 |
@@ -291,39 +292,39 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [customstateset](https://html.spec.whatwg.org/#customstateset) | `dom/html/HTMLElement.ts` | `dom/html/forms/element-internals.test.ts` |
 | [data-state](https://html.spec.whatwg.org/#data-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [deactivate-an-event-handler](https://html.spec.whatwg.org/#deactivate-an-event-handler) | `dom/events/handlers.ts` | **untested** |
-| [default-button](https://html.spec.whatwg.org/#default-button) | `dom/html/forms/form-submission.ts` | **untested** |
-| [design-mode-enabled](https://html.spec.whatwg.org/#design-mode-enabled) | `dom/html/shared.ts` | **untested** |
+| [default-button](https://html.spec.whatwg.org/#default-button) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
+| [design-mode-enabled](https://html.spec.whatwg.org/#design-mode-enabled) | `dom/html/shared.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [details-name-group](https://html.spec.whatwg.org/#details-name-group) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
-| [determine-if-a-command-is-valid](https://html.spec.whatwg.org/#determine-if-a-command-is-valid) | `dom/html/invokers.ts` | **untested** |
-| [determining-the-origin](https://html.spec.whatwg.org/#determining-the-origin) | `dom/window/origin.ts` | **untested** |
+| [determine-if-a-command-is-valid](https://html.spec.whatwg.org/#determine-if-a-command-is-valid) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
+| [determining-the-origin](https://html.spec.whatwg.org/#determining-the-origin) | `dom/window/origin.ts` | `dom/window/window-apis.test.ts` |
 | [determining-the-target-of-an-event-handler](https://html.spec.whatwg.org/#determining-the-target-of-an-event-handler) | `dom/events/handlers.ts` | `dom/events/handlers.test.ts` |
 | [dialog-cleanup-steps](https://html.spec.whatwg.org/#dialog-cleanup-steps) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
-| [dialog-close-watcher](https://html.spec.whatwg.org/#dialog-close-watcher) | `dom/html/interactive.ts` | **untested** |
+| [dialog-close-watcher](https://html.spec.whatwg.org/#dialog-close-watcher) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dialog-focusing-steps](https://html.spec.whatwg.org/#dialog-focusing-steps) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/wpt-dialog.test.ts` |
-| [dialog-pointerdown-target](https://html.spec.whatwg.org/#dialog-pointerdown-target) | `dom/html/top-layer.ts` | **untested** |
+| [dialog-pointerdown-target](https://html.spec.whatwg.org/#dialog-pointerdown-target) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
 | [dialog-request-close](https://html.spec.whatwg.org/#dialog-request-close) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
 | [dialog-setup-steps](https://html.spec.whatwg.org/#dialog-setup-steps) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
-| [dialog-toggle-task-tracker](https://html.spec.whatwg.org/#dialog-toggle-task-tracker) | `dom/html/interactive.ts` | **untested** |
+| [dialog-toggle-task-tracker](https://html.spec.whatwg.org/#dialog-toggle-task-tracker) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [disabled-elements](https://html.spec.whatwg.org/#disabled-elements) | `jest-dom/matchers/state.ts` | `user-event/upstream/utils/misc/isDisabled.test.ts`; WPT: `html/semantics/disabled-elements/disabledElement.html` |
 | [do-not-apply](https://html.spec.whatwg.org/#do-not-apply) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/input-type.ts` | `dom/html/forms/wpt-forms.test.ts`, `compat/forms/textarea-selection.test.ts` |
 | [doctype-state](https://html.spec.whatwg.org/#doctype-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [document-base-url](https://html.spec.whatwg.org/#document-base-url) | `dom/nodes/Document.ts` | `dom/nodes/wpt-nodes.test.ts` |
-| [document-showing-popover](https://html.spec.whatwg.org/#document-showing-popover) | `dom/html/top-layer.ts` | **untested** |
+| [document-showing-popover](https://html.spec.whatwg.org/#document-showing-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [document.title](https://html.spec.whatwg.org/#document.title) | `dom/html/resources.ts` | `dom/html/elements.test.ts`, `compat/html/global-attributes.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.title-01.html`, `html/dom/documents/dom-tree-accessors/document.title-03.html` +5 |
 | [documentandelementeventhandlers](https://html.spec.whatwg.org/#documentandelementeventhandlers) | `dom/events/handlers.ts` | **untested** |
-| [dom-a-text](https://html.spec.whatwg.org/#dom-a-text) | `dom/html/anchor.ts` | **untested** |
+| [dom-a-text](https://html.spec.whatwg.org/#dom-a-text) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
 | [dom-accesskeylabel](https://html.spec.whatwg.org/#dom-accesskeylabel) | `dom/html/HTMLElement.ts` | `dom/html/wpt-html-dom.test.ts` |
 | [dom-animationframeprovider-requestanimationframe](https://html.spec.whatwg.org/#dom-animationframeprovider-requestanimationframe) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dom-attachinternals](https://html.spec.whatwg.org/#dom-attachinternals) | `dom/html/HTMLElement.ts` | `dom/html/custom-elements.test.ts`, `dom/html/forms/element-internals.test.ts` |
-| [dom-audio](https://html.spec.whatwg.org/#dom-audio) | `dom/html/media.ts` | **untested** |
-| [dom-autocapitalize](https://html.spec.whatwg.org/#dom-autocapitalize) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-autocorrect](https://html.spec.whatwg.org/#dom-autocorrect) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-base-href](https://html.spec.whatwg.org/#dom-base-href) | `dom/html/elements.ts` | **untested** |
-| [dom-blur](https://html.spec.whatwg.org/#dom-blur) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-button-command](https://html.spec.whatwg.org/#dom-button-command) | `dom/html/invokers.ts` | **untested** |
+| [dom-audio](https://html.spec.whatwg.org/#dom-audio) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
+| [dom-autocapitalize](https://html.spec.whatwg.org/#dom-autocapitalize) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-autocorrect](https://html.spec.whatwg.org/#dom-autocorrect) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-base-href](https://html.spec.whatwg.org/#dom-base-href) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [dom-blur](https://html.spec.whatwg.org/#dom-blur) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-button-command](https://html.spec.whatwg.org/#dom-button-command) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dom-button-type](https://html.spec.whatwg.org/#dom-button-type) | `dom/html/forms/HTMLButtonElement.ts` | `compat/forms/reflection.test.ts`; WPT: `html/semantics/forms/the-button-element/button-type.html` |
 | [dom-click](https://html.spec.whatwg.org/#dom-click) | `dom/html/HTMLElement.ts` | `dom/html/elements.test.ts`, `compat/forms/submission-activation.test.ts`, `compat/html/activation.test.ts` |
-| [dom-commandevent-source](https://html.spec.whatwg.org/#dom-commandevent-source) | `dom/html/invokers.ts` | **untested** |
+| [dom-commandevent-source](https://html.spec.whatwg.org/#dom-commandevent-source) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dom-contenteditable](https://html.spec.whatwg.org/#dom-contenteditable) | `dom/html/HTMLElement.ts` | `dom/html/editing.test.ts` |
 | [dom-customelementregistry-define](https://html.spec.whatwg.org/#dom-customelementregistry-define) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `compat/html/custom-elements.test.ts` |
 | [dom-customelementregistry-get](https://html.spec.whatwg.org/#dom-customelementregistry-get) | `dom/html/custom-elements.ts` | `compat/html/custom-elements.test.ts` |
@@ -333,10 +334,10 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-cva-checkvalidity](https://html.spec.whatwg.org/#dom-cva-checkvalidity) | `dom/html/forms/validation.ts` | WPT: `html/semantics/forms/constraints/form-validation-checkValidity.html` |
 | [dom-cva-reportvalidity](https://html.spec.whatwg.org/#dom-cva-reportvalidity) | `dom/html/forms/validation.ts` | WPT: `html/semantics/forms/constraints/form-validation-reportValidity.html` |
 | [dom-cva-setcustomvalidity](https://html.spec.whatwg.org/#dom-cva-setcustomvalidity) | `dom/html/forms/validation.ts` | `dom/html/forms/validation.test.ts` |
-| [dom-cva-validationmessage](https://html.spec.whatwg.org/#dom-cva-validationmessage) | `dom/html/forms/validation.ts` | **untested** |
-| [dom-cva-validity](https://html.spec.whatwg.org/#dom-cva-validity) | `dom/html/forms/validation.ts` | **untested** |
+| [dom-cva-validationmessage](https://html.spec.whatwg.org/#dom-cva-validationmessage) | `dom/html/forms/validation.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-cva-validity](https://html.spec.whatwg.org/#dom-cva-validity) | `dom/html/forms/validation.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-cva-willvalidate](https://html.spec.whatwg.org/#dom-cva-willvalidate) | `dom/html/forms/validation.ts` | WPT: `html/semantics/forms/constraints/form-validation-willValidate-datalist.html`, `html/semantics/forms/constraints/form-validation-willValidate.html` +1 |
-| [dom-datalist-options](https://html.spec.whatwg.org/#dom-datalist-options) | `dom/html/forms/HTMLOutputElement.ts` | **untested** |
+| [dom-datalist-options](https://html.spec.whatwg.org/#dom-datalist-options) | `dom/html/forms/HTMLOutputElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-dataset](https://html.spec.whatwg.org/#dom-dataset) | `dom/nodes/Element.ts` | WPT: `html/dom/elements/global-attributes/custom-attrs.html` |
 | [dom-datatransfer](https://html.spec.whatwg.org/#dom-datatransfer) | `dom/events/DataTransfer.ts` | **untested** |
 | [dom-datatransfer-cleardata](https://html.spec.whatwg.org/#dom-datatransfer-cleardata) | `dom/events/DataTransfer.ts` | **untested** |
@@ -350,24 +351,24 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-datatransferitemlist-add](https://html.spec.whatwg.org/#dom-datatransferitemlist-add) | `dom/events/DataTransfer.ts`, `user-event/utils/dataTransfer/DataTransfer.ts` | **untested** |
 | [dom-datatransferitemlist-clear](https://html.spec.whatwg.org/#dom-datatransferitemlist-clear) | `dom/events/DataTransfer.ts` | **untested** |
 | [dom-datatransferitemlist-remove](https://html.spec.whatwg.org/#dom-datatransferitemlist-remove) | `dom/events/DataTransfer.ts` | **untested** |
-| [dom-dialog-close](https://html.spec.whatwg.org/#dom-dialog-close) | `dom/html/interactive.ts` | **untested** |
-| [dom-dialog-closedby](https://html.spec.whatwg.org/#dom-dialog-closedby) | `dom/html/interactive.ts` | **untested** |
+| [dom-dialog-close](https://html.spec.whatwg.org/#dom-dialog-close) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
+| [dom-dialog-closedby](https://html.spec.whatwg.org/#dom-dialog-closedby) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dom-dialog-requestclose](https://html.spec.whatwg.org/#dom-dialog-requestclose) | `dom/html/interactive.ts` | WPT: `html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-recurse.html` |
-| [dom-dialog-returnvalue](https://html.spec.whatwg.org/#dom-dialog-returnvalue) | `dom/html/interactive.ts` | **untested** |
+| [dom-dialog-returnvalue](https://html.spec.whatwg.org/#dom-dialog-returnvalue) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dom-dialog-show](https://html.spec.whatwg.org/#dom-dialog-show) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
 | [dom-dialog-showmodal](https://html.spec.whatwg.org/#dom-dialog-showmodal) | `dom/html/interactive.ts` | WPT: `html/semantics/interactive-elements/the-dialog-element/dialog-showModal-remove.html` |
 | [dom-document-body](https://html.spec.whatwg.org/#dom-document-body) | `dom/nodes/Document.ts` | WPT: `html/dom/documents/dom-tree-accessors/Document.body.html` |
 | [dom-document-close](https://html.spec.whatwg.org/#dom-document-close) | `dom/nodes/Document.ts` | `dom/nodes/document-write.test.ts` |
 | [dom-document-cookie](https://html.spec.whatwg.org/#dom-document-cookie) | `dom/window/cookies.ts`, `dom/window/document.ts` | `dom/window/cookies.test.ts`, `dom/window/window.test.ts`, `compat/html/cookie.test.ts` |
-| [dom-document-currentscript](https://html.spec.whatwg.org/#dom-document-currentscript) | `dom/window/document.ts` | **untested** |
+| [dom-document-currentscript](https://html.spec.whatwg.org/#dom-document-currentscript) | `dom/window/document.ts` | `compat/html/elements.test.ts` |
 | [dom-document-defaultview](https://html.spec.whatwg.org/#dom-document-defaultview) | `dom/window/globals.ts` | `dom/css/computed-style-override.test.ts`, `dom/window/globals.test.ts`; WPT: `dom/nodes/DOMImplementation-createDocument-no-browsing-context.html` |
 | [dom-document-designmode](https://html.spec.whatwg.org/#dom-document-designmode) | `dom/html/shared.ts`, `dom/window/document.ts` | `dom/html/editing.test.ts` |
 | [dom-document-dir](https://html.spec.whatwg.org/#dom-document-dir) | `dom/html/resources.ts` | `compat/html/global-attributes.test.ts`; WPT: `html/dom/elements/global-attributes/document-dir.html` |
 | [dom-document-domain](https://html.spec.whatwg.org/#dom-document-domain) | `dom/window/document.ts` | `compat/html/document.test.ts` |
-| [dom-document-fgcolor](https://html.spec.whatwg.org/#dom-document-fgcolor) | `dom/html/resources.ts` | **untested** |
+| [dom-document-fgcolor](https://html.spec.whatwg.org/#dom-document-fgcolor) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [dom-document-forms](https://html.spec.whatwg.org/#dom-document-forms) | `dom/nodes/Document.ts` | `dom/collections/collections.test.ts`, `compat/forms/form-owner.test.ts` |
 | [dom-document-getelementsbyname](https://html.spec.whatwg.org/#dom-document-getelementsbyname) | `dom/html/forms/collections.ts`, `dom/nodes/Document.ts` | WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-case.html`, `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-id.html` +6 |
-| [dom-document-hasfocus](https://html.spec.whatwg.org/#dom-document-hasfocus) | `dom/html/HTMLElement.ts`, `dom/html/focus.ts` | **untested** |
+| [dom-document-hasfocus](https://html.spec.whatwg.org/#dom-document-hasfocus) | `dom/html/HTMLElement.ts`, `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [dom-document-head](https://html.spec.whatwg.org/#dom-document-head) | `dom/nodes/Document.ts` | WPT: `html/dom/documents/dom-tree-accessors/document.head-01.html`, `html/dom/documents/dom-tree-accessors/document.head-02.html` |
 | [dom-document-hidden](https://html.spec.whatwg.org/#dom-document-hidden) | `dom/window/document.ts` | `compat/html/document.test.ts` |
 | [dom-document-lastmodified](https://html.spec.whatwg.org/#dom-document-lastmodified) | `dom/window/document.ts` | `compat/html/document.test.ts` |
@@ -380,110 +381,110 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-document-writeln](https://html.spec.whatwg.org/#dom-document-writeln) | `dom/nodes/Document.ts` | **untested** |
 | [dom-documentorshadowroot-activeelement](https://html.spec.whatwg.org/#dom-documentorshadowroot-activeelement) | `dom/html/HTMLElement.ts`, `dom/html/focus.ts`, `dom/nodes/ShadowRoot.ts` | `dom/html/focus.test.ts`, `dom/nodes/shadow-dom.test.ts`, `compat/html/focus.test.ts` |
 | [dom-domparser-parsefromstring](https://html.spec.whatwg.org/#dom-domparser-parsefromstring) | `dom/parser/xml.ts`, `dom/window/fallbacks.ts` | `dom/parser/wpt-domparsing.test.ts`, `dom/serializer/serializer.test.ts`, `dom/window/window.test.ts`; WPT: `domparsing/DOMParser-parseFromString-stylesheets.html`, `domparsing/DOMParser-parseFromString-xml-scripting-support-disabled.html` |
-| [dom-domstringlist-contains](https://html.spec.whatwg.org/#dom-domstringlist-contains) | `dom/window/DOMStringList.ts` | **untested** |
-| [dom-domstringlist-item](https://html.spec.whatwg.org/#dom-domstringlist-item) | `dom/window/DOMStringList.ts` | **untested** |
-| [dom-domstringlist-length](https://html.spec.whatwg.org/#dom-domstringlist-length) | `dom/window/DOMStringList.ts` | **untested** |
+| [dom-domstringlist-contains](https://html.spec.whatwg.org/#dom-domstringlist-contains) | `dom/window/DOMStringList.ts` | `dom/window/window-apis.test.ts` |
+| [dom-domstringlist-item](https://html.spec.whatwg.org/#dom-domstringlist-item) | `dom/window/DOMStringList.ts` | `dom/window/window-apis.test.ts` |
+| [dom-domstringlist-length](https://html.spec.whatwg.org/#dom-domstringlist-length) | `dom/window/DOMStringList.ts` | `dom/window/window-apis.test.ts` |
 | [dom-domstringmap-nameditem](https://html.spec.whatwg.org/#dom-domstringmap-nameditem) | `dom/collections/DOMStringMap.ts` | WPT: `html/dom/elements/global-attributes/dataset-get-invalid-names.html` |
 | [dom-domstringmap-removeitem](https://html.spec.whatwg.org/#dom-domstringmap-removeitem) | `dom/collections/DOMStringMap.ts` | **untested** |
 | [dom-domstringmap-setitem](https://html.spec.whatwg.org/#dom-domstringmap-setitem) | `dom/collections/DOMStringMap.ts` | **untested** |
-| [dom-draggable](https://html.spec.whatwg.org/#dom-draggable) | `dom/html/HTMLElement.ts` | **untested** |
+| [dom-draggable](https://html.spec.whatwg.org/#dom-draggable) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [dom-element-gethtml](https://html.spec.whatwg.org/#dom-element-gethtml) | `dom/nodes/Element.ts`, `dom/serializer/index.ts` | `dom/nodes/wpt-shadow-dom.test.ts`, `dom/serializer/serializer.test.ts` |
 | [dom-element-innerhtml](https://html.spec.whatwg.org/#dom-element-innerhtml) | `dom/nodes/Element.ts` | `dom/nodes/element-node-misc.test.ts`, `dom/parser/wpt-domparsing.test.ts` |
 | [dom-element-insertadjacenthtml](https://html.spec.whatwg.org/#dom-element-insertadjacenthtml) | `dom/nodes/Element.ts` | `dom/parser/wpt-domparsing.test.ts` |
 | [dom-element-sethtmlunsafe](https://html.spec.whatwg.org/#dom-element-sethtmlunsafe) | `dom/nodes/Element.ts`, `dom/parser/index.ts` | **untested** |
 | [dom-elementinternals-checkvalidity](https://html.spec.whatwg.org/#dom-elementinternals-checkvalidity) | `dom/html/forms/face.ts` | `dom/html/forms/element-internals.test.ts` |
-| [dom-elementinternals-form](https://html.spec.whatwg.org/#dom-elementinternals-form) | `dom/html/forms/face.ts` | **untested** |
-| [dom-elementinternals-labels](https://html.spec.whatwg.org/#dom-elementinternals-labels) | `dom/html/forms/face.ts` | **untested** |
+| [dom-elementinternals-form](https://html.spec.whatwg.org/#dom-elementinternals-form) | `dom/html/forms/face.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [dom-elementinternals-labels](https://html.spec.whatwg.org/#dom-elementinternals-labels) | `dom/html/forms/face.ts` | `dom/html/forms/face-autofill.test.ts` |
 | [dom-elementinternals-setformvalue](https://html.spec.whatwg.org/#dom-elementinternals-setformvalue) | `dom/html/forms/face.ts` | WPT: `custom-elements/form-associated/ElementInternals-setFormValue-nullish-value.html` |
 | [dom-elementinternals-setvalidity](https://html.spec.whatwg.org/#dom-elementinternals-setvalidity) | `dom/html/forms/face.ts` | `dom/html/forms/element-internals.test.ts` |
 | [dom-elementinternals-shadowroot](https://html.spec.whatwg.org/#dom-elementinternals-shadowroot) | `dom/html/HTMLElement.ts` | WPT: `custom-elements/element-internals-shadowroot.html` |
-| [dom-fae-form](https://html.spec.whatwg.org/#dom-fae-form) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [dom-fe-autocomplete](https://html.spec.whatwg.org/#dom-fe-autocomplete) | `dom/html/forms/autofill.ts` | `compat/forms/reflection.test.ts` |
+| [dom-fae-form](https://html.spec.whatwg.org/#dom-fae-form) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-fe-autocomplete](https://html.spec.whatwg.org/#dom-fe-autocomplete) | `dom/html/forms/autofill.ts` | `dom/html/forms/face-autofill.test.ts`, `compat/forms/reflection.test.ts` |
 | [dom-fieldset-elements](https://html.spec.whatwg.org/#dom-fieldset-elements) | `dom/html/forms/HTMLFieldSetElement.ts` | WPT: `custom-elements/form-associated/fieldset-elements-after-upgrade.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [dom-focus](https://html.spec.whatwg.org/#dom-focus) | `dom/html/HTMLElement.ts` | WPT: `html/editing/focus/focus-management/focus-on-all-elements.html` |
-| [dom-form-checkvalidity](https://html.spec.whatwg.org/#dom-form-checkvalidity) | `dom/html/forms/HTMLFormElement.ts`, `dom/html/forms/form-submission.ts` | **untested** |
+| [dom-form-checkvalidity](https://html.spec.whatwg.org/#dom-form-checkvalidity) | `dom/html/forms/HTMLFormElement.ts`, `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-form-elements](https://html.spec.whatwg.org/#dom-form-elements) | `dom/html/forms/HTMLFormElement.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`; WPT: `html/semantics/forms/the-form-element/form-elements-filter.html`, `html/semantics/forms/the-form-element/form-elements-interfaces-01.html` +3 |
-| [dom-form-length](https://html.spec.whatwg.org/#dom-form-length) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
-| [dom-form-nameditem](https://html.spec.whatwg.org/#dom-form-nameditem) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
-| [dom-form-reportvalidity](https://html.spec.whatwg.org/#dom-form-reportvalidity) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
+| [dom-form-length](https://html.spec.whatwg.org/#dom-form-length) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-form-nameditem](https://html.spec.whatwg.org/#dom-form-nameditem) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-form-reportvalidity](https://html.spec.whatwg.org/#dom-form-reportvalidity) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-form-requestsubmit](https://html.spec.whatwg.org/#dom-form-requestsubmit) | `dom/html/forms/HTMLFormElement.ts` | `dom/html/forms/form.test.ts`, `compat/forms/submission-activation.test.ts` |
-| [dom-form-reset](https://html.spec.whatwg.org/#dom-form-reset) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
-| [dom-form-submit](https://html.spec.whatwg.org/#dom-form-submit) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
+| [dom-form-reset](https://html.spec.whatwg.org/#dom-form-reset) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-form-submit](https://html.spec.whatwg.org/#dom-form-submit) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-fs-action](https://html.spec.whatwg.org/#dom-fs-action) | `dom/html/forms/HTMLFormElement.ts`, `dom/html/forms/common.ts` | WPT: `html/semantics/forms/the-form-element/form-action-reflection-with-base-url.html`, `html/semantics/forms/the-form-element/form-action-reflection.html` |
 | [dom-fs-formaction](https://html.spec.whatwg.org/#dom-fs-formaction) | `dom/html/forms/HTMLButtonElement.ts`, `dom/html/forms/HTMLInputElement.ts` | `compat/forms/reflection.test.ts`; WPT: `html/semantics/forms/attributes-common-to-form-controls/formAction_document_address.html`, `html/semantics/forms/attributes-common-to-form-controls/formaction.html` |
-| [dom-hidden](https://html.spec.whatwg.org/#dom-hidden) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-hidepopover](https://html.spec.whatwg.org/#dom-hidepopover) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-history](https://html.spec.whatwg.org/#dom-history) | `dom/window/Window.ts` | **untested** |
-| [dom-history-back](https://html.spec.whatwg.org/#dom-history-back) | `dom/window/History.ts` | **untested** |
-| [dom-history-forward](https://html.spec.whatwg.org/#dom-history-forward) | `dom/window/History.ts` | **untested** |
+| [dom-hidden](https://html.spec.whatwg.org/#dom-hidden) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-hidepopover](https://html.spec.whatwg.org/#dom-hidepopover) | `dom/html/HTMLElement.ts` | `dom/html/invokers-toggle.test.ts` |
+| [dom-history](https://html.spec.whatwg.org/#dom-history) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-history-back](https://html.spec.whatwg.org/#dom-history-back) | `dom/window/History.ts` | `dom/window/window-apis.test.ts` |
+| [dom-history-forward](https://html.spec.whatwg.org/#dom-history-forward) | `dom/window/History.ts` | `dom/window/window-apis.test.ts` |
 | [dom-history-go](https://html.spec.whatwg.org/#dom-history-go) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
 | [dom-history-length](https://html.spec.whatwg.org/#dom-history-length) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
 | [dom-history-pushstate](https://html.spec.whatwg.org/#dom-history-pushstate) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
-| [dom-history-replacestate](https://html.spec.whatwg.org/#dom-history-replacestate) | `dom/window/History.ts` | **untested** |
+| [dom-history-replacestate](https://html.spec.whatwg.org/#dom-history-replacestate) | `dom/window/History.ts` | `dom/window/window-apis.test.ts` |
 | [dom-history-state](https://html.spec.whatwg.org/#dom-history-state) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
-| [dom-htmlformcontrolscollection-nameditem](https://html.spec.whatwg.org/#dom-htmlformcontrolscollection-nameditem) | `dom/html/forms/collections.ts` | **untested** |
+| [dom-htmlformcontrolscollection-nameditem](https://html.spec.whatwg.org/#dom-htmlformcontrolscollection-nameditem) | `dom/html/forms/collections.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-htmloptionscollection-add](https://html.spec.whatwg.org/#dom-htmloptionscollection-add) | `dom/html/forms/collections.ts` | WPT: `html/semantics/forms/the-select-element/select-add-optgroup.html` |
-| [dom-htmloptionscollection-length](https://html.spec.whatwg.org/#dom-htmloptionscollection-length) | `dom/html/forms/collections.ts` | **untested** |
+| [dom-htmloptionscollection-length](https://html.spec.whatwg.org/#dom-htmloptionscollection-length) | `dom/html/forms/collections.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-htmloptionscollection-remove](https://html.spec.whatwg.org/#dom-htmloptionscollection-remove) | `dom/html/forms/collections.ts` | WPT: `html/semantics/forms/the-select-element/select-remove.html` |
-| [dom-htmloptionscollection-selectedindex](https://html.spec.whatwg.org/#dom-htmloptionscollection-selectedindex) | `dom/html/forms/collections.ts` | **untested** |
-| [dom-htmloptionscollection-setter](https://html.spec.whatwg.org/#dom-htmloptionscollection-setter) | `dom/html/forms/collections.ts` | **untested** |
-| [dom-hyperlink-href](https://html.spec.whatwg.org/#dom-hyperlink-href) | `dom/html/anchor.ts` | **untested** |
-| [dom-iframe-contentdocument](https://html.spec.whatwg.org/#dom-iframe-contentdocument) | `dom/html/elements.ts` | **untested** |
+| [dom-htmloptionscollection-selectedindex](https://html.spec.whatwg.org/#dom-htmloptionscollection-selectedindex) | `dom/html/forms/collections.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-htmloptionscollection-setter](https://html.spec.whatwg.org/#dom-htmloptionscollection-setter) | `dom/html/forms/collections.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-hyperlink-href](https://html.spec.whatwg.org/#dom-hyperlink-href) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
+| [dom-iframe-contentdocument](https://html.spec.whatwg.org/#dom-iframe-contentdocument) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [dom-iframe-contentwindow](https://html.spec.whatwg.org/#dom-iframe-contentwindow) | `dom/html/elements.ts`, `dom/window/browsing-context.ts` | `dom/window/iframe.test.ts` |
-| [dom-image](https://html.spec.whatwg.org/#dom-image) | `dom/html/elements.ts` | **untested** |
+| [dom-image](https://html.spec.whatwg.org/#dom-image) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [dom-img-complete](https://html.spec.whatwg.org/#dom-img-complete) | `dom/html/elements.ts` | `dom/html/elements.test.ts` |
-| [dom-img-width](https://html.spec.whatwg.org/#dom-img-width) | `dom/html/elements.ts` | **untested** |
+| [dom-img-width](https://html.spec.whatwg.org/#dom-img-width) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [dom-inert](https://html.spec.whatwg.org/#dom-inert) | `dom/html/HTMLElement.ts` | `dom/window/globals.test.ts` |
-| [dom-innertext](https://html.spec.whatwg.org/#dom-innertext) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-input-checked](https://html.spec.whatwg.org/#dom-input-checked) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [dom-input-files](https://html.spec.whatwg.org/#dom-input-files) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [dom-innertext](https://html.spec.whatwg.org/#dom-innertext) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-input-checked](https://html.spec.whatwg.org/#dom-input-checked) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [dom-input-files](https://html.spec.whatwg.org/#dom-input-files) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/controls-details.test.ts` |
 | [dom-input-height](https://html.spec.whatwg.org/#dom-input-height) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/reflection.test.ts` |
 | [dom-input-indeterminate](https://html.spec.whatwg.org/#dom-input-indeterminate) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/checkedness.test.ts` |
-| [dom-input-list](https://html.spec.whatwg.org/#dom-input-list) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [dom-input-showpicker](https://html.spec.whatwg.org/#dom-input-showpicker) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [dom-input-list](https://html.spec.whatwg.org/#dom-input-list) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-input-showpicker](https://html.spec.whatwg.org/#dom-input-showpicker) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/controls-details.test.ts` |
 | [dom-input-stepdown](https://html.spec.whatwg.org/#dom-input-stepdown) | `dom/html/forms/HTMLInputElement.ts` | WPT: `html/semantics/forms/the-input-element/datetime-weekmonth.html`, `html/semantics/forms/the-input-element/datetime.html` +1 |
-| [dom-input-stepup](https://html.spec.whatwg.org/#dom-input-stepup) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/datetime-weekmonth.html`, `html/semantics/forms/the-input-element/datetime.html` +2 |
+| [dom-input-stepup](https://html.spec.whatwg.org/#dom-input-stepup) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-microsyntaxes.test.ts`, `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/datetime-weekmonth.html`, `html/semantics/forms/the-input-element/datetime.html` +2 |
 | [dom-input-type](https://html.spec.whatwg.org/#dom-input-type) | `dom/html/forms/HTMLInputElement.ts` | WPT: `html/semantics/forms/the-input-element/datetime-weekmonth.html`, `html/semantics/forms/the-input-element/datetime.html` +3 |
 | [dom-input-value](https://html.spec.whatwg.org/#dom-input-value) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/input-type.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/react.test.tsx`, `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/datetime-weekmonth.html`, `html/semantics/forms/the-input-element/datetime.html` |
-| [dom-input-value-value](https://html.spec.whatwg.org/#dom-input-value-value) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [dom-input-value-value](https://html.spec.whatwg.org/#dom-input-value-value) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [dom-input-valueasdate](https://html.spec.whatwg.org/#dom-input-valueasdate) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/input-valueasdate-null.html`, `html/semantics/forms/the-input-element/input-valueasdate.html` +1 |
 | [dom-input-valueasnumber](https://html.spec.whatwg.org/#dom-input-valueasnumber) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/input-valueasnumber.html` |
 | [dom-input-width](https://html.spec.whatwg.org/#dom-input-width) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/reflection.test.ts` |
 | [dom-iscontenteditable](https://html.spec.whatwg.org/#dom-iscontenteditable) | `dom/html/HTMLElement.ts` | `dom/html/editing.test.ts` |
-| [dom-issecurecontext](https://html.spec.whatwg.org/#dom-issecurecontext) | `dom/window/Window.ts` | **untested** |
-| [dom-label-control](https://html.spec.whatwg.org/#dom-label-control) | `dom/html/forms/HTMLLabelElement.ts` | **untested** |
-| [dom-label-form](https://html.spec.whatwg.org/#dom-label-form) | `dom/html/forms/HTMLLabelElement.ts` | **untested** |
-| [dom-legend-form](https://html.spec.whatwg.org/#dom-legend-form) | `dom/html/forms/HTMLFieldSetElement.ts` | **untested** |
+| [dom-issecurecontext](https://html.spec.whatwg.org/#dom-issecurecontext) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-label-control](https://html.spec.whatwg.org/#dom-label-control) | `dom/html/forms/HTMLLabelElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-label-form](https://html.spec.whatwg.org/#dom-label-form) | `dom/html/forms/HTMLLabelElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-legend-form](https://html.spec.whatwg.org/#dom-legend-form) | `dom/html/forms/HTMLFieldSetElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-lfe-labels](https://html.spec.whatwg.org/#dom-lfe-labels) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/collections.ts`, `dom/html/forms/form-associated.ts` | `aria/internal.test.ts`, `dom/html/forms/form.test.ts`; WPT: `html/semantics/forms/the-label-element/labels-live-attribute-changes.html`, `html/semantics/forms/the-label-element/labels-live-label-removal.html` |
-| [dom-localstorage](https://html.spec.whatwg.org/#dom-localstorage) | `dom/window/Window.ts` | **untested** |
-| [dom-location](https://html.spec.whatwg.org/#dom-location) | `dom/window/Window.ts` | **untested** |
-| [dom-location-ancestororigins](https://html.spec.whatwg.org/#dom-location-ancestororigins) | `dom/window/Location.ts` | **untested** |
-| [dom-location-assign](https://html.spec.whatwg.org/#dom-location-assign) | `dom/window/Location.ts` | **untested** |
+| [dom-localstorage](https://html.spec.whatwg.org/#dom-localstorage) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-location](https://html.spec.whatwg.org/#dom-location) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-location-ancestororigins](https://html.spec.whatwg.org/#dom-location-ancestororigins) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
+| [dom-location-assign](https://html.spec.whatwg.org/#dom-location-assign) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
 | [dom-location-hash](https://html.spec.whatwg.org/#dom-location-hash) | `dom/window/Location.ts` | `compat/html/history-location.test.ts`; WPT: `html/browsers/history/the-location-interface/location-hash-about-blank.html`, `html/browsers/history/the-location-interface/location_hash_set_empty_string.html` +1 |
 | [dom-location-href](https://html.spec.whatwg.org/#dom-location-href) | `dom/window/Location.ts` | `dom/window/location.test.ts` |
-| [dom-location-protocol](https://html.spec.whatwg.org/#dom-location-protocol) | `dom/window/Location.ts` | **untested** |
+| [dom-location-protocol](https://html.spec.whatwg.org/#dom-location-protocol) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
 | [dom-location-reload](https://html.spec.whatwg.org/#dom-location-reload) | `dom/window/Location.ts` | `compat/not-implemented/not-implemented.test.ts` |
-| [dom-location-replace](https://html.spec.whatwg.org/#dom-location-replace) | `dom/window/Location.ts` | **untested** |
-| [dom-map-areas](https://html.spec.whatwg.org/#dom-map-areas) | `dom/html/elements.ts` | **untested** |
-| [dom-media-load](https://html.spec.whatwg.org/#dom-media-load) | `dom/html/media.ts` | **untested** |
-| [dom-media-muted](https://html.spec.whatwg.org/#dom-media-muted) | `dom/html/media.ts` | **untested** |
-| [dom-media-pause](https://html.spec.whatwg.org/#dom-media-pause) | `dom/html/media.ts` | **untested** |
+| [dom-location-replace](https://html.spec.whatwg.org/#dom-location-replace) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
+| [dom-map-areas](https://html.spec.whatwg.org/#dom-map-areas) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [dom-media-load](https://html.spec.whatwg.org/#dom-media-load) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
+| [dom-media-muted](https://html.spec.whatwg.org/#dom-media-muted) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
+| [dom-media-pause](https://html.spec.whatwg.org/#dom-media-pause) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
 | [dom-media-play](https://html.spec.whatwg.org/#dom-media-play) | `dom/html/media.ts` | `compat/not-implemented/not-implemented.test.ts` |
 | [dom-messageevent-initmessageevent](https://html.spec.whatwg.org/#dom-messageevent-initmessageevent) | `dom/events/events.ts` | **untested** |
-| [dom-navigator](https://html.spec.whatwg.org/#dom-navigator) | `dom/window/Window.ts` | **untested** |
-| [dom-navigator-canplaytype](https://html.spec.whatwg.org/#dom-navigator-canplaytype) | `dom/html/media.ts` | **untested** |
+| [dom-navigator](https://html.spec.whatwg.org/#dom-navigator) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-navigator-canplaytype](https://html.spec.whatwg.org/#dom-navigator-canplaytype) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
 | [dom-navigator-platform](https://html.spec.whatwg.org/#dom-navigator-platform) | `dom/window/Window.ts` | `dom/window/window.test.ts` |
-| [dom-noncedelement-nonce](https://html.spec.whatwg.org/#dom-noncedelement-nonce) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-open](https://html.spec.whatwg.org/#dom-open) | `dom/window/Window.ts` | **untested** |
+| [dom-noncedelement-nonce](https://html.spec.whatwg.org/#dom-noncedelement-nonce) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-open](https://html.spec.whatwg.org/#dom-open) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
 | [dom-option](https://html.spec.whatwg.org/#dom-option) | `dom/html/forms/HTMLOptionElement.ts` | `compat/forms/select-option.test.ts` |
-| [dom-option-form](https://html.spec.whatwg.org/#dom-option-form) | `dom/html/forms/HTMLOptionElement.ts` | WPT: `html/semantics/forms/the-option-element/option-form.html` |
+| [dom-option-form](https://html.spec.whatwg.org/#dom-option-form) | `dom/html/forms/HTMLOptionElement.ts` | `compat/forms/form-algorithms.test.ts`; WPT: `html/semantics/forms/the-option-element/option-form.html` |
 | [dom-option-index](https://html.spec.whatwg.org/#dom-option-index) | `dom/html/forms/HTMLOptionElement.ts` | WPT: `html/semantics/forms/the-option-element/option-index.html` |
 | [dom-option-label](https://html.spec.whatwg.org/#dom-option-label) | `dom/html/forms/HTMLOptionElement.ts` | WPT: `html/semantics/forms/the-option-element/option-label.html`, `html/semantics/forms/the-option-element/option-value.html` |
 | [dom-option-selected](https://html.spec.whatwg.org/#dom-option-selected) | `dom/html/forms/HTMLOptionElement.ts` | WPT: `html/semantics/forms/the-option-element/option-selected.html`, `html/semantics/forms/the-select-element/select-setter-dirtiness.html` |
 | [dom-option-text](https://html.spec.whatwg.org/#dom-option-text) | `dom/html/forms/HTMLOptionElement.ts` | `dom/html/forms/select-textarea.test.ts`, `compat/forms/select-option.test.ts`; WPT: `html/semantics/forms/the-option-element/option-text-label.html`, `html/semantics/forms/the-option-element/option-text-recurse.html` +1 |
-| [dom-option-value](https://html.spec.whatwg.org/#dom-option-value) | `dom/html/forms/HTMLOptionElement.ts` | **untested** |
-| [dom-origin](https://html.spec.whatwg.org/#dom-origin) | `dom/window/Window.ts` | **untested** |
-| [dom-outertext](https://html.spec.whatwg.org/#dom-outertext) | `dom/html/HTMLElement.ts` | **untested** |
+| [dom-option-value](https://html.spec.whatwg.org/#dom-option-value) | `dom/html/forms/HTMLOptionElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-origin](https://html.spec.whatwg.org/#dom-origin) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-outertext](https://html.spec.whatwg.org/#dom-outertext) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [dom-output-defaultvalue](https://html.spec.whatwg.org/#dom-output-defaultvalue) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
 | [dom-output-value](https://html.spec.whatwg.org/#dom-output-value) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
 | [dom-parent](https://html.spec.whatwg.org/#dom-parent) | `dom/window/Window.ts` | `dom/window/iframe.test.ts` |
@@ -491,148 +492,148 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-progress-max](https://html.spec.whatwg.org/#dom-progress-max) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
 | [dom-progress-position](https://html.spec.whatwg.org/#dom-progress-position) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
 | [dom-progress-value](https://html.spec.whatwg.org/#dom-progress-value) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
-| [dom-radionodelist-value](https://html.spec.whatwg.org/#dom-radionodelist-value) | `dom/html/forms/collections.ts` | **untested** |
+| [dom-radionodelist-value](https://html.spec.whatwg.org/#dom-radionodelist-value) | `dom/html/forms/collections.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-range-createcontextualfragment](https://html.spec.whatwg.org/#dom-range-createcontextualfragment) | `dom/traversal/Range.ts` | `dom/parser/wpt-domparsing.test.ts`, `dom/traversal/selection.test.ts` |
 | [dom-reporterror](https://html.spec.whatwg.org/#dom-reporterror) | `dom/window/Window.ts` | `dom/window/timers.test.ts` |
-| [dom-script-async](https://html.spec.whatwg.org/#dom-script-async) | `dom/html/resources.ts` | **untested** |
-| [dom-script-text](https://html.spec.whatwg.org/#dom-script-text) | `dom/html/resources.ts` | **untested** |
-| [dom-select-add](https://html.spec.whatwg.org/#dom-select-add) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
-| [dom-select-item](https://html.spec.whatwg.org/#dom-select-item) | `dom/html/forms/HTMLSelectElement.ts`, `jest-dom/matchers/content.ts` | **untested** |
-| [dom-select-nameditem](https://html.spec.whatwg.org/#dom-select-nameditem) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
-| [dom-select-options](https://html.spec.whatwg.org/#dom-select-options) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
+| [dom-script-async](https://html.spec.whatwg.org/#dom-script-async) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
+| [dom-script-text](https://html.spec.whatwg.org/#dom-script-text) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
+| [dom-select-add](https://html.spec.whatwg.org/#dom-select-add) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-select-item](https://html.spec.whatwg.org/#dom-select-item) | `dom/html/forms/HTMLSelectElement.ts`, `jest-dom/matchers/content.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-select-nameditem](https://html.spec.whatwg.org/#dom-select-nameditem) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-select-options](https://html.spec.whatwg.org/#dom-select-options) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-select-remove](https://html.spec.whatwg.org/#dom-select-remove) | `dom/html/forms/HTMLSelectElement.ts` | WPT: `html/semantics/forms/the-select-element/select-remove.html` |
 | [dom-select-selectedindex](https://html.spec.whatwg.org/#dom-select-selectedindex) | `dom/html/forms/HTMLSelectElement.ts` | WPT: `html/semantics/forms/the-select-element/select-setter-dirtiness.html` |
 | [dom-select-selectedoptions](https://html.spec.whatwg.org/#dom-select-selectedoptions) | `dom/html/forms/HTMLSelectElement.ts` | WPT: `html/semantics/forms/the-select-element/option-selectedness-script-mutation.html`, `html/semantics/forms/the-select-element/select-selectedOptions.html` |
-| [dom-select-showpicker](https://html.spec.whatwg.org/#dom-select-showpicker) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
-| [dom-select-type](https://html.spec.whatwg.org/#dom-select-type) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
+| [dom-select-showpicker](https://html.spec.whatwg.org/#dom-select-showpicker) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/controls-details.test.ts` |
+| [dom-select-type](https://html.spec.whatwg.org/#dom-select-type) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-select-value](https://html.spec.whatwg.org/#dom-select-value) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/select-option.test.ts`; WPT: `html/semantics/forms/the-select-element/select-selectedOptions-and-selected.html`, `html/semantics/forms/the-select-element/select-selectedOptions-and-value.html` +2 |
-| [dom-sessionstorage](https://html.spec.whatwg.org/#dom-sessionstorage) | `dom/window/Window.ts` | **untested** |
-| [dom-setinterval](https://html.spec.whatwg.org/#dom-setinterval) | `dom/window/Window.ts` | **untested** |
+| [dom-sessionstorage](https://html.spec.whatwg.org/#dom-sessionstorage) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
+| [dom-setinterval](https://html.spec.whatwg.org/#dom-setinterval) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
 | [dom-settimeout](https://html.spec.whatwg.org/#dom-settimeout) | `dom/window/Window.ts` | `dom/window/wpt-timers.test.ts` |
 | [dom-shadowroot-gethtml](https://html.spec.whatwg.org/#dom-shadowroot-gethtml) | `dom/nodes/ShadowRoot.ts` | **untested** |
 | [dom-shadowroot-innerhtml](https://html.spec.whatwg.org/#dom-shadowroot-innerhtml) | `dom/nodes/ShadowRoot.ts` | **untested** |
 | [dom-shadowroot-sethtmlunsafe](https://html.spec.whatwg.org/#dom-shadowroot-sethtmlunsafe) | `dom/nodes/ShadowRoot.ts` | **untested** |
-| [dom-showpopover](https://html.spec.whatwg.org/#dom-showpopover) | `dom/html/HTMLElement.ts` | **untested** |
+| [dom-showpopover](https://html.spec.whatwg.org/#dom-showpopover) | `dom/html/HTMLElement.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dom-slot-assign](https://html.spec.whatwg.org/#dom-slot-assign) | `dom/html/slot.ts`, `dom/nodes/slots.ts` | `dom/nodes/shadow-dom.test.ts` |
-| [dom-slot-assignedelements](https://html.spec.whatwg.org/#dom-slot-assignedelements) | `dom/html/slot.ts`, `dom/nodes/slots.ts` | **untested** |
-| [dom-slot-assignednodes](https://html.spec.whatwg.org/#dom-slot-assignednodes) | `aria/accname.ts`, `dom/html/slot.ts`, `dom/nodes/slots.ts` | **untested** |
-| [dom-spellcheck](https://html.spec.whatwg.org/#dom-spellcheck) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-storage-clear](https://html.spec.whatwg.org/#dom-storage-clear) | `dom/window/Storage.ts` | **untested** |
-| [dom-storage-getitem](https://html.spec.whatwg.org/#dom-storage-getitem) | `dom/window/Storage.ts` | **untested** |
-| [dom-storage-key](https://html.spec.whatwg.org/#dom-storage-key) | `dom/window/Storage.ts` | **untested** |
-| [dom-storage-length](https://html.spec.whatwg.org/#dom-storage-length) | `dom/window/Storage.ts` | **untested** |
-| [dom-storage-removeitem](https://html.spec.whatwg.org/#dom-storage-removeitem) | `dom/window/Storage.ts` | **untested** |
-| [dom-storage-setitem](https://html.spec.whatwg.org/#dom-storage-setitem) | `dom/window/Storage.ts` | **untested** |
+| [dom-slot-assignedelements](https://html.spec.whatwg.org/#dom-slot-assignedelements) | `dom/html/slot.ts`, `dom/nodes/slots.ts` | `compat/html/elements.test.ts` |
+| [dom-slot-assignednodes](https://html.spec.whatwg.org/#dom-slot-assignednodes) | `aria/accname.ts`, `dom/html/slot.ts`, `dom/nodes/slots.ts` | `compat/html/elements.test.ts` |
+| [dom-spellcheck](https://html.spec.whatwg.org/#dom-spellcheck) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [dom-storage-clear](https://html.spec.whatwg.org/#dom-storage-clear) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [dom-storage-getitem](https://html.spec.whatwg.org/#dom-storage-getitem) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [dom-storage-key](https://html.spec.whatwg.org/#dom-storage-key) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [dom-storage-length](https://html.spec.whatwg.org/#dom-storage-length) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [dom-storage-removeitem](https://html.spec.whatwg.org/#dom-storage-removeitem) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [dom-storage-setitem](https://html.spec.whatwg.org/#dom-storage-setitem) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
 | [dom-storageevent-initstorageevent](https://html.spec.whatwg.org/#dom-storageevent-initstorageevent) | `dom/events/events.ts` | **untested** |
-| [dom-style-disabled](https://html.spec.whatwg.org/#dom-style-disabled) | `dom/html/resources.ts` | **untested** |
+| [dom-style-disabled](https://html.spec.whatwg.org/#dom-style-disabled) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [dom-tabindex](https://html.spec.whatwg.org/#dom-tabindex) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `compat/html/focus.test.ts`; WPT: `html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/tabindex-getter-frame.html`, `html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/tabindex-getter.html` |
-| [dom-table-insertrow](https://html.spec.whatwg.org/#dom-table-insertrow) | `dom/html/elements.ts` | **untested** |
-| [dom-table-rows](https://html.spec.whatwg.org/#dom-table-rows) | `dom/html/elements.ts` | **untested** |
+| [dom-table-insertrow](https://html.spec.whatwg.org/#dom-table-insertrow) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [dom-table-rows](https://html.spec.whatwg.org/#dom-table-rows) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [dom-template-content](https://html.spec.whatwg.org/#dom-template-content) | `dom/html/template.ts` | `dom/html/template.test.ts` |
-| [dom-template-shadowrootslotassignment](https://html.spec.whatwg.org/#dom-template-shadowrootslotassignment) | `dom/html/template.ts` | **untested** |
-| [dom-textarea-defaultvalue](https://html.spec.whatwg.org/#dom-textarea-defaultvalue) | `dom/html/forms/HTMLTextAreaElement.ts` | **untested** |
+| [dom-template-shadowrootslotassignment](https://html.spec.whatwg.org/#dom-template-shadowrootslotassignment) | `dom/html/template.ts` | `dom/html/forms/controls-details.test.ts` |
+| [dom-textarea-defaultvalue](https://html.spec.whatwg.org/#dom-textarea-defaultvalue) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-textarea-textlength](https://html.spec.whatwg.org/#dom-textarea-textlength) | `dom/html/forms/HTMLTextAreaElement.ts` | WPT: `html/semantics/forms/the-textarea-element/textarea-textLength.html` |
 | [dom-textarea-value](https://html.spec.whatwg.org/#dom-textarea-value) | `dom/html/forms/HTMLTextAreaElement.ts` | WPT: `html/semantics/forms/the-textarea-element/value-defaultValue-textContent.html` |
 | [dom-textarea/input-select](https://html.spec.whatwg.org/#dom-textarea/input-select) | `dom/html/forms/HTMLInputElement.ts` | WPT: `html/semantics/forms/the-input-element/selection-weekmonth.html`, `html/semantics/forms/the-input-element/selection.html` |
-| [dom-textarea/input-selectionstart](https://html.spec.whatwg.org/#dom-textarea/input-selectionstart) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [dom-textarea/input-selectionstart](https://html.spec.whatwg.org/#dom-textarea/input-selectionstart) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/controls-details.test.ts` |
 | [dom-textarea/input-setrangetext](https://html.spec.whatwg.org/#dom-textarea/input-setrangetext) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/textarea-selection.test.ts` |
 | [dom-textarea/input-setselectionrange](https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange) | `dom/html/forms/HTMLInputElement.ts` | `user-event/differential/events.test.ts`, `user-event/upstream/environment/select.test.ts`; WPT: `html/semantics/forms/textfieldselection/textfieldselection-setSelectionRange.html` |
-| [dom-title-text](https://html.spec.whatwg.org/#dom-title-text) | `dom/html/resources.ts` | **untested** |
-| [dom-togglepopover](https://html.spec.whatwg.org/#dom-togglepopover) | `dom/html/HTMLElement.ts` | **untested** |
-| [dom-tr-rowindex](https://html.spec.whatwg.org/#dom-tr-rowindex) | `dom/html/elements.ts` | **untested** |
-| [dom-translate](https://html.spec.whatwg.org/#dom-translate) | `dom/html/HTMLElement.ts` | **untested** |
+| [dom-title-text](https://html.spec.whatwg.org/#dom-title-text) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
+| [dom-togglepopover](https://html.spec.whatwg.org/#dom-togglepopover) | `dom/html/HTMLElement.ts` | `dom/html/invokers-toggle.test.ts` |
+| [dom-tr-rowindex](https://html.spec.whatwg.org/#dom-tr-rowindex) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [dom-translate](https://html.spec.whatwg.org/#dom-translate) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [dom-window](https://html.spec.whatwg.org/#dom-window) | `dom/window/Window.ts` | `dom/window/globals.test.ts` |
-| [dom-window-customelements](https://html.spec.whatwg.org/#dom-window-customelements) | `dom/window/Window.ts` | **untested** |
+| [dom-window-customelements](https://html.spec.whatwg.org/#dom-window-customelements) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
 | [dom-window-event](https://html.spec.whatwg.org/#dom-window-event) | `dom/events/dispatch.ts` | `dom/events/dispatch.test.ts` |
 | [dom-window-postmessage](https://html.spec.whatwg.org/#dom-window-postmessage) | `dom/window/Window.ts` | `dom/window/messaging.test.ts`, `dom/window/timers.test.ts` |
-| [dom-writingsuggestions](https://html.spec.whatwg.org/#dom-writingsuggestions) | `dom/html/HTMLElement.ts` | **untested** |
+| [dom-writingsuggestions](https://html.spec.whatwg.org/#dom-writingsuggestions) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [domstringmap](https://html.spec.whatwg.org/#domstringmap) | `dom/collections/DOMStringMap.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-collections.test.ts`, `compat/html/global-attributes.test.ts` |
 | [editable](https://html.spec.whatwg.org/#editable) | `dom/html/shared.ts` | `dom/html/editing.test.ts` |
 | [editing-host](https://html.spec.whatwg.org/#editing-host) | `dom/html/shared.ts` | `dom/html/editing.test.ts` |
-| [element-interface](https://html.spec.whatwg.org/#element-interface) | `dom/html/registry.ts` | **untested** |
+| [element-interface](https://html.spec.whatwg.org/#element-interface) | `dom/html/registry.ts` | `compat/html/elements.test.ts` |
 | [element-interfaces](https://html.spec.whatwg.org/#element-interfaces) | `dom/html/registry.ts` | `dom/html/interfaces.wpt.test.ts` |
-| [elementcssinlinestyle](https://html.spec.whatwg.org/#elementcssinlinestyle) | `dom/html/HTMLElement.ts` | **untested** |
-| [elementinternals](https://html.spec.whatwg.org/#elementinternals) | `dom/html/HTMLElement.ts` | **untested** |
+| [elementcssinlinestyle](https://html.spec.whatwg.org/#elementcssinlinestyle) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [elementinternals](https://html.spec.whatwg.org/#elementinternals) | `dom/html/HTMLElement.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [elements-in-the-dom](https://html.spec.whatwg.org/#elements-in-the-dom) | `dom/html/registry.ts` | `dom/html/interfaces.wpt.test.ts` |
-| [email-state-(type=email](https://html.spec.whatwg.org/#email-state-(type=email) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [email-state-(type=email](https://html.spec.whatwg.org/#email-state-(type=email) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [enable-close-watcher-for-request-close](https://html.spec.whatwg.org/#enable-close-watcher-for-request-close) | `dom/html/interactive.ts` | `dom/html/top-layer.test.ts` |
 | [enabling-and-disabling-form-controls:-the-disabled-attribute](https://html.spec.whatwg.org/#enabling-and-disabling-form-controls:-the-disabled-attribute) | `dom/events/activation.ts` | `user-event/upstream/utils/misc/isDisabled.test.ts`; WPT: `css/selectors/invalidation/enabled-disabled.html`, `dom/events/event-disabled-dynamic.html` +2 |
-| [encoding-parsing-a-url](https://html.spec.whatwg.org/#encoding-parsing-a-url) | `dom/html/reflect.ts` | **untested** |
+| [encoding-parsing-a-url](https://html.spec.whatwg.org/#encoding-parsing-a-url) | `dom/html/reflect.ts` | `dom/html/forms/controls-details.test.ts` |
 | [end-tag-open-state](https://html.spec.whatwg.org/#end-tag-open-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [enqueue-a-custom-element-callback-reaction](https://html.spec.whatwg.org/#enqueue-a-custom-element-callback-reaction) | `dom/html/custom-elements.ts`, `dom/html/forms/face.ts` | `compat/html/custom-elements.test.ts` |
-| [enqueue-an-element-on-the-appropriate-element-queue](https://html.spec.whatwg.org/#enqueue-an-element-on-the-appropriate-element-queue) | `dom/html/custom-elements.ts` | **untested** |
+| [enqueue-an-element-on-the-appropriate-element-queue](https://html.spec.whatwg.org/#enqueue-an-element-on-the-appropriate-element-queue) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [ensure-details-exclusivity-by-closing-the-given-element-if-needed](https://html.spec.whatwg.org/#ensure-details-exclusivity-by-closing-the-given-element-if-needed) | `dom/html/interactive.ts` | `dom/html/wpt-details.test.ts` |
 | [escapingString](https://html.spec.whatwg.org/#escapingString) | `dom/serializer/index.ts` | `dom/serializer/serializer.test.ts` |
-| [establish-a-close-watcher](https://html.spec.whatwg.org/#establish-a-close-watcher) | `dom/html/top-layer.ts` | **untested** |
+| [establish-a-close-watcher](https://html.spec.whatwg.org/#establish-a-close-watcher) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [event-handler-attributes](https://html.spec.whatwg.org/#event-handler-attributes) | `dom/events/handlers.ts` | `dom/events/handlers.test.ts`, `dom/events/wpt-events.test.ts` |
 | [event-handler-idl-attributes](https://html.spec.whatwg.org/#event-handler-idl-attributes) | `dom/events/handlers.ts` | `dom/events/handlers.test.ts` |
 | [event-handlers-on-elements](https://html.spec.whatwg.org/#event-handlers-on-elements) | `dom/events/handlers.ts` | `dom/events/wpt-events.test.ts` |
-| [explicitly-set-attr-element](https://html.spec.whatwg.org/#explicitly-set-attr-element) | `dom/html/invokers.ts` | **untested** |
-| [face-entry-construction](https://html.spec.whatwg.org/#face-entry-construction) | `dom/html/forms/face.ts` | **untested** |
-| [face-state](https://html.spec.whatwg.org/#face-state) | `dom/html/forms/face.ts` | **untested** |
-| [face-submission-value](https://html.spec.whatwg.org/#face-submission-value) | `dom/html/forms/face.ts` | **untested** |
+| [explicitly-set-attr-element](https://html.spec.whatwg.org/#explicitly-set-attr-element) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
+| [face-entry-construction](https://html.spec.whatwg.org/#face-entry-construction) | `dom/html/forms/face.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [face-state](https://html.spec.whatwg.org/#face-state) | `dom/html/forms/face.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [face-submission-value](https://html.spec.whatwg.org/#face-submission-value) | `dom/html/forms/face.ts` | `dom/html/forms/face-autofill.test.ts` |
 | [fallback-base-url](https://html.spec.whatwg.org/#fallback-base-url) | `dom/nodes/Document.ts` | **untested** |
-| [field-that-blocks-implicit-submission](https://html.spec.whatwg.org/#field-that-blocks-implicit-submission) | `dom/html/forms/form-submission.ts` | **untested** |
+| [field-that-blocks-implicit-submission](https://html.spec.whatwg.org/#field-that-blocks-implicit-submission) | `dom/html/forms/form-submission.ts` | `dom/html/forms/controls-details.test.ts` |
 | [fire-a-focus-event](https://html.spec.whatwg.org/#fire-a-focus-event) | `dom/html/events.ts` | `compat/html/focus.test.ts` |
 | [fire-a-synthetic-pointer-event](https://html.spec.whatwg.org/#fire-a-synthetic-pointer-event) | `dom/events/activation.ts`, `dom/events/fire.ts`, `dom/html/events.ts` | `dom/events/activation.test.ts` |
-| [firing-submission-events](https://html.spec.whatwg.org/#firing-submission-events) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
+| [firing-submission-events](https://html.spec.whatwg.org/#firing-submission-events) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [flow-content-3](https://html.spec.whatwg.org/#flow-content-3) | `dom/css/cascade.ts` | `dom/css/view.test.ts` |
 | [focus](https://html.spec.whatwg.org/#focus) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts`; WPT: `html/interaction/focus/focus-01.html`, `html/interaction/focus/focus-02.html` +1 |
 | [focus-chain](https://html.spec.whatwg.org/#focus-chain) | `dom/html/focus.ts` | `dom/html/focus.test.ts`; WPT: `html/interaction/focus/focus-management/focus-event-targets-simple.html` |
 | [focus-delegate](https://html.spec.whatwg.org/#focus-delegate) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts` |
 | [focus-fixup-rule](https://html.spec.whatwg.org/#focus-fixup-rule) | `dom/html/focus.ts`, `dom/nodes/tree.ts` | `dom/html/focus.test.ts`, `compat/html/focus.test.ts`; WPT: `inert/dynamic-inert-on-focused-element.html` |
-| [focus-navigation-scope-owner](https://html.spec.whatwg.org/#focus-navigation-scope-owner) | `dom/html/focus.ts` | **untested** |
-| [focus-update-steps](https://html.spec.whatwg.org/#focus-update-steps) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts`, `compat/html/focus.test.ts`; WPT: `html/interaction/focus/focus-management/focus-event-targets-simple.html` |
+| [focus-navigation-scope-owner](https://html.spec.whatwg.org/#focus-navigation-scope-owner) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [focus-update-steps](https://html.spec.whatwg.org/#focus-update-steps) | `dom/html/focus.ts`, `dom/html/forms/user-validity.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts`, `compat/html/focus.test.ts`; WPT: `html/interaction/focus/focus-management/focus-event-targets-simple.html` |
 | [focusable-area](https://html.spec.whatwg.org/#focusable-area) | `dom/html/focus.ts` | `dom/html/editing.test.ts`, `dom/html/focus.test.ts`, `compat/html/focus.test.ts`; WPT: `inert/inert-canvas-fallback-content.html` |
 | [focused-area-of-the-document](https://html.spec.whatwg.org/#focused-area-of-the-document) | `dom/nodes/Document.ts` | **untested** |
 | [focusing-steps](https://html.spec.whatwg.org/#focusing-steps) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts`, `compat/html/focus.test.ts`; WPT: `html/editing/focus/focus-management/focusing-focused-noop.html` |
 | [following-hyperlinks-2](https://html.spec.whatwg.org/#following-hyperlinks-2) | `dom/html/anchor.ts` | `compat/not-implemented/not-implemented.test.ts` |
 | [form-associated-custom-elements](https://html.spec.whatwg.org/#form-associated-custom-elements) | `dom/html/forms/face.ts` | `dom/html/forms/face-parser-selectedcontent.test.ts` |
-| [form-associated-element](https://html.spec.whatwg.org/#form-associated-element) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | **untested** |
+| [form-associated-element](https://html.spec.whatwg.org/#form-associated-element) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
 | [form-owner](https://html.spec.whatwg.org/#form-owner) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
 | [form-submission-algorithm](https://html.spec.whatwg.org/#form-submission-algorithm) | `dom/html/forms/form-submission.ts` | WPT: `html/semantics/forms/form-submission-0/form-submit-invalid.html`, `html/semantics/forms/form-submission-0/form-submitters.html` +1 |
 | [formatting](https://html.spec.whatwg.org/#formatting) | `dom/parser/treebuilder.ts` | **untested** |
 | [forms](https://html.spec.whatwg.org/#forms) | `dom/html/forms/common.ts`, `dom/html/forms/index.ts` | `dom/html/forms/wpt-forms.test.ts`, `compat/forms/reflection.test.ts` |
 | [fragment-parsing-algorithm-steps](https://html.spec.whatwg.org/#fragment-parsing-algorithm-steps) | `dom/parser/index.ts` | **untested** |
 | [fragment-serializing-algorithm-steps](https://html.spec.whatwg.org/#fragment-serializing-algorithm-steps) | `dom/serializer/index.ts` | **untested** |
-| [fully-active](https://html.spec.whatwg.org/#fully-active) | `dom/html/top-layer.ts`, `dom/window/History.ts` | **untested** |
+| [fully-active](https://html.spec.whatwg.org/#fully-active) | `dom/html/top-layer.ts`, `dom/window/History.ts` | `dom/window/window-apis.test.ts` |
 | [generate-all-implied-end-tags-thoroughly](https://html.spec.whatwg.org/#generate-all-implied-end-tags-thoroughly) | `dom/parser/treebuilder.ts` | **untested** |
 | [generate-implied-end-tags](https://html.spec.whatwg.org/#generate-implied-end-tags) | `dom/parser/treebuilder.ts` | **untested** |
 | [generic-raw-text-element-parsing-algorithm](https://html.spec.whatwg.org/#generic-raw-text-element-parsing-algorithm) | `dom/parser/treebuilder.ts` | **untested** |
-| [get-a-select](https://html.spec.whatwg.org/#get-a-select) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
-| [get-the-focusable-area](https://html.spec.whatwg.org/#get-the-focusable-area) | `dom/html/focus.ts` | **untested** |
-| [get-the-text-steps](https://html.spec.whatwg.org/#get-the-text-steps) | `dom/html/innerText.ts` | **untested** |
+| [get-a-select](https://html.spec.whatwg.org/#get-a-select) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/controls-details.test.ts` |
+| [get-the-focusable-area](https://html.spec.whatwg.org/#get-the-focusable-area) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [get-the-text-steps](https://html.spec.whatwg.org/#get-the-text-steps) | `dom/html/innerText.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [getting-the-current-value-of-the-event-handler](https://html.spec.whatwg.org/#getting-the-current-value-of-the-event-handler) | `dom/events/handlers.ts` | **untested** |
 | [global-attributes](https://html.spec.whatwg.org/#global-attributes) | `dom/html/HTMLElement.ts` | `dom/html/elements.test.ts`, `dom/html/wpt-html-dom.test.ts`, `compat/html/global-attributes.test.ts` |
-| [globaleventhandlers](https://html.spec.whatwg.org/#globaleventhandlers) | `dom/events/handlers.ts`, `dom/window/Window.ts` | **untested** |
+| [globaleventhandlers](https://html.spec.whatwg.org/#globaleventhandlers) | `dom/events/handlers.ts`, `dom/window/Window.ts` | `dom/html/forms/controls-details.test.ts` |
 | [has-a-reversed-range](https://html.spec.whatwg.org/#has-a-reversed-range) | `dom/html/forms/HTMLInputElement.ts` | WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html` |
 | [has-an-element-in-scope](https://html.spec.whatwg.org/#has-an-element-in-scope) | `dom/parser/treebuilder.ts` | **untested** |
 | [has-an-element-in-the-specific-scope](https://html.spec.whatwg.org/#has-an-element-in-the-specific-scope) | `dom/parser/treebuilder.ts` | **untested** |
-| [heading-levels-and-offsets](https://html.spec.whatwg.org/#heading-levels-and-offsets) | `dom/selectors/compile.ts` | **untested** |
-| [heading-offset](https://html.spec.whatwg.org/#heading-offset) | `dom/selectors/compile.ts` | **untested** |
+| [heading-levels-and-offsets](https://html.spec.whatwg.org/#heading-levels-and-offsets) | `dom/selectors/compile.ts` | `dom/selectors/html-state.test.ts` |
+| [heading-offset](https://html.spec.whatwg.org/#heading-offset) | `dom/selectors/compile.ts` | `dom/selectors/html-state.test.ts` |
 | [hidden-elements](https://html.spec.whatwg.org/#hidden-elements) | `dom/css/cascade.ts` | `aria/accname-steps.test.ts`, `aria/tree-exclusion.test.ts` |
-| [hide-all-popovers-until](https://html.spec.whatwg.org/#hide-all-popovers-until) | `dom/html/top-layer.ts` | **untested** |
+| [hide-all-popovers-until](https://html.spec.whatwg.org/#hide-all-popovers-until) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [hide-popover-algorithm](https://html.spec.whatwg.org/#hide-popover-algorithm) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`; WPT: `html/semantics/popovers/popover-manual-hide-does-not-close-auto.html` |
 | [hide-popover-stack-until](https://html.spec.whatwg.org/#hide-popover-stack-until) | `dom/html/top-layer.ts` | `dom/html/wpt-popover.test.ts` |
-| [hiding-popover-nesting-count](https://html.spec.whatwg.org/#hiding-popover-nesting-count) | `dom/html/top-layer.ts` | **untested** |
-| [hint-stack-parent](https://html.spec.whatwg.org/#hint-stack-parent) | `dom/html/top-layer.ts` | **untested** |
+| [hiding-popover-nesting-count](https://html.spec.whatwg.org/#hiding-popover-nesting-count) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [hint-stack-parent](https://html.spec.whatwg.org/#hint-stack-parent) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [html-element-constructors](https://html.spec.whatwg.org/#html-element-constructors) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/html/registry.ts` | `dom/html/custom-elements.test.ts`, `dom/html/wpt-custom-elements.test.ts`; WPT: `custom-elements/HTMLElement-constructor-customized-builtins.html`, `custom-elements/HTMLElement-constructor.html` |
 | [html-fragment-parsing-algorithm](https://html.spec.whatwg.org/#html-fragment-parsing-algorithm) | `dom/parser/index.ts`, `dom/parser/treebuilder.ts` | `dom/parser/html5lib-tree.test.ts`, `dom/serializer/serializer.test.ts` |
 | [html-fragment-serialisation-algorithm](https://html.spec.whatwg.org/#html-fragment-serialisation-algorithm) | `dom/serializer/index.ts` | **untested** |
-| [htmlanchorelement](https://html.spec.whatwg.org/#htmlanchorelement) | `dom/html/anchor.ts` | **untested** |
-| [htmlareaelement](https://html.spec.whatwg.org/#htmlareaelement) | `dom/html/anchor.ts` | **untested** |
-| [htmlcanvaselement](https://html.spec.whatwg.org/#htmlcanvaselement) | `dom/html/elements.ts` | **untested** |
-| [htmlelement](https://html.spec.whatwg.org/#htmlelement) | `dom/html/HTMLElement.ts` | **untested** |
+| [htmlanchorelement](https://html.spec.whatwg.org/#htmlanchorelement) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
+| [htmlareaelement](https://html.spec.whatwg.org/#htmlareaelement) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
+| [htmlcanvaselement](https://html.spec.whatwg.org/#htmlcanvaselement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [htmlelement](https://html.spec.whatwg.org/#htmlelement) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [htmlformcontrolscollection](https://html.spec.whatwg.org/#htmlformcontrolscollection) | `dom/html/forms/collections.ts` | WPT: `html/semantics/forms/the-form-element/form-elements-interfaces-01.html` |
 | [htmlhyperlinkelementutils](https://html.spec.whatwg.org/#htmlhyperlinkelementutils) | `dom/html/anchor.ts` | `dom/html/elements.test.ts` |
-| [htmliframeelement](https://html.spec.whatwg.org/#htmliframeelement) | `dom/html/elements.ts` | **untested** |
-| [htmlimageelement](https://html.spec.whatwg.org/#htmlimageelement) | `dom/html/elements.ts` | **untested** |
-| [htmlmediaelement](https://html.spec.whatwg.org/#htmlmediaelement) | `dom/html/media.ts` | **untested** |
-| [htmlobjectelement](https://html.spec.whatwg.org/#htmlobjectelement) | `dom/html/elements.ts` | **untested** |
+| [htmliframeelement](https://html.spec.whatwg.org/#htmliframeelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [htmlimageelement](https://html.spec.whatwg.org/#htmlimageelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [htmlmediaelement](https://html.spec.whatwg.org/#htmlmediaelement) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
+| [htmlobjectelement](https://html.spec.whatwg.org/#htmlobjectelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [htmloptionscollection](https://html.spec.whatwg.org/#htmloptionscollection) | `dom/html/forms/collections.ts` | `dom/html/forms/select-textarea.test.ts` |
-| [htmlorsvgelement](https://html.spec.whatwg.org/#htmlorsvgelement) | `dom/html/HTMLElement.ts` | **untested** |
-| [htmlscriptelement](https://html.spec.whatwg.org/#htmlscriptelement) | `dom/html/resources.ts` | **untested** |
-| [htmlunknownelement](https://html.spec.whatwg.org/#htmlunknownelement) | `dom/html/elements.ts` | **untested** |
+| [htmlorsvgelement](https://html.spec.whatwg.org/#htmlorsvgelement) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [htmlscriptelement](https://html.spec.whatwg.org/#htmlscriptelement) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
+| [htmlunknownelement](https://html.spec.whatwg.org/#htmlunknownelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [iframe-load-event-steps](https://html.spec.whatwg.org/#iframe-load-event-steps) | `dom/window/browsing-context.ts` | `dom/window/iframe.test.ts` |
 | [implicit-submission](https://html.spec.whatwg.org/#implicit-submission) | `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts` |
 | [inert](https://html.spec.whatwg.org/#inert) | `dom/html/focus.ts` | WPT: `inert/inert-canvas-fallback-content.html`, `inert/nested-inert-unfocusable.html` |
@@ -641,51 +642,51 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [insert-a-comment](https://html.spec.whatwg.org/#insert-a-comment) | `dom/parser/treebuilder.ts` | **untested** |
 | [insert-a-foreign-element](https://html.spec.whatwg.org/#insert-a-foreign-element) | `dom/parser/treebuilder.ts` | **untested** |
 | [insert-an-html-element](https://html.spec.whatwg.org/#insert-an-html-element) | `dom/parser/treebuilder.ts` | **untested** |
-| [interactive-content](https://html.spec.whatwg.org/#interactive-content) | `dom/html/forms/HTMLLabelElement.ts`, `dom/html/interactive.ts` | **untested** |
-| [interactive-elements](https://html.spec.whatwg.org/#interactive-elements) | `dom/html/interactive.ts` | **untested** |
-| [interactively-validate-the-constraints](https://html.spec.whatwg.org/#interactively-validate-the-constraints) | `dom/html/forms/form-submission.ts` | **untested** |
+| [interactive-content](https://html.spec.whatwg.org/#interactive-content) | `dom/html/forms/HTMLLabelElement.ts`, `dom/html/interactive.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [interactive-elements](https://html.spec.whatwg.org/#interactive-elements) | `dom/html/interactive.ts` | `dom/html/forms/face-autofill.test.ts` |
+| [interactively-validate-the-constraints](https://html.spec.whatwg.org/#interactively-validate-the-constraints) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
 | [invoke-custom-element-reactions](https://html.spec.whatwg.org/#invoke-custom-element-reactions) | `dom/html/custom-elements.ts` | WPT: `custom-elements/reaction-timing.html` |
-| [is-modal](https://html.spec.whatwg.org/#is-modal) | `dom/html/top-layer.ts` | **untested** |
-| [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | **untested** |
-| [language](https://html.spec.whatwg.org/#language) | `dom/html/innerText.ts`, `dom/selectors/state.ts` | **untested** |
+| [is-modal](https://html.spec.whatwg.org/#is-modal) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `compat/forms/form-algorithms.test.ts` |
+| [language](https://html.spec.whatwg.org/#language) | `dom/html/innerText.ts`, `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `compat/html/activation.test.ts` |
 | [light-dismiss-open-dialogs](https://html.spec.whatwg.org/#light-dismiss-open-dialogs) | `dom/html/interactive.ts` | `dom/html/top-layer.test.ts` |
 | [light-dismiss-open-popovers](https://html.spec.whatwg.org/#light-dismiss-open-popovers) | `dom/html/top-layer.ts` | `dom/html/top-layer.test.ts` |
-| [list-of-animation-frame-callbacks](https://html.spec.whatwg.org/#list-of-animation-frame-callbacks) | `dom/window/Window.ts` | **untested** |
+| [list-of-animation-frame-callbacks](https://html.spec.whatwg.org/#list-of-animation-frame-callbacks) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |
 | [local-date-and-time-state-(type=datetime-local](https://html.spec.whatwg.org/#local-date-and-time-state-(type=datetime-local) | `dom/html/forms/microsyntaxes.ts` | WPT: `html/semantics/forms/the-input-element/datetime-local-trailing-zeros.html`, `html/semantics/forms/the-input-element/datetime-local-valueasdate.html` +1 |
-| [location-object-navigate-ish](https://html.spec.whatwg.org/#location-object-navigate-ish) | `dom/window/Location.ts` | **untested** |
+| [location-object-navigate-ish](https://html.spec.whatwg.org/#location-object-navigate-ish) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
 | [location-object-setup-steps](https://html.spec.whatwg.org/#location-object-setup-steps) | `dom/window/Location.ts` | `dom/window/wpt-history.test.ts` |
-| [locked-for-reset](https://html.spec.whatwg.org/#locked-for-reset) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
-| [look-up-a-custom-element-definition](https://html.spec.whatwg.org/#look-up-a-custom-element-definition) | `dom/html/custom-elements.ts` | **untested** |
+| [locked-for-reset](https://html.spec.whatwg.org/#locked-for-reset) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [look-up-a-custom-element-definition](https://html.spec.whatwg.org/#look-up-a-custom-element-definition) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [markup-declaration-open-state](https://html.spec.whatwg.org/#markup-declaration-open-state) | `dom/parser/tokenizer.ts`, `dom/parser/treebuilder.ts` | **untested** |
-| [merge-with-the-next-text-node](https://html.spec.whatwg.org/#merge-with-the-next-text-node) | `dom/html/HTMLElement.ts` | **untested** |
+| [merge-with-the-next-text-node](https://html.spec.whatwg.org/#merge-with-the-next-text-node) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [multipart-form-data](https://html.spec.whatwg.org/#multipart-form-data) | `dom/window/xhr.ts` | **untested** |
 | [named-character-reference-state](https://html.spec.whatwg.org/#named-character-reference-state) | `dom/parser/entities.ts`, `dom/parser/tokenizer.ts` | **untested** |
 | [named-character-references](https://html.spec.whatwg.org/#named-character-references) | `dom/parser/entities-data.ts`, `dom/parser/generate-entities.ts` | `dom/parser/html5lib-tokenizer.test.ts` |
-| [navigable-top-level-traversable](https://html.spec.whatwg.org/#navigable-top-level-traversable) | `dom/window/Storage.ts` | **untested** |
+| [navigable-top-level-traversable](https://html.spec.whatwg.org/#navigable-top-level-traversable) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
 | [navigate](https://html.spec.whatwg.org/#navigate) | `dom/window/History.ts` | `dom/window/location.test.ts`, `compat/not-implemented/not-implemented.test.ts` |
 | [navigate-fragid](https://html.spec.whatwg.org/#navigate-fragid) | `dom/window/History.ts` | `dom/window/location.test.ts`, `compat/html/history-location.test.ts` |
-| [navigatorconcurrenthardware](https://html.spec.whatwg.org/#navigatorconcurrenthardware) | `dom/window/Navigator.ts` | **untested** |
-| [navigatorcookies](https://html.spec.whatwg.org/#navigatorcookies) | `dom/window/Navigator.ts` | **untested** |
-| [navigatorid](https://html.spec.whatwg.org/#navigatorid) | `dom/window/Navigator.ts` | **untested** |
-| [navigatorlanguage](https://html.spec.whatwg.org/#navigatorlanguage) | `dom/window/Navigator.ts` | **untested** |
-| [navigatoronline](https://html.spec.whatwg.org/#navigatoronline) | `dom/window/Navigator.ts` | **untested** |
-| [navigatorplugins](https://html.spec.whatwg.org/#navigatorplugins) | `dom/window/Navigator.ts` | **untested** |
-| [nearest-clicked-dialog](https://html.spec.whatwg.org/#nearest-clicked-dialog) | `dom/html/interactive.ts` | **untested** |
-| [nearest-inclusive-open-popover](https://html.spec.whatwg.org/#nearest-inclusive-open-popover) | `dom/html/top-layer.ts` | **untested** |
-| [nearest-inclusive-target-popover](https://html.spec.whatwg.org/#nearest-inclusive-target-popover) | `dom/html/top-layer.ts` | **untested** |
-| [number-of-days-in-month-month-of-year-year](https://html.spec.whatwg.org/#number-of-days-in-month-month-of-year-year) | `dom/html/forms/microsyntaxes.ts` | **untested** |
+| [navigatorconcurrenthardware](https://html.spec.whatwg.org/#navigatorconcurrenthardware) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
+| [navigatorcookies](https://html.spec.whatwg.org/#navigatorcookies) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
+| [navigatorid](https://html.spec.whatwg.org/#navigatorid) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
+| [navigatorlanguage](https://html.spec.whatwg.org/#navigatorlanguage) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
+| [navigatoronline](https://html.spec.whatwg.org/#navigatoronline) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
+| [navigatorplugins](https://html.spec.whatwg.org/#navigatorplugins) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
+| [nearest-clicked-dialog](https://html.spec.whatwg.org/#nearest-clicked-dialog) | `dom/html/interactive.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [nearest-inclusive-open-popover](https://html.spec.whatwg.org/#nearest-inclusive-open-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [nearest-inclusive-target-popover](https://html.spec.whatwg.org/#nearest-inclusive-target-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [number-of-days-in-month-month-of-year-year](https://html.spec.whatwg.org/#number-of-days-in-month-month-of-year-year) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [numeric-character-reference-end-state](https://html.spec.whatwg.org/#numeric-character-reference-end-state) | `dom/parser/entities.ts` | **untested** |
 | [numeric-character-reference-state](https://html.spec.whatwg.org/#numeric-character-reference-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [open-dialogs-list](https://html.spec.whatwg.org/#open-dialogs-list) | `dom/html/top-layer.ts` | **untested** |
-| [opened-in-popover-mode](https://html.spec.whatwg.org/#opened-in-popover-mode) | `dom/html/top-layer.ts` | **untested** |
-| [option-element-nearest-ancestor-select](https://html.spec.whatwg.org/#option-element-nearest-ancestor-select) | `dom/html/forms/HTMLOptionElement.ts` | **untested** |
-| [own-autocapitalization-hint](https://html.spec.whatwg.org/#own-autocapitalization-hint) | `dom/html/HTMLElement.ts` | **untested** |
-| [parse-a-date-string](https://html.spec.whatwg.org/#parse-a-date-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [parse-a-local-date-and-time-string](https://html.spec.whatwg.org/#parse-a-local-date-and-time-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [parse-a-month-string](https://html.spec.whatwg.org/#parse-a-month-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [parse-a-time-string](https://html.spec.whatwg.org/#parse-a-time-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [parse-a-week-string](https://html.spec.whatwg.org/#parse-a-week-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
+| [open-dialogs-list](https://html.spec.whatwg.org/#open-dialogs-list) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [opened-in-popover-mode](https://html.spec.whatwg.org/#opened-in-popover-mode) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [option-element-nearest-ancestor-select](https://html.spec.whatwg.org/#option-element-nearest-ancestor-select) | `dom/html/forms/HTMLOptionElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [own-autocapitalization-hint](https://html.spec.whatwg.org/#own-autocapitalization-hint) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
+| [parse-a-date-string](https://html.spec.whatwg.org/#parse-a-date-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [parse-a-local-date-and-time-string](https://html.spec.whatwg.org/#parse-a-local-date-and-time-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [parse-a-month-string](https://html.spec.whatwg.org/#parse-a-month-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [parse-a-time-string](https://html.spec.whatwg.org/#parse-a-time-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [parse-a-week-string](https://html.spec.whatwg.org/#parse-a-week-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [parsing](https://html.spec.whatwg.org/#parsing) | `dom/parser/index.ts`, `dom/parser/tags.ts`, `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-afterbody](https://html.spec.whatwg.org/#parsing-main-afterbody) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-afterframeset](https://html.spec.whatwg.org/#parsing-main-afterframeset) | `dom/parser/treebuilder.ts` | **untested** |
@@ -704,26 +705,26 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [parsing-main-intemplate](https://html.spec.whatwg.org/#parsing-main-intemplate) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-intr](https://html.spec.whatwg.org/#parsing-main-intr) | `dom/parser/treebuilder.ts` | WPT: `html/semantics/forms/the-form-element/form-elements-nameditem-02.html` |
 | [parsing-template-contents](https://html.spec.whatwg.org/#parsing-template-contents) | `dom/parser/treebuilder.ts` | **untested** |
-| [past-names-map](https://html.spec.whatwg.org/#past-names-map) | `dom/html/forms/HTMLFormElement.ts` | **untested** |
+| [past-names-map](https://html.spec.whatwg.org/#past-names-map) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [placeholder-label-option](https://html.spec.whatwg.org/#placeholder-label-option) | `dom/html/forms/HTMLSelectElement.ts` | WPT: `html/semantics/forms/the-select-element/select-validity-option-descendants.html` |
 | [plaintext-state](https://html.spec.whatwg.org/#plaintext-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [popover-close-watcher](https://html.spec.whatwg.org/#popover-close-watcher) | `dom/html/top-layer.ts` | **untested** |
+| [popover-close-watcher](https://html.spec.whatwg.org/#popover-close-watcher) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popover-focusing-steps](https://html.spec.whatwg.org/#popover-focusing-steps) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts` |
-| [popover-hiding](https://html.spec.whatwg.org/#popover-hiding) | `dom/html/top-layer.ts` | **untested** |
+| [popover-hiding](https://html.spec.whatwg.org/#popover-hiding) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popover-light-dismiss](https://html.spec.whatwg.org/#popover-light-dismiss) | `dom/html/top-layer.ts` | `dom/html/top-layer.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts` |
-| [popover-pointerdown-target](https://html.spec.whatwg.org/#popover-pointerdown-target) | `dom/html/top-layer.ts` | **untested** |
-| [popover-stack-position](https://html.spec.whatwg.org/#popover-stack-position) | `dom/html/top-layer.ts` | **untested** |
-| [popover-target-attribute-activation-behavior](https://html.spec.whatwg.org/#popover-target-attribute-activation-behavior) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/invokers.ts` | **untested** |
-| [popover-target-element](https://html.spec.whatwg.org/#popover-target-element) | `dom/html/invokers.ts` | **untested** |
-| [popover-toggle-task-tracker](https://html.spec.whatwg.org/#popover-toggle-task-tracker) | `dom/html/top-layer.ts` | **untested** |
-| [popover-trigger](https://html.spec.whatwg.org/#popover-trigger) | `dom/html/top-layer.ts` | **untested** |
-| [popover-visibility-state](https://html.spec.whatwg.org/#popover-visibility-state) | `dom/html/top-layer.ts` | **untested** |
+| [popover-pointerdown-target](https://html.spec.whatwg.org/#popover-pointerdown-target) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
+| [popover-stack-position](https://html.spec.whatwg.org/#popover-stack-position) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [popover-target-attribute-activation-behavior](https://html.spec.whatwg.org/#popover-target-attribute-activation-behavior) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
+| [popover-target-element](https://html.spec.whatwg.org/#popover-target-element) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
+| [popover-toggle-task-tracker](https://html.spec.whatwg.org/#popover-toggle-task-tracker) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [popover-trigger](https://html.spec.whatwg.org/#popover-trigger) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [popover-visibility-state](https://html.spec.whatwg.org/#popover-visibility-state) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popoverinvokerelement](https://html.spec.whatwg.org/#popoverinvokerelement) | `dom/html/registry.ts` | `dom/html/elements.test.ts` |
 | [preprocessing-the-input-stream](https://html.spec.whatwg.org/#preprocessing-the-input-stream) | `dom/parser/tokenizer.ts` | **untested** |
-| [previously-focused-element](https://html.spec.whatwg.org/#previously-focused-element) | `dom/html/top-layer.ts` | **untested** |
-| [process-close-watchers](https://html.spec.whatwg.org/#process-close-watchers) | `dom/html/top-layer.ts` | **untested** |
+| [previously-focused-element](https://html.spec.whatwg.org/#previously-focused-element) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [process-close-watchers](https://html.spec.whatwg.org/#process-close-watchers) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [processing-instruction-open-state](https://html.spec.whatwg.org/#processing-instruction-open-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [prod-potentialcustomelementname](https://html.spec.whatwg.org/#prod-potentialcustomelementname) | `dom/html/custom-elements.ts` | **untested** |
+| [prod-potentialcustomelementname](https://html.spec.whatwg.org/#prod-potentialcustomelementname) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [pseudo-classes](https://html.spec.whatwg.org/#pseudo-classes) | `dom/html/forms/state.ts`, `dom/selectors/html-predicates.ts`, `dom/selectors/state.ts` | `dom/html/forms/validation.test.ts`, `dom/selectors/matching.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `dom/selectors/wpt-runner.test.ts` +1; WPT: `html/semantics/selectors/pseudo-classes/autofill.html`, `html/semantics/selectors/pseudo-classes/checked-002.html` +17 |
 | [push-onto-the-list-of-active-formatting-elements](https://html.spec.whatwg.org/#push-onto-the-list-of-active-formatting-elements) | `dom/parser/treebuilder.ts` | **untested** |
 | [queue-a-details-toggle-event-task](https://html.spec.whatwg.org/#queue-a-details-toggle-event-task) | `dom/html/interactive.ts` | `dom/html/element-tasks.test.ts` |
@@ -739,18 +740,18 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [reconstruct-the-active-formatting-elements](https://html.spec.whatwg.org/#reconstruct-the-active-formatting-elements) | `dom/parser/treebuilder.ts` | **untested** |
 | [reflecting-content-attributes-in-idl-attributes](https://html.spec.whatwg.org/#reflecting-content-attributes-in-idl-attributes) | `dom/html/HTMLElement.ts`, `dom/html/aria-reflection.ts`, `dom/html/forms/common.ts` +2 | `dom/html/reflection.wpt.test.ts`, `dom/html/wpt-html-dom.test.ts`, `compat/forms/reflection.test.ts` |
 | [rendered-text-collection-steps](https://html.spec.whatwg.org/#rendered-text-collection-steps) | `dom/html/innerText.ts` | WPT: `html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html` |
-| [rendered-text-fragment](https://html.spec.whatwg.org/#rendered-text-fragment) | `dom/html/innerText.ts` | **untested** |
+| [rendered-text-fragment](https://html.spec.whatwg.org/#rendered-text-fragment) | `dom/html/innerText.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [rendering](https://html.spec.whatwg.org/#rendering) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts` |
 | [report-an-exception](https://html.spec.whatwg.org/#report-an-exception) | `dom/events/report.ts`, `dom/html/custom-elements.ts`, `jest-environment/index.ts` +2 | `dom/events/dispatch.test.ts`, `jest-environment/jest.test.ts`, `register/register.test.ts`, `vitest-environment/react.test.tsx` |
 | [report-the-error](https://html.spec.whatwg.org/#report-the-error) | `dom/events/report.ts` | **untested** |
-| [request-close-return-value](https://html.spec.whatwg.org/#request-close-return-value) | `dom/html/interactive.ts` | **untested** |
-| [request-close-source-element](https://html.spec.whatwg.org/#request-close-source-element) | `dom/html/interactive.ts` | **untested** |
+| [request-close-return-value](https://html.spec.whatwg.org/#request-close-return-value) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
+| [request-close-source-element](https://html.spec.whatwg.org/#request-close-source-element) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [reset-the-form-owner](https://html.spec.whatwg.org/#reset-the-form-owner) | `dom/html/forms/form-associated.ts` | `dom/html/forms/form.test.ts` |
 | [reset-the-insertion-mode-appropriately](https://html.spec.whatwg.org/#reset-the-insertion-mode-appropriately) | `dom/parser/treebuilder.ts` | **untested** |
 | [rules-for-parsing-floating-point-number-values](https://html.spec.whatwg.org/#rules-for-parsing-floating-point-number-values) | `dom/html/forms/microsyntaxes.ts`, `dom/html/reflect.ts` | `compat/html/output-progress-meter.test.ts`; WPT: `html/semantics/forms/the-meter-element/meter-leading-plus-sign.html` |
-| [rules-for-parsing-integers](https://html.spec.whatwg.org/#rules-for-parsing-integers) | `dom/html/reflect.ts` | **untested** |
-| [rules-for-parsing-non-negative-integers](https://html.spec.whatwg.org/#rules-for-parsing-non-negative-integers) | `dom/html/reflect.ts`, `dom/selectors/compile.ts` | **untested** |
-| [run-light-dismiss-activities](https://html.spec.whatwg.org/#run-light-dismiss-activities) | `dom/events/dispatch.ts`, `dom/html/top-layer.ts` | **untested** |
+| [rules-for-parsing-integers](https://html.spec.whatwg.org/#rules-for-parsing-integers) | `dom/html/reflect.ts` | `dom/html/forms/controls-details.test.ts` |
+| [rules-for-parsing-non-negative-integers](https://html.spec.whatwg.org/#rules-for-parsing-non-negative-integers) | `dom/html/reflect.ts`, `dom/selectors/compile.ts` | `dom/selectors/html-state.test.ts` |
+| [run-light-dismiss-activities](https://html.spec.whatwg.org/#run-light-dismiss-activities) | `dom/events/dispatch.ts`, `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
 | [run-the-animation-frame-callbacks](https://html.spec.whatwg.org/#run-the-animation-frame-callbacks) | `dom/window/Window.ts` | `dom/window/timers.test.ts` |
 | [script-data-double-escape-start-state](https://html.spec.whatwg.org/#script-data-double-escape-start-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [script-data-double-escaped-less-than-sign-state](https://html.spec.whatwg.org/#script-data-double-escaped-less-than-sign-state) | `dom/parser/tokenizer.ts` | **untested** |
@@ -762,78 +763,81 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [selector-checked](https://html.spec.whatwg.org/#selector-checked) | `dom/html/forms/state.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/matching.test.ts` |
 | [selector-custom](https://html.spec.whatwg.org/#selector-custom) | `dom/selectors/state.ts` | `dom/html/forms/element-internals.test.ts`, `dom/selectors/pseudo-classes.test.ts` |
 | [selector-default](https://html.spec.whatwg.org/#selector-default) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
-| [selector-defined](https://html.spec.whatwg.org/#selector-defined) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `dom/selectors/pseudo-classes.test.ts`; WPT: `css/selectors/invalidation/defined-in-has.html`, `css/selectors/invalidation/defined.html` |
-| [selector-disabled](https://html.spec.whatwg.org/#selector-disabled) | `dom/html/forms/state.ts` | **untested** |
+| [selector-defined](https://html.spec.whatwg.org/#selector-defined) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `compat/html/custom-element-reactions.test.ts`; WPT: `css/selectors/invalidation/defined-in-has.html`, `css/selectors/invalidation/defined.html` |
+| [selector-disabled](https://html.spec.whatwg.org/#selector-disabled) | `dom/html/forms/state.ts` | `dom/selectors/html-state.test.ts` |
 | [selector-focus](https://html.spec.whatwg.org/#selector-focus) | `dom/html/focus.ts` | WPT: `shadow-dom/focus/focus-selector-delegatesFocus.html` |
 | [selector-in-range](https://html.spec.whatwg.org/#selector-in-range) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts`; WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html`, `html/semantics/selectors/pseudo-classes/inrange-outofrange.html` |
 | [selector-indeterminate](https://html.spec.whatwg.org/#selector-indeterminate) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
-| [selector-invalid](https://html.spec.whatwg.org/#selector-invalid) | `dom/html/forms/state.ts` | **untested** |
-| [selector-link](https://html.spec.whatwg.org/#selector-link) | `dom/selectors/state.ts` | **untested** |
-| [selector-muted](https://html.spec.whatwg.org/#selector-muted) | `dom/selectors/state.ts` | **untested** |
+| [selector-invalid](https://html.spec.whatwg.org/#selector-invalid) | `dom/html/forms/state.ts` | `dom/selectors/html-state.test.ts` |
+| [selector-link](https://html.spec.whatwg.org/#selector-link) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
+| [selector-muted](https://html.spec.whatwg.org/#selector-muted) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [selector-open](https://html.spec.whatwg.org/#selector-open) | `dom/selectors/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-out-of-range](https://html.spec.whatwg.org/#selector-out-of-range) | `dom/html/forms/state.ts` | WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html`, `html/semantics/selectors/pseudo-classes/inrange-outofrange.html` |
-| [selector-paused](https://html.spec.whatwg.org/#selector-paused) | `dom/selectors/state.ts` | **untested** |
+| [selector-paused](https://html.spec.whatwg.org/#selector-paused) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [selector-placeholder-shown](https://html.spec.whatwg.org/#selector-placeholder-shown) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
-| [selector-playing](https://html.spec.whatwg.org/#selector-playing) | `dom/selectors/state.ts` | **untested** |
+| [selector-playing](https://html.spec.whatwg.org/#selector-playing) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [selector-popover-open](https://html.spec.whatwg.org/#selector-popover-open) | `dom/html/top-layer.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-read-write](https://html.spec.whatwg.org/#selector-read-write) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-required](https://html.spec.whatwg.org/#selector-required) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
+| [selector-user-invalid](https://html.spec.whatwg.org/#selector-user-invalid) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts`, `user-event/event/user-validity.test.ts` |
+| [selector-user-valid](https://html.spec.whatwg.org/#selector-user-valid) | `dom/html/forms/state.ts`, `dom/html/forms/user-validity.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-valid](https://html.spec.whatwg.org/#selector-valid) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts`, `compat/forms/pseudo-classes.test.ts`; WPT: `html/semantics/selectors/pseudo-classes/valid-invalid-fieldset-disconnected.html` |
 | [self-closing-start-tag-state](https://html.spec.whatwg.org/#self-closing-start-tag-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [semantics](https://html.spec.whatwg.org/#semantics) | `dom/html/elements.ts` | **untested** |
+| [semantics](https://html.spec.whatwg.org/#semantics) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
+| [send-select-update-notifications](https://html.spec.whatwg.org/#send-select-update-notifications) | `dom/html/forms/user-validity.ts` | `user-event/event/user-validity.test.ts` |
 | [sequential-focus-navigation](https://html.spec.whatwg.org/#sequential-focus-navigation) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts` |
 | [sequential-focus-navigation-order](https://html.spec.whatwg.org/#sequential-focus-navigation-order) | `dom/html/focus.ts` | `dom/html/focus.test.ts` |
-| [sequentially-focusable](https://html.spec.whatwg.org/#sequentially-focusable) | `dom/html/focus.ts` | **untested** |
+| [sequentially-focusable](https://html.spec.whatwg.org/#sequentially-focusable) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [serialising-html-fragments](https://html.spec.whatwg.org/#serialising-html-fragments) | `dom/serializer/index.ts` | `dom/serializer/serializer.test.ts` |
 | [serializes-as-void](https://html.spec.whatwg.org/#serializes-as-void) | `dom/serializer/index.ts` | **untested** |
-| [session-storage-holder](https://html.spec.whatwg.org/#session-storage-holder) | `dom/window/Storage.ts` | **untested** |
-| [set-the-dialog-close-watcher](https://html.spec.whatwg.org/#set-the-dialog-close-watcher) | `dom/html/interactive.ts` | **untested** |
+| [session-storage-holder](https://html.spec.whatwg.org/#session-storage-holder) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [set-the-dialog-close-watcher](https://html.spec.whatwg.org/#set-the-dialog-close-watcher) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [set-the-frozen-base-url](https://html.spec.whatwg.org/#set-the-frozen-base-url) | `dom/nodes/Document.ts` | **untested** |
-| [set-the-selection-range](https://html.spec.whatwg.org/#set-the-selection-range) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [set-the-selection-range](https://html.spec.whatwg.org/#set-the-selection-range) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/controls-details.test.ts` |
 | [shared-history-push/replace-state-steps](https://html.spec.whatwg.org/#shared-history-push/replace-state-steps) | `dom/window/History.ts` | `dom/window/history.test.ts`, `dom/window/wpt-history.test.ts`, `compat/html/history-location.test.ts` |
 | [show-a-modal-dialog](https://html.spec.whatwg.org/#show-a-modal-dialog) | `dom/html/interactive.ts` | `dom/html/wpt-dialog.test.ts` |
 | [show-popover](https://html.spec.whatwg.org/#show-popover) | `dom/html/top-layer.ts` | `dom/html/wpt-popover.test.ts` |
-| [showing-auto-popover-list](https://html.spec.whatwg.org/#showing-auto-popover-list) | `dom/html/top-layer.ts` | **untested** |
+| [showing-auto-popover-list](https://html.spec.whatwg.org/#showing-auto-popover-list) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [special](https://html.spec.whatwg.org/#special) | `dom/parser/treebuilder.ts` | **untested** |
 | [statically-validate-the-constraints](https://html.spec.whatwg.org/#statically-validate-the-constraints) | `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts`, `compat/forms/validation.test.ts` |
 | [stop-parsing](https://html.spec.whatwg.org/#stop-parsing) | `dom/parser/treebuilder.ts` | **untested** |
-| [storage](https://html.spec.whatwg.org/#storage) | `dom/window/Storage.ts` | **untested** |
-| [summary-for-its-parent-details](https://html.spec.whatwg.org/#summary-for-its-parent-details) | `dom/html/focus.ts` | **untested** |
+| [storage](https://html.spec.whatwg.org/#storage) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
+| [summary-for-its-parent-details](https://html.spec.whatwg.org/#summary-for-its-parent-details) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [tabindex-focus-flag](https://html.spec.whatwg.org/#tabindex-focus-flag) | `dom/html/focus.ts` | `compat/html/focus.test.ts` |
 | [tag-name-state](https://html.spec.whatwg.org/#tag-name-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [tag-open-state](https://html.spec.whatwg.org/#tag-open-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [textFieldSelection](https://html.spec.whatwg.org/#textFieldSelection) | `dom/html/forms/HTMLTextAreaElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/wpt-forms.test.ts`, `compat/forms/textarea-selection.test.ts`; WPT: `html/semantics/forms/textfieldselection/selection-not-application-textarea.html`, `html/semantics/forms/textfieldselection/selection.html` +1 |
-| [textarea-wrapping-transformation](https://html.spec.whatwg.org/#textarea-wrapping-transformation) | `dom/html/forms/form-submission.ts` | **untested** |
+| [textarea-wrapping-transformation](https://html.spec.whatwg.org/#textarea-wrapping-transformation) | `dom/html/forms/form-submission.ts` | `dom/html/forms/controls-details.test.ts` |
 | [the-a-element](https://html.spec.whatwg.org/#the-a-element) | `dom/html/anchor.ts` | WPT: `html/semantics/forms/the-label-element/label-inside-anchor.html`, `html/semantics/interactive-elements/the-summary-element/anchor-without-link.html` |
 | [the-a-element:activation-behaviour](https://html.spec.whatwg.org/#the-a-element:activation-behaviour) | `dom/html/anchor.ts` | `compat/html/activation.test.ts` |
 | [the-after-after-body-insertion-mode](https://html.spec.whatwg.org/#the-after-after-body-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |
 | [the-after-after-frameset-insertion-mode](https://html.spec.whatwg.org/#the-after-after-frameset-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |
 | [the-after-head-insertion-mode](https://html.spec.whatwg.org/#the-after-head-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |
-| [the-area-element](https://html.spec.whatwg.org/#the-area-element) | `dom/html/anchor.ts` | **untested** |
+| [the-area-element](https://html.spec.whatwg.org/#the-area-element) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
 | [the-before-head-insertion-mode](https://html.spec.whatwg.org/#the-before-head-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |
 | [the-before-html-insertion-mode](https://html.spec.whatwg.org/#the-before-html-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |
 | [the-beforeunloadevent-interface](https://html.spec.whatwg.org/#the-beforeunloadevent-interface) | `dom/events/events.ts` | **untested** |
 | [the-button-element](https://html.spec.whatwg.org/#the-button-element) | `dom/html/forms/HTMLButtonElement.ts` | `dom/html/forms/wpt-forms.test.ts`; WPT: `dom/events/preventDefault-during-activation-behavior.html`, `html/semantics/forms/attributes-common-to-form-controls/formAction_document_address.html` +2 |
 | [the-button-element:activation-behaviour](https://html.spec.whatwg.org/#the-button-element:activation-behaviour) | `dom/html/forms/HTMLButtonElement.ts`, `dom/html/invokers.ts` | `dom/html/forms/activation.test.ts`, `compat/forms/submission-activation.test.ts`, `compat/html/activation.test.ts` |
 | [the-button-element:attr-button-commandfor](https://html.spec.whatwg.org/#the-button-element:attr-button-commandfor) | `dom/html/invokers.ts` | `dom/html/wpt-popover.test.ts` |
-| [the-commandevent-interface](https://html.spec.whatwg.org/#the-commandevent-interface) | `dom/html/invokers.ts` | **untested** |
+| [the-commandevent-interface](https://html.spec.whatwg.org/#the-commandevent-interface) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [the-constraint-validation-api](https://html.spec.whatwg.org/#the-constraint-validation-api) | `dom/html/forms/validation.ts` | `compat/forms/validation.test.ts`; WPT: `html/semantics/forms/constraints/form-validation-checkValidity.html`, `html/semantics/forms/constraints/form-validation-reportValidity.html` +18 |
 | [the-datalist-element](https://html.spec.whatwg.org/#the-datalist-element) | `dom/html/forms/HTMLOutputElement.ts` | WPT: `html/semantics/forms/the-datalist-element/datalistoptions.html` |
 | [the-datatransfer-interface](https://html.spec.whatwg.org/#the-datatransfer-interface) | `dom/events/DataTransfer.ts` | `dom/events/DataTransfer.test.ts` |
 | [the-datatransferitem-interface](https://html.spec.whatwg.org/#the-datatransferitem-interface) | `dom/events/DataTransfer.ts` | `dom/events/DataTransfer.test.ts` |
 | [the-datatransferitemlist-interface](https://html.spec.whatwg.org/#the-datatransferitemlist-interface) | `dom/events/DataTransfer.ts` | `dom/events/DataTransfer.test.ts` |
 | [the-details-element](https://html.spec.whatwg.org/#the-details-element) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/elements.test.ts`, `dom/html/wpt-details.test.ts`; WPT: `html/semantics/interactive-elements/the-details-element/details-name-exclusivity-fragment-insertion.html` |
-| [the-details-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-details-element:concept-element-attributes-change-ext) | `dom/html/interactive.ts` | **untested** |
-| [the-details-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-details-element:html-element-insertion-steps) | `dom/html/interactive.ts` | **untested** |
+| [the-details-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-details-element:concept-element-attributes-change-ext) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
+| [the-details-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-details-element:html-element-insertion-steps) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [the-dialog-element](https://html.spec.whatwg.org/#the-dialog-element) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/elements.test.ts`, `dom/html/wpt-dialog.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts`; WPT: `html/semantics/interactive-elements/the-dialog-element/dialog-close-event-async.html`, `html/semantics/interactive-elements/the-dialog-element/dialog-close-event.html` +6 |
-| [the-dialog-element:command-steps](https://html.spec.whatwg.org/#the-dialog-element:command-steps) | `dom/html/interactive.ts`, `dom/html/invokers.ts` | **untested** |
-| [the-dialog-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-dialog-element:concept-element-attributes-change-ext) | `dom/html/interactive.ts` | **untested** |
-| [the-dialog-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-dialog-element:html-element-insertion-steps) | `dom/html/interactive.ts` | **untested** |
-| [the-dialog-element:html-element-removing-steps](https://html.spec.whatwg.org/#the-dialog-element:html-element-removing-steps) | `dom/html/interactive.ts` | **untested** |
+| [the-dialog-element:command-steps](https://html.spec.whatwg.org/#the-dialog-element:command-steps) | `dom/html/interactive.ts`, `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
+| [the-dialog-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-dialog-element:concept-element-attributes-change-ext) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
+| [the-dialog-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-dialog-element:html-element-insertion-steps) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
+| [the-dialog-element:html-element-removing-steps](https://html.spec.whatwg.org/#the-dialog-element:html-element-removing-steps) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [the-dir-attribute](https://html.spec.whatwg.org/#the-dir-attribute) | `dom/selectors/state.ts` | `compat/html/global-attributes.test.ts`; WPT: `html/dom/elements/global-attributes/dir-auto-div-append-child.html`, `html/dom/elements/global-attributes/dir-slots-directionality.html` |
 | [the-directionality](https://html.spec.whatwg.org/#the-directionality) | `dom/selectors/state.ts` | `dom/selectors/matching.test.ts`; WPT: `css/selectors/dir-pseudo-on-input-element.html`, `html/semantics/selectors/pseudo-classes/dir-dynamic.html` +1 |
 | [the-document-object](https://html.spec.whatwg.org/#the-document-object) | `dom/events/handlers.ts`, `dom/index.ts`, `dom/nodes/Document.ts` +1 | `dom/window/window.test.ts`, `dom/window/xhr.test.ts`, `compat/html/document.test.ts` |
-| [the-domstringlist-interface](https://html.spec.whatwg.org/#the-domstringlist-interface) | `dom/window/DOMStringList.ts` | **untested** |
+| [the-domstringlist-interface](https://html.spec.whatwg.org/#the-domstringlist-interface) | `dom/window/DOMStringList.ts` | `dom/window/window-apis.test.ts` |
 | [the-dragevent-interface](https://html.spec.whatwg.org/#the-dragevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
 | [the-elementinternals-interface](https://html.spec.whatwg.org/#the-elementinternals-interface) | `dom/html/forms/face.ts` | `dom/html/forms/element-internals.test.ts`, `dom/html/forms/face-parser-selectedcontent.test.ts`, `dom/html/wpt-custom-elements.test.ts`; WPT: `custom-elements/ElementInternals-accessibility-values.html` |
 | [the-errorevent-interface](https://html.spec.whatwg.org/#the-errorevent-interface) | `dom/events/events.ts` | **untested** |
@@ -845,50 +849,50 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-hashchangeevent-interface](https://html.spec.whatwg.org/#the-hashchangeevent-interface) | `dom/events/events.ts` | **untested** |
 | [the-history-interface](https://html.spec.whatwg.org/#the-history-interface) | `dom/window/History.ts` | `dom/window/history.test.ts`, `dom/window/wpt-history.test.ts`, `compat/html/history-location.test.ts` |
 | [the-iframe-element](https://html.spec.whatwg.org/#the-iframe-element) | `dom/window/browsing-context.ts` | `dom/html/elements.test.ts`, `dom/window/iframe.test.ts`, `vitest-environment/react.test.tsx` |
-| [the-iframe-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-iframe-element:html-element-insertion-steps) | `dom/window/browsing-context.ts` | **untested** |
-| [the-iframe-element:html-element-removing-steps](https://html.spec.whatwg.org/#the-iframe-element:html-element-removing-steps) | `dom/window/browsing-context.ts` | **untested** |
-| [the-indicated-part-of-the-document](https://html.spec.whatwg.org/#the-indicated-part-of-the-document) | `dom/selectors/state.ts` | **untested** |
+| [the-iframe-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-iframe-element:html-element-insertion-steps) | `dom/window/browsing-context.ts` | `dom/html/forms/controls-details.test.ts` |
+| [the-iframe-element:html-element-removing-steps](https://html.spec.whatwg.org/#the-iframe-element:html-element-removing-steps) | `dom/window/browsing-context.ts` | `dom/html/forms/controls-details.test.ts` |
+| [the-indicated-part-of-the-document](https://html.spec.whatwg.org/#the-indicated-part-of-the-document) | `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [the-initial-insertion-mode](https://html.spec.whatwg.org/#the-initial-insertion-mode) | `dom/parser/index.ts`, `dom/parser/treebuilder.ts` | **untested** |
 | [the-innertext-idl-attribute](https://html.spec.whatwg.org/#the-innertext-idl-attribute) | `dom/html/innerText.ts` | `dom/html/elements.test.ts`, `dom/html/wpt-html-dom.test.ts`; WPT: `html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html` |
 | [the-input-element](https://html.spec.whatwg.org/#the-input-element) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/wpt-forms.test.ts`; WPT: `html/semantics/forms/attributes-common-to-form-controls/formAction_document_address.html`, `html/semantics/forms/the-input-element/datetime-weekmonth.html` +6 |
 | [the-input-element:activation-behaviour](https://html.spec.whatwg.org/#the-input-element:activation-behaviour) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/activation.test.ts`, `dom/html/forms/react.test.tsx`, `compat/html/activation.test.ts` |
-| [the-input-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
-| [the-input-element:concept-input-checked-dirty-flag-2](https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [the-input-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [the-input-element:concept-input-checked-dirty-flag-2](https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [the-input-element:concept-node-clone-ext](https://html.spec.whatwg.org/#the-input-element:concept-node-clone-ext) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/checkedness.test.ts` |
 | [the-input-element:legacy-canceled-activation-behavior](https://html.spec.whatwg.org/#the-input-element:legacy-canceled-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/activation.test.ts` |
 | [the-input-element:legacy-pre-activation-behavior](https://html.spec.whatwg.org/#the-input-element:legacy-pre-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/activation.test.ts` |
 | [the-insertion-mode](https://html.spec.whatwg.org/#the-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |
 | [the-label-element](https://html.spec.whatwg.org/#the-label-element) | `dom/html/forms/HTMLLabelElement.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`; WPT: `html/semantics/forms/the-label-element/label-inside-anchor.html` |
-| [the-label-element:activation-behaviour](https://html.spec.whatwg.org/#the-label-element:activation-behaviour) | `dom/html/forms/HTMLLabelElement.ts` | `dom/html/forms/activation.test.ts`, `compat/forms/submission-activation.test.ts` |
-| [the-legend-element](https://html.spec.whatwg.org/#the-legend-element) | `dom/html/forms/HTMLFieldSetElement.ts` | **untested** |
-| [the-link-element](https://html.spec.whatwg.org/#the-link-element) | `dom/html/resources.ts` | **untested** |
+| [the-label-element:activation-behaviour](https://html.spec.whatwg.org/#the-label-element:activation-behaviour) | `dom/html/forms/HTMLLabelElement.ts` | `dom/html/forms/activation.test.ts`, `dom/html/forms/face-autofill.test.ts`, `compat/forms/submission-activation.test.ts` |
+| [the-legend-element](https://html.spec.whatwg.org/#the-legend-element) | `dom/html/forms/HTMLFieldSetElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [the-link-element](https://html.spec.whatwg.org/#the-link-element) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [the-location-interface](https://html.spec.whatwg.org/#the-location-interface) | `dom/window/Location.ts` | `dom/window/location.test.ts`, `dom/window/wpt-history.test.ts`, `compat/html/history-location.test.ts` |
 | [the-messageevent-interface](https://html.spec.whatwg.org/#the-messageevent-interface) | `dom/events/events.ts` | `dom/window/messaging.test.ts` |
 | [the-meter-element](https://html.spec.whatwg.org/#the-meter-element) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts`; WPT: `html/semantics/forms/the-meter-element/meter-leading-plus-sign.html`, `html/semantics/forms/the-meter-element/meter.html` |
 | [the-navigator-object](https://html.spec.whatwg.org/#the-navigator-object) | `dom/window/Navigator.ts` | `dom/window/window.test.ts` |
 | [the-optgroup-element](https://html.spec.whatwg.org/#the-optgroup-element) | `dom/html/forms/HTMLOptionElement.ts` | WPT: `dom/nodes/moveBefore/moveBefore-optgroup.html` |
 | [the-option-element](https://html.spec.whatwg.org/#the-option-element) | `dom/html/forms/HTMLOptionElement.ts` | `dom/html/forms/select-textarea.test.ts`, `compat/forms/select-option.test.ts`; WPT: `html/semantics/forms/the-option-element/option-element-constructor.html` |
-| [the-option-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-option-element:concept-element-attributes-change-ext) | `dom/html/forms/HTMLOptionElement.ts` | **untested** |
-| [the-option-element:concept-node-clone-ext](https://html.spec.whatwg.org/#the-option-element:concept-node-clone-ext) | `dom/html/forms/HTMLOptionElement.ts` | **untested** |
+| [the-option-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-option-element:concept-element-attributes-change-ext) | `dom/html/forms/HTMLOptionElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [the-option-element:concept-node-clone-ext](https://html.spec.whatwg.org/#the-option-element:concept-node-clone-ext) | `dom/html/forms/HTMLOptionElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [the-output-element](https://html.spec.whatwg.org/#the-output-element) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts`; WPT: `html/semantics/forms/the-output-element/output.html` |
 | [the-output-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-output-element:concept-form-reset-control) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts` |
 | [the-pagetransitionevent-interface](https://html.spec.whatwg.org/#the-pagetransitionevent-interface) | `dom/events/events.ts` | **untested** |
 | [the-popover-attribute](https://html.spec.whatwg.org/#the-popover-attribute) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/elements.test.ts`, `dom/html/wpt-popover.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts` |
 | [the-popover-attribute:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-popover-attribute:concept-element-attributes-change-ext) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts` |
-| [the-popover-attribute:html-element-removing-steps](https://html.spec.whatwg.org/#the-popover-attribute:html-element-removing-steps) | `dom/html/top-layer.ts` | **untested** |
+| [the-popover-attribute:html-element-removing-steps](https://html.spec.whatwg.org/#the-popover-attribute:html-element-removing-steps) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [the-popover-target-attributes](https://html.spec.whatwg.org/#the-popover-target-attributes) | `dom/html/invokers.ts` | `dom/html/wpt-popover.test.ts` |
 | [the-popstateevent-interface](https://html.spec.whatwg.org/#the-popstateevent-interface) | `dom/events/events.ts` | `dom/events/shape.test.ts` |
 | [the-progress-element](https://html.spec.whatwg.org/#the-progress-element) | `dom/html/forms/HTMLOutputElement.ts` | `compat/html/output-progress-meter.test.ts`; WPT: `html/semantics/forms/the-progress-element/progress-2.html`, `html/semantics/forms/the-progress-element/progress-max-setting.html` +1 |
 | [the-promiserejectionevent-interface](https://html.spec.whatwg.org/#the-promiserejectionevent-interface) | `dom/events/events.ts` | **untested** |
-| [the-readonly-attribute](https://html.spec.whatwg.org/#the-readonly-attribute) | `dom/html/forms/input-type.ts` | **untested** |
-| [the-readonly-attribute:barred-from-constraint-validation](https://html.spec.whatwg.org/#the-readonly-attribute:barred-from-constraint-validation) | `dom/html/forms/HTMLInputElement.ts` | **untested** |
+| [the-readonly-attribute](https://html.spec.whatwg.org/#the-readonly-attribute) | `dom/html/forms/input-type.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [the-readonly-attribute:barred-from-constraint-validation](https://html.spec.whatwg.org/#the-readonly-attribute:barred-from-constraint-validation) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [the-script-element](https://html.spec.whatwg.org/#the-script-element) | `dom/html/resources.ts` | `dom/html/elements.test.ts` |
 | [the-select-element](https://html.spec.whatwg.org/#the-select-element) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/react.test.tsx`, `dom/html/forms/select-textarea.test.ts`, `dom/html/forms/wpt-forms.test.ts`, `compat/forms/select-option.test.ts` |
 | [the-select-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-select-element:concept-form-reset-control) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/select-option.test.ts` |
-| [the-select-element:selectedness-setting-algorithm](https://html.spec.whatwg.org/#the-select-element:selectedness-setting-algorithm) | `dom/html/forms/HTMLSelectElement.ts` | **untested** |
+| [the-select-element:selectedness-setting-algorithm](https://html.spec.whatwg.org/#the-select-element:selectedness-setting-algorithm) | `dom/html/forms/HTMLSelectElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [the-slot-element](https://html.spec.whatwg.org/#the-slot-element) | `dom/html/slot.ts` | `aria/accessible-name.test.ts`, `dom/html/elements.test.ts`, `dom/nodes/shadow-dom.test.ts`, `dom/nodes/wpt-shadow-dom.test.ts` |
 | [the-storageevent-interface](https://html.spec.whatwg.org/#the-storageevent-interface) | `dom/events/events.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
-| [the-style-element](https://html.spec.whatwg.org/#the-style-element) | `dom/html/resources.ts` | **untested** |
+| [the-style-element](https://html.spec.whatwg.org/#the-style-element) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [the-submitevent-interface](https://html.spec.whatwg.org/#the-submitevent-interface) | `dom/events/events.ts` | **untested** |
 | [the-summary-element:activation-behaviour](https://html.spec.whatwg.org/#the-summary-element:activation-behaviour) | `dom/html/interactive.ts` | `compat/html/activation.test.ts` |
 | [the-template-element](https://html.spec.whatwg.org/#the-template-element) | `dom/html/template.ts` | `dom/html/elements.test.ts`, `dom/html/template.test.ts` |
@@ -898,17 +902,17 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-textarea-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-textarea-element:concept-form-reset-control) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/textarea-selection.test.ts` |
 | [the-textarea-element:concept-node-clone-ext](https://html.spec.whatwg.org/#the-textarea-element:concept-node-clone-ext) | `dom/html/forms/HTMLTextAreaElement.ts` | WPT: `html/semantics/forms/the-textarea-element/cloning-steps.html` |
 | [the-title-element](https://html.spec.whatwg.org/#the-title-element) | `dom/html/resources.ts` | `compat/html/global-attributes.test.ts` |
-| [the-title-element-2](https://html.spec.whatwg.org/#the-title-element-2) | `dom/html/resources.ts` | **untested** |
-| [the-toggleevent-interface](https://html.spec.whatwg.org/#the-toggleevent-interface) | `dom/events/events.ts`, `dom/html/events.ts` | **untested** |
-| [the-useractivation-interface](https://html.spec.whatwg.org/#the-useractivation-interface) | `dom/window/Navigator.ts` | **untested** |
+| [the-title-element-2](https://html.spec.whatwg.org/#the-title-element-2) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
+| [the-toggleevent-interface](https://html.spec.whatwg.org/#the-toggleevent-interface) | `dom/events/events.ts`, `dom/html/events.ts` | `dom/html/invokers-toggle.test.ts` |
+| [the-useractivation-interface](https://html.spec.whatwg.org/#the-useractivation-interface) | `dom/window/Navigator.ts` | `dom/window/window-apis.test.ts` |
 | [the-window-object](https://html.spec.whatwg.org/#the-window-object) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts`, `jest-environment/jest.test.ts`, `register/register.test.ts` +2 |
-| [timer-initialisation-steps](https://html.spec.whatwg.org/#timer-initialisation-steps) | `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/wpt-timers.test.ts` |
-| [timeranges](https://html.spec.whatwg.org/#timeranges) | `dom/html/media.ts` | **untested** |
-| [timers](https://html.spec.whatwg.org/#timers) | `dom/window/Window.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/wpt-timers.test.ts`, `jest-environment/environment.test.ts` |
+| [timer-initialisation-steps](https://html.spec.whatwg.org/#timer-initialisation-steps) | `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts`, `dom/window/wpt-timers.test.ts` |
+| [timeranges](https://html.spec.whatwg.org/#timeranges) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
+| [timers](https://html.spec.whatwg.org/#timers) | `dom/window/Window.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts`, `dom/window/wpt-timers.test.ts` +1 |
 | [tokenization](https://html.spec.whatwg.org/#tokenization) | `dom/parser/tokenizer.ts` | `dom/parser/html5lib-tokenizer.test.ts`, `native/native.test.ts` |
-| [top-layer](https://html.spec.whatwg.org/#top-layer) | `dom/html/top-layer.ts` | **untested** |
-| [topmost-auto-or-hint-popover](https://html.spec.whatwg.org/#topmost-auto-or-hint-popover) | `dom/html/top-layer.ts` | **untested** |
-| [topmost-clicked-popover](https://html.spec.whatwg.org/#topmost-clicked-popover) | `dom/html/top-layer.ts` | **untested** |
+| [top-layer](https://html.spec.whatwg.org/#top-layer) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [topmost-auto-or-hint-popover](https://html.spec.whatwg.org/#topmost-auto-or-hint-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
+| [topmost-clicked-popover](https://html.spec.whatwg.org/#topmost-clicked-popover) | `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
 | [topmost-popover-ancestor](https://html.spec.whatwg.org/#topmost-popover-ancestor) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/wpt-popover.test.ts` |
 | [traverse-the-history-by-a-delta](https://html.spec.whatwg.org/#traverse-the-history-by-a-delta) | `dom/window/History.ts` | `dom/window/history.test.ts` |
 | [tree-construction](https://html.spec.whatwg.org/#tree-construction) | `dom/parser/treebuilder.ts` | `dom/parser/html5lib-tree.test.ts` |
@@ -917,23 +921,24 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [update-a-select](https://html.spec.whatwg.org/#update-a-select) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/face-parser-selectedcontent.test.ts` |
 | [update-a-style-block](https://html.spec.whatwg.org/#update-a-style-block) | `dom/css/stylesheets.ts`, `dom/html/resources.ts` | `dom/html/elements.test.ts`; WPT: `css/cssom/preferred-stylesheet-reversed-order.html` |
 | [update-document-for-history-step-application](https://html.spec.whatwg.org/#update-document-for-history-step-application) | `dom/window/History.ts` | `dom/window/history.test.ts`, `compat/html/history-location.test.ts` |
-| [update-href](https://html.spec.whatwg.org/#update-href) | `dom/html/anchor.ts` | **untested** |
+| [update-href](https://html.spec.whatwg.org/#update-href) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
 | [update-the-rendering](https://html.spec.whatwg.org/#update-the-rendering) | `dom/html/focus.ts`, `dom/window/Window.ts` | `dom/html/top-layer.test.ts`, `dom/html/wpt-focus.test.ts` |
-| [used-autocorrection-state](https://html.spec.whatwg.org/#used-autocorrection-state) | `dom/html/HTMLElement.ts` | **untested** |
+| [used-autocorrection-state](https://html.spec.whatwg.org/#used-autocorrection-state) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [user-prompts](https://html.spec.whatwg.org/#user-prompts) | `dom/window/Window.ts` | `dom/window/window.test.ts`, `compat/not-implemented/not-implemented.test.ts` |
-| [valid-absolute-url](https://html.spec.whatwg.org/#valid-absolute-url) | `dom/html/forms/microsyntaxes.ts` | **untested** |
+| [user-validity](https://html.spec.whatwg.org/#user-validity) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/HTMLSelectElement.ts`, `dom/html/forms/HTMLTextAreaElement.ts` +2 | `dom/selectors/pseudo-classes.test.ts`, `user-event/event/user-validity.test.ts` |
+| [valid-absolute-url](https://html.spec.whatwg.org/#valid-absolute-url) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [valid-custom-element-name](https://html.spec.whatwg.org/#valid-custom-element-name) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `compat/html/custom-elements.test.ts` |
-| [valid-date-string](https://html.spec.whatwg.org/#valid-date-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-e-mail-address](https://html.spec.whatwg.org/#valid-e-mail-address) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-floating-point-number](https://html.spec.whatwg.org/#valid-floating-point-number) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-month-string](https://html.spec.whatwg.org/#valid-month-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-normalised-local-date-and-time-string](https://html.spec.whatwg.org/#valid-normalised-local-date-and-time-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-simple-colour](https://html.spec.whatwg.org/#valid-simple-colour) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-time-string](https://html.spec.whatwg.org/#valid-time-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
-| [valid-week-string](https://html.spec.whatwg.org/#valid-week-string) | `dom/html/forms/microsyntaxes.ts` | **untested** |
+| [valid-date-string](https://html.spec.whatwg.org/#valid-date-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-e-mail-address](https://html.spec.whatwg.org/#valid-e-mail-address) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-floating-point-number](https://html.spec.whatwg.org/#valid-floating-point-number) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-month-string](https://html.spec.whatwg.org/#valid-month-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-normalised-local-date-and-time-string](https://html.spec.whatwg.org/#valid-normalised-local-date-and-time-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-simple-colour](https://html.spec.whatwg.org/#valid-simple-colour) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-time-string](https://html.spec.whatwg.org/#valid-time-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [valid-week-string](https://html.spec.whatwg.org/#valid-week-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [validitystate](https://html.spec.whatwg.org/#validitystate) | `dom/html/forms/validation.ts` | `dom/html/forms/validation.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [value-sanitization-algorithm](https://html.spec.whatwg.org/#value-sanitization-algorithm) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-value.test.ts` |
-| [week-number-of-the-last-day](https://html.spec.whatwg.org/#week-number-of-the-last-day) | `dom/html/forms/microsyntaxes.ts` | **untested** |
+| [week-number-of-the-last-day](https://html.spec.whatwg.org/#week-number-of-the-last-day) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [windoweventhandlers](https://html.spec.whatwg.org/#windoweventhandlers) | `dom/events/handlers.ts` | **untested** |
 | [xml-fragment-parsing-algorithm](https://html.spec.whatwg.org/#xml-fragment-parsing-algorithm) | `dom/parser/xml.ts` | `dom/serializer/serializer.test.ts` |
 
@@ -969,7 +974,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-element-attributes-set](https://dom.spec.whatwg.org/#concept-element-attributes-set) | `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-set-value](https://dom.spec.whatwg.org/#concept-element-attributes-set-value) | `dom/html/reflect.ts`, `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-custom-element-state](https://dom.spec.whatwg.org/#concept-element-custom-element-state) | `dom/html/custom-elements.ts`, `dom/nodes/constants.ts` | **untested** |
-| [concept-event-dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) | `dom/events/dispatch.ts`, `dom/html/forms/HTMLInputElement.ts` | `dom/events/activation.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` +5; WPT: `dom/events/Event-dispatch-bubbles-false.html`, `dom/events/Event-dispatch-bubbles-true.html` +8 |
+| [concept-event-dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) | `dom/events/dispatch.ts`, `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/user-validity.ts` | `dom/events/activation.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` +5; WPT: `dom/events/Event-dispatch-bubbles-false.html`, `dom/events/Event-dispatch-bubbles-true.html` +8 |
 | [concept-event-fire](https://dom.spec.whatwg.org/#concept-event-fire) | `dom/events/fire.ts`, `dom/html/events.ts`, `dom/html/forms/common.ts` | `dom/events/event-path.test.ts` |
 | [concept-event-initialize](https://dom.spec.whatwg.org/#concept-event-initialize) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
 | [concept-event-listener](https://dom.spec.whatwg.org/#concept-event-listener) | `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
@@ -1345,7 +1350,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | --- | --- | --- |
 | [constructors](https://xhr.spec.whatwg.org/#constructors) | `dom/window/xhr.ts` | **untested** |
 | [document-response](https://xhr.spec.whatwg.org/#document-response) | `dom/window/xhr.ts` | `compat/xhr/xhr.test.ts` |
-| [dom-formdata](https://xhr.spec.whatwg.org/#dom-formdata) | `dom/html/forms/FormData.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-data.test.ts` |
+| [dom-formdata](https://xhr.spec.whatwg.org/#dom-formdata) | `dom/html/forms/FormData.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-algorithms.test.ts`, `compat/forms/form-data.test.ts` |
 | [dom-xmlhttprequest-abort](https://xhr.spec.whatwg.org/#dom-xmlhttprequest-abort) | `dom/window/xhr.ts` | **untested** |
 | [dom-xmlhttprequest-getallresponseheaders](https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getallresponseheaders) | `dom/window/xhr.ts` | **untested** |
 | [dom-xmlhttprequest-getresponseheader](https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getresponseheader) | `dom/window/xhr.ts` | **untested** |
@@ -1457,7 +1462,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: selectors
 
-<https://drafts.csswg.org/selectors/> — 28 sections implemented, 12 tested, 4 by WPT only, 12 untested.
+<https://drafts.csswg.org/selectors/> — 29 sections implemented, 13 tested, 4 by WPT only, 12 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1488,6 +1493,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-lang-pseudo](https://drafts.csswg.org/selectors/#the-lang-pseudo) | `dom/selectors/state.ts` | `dom/selectors/matching.test.ts` |
 | [typedef-complex-selector](https://drafts.csswg.org/selectors/#typedef-complex-selector) | `dom/selectors/parser.ts` | **untested** |
 | [typedef-compound-selector](https://drafts.csswg.org/selectors/#typedef-compound-selector) | `dom/selectors/parser.ts` | **untested** |
+| [user-pseudos](https://drafts.csswg.org/selectors/#user-pseudos) | `dom/html/forms/user-validity.ts` | `user-event/event/user-validity.test.ts` |
 | [useraction-pseudos](https://drafts.csswg.org/selectors/#useraction-pseudos) | `dom/selectors/state.ts` | `dom/css/cascade-matching-caches.test.ts`; WPT: `css/selectors/is-where-pseudo-classes.html` |
 
 ## W3C: selection-api
@@ -1616,7 +1622,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-cascade
 
-<https://drafts.csswg.org/css-cascade/> — 12 sections implemented, 10 tested, 0 by WPT only, 2 untested.
+<https://drafts.csswg.org/css-cascade/> — 13 sections implemented, 11 tested, 0 by WPT only, 2 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1628,6 +1634,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-cssscoperule-start](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-start) | `dom/css/cssom.ts` | **untested** |
 | [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/computed-values.test.ts` |
 | [layer-apis](https://drafts.csswg.org/css-cascade/#layer-apis) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [revert-layer](https://drafts.csswg.org/css-cascade/#revert-layer) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [shorthand](https://drafts.csswg.org/css-cascade/#shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/wpt-cssom.test.ts` |
 | [the-csslayerblockrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerblockrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [the-csslayerstatementrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerstatementrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
@@ -2179,7 +2186,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [the-requestidlecallback-method](https://w3c.github.io/requestidlecallback/#the-requestidlecallback-method) | `dom/window/Window.ts` | `dom/window/timers.test.ts` |
+| [the-requestidlecallback-method](https://w3c.github.io/requestidlecallback/#the-requestidlecallback-method) | `dom/window/Window.ts` | `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts` |
 
 ## W3C: svg-aam
 
