@@ -3,6 +3,7 @@
 
 import { getWindowFromNode, getDocument, jestFakeTimersAreEnabled, advanceFakeTimersByTime, checkContainerType } from "./helpers.ts";
 import { getConfig, runWithExpensiveErrorDiagnosticsDisabled } from "./config.ts";
+import { envDebugFormat } from "./agent-debug.ts";
 
 export interface WaitForOptions {
   container?: any;
@@ -29,6 +30,9 @@ function waitForImpl<T>(
     stackTraceError,
     interval = 50,
     onTimeout = (error) => {
+      // Ours: under CTRL_DOM_DEBUG a query error already carries the snapshot; upstream prints
+      // the DOM a second time here.
+      if (error.name === "TestingLibraryElementError" && envDebugFormat() !== null) return error;
       Object.defineProperty(error, "message", {
         value: getConfig().getElementError(error.message, container).message,
       });

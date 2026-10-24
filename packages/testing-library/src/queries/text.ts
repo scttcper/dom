@@ -11,6 +11,8 @@ import { fuzzyMatches, matches, makeNormalizer, type Matcher } from "../matches.
 import { getNodeTextImpl } from "../get-node-text.ts";
 import { getConfig } from "../config.ts";
 import { matchesSelector } from "../selectors.ts";
+import { envDebugFormat } from "../agent-debug.ts";
+import { textCandidates } from "../candidates.ts";
 
 export interface SelectorMatcherOptions {
   selector?: string;
@@ -69,9 +71,14 @@ const getMissingError: GetErrorFunction<[Matcher, SelectorMatcherOptions]> = (c,
   const normalizedText = matchNormalizer(text.toString());
   const isNormalizedDifferent = normalizedText !== text.toString();
   const isCustomSelector = (selector ?? "*") !== "*";
-  return `Unable to find an element with the text: ${
+  const message = `Unable to find an element with the text: ${
     isNormalizedDifferent ? `${normalizedText} (normalized from '${text}')` : text
   }${isCustomSelector ? `, which matches selector '${selector}'` : ""}. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.`;
+  // Ours: under CTRL_DOM_DEBUG, list similar and split-up text.
+  if (envDebugFormat() === null) return message;
+  const { exact = true, ignore = getConfig().defaultIgnore } = options;
+  const candidates = textCandidates(c, text, matchNormalizer, selector ?? "*", ignore, exact);
+  return candidates === "" ? message : `${message}\n\n${candidates}`;
 };
 
 const queryAllByTextWithSuggestions = wrapAllByQueryWithSuggestion(queryAllByText, queryAllByText.name, "queryAll");

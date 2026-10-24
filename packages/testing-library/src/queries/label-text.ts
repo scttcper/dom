@@ -20,6 +20,8 @@ import {
 import { matchesSelector } from "../selectors.ts";
 import type { SelectorMatcherOptions } from "./text.ts";
 import { $impl } from "@rtd/dom/internal";
+import { envDebugFormat } from "../agent-debug.ts";
+import { labelCandidates } from "../candidates.ts";
 
 function queryAllLabels(container: any): { textToMatch: string | null; node: any }[] {
   // `container.querySelectorAll('label,input')`
@@ -137,10 +139,18 @@ function getAllByLabelText(container: any, text: Matcher, ...rest: [SelectorMatc
         );
       }
     } else {
-      throw getConfig().getElementError(`Unable to find a label with the text of: ${text}`, container);
+      throw getConfig().getElementError(withLabelCandidates(`Unable to find a label with the text of: ${text}`, container, text, rest[0]), container);
     }
   }
   return els;
+}
+
+/** Ours: under CTRL_DOM_DEBUG, append the form controls and their names. */
+function withLabelCandidates(message: string, container: any, text: Matcher, options: SelectorMatcherOptions = {}): string {
+  if (envDebugFormat() === null) return message;
+  const { exact = true, trim, collapseWhitespace, normalizer } = options;
+  const candidates = labelCandidates(container, text, makeNormalizer({ trim, collapseWhitespace, normalizer }), exact);
+  return candidates === "" ? message : `${message}\n\n${candidates}`;
 }
 
 function getTagNameOfElementAssociatedWithLabelViaFor(container: any, label: any): string | null {

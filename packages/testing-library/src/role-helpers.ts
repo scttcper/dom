@@ -102,6 +102,9 @@ export function getRoles(container: any, { hidden = false }: { hidden?: boolean 
   return roles;
 }
 
+// Always HTML, also under CTRL_DOM_DEBUG (a shallow clone has no accessible content to snapshot).
+const PRETTY = { format: "pretty" } as const;
+
 export function prettyRoles(dom: any, { hidden, includeDescription }: { hidden?: boolean; includeDescription?: boolean }): string {
   const roles = getRoles(dom, { hidden });
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
@@ -115,7 +118,7 @@ export function prettyRoles(dom: any, { hidden, includeDescription }: { hidden?:
         .map((el) => {
           const impl = implOf(el);
           const nameString = `Name "${aria.computeAccessibleName(impl, pseudo, gcs)}":\n`;
-          const domString = prettyDOM(el.cloneNode(false));
+          const domString = prettyDOM(el.cloneNode(false), undefined, PRETTY);
           if (includeDescription) {
             const descriptionString = `Description "${aria.computeAccessibleDescription(impl, pseudo, gcs)}":\n`;
             return `${nameString}${descriptionString}${domString}`;

@@ -2,6 +2,7 @@
 // https://github.com/testing-library/dom-testing-library/blob/main/src/config.ts
 
 import { prettyDOM } from "./pretty-dom.ts";
+import { agentErrorContext, envDebugFormat } from "./agent-debug.ts";
 
 export interface Config {
   testIdAttribute: string;
@@ -42,6 +43,13 @@ let config: InternalConfig = {
   throwSuggestions: false,
   // called when getBy* queries fail. (message, container) => Error
   getElementError(message, container) {
+    // Ours: CTRL_DOM_DEBUG=aria|compact prints the accessibility snapshot / compact HTML instead.
+    const agentFormat = envDebugFormat();
+    if (agentFormat !== null) {
+      const error = new Error([message, agentErrorContext(container, agentFormat, prettyDOM)].filter(Boolean).join("\n\n"));
+      error.name = "TestingLibraryElementError";
+      return error;
+    }
     const prettifiedDOM = prettyDOM(container);
     const error = new Error(
       [message, `Ignored nodes: comments, ${config.defaultIgnore}\n${prettifiedDOM}`].filter(Boolean).join("\n\n"),

@@ -29,6 +29,8 @@ import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } fro
 import { checkContainerType, implOf } from "../helpers.ts";
 import { matches, type Matcher } from "../matches.ts";
 import { getConfig } from "../config.ts";
+import { envDebugFormat } from "../agent-debug.ts";
+import { roleCandidates } from "../candidates.ts";
 
 export interface ByRoleOptions {
   suggest?: boolean;
@@ -94,6 +96,7 @@ function queryAllByRole(
   if (valueText !== undefined) assertSupported(role, "aria-valuetext");
   if (expanded !== undefined) assertSupported(role, "aria-expanded");
 
+  const state: StateFilter = { selected, busy, checked, pressed, current, level, expanded, valueNow, valueMin, valueMax, valueText };
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
   const root = implOf(container);
   const out: any[] = [];
@@ -105,55 +108,70 @@ function queryAllByRole(
   for (let el = root.first; el !== null; el = nextInTree(el, root)) {
     if (el.type !== ELEMENT_NODE) continue;
     if (!aria.roleMatches(el, role, queryFallbacks)) continue;
-    if (!matchesState(el)) continue;
+    if (!matchesState(el, state)) continue;
     if (hidden === false && (gcs === null ? isInaccessibleImpl(el) : aria.isInaccessibleWithStyle(el, gcs, memo))) continue;
     if (name !== undefined && !matches(aria.computeAccessibleName(el, pseudo, gcs), el.node, name as Matcher, identity)) continue;
     if (description !== undefined && !matches(aria.computeAccessibleDescription(el, pseudo, gcs), el.node, description as Matcher, identity)) continue;
     out.push(el.node);
   }
   return out;
+}
 
-  function matchesState(element: NodeImpl): boolean {
-    if (selected !== undefined) {
-      return selected === computeAriaSelected(element);
-    }
-    if (busy !== undefined) {
-      return busy === computeAriaBusy(element);
-    }
-    if (checked !== undefined) {
-      return checked === computeAriaChecked(element);
-    }
-    if (pressed !== undefined) {
-      return pressed === computeAriaPressed(element);
-    }
-    if (current !== undefined) {
-      return current === computeAriaCurrent(element);
-    }
-    if (expanded !== undefined) {
-      return expanded === computeAriaExpanded(element);
-    }
-    if (level !== undefined) {
-      return level === computeHeadingLevelImpl(element);
-    }
-    if (valueNow !== undefined || valueMax !== undefined || valueMin !== undefined || valueText !== undefined) {
-      let valueMatches = true;
-      if (valueNow !== undefined) {
-        valueMatches &&= valueNow === computeAriaValueNow(element);
-      }
-      if (valueMax !== undefined) {
-        valueMatches &&= valueMax === computeAriaValueMax(element);
-      }
-      if (valueMin !== undefined) {
-        valueMatches &&= valueMin === computeAriaValueMin(element);
-      }
-      if (valueText !== undefined) {
-        valueMatches &&= matches(computeAriaValueText(element) ?? null, element.node, valueText, identity);
-      }
-      return valueMatches;
-    }
-    // don't care if aria attributes are unspecified
-    return true;
+interface StateFilter {
+  selected?: boolean;
+  busy?: boolean;
+  checked?: boolean;
+  pressed?: boolean;
+  current?: boolean | string;
+  level?: number;
+  expanded?: boolean;
+  valueNow?: number;
+  valueMin?: number;
+  valueMax?: number;
+  valueText?: Matcher;
+}
+
+/** ByRole's state filters (upstream's closure `matchesState`); one object per query, no per-element allocation. */
+function matchesState(element: NodeImpl, s: StateFilter): boolean {
+  if (s.selected !== undefined) {
+    return s.selected === computeAriaSelected(element);
   }
+  if (s.busy !== undefined) {
+    return s.busy === computeAriaBusy(element);
+  }
+  if (s.checked !== undefined) {
+    return s.checked === computeAriaChecked(element);
+  }
+  if (s.pressed !== undefined) {
+    return s.pressed === computeAriaPressed(element);
+  }
+  if (s.current !== undefined) {
+    return s.current === computeAriaCurrent(element);
+  }
+  if (s.expanded !== undefined) {
+    return s.expanded === computeAriaExpanded(element);
+  }
+  if (s.level !== undefined) {
+    return s.level === computeHeadingLevelImpl(element);
+  }
+  if (s.valueNow !== undefined || s.valueMax !== undefined || s.valueMin !== undefined || s.valueText !== undefined) {
+    let valueMatches = true;
+    if (s.valueNow !== undefined) {
+      valueMatches &&= s.valueNow === computeAriaValueNow(element);
+    }
+    if (s.valueMax !== undefined) {
+      valueMatches &&= s.valueMax === computeAriaValueMax(element);
+    }
+    if (s.valueMin !== undefined) {
+      valueMatches &&= s.valueMin === computeAriaValueMin(element);
+    }
+    if (s.valueText !== undefined) {
+      valueMatches &&= matches(computeAriaValueText(element) ?? null, element.node, s.valueText, identity);
+    }
+    return valueMatches;
+  }
+  // don't care if aria attributes are unspecified
+  return true;
 }
 
 const getNameHint = (name: ByRoleOptions["name"]): string => {
@@ -172,7 +190,11 @@ const getMultipleError: GetErrorFunction<[any, ByRoleOptions?]> = (c, role, { na
   return `Found multiple elements with the role "${role}"${getNameHint(name)}`;
 };
 
-const getMissingError: GetErrorFunction<[any, ByRoleOptions?]> = (container, role, { hidden = getConfig().defaultHidden, name, description } = {}) => {
+const getMissingError: GetErrorFunction<[any, ByRoleOptions?]> = (container, role, options = {}) => {
+  const { hidden = getConfig().defaultHidden, name, description } = options;
+  // Ours: under CTRL_DOM_DEBUG the closest candidates replace the role listing (the error
+  // context that follows is the accessibility snapshot), also inside waitFor.
+  if (envDebugFormat() !== null) return agentMissingError(container, role, options, hidden);
   if (getConfig()._disableExpensiveErrorDiagnostics) {
     return `Unable to find role="${role}"${getNameHint(name)}`;
   }
@@ -226,6 +248,27 @@ Unable to find an ${hidden === false ? "accessible " : ""}element with the role 
 
 ${roleMessage}`.trim();
 };
+
+function agentMissingError(container: any, role: any, options: ByRoleOptions, hidden: boolean): string {
+  const { name, description, queryFallbacks = false, value: { now: valueNow, min: valueMin, max: valueMax, text: valueText } = {} } = options;
+  const { selected, busy, checked, pressed, current, level, expanded } = options;
+  const state: StateFilter = { selected, busy, checked, pressed, current, level, expanded, valueNow, valueMin, valueMax, valueText };
+  const stateHint = Object.entries({ selected, busy, checked, pressed, current, level, expanded, value: options.value })
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+    .join(", ");
+  const descriptionHint = description === undefined ? "" : typeof description === "string" ? ` and description "${description}"` : ` and description \`${description}\``;
+  const head = `Unable to find an ${hidden === false ? "accessible " : ""}element with the role "${role}"${getNameHint(name)}${descriptionHint}`;
+  const candidates = roleCandidates(container, {
+    role: String(role),
+    name: name as Matcher | undefined,
+    hidden,
+    queryFallbacks,
+    matchesState: (el) => matchesState(el, state),
+    stateHint: `{ ${stateHint} }`,
+  });
+  return candidates === "" ? head : `${head}\n\n${candidates}`;
+}
 
 const queryAllByRoleWithSuggestions = wrapAllByQueryWithSuggestion(queryAllByRole, queryAllByRole.name, "queryAll");
 const [queryByRole, getAllByRole, getByRole, findAllByRole, findByRole] = buildQueries(

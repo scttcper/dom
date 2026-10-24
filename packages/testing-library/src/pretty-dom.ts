@@ -17,7 +17,9 @@ import { getUserCodeFrame } from "./get-user-code-frame.ts";
 import { getDocument } from "./helpers.ts";
 import { getConfig } from "./config.ts";
 import { matchesSelector } from "./selectors.ts";
-import { $impl } from "@rtd/dom/internal";
+import { $impl, SVG_NS } from "@rtd/dom/internal";
+import { ariaSnapshot, type AriaSnapshotOptions } from "./aria-snapshot.ts";
+import { envDebugFormat, type DebugFormat } from "./agent-debug.ts";
 
 declare const process: any;
 
@@ -101,6 +103,8 @@ interface PrintConfig {
   /** defaultIgnore is "script, style": skip elements named script/style without the selector engine */
   scriptStyleIgnore: boolean;
   defaultIgnore: string;
+  /** `format: "compact"` (ours): no class/style attributes, no SVG internals, long text truncated */
+  compact: boolean;
 }
 
 const NO_COLOR: Color = { open: "", close: "" };
@@ -196,6 +200,7 @@ function printProps(impl: NodeImpl, config: PrintConfig, indentation: string): s
   const keys: string[] = [];
   const props = new Map<string, string>();
   for (let i = 0; i < attrs.length; i++) {
+    if (config.compact && isNoiseAttribute(impl, attrs[i].name)) continue;
     keys.push(attrs[i].name);
     props.set(attrs[i].name, attrs[i].value);
   }
@@ -218,10 +223,20 @@ function printProps(impl: NodeImpl, config: PrintConfig, indentation: string): s
   return out;
 }
 
+function isNoiseAttribute(impl: NodeImpl, name: string): boolean {
+  if (name === "class" || name === "style") return true;
+  // Inside <svg> only what queries read survives (role, aria-*, data-testid, id).
+  return impl.ns === SVG_NS && name !== "role" && name !== "id" && !name.startsWith("aria-") && !name.startsWith("data-");
+}
+
+const COMPACT_MAX_TEXT = 200;
+
 function printChildren(impl: NodeImpl, config: PrintConfig, indentation: string, depth: number): string {
+  if (config.compact && impl.ns === SVG_NS && impl.name === "svg") return "";
   let out = "";
   for (let c = impl.first; c !== null; c = c.next) {
     if (!keepChild(c, config)) continue;
+    if (config.compact && c.type === TEXT_NODE && c.data.trim() === "") continue;
     out += config.spacingOuter + indentation + printNode(c, config, indentation, depth);
   }
   return out;
@@ -230,7 +245,8 @@ function printChildren(impl: NodeImpl, config: PrintConfig, indentation: string,
 function printNode(impl: NodeImpl, config: PrintConfig, indentation: string, depth: number): string {
   if (!pluginHandles(impl)) throw DELEGATE;
   if (impl.type === TEXT_NODE) {
-    return config.colors.content.open + escapeHTML(impl.data) + config.colors.content.close;
+    const data = config.compact && impl.data.length > COMPACT_MAX_TEXT ? impl.data.slice(0, COMPACT_MAX_TEXT - 1) + "…" : impl.data;
+    return config.colors.content.open + escapeHTML(data) + config.colors.content.close;
   }
   if (impl.type === COMMENT_NODE) {
     const commentColor = config.colors.comment;
@@ -281,16 +297,18 @@ function makePrintConfig(options: Record<string, any>, filterNode: ((node: any) 
     filterNode,
     scriptStyleIgnore: defaultIgnore === "script, style",
     defaultIgnore,
+    compact: false,
   };
 }
 
-function formatDOM(dom: any, filterNode: ((node: any) => boolean) | undefined, prettyFormatOptions: Record<string, any>): string {
+function formatDOM(dom: any, filterNode: ((node: any) => boolean) | undefined, prettyFormatOptions: Record<string, any>, compact = false): string {
   const allOptions = { printFunctionName: false, highlight: shouldHighlight(), ...prettyFormatOptions };
   const impl: NodeImpl | undefined = dom[$impl];
   const effectiveFilter = filterNode ?? filterCommentsAndDefaultIgnoreTagsTags;
   if (impl !== undefined) {
     const config = makePrintConfig(allOptions, filterNode === undefined ? null : filterNode);
     if (config !== null) {
+      config.compact = compact;
       try {
         return printNode(impl, config, "", 0);
       } catch (e) {
@@ -328,6 +346,7 @@ export function prettyDOM(dom?: any, maxLength?: any, options: Record<string, an
   if (!dom) {
     dom = getDocument().body;
   }
+  const explicitMaxLength: number | undefined = typeof maxLength === "number" ? maxLength : undefined;
   if (typeof maxLength !== "number") {
     maxLength = (typeof process !== "undefined" && typeof process.env !== "undefined" && process.env.DEBUG_PRINT_LIMIT) || 7000;
   }
@@ -348,6 +367,25 @@ export function prettyDOM(dom?: any, maxLength?: any, options: Record<string, an
   }
   if (!("outerHTML" in dom)) {
     throw new TypeError(`Expected an element or document but got ${domTypeName}`);
+  }
+
+  // Ours: `format` ("pretty" | "aria" | "compact"), defaulting to CTRL_DOM_DEBUG (./agent-debug.ts).
+  // Without either, `options` reaches the upstream path untouched.
+  const format: DebugFormat | null = options.format ?? envDebugFormat();
+  if (format !== null || "format" in options) {
+    const { format: _format, hidden, maxLines, maxTextLength, collapseAfter, urls, ...rest } = options;
+    if (format === "aria") {
+      const snapshot = ariaSnapshot(dom, { hidden, maxLines, maxTextLength, collapseAfter, urls } satisfies AriaSnapshotOptions);
+      return explicitMaxLength !== undefined && snapshot.length > explicitMaxLength ? `${snapshot.slice(0, explicitMaxLength)}...` : snapshot;
+    }
+    options = rest;
+    if (format === "compact") {
+      // No ANSI colors unless asked for: they cost an agent more tokens than the markup.
+      const withoutColors: Record<string, any> = { highlight: false, ...options };
+      const { filterNode, ...prettyFormatOptions } = withoutColors;
+      const debugContent = formatDOM(dom, filterNode, prettyFormatOptions, true);
+      return debugContent.length > maxLength ? `${debugContent.slice(0, maxLength)}...` : debugContent;
+    }
   }
 
   const { filterNode, ...prettyFormatOptions } = options;

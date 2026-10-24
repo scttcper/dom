@@ -10,6 +10,7 @@ import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOption
 import { waitFor } from "./wait-for.ts";
 import { getConfig } from "./config.ts";
 import { implOf } from "./helpers.ts";
+import { agentElementSummary, envDebugFormat } from "./agent-debug.ts";
 
 export type GetErrorFunction<Arguments extends any[] = [string]> = (c: any, ...args: Arguments) => string;
 type AnyQuery = (container: any, ...args: any[]) => any;
@@ -59,7 +60,11 @@ export function makeSingleQuery(allQuery: AnyQuery, getMultipleError: GetErrorFu
   return (container: any, ...args: any[]) => {
     const els = allQuery(container, ...args);
     if (els.length > 1) {
-      const elementStrings = els.map((element: any) => getElementError(null, element).message).join("\n\n");
+      // Ours: under CTRL_DOM_DEBUG each element prints as its snapshot line(s).
+      const elementStrings =
+        envDebugFormat() !== null
+          ? els.map((element: any) => agentElementSummary(element)).join("\n")
+          : els.map((element: any) => getElementError(null, element).message).join("\n\n");
 
       throw getMultipleElementsFoundError(
         `${getMultipleError(container, ...args)}

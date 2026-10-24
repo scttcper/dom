@@ -16,6 +16,7 @@ import {
   getQueriesForElement,
   prettyDOM,
   type BoundFunction,
+  type PrettyDOMOptions,
   type Queries,
   type prettyFormat,
   type queries,
@@ -44,7 +45,8 @@ export type RenderResult<
       | Array<RendererableContainer | HydrateableContainer>
       | undefined,
     maxLength?: number | undefined,
-    options?: prettyFormat.OptionsReceived | undefined,
+    // Ours: PrettyDOMOptions (upstream: prettyFormat.OptionsReceived) adds `format: "aria"` & co.
+    options?: (prettyFormat.OptionsReceived & PrettyDOMOptions) | undefined,
   ) => void;
   rerender: (ui: React.ReactNode) => void;
   unmount: () => void;
@@ -348,7 +350,7 @@ function renderRoot(
   return {
     container,
     baseElement,
-    debug: (el: unknown = baseElement, maxLength?: number, options?: prettyFormat.OptionsReceived) =>
+    debug: (el: unknown = baseElement, maxLength?: number, options?: PrettyDOMOptions) =>
       Array.isArray(el)
         ? // eslint-disable-next-line no-console
           el.forEach((e) => console.log(prettyDOM(e, maxLength, options)))

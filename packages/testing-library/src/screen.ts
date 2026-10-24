@@ -6,6 +6,7 @@ import { getQueriesForElement } from "./get-queries-for-element.ts";
 import { getDocument } from "./helpers.ts";
 import { logDOM } from "./pretty-dom.ts";
 import { queries } from "./queries/ordered.ts";
+import { ariaSnapshot } from "./aria-snapshot.ts";
 
 declare const document: any;
 
@@ -40,7 +41,8 @@ const logTestingPlaygroundURL = (element = getDocument().body): string | undefin
   return playgroundUrl;
 };
 
-const initialValue: Record<string, (...args: any[]) => any> = { debug, logTestingPlaygroundURL };
+// Ours: `screen.ariaSnapshot(element = document.body, options)`, the accessibility tree as YAML.
+const initialValue: Record<string, (...args: any[]) => any> = { debug, logTestingPlaygroundURL, ariaSnapshot };
 
 export const screen: any =
   typeof document !== "undefined" && document.body

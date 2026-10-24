@@ -44,6 +44,9 @@ export { getRoles, logRoles, isInaccessible } from "./role-helpers.ts";
 export { prettyDOM, logDOM, prettyFormat } from "./pretty-dom.ts";
 export { configure, getConfig } from "./config.ts";
 export { getSuggestedQuery } from "./suggestions.ts";
+// Ours (not in upstream): agent-oriented debugging, see docs/agent-debugging.md.
+export { ariaSnapshot } from "./aria-snapshot.ts";
+export { diffAriaSnapshots } from "./aria-snapshot-diff.ts";
 
 // upstream: `import * as queryHelpers from './query-helpers'`
 const queryHelpers = {
