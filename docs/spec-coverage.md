@@ -22,10 +22,10 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 783 | 603 | 54 | 126 |
-| [DOM Standard](#dom-standard) | 273 | 236 | 28 | 9 |
+| [HTML Standard](#html-standard) | 784 | 604 | 54 | 126 |
+| [DOM Standard](#dom-standard) | 273 | 237 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 73 | 37 | 22 | 14 |
-| [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
+| [Web IDL](#web-idl) | 34 | 22 | 0 | 12 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
 | [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
@@ -93,7 +93,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1579 | 1067 | 120 | 392 |
+| **All** | 1581 | 1069 | 120 | 392 |
 
 ## Web-platform-tests fixtures
 
@@ -119,7 +119,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | `dom/collections` | 13 | 13 | 21 | `expectations/dom-core.json` |
 | `dom/events` | 70 | 70 | 31 | `expectations/events.json` |
 | `dom/lists` | 5 | 5 | 3 | `expectations/dom-core.json` |
-| `dom/nodes` | 293 | 293 | 1381 | `expectations/dom-core.json` |
+| `dom/nodes` | 293 | 293 | 1376 | `expectations/dom-core.json` |
 | `dom/ranges` | 50 | 50 | 1 | `expectations.json` |
 | `dom/traversal` | 17 | 17 | 6 | `expectations.json`, `expectations/traversal-parsing.json` |
 | `domparsing` | 30 | 30 | 8 | `expectations/traversal-parsing.json` |
@@ -154,7 +154,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 783 sections implemented, 603 tested, 54 by WPT only, 126 untested.
+<https://html.spec.whatwg.org/> — 784 sections implemented, 604 tested, 54 by WPT only, 126 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -635,6 +635,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [htmlscriptelement](https://html.spec.whatwg.org/#htmlscriptelement) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [htmlunknownelement](https://html.spec.whatwg.org/#htmlunknownelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [iframe-load-event-steps](https://html.spec.whatwg.org/#iframe-load-event-steps) | `dom/window/browsing-context.ts` | `dom/window/iframe.test.ts` |
+| [image-button-state-(type=image](https://html.spec.whatwg.org/#image-button-state-(type=image) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts` |
 | [implicit-submission](https://html.spec.whatwg.org/#implicit-submission) | `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts` |
 | [inert](https://html.spec.whatwg.org/#inert) | `dom/html/focus.ts` | WPT: `inert/inert-canvas-fallback-content.html`, `inert/nested-inert-unfocusable.html` |
 | [input-type-change](https://html.spec.whatwg.org/#input-type-change) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-value.test.ts`; WPT: `html/semantics/forms/the-input-element/input-type-change-value.html`, `html/semantics/forms/the-input-element/type-change-text-to-file-to-text.html` |
@@ -944,7 +945,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## DOM Standard
 
-<https://dom.spec.whatwg.org/> — 273 sections implemented, 236 tested, 28 by WPT only, 9 untested.
+<https://dom.spec.whatwg.org/> — 273 sections implemented, 237 tested, 28 by WPT only, 8 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -967,7 +968,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-element-attributes-append](https://dom.spec.whatwg.org/#concept-element-attributes-append) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-change](https://dom.spec.whatwg.org/#concept-element-attributes-change) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-change-ext](https://dom.spec.whatwg.org/#concept-element-attributes-change-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
-| [concept-element-attributes-get-by-name](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-name) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-get-by-name](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-name) | `dom/collections/NamedNodeMap.ts`, `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-get-by-namespace](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-namespace) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-remove](https://dom.spec.whatwg.org/#concept-element-attributes-remove) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-replace](https://dom.spec.whatwg.org/#concept-element-attributes-replace) | `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
@@ -1192,7 +1193,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [queueing-a-mutation-record](https://dom.spec.whatwg.org/#queueing-a-mutation-record) | `dom/observers/queue.ts` | `dom/observers/mutation-observer.test.ts`, `dom/observers/mutation-records.test.ts`, `dom/observers/wpt-mutation-observer.test.ts` |
 | [range-collapsed](https://dom.spec.whatwg.org/#range-collapsed) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [ranges](https://dom.spec.whatwg.org/#ranges) | `dom/traversal/Range.ts` | `dom/traversal/wpt-ranges.test.ts` |
-| [ref-for-dfn-supported-property-names](https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names) | `dom/collections/HTMLCollection.ts` | **untested** |
+| [ref-for-dfn-supported-property-names](https://dom.spec.whatwg.org/#ref-for-dfn-supported-property-names) | `dom/collections/HTMLCollection.ts`, `dom/collections/NamedNodeMap.ts` | `dom/collections/collections.test.ts` |
 | [registered-observer](https://dom.spec.whatwg.org/#registered-observer) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
 | [registered-observer-list](https://dom.spec.whatwg.org/#registered-observer-list) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
 | [remove-an-event-listener](https://dom.spec.whatwg.org/#remove-an-event-listener) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts` |
@@ -1304,13 +1305,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## Web IDL
 
-<https://webidl.spec.whatwg.org/> — 33 sections implemented, 22 tested, 0 by WPT only, 11 untested.
+<https://webidl.spec.whatwg.org/> — 34 sections implemented, 22 tested, 0 by WPT only, 12 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [LegacyPlatformObjectGetOwnProperty](https://webidl.spec.whatwg.org/#LegacyPlatformObjectGetOwnProperty) | `dom/window/Storage.ts` | **untested** |
 | [Replaceable](https://webidl.spec.whatwg.org/#Replaceable) | `dom/window/Navigator.ts` | `dom/window/window.test.ts` |
 | [abstract-opdef-converttoint](https://webidl.spec.whatwg.org/#abstract-opdef-converttoint) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
+| [dfn-array-index-property-name](https://webidl.spec.whatwg.org/#dfn-array-index-property-name) | `dom/collections/NamedNodeMap.ts` | **untested** |
 | [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts` | `dom/html/interfaces.wpt.test.ts` |
 | [dfn-create-operation-function](https://webidl.spec.whatwg.org/#dfn-create-operation-function) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dfn-overload-resolution-algorithm](https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm) | `dom/webidl-runtime.ts`, `dom/window/Storage.ts` | **untested** |
@@ -1335,7 +1337,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [legacy-callback-interface-object](https://webidl.spec.whatwg.org/#legacy-callback-interface-object) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts` |
 | [legacy-platform-object-defineownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
 | [legacy-platform-object-delete](https://webidl.spec.whatwg.org/#legacy-platform-object-delete) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
-| [legacy-platform-object-getownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty) | `dom/collections/HTMLCollection.ts` | **untested** |
+| [legacy-platform-object-getownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty) | `dom/collections/HTMLCollection.ts`, `dom/collections/NamedNodeMap.ts` | **untested** |
 | [legacy-platform-object-ownpropertykeys](https://webidl.spec.whatwg.org/#legacy-platform-object-ownpropertykeys) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
 | [legacy-platform-object-property-enumeration](https://webidl.spec.whatwg.org/#legacy-platform-object-property-enumeration) | `dom/collections/HTMLCollection.ts` | **untested** |
 | [legacy-platform-object-property-visibility](https://webidl.spec.whatwg.org/#legacy-platform-object-property-visibility) | `dom/window/Storage.ts` | **untested** |
