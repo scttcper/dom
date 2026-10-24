@@ -139,7 +139,7 @@ describe(":in-range / :out-of-range — https://html.spec.whatwg.org/#selector-i
   });
 });
 
-describe(":user-invalid / :user-valid — https://html.spec.whatwg.org/#selector-user-invalid", () => {
+describe(":user-invalid / :user-valid — https://html.spec.whatwg.org/#selector-user-invalid, https://html.spec.whatwg.org/#selector-user-valid", () => {
   test("do not match before the user interacted (user validity is false)", () => {
     document.body!.innerHTML = `<form><input id=a required><input id=b></form>`;
     expect([$$(":user-invalid"), $$(":user-valid")]).toEqual([[], []]);

@@ -47,7 +47,7 @@ describe.skipIf(rtd === null)('user validity on @rtd/dom — https://html.spec.w
     expect($('r').matches(':user-invalid')).toBe(false)
   })
 
-  test('selectOptions sets it on the select (send select update notifications)', async () => {
+  test('selectOptions sets it on the select (https://html.spec.whatwg.org/#send-select-update-notifications)', async () => {
     const {user, $} = setup('<select id="s" required><option value="">pick</option><option value="a">A</option></select>')
     await user.selectOptions($('s'), '')
     expect($('s').matches(':user-invalid')).toBe(true)
