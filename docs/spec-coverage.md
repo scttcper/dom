@@ -22,7 +22,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 783 | 602 | 54 | 127 |
+| [HTML Standard](#html-standard) | 783 | 603 | 54 | 126 |
 | [DOM Standard](#dom-standard) | 273 | 236 | 28 | 9 |
 | [CSS: cssom](#css-cssom) | 73 | 37 | 22 | 14 |
 | [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
@@ -93,7 +93,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1579 | 1066 | 120 | 393 |
+| **All** | 1579 | 1067 | 120 | 392 |
 
 ## Web-platform-tests fixtures
 
@@ -154,7 +154,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 783 sections implemented, 602 tested, 54 by WPT only, 127 untested.
+<https://html.spec.whatwg.org/> — 783 sections implemented, 603 tested, 54 by WPT only, 126 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -696,7 +696,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [parsing-main-incolgroup](https://html.spec.whatwg.org/#parsing-main-incolgroup) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-inforeign](https://html.spec.whatwg.org/#parsing-main-inforeign) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-inframeset](https://html.spec.whatwg.org/#parsing-main-inframeset) | `dom/parser/treebuilder.ts` | **untested** |
-| [parsing-main-inhead](https://html.spec.whatwg.org/#parsing-main-inhead) | `dom/parser/treebuilder.ts` | **untested** |
+| [parsing-main-inhead](https://html.spec.whatwg.org/#parsing-main-inhead) | `dom/parser/treebuilder.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [parsing-main-inheadnoscript](https://html.spec.whatwg.org/#parsing-main-inheadnoscript) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-intable](https://html.spec.whatwg.org/#parsing-main-intable) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-intabletext](https://html.spec.whatwg.org/#parsing-main-intabletext) | `dom/parser/treebuilder.ts` | **untested** |
