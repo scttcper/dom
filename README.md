@@ -99,9 +99,11 @@ and from jsdom is in [docs/deviations.md](docs/deviations.md).
   node and rebuilds its classes for every window; we share them.
 - **Results are kept until the DOM changes.** Every mutation bumps a document version, and query
   results, accessible names, computed styles and live collections are reused until it changes.
-- **Our Testing Library reads the tree directly.** Stock Testing Library calls
-  `querySelectorAll('*')` and `getComputedStyle` per element through the public API; ours walks
-  the internal tree with the same role, name and visibility rules.
+- **Our queries read the DOM's data directly.** To find `getByRole('button', { name: 'Save' })`,
+  stock Testing Library goes through every element on the page and calls DOM methods on each one
+  to work out its role, its label and whether it's hidden. Ours is part of the DOM, so it reads
+  the same information straight from the DOM's internal data. Same rules, same results, far less
+  work.
 - **Browser-engine shortcuts for selectors and CSS.** Selectors compile to matchers with id, class
   and tag shortcuts and an ancestor Bloom filter; style rules are bucketed and matched rules reused.
 - **Timers don't wait.** The test environments run timers on a virtual clock that jumps ahead
