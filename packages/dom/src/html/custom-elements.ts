@@ -778,6 +778,27 @@ function pushReaction(el: Element, r: Reaction): void {
   }
 }
 
+/** Nesting depth of `outsideCEReactions`. */
+let uaActionDepth = 0;
+
+/**
+ * Runs a user agent action that is not part of a [CEReactions] API call — activation behaviors
+ * reached through `click()` / `dispatchEvent()` (neither is [CEReactions]) and the close request /
+ * light dismiss steps after a dispatch. The DOM mutations it makes would flush the current element
+ * queue right away (create.ts approximates [CEReactions] per mutation); here the reactions they
+ * enqueue go to the backup element queue instead and run in a microtask, as the spec's
+ * https://html.spec.whatwg.org/#enqueue-an-element-on-the-appropriate-element-queue step 1 says
+ * when the custom element reactions stack is empty.
+ */
+export function outsideCEReactions<T>(fn: () => T): T {
+  uaActionDepth++;
+  try {
+    return fn();
+  } finally {
+    uaActionDepth--;
+  }
+}
+
 /** https://html.spec.whatwg.org/#backup-element-queue — reactions no flush point picked up. */
 function backupFlush(): void {
   microtaskQueued = false;
@@ -814,6 +835,9 @@ export function enqueueFormCallback(el: Element, name: "formAssociatedCallback" 
  * callback continues, like the nested [CEReactions] scope of that call.
  */
 export function flushReactions(): void {
+  // Inside a user agent action that no [CEReactions] API call wraps, reactions wait for the
+  // backup element queue's microtask (see `outsideCEReactions`).
+  if (uaActionDepth !== 0) return;
   if (deferredParsed.length !== 0) releaseDeferred(false);
   while (elementQueue.length !== 0) {
     const queue = elementQueue;

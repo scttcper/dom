@@ -34,6 +34,7 @@ import {
   topmostPopoverAncestor,
 } from "./top-layer.ts";
 import { setDialogCommandSteps } from "./invokers.ts";
+import { outsideCEReactions } from "./custom-elements.ts";
 import { blurElement, focusDelegate, focusElement, isInert, isSummaryForParentDetails } from "./focus.ts";
 import { $focused, $host, $impl } from "../keys.ts";
 
@@ -140,8 +141,12 @@ export const HTMLSummaryElement: typeof SummaryBase = class HTMLElement extends 
     const target = (event?.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl];
     if (target !== undefined && inInteractiveContent(target, impl)) return;
     const details = impl.parent!;
-    if (contentAttr(details, "open") !== null) removeAttribute(details, "open");
-    else setAttribute(details, "open", "");
+    // Activation runs from click()/dispatchEvent(), not a [CEReactions] call: a customized
+    // details' attributeChangedCallback runs from the backup element queue (a microtask).
+    outsideCEReactions(() => {
+      if (contentAttr(details, "open") !== null) removeAttribute(details, "open");
+      else setAttribute(details, "open", "");
+    });
   }
 }
 
