@@ -1,0 +1,3 @@
+# (u) bun test: @ctrl/dom/register installs the window before every test file.
+[test]
+preload = ["@ctrl/dom/register"]

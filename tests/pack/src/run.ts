@@ -15,6 +15,10 @@
 //    (d1) Jest, testEnvironment "ctrl-dom", stock Testing Library
 //    (d2) Jest, preset "@ctrl/dom", the stock test file routed to @ctrl/dom's CJS builds (README)
 //    (d3) Jest, testEnvironment "ctrl-dom", @ctrl/dom/react + /user-event required directly
+//    (n)  node:test, `node --import @ctrl/dom/register --test`: @ctrl/dom/react + /user-event, with
+//         node:assert and with /jest-dom/matchers on Jest's standalone `expect`
+//    (u)  bun test with bunfig.toml's `preload = ["@ctrl/dom/register"]` and bun's expect.extend
+//         (skipped when bun is not installed; no loader hook, the test's instanceof checks remain)
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
 //    (es) (e) without skipLibCheck: our .d.ts files (and the module augmentations they make to
 //         vitest and jest) type-check too
@@ -91,6 +95,7 @@ const rootPkg = readJson(join(repoRoot, "package.json"));
 const reactPkg = readJson(join(repoRoot, "packages/react/package.json"));
 const userEventPkg = readJson(join(repoRoot, "packages/user-event/package.json"));
 const jestEnvPkg = readJson(join(repoRoot, "packages/jest-environment/package.json"));
+const registerPkg = readJson(join(repoRoot, "packages/register/package.json"));
 const fileRef = (name: string) => `file:${packed.get(name)}`;
 
 rmSync(project, { recursive: true, force: true });
@@ -115,6 +120,8 @@ writeFileSync(
         ["@testing-library/jest-dom", reactPkg.devDependencies["@testing-library/jest-dom"]],
         ["vitest", rootPkg.devDependencies.vitest],
         ["jest", jestEnvPkg.devDependencies.jest],
+        // Jest's standalone expect, for the node:test check (n).
+        ["expect", registerPkg.devDependencies.expect],
         ["typescript", rootPkg.devDependencies.typescript],
       ]),
     },
@@ -144,7 +151,23 @@ interface Check {
   /** Files (relative to node_modules/) that must appear in the load log. */
   mustLoad: string[];
   mustNotLoad?: RegExp;
+  /** Run `cmd` with this executable instead of `pnpm exec`. */
+  bin?: string;
+  /** false: no Node loader hook (a runtime other than Node); the test's own instanceof checks remain. */
+  recordLoads?: boolean;
+  /** Reason the check cannot run on this machine. */
+  skip?: string;
 }
+
+/**
+ * Bun, resolved from the repository (a version manager's shim picks the version by directory, and
+ * the project lives in os.tmpdir()). Null when it is not installed.
+ */
+function findBun(): string | null {
+  const result = spawnSync("bun", ["-e", "console.log(process.execPath)"], { cwd: repoRoot, encoding: "utf8" });
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+const bun = findBun();
 
 const checks: Check[] = [
   {
@@ -223,6 +246,30 @@ const checks: Check[] = [
     mustNotLoad: /\/node_modules\/@testing-library\//,
   },
   {
+    id: "n",
+    title: "node:test, --import @ctrl/dom/register, @ctrl/dom subpaths + expect",
+    bin: process.execPath,
+    cmd: ["--import", "@ctrl/dom/register", "--test", "node.test.ts"],
+    mustLoad: [
+      "@ctrl/dom/dist/register/index.js",
+      "@ctrl/dom/dist/dom/index.js",
+      "@ctrl/dom/dist/react/index.js",
+      "@ctrl/dom/dist/user-event/index.js",
+      "@ctrl/dom/dist/jest-dom/matchers.js",
+      "expect/",
+    ],
+    mustNotLoad: /\/node_modules\/(@testing-library|vitest|jest-environment-ctrl-dom)\//,
+  },
+  {
+    id: "u",
+    title: "bun test, bunfig.toml preload @ctrl/dom/register",
+    bin: bun ?? undefined,
+    cmd: ["test", "./bun.test.tsx"],
+    mustLoad: [],
+    recordLoads: false,
+    skip: bun === null ? "bun is not installed" : undefined,
+  },
+  {
     id: "e",
     title: "tsc --noEmit with our declarations",
     cmd: ["tsc", "--noEmit", "-p", "tsconfig.json"],
@@ -272,16 +319,21 @@ function verifyLoads(check: Check, log: string): string[] {
 
 const results: { check: Check; ok: boolean; problems: string[]; ms: number }[] = [];
 for (const check of checks) {
+  if (check.skip) {
+    console.log(`SKIP (${check.id}) ${check.title}: ${check.skip}`);
+    continue;
+  }
   const log = join(root, `loads-${check.id}.log`);
   rmSync(log, { force: true });
   const t0 = performance.now();
-  const proc = spawnSync("pnpm", ["exec", ...check.cmd], {
+  const [cmd, args] = check.bin ? [check.bin, check.cmd] : ["pnpm", ["exec", ...check.cmd]];
+  const proc = spawnSync(cmd, args, {
     cwd: project,
     encoding: "utf8",
     env: {
       ...process.env,
       RTD_LOAD_LOG: log,
-      NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import ${join(project, "record-loads.mjs")}`.trim(),
+      NODE_OPTIONS: check.recordLoads === false ? (process.env.NODE_OPTIONS ?? "") : `${process.env.NODE_OPTIONS ?? ""} --import ${join(project, "record-loads.mjs")}`.trim(),
       CI: "1",
     },
   });
