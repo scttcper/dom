@@ -13,7 +13,7 @@
     "bench": "node scripts/bench.ts"
   },
   "devDependencies": {
-    "scriptc": "0.4.2",
-    "@scriptc/types": "0.4.2"
+    "scriptc": "0.4.4",
+    "@scriptc/types": "0.4.4"
   }
 }
