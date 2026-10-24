@@ -180,7 +180,7 @@ bool(HTMLOptionElement, "defaultSelected=selected disabled");
 /**
  * The legacy factory function `Option(text, value, defaultSelected, selected)`:
  * https://html.spec.whatwg.org/#dom-option
- * Exposed as the `Option` global by the window (TODO(window): install it).
+ * Exposed as the `Option` global by the window.
  */
 export const Option = function Option(this: unknown, text?: string, value?: string, defaultSelected?: boolean, selected?: boolean): HTMLOptionElement {
   if (new.target === undefined) throw new TypeError("Failed to construct 'Option': Please use the 'new' operator, this DOM object constructor cannot be called as a function.");
