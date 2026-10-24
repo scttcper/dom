@@ -1,0 +1,22 @@
+{
+  "repository": "https://github.com/remix-run/react-router.git",
+  "branch": "main",
+  "commit": "bb7c1f021363e96745dd3cfc5d2431e9b80ffe61",
+  "package": "packages/react-router",
+  "presets": {
+    "smoke": [
+      "packages/react-router/__tests__/data-memory-router-test.tsx",
+      "packages/react-router/__tests__/useNavigate-test.tsx",
+      "packages/react-router/__tests__/dom/data-browser-router-test.tsx",
+      "packages/react-router/__tests__/dom/link-click-test.tsx"
+    ],
+    "all": []
+  },
+  "exclude": [
+    "__tests__/rsc/server-test.ts",
+    "__tests__/rsc/server-function-redirect-test.ts",
+    "__tests__/dom/dom-export-test.tsx"
+  ],
+  "excludeReason": "They import the package's own build output (react-router/dom, react-router/internal/react-server-client resolve to dist/), which the runner does not build (no lifecycle scripts, no tsdown); they fail to load on jsdom too.",
+  "note": "Pinned 2026-10-23 (upstream main, committed 2026-10-23). Jest 30 in native ESM mode (--experimental-vm-modules, babel-jest) + jest-environment-jsdom 30 (jsdom 26) + stock @testing-library/{react,user-event,jest-dom}. Only the react-router package's Jest project (the DOM one; the other packages are Node-side)."
+}
