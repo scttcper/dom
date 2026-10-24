@@ -238,6 +238,36 @@ describe("FormData — https://html.spec.whatwg.org/#constructing-the-form-data-
     expect([...new window.FormData($("f"), $("i"))]).toEqual([["pos.x", "0"], ["pos.y", "0"]]);
   });
 
+  // https://html.spec.whatwg.org/#image-button-state-(type=image): activation selects the click's
+  // coordinate (offsetX/offsetY, = clientX/Y without layout, as in jsdom); step 5.2 of
+  // https://html.spec.whatwg.org/#constructing-the-form-data-set appends it. React Router's
+  // data-browser-router "submitter value(s) in tree order" test
+  // (downstream/react-router/repros/image-button-selected-coordinate.test.ts).
+  test("an image submitter's name.x/name.y are the coordinate the activating click selected", () => {
+    document.body!.innerHTML = "<form id=f><input name=a value=1><input type=image id=i name=pos><input type=image id=n></form>";
+    const submitted: string[][][] = [];
+    $("f").addEventListener("submit", (e: any) => {
+      e.preventDefault();
+      submitted.push([...new window.FormData($("f"), e.submitter)]);
+    });
+    $("i").dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true, clientX: 1, clientY: 2 }));
+    $("n").dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true, clientX: 3, clientY: 4 }));
+    // click()'s synthetic click is at (0,0): the earlier coordinate does not stick.
+    $("i").click();
+    expect(submitted).toEqual([
+      [["a", "1"], ["pos.x", "1"], ["pos.y", "2"]],
+      [["a", "1"], ["x", "3"], ["y", "4"]],
+      [["a", "1"], ["pos.x", "0"], ["pos.y", "0"]],
+    ]);
+  });
+
+  // https://html.spec.whatwg.org/#concept-form-submit step 9.3: method=dialog returns "x,y".
+  test("an image button submitting a method=dialog form returns its selected coordinate", () => {
+    document.body!.innerHTML = "<dialog id=d open><form method=dialog><input type=image id=i></form></dialog>";
+    $("i").dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true, clientX: 5, clientY: 6 }));
+    expect($("d").returnValue).toBe("5,6");
+  });
+
   test("a file input with no selection contributes an empty application/octet-stream File", () => {
     document.body!.innerHTML = "<form id=f><input type=file name=f></form>";
     const [[name, file]] = [...new window.FormData($("f"))] as [string, File][];

@@ -134,7 +134,7 @@ import {
   type ConstraintValidation,
   type ValidityState,
 } from "./validation.ts";
-import { FORM_ENCTYPE, FORM_METHOD, resetForm, submitForm } from "./form-submission.ts";
+import { FORM_ENCTYPE, FORM_METHOD, resetForm, selectedCoordinates, submitForm } from "./form-submission.ts";
 
 // --- value sanitization ---------------------------------------------------------------------
 
@@ -1168,6 +1168,14 @@ export class HTMLInputElement extends HTMLElement {
     }
     if (!this._isMutable()) return;
     if (type === I_SUBMIT || type === I_IMAGE) {
+      if (type === I_IMAGE) {
+        // https://html.spec.whatwg.org/#image-button-state-(type=image): a click selects the
+        // coordinate it was made at (no layout: the event's offsetX/offsetY, which mirror clientX/Y,
+        // as jsdom reads them); an activation without one assumes (0,0).
+        const e = _event as { offsetX?: unknown; offsetY?: unknown } | null;
+        if (e !== null && typeof e.offsetX === "number" && typeof e.offsetY === "number") selectedCoordinates.set(impl, { x: e.offsetX, y: e.offsetY });
+        else selectedCoordinates.delete(impl);
+      }
       const form = formOwner(impl);
       if (form !== null) submitForm(form, impl, false);
     } else if (type === I_RESET) {

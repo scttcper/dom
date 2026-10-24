@@ -305,6 +305,13 @@ function textareaWrappingTransformation(textarea: NodeImpl, value: string): stri
 }
 
 /**
+ * An image button's selected coordinate (https://html.spec.whatwg.org/#image-button-state-(type=image)),
+ * set by its activation behavior. A side table: image buttons are rare, so other inputs carry no field.
+ * Absent means (0,0), "if the user activates the control without explicitly selecting a coordinate".
+ */
+export const selectedCoordinates = new WeakMap<NodeImpl, { x: number; y: number }>();
+
+/**
  * https://html.spec.whatwg.org/#constructing-the-form-data-set — returns null when the form is
  * already constructing its entry list.
  */
@@ -331,11 +338,12 @@ export function constructEntryList(
       if (isButton && field !== submitter) continue;
       const w = field.node as unknown as InputLike;
       if ((type === I_CHECKBOX || type === I_RADIO) && !w.checked) continue;
-      // Step 5.2: image buttons append name.x / name.y (we have no click coordinate: 0,0).
+      // Step 5.2: image buttons append name.x / name.y with the submitter's selected coordinate.
       if (type === I_IMAGE) {
         const n = attr(field, "name") ?? "";
         const prefix = n === "" ? "" : n + ".";
-        entries.push([prefix + "x", "0"], [prefix + "y", "0"]);
+        const c = selectedCoordinates.get(field);
+        entries.push([prefix + "x", c === undefined ? "0" : String(c.x)], [prefix + "y", c === undefined ? "0" : String(c.y)]);
         continue;
       }
       // Step 5.4: form-associated custom elements run entry construction.

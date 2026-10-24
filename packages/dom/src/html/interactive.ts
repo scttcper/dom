@@ -1,7 +1,7 @@
 // Interactive elements: <details>, <summary>, <dialog>.
 // https://html.spec.whatwg.org/#interactive-elements
 
-import { setDialogSubmission } from "./forms/form-submission.ts";
+import { selectedCoordinates, setDialogSubmission } from "./forms/form-submission.ts";
 import { HTMLElement } from "./HTMLElement.ts";
 import { bool, contentAttr, str } from "./reflect.ts";
 import { ELEMENT_NODE, F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, F_SHADOW_ROOT, HTML_NS, SVG_NS } from "../nodes/constants.ts";
@@ -479,12 +479,14 @@ export function submitFormToDialog(form: NodeImpl, submitter: NodeImpl): boolean
   let subject: NodeImpl | null = form.parent;
   while (subject !== null && !(subject.type === ELEMENT_NODE && subject.tag === T.dialog && subject.ns === HTML_NS)) subject = subject.parent;
   if (subject === null) return true;
-  // 9.3-9.5. Image buttons return their selected coordinate (no layout: always 0,0); a form
+  // 9.3-9.5. Image buttons return their selected coordinate ("x,y"; (0,0) without one); a form
   // submitting itself returns "" (as browsers and WPT do), other submitters their optional value.
   let result: string | null;
   if (submitter === form) result = "";
-  else if (submitter.tag === T.input && contentAttr(submitter, "type")?.toLowerCase() === "image") result = "0,0";
-  else result = contentAttr(submitter, "value");
+  else if (submitter.tag === T.input && contentAttr(submitter, "type")?.toLowerCase() === "image") {
+    const c = selectedCoordinates.get(submitter);
+    result = c === undefined ? "0,0" : `${c.x},${c.y}`;
+  } else result = contentAttr(submitter, "value");
   // 9.6.
   closeDialog(subject, result, null);
   return true;
