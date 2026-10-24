@@ -238,10 +238,13 @@ the change: whole stack 3.92 → 3.73 s wall (ctrl-dom with stock Testing Librar
   growing it from 1 MB skips most scavenges. Only for forked pools (`forks`, `vmForks`): worker
   threads reject V8 flags in `execArgv`.
 
-The plugin adds both in `configureVitest`, where the resolved pool (CLI `--pool` included) is
-known; `testingLibrary: false` gets only the young generation (the compile cache stays off for
-stock Testing Library, see `compileCache`). comparison/'s `ctrl-dom-stack` contender mirrors it
-(`workerExecArgv` from publish/ctrl-dom/vitest.js).
+The plugin adds only the compile-cache preload (with its Testing Library; it stays off for stock
+Testing Library, see `compileCache`), in `configureVitest`, where the resolved pool is known.
+The young generation flag is not shipped: −6% worker CPU did not show up as wall time on these
+runs, and +13 MB RSS per worker (+11%) works against the memory half of priority 1. Pass
+`--min-semi-space-size=16` in your own `execArgv` if CPU matters more than memory for you.
+comparison/'s `ctrl-dom-stack` contender mirrors the plugin (`workerExecArgv` from
+publish/ctrl-dom/vitest.js).
 
 ## Regression check (`compare.ts`)
 

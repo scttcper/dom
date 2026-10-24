@@ -51,12 +51,9 @@ Per file: `// @vitest-environment ctrl-dom`. Options go under the environment's 
 `environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/", width: 1280 } }`, or
 `ctrlDom({ url, width })` with the plugin.
 
-The plugin also tunes the Node flags of Vitest's workers, since the default pool starts one per
-test file: with its Testing Library it turns the compile cache on as each worker starts (not only
-for the DOM), and in the `forks`/`vmForks` pools it starts V8's young generation at 16 MB
-(`--min-semi-space-size=16`), which skips most of the garbage collections a short-lived worker
-does while loading modules (~13 MB more RSS per worker). A semi-space size in your own `execArgv`
-wins.
+The plugin also adds a Node flag to Vitest's workers, since the default pool starts one per test
+file: with its Testing Library it turns the compile cache on as each worker starts, so Vitest's
+own worker modules load from it too, not only the DOM.
 
 ## Jest
 

@@ -3,16 +3,13 @@
  * the worker flags it adds per resolved pool.
  *
  * Spec: Node.js CLI options — https://nodejs.org/api/cli.html#--importmodule (the compile-cache
- * preload), https://nodejs.org/api/module.html#moduleenablecompilecacheoptions, and V8's
- * `--min-semi-space-size`; worker threads reject V8 flags in `execArgv`
- * (https://nodejs.org/api/worker_threads.html#new-workerfilename-options, ERR_WORKER_INVALID_EXEC_ARGV).
+ * preload), https://nodejs.org/api/module.html#moduleenablecompilecacheoptions.
  * Vitest plugin API — `configureVitest({ project })`, https://vitest.dev/api/advanced/plugin.
  */
 import { spawnSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ctrlDom, workerExecArgv } from "../../../publish/ctrl-dom/vitest.js";
 
-const SEMI = "--min-semi-space-size=16";
 const isCompileCacheImport = (arg: string) => arg.startsWith("--import=data:text/javascript,") && arg.includes("enableCompileCache");
 
 beforeEach(() => {
@@ -26,35 +23,21 @@ afterEach(() => {
 });
 
 describe("workerExecArgv — worker flags per pool", () => {
-  test("forked pools (forks, vmForks) get a 16 MB young generation", () => {
-    expect(workerExecArgv({ pool: "forks" })).toEqual([SEMI]);
-    expect(workerExecArgv({ pool: "vmForks" })).toEqual([SEMI]);
-    expect(workerExecArgv({})).toEqual([SEMI]); // Vitest's default pool is forks
-  });
-
-  test("thread pools and custom pools get no V8 flag (invalid in a worker thread's execArgv)", () => {
-    expect(workerExecArgv({ pool: "threads" })).toEqual([]);
-    expect(workerExecArgv({ pool: "vmThreads" })).toEqual([]);
-    expect(workerExecArgv({ pool: "./my-pool.js" })).toEqual([]);
-  });
-
-  test("a semi-space size already in execArgv wins", () => {
-    expect(workerExecArgv({ pool: "forks", execArgv: ["--max-semi-space-size=64"] })).toEqual([]);
-    expect(workerExecArgv({ pool: "forks", execArgv: ["--min-semi-space-size=2"] })).toEqual([]);
+  test("no V8 flags: without the compile cache nothing is added, in any pool", () => {
+    expect(workerExecArgv({})).toEqual([]);
+    expect(workerExecArgv({ compileCache: false })).toEqual([]);
   });
 
   test("compileCache adds a preload that enables the compile cache at process start, in every pool", () => {
-    for (const pool of ["forks", "threads", "vmThreads"]) {
-      const flags = workerExecArgv({ pool, compileCache: true });
-      expect(flags.filter(isCompileCacheImport)).toHaveLength(1);
-    }
+    const flags = workerExecArgv({ compileCache: true });
+    expect(flags.filter(isCompileCacheImport)).toHaveLength(1);
   });
 
   test("CTRL_DOM_COMPILE_CACHE=0/1 overrides compileCache, as for the environment", () => {
     vi.stubEnv("CTRL_DOM_COMPILE_CACHE", "0");
-    expect(workerExecArgv({ pool: "threads", compileCache: true })).toEqual([]);
+    expect(workerExecArgv({ compileCache: true })).toEqual([]);
     vi.stubEnv("CTRL_DOM_COMPILE_CACHE", "1");
-    expect(workerExecArgv({ pool: "threads", compileCache: false }).filter(isCompileCacheImport)).toHaveLength(1);
+    expect(workerExecArgv({ compileCache: false }).filter(isCompileCacheImport)).toHaveLength(1);
   });
 
   test("the compile-cache preload is a valid --import: Node runs it and the cache is on", () => {
@@ -76,12 +59,11 @@ describe("ctrlDom().configureVitest — flags follow the resolved pool", () => {
   test("appends to the project's execArgv for forks, keeping the user's flags first", () => {
     const argv = configure({}, { pool: "forks", execArgv: ["--conditions=dev"] });
     expect(argv[0]).toBe("--conditions=dev");
-    expect(argv).toContain(SEMI);
     expect(argv.filter(isCompileCacheImport)).toHaveLength(1); // Testing Library routed: compileCache on
   });
 
-  test("testingLibrary: false leaves the compile cache off; threads get nothing", () => {
-    expect(configure({ testingLibrary: false }, { pool: "forks", execArgv: [] })).toEqual([SEMI]);
+  test("testingLibrary: false leaves the compile cache off: no flags", () => {
+    expect(configure({ testingLibrary: false }, { pool: "forks", execArgv: [] })).toEqual([]);
     expect(configure({ testingLibrary: false }, { pool: "threads", execArgv: [] })).toEqual([]);
   });
 
