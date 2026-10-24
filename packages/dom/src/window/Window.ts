@@ -367,8 +367,10 @@ export class Window extends EventTarget {
   /** https://html.spec.whatwg.org/#dom-issecurecontext (https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy) */
   get isSecureContext(): boolean {
     const { protocol, hostname } = this[$url];
+    // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy steps 3-6: secure
+    // schemes and file, the loopback ranges 127.0.0.0/8 and ::1/128, and localhost names.
     if (protocol === "https:" || protocol === "wss:" || protocol === "file:") return true;
-    return hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "127.0.0.1" || hostname === "[::1]";
+    return hostname === "localhost" || hostname.endsWith(".localhost") || /^127\.\d+\.\d+\.\d+$/.test(hostname) || hostname === "[::1]";
   }
 
   get crossOriginIsolated(): boolean {
