@@ -28,7 +28,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
-| [CSS: selectors](#css-selectors) | 28 | 10 | 5 | 13 |
+| [CSS: selectors](#css-selectors) | 28 | 12 | 4 | 12 |
 | [CSS: cssom-view](#css-cssom-view) | 25 | 14 | 0 | 11 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 5 | 1 | 15 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
@@ -89,7 +89,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1542 | 734 | 121 | 687 |
+| **All** | 1542 | 736 | 120 | 686 |
 
 ## Web-platform-tests fixtures
 
@@ -201,7 +201,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [bogus-comment-state](https://html.spec.whatwg.org/#bogus-comment-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [bogus-doctype-state](https://html.spec.whatwg.org/#bogus-doctype-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [can-have-its-url-rewritten](https://html.spec.whatwg.org/#can-have-its-url-rewritten) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
-| [case-sensitivity-of-selectors](https://html.spec.whatwg.org/#case-sensitivity-of-selectors) | `dom/css/cascade.ts`, `dom/selectors/compile.ts`, `jest-dom/matchers/aria.ts` +1 | `dom/selectors/matching.test.ts`; WPT: `css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html` |
+| [case-sensitivity-of-selectors](https://html.spec.whatwg.org/#case-sensitivity-of-selectors) | `dom/css/cascade.ts`, `dom/selectors/compile.ts`, `jest-dom/matchers/aria.ts` +1 | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/matching.test.ts`; WPT: `css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html` |
 | [categories](https://html.spec.whatwg.org/#categories) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
 | [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` +1 | `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
 | [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | **untested** |
@@ -241,7 +241,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [computed-writing-suggestions-value](https://html.spec.whatwg.org/#computed-writing-suggestions-value) | `dom/html/HTMLElement.ts` | **untested** |
 | [concept-button](https://html.spec.whatwg.org/#concept-button) | `dom/html/invokers.ts` | **untested** |
 | [concept-custom-element-definition-construction-stack](https://html.spec.whatwg.org/#concept-custom-element-definition-construction-stack) | `dom/html/custom-elements.ts` | **untested** |
-| [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | `dom/window/iframe.test.ts` |
+| [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | `dom/nodes/wpt-nodes.test.ts`, `dom/window/iframe.test.ts` |
 | [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | **untested** |
 | [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts` |
 | [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`, `compat/html/focus.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
@@ -755,7 +755,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [script-data-less-than-sign-state](https://html.spec.whatwg.org/#script-data-less-than-sign-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [script-data-state](https://html.spec.whatwg.org/#script-data-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [selectedness-setting-algorithm](https://html.spec.whatwg.org/#selectedness-setting-algorithm) | `dom/html/forms/HTMLSelectElement.ts` | `dom/html/forms/select-textarea.test.ts`, `compat/forms/select-option.test.ts` |
-| [selector-checked](https://html.spec.whatwg.org/#selector-checked) | `dom/html/forms/state.ts` | `dom/selectors/matching.test.ts` |
+| [selector-checked](https://html.spec.whatwg.org/#selector-checked) | `dom/html/forms/state.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/matching.test.ts` |
 | [selector-custom](https://html.spec.whatwg.org/#selector-custom) | `dom/selectors/state.ts` | `dom/html/forms/element-internals.test.ts`, `dom/selectors/pseudo-classes.test.ts` |
 | [selector-default](https://html.spec.whatwg.org/#selector-default) | `dom/html/forms/state.ts` | `dom/selectors/pseudo-classes.test.ts` |
 | [selector-defined](https://html.spec.whatwg.org/#selector-defined) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `dom/selectors/pseudo-classes.test.ts`; WPT: `css/selectors/invalidation/defined-in-has.html`, `css/selectors/invalidation/defined.html` |
@@ -1050,7 +1050,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-element-closest](https://dom.spec.whatwg.org/#dom-element-closest) | `dom/selectors/index.ts` | **untested** |
 | [dom-element-getattributenode](https://dom.spec.whatwg.org/#dom-element-getattributenode) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-element-getattributenodens](https://dom.spec.whatwg.org/#dom-element-getattributenodens) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
-| [dom-element-matches](https://dom.spec.whatwg.org/#dom-element-matches) | `dom/selectors/index.ts` | `dom/selectors/wpt-query-selector-all.test.ts`, `dom/selectors/wpt-runner.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-matches.html` |
+| [dom-element-matches](https://dom.spec.whatwg.org/#dom-element-matches) | `dom/selectors/index.ts` | `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/wpt-query-selector-all.test.ts`, `dom/selectors/wpt-runner.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-matches.html` |
 | [dom-element-removeattributenode](https://dom.spec.whatwg.org/#dom-element-removeattributenode) | `dom/nodes/Element.ts`, `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
 | [dom-element-setattribute](https://dom.spec.whatwg.org/#dom-element-setattribute) | `dom/nodes/attributes.ts` | WPT: `dom/nodes/Element-setAttribute.html`, `dom/nodes/attributes.html` +1 |
 | [dom-element-setattributenode](https://dom.spec.whatwg.org/#dom-element-setattributenode) | `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
@@ -1098,7 +1098,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-nonelementparentnode-getelementbyid](https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid) | `aria/tree.ts` | WPT: `dom/nodes/DocumentFragment-getElementById.html`, `shadow-dom/getElementById-dynamic-001.html` +1 |
 | [dom-parentnode-movebefore](https://dom.spec.whatwg.org/#dom-parentnode-movebefore) | `dom/nodes/mixins.ts` | WPT: `dom/nodes/moveBefore/moveBefore-optgroup.html`, `dom/nodes/moveBefore/moveBefore-option-recalc-style.html` +1 |
 | [dom-parentnode-queryselector](https://dom.spec.whatwg.org/#dom-parentnode-queryselector) | `dom/nodes/mixins.ts`, `dom/selectors/index.ts` | WPT: `dom/nodes/ParentNode-querySelector-argument-stringification.html`, `dom/nodes/ParentNode-querySelector-dupe-id.html` +2 |
-| [dom-parentnode-queryselectorall](https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall) | `dom/nodes/mixins.ts`, `dom/selectors/index.ts` | `dom/selectors/wpt-query-selector-all.test.ts`, `dom/selectors/wpt-runner.test.ts`; WPT: `dom/nodes/Element-querySelectorAll-context-element.html`, `dom/nodes/ParentNode-querySelector-argument-stringification.html` +3 |
+| [dom-parentnode-queryselectorall](https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall) | `dom/nodes/mixins.ts`, `dom/selectors/index.ts` | `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/wpt-query-selector-all.test.ts`, `dom/selectors/wpt-runner.test.ts`; WPT: `dom/nodes/Element-querySelectorAll-context-element.html`, `dom/nodes/ParentNode-querySelector-argument-stringification.html` +3 |
 | [dom-range-clonecontents](https://dom.spec.whatwg.org/#dom-range-clonecontents) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [dom-range-clonerange](https://dom.spec.whatwg.org/#dom-range-clonerange) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [dom-range-collapse](https://dom.spec.whatwg.org/#dom-range-collapse) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
@@ -1188,7 +1188,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [registered-observer-list](https://dom.spec.whatwg.org/#registered-observer-list) | `dom/observers/queue.ts` | `dom/observers/mutation-records.test.ts` |
 | [remove-an-event-listener](https://dom.spec.whatwg.org/#remove-an-event-listener) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts` |
 | [retarget](https://dom.spec.whatwg.org/#retarget) | `dom/events/dispatch.ts` | `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` |
-| [scope-match-a-selectors-string](https://dom.spec.whatwg.org/#scope-match-a-selectors-string) | `dom/selectors/index.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/wpt-query-selector-all.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-namespace-tagname-attribute.html`, `dom/nodes/ParentNode-querySelectorAll-namespace.html` |
+| [scope-match-a-selectors-string](https://dom.spec.whatwg.org/#scope-match-a-selectors-string) | `dom/selectors/index.ts` | `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/matching.test.ts`, `dom/selectors/wpt-query-selector-all.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-namespace-tagname-attribute.html`, `dom/nodes/ParentNode-querySelectorAll-namespace.html` |
 | [set-an-existing-attribute-value](https://dom.spec.whatwg.org/#set-an-existing-attribute-value) | `dom/nodes/Node.ts` | `dom/nodes/attributes.test.ts` |
 | [set-the-canceled-flag](https://dom.spec.whatwg.org/#set-the-canceled-flag) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
 | [shadowroot-available-to-element-internals](https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals) | `dom/nodes/ShadowRoot.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
@@ -1414,7 +1414,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: selectors
 
-<https://drafts.csswg.org/selectors/> — 28 sections implemented, 10 tested, 5 by WPT only, 13 untested.
+<https://drafts.csswg.org/selectors/> — 28 sections implemented, 12 tested, 4 by WPT only, 12 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1430,7 +1430,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [headings](https://drafts.csswg.org/selectors/#headings) | `dom/selectors/compile.ts`, `dom/selectors/parser.ts` | `dom/selectors/matching.test.ts`; WPT: `css/selectors/heading-prefixed.html`, `css/selectors/invalidation/heading-pseudo-class-in-has-with-headingoffset.html` +2 |
 | [input-pseudos](https://drafts.csswg.org/selectors/#input-pseudos) | `dom/selectors/state.ts` | `dom/selectors/pseudo-classes.test.ts`, `compat/forms/pseudo-classes.test.ts` |
 | [match-a-selector-against-a-pseudo-element](https://drafts.csswg.org/selectors/#match-a-selector-against-a-pseudo-element) | `dom/selectors/internal.ts` | **untested** |
-| [match-a-selector-against-an-element](https://drafts.csswg.org/selectors/#match-a-selector-against-an-element) | `dom/selectors/compile.ts` | **untested** |
+| [match-a-selector-against-an-element](https://drafts.csswg.org/selectors/#match-a-selector-against-an-element) | `dom/selectors/compile.ts`, `dom/selectors/filter.ts` | `dom/selectors/engine-shortcuts.test.ts` |
 | [modal-state](https://drafts.csswg.org/selectors/#modal-state) | `dom/html/top-layer.ts` | WPT: `css/selectors/modal-pseudo-class.html` |
 | [parse-selector](https://drafts.csswg.org/selectors/#parse-selector) | `dom/selectors/parser.ts` | **untested** |
 | [pseudo-element-states](https://drafts.csswg.org/selectors/#pseudo-element-states) | `dom/selectors/parser.ts` | **untested** |
@@ -1445,7 +1445,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-lang-pseudo](https://drafts.csswg.org/selectors/#the-lang-pseudo) | `dom/selectors/state.ts` | `dom/selectors/matching.test.ts` |
 | [typedef-complex-selector](https://drafts.csswg.org/selectors/#typedef-complex-selector) | `dom/selectors/parser.ts` | **untested** |
 | [typedef-compound-selector](https://drafts.csswg.org/selectors/#typedef-compound-selector) | `dom/selectors/parser.ts` | **untested** |
-| [useraction-pseudos](https://drafts.csswg.org/selectors/#useraction-pseudos) | `dom/selectors/state.ts` | WPT: `css/selectors/is-where-pseudo-classes.html` |
+| [useraction-pseudos](https://drafts.csswg.org/selectors/#useraction-pseudos) | `dom/selectors/state.ts` | `dom/css/cascade-matching-caches.test.ts`; WPT: `css/selectors/is-where-pseudo-classes.html` |
 
 ## CSS: cssom-view
 
@@ -1610,12 +1610,12 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [cascade-sort](https://drafts.csswg.org/css-cascade/#cascade-sort) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts`, `dom/css/computed-values.test.ts` |
-| [cascading](https://drafts.csswg.org/css-cascade/#cascading) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts` |
+| [cascading](https://drafts.csswg.org/css-cascade/#cascading) | `dom/css/cascade.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/cascade.test.ts` |
 | [computed](https://drafts.csswg.org/css-cascade/#computed) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [defaulting-keywords](https://drafts.csswg.org/css-cascade/#defaulting-keywords) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [dom-cssscoperule-end](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-end) | `dom/css/cssom.ts` | **untested** |
 | [dom-cssscoperule-start](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-start) | `dom/css/cssom.ts` | **untested** |
-| [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/computed-values.test.ts` |
+| [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/computed-values.test.ts` |
 | [layer-apis](https://drafts.csswg.org/css-cascade/#layer-apis) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [shorthand](https://drafts.csswg.org/css-cascade/#shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/wpt-cssom.test.ts` |
 | [the-csslayerblockrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerblockrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
