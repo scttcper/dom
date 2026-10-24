@@ -188,7 +188,9 @@ Allocation-free preorder iteration: `for (let n = root.first; n !== null; n = ne
 3. Zero cost when unused: mutation observers, ranges, custom elements, stylesheets.
 4. Caches are version-stamped, never eagerly invalidated by walking.
 5. Startup: importing `@rtd/dom` and creating a window must stay far below happy-dom
-   (target: < 15 ms import from the bundled build, < 1 ms `createWindow`).
+   (target: < 15 ms import from the bundled build, < 1 ms `createWindow`). Where a fresh Vitest
+   worker's time goes, why `installGlobals` loads Node's undici, and why a V8 startup snapshot
+   of the DOM was measured and not shipped: bench/README.md, "Worker startup".
 6. No `Proxy` on hot paths (indexed access on collections is the main temptation).
 
 ## Memory: what may stay reachable (enforced by `tests/compat/test/leaks`)

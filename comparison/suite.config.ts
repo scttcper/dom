@@ -2,13 +2,16 @@
 // project per contender. Vitest's defaults otherwise (forks pool, a fresh worker per file), with
 // a fixed worker count so runs are comparable.
 //
-//   COMPARE_WORKERS=4   Vitest workers (default 4)
+//   COMPARE_WORKERS=4          Vitest workers (default 4)
+//   COMPARE_EXEC_ARGV="--cpu-prof --cpu-prof-dir=/tmp/p"   extra Node flags for every worker
+//                              (whitespace separated; for profiling and experiments)
 
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { selectContenders } from "./contenders/index.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
+const extraExecArgv = process.env.COMPARE_EXEC_ARGV?.split(/\s+/).filter(Boolean) ?? [];
 
 export default defineConfig({
   test: {
@@ -21,7 +24,7 @@ export default defineConfig({
         environment: c.environment,
         environmentOptions: c.environmentOptions ?? {},
         setupFiles: ["./lib/suite-setup.ts"],
-        execArgv: (c.preload ?? []).flatMap((p) => ["--import", p]),
+        execArgv: [...(c.preload ?? []).flatMap((p) => ["--import", p]), ...(c.execArgv ?? []), ...extraExecArgv],
         env: c.env,
         server: { deps: { external: c.external ?? [] } },
       },

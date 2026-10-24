@@ -1,5 +1,6 @@
 // Records Vitest's own per-file diagnostics for the suite benchmark (COMPARE_DIAGNOSTICS_FILE):
-// environment setup, import/collect and test time as Vitest measured them.
+// environment setup, harness preparation, setup files, import/collect and test time as Vitest
+// measured them.
 import { appendFileSync } from "node:fs";
 import type { Reporter, TestModule } from "vitest/node";
 
@@ -10,7 +11,7 @@ export default class SuiteReporter implements Reporter {
     let lines = "";
     for (const m of testModules) {
       const d = m.diagnostic();
-      lines += `${JSON.stringify({ state: m.state(), environmentSetupMs: d.environmentSetupDuration, collectMs: d.collectDuration, durationMs: d.duration })}\n`;
+      lines += `${JSON.stringify({ state: m.state(), environmentSetupMs: d.environmentSetupDuration, prepareMs: d.prepareDuration, setupMs: d.setupDuration, collectMs: d.collectDuration, durationMs: d.duration })}\n`;
     }
     appendFileSync(out, lines);
   }

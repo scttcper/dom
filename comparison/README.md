@@ -23,6 +23,8 @@ typed into with user-event. Every contender runs the same files with Vitest's de
 pool, a fresh worker per file) and 4 workers, a fresh `vitest` process per run, contenders
 interleaved, 3 runs each. Reported: wall time, Vitest's own per-file environment setup
 (`TestModule.diagnostic()`), and worker RSS at the end of each file. Every run must pass.
+`COMPARE_EXEC_ARGV` passes extra Node flags to every worker (profiling,
+experiments: bench/README.md, "Worker startup").
 
 **The same files with `--pool vmForks`** (`suite.ts --pool vmForks`): Vitest's VM pool keeps
 workers alive and gives each file a fresh vm context and environment instead of a fresh process,

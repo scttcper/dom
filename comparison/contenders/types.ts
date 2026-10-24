@@ -21,6 +21,8 @@ export interface Contender {
   alias?: Array<{ find: string | RegExp; replacement: string }>;
   /** `--import` preloads for its Vitest workers and cold-start processes. */
   preload?: string[];
+  /** Other Node flags for its Vitest workers and cold-start processes (after the preloads). */
+  execArgv?: string[];
   /** Environment variables for its Vitest workers and cold-start processes. */
   env?: Record<string, string>;
   /** Modules to load natively in Vitest (`server.deps.external`), as an installed package would be. */

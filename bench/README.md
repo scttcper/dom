@@ -137,6 +137,75 @@ diagnostics summed over files (`environmentSetupDuration`, setup files, collect/
 duration — CPU time across workers, not wall), and per-file worker RSS/heap recorded by the
 setup file. Only runs where every file passed are timed.
 
+## Worker startup: where a fresh Vitest worker's time goes
+
+Vitest's default pool forks a fresh worker per test file, so everything below is paid once per
+file. Measured 2026-10-23 at e68c6fc (Apple M4 Max, Node 26.12.1, shared machine: medians of
+fresh, interleaved processes; profiles aggregated over 100 workers of comparison/'s suite with
+`COMPARE_EXEC_ARGV="--cpu-prof ..."`).
+
+Our environment's `setup()` is ~22 ms per file with @ctrl/dom's Testing Library (the compile
+cache on) and ~32 ms with stock Testing Library (off). It splits into:
+
+| step | ms | notes |
+| --- | ---: | --- |
+| import `@rtd/dom` (1.4 MB bundle) | 8.7 cached / 19 uncached | ~10 ms of the uncached import is V8 compiling the bundle; evaluation ~4 ms (class creation, prototype mixins; nothing large left to defer) |
+| `installGlobals` | 11 | 10.7 ms of it is Node loading undici (below); our own work ~0.5 ms |
+| `createWindow` | 2 | first window per process includes `preparePrototype` (interface objects, ~0.3 ms real) |
+| clock, handlers | 0.3 | |
+
+**undici.** Reading the descriptors of Node's lazy `FormData`/`MessageEvent`/`CloseEvent`/
+`ErrorEvent` globals makes Node evaluate its bundled undici (agent, pool, client, `node:http2`,
+`node:tls`): 10.7 ms. `installGlobals` does it on purpose before installing our `Event`/
+`EventTarget` (window/globals.ts header): undici's classes extend whatever `Event`/`EventTarget`
+are global when it first loads, so a test's first `fetch()` (MSW) or `new Response()` would
+otherwise make Node's WebSocket/MessageEvent extend ours for the rest of the process, and
+uninstall could not restore the originals. There is no way around it that keeps that behavior:
+those globals are V8 lazy data properties (reading their value or descriptor, or redefining them,
+triggers the load; only assignment and `delete` do not, and both lose the lazy property), Node's
+`fetch` wrapper loads undici only when called, and no public synchronous path returns undici's
+classes. It is also the one part a startup snapshot cannot hold (below).
+
+### V8 startup snapshot: works, does not pay
+
+A userland snapshot (`node --snapshot-blob x --build-snapshot entry.cjs`) holding the evaluated DOM
+bundle, handed to workers with `--snapshot-blob` in `execArgv`, was evaluated end to end
+(`node bench/startup-snapshot.ts [--warm] [--keep]` rebuilds it and times the process-level
+numbers).
+
+- **It works with Vitest's forks and vmForks pools.** Node runs the worker entry (ESM) after
+  deserializing, `module.registerHooks` registered from `v8.startupSnapshot.addDeserializeCallback`
+  can answer the DOM entries' URLs with re-exports of the snapshot's modules (so the environment,
+  test code and the Testing Library bundles all get the snapshot instance, no bridge needed), and
+  all 100 suite files pass. One Node bug to work around: a deserialized userland snapshot has no
+  `console.Console` (Node 26.12), which Vitest's worker constructs (`TypeError: Console is not a
+  constructor` in every file); the entry must save it before snapshotting and put it back.
+  Worker threads (the `threads`/`vmThreads` pools) reject `--snapshot-blob` in `execArgv`
+  (`ERR_WORKER_INVALID_EXEC_ARGV`), so it could only ever apply to forked pools.
+- **undici cannot be in it**: loading it before snapshotting aborts the build (`global handle
+  not serialized`: the HTTP parser and http2 bindings), so `installGlobals` still pays 10.7 ms.
+- **Blob**: 11.6 MB (Node alone: 6.8 MB; 12.0 MB warmed), built in ~0.25 s plus ~55 ms to bundle
+  the DOM as one CommonJS file (the builder cannot `require` user files). Valid only for the exact
+  Node binary: Node refuses to start from a blob built by another version, so it would have to be
+  built lazily per machine into a cache keyed by Node version + bundle hash.
+- **Process level** (fresh process: import + `createWindow` + `installGlobals`): the import
+  drops from 8.7 ms (compile cache) / 19 ms (none) to 1.9 ms (the generated re-export module),
+  but deserializing the DOM's part of the heap adds 4.9 ms to Node's boot (an empty userland
+  snapshot adds 0.6 ms), heap +0.4 MB and RSS +9 MB. Net: ~2 ms per process against the compile
+  cache, ~12 ms without it. Functions the builder never ran have no bytecode in the blob and are
+  compiled on first call; `--warm` exercises the DOM before snapshotting so a first render finds
+  them compiled.
+- **End to end** (comparison/'s 100-file suite, 3 workers, 9 interleaved runs per variant, warmed
+  blob): Vitest's per-file environment setup drops 23.1 → 14.0 ms (whole stack) and 33.0 →
+  13.8 ms (stock Testing Library), but nothing else gets faster and test-file import gets
+  slower (+1.8 / +4.4 ms per file), so total CPU over the run is unchanged (18.31 → 18.13 s and
+  30.32 → 30.37 s) and wall time within noise (5.01 → 5.08 s, 8.81 → 8.69 s), while every worker
+  holds 14–20 MB more RSS (108 → 123 MB, 119 → 140 MB).
+
+So it is not shipped: the saving is the bundle's evaluation (~4 ms), which deserialization
+mostly costs again, and the large per-file costs (Node's own boot, Vitest's worker modules,
+undici, test-file imports) are outside what a DOM snapshot can hold.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`rtd` for React
