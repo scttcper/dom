@@ -25,5 +25,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "vitest-environment-rtd": "workspace:*"
+  },
+  "devDependencies": {
+    "@tanstack/react-virtual": "3.14.22"
   }
 }
