@@ -111,6 +111,36 @@ missing leaves ours in place instead of its mock. `compat` picks what the test g
 
 The repository's `docs/deviations.md` lists every API in each profile, with the reason.
 
+## Debugging with coding agents
+
+`screen.debug()` and failing queries print the whole DOM as HTML, which costs an agent thousands
+of tokens of classes and SVG paths. Run tests with `CTRL_DOM_DEBUG=aria` (or
+`ctrlDom({ debug: "aria" })`) to print the accessibility tree in Playwright's aria snapshot
+format instead, plus the closest matches when a `*ByRole`, `*ByText` or `*ByLabelText` query
+fails:
+
+```
+Unable to find an accessible element with the role "button" and name "Submit"
+
+Closest matches:
+- text: "Submit"  # in <div>, which has no role: give it role="button" or use getByText
+- button "Pay now"  # same role, other name
+
+Accessibility snapshot of <body> (CTRL_DOM_DEBUG=aria):
+- main:
+  - heading "Checkout" [level=1]
+  - form "Payment":
+    - textbox "Email address"
+    - button "Pay now"
+    - text: Submit
+```
+
+That error is 468 characters; upstream prints 2,476 for the same small form, and around 437,000
+for a large page. `ariaSnapshot(el?)` / `screen.ariaSnapshot()`, `prettyDOM(el, max, { format: "aria" })`
+and `diffAriaSnapshots(before, after)` are available directly. `CTRL_DOM_DEBUG=compact` prints
+HTML without class/style attributes and SVG internals. Without the variable, output is identical
+to Testing Library's. Details: the repository's `docs/agent-debugging.md`.
+
 ## Differences from jsdom
 
 There is no layout (geometry is zero unless mocked), no script execution, no navigation and no
