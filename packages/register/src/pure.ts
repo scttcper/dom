@@ -36,8 +36,8 @@ export interface RegisterOptions extends Omit<WindowOptions, "shareStorageWith">
    * - node:test: expose its hooks as the globals `beforeAll`, `afterAll`, `beforeEach` and
    *   `afterEach` (only those not already defined), the way Jest, Vitest's `globals` and bun test
    *   do, so Testing Library's React `render` registers its automatic `cleanup()` and act
-   *   environment; and unregister after the last test.
-   * - bun test (its hooks are already global): unregister after the last test.
+   *   environment; and close the window (dropping pending timers) after the last test.
+   * - bun test (its hooks are already global): close the window after the last test.
    * Elsewhere it does nothing.
    */
   testHooks?: boolean;
@@ -58,7 +58,7 @@ const DOM_MODULES = Symbol.for("rtd.dom.modules");
 
 const host = globalThis as unknown as Record<PropertyKey, unknown>;
 
-let current: { registration: Registration; teardown: () => void } | null = null;
+let current: { registration: Registration; close: () => void; teardown: () => void } | null = null;
 
 function timeSkip(option: boolean | undefined): boolean {
   const env = process.env.CTRL_DOM_TIME_SKIP ?? process.env.RTD_TIME_SKIP;
@@ -106,13 +106,20 @@ export function register(options: RegisterOptions = {}): Registration {
       if (current?.registration === registration) unregister();
     },
   };
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    clock.uninstall();
+    window.close();
+  };
   current = {
     registration,
+    close,
     teardown() {
       internal.setUncaughtExceptionHandler(null);
       internal.setNotImplementedHandler(null);
-      clock.uninstall();
-      window.close();
+      close();
       uninstall();
       delete host[DOM_MODULES];
       removeHooks?.();
@@ -141,6 +148,17 @@ const require = createRequire(import.meta.url);
 /** The end-of-run hook is registered once per process, whatever registers later. */
 let teardownHooked = false;
 
+/**
+ * After the last test: close the window and drop its pending timers (the window's and the
+ * virtual clock's), so a forgotten interval cannot keep the process alive, as the Vitest
+ * environment's teardown does. The globals stay: work the tests left behind (a React root nobody
+ * unmounted renders from a setImmediate) would otherwise throw `window is not defined` after the
+ * run, which node:test reports as a failure of the file.
+ */
+function endOfRun(): void {
+  current?.close();
+}
+
 /** Under `node --test` (child processes, or --test-isolation=none in the runner's process). */
 function underNodeTest(): boolean {
   return process.env.NODE_TEST_CONTEXT !== undefined || process.execArgv.some((arg) => arg === "--test" || arg.startsWith("--test-"));
@@ -153,7 +171,7 @@ function installTestHooks(): (() => void) | null {
       try {
         // A preload's afterAll runs once, after every file (https://bun.com/docs/test/lifecycle).
         // Outside `bun test` it throws: nothing to hook.
-        (require("bun:test") as typeof import("node:test") & { afterAll(fn: () => void): void }).afterAll(() => unregister());
+        (require("bun:test") as typeof import("node:test") & { afterAll(fn: () => void): void }).afterAll(endOfRun);
         teardownHooked = true;
       } catch {}
     }
@@ -165,7 +183,7 @@ function installTestHooks(): (() => void) | null {
   // process (one file by default; all of them with --test-isolation=none).
   // https://nodejs.org/api/test.html#afterfn-options
   if (!teardownHooked) {
-    nodeTest.after(() => unregister());
+    nodeTest.after(endOfRun);
     teardownHooked = true;
   }
   const globals: Record<string, unknown> = {

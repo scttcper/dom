@@ -74,8 +74,8 @@ describe("register(options) / unregister() — https://html.spec.whatwg.org/#the
   });
 });
 
-function run(cmd: string, args: string[], cwd: string, env: Record<string, string> = {}) {
-  const result = spawnSync(cmd, args, { cwd, encoding: "utf8", env: { ...process.env, ...env, NODE_OPTIONS: "" } });
+function run(cmd: string, args: string[], cwd: string, env: Record<string, string> = {}, timeout?: number) {
+  const result = spawnSync(cmd, args, { cwd, encoding: "utf8", timeout, env: { ...process.env, ...env, NODE_OPTIONS: "" } });
   return { status: result.status, output: `${result.stdout}${result.stderr}`, error: result.error };
 }
 
@@ -101,6 +101,12 @@ describe("node:test — https://nodejs.org/api/test.html", () => {
   test("--test-isolation=none: every file shares the one registration", () => {
     const { status, output } = run(process.execPath, ["--import", "@rtd/register", "--test", "--test-isolation=none", "node/signup.test.ts", "node/per-file.test.ts"], fixtures);
     expect(output).toMatch(/ℹ pass 5/);
+    expect(status, output).toBe(0);
+  });
+
+  test("after the last test the window closes and its timers are dropped, so a leftover interval does not keep the process alive", () => {
+    const { status, output, error } = run(process.execPath, ["--import", "@rtd/register", "--test", "node/interval.test.ts"], fixtures, {}, 10_000);
+    expect(error).toBeUndefined();
     expect(status, output).toBe(0);
   });
 
