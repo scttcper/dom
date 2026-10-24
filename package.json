@@ -16,6 +16,7 @@
     "scriptc:check": "pnpm --filter @rtd/native run check",
     "build": "node scripts/build.ts",
     "docs:compat": "node scripts/compat-doc.ts",
+    "docs:spec": "node scripts/spec-coverage.ts",
     "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
     "bench:compare": "node bench/compare.ts",
     "compare": "node comparison/run.ts",
