@@ -461,11 +461,127 @@ const churn: Workload = {
   },
 };
 
+/**
+ * A CSS-in-JS style sheet like the ones Emotion / styled-components / MUI inject into test
+ * documents: one or two hashed classes per component, :hover/:focus variants, descendant and
+ * child rules scoped under component classes, a few global tag / universal / attribute rules.
+ * `n` component classes → about 6n rules.
+ */
+function cssInJsSheet(n: number): string {
+  const rules = [
+    "*, *::before, *::after { box-sizing: border-box; }",
+    "html { font-size: 16px; } body { margin: 0; font-family: sans-serif; }",
+    "[hidden] { display: none !important; }",
+    "button { cursor: pointer; } input, textarea { font: inherit; }",
+    "form > fieldset { border: 0; } fieldset legend { font-weight: 600; }",
+    ".app .toolbar button.primary { color: white; }",
+    "ul li + li { margin-top: 4px; }",
+  ];
+  for (let i = 0; i < n; i++) {
+    rules.push(
+      `.css-${i} { display: flex; padding: ${i % 8}px; color: rgb(${i % 255}, 10, 20); }`,
+      `.css-${i}:hover { color: blue; }`,
+      `.css-${i}:focus-visible { outline: 2px solid; }`,
+      `.css-${i} > label { font-weight: ${i % 2 ? 400 : 500}; }`,
+      `.css-${i} .hint, .theme-dark .css-${i} input { opacity: 0.8; }`,
+      `.panel .css-${i} input[type="text"] { border-color: gray; }`,
+    );
+  }
+  return rules.join("\n");
+}
+
+/** 40-field styled form under a CSS-in-JS sheet: mount + 3 rerenders with role queries. */
+function styledFormWorkload(): Workload {
+  const n = 40;
+  return {
+    id: "react/styled-form-rerender",
+    title: "40-field form under a 1,200-rule CSS-in-JS sheet: mount + 3 rerenders with queries",
+    kind: "react",
+    iterations: 10,
+    warmup: 3,
+    setup(env) {
+      const { React, rtl, dom, document } = env;
+      const h = React.createElement;
+      const style = document.createElement("style");
+      style.textContent = cssInJsSheet(200);
+      document.head.append(style);
+      const probe = [0, Math.floor(n / 2), n - 1];
+      function StyledForm({ revision }: { revision: number }) {
+        const fields = [];
+        for (let i = 0; i < n; i++) {
+          fields.push(
+            h(
+              "div",
+              { key: i, className: `css-${i} field` },
+              h("label", { htmlFor: `s-${i}`, className: `css-${100 + (i % 50)}` }, `Field ${i}`),
+              h("input", { id: `s-${i}`, className: `css-${150 + (i % 50)}`, readOnly: true, value: `v${revision}-${i}` }),
+              i % 5 === 0 ? h("span", { className: "hint" }, `Hint for field ${i}`) : null,
+            ),
+          );
+        }
+        return h(
+          "div",
+          { className: "app css-199" },
+          h("div", { className: "toolbar css-198" }, h("button", { type: "button", className: "primary css-197" }, "New")),
+          h("div", { className: "panel css-196", hidden: revision % 2 === 1 }, h("button", { type: "button" }, "Hidden action")),
+          h(
+            "form",
+            { "aria-label": "Styled form", className: "css-195" },
+            h("h2", { className: "css-194" }, `Revision ${revision}`),
+            h("fieldset", { className: "css-193" }, h("legend", null, "Fields"), fields),
+            h("button", { type: "submit", className: "css-192" }, "Submit"),
+          ),
+        );
+      }
+      let view: any;
+      let values: string[] = [];
+      return {
+        beforeEach() {
+          values = [];
+        },
+        run() {
+          view = rtl.render(h(StyledForm, { revision: 0 }));
+          for (let revision = 0; revision < 4; revision++) {
+            if (revision > 0) view.rerender(h(StyledForm, { revision }));
+            dom.getByRole(view.container, "heading", { name: `Revision ${revision}` });
+            for (const i of probe) {
+              values.push(dom.getByRole(view.container, "textbox", { name: `Field ${i}` }).value);
+            }
+            dom.getByRole(view.container, "button", { name: "Submit" });
+            values.push(String(dom.queryAllByRole(view.container, "button").length));
+          }
+        },
+        verify() {
+          eq(values.length, 16, "queried values");
+          for (let revision = 0; revision < 4; revision++) {
+            for (let k = 0; k < probe.length; k++) {
+              eq(values[revision * 4 + k], `v${revision}-${probe[k]}`, "rerendered value");
+            }
+            // The hidden panel's button is excluded on odd revisions.
+            eq(values[revision * 4 + 3], revision % 2 === 1 ? "2" : "3", "visible buttons");
+          }
+          eq(env.window.getComputedStyle(view.container.querySelector(".css-0")).display, "flex", "class rule");
+          eq(env.window.getComputedStyle(view.container.querySelector("label")).fontWeight, "500", "child rule");
+        },
+        afterEach() {
+          view?.unmount();
+          view?.container.remove();
+          view = null;
+        },
+        close() {
+          style.remove();
+        },
+      };
+    },
+  };
+}
+
 export const reactWorkloads: Workload[] = [
   formWorkload(false),
   formWorkload(true),
   bigFormWorkload(20),
   bigFormWorkload(100),
+  styledFormWorkload(),
   keyedList,
   textQueries,
   asyncFlows,

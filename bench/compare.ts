@@ -61,7 +61,10 @@ const PLAN: Array<[workload: string, config: string]> = [
     "react/text-queries",
     "react/findby-waitfor",
     "react/mount-unmount-churn",
+    "react/styled-form-rerender",
   ].map((w): [string, string] => [w, "rtd"]),
+  // The stock Testing Library path (getComputedStyle per element and ancestor) under author styles.
+  ["react/styled-form-rerender", "rtd-dom"],
   ...[
     "dom/create-4k",
     "dom/build-1000-rows",
@@ -70,6 +73,7 @@ const PLAN: Array<[workload: string, config: string]> = [
     "dom/innerhtml-250",
     "dom/selector-warm",
     "dom/mutation-query",
+    "dom/role-selector-query",
     "dom/event-propagation-30",
     "dom/mutation-observer-50",
     "dom/window-churn",

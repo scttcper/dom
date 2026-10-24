@@ -264,6 +264,48 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    // Stock Testing Library's getByRole runs `querySelectorAll(makeRoleSelector(role))` (an
+    // explicit-role item plus the role's implicit tags) after every render; app code and older
+    // tests use `#id descendant` queries.
+    id: "dom/role-selector-query",
+    title: "Attribute mutation + role selector lists and #id-rooted queries, 250 rows",
+    kind: "dom",
+    iterations: 100,
+    warmup: 20,
+    setup({ document }) {
+      const container = document.createElement("main");
+      container.innerHTML =
+        Array.from(
+          { length: 250 },
+          (_, i) => `<div class="row"><h3>Row ${i}</h3><label>Name ${i}<input type="text"></label><button type="button">Edit</button>${i % 10 === 0 ? `<div role="button">More</div>` : ""}</div>`,
+        ).join("") + `<section id="panel"><ul>${"<li><a href='#'>x</a></li>".repeat(20)}</ul></section>`;
+      document.body.append(container);
+      const target = container.lastElementChild;
+      return {
+        run() {
+          let n = 0;
+          for (let k = 0; k < 5; k++) {
+            target.toggleAttribute("data-dirty");
+            n +=
+              container.querySelectorAll('*[role~="button"],button,input').length +
+              container.querySelectorAll('*[role~="textbox"],input,textarea').length +
+              container.querySelectorAll('*[role~="heading"],h1,h2,h3,h4,h5,h6').length +
+              container.querySelectorAll("#panel li > a").length +
+              container.querySelectorAll("#missing li").length;
+          }
+          return n;
+        },
+        verify(n) {
+          // Per round: 250 buttons + 25 [role=button] + 250 inputs; 250 inputs; 250 h3; 20 links.
+          eq(n, 5 * (525 + 250 + 250 + 20), "match count");
+        },
+        close() {
+          container.remove();
+        },
+      };
+    },
+  },
+  {
     id: "dom/event-propagation-30",
     title: "Event propagation, capture + bubble, 30 levels (10 dispatches)",
     kind: "dom",
