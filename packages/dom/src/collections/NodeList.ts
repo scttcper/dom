@@ -29,6 +29,13 @@
 //
 // Internal state lives in private fields so `Object.keys(list)` is just the indices (jest's
 // `equals` and pretty-format enumerate own keys).
+//
+// Measured and dropped (2026-10-24, comparison page, 612 `li` matches): static lists as views of
+// the selector cache's array with prototype index getters (mode 2) make querySelectorAll O(1)
+// and Array.from(qsa('li')) 9.1 → 5.8 µs, but `list[i]` loops go 4.4 → 31.6 µs and
+// qsa().forEach 14.3 → 34.2 µs (Array.prototype.forEach reads indices), and Object.keys and
+// two WPT length-tampering tests break. Keeping own properties and iterating the cached array
+// instead gains nothing (9.4 µs): the per-step next() result dominates, not where items live.
 
 import { F_CHILD_LIST } from "../nodes/constants.ts";
 import type { Node } from "../nodes/Node.ts";
