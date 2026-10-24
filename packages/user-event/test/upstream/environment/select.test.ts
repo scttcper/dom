@@ -19,9 +19,8 @@ test('`Selection.setBaseAndExtent()` resets input selection in browser', async (
   expect(element.selectionStart).toBe(isJsdomEnv() || isRtdEnv() ? 3 : 0)
 })
 
-// divergence: @rtd/dom does not fire `select` from setSelectionRange() yet.
-// TODO(html-forms): queue `select` per https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
-test.skipIf(isRtdEnv())('events are not dispatched on same microtask in browser', async () => {
+// @rtd/dom queues `select` per https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
+test('events are not dispatched on same microtask in browser', async () => {
   const {element} = render<HTMLInputElement>(`<input value="foo"/>`)
   const onSelect = vi.fn()
   element.addEventListener('select', onSelect)

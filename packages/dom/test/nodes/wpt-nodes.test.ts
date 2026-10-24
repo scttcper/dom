@@ -79,9 +79,11 @@ defineWPT(
   "document.write() into a cloned document with declarative shadow roots (parser/html area: no 'allow declarative shadow roots' flag)",
 );
 // Not registered: Document-base-url-not-live / Document-cloneNode-about-base-url* /
-// Document-cloneNode-srcdoc-base-url (about:blank/srcdoc iframes inheriting their creator's base
-// URL: TODO(window) sets Document[$aboutBase]); Node-appendChild-cereactions-vs-script (script
-// execution); Document-createEvent-touchevent (events area).
+// Document-cloneNode-srcdoc-base-url (about:blank/srcdoc iframes snapshot their creator's base URL
+// now, https://html.spec.whatwg.org/#concept-document-about-base-url, pinned in
+// test/window/iframe.test.ts; these files still time out in the harness waiting on the iframes'
+// load events); Node-appendChild-cereactions-vs-script (script execution);
+// Document-createEvent-touchevent (events area).
 
 // moveBefore (https://dom.spec.whatwg.org/#move): the subset that does not need layout,
 // animations, iframes or the html agent's moving steps.
