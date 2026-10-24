@@ -51,6 +51,13 @@ Per file: `// @vitest-environment ctrl-dom`. Options go under the environment's 
 `environmentOptions: { "ctrl-dom": { url: "http://localhost:3000/", width: 1280 } }`, or
 `ctrlDom({ url, width })` with the plugin.
 
+The plugin also tunes the Node flags of Vitest's workers, since the default pool starts one per
+test file: with its Testing Library it turns the compile cache on as each worker starts (not only
+for the DOM), and in the `forks`/`vmForks` pools it starts V8's young generation at 16 MB
+(`--min-semi-space-size=16`), which skips most of the garbage collections a short-lived worker
+does while loading modules (~13 MB more RSS per worker). A semi-space size in your own `execArgv`
+wins.
+
 ## Jest
 
 ```sh
@@ -230,7 +237,7 @@ Jest):
 | `timeSkip` | `true` | skip idle time on a virtual clock; `false` keeps real-time timers. `CTRL_DOM_TIME_SKIP=0/1` overrides |
 | `compat` | `"jsdom-30"` (Vitest), `"jsdom-26"` (Jest) | which APIs beyond jsdom's are exposed: see below |
 | `layout` | off | `"lite"`: an approximate box model for geometry (`getBoundingClientRect`, `offset*`, `client*`, `scroll*`, ResizeObserver), so virtualizers (TanStack Virtual, react-window) and positioning libraries work without hand-written mocks. Off, geometry is zeros as in jsdom. Details: the repository's `docs/layout.md` |
-| `compileCache` (Vitest) | `true` with the plugin's Testing Library, else `false` | enable Node's compile cache before importing the DOM, for every worker after the first. It stays on for everything the worker loads, which only pays off for large files (stock Testing Library's many small ones load slower). `CTRL_DOM_COMPILE_CACHE=0/1` overrides |
+| `compileCache` (Vitest) | `true` with the plugin's Testing Library, else `false` | enable Node's compile cache before importing the DOM (with the plugin: as each worker starts), for every worker after the first. It stays on for everything the worker loads, which only pays off for large files (stock Testing Library's many small ones load slower). `CTRL_DOM_COMPILE_CACHE=0/1` overrides |
 | `nodeFetch` (Jest) | `false` | keep Node's `fetch`/`Request`/`Response` (absent under jest-environment-jsdom) |
 
 ## Compat profiles

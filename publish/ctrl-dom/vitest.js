@@ -20,6 +20,42 @@ const TESTING_LIBRARY = [
 ];
 
 /**
+ * Turns on Node's compile cache as the worker process starts, before Vitest's own worker modules
+ * load, rather than at environment setup (CtrlDomEnvironmentOptions.compileCache): Vitest's
+ * runner, chai and the module runner then load from it too. A `data:` URL, so there is no file to
+ * resolve. Node ignores it under NODE_DISABLE_COMPILE_CACHE (Vitest's v8 coverage sets that).
+ */
+const COMPILE_CACHE_IMPORT = '--import=data:text/javascript,import{enableCompileCache}from"node:module";enableCompileCache?.()';
+
+/**
+ * Young generation size for forked workers. A worker lives for one test file (Vitest's default
+ * isolation), and almost everything it allocates while loading modules and rendering survives
+ * only briefly: starting the semi-spaces at 16 MB instead of growing them from 1 MB skips most
+ * scavenges. comparison/'s 100-file suite (bench/README.md, "Worker startup"): −7% to −9% worker
+ * CPU, +13 MB RSS per worker.
+ */
+const SEMI_SPACE = "--min-semi-space-size=16";
+
+/** Pools whose workers are child processes: V8 flags in `execArgv` are invalid for worker threads. */
+const PROCESS_POOLS = new Set(["forks", "vmForks"]);
+
+/**
+ * The Node flags the plugin adds to a project's workers (exported for comparison/, which mirrors
+ * the plugin's setup without loading Vitest's config machinery).
+ * @param {{ pool?: unknown, execArgv?: readonly string[], compileCache?: boolean }} project
+ * @returns {string[]}
+ */
+export function workerExecArgv({ pool = "forks", execArgv = [], compileCache = false }) {
+  const flags = [];
+  // The same override as the environment's own compileCache option.
+  const env = process.env.CTRL_DOM_COMPILE_CACHE ?? process.env.RTD_COMPILE_CACHE;
+  if (env === "1" || (env !== "0" && compileCache)) flags.push(COMPILE_CACHE_IMPORT);
+  // A semi-space size the user chose wins.
+  if (PROCESS_POOLS.has(pool) && !execArgv.some((arg) => /^--(min|max)-semi-space-size\b/.test(arg))) flags.push(SEMI_SPACE);
+  return flags;
+}
+
+/**
  * @param {import("./vitest.d.ts").CtrlDomPluginOptions} [options]
  * @returns {import("vitest/config").Plugin}
  */
@@ -45,6 +81,13 @@ export function ctrlDom(options = {}) {
           ...(agentMode ? { setupFiles: [failureSnapshot] } : {}),
         },
       };
+    },
+    // Worker flags depend on the resolved pool (a CLI `--pool` included), known only here.
+    configureVitest({ project }) {
+      const config = project.config;
+      if (config.browser?.enabled) return;
+      const flags = workerExecArgv({ pool: config.pool, execArgv: config.execArgv, compileCache: environmentOptions.compileCache === true });
+      if (flags.length > 0) config.execArgv = [...(config.execArgv ?? []), ...flags];
     },
   };
 }

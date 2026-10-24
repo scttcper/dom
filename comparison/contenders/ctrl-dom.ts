@@ -13,6 +13,7 @@ import { existsSync, statSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { distMapEnv, workspacePackages, repoRoot } from "../../bench/lib/packages.ts";
+import { workerExecArgv } from "../../publish/ctrl-dom/vitest.js";
 import type { Contender } from "./types.ts";
 
 const dist = new Map(workspacePackages().flatMap((p) => p.exports.map((e) => [e.specifier, e.dist] as const)));
@@ -76,8 +77,11 @@ export const ctrlDomStack: Contender = {
   preload,
   env,
   external,
-  // What `ctrlDom()` (@ctrl/dom/vitest) configures when it routes Testing Library to @ctrl/dom.
+  // What `ctrlDom()` (@ctrl/dom/vitest) configures when it routes Testing Library to @ctrl/dom:
+  // the compile cache, and its worker flags for Vitest's default (forks) pool.
   environmentOptions: { "ctrl-dom": { compileCache: true } },
+  // COMPARE_WORKER_FLAGS=0 leaves them out (to measure what they buy).
+  execArgv: process.env.COMPARE_WORKER_FLAGS === "0" ? [] : workerExecArgv({ pool: "forks", compileCache: true }),
   alias: [
     { find: /^@testing-library\/react$/, replacement: bundle("@rtd/react") },
     { find: /^@testing-library\/dom$/, replacement: bundle("@rtd/testing-library") },

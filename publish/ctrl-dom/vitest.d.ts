@@ -24,4 +24,11 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
 /** @ctrl/dom's Vitest environment plus (by default) the Testing Library aliases. */
 export declare function ctrlDom(options?: CtrlDomPluginOptions): Plugin;
 
+/**
+ * @internal The Node flags `ctrlDom()` adds to a project's worker `execArgv` for its resolved
+ * pool: the compile cache from process start (with `compileCache`), and a 16 MB young generation
+ * in forked workers unless `execArgv` already sets a semi-space size.
+ */
+export declare function workerExecArgv(project: { pool?: unknown; execArgv?: readonly string[]; compileCache?: boolean }): string[];
+
 export default ctrlDom;

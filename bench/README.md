@@ -206,6 +206,43 @@ So it is not shipped: the saving is the bundle's evaluation (~4 ms), which deser
 mostly costs again, and the large per-file costs (Node's own boot, Vitest's worker modules,
 undici, test-file imports) are outside what a DOM snapshot can hold.
 
+### Worker flags (`ctrlDom()`)
+
+What did pay is how the worker process itself runs. Self time per worker, aggregated over the
+100 profiles: Node's module loader (resolution + compilation) ~31 ms, @rtd/dom ~17 ms (import and
+test work), Vitest's own modules ~12 ms, react-dom ~10 ms, undici ~5 ms, GC ~4.4 ms (profiler
+inflated, but the proportions hold). Two flags, measured on comparison/'s suite (whole stack,
+3 workers, 9 interleaved runs each; `COMPARE_WORKER_FLAGS=0` / `COMPARE_EXEC_ARGV` select them):
+
+| flags | worker CPU per file | CPU over the run | wall | worker RSS |
+| --- | ---: | ---: | ---: | ---: |
+| none | 201.6 ms [184.5–232.3] | 21.27 s [19.83–24.45] | 5.94 s [5.54–7.09] | 108.5 MB |
+| compile cache from start | 197.6 ms [156.9–207.9] | 20.87 s [16.50–22.13] | 5.86 s [4.55–6.41] | 108.9 MB |
+| `--min-semi-space-size=16` | 186.1 ms [148.0–207.8] | 19.76 s [15.69–21.88] | 5.87 s [4.67–6.56] | 121.2 MB |
+| both (what `ctrlDom()` adds) | 187.0 ms [145.3–222.2] | 19.86 s [15.50–23.41] | 5.93 s [4.54–7.60] | 121.7 MB |
+
+Worker CPU per file is `process.cpuUsage()` at the end of the file (lib/suite-setup.ts), the
+least load-sensitive number here; the machine was saturated by other jobs (load ~10 on 14
+cores), which is why wall time did not move. An earlier run of the same comparison measured
+CPU over the run 18.24 → 16.67 s (young generation), 17.22 s (compile cache from start), 16.13 s
+(both). `pnpm compare --only startup,suite` afterwards (4 workers, 3 runs) against the run before
+the change: whole stack 3.92 → 3.73 s wall (ctrl-dom with stock Testing Library, unchanged, went
+7.00 → 6.78 s in the same runs, so ~2% of that is the machine), cold start 56.1 → 53.2 ms.
+
+- **Compile cache from process start.** With @ctrl/dom's Testing Library the environment already
+  enables Node's compile cache before importing the DOM; enabling it as the worker starts (an
+  `--import=data:` preload) also caches Vitest's runner, chai and the module runner, which every
+  worker loads before the environment.
+- **`--min-semi-space-size=16`.** A worker lives for one file and most of what it allocates while
+  loading modules and rendering dies young; starting the young generation at 16 MB instead of
+  growing it from 1 MB skips most scavenges. Only for forked pools (`forks`, `vmForks`): worker
+  threads reject V8 flags in `execArgv`.
+
+The plugin adds both in `configureVitest`, where the resolved pool (CLI `--pool` included) is
+known; `testingLibrary: false` gets only the young generation (the compile cache stays off for
+stock Testing Library, see `compileCache`). comparison/'s `ctrl-dom-stack` contender mirrors it
+(`workerExecArgv` from publish/ctrl-dom/vitest.js).
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`rtd` for React
