@@ -51,6 +51,7 @@ const fullMapper = full
       ...Object.assign({}, ...shims.map(s => SHIM_MAP[s])),
       // Our bundles' own cross-package imports (one module instance each).
       '^@rtd/testing-library$': pkg('testing-library/dist/index.cjs'),
+      '^@rtd/testing-library/agent$': pkg('testing-library/dist/agent.cjs'),
       '^@rtd/aria$': pkg('aria/dist/index.cjs'),
       '^@rtd/aria/internal$': pkg('aria/dist/internal.cjs'),
     }
