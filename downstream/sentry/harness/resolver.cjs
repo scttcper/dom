@@ -1,4 +1,4 @@
-// Jest resolver for the Sentry downstream corpus. Delegates to upstream's own
+// Jest resolver for the Sentry downstream suite. Delegates to upstream's own
 // tests/js/jestWorkspaceResolver.cjs for everything, except:
 //   - bare react / react-dom / scheduler imports made *from our packages* (packages/*/dist) are
 //     resolved as if imported from Sentry's tests/js workspace, so there is exactly one React;

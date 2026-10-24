@@ -1,4 +1,4 @@
-// Wrapper Jest config for the Sentry downstream corpus (driven by downstream/sentry/run.ts).
+// Wrapper Jest config for the Sentry downstream suite (driven by downstream/sentry/run.ts).
 // Imports upstream's own root config (tests/js/createJestConfig.ts via jest.config.mjs) unchanged
 // and only substitutes, per mode:
 //

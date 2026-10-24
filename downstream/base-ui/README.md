@@ -1,4 +1,4 @@
-# Base UI downstream corpus
+# Base UI downstream suite
 
 Runs the **unmodified** upstream [`mui/base-ui`](https://github.com/mui/base-ui) `@base-ui/react`
 Vitest suite (≈7k tests, real-world React components exercised through `@mui/internal-test-utils`,
@@ -79,12 +79,12 @@ minimal fallback installer for when that is unavailable.
 
 ## Caveats
 
-- **userAgent contains "jsdom"** (`Mozilla/5.0 (darwin) rtd-dom (jsdom-compatible headless corpus)`).
+- **userAgent contains "jsdom"** (`Mozilla/5.0 (darwin) rtd-dom (jsdom-compatible headless)`).
   Base UI and `@mui/internal-test-utils` branch on `/jsdom/.test(navigator.userAgent)` to skip
   tests that need real layout and to install a `setTimeout`-based requestAnimationFrame
   (`test/setupVitest.ts`). With this UA both engines run exactly the same tests and branches; the
-  runner checks identical discovered/skipped sets. This is a jsdom-replacement corpus, not a
-  claim of browser-grade layout.
+  runner checks identical discovered/skipped sets. It measures jsdom replacement, not a claim of
+  browser-grade layout.
 - Some upstream jsdom-only tests pin jsdom quirks rather than standards (e.g.
   `getViewportRect` expects `window.visualViewport === undefined`); those are listed in
   `TRIAGE.md` as fixture assumptions, not bugs.

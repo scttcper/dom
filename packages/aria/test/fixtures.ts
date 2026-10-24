@@ -1,4 +1,4 @@
-// Differential fixture corpus: markup evaluated by the upstream oracle on jsdom and by
+// Differential fixtures: markup evaluated by the upstream oracle on jsdom and by
 // @rtd/aria on @rtd/dom. Markup is written fully explicit (tbody, closing tags, no
 // self-closing non-void elements) so both parsers build identical trees.
 
@@ -282,7 +282,7 @@ fixtures.push(
   },
 );
 
-// Combinatorial corpus: every element name aria-query / dom-accessibility-api know about,
+// Combinatorial fixtures: every element name aria-query / dom-accessibility-api know about,
 // crossed with the attributes their role tables branch on.
 const TAGS = [
   "a", "abbr", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "blockquote", "button",

@@ -79,18 +79,9 @@ Workspace packages (internal names; each is one subpath of `@ctrl/dom` or one en
 - Differential forms suite against jsdom (`tests/compat`): 701/701, with spec-pinned
   corrections where jsdom is wrong; React form scenarios pass in all three modes.
 - Stock jest-dom on `@ctrl/dom` (environment swap only): every non-skipped test passes.
-- Real-world corpus: the unmodified Base UI test suite (`downstream/base-ui`, mui/base-ui
-  `205831c`), with only the environment swapped (`rtd-dom`) or the whole Testing Library stack
-  aliased to ours (`rtd-full`; the downstream runners' mode names use the workspace name):
-
-  | mode | passed / 9,199 | wall | peak RSS |
-  | --- | ---: | ---: | ---: |
-  | jsdom (upstream baseline) | 9,199 | 81.5 s | 506 MiB |
-  | rtd-dom | 9,197 | 58.8 s | 394 MiB |
-  | rtd-full | 9,197 | 54.3 s | 390 MiB |
-
-  The 2 remaining failures are an upstream timing race that only appears when rendering takes
-  under 1 ms (see `downstream/base-ui/TRIAGE.md`); everything else matches jsdom.
+- Real-world suites: seven projects' own unmodified test suites (Base UI, Radix, React Aria,
+  Sentry, TanStack Query, React Hook Form, React Router), each run on jsdom, on our environment and
+  on our whole stack: see [Tested against](#tested-against) below.
 
 ### Tested against
 

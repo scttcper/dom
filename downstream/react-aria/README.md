@@ -1,4 +1,4 @@
-# React Aria downstream corpus
+# React Aria downstream suite
 
 Runs the **unmodified** upstream [`adobe/react-spectrum`](https://github.com/adobe/react-spectrum)
 Jest suite for `react-aria` (hooks, incl. the former `@react-aria/*` packages, whose tests now live

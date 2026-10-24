@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Base UI downstream corpus: run the unmodified upstream `@base-ui/react` Vitest suite on
+// Base UI downstream suite: run the unmodified upstream `@base-ui/react` Vitest suite on
 //   jsdom     upstream baseline, unchanged
 //   rtd-dom   only the DOM environment swapped to @rtd/dom (stock Testing Library from upstream's lockfile)
 //   rtd-full  @rtd/dom + our Testing Library shims (@testing-library/{react,dom,user-event,jest-dom})

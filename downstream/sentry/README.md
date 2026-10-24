@@ -1,4 +1,4 @@
-# Sentry downstream corpus
+# Sentry downstream suite
 
 Runs [getsentry/sentry](https://github.com/getsentry/sentry)'s real frontend **Jest** suite
 (unmodified specs, upstream `tests/js/setup.ts` + `setupFramework.ts` + `getsentry-test/setup`,

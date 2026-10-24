@@ -1,6 +1,6 @@
 # Base UI downstream triage
 
-Corpus: `mui/base-ui` @ `205831caa12125f8e81f1af02a013239b27d752a`, `@base-ui/react` project, full
+Suite: `mui/base-ui` @ `205831caa12125f8e81f1af02a013239b27d752a`, `@base-ui/react` project, full
 suite (`--preset all`, 354 files, 10,777 tests, 1,578 skipped identically in every mode). Run:
 2026-10-23, report `results/2026-10-23-all.md`.
 
@@ -157,7 +157,7 @@ before `trigger.focus()` in that test.
 
 - No differences in failures between rtd-dom and rtd-full apart from cluster 5: our Testing
   Library, React, and jest-dom shims are behaviorally equivalent to the stock packages on this
-  corpus.
+  suite.
 - Harness check: one React instance (resolution receipts), one `@rtd/dom` instance per worker
   (`globalThis.Node === (await import('@rtd/dom')).Node`), and every `@testing-library/*`
   specifier (including those imported by `@mui/internal-test-utils`) resolved to our packages in

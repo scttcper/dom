@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Sentry downstream corpus: run getsentry/sentry's real frontend Jest suite (unmodified specs,
+// Sentry downstream suite: run getsentry/sentry's real frontend Jest suite (unmodified specs,
 // upstream setup, upstream Jest/SWC/resolver) on
 //   jsdom        upstream exactly as configured (@sentry/jest-environment/jsdom + its hacks)
 //   rtd-dom      testEnvironment -> jest-environment-rtd; stock Testing Library

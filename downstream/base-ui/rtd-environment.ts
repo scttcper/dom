@@ -18,12 +18,12 @@
 // to skip tests that need real layout and to install a headless requestAnimationFrame shim
 // (test/setupVitest.ts). A UA containing "jsdom" makes @rtd/dom exercise exactly the tests and
 // branches the jsdom baseline exercises: no tests, assertions or skip conditions are edited, and
-// the runner verifies identical discovered/skipped counts. This is a jsdom-replacement corpus,
-// not a claim of layout-capable browser behaviour.
+// the runner verifies identical discovered/skipped counts. It measures jsdom replacement, not a
+// claim of layout-capable browser behaviour.
 
 import * as dom from "../../packages/dom/src/index.ts";
 
-export const RTD_DOWNSTREAM_USER_AGENT = "Mozilla/5.0 (darwin) rtd-dom (jsdom-compatible headless corpus)";
+export const RTD_DOWNSTREAM_USER_AGENT = "Mozilla/5.0 (darwin) rtd-dom (jsdom-compatible headless)";
 
 interface EnvironmentOptions {
   rtd?: Record<string, unknown>;

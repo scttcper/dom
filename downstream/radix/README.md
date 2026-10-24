@@ -1,4 +1,4 @@
-# Radix Primitives downstream corpus
+# Radix Primitives downstream suite
 
 Runs the unmodified upstream [`radix-ui/primitives`](https://github.com/radix-ui/primitives) Vitest
 `unit` project (47 files, 1,143 tests: dialogs, menus, select, slider, toast, form, focus scope,

@@ -1,6 +1,6 @@
 # Radix Primitives downstream triage
 
-Corpus: `radix-ui/primitives` @ `eb3a2b7091293e27df8f9ba906632d8daa3d81a3`, `unit` project, full
+Suite: `radix-ui/primitives` @ `eb3a2b7091293e27df8f9ba906632d8daa3d81a3`, `unit` project, full
 suite (`--preset all`, 47 files, 1,143 tests, 9 skipped/todo identically in every mode, retry 0).
 Run: 2026-10-23, `--workers 4 --rounds 3` (modes interleaved, medians; wall range in
 parentheses), report `results/2026-10-23-all.md`. No test changed status between rounds.

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// React Aria downstream corpus: run the unmodified upstream adobe/react-spectrum Jest suite for
+// React Aria downstream suite: run the unmodified upstream adobe/react-spectrum Jest suite for
 // `react-aria` and `react-aria-components` on
 //   jsdom     upstream baseline (jest-environment-jsdom, upstream's config unchanged)
 //   rtd-dom   testEnvironment swapped to jest-environment-rtd (stock Testing Library from upstream's lockfile)

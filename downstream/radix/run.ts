@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Radix Primitives downstream corpus: run the unmodified upstream `radix-ui/primitives` Vitest
+// Radix Primitives downstream suite: run the unmodified upstream `radix-ui/primitives` Vitest
 // `unit` project on
 //   jsdom     upstream baseline, unchanged (Vitest 4 + jsdom 29)
 //   rtd-dom   only the DOM environment swapped to our stock `vitest-environment-rtd`
@@ -74,7 +74,7 @@ const { values } = parseArgs({
     preset: { type: "string", default: "smoke" },
     files: { type: "string" },
     modes: { type: "string", default: MODES.join(",") },
-    // Fixed default (not core-count based) so every mode, and every corpus on a shared machine,
+    // Fixed default (not core-count based) so every mode, and every suite on a shared machine,
     // runs with the same worker count.
     workers: { type: "string", default: String(Math.min(4, availableParallelism())) },
     rounds: { type: "string", default: "1" },
