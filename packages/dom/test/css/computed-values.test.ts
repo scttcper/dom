@@ -119,11 +119,61 @@ describe("defaulting keywords — https://drafts.csswg.org/css-cascade-5/#defaul
     expect(cs("div", "display")).toBe("block");
   });
 
-  test.fails("revert-layer: rolls back to the previous cascade layer, not to the UA origin", () => {
-    // Known gap (docs/deviations.md, CSS): revert-layer behaves like revert (UA origin). Expected:
-    // the value from layer `a` ("red"); currently the inherited/initial color is returned.
+  test("revert-layer: rolls back to the previous cascade layer, not to the UA origin", () => {
     setup(`<style>@layer a { p { color: red } } @layer b { p { color: revert-layer } }</style>`, `<p>x</p>`);
     expect(cs("p", "color")).toBe("red");
+  });
+});
+
+describe("revert-layer — https://drafts.csswg.org/css-cascade-5/#revert-layer", () => {
+  test("the spec example: revert-layer in layer two yields layer one's height, ignoring layer two's other declarations", () => {
+    setup(`<style>@layer one { div { height: 100px } } @layer two { div { height: 200px } div { height: revert-layer } }</style>`, `<div>x</div>`);
+    expect(cs("div", "height")).toBe("100px");
+  });
+
+  test("unlayered declarations roll back to the last layer", () => {
+    setup(`<style>@layer base { p { padding-left: 4px } } p { padding-left: 9px } p.r { padding-left: revert-layer }</style>`, `<p class="r">x</p>`);
+    expect(cs("p", "padding-left")).toBe("4px");
+  });
+
+  test("rolling back repeats while the previous layer's winner is revert-layer too", () => {
+    setup(`<style>@layer a, b, c; @layer a { p { color: green } } @layer b { p { color: revert-layer } } @layer c { p { color: revert-layer } }</style>`, `<p>x</p>`);
+    expect(cs("p", "color")).toBe("green");
+  });
+
+  test("with no lower layer in the author origin it rolls back to the user-agent origin (div display:block)", () => {
+    setup(`<style>@layer a { div { display: flex } } @layer b { div { display: revert-layer } } @layer c { div { padding-left: revert-layer } }</style>`, `<div>x</div>`);
+    expect(cs("div", "display")).toBe("flex");
+    setup(`<style>@layer only { div { display: revert-layer } }</style>`, `<div>x</div>`);
+    expect(cs("div", "display")).toBe("block");
+  });
+
+  test("the current layer is removed at its normal and important levels", () => {
+    setup(`<style>@layer a { p { color: green } } @layer b { p { color: red !important } p { color: revert-layer !important } }</style>`, `<p>x</p>`);
+    expect(cs("p", "color")).toBe("green");
+  });
+
+  test("in the style attribute it only reverts the style attribute (element-attached styles are their own layer)", () => {
+    setup(`<style>@layer a { p { color: green } } p { color: blue }</style>`, `<p style="color: revert-layer">x</p>`);
+    expect(cs("p", "color")).toBe("blue");
+  });
+
+  test("on a shorthand it rolls back each longhand", () => {
+    setup(`<style>@layer a { p { margin: 1px 2px } } @layer b { p { margin: revert-layer } }</style>`, `<p>x</p>`);
+    expect([cs("p", "margin-top"), cs("p", "margin-left")]).toEqual(["1px", "2px"]);
+  });
+
+  test("a var() fallback that substitutes to revert-layer rolls back too (https://drafts.csswg.org/css-variables-2/#substitute-a-var), and so do custom properties", () => {
+    setup(
+      `<style>@layer a { p { color: green; --x: 1px } } @layer b { p { color: var(--unset, revert-layer); --x: revert-layer } }</style>`,
+      `<p>x</p>`,
+    );
+    expect([cs("p", "color"), cs("p", "--x")]).toEqual(["green", "1px"]);
+  });
+
+  test("the rolled-back value is computed like any other (inherit from the previous layer inherits)", () => {
+    setup(`<style>div { padding-left: 6px } @layer a { span { padding-left: inherit } } @layer b { span { padding-left: revert-layer } }</style>`, `<div><span>x</span></div>`);
+    expect(cs("span", "padding-left")).toBe("6px");
   });
 
   test("CSS-wide keywords set on a shorthand apply to every longhand", () => {

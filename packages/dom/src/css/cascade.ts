@@ -647,26 +647,128 @@ function importantOrder(a: Matched, b: Matched): number {
   return b.context - a.context || b.rule.layer - a.rule.layer || a.rule.specificity - b.rule.specificity || a.rule.order - b.rule.order;
 }
 
-function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): StyleRecord {
-  filterFor = null;
-  hashedSeen = 0;
-  const rec = new StyleRecord(el, pseudo);
+/** Author rules matching `el` (or its pseudo-element): its tree's sheets, then its own shadow tree's :host rules. */
+function collectAuthor(el: NodeImpl, pseudo: number, rs: RootStyles | null, styleVersion: number, out: Matched[]): void {
   const doc = el.doc;
-  const rs = rootOf(el);
-  rec.root = rs;
-  const matched: Matched[] = [];
   const pseudoName = pseudo === PSEUDO_NONE ? "" : pseudo === PSEUDO_BEFORE ? "before" : "after";
-  const prevDeps = beginStateDeps();
   if (rs !== null) {
     const idx = ruleIndexFor(rs, doc, styleVersion);
-    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), 1, matched);
+    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), 1, out);
   }
   // The host's own shadow tree styles it (and its ::before/::after) through :host rules.
   const srs = shadowStylesOf(el);
   if (srs !== null) {
     const idx = ruleIndexFor(srs, doc, styleVersion);
-    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, el, 0, matched);
+    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, el, 0, out);
   }
+}
+
+// --- revert-layer ----------------------------------------------------------------------------
+//
+// https://drafts.csswg.org/css-cascade-5/#revert-layer — "the cascaded value is rolled back to
+// the earlier layer, so that the specified value is calculated as if no rules were specified in
+// the current cascade layer—or between its normal and important levels in the cascade—for this
+// property on this element." The cascade keeps only winners (StyleRecord.decls), so the losing
+// declarations are not around: when a winner is `revert-layer` (and only then), the element's
+// author rules are matched again and the winner search for that one property is re-run with the
+// winner's layer excluded, repeating while the new winner is `revert-layer` too. Nothing on the
+// common path changes; the result is memoized with the other computed values.
+//
+// A layer is identified by its context (outer tree vs the host's own shadow tree, which have
+// separate layer orders) and its rank in that tree's layer order; the style attribute is a layer
+// of its own (element-attached declarations: Issue 6743, revert-layer there does not revert author
+// layers). With no author declaration left, the caller rolls back to the UA origin like `revert`
+// ("If there are no lower-precedence declarations in the same cascade origin as the revert-layer
+// value, the cascaded value will roll back to the previous origin").
+
+/** Layer key of the style attribute. */
+const INLINE_LAYER = -1;
+
+function layerKey(m: Matched): number {
+  return m.context * 0x100000 + m.rule.layer;
+}
+
+/** Winner bookkeeping for one property (`winnerIn`). */
+let winValue: string | undefined = undefined;
+let winLayer = 0;
+
+/** The last declaration for `prop` in `block` at `important` (as applyBlock would leave it), recorded with `layer`. */
+function winnerIn(block: DeclBlock, important: boolean, prop: string, layer: number): void {
+  const names = block.names;
+  const imp = block.important;
+  for (let i = 0; i < names.length; i++) {
+    if (imp[i] !== important) continue;
+    const name = names[i];
+    if (name === prop) {
+      winValue = block.values[i];
+      winLayer = layer;
+    } else {
+      const longhands = PENDING_LONGHANDS.get(name);
+      if (longhands !== undefined && longhands.indexOf(prop) !== -1) {
+        winValue = PENDING + name + PENDING + block.values[i];
+        winLayer = layer;
+      }
+    }
+  }
+}
+
+/** The declared value with pending shorthands resolved and var() substituted, for keyword checks. */
+function effectiveValue(rec: StyleRecord, prop: string, v: string): string | null {
+  if (v.charCodeAt(0) === 0) return isCustomPropertyName(prop) ? v : resolvePending(rec, prop, v);
+  if (!isCustomPropertyName(prop) && containsVar(v)) {
+    const r = substitute(v, (n) => customProps(rec)?.get(n) ?? null);
+    return r === null ? null : r.trim();
+  }
+  return v;
+}
+
+/**
+ * The author cascaded value of `prop` once `revert-layer` rolled back every layer it names
+ * (https://drafts.csswg.org/css-cascade-5/#revert-layer), or undefined when no author
+ * declaration remains (the caller then reverts to the UA origin).
+ */
+function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
+  const el = rec.el;
+  const matched: Matched[] = [];
+  filterFor = null;
+  hashedSeen = 0;
+  collectAuthor(el, rec.pseudo, rec.root, currentStyleVersion(el.doc), matched);
+  filterFor = null;
+  matched.sort(normalOrder);
+  const important = matched.slice().sort(importantOrder);
+  const inline = rec.pseudo === PSEUDO_NONE ? inlineBlock(el) : null;
+  const excluded: number[] = [];
+  for (;;) {
+    // https://drafts.csswg.org/css-cascade-5/#cascade-sort, restricted to one property.
+    winValue = undefined;
+    winLayer = 0;
+    for (let i = 0; i < matched.length; i++) {
+      const k = layerKey(matched[i]);
+      if (excluded.indexOf(k) === -1) winnerIn(matched[i].rule.block, false, prop, k);
+    }
+    if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, false, prop, INLINE_LAYER);
+    for (let i = 0; i < important.length; i++) {
+      const k = layerKey(important[i]);
+      if (excluded.indexOf(k) === -1) winnerIn(important[i].rule.block, true, prop, k);
+    }
+    if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, true, prop, INLINE_LAYER);
+    const v = winValue as string | undefined;
+    if (v === undefined) return undefined;
+    const eff = effectiveValue(rec, prop, v);
+    if (eff === null || eff.toLowerCase() !== "revert-layer") return v;
+    excluded.push(winLayer);
+  }
+}
+
+function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): StyleRecord {
+  filterFor = null;
+  hashedSeen = 0;
+  const rec = new StyleRecord(el, pseudo);
+  const rs = rootOf(el);
+  rec.root = rs;
+  const matched: Matched[] = [];
+  const prevDeps = beginStateDeps();
+  collectAuthor(el, pseudo, rs, styleVersion, matched);
   const deps = endStateDeps(prevDeps);
   if (deps !== null) {
     // Keep only dependencies on the element and its ancestors (removing one of those removes the
@@ -777,11 +879,19 @@ function customProps(rec: StyleRecord): Map<string, string> | null {
     const s = state.get(name);
     if (s === 2) return map.get(name) ?? null;
     if (s === 1) return null;
-    const raw = decls!.get(name);
+    let raw = decls!.get(name);
     if (raw === undefined) return map.get(name) ?? null;
     state.set(name, 1);
+    let lower = raw.toLowerCase();
+    if (lower === "revert-layer") {
+      // https://drafts.csswg.org/css-cascade-5/#revert-layer (no author value left: inherit below).
+      const prev = revertLayerValue(rec, name);
+      if (prev !== undefined) {
+        raw = prev;
+        lower = prev.toLowerCase();
+      }
+    }
     let value: string | null = raw;
-    const lower = raw.toLowerCase();
     if (lower === "initial") value = null;
     else if (lower === "inherit" || lower === "unset" || lower === "revert" || lower === "revert-layer") value = inherited?.get(name) ?? null;
     else if (containsVar(raw)) value = substitute(raw, (n) => (decls!.has(n) ? resolve(n) : (map.get(n) ?? null)));
@@ -1054,8 +1164,14 @@ function cascadedToComputed(rec: StyleRecord, prop: string, v: string | undefine
       return initialValue(rec, prop);
     case "unset":
       return inherited ? inheritedValue(rec, prop) : initialValue(rec, prop);
-    case "revert":
     case "revert-layer": {
+      // https://drafts.csswg.org/css-cascade-5/#revert-layer: the previous layer's value, else
+      // the UA origin (below). The rolled-back value is never revert-layer itself.
+      const prev = revertLayerValue(rec, prop);
+      if (prev !== undefined) return cascadedToComputed(rec, prop, prev);
+    }
+    // falls through
+    case "revert": {
       const ua = rec.ua?.get(prop);
       if (ua !== undefined && ua !== "revert" && ua !== "revert-layer") return cascadedToComputed(rec, prop, ua);
       return inherited ? inheritedValue(rec, prop) : initialValue(rec, prop);
@@ -1077,15 +1193,23 @@ function uaDirection(el: NodeImpl): string {
   return "ltr";
 }
 
+/** https://drafts.csswg.org/css-variables-2/#invalid-at-computed-value-time for `display`. */
+function substituteDisplay(rec: StyleRecord, v: string): string {
+  const r = substitute(v, (n) => customProps(rec)?.get(n) ?? null);
+  return r === null || normalizeLonghand("display", r) === null ? "unset" : r.trim();
+}
+
 function computeDisplay(rec: StyleRecord): string {
   if (rec.display !== "") return rec.display;
   let d: string;
   if (rec.displayLocked) d = "none";
   else {
     let v = rec.decls?.get("display");
-    if (v !== undefined && containsVar(v)) {
-      const r = substitute(v, (n) => customProps(rec)?.get(n) ?? null);
-      v = r === null || normalizeLonghand("display", r) === null ? "unset" : r.trim();
+    if (v !== undefined && containsVar(v)) v = substituteDisplay(rec, v);
+    if (v === "revert-layer") {
+      // https://drafts.csswg.org/css-cascade-5/#revert-layer (undefined: back to the UA origin).
+      v = revertLayerValue(rec, "display");
+      if (v !== undefined && containsVar(v)) v = substituteDisplay(rec, v);
     }
     const ua = rec.pseudo === PSEUDO_NONE ? uaDisplay(rec.el) : "inline";
     if (v === undefined || v === "revert" || v === "revert-layer") d = ua;
