@@ -106,7 +106,8 @@ export function report(options: { readme?: boolean } = {}): void {
   const header = (cs: readonly Contender[]) => ["", ...cs.map((c) => `${c.label} ${c.version()}`)];
   const domOf = (c: Contender) => c.sameDomAs ?? c.id;
   const benchValue = (c: Contender, name: string) => bench.get(c.id)?.get(name)?.latency.p50 ?? bench.get(domOf(c))?.get(name)?.latency.p50;
-  const date = new Date().toISOString().slice(0, 10);
+  // The local date (an evening run is not "tomorrow" in UTC).
+  const date = Temporal.Now.plainDateISO().toString();
 
   // ── RESULTS.md ──
   const md: string[] = [

@@ -1,59 +1,59 @@
 # Comparison results
 
-Generated 2026-10-24 by `pnpm compare` (comparison/report.ts) on Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1. How each number is measured: [README.md](README.md).
+Generated 2026-10-23 by `pnpm compare` (comparison/report.ts) on Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1. How each number is measured: [README.md](README.md).
 
 ## `vitest run`, 100 React test files
 
 3 runs per contender, 4 workers, Vitest's default pool (a fresh worker per file): median [min–max] over runs, speedup vs jsdom in parentheses.
 
-|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom e9f3baf+changes | ctrl-dom + its Testing Library e9f3baf+changes |
+|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom d991aa5 | ctrl-dom + its Testing Library d991aa5 |
 | --- | ---: | ---: | ---: | ---: |
-| Wall time | 13.94 s [13.75 s–14.52 s] | 9.08 s (1.5×) [8.66 s–9.61 s] | 7.54 s (1.8×) [7.37 s–7.66 s] | **4.36 s** (3.2×) [4.35 s–4.44 s] |
-| Environment setup per file (Vitest's mean) | 301 ms [297 ms–314 ms] | 143 ms (2.1×) [135 ms–151 ms] | 23.9 ms (13×) [23.5 ms–24.0 ms] | **23.3 ms** (13×) [22.6 ms–23.7 ms] |
-| Worker RSS after a file (median) | 217 MB [216 MB–217 MB] | 128 MB [127 MB–128 MB] | 139 MB [139 MB–139 MB] | **126 MB** [126 MB–127 MB] |
+| Wall time | 13.32 s [13.31 s–13.81 s] | 8.73 s (1.5×) [8.51 s–8.83 s] | 6.07 s (2.2×) [6.03 s–6.18 s] | **3.47 s** (3.8×) [3.45 s–3.57 s] |
+| Environment setup per file (Vitest's mean) | 284 ms [284 ms–293 ms] | 135 ms (2.1×) [132 ms–138 ms] | 31.2 ms (9.1×) [30.9 ms–31.7 ms] | **21.5 ms** (13×) [21.4 ms–21.8 ms] |
+| Worker RSS after a file (median) | 216 MB [216 MB–217 MB] | 127 MB [127 MB–128 MB] | 119 MB [119 MB–119 MB] | **108 MB** [108 MB–108 MB] |
 
 ## Cold start
 
 A fresh process per sample (10 each, interleaved): the environment's `setup()` (importing the DOM included), then the first test (import React and Testing Library, render, `getByRole`). Median [min–max].
 
-|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom e9f3baf+changes | ctrl-dom + its Testing Library e9f3baf+changes |
+|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom d991aa5 | ctrl-dom + its Testing Library d991aa5 |
 | --- | ---: | ---: | ---: | ---: |
-| Environment setup | 290 ms [273 ms–313 ms] | 141 ms (2.1×) [131 ms–157 ms] | **34.7 ms** (8.4×) [32.6 ms–51.4 ms] | 36.6 ms (7.9×) [32.6 ms–39.2 ms] |
-| First test | 91.8 ms [86.6 ms–102 ms] | 56.9 ms (1.6×) [50.1 ms–63.6 ms] | 70.0 ms (1.3×) [66.3 ms–107 ms] | **22.2 ms** (4.1×) [19.5 ms–25.4 ms] |
-| Total | 378 ms [363 ms–413 ms] | 198 ms (1.9×) [181 ms–218 ms] | 104 ms (3.6×) [99.0 ms–158 ms] | **58.8 ms** (6.4×) [52.1 ms–62.4 ms] |
+| Environment setup | 273 ms [263 ms–308 ms] | 132 ms (2.1×) [123 ms–147 ms] | 43.2 ms (6.3×) [41.5 ms–46.5 ms] | **33.5 ms** (8.2×) [32.4 ms–46.0 ms] |
+| First test | 88.5 ms [82.6 ms–103 ms] | 54.7 ms (1.6×) [46.8 ms–64.3 ms] | 61.8 ms (1.4×) [52.3 ms–65.2 ms] | **21.7 ms** (4.1×) [19.7 ms–23.5 ms] |
+| Total | 362 ms [346 ms–411 ms] | 188 ms (1.9×) [170 ms–211 ms] | 105 ms (3.5×) [95.2 ms–110 ms] | **55.2 ms** (6.6×) [53.4 ms–67.7 ms] |
 | Heap after GC | 47 MB [47 MB–47 MB] | 26 MB [26 MB–26 MB] | 19 MB [19 MB–19 MB] | **18 MB** [18 MB–18 MB] |
-| RSS | 222 MB [219 MB–224 MB] | 138 MB [137 MB–140 MB] | 128 MB [126 MB–130 MB] | **120 MB** [118 MB–122 MB] |
+| RSS | 222 MB [220 MB–224 MB] | 137 MB [136 MB–140 MB] | 128 MB [126 MB–130 MB] | **120 MB** [118 MB–122 MB] |
 
 ## Benchmarks: dom.bench.ts
 
 Median time per iteration (Vitest bench, warm; ± relative margin of error at 95%), speedup vs jsdom in parentheses.
 
-|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom e9f3baf+changes |
+|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom d991aa5 |
 | --- | ---: | ---: | ---: |
-| Parse a 220 KB page (body.innerHTML =) | 40.0 ms ±1.3% | 32.5 ms (1.2×) ±2.1% | **2.11 ms** (19×) ±3.8% |
-| Serialize the page (body.innerHTML) | 1.22 ms ±1.4% | 1.84 ms (0.7×) ±1.3% | **558 µs** (2.2×) ±1.2% |
-| querySelectorAll('li') | 67.9 µs ±0.3% | **0.04 µs** (1617×) ±0.3% | 3.37 µs (20×) ±0.3% |
-| querySelectorAll('.card') | 19.9 µs ±0.2% | **0.04 µs** (474×) ±0.7% | 1.04 µs (19×) ±0.2% |
-| querySelectorAll('[aria-label]') | 1.29 ms ±0.9% | **0.08 µs** (15511×) ±0.1% | 2.29 µs (562×) ±0.2% |
-| querySelectorAll('[class~="card"]') | 5.32 ms ±0.7% | **0.08 µs** (64131×) ±0.1% | 1.04 µs (5108×) ±0.2% |
-| querySelectorAll(':nth-child(2n+1)') | 1.91 ms ±0.7% | **0.08 µs** (23065×) ±0.1% | 16.3 µs (118×) ±0.4% |
-| Render 100 custom elements with shadow roots | 4.54 ms ±1.7% | 2.69 ms (1.7×) ±4.9% | **640 µs** (7.1×) ±7.8% |
-| Build a form of 1,000 labelled inputs | 10.8 ms ±1.9% | 15.2 ms (0.7×) ±3.4% | **742 µs** (15×) ±4.0% |
-| Dispatch 10 clicks through 30 ancestors (capture + bubble) | 152 µs ±0.2% | 89.8 µs (1.7×) ±0.3% | **27.6 µs** (5.5×) ±0.4% |
-| getComputedStyle of 100 elements (display, visibility) | 76.6 µs ±1.4% | 21.0 µs (3.6×) ±0.3% | **8.04 µs** (9.5×) ±0.3% |
-| Mutate an attribute, then querySelectorAll('[aria-label]') | 1.37 ms ±0.5% | 752 µs (1.8×) ±3.0% | **60.3 µs** (23×) ±0.3% |
+| Parse a 220 KB page (body.innerHTML =) | 38.2 ms ±0.8% | 32.3 ms (1.2×) ±1.2% | **2.08 ms** (18×) ±4.0% |
+| Serialize the page (body.innerHTML) | 1.14 ms ±1.2% | 1.87 ms (0.6×) ±1.4% | **542 µs** (2.1×) ±1.1% |
+| querySelectorAll('li') | 68.4 µs ±0.3% | **0.04 µs** (1629×) ±0.1% | 3.33 µs (21×) ±0.2% |
+| querySelectorAll('.card') | 20.0 µs ±0.2% | **0.08 µs** (241×) ±0.1% | 1.08 µs (18×) ±0.4% |
+| querySelectorAll('[aria-label]') | 1.28 ms ±0.4% | **0.08 µs** (15392×) ±0.1% | 2.29 µs (557×) ±0.1% |
+| querySelectorAll('[class~="card"]') | 5.50 ms ±0.3% | **0.08 µs** (66319×) ±0.1% | 1.08 µs (5083×) ±0.2% |
+| querySelectorAll(':nth-child(2n+1)') | 1.90 ms ±0.3% | **0.08 µs** (22868×) ±0.1% | 16.3 µs (116×) ±0.2% |
+| Render 100 custom elements with shadow roots | 4.56 ms ±1.2% | 2.56 ms (1.8×) ±4.6% | **705 µs** (6.5×) ±6.1% |
+| Build a form of 1,000 labelled inputs | 11.1 ms ±1.7% | 15.7 ms (0.7×) ±3.5% | **738 µs** (15×) ±31.2% |
+| Dispatch 10 clicks through 30 ancestors (capture + bubble) | 148 µs ±0.2% | 88.0 µs (1.7×) ±0.6% | **27.7 µs** (5.4×) ±0.1% |
+| getComputedStyle of 100 elements (display, visibility) | 75.8 µs ±1.1% | 20.1 µs (3.8×) ±0.2% | **8.71 µs** (8.7×) ±0.1% |
+| Mutate an attribute, then querySelectorAll('[aria-label]') | 1.32 ms ±0.5% | 739 µs (1.8×) ±3.1% | **59.4 µs** (22×) ±0.2% |
 
 ## Benchmarks: react.bench.tsx
 
 Median time per iteration (Vitest bench, warm; ± relative margin of error at 95%), speedup vs jsdom in parentheses.
 
-|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom e9f3baf+changes | ctrl-dom + its Testing Library e9f3baf+changes |
+|  | jsdom 30.1.3 | happy-dom 21.0.4 | ctrl-dom d991aa5 | ctrl-dom + its Testing Library d991aa5 |
 | --- | ---: | ---: | ---: | ---: |
-| Render a 20-field form, 10 getByRole({ name }) queries | 11.0 ms ±1.0% | 3.84 ms (2.9×) ±1.6% | 1.11 ms (9.9×) ±2.5% | **232 µs** (48×) ±2.7% |
-| user.type('hello world') into a controlled input | 22.8 ms ±1.7% | 21.4 ms (1.1×) ±2.3% | 1.14 ms (20×) ±1.8% | **640 µs** (36×) ±1.1% |
-| user.click a button 10 times (state updates) | 57.9 ms ±1.7% | 53.0 ms (1.1×) ±1.4% | 1.61 ms (36×) ±1.1% | **1.09 ms** (53×) ±1.2% |
-| Reverse a 500-row keyed list, then getAllByRole('listitem') | 94.1 ms ±0.6% | 48.4 ms (1.9×) ±2.5% | 7.34 ms (13×) ±3.5% | **5.64 ms** (17×) ±1.7% |
-| getByText among 200 table rows | 2.58 ms ±1.2% | 404 µs (6.4×) ±0.9% | 351 µs (7.4×) ±0.3% | **25.6 µs** (101×) ±0.4% |
-| findByRole after a 20 ms timer | 24.5 ms ±1.1% | 23.9 ms (1.0×) ±1.3% | 154 µs (159×) ±2.0% | **124 µs** (197×) ±2.0% |
+| Render a 20-field form, 10 getByRole({ name }) queries | 10.5 ms ±0.8% | 3.77 ms (2.8×) ±1.5% | 1.05 ms (10.0×) ±1.9% | **222 µs** (47×) ±2.2% |
+| user.type('hello world') into a controlled input | 24.3 ms ±2.1% | 25.0 ms (1.0×) ±2.4% | 1.02 ms (24×) ±1.4% | **649 µs** (37×) ±1.0% |
+| user.click a button 10 times (state updates) | 62.5 ms ±2.2% | 56.6 ms (1.1×) ±1.7% | 1.60 ms (39×) ±1.1% | **1.01 ms** (62×) ±0.6% |
+| Reverse a 500-row keyed list, then getAllByRole('listitem') | 94.6 ms ±0.8% | 48.7 ms (1.9×) ±1.2% | 7.02 ms (13×) ±3.3% | **5.25 ms** (18×) ±1.6% |
+| getByText among 200 table rows | 2.47 ms ±0.5% | 393 µs (6.3×) ±0.8% | 344 µs (7.2×) ±0.2% | **25.5 µs** (97×) ±0.2% |
+| findByRole after a 20 ms timer | 25.0 ms ±1.0% | 24.3 ms (1.0×) ±1.0% | **134 µs** (186×) ±1.8% | 140 µs (179×) ±1.8% |
 
 Notes: happy-dom caches `querySelectorAll` results until the document changes, which is why the warm query rows are near zero for it; the mutate-then-query row measures a query after a change. ctrl-dom's environment skips idle time on a virtual clock, so `findByRole` after a timer does not wait it out in real time. Contenders sharing a DOM (`sameDomAs`) run the DOM benchmarks once.
