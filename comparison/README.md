@@ -1,4 +1,4 @@
-# @rtd/comparison
+# Comparison
 
 How the DOMs people test React components with compare, measured the same way under Vitest:
 **jsdom**, **happy-dom** and **ctrl-dom** (with stock Testing Library, and with its own). It

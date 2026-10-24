@@ -55,7 +55,7 @@ jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 
 `packages/react-aria-components/test/Sheet.test.js` stubs `window.CSS.supports = () => true` at
 module scope ("jsdom does not implement CSS.supports"). WebIDL namespace operations are writable,
-configurable data properties; @rtd/dom freezes `CSS`, so the assignment throws `TypeError: Cannot
+configurable data properties; @ctrl/dom freezes `CSS`, so the assignment throws `TypeError: Cannot
 assign to read only property 'supports' of object '[object CSS]'` and the whole file (63 tests)
 fails to load in both rtd modes.
 
@@ -115,7 +115,7 @@ in a rAF and tests flush it with `act(() => jest.runAllTimers())`.
 ## 5. jest-environment: interface prototypes are shared across test files of a worker
 
 jest-environment-jsdom builds a new JSDOM — new interface objects and prototypes — per test file.
-jest-environment-rtd loads @rtd/dom once per worker (singleton strategy) and every window reuses
+jest-environment-ctrl-dom loads @ctrl/dom once per worker (singleton strategy) and every window reuses
 the module's interfaces, so prototype patches leak into later files of the same worker. Examples:
 `useLandmark.test.tsx` (41 tests, "Property `clientWidth` does not have access type get"; passes
 alone — an earlier file spied on `HTMLElement.prototype.clientHeight` and only `mockReset()` it),
@@ -178,7 +178,7 @@ objects.
 RAC Checkbox, CheckboxField, RadioGroup, RadioField "should support press state with keyboard":
 `onPress` called 2× after `user.keyboard('[Space>]')` + `user.keyboard('[/Space]')`.
 
-**Not a bug in our port.** react-spectrum pins `@testing-library/user-event` **14.6.5**; @rtd/user-event
+**Not a bug in our port.** react-spectrum pins `@testing-library/user-event` **14.6.5**; @ctrl/dom/user-event
 tracks **14.6.8**. Upstream commit 71a5475 (testing-library/user-event#1325) changed the `click`
 dispatched by a Space keyup from `pointerType: "undefined"` (`String(undefined)`) to `""`. React
 Aria's `usePress` treats `detail === 0 && !pointerType` as a virtual click and presses again, so
@@ -204,12 +204,12 @@ small component and shows stock 14.6.8 + stock RTL emitting the same warning as 
 
 Related (only with a `--shims` subset): substituting only `@testing-library/user-event` used to lose
 `act()` wrapping (stock RTL configures stock `@testing-library/dom`). Fixed in 83eab21: when a React
-act environment is active and @rtd/testing-library is unconfigured, user-event reads the project's
+act environment is active and @ctrl/dom/testing-library is unconfigured, user-event reads the project's
 stock `@testing-library/dom` config (Checkbox + RadioGroup with `--shims user-event`: 68/54 → 115/7).
 
 ## 11. Unattributed (resolved)
 
 The ~120 unattributed failures of the first run came down to clusters 12-21 plus the cluster 2
-and 6 fixes; see the table at the top. Most were jsdom-parity gaps where @rtd/dom implemented a
+and 6 fixes; see the table at the top. Most were jsdom-parity gaps where @ctrl/dom implemented a
 newer spec feature that React Aria feature-detects (`inert`, `PointerEvent`, `screen.orientation`,
 `getTargetRanges`, `matchMedia`) and the jsdom-written suite never exercised that path.

@@ -1,6 +1,4 @@
-# @rtd/testing-library
-
-> Workspace package `@rtd/testing-library`, published as `@ctrl/dom/testing-library` (see the root README and scripts/release.ts).
+# @ctrl/dom/testing-library
 
 Drop-in replacement for `@testing-library/dom` 10.4 (same exports, behaviour, error messages and
 `prettyDOM` output, same types), built on `@ctrl/dom`.

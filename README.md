@@ -56,19 +56,22 @@ Published (assembled by [scripts/release.ts](scripts/release.ts) from the worksp
 | `jest-environment-ctrl-dom` | jest-environment-jsdom (`testEnvironment: "ctrl-dom"`) |
 | `vitest-environment-ctrl-dom` | `environment: "ctrl-dom"` (re-exports `@ctrl/dom/vitest-environment`) |
 
-Workspace packages (internal names; each is one subpath of `@ctrl/dom` or one environment):
+What each import is and where its source lives:
 
-| Workspace package | Published as | Replaces | |
+| Import | Source | Replaces | |
 | --- | --- | --- | --- |
-| `@rtd/dom` | `@ctrl/dom` | jsdom / happy-dom | nodes, WHATWG HTML parser, selectors, CSS cascade + CSSOM, events, forms, window |
-| `@rtd/aria` | `@ctrl/dom/aria` | aria-query + dom-accessibility-api | roles, accessible name/description, states, hidden |
-| `@rtd/testing-library` | `@ctrl/dom/testing-library` | `@testing-library/dom` 10.4 | queries, `waitFor`, `fireEvent`, `prettyDOM`, suggestions |
-| `@rtd/react` | `@ctrl/dom/react` | `@testing-library/react` 16.3 | `render`, `renderHook`, `act`, cleanup |
-| `@rtd/user-event` | `@ctrl/dom/user-event` | `@testing-library/user-event` 14.6 | pointer/keyboard simulation |
-| `@rtd/jest-dom` | `@ctrl/dom/jest-dom` | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
-| `vitest-environment-rtd` | `@ctrl/dom/vitest-environment` | Vitest's jsdom environment | |
-| `jest-environment-rtd` | `jest-environment-ctrl-dom` | jest-environment-jsdom | |
-| `@rtd/native` | not published | | scriptc experiments and the `scriptc:check` gate (see below) |
+| `@ctrl/dom` | [packages/dom](packages/dom) | jsdom / happy-dom | nodes, WHATWG HTML parser, selectors, CSS cascade + CSSOM, events, forms, window |
+| `@ctrl/dom/aria` | [packages/aria](packages/aria) | aria-query + dom-accessibility-api | roles, accessible name/description, states, hidden |
+| `@ctrl/dom/testing-library` | [packages/testing-library](packages/testing-library) | `@testing-library/dom` 10.4 | queries, `waitFor`, `fireEvent`, `prettyDOM`, suggestions |
+| `@ctrl/dom/react` | [packages/react](packages/react) | `@testing-library/react` 16.3 | `render`, `renderHook`, `act`, cleanup |
+| `@ctrl/dom/user-event` | [packages/user-event](packages/user-event) | `@testing-library/user-event` 14.6 | pointer/keyboard simulation |
+| `@ctrl/dom/jest-dom` | [packages/jest-dom](packages/jest-dom) | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
+| `@ctrl/dom/vitest-environment` | [packages/vitest-environment](packages/vitest-environment) | Vitest's jsdom environment | |
+| `@ctrl/dom/register` | [packages/register](packages/register) | `@happy-dom/global-registrator` | DOM globals for `node --test` and `bun test` |
+| `jest-environment-ctrl-dom` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
+
+[packages/native](packages/native) is not published: scriptc experiments and the
+`scriptc:check` gate (see below).
 
 ## Compatibility
 
@@ -173,6 +176,11 @@ node downstream/track.ts  # compare the latest downstream runs with downstream/b
 pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
 pnpm scriptc:check
 ```
+
+Inside the repository each directory under `packages/` is a workspace package named after it
+(`packages/react` is `@rtd/react`, the environments are `vitest-environment-rtd` and
+`jest-environment-rtd`), and code imports those names. `pnpm build` renames them to the
+published ones, and no `@rtd/` name ships.
 
 Read [CLAUDE.md](CLAUDE.md) for conventions (spec links in tests, performance rules).
 

@@ -1,6 +1,6 @@
 # Layout-lite
 
-By default @rtd/dom has no layout, like jsdom and happy-dom: every geometry API returns zero. That
+By default @ctrl/dom has no layout, like jsdom and happy-dom: every geometry API returns zero. That
 is right for most component tests and costs nothing. It is wrong for the libraries whose output
 depends on geometry:
 

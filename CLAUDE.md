@@ -1,4 +1,4 @@
-# react-testing-dom
+# @ctrl/dom
 
 A pnpm monorepo that reimplements the React Testing Library stack — `@testing-library/react`,
 `@testing-library/dom`, `@testing-library/user-event`, `@testing-library/jest-dom`,
@@ -36,7 +36,7 @@ before changing anything.
 ## Tests
 
 - Vitest. Tests live in `packages/<pkg>/test/**/*.test.ts(x)`; run one package with
-  `pnpm vitest run --project @rtd/dom` (project names are the package names).
+  `pnpm vitest run --project @rtd/dom` (project names are the workspace package names, `@rtd/<dir>`, which the build renames to `@ctrl/dom/<dir>`).
 - **Every spec test file starts with a doc block naming the spec(s) and linking the sections
   under test. `describe` names include the section title and URL; each test name states the
   algorithm step or behavior it pins.** See `packages/dom/test/nodes/tree.test.ts`.

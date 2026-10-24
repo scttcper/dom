@@ -1,20 +1,25 @@
 # Architecture
 
-ctrl-dom (published as `@ctrl/dom`, developed under the workspace name react-testing-dom) is a
-DOM plus the Testing Library stack, for testing React components on Node.js:
+ctrl-dom (published as `@ctrl/dom`, https://github.com/scttcper/dom) is a DOM plus the Testing
+Library stack, for testing React components on Node.js:
 
 ```
-@rtd/react          (drop-in for @testing-library/react)      render, act, renderHook, cleanup
-@rtd/user-event     (drop-in for @testing-library/user-event)  pointer/keyboard simulation
-@rtd/jest-dom       (drop-in for @testing-library/jest-dom)    matchers for vitest/jest
-@rtd/testing-library(drop-in for @testing-library/dom)         queries, waitFor, fireEvent, prettyDOM
-@rtd/aria           (replaces aria-query + dom-accessibility-api) roles, names, states, hidden
-@rtd/dom            (replaces jsdom / happy-dom)                nodes, parser, selectors, css, events, window
-vitest-environment-rtd                                          installs @rtd/dom as globals
-@rtd/register                                                   the same for node:test / bun test (no environment)
-@rtd/native         scriptc-compiled accelerators + scriptc compatibility gate
-bench/              benchmarks vs jsdom and happy-dom
+@ctrl/dom/react               drop-in for @testing-library/react           render, act, renderHook, cleanup
+@ctrl/dom/user-event          drop-in for @testing-library/user-event      pointer/keyboard simulation
+@ctrl/dom/jest-dom            drop-in for @testing-library/jest-dom        matchers for vitest/jest
+@ctrl/dom/testing-library     drop-in for @testing-library/dom             queries, waitFor, fireEvent, prettyDOM
+@ctrl/dom/aria                replaces aria-query + dom-accessibility-api  roles, names, states, hidden
+@ctrl/dom                     replaces jsdom / happy-dom                   nodes, parser, selectors, css, events, window
+@ctrl/dom/vitest-environment  installs the DOM as Vitest's test globals (jest-environment-ctrl-dom: Jest's)
+@ctrl/dom/register            the same for node:test / bun test (no environment)
+packages/native               not published: scriptc experiments + the scriptc:check gate
+bench/                        benchmarks vs jsdom and happy-dom
 ```
+
+Each lives in `packages/<name>/` as a workspace package named `@rtd/<name>` (`packages/dom` is
+`@rtd/dom`, `packages/react` is `@rtd/react`; the environments are `vitest-environment-rtd` and
+`jest-environment-rtd`). Code, tests, bench and downstream runners import those names, and the
+build renames them to the published ones (see Packaging); no `@rtd/` name ships.
 
 The upper layers are allowed (and expected) to reach into `@rtd/dom/internal` instead of
 going through the public DOM API. That is the point of consolidating: `getByRole` walks
@@ -27,9 +32,7 @@ unmodified (people will swap only the environment first). `bench/` runs both sta
 
 ## Packaging
 
-The workspace packages above keep internal names (`@rtd/*`, `*-environment-rtd`); code, tests,
-bench and downstream runners use them. What ships is assembled by `pnpm build`
-(scripts/release.ts) into `release/`:
+What ships is assembled by `pnpm build` (scripts/release.ts) into `release/`:
 
 - `@ctrl/dom`: `@rtd/dom` at the root and every other runtime package under a subpath
   (`@ctrl/dom/aria`, `/testing-library`, `/react`, `/user-event`, `/jest-dom`,

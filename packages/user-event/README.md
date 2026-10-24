@@ -1,6 +1,4 @@
-# @rtd/user-event
-
-> Workspace package `@rtd/user-event`, published as `@ctrl/dom/user-event` (see the root README and scripts/release.ts).
+# @ctrl/dom/user-event
 
 Drop-in replacement for `@testing-library/user-event` 14.6, with fast paths for `@ctrl/dom`.
 

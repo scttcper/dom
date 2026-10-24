@@ -14,7 +14,7 @@ byte-identical to `@testing-library/dom`.
   tree in [Playwright's aria snapshot YAML](https://playwright.dev/docs/aria-snapshots), a
   format models already know. It shows roles, accessible names, the states `*ByRole` filters on,
   textbox and slider values, and text. It is computed with the same role, name and hidden rules
-  as `*ByRole` (`@rtd/aria`), so it shows what the queries match.
+  as `*ByRole` (`@ctrl/dom/aria`), so it shows what the queries match.
 - **`prettyDOM(el, max, { format })`**: `"pretty"` (upstream), `"aria"` (the snapshot) or
   `"compact"` (HTML without `class`/`style` attributes and SVG internals, without ANSI colors).
   `screen.debug()` and `render().debug()` take the same option.

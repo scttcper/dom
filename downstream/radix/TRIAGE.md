@@ -39,13 +39,13 @@ tests as rtd-dom: none of the failures come from our Testing Library packages.
 - Cause: Radix copies native validity with `for (const key in control.validity)`
   (`validityStateToObject`, `hasBuiltInError` in `form.tsx`). WebIDL attributes are enumerable
   accessors on the interface prototype (https://webidl.spec.whatwg.org/#es-attributes), so jsdom
-  yields the 11 attributes. @rtd/dom's ValidityState has non-enumerable class getters and an
+  yields the 11 attributes. @ctrl/dom's ValidityState has non-enumerable class getters and an
   enumerable own `_el` field, so for…in yields only `_el`; `hasBuiltInError` treats `validity._el`
   (truthy) as a built-in error and the copy has no `valueMissing`.
 - Fix (html-forms): make ValidityState's attribute getters enumerable on the prototype and keep
   the element reference non-enumerable (or in a private/symbol slot).
 - Broader (dom-core decision): the same shape is everywhere. Measured `for…in` / `Object.keys`
-  on fresh objects, jsdom vs @rtd/dom: `div` 267 vs 165 keys with own `_listeners,_impl,_childNodes,…`;
+  on fresh objects, jsdom vs @ctrl/dom: `div` 267 vs 165 keys with own `_listeners,_impl,_childNodes,…`;
   `Event` 22 vs 5 with own `_s`; `Range` 32 vs 9 with own `_sc,_so,…`; `DOMRect` own `x,y,…` (jsdom)
   vs `_x,_y,_width,_height`; `CSSStyleDeclaration` own `_owner,_block,…`. Code that spreads or
   `Object.keys`s DOMRect/Event objects (common in tests and in libraries that serialize rects)
@@ -58,7 +58,7 @@ tests as rtd-dom: none of the failures come from our Testing Library packages.
   location" (inline snapshot recorded on jsdom expects `aria-hidden="true"`, receives
   `inert="true"`).
 - Cause: `supportsInert()` is `HTMLElement.prototype.hasOwnProperty('inert')`; `suppressOthers`
-  uses `inert` when supported. @rtd/dom implements the reflected `inert` attribute
+  uses `inert` when supported. @ctrl/dom implements the reflected `inert` attribute
   (https://html.spec.whatwg.org/#dom-inert, `packages/dom/src/html/HTMLElement.ts`); jsdom 29 does
   not. Spec-correct behaviour against a test assumption that only holds on jsdom, same category as Base UI's
   visualViewport cluster.

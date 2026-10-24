@@ -20,7 +20,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 | --: | --: | --- | --- | --- | --- |
 | 1 | 2 | both | `'value' in el.attributes` was false: NamedNodeMap had no named properties | dom-core | **fixed** (repro `repros/namednodemap-named-properties.test.ts`) |
 | 2 | 1 | both, intermittent | `File` is Node's: deep equality sees its `lastModified` | dom-core (host delegates, decision) | deviation |
-| 3 | 1 | both, intermittent | React's scheduler runs on `setImmediate` under @rtd/dom, `setTimeout` under jest-environment-jsdom | jest-environment (decision) | deviation |
+| 3 | 1 | both, intermittent | React's scheduler runs on `setImmediate` under @ctrl/dom, `setTimeout` under jest-environment-jsdom | jest-environment (decision) | deviation |
 
 ## 1. NamedNodeMap named properties (fixed): 2 tests
 
@@ -29,7 +29,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 - Cause: react-hook-form's `getCheckboxValue` (src/logic) returns the checkbox's `value` only when
   `'value' in option.attributes`, otherwise `true`. That is a WebIDL named property on
   NamedNodeMap ([LegacyUnenumerableNamedProperties],
-  https://dom.spec.whatwg.org/#interface-namednodemap). @rtd/dom left them out (documented
+  https://dom.spec.whatwg.org/#interface-namednodemap). @ctrl/dom left them out (documented
   Proxy-free collections deviation), so a checked `<input type=checkbox value="test">` submitted
   `true`: validation never cleared and the form JSON was wrong. A real-app bug, not a test quirk.
 - Fix: `packages/dom/src/collections/NamedNodeMap.ts`: each NamedNodeMap is a Proxy with the named
@@ -50,7 +50,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
   (https://w3c.github.io/FileAPI/#dom-file-lastmodified), so the two differ whenever a millisecond
   boundary falls between them. On jsdom the window's `File` is jsdom's wrapper, whose state lives
   behind a non-enumerable impl symbol, so `toEqual` sees no own properties and always passes (even
-  jest-fixed-jsdom keeps jsdom's File; it only swaps Blob/fetch/streams). @rtd/dom exposes Node's
+  jest-fixed-jsdom keeps jsdom's File; it only swaps Blob/fetch/streams). @ctrl/dom exposes Node's
   `File` (window `HOST_DELEGATES`, packages/dom/src/window/Window.ts), whose state (`lastModified`
   included) is in own enumerable symbol properties, which Jest's equality compares.
 - Status: deviation (Node's File/Blob work with Node's fetch, FormData and streams). The upstream
@@ -64,7 +64,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 - Cause: the test is a regression test for an ordering race between a `values` prop update and
   `remove()`; the final state sometimes keeps a trailing empty row (`[{ name: 'Bob', … }, {}]`).
   jest-environment-jsdom has neither `setImmediate` nor `MessageChannel`, so React's scheduler
-  falls back to `setTimeout(0)`; jest-environment-rtd keeps Node's `setImmediate`
+  falls back to `setTimeout(0)`; jest-environment-ctrl-dom keeps Node's `setImmediate`
   (docs/deviations.md, "Window": React's scheduler already prefers it under Node), which runs
   React's work earlier relative to `waitFor`'s polling and the test's effects. Evidence: with
   `setImmediate` and `MessageChannel` deleted from the rtd global it passed 8/8. Not time skipping:
@@ -75,5 +75,5 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 ## Notes
 
 - jest-fixed-jsdom puts Node's `fetch`/`Request`/`Response`/`Blob`/streams on the jsdom global;
-  the rtd modes use jest-environment-rtd's equivalent, `testEnvironmentOptions.nodeFetch: true`.
+  the rtd modes use jest-environment-ctrl-dom's equivalent, `testEnvironmentOptions.nodeFetch: true`.
 - `Server` project (`*.server.test.tsx`, testEnvironment node) is not run: it never touches a DOM.

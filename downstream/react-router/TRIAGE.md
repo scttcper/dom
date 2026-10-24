@@ -34,7 +34,7 @@ Started at rtd-dom 6 / rtd-full 10 failing plus 10 files (273 tests) failing to 
   (https://html.spec.whatwg.org/#image-button-state-(type=image)), and constructing the entry list
   appends `name.x`/`name.y` from it (https://html.spec.whatwg.org/#constructing-the-form-data-set
   step 5.2). jsdom uses the click's `offsetX`/`offsetY` (which mirror clientX/Y without layout).
-  @rtd/dom always appended 0,0 (and returned "0,0" for `method=dialog`).
+  @ctrl/dom always appended 0,0 (and returned "0,0" for `method=dialog`).
 - Fix: `HTMLInputElement._activationBehavior` records the activating MouseEvent's
   offsetX/offsetY in a side table (`selectedCoordinates`, form-submission.ts: image buttons are
   rare, so inputs carry no extra field); the entry list and the dialog return value read it.
@@ -52,7 +52,7 @@ Started at rtd-dom 6 / rtd-full 10 failing plus 10 files (273 tests) failing to 
   `new AbortController()` from the global it runs in (the test realm) and the router adds
   `abort` listeners to `request.signal`. Under jest-environment-jsdom that controller is jsdom's,
   whose state sits behind a non-enumerable impl symbol, so Jest's equality sees no own properties
-  on either side. @rtd/dom exposes Node's `AbortController`/`AbortSignal` (docs/deviations.md,
+  on either side. @ctrl/dom exposes Node's `AbortController`/`AbortSignal` (docs/deviations.md,
   "Window": they stay Node's so they work with Node APIs), which keep listeners in own enumerable
   symbol properties, so the listener lists are compared.
 - Status: deviation. Same family as react-hook-form's host `File` (its TRIAGE.md, cluster 2):

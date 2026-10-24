@@ -1,6 +1,4 @@
-# @rtd/jest-dom
-
-> Workspace package `@rtd/jest-dom`, published as `@ctrl/dom/jest-dom` (see the root README and scripts/release.ts).
+# @ctrl/dom/jest-dom
 
 Drop-in replacement for `@testing-library/jest-dom` 7.0: all matchers, same entry points and
 types.

@@ -1,8 +1,7 @@
-# vitest-environment-rtd
+# @ctrl/dom/vitest-environment
 
-> Workspace package `vitest-environment-rtd`, published as `@ctrl/dom/vitest-environment` (and `vitest-environment-ctrl-dom`) (see the root README and scripts/release.ts).
-
-Vitest environment that installs an `@ctrl/dom` window as the test globals.
+Vitest environment that installs an `@ctrl/dom` window as the test globals. Also published on
+its own as `vitest-environment-ctrl-dom`, so Vitest resolves `environment: "ctrl-dom"`.
 
 ```ts
 // vitest.config.ts

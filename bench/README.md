@@ -1,6 +1,6 @@
-# @rtd/bench
+# Benchmarks
 
-Benchmarks for react-testing-dom against **jsdom** and **happy-dom** (and the stock
+Benchmarks for @ctrl/dom against **jsdom** and **happy-dom** (and the stock
 `@testing-library/*` packages on them). Never against browsers.
 
 ## Run

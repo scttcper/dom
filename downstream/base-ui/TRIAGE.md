@@ -18,7 +18,7 @@ Latest full run: 2026-10-23 (quiet machine), report `results/2026-10-23-all.md`.
 
 `PopoverRoot.test.tsx` — "… focus management > with focusable elements between the trigger and
 the popup > closes and moves focus before the trigger when tabbing backward from the focused
-trigger" (detached-trigger variants) fails intermittently on @rtd/dom (≈1 in 3 single-file runs,
+trigger" (detached-trigger variants) fails intermittently on @ctrl/dom (≈1 in 3 single-file runs,
 stock user-event too) and never on jsdom.
 
 Cause, traced with focus-call stacks: the popup's initial focus is scheduled through Base UI's
@@ -29,7 +29,7 @@ runs `trigger.focus()` first, and the late initial focus then pulls focus into t
 shift+Tab never reaches the element before the trigger. jsdom renders slowly enough that the timer
 always fires inside `render()`. Removing the nested-document focus change does not affect it.
 
-Making @rtd/dom deterministic here would mean making it slower, so it is left as a known
+Making @ctrl/dom deterministic here would mean making it slower, so it is left as a known
 environment-speed race. Upstream fix: wait one timer tick (or for the popup's initial focus)
 before `trigger.focus()` in that test.
 
@@ -65,7 +65,7 @@ before `trigger.focus()` in that test.
 - Symptom: scroll-area `[data-scrolling]` never set; drawer "scrolls instead of swiping" /
   "dismisses from a bottom-edge scroll container" fail. Tests use
   `fireEvent.scroll(viewport, { target: { scrollTop: 1 } })` or `el.scrollTop = 40` after mocking
-  `scrollHeight`/`clientHeight`. jsdom stores the value. @rtd/dom reads back 0.
+  `scrollHeight`/`clientHeight`. jsdom stores the value. @ctrl/dom reads back 0.
 - In rtd-full, 2 of the 13 show up as `element.getAnimations is not a function`. The scroll-end
   path in `ScrollAreaViewport.tsx` is reached in a different order. jsdom also lacks
   `getAnimations`, so that error is a side effect, not a separate cluster. In rtd-dom, 8 of the 19
@@ -81,7 +81,7 @@ before `trigger.focus()` in that test.
   items (TabsList "hidden successor", CompositeRoot "cannot hold the tab stop", useListNavigation
   and useTypeahead "hidden" tests, listIndex). Base UI's `isElementVisible` prefers
   `element.checkVisibility()` when it exists (`internals/composite/listIndex.ts:566`). jsdom has no
-  `checkVisibility`, so the baseline uses `getComputedStyle`. @rtd/dom's `checkVisibility()` returns
+  `checkVisibility`, so the baseline uses `getComputedStyle`. @ctrl/dom's `checkVisibility()` returns
   `true` even though `getComputedStyle(el).display === "none"`.
 - Spec: https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility (step 1: no box -> false)
 
@@ -102,7 +102,7 @@ before `trigger.focus()` in that test.
   `Combobox.createItems` closed-trigger typeahead fail intermittently and depend on test order. A
   test passes alone and fails after the previous typeahead test. With `--shims react,dom,jest-dom`
   (stock user-event inlined against our Testing Library) they pass, which isolates
-  `@rtd/user-event`.
+  `@ctrl/dom/user-event`.
 - Cause: `utils/misc/wait.ts` `yieldBetweenActions()` (deviation "user-event `delay: 0`") waits for
   a real timeout only when the number of active Timeout resources across the whole process grew
   during the action. Otherwise it yields with `setImmediate`. When a handler clears one timer and
@@ -119,7 +119,7 @@ before `trigger.focus()` in that test.
 - Symptom: Field.Root "custom validity ownership" (2), Field.Validity "surfaces valueMissing
   immediately after a stale custom error", Autocomplete "Field prop: validationMode=onSubmit".
   Base UI reads `validationMessage` back to decide whether it owns the current custom error.
-- Cause: with both a custom error and a native failure (typeMismatch / valueMissing), @rtd/dom
+- Cause: with both a custom error and a native failure (typeMismatch / valueMissing), @ctrl/dom
   returns the native localized message. jsdom and Chromium return the custom message.
 - Spec: https://html.spec.whatwg.org/#dom-cva-validationmessage
 

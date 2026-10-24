@@ -1,6 +1,4 @@
-# jest-environment-rtd
-
-> Workspace package `jest-environment-rtd`, published as `jest-environment-ctrl-dom` (see the root README and scripts/release.ts).
+# jest-environment-ctrl-dom
 
 Jest environment that installs an `@ctrl/dom` window as the test globals.
 
@@ -16,8 +14,9 @@ module.exports = {
 
 The environment publishes the DOM modules it loaded on the test global, and published
 `@ctrl/dom` / `@ctrl/dom/internal` resolve to bridges that return them, so every module in a test
-file shares one DOM (scripts/release.ts, writeBridges). In this workspace, `preset:
-"jest-environment-rtd"` maps `@rtd/dom` to the shims in src/shims/ for the same effect. Peer
+file shares one DOM (scripts/release.ts, writeBridges). Inside this repository, where the
+packages run from source, the workspace preset maps the DOM's imports to the shims in src/shims/
+for the same effect. Peer
 dependencies: `jest` >= 30, `@ctrl/dom`.
 
 Differences from jest-environment-jsdom you may notice (see `docs/deviations.md`):
