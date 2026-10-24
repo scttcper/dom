@@ -21,7 +21,21 @@ import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_STYLE_ATTR, F_SHADOW_ROOT, HTML_NS }
 import { T } from "../nodes/tags.ts";
 import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
-import { KEY_CLASS, KEY_ID, KEY_TAG, matchesSelector, type CompiledSelector } from "../selectors/internal.ts";
+import {
+  KEY_CLASS,
+  KEY_ID,
+  KEY_TAG,
+  beginStateDeps,
+  buildAncestorFilter,
+  endStateDeps,
+  matchesSelector,
+  matchesSelectorDirect,
+  mayMatchAncestors,
+  stateDepsHold,
+  type CompiledSelector,
+  type MatchOptions,
+  type StateDeps,
+} from "../selectors/internal.ts";
 import { directionality, inputTypeName, predicates } from "../selectors/state.ts";
 import {
   CSSGroupingRule,
@@ -57,10 +71,19 @@ export class IndexedRule {
   layer: number;
   block: DeclBlock;
   layerNode: LayerNode;
+  /** Copied from `sel` so the cascade's loop reads them without a pointer hop (as Blink's RuleData). */
+  h0: number;
+  h1: number;
+  h2: number;
+  h3: number;
 
   constructor(sel: CompiledSelector, order: number, block: DeclBlock, layerNode: LayerNode) {
     this.sel = sel;
     this.specificity = sel.specificity;
+    this.h0 = sel.h0;
+    this.h1 = sel.h1;
+    this.h2 = sel.h2;
+    this.h3 = sel.h3;
     this.order = order;
     this.layer = 0;
     this.block = block;
@@ -416,8 +439,20 @@ export class StyleRecord {
   display: string;
   visibility: string;
   pointerEvents: string;
-  /** Depends on volatile selector state: never reuse from cache. */
+  /** Depends on state that neither the version stamps nor `deps` cover: never reuse from cache. */
   volatile: boolean;
+  /**
+   * Volatile selector tests (:hover, :focus, :checked, ...) evaluated while matching this
+   * element's rules, with their results (selectors/compile.ts StateDeps), or null. While they
+   * still hold, the matched declarations are reused; computed values are recomputed.
+   */
+  deps: StateDeps | null;
+  /**
+   * An ancestor's record (the parent's, or the originating element's for a pseudo-element) is
+   * volatile, has `deps`, or itself inherits from one: inherited computed values may change
+   * without a version bump, so they are not kept across reuses.
+   */
+  inheritsVolatile: boolean;
   before: StyleRecord | null;
   after: StyleRecord | null;
   /** Tree root styles this element belongs to (null when disconnected). */
@@ -436,6 +471,8 @@ export class StyleRecord {
     this.visibility = "";
     this.pointerEvents = "";
     this.volatile = false;
+    this.deps = null;
+    this.inheritsVolatile = false;
     this.before = null;
     this.after = null;
     this.root = null;
@@ -504,25 +541,42 @@ class Matched {
   }
 }
 
-function collect(buckets: RuleBuckets, el: NodeImpl, pseudo: string, host: NodeImpl | null, context: number, out: Matched[], rec: StyleRecord): void {
+/**
+ * Element the ancestor filter (selectors/filter.ts) was last built for in this computeRecord, or
+ * null. Rebuilt lazily when the first rule with ancestor hashes is tested, so elements whose
+ * candidate rules have no descendant / child combinators never pay for it.
+ */
+let filterFor: NodeImpl | null = null;
+
+function testRules(list: IndexedRule[] | undefined, el: NodeImpl, pseudo: string, opts: MatchOptions | undefined, filter: boolean, context: number, out: Matched[]): void {
+  if (list === undefined) return;
+  for (let i = 0; i < list.length; i++) {
+    const r = list[i];
+    if (filter && r.h0 >= 0) {
+      // WebKit SelectorFilter fast reject (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/SelectorFilter.h).
+      if (filterFor !== el) {
+        buildAncestorFilter(el);
+        filterFor = el;
+      }
+      if (!mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) continue;
+    }
+    if (opts === undefined ? matchesSelectorDirect(r.sel, el, pseudo) : matchesSelector(r.sel, el, pseudo, opts)) out.push(new Matched(r, context));
+  }
+}
+
+function collect(buckets: RuleBuckets, el: NodeImpl, pseudo: string, host: NodeImpl | null, context: number, out: Matched[]): void {
   if (buckets.size === 0) return;
   const opts = host === null ? undefined : { shadowHost: host };
-  const test = (list: IndexedRule[] | undefined): void => {
-    if (list === undefined) return;
-    for (let i = 0; i < list.length; i++) {
-      const r = list[i];
-      if (r.sel.volatile) rec.volatile = true;
-      if (matchesSelector(r.sel, el, pseudo, opts)) out.push(new Matched(r, context));
-    }
-  };
   const quirks = buckets.quirks;
-  if (el.id !== "" && buckets.ids.size !== 0) test(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id));
+  // Quirks mode matches ids and classes ASCII case-insensitively: the filter's exact hashes do not apply.
+  const filter = !quirks;
+  if (el.id !== "" && buckets.ids.size !== 0) testRules(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id), el, pseudo, opts, filter, context, out);
   if (buckets.classes.size !== 0 && el.attrs !== null) {
     const cls = classTokens(el);
-    for (let i = 0; i < cls.length; i++) test(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]));
+    for (let i = 0; i < cls.length; i++) testRules(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]), el, pseudo, opts, filter, context, out);
   }
-  if (buckets.tags.size !== 0) test(buckets.tags.get(asciiLowercase(el.name)));
-  test(buckets.universal);
+  if (buckets.tags.size !== 0) testRules(buckets.tags.get(asciiLowercase(el.name)), el, pseudo, opts, filter, context, out);
+  testRules(buckets.universal, el, pseudo, opts, filter, context, out);
 }
 
 function bucketsFor(idx: RuleIndex, pseudo: number): RuleBuckets {
@@ -589,24 +643,36 @@ function importantOrder(a: Matched, b: Matched): number {
 }
 
 function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): StyleRecord {
+  const parent = pseudo === PSEUDO_NONE ? inheritanceParent(el) : el;
+  const parentRec = parent === null ? null : styleRecord(parent);
+  filterFor = null;
   const rec = new StyleRecord(el, pseudo);
+  if (parentRec !== null) rec.inheritsVolatile = parentRec.volatile || parentRec.deps !== null || parentRec.inheritsVolatile;
   const doc = el.doc;
   const rs = rootOf(el);
   rec.root = rs;
   const matched: Matched[] = [];
   const pseudoName = pseudo === PSEUDO_NONE ? "" : pseudo === PSEUDO_BEFORE ? "before" : "after";
+  const prevDeps = beginStateDeps();
   if (rs !== null) {
     const idx = ruleIndexFor(rs, doc, styleVersion);
-    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), 1, matched, rec);
+    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), 1, matched);
   }
   // The host's own shadow tree styles it (and its ::before/::after) through :host rules.
   const srs = shadowStylesOf(el);
   if (srs !== null) {
     const idx = ruleIndexFor(srs, doc, styleVersion);
-    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, el, 0, matched, rec);
+    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, el, 0, matched);
+  }
+  const deps = endStateDeps(prevDeps);
+  if (deps !== null) {
+    // Keep only dependencies on the element and its ancestors (removing one of those removes the
+    // element too), so a cached record never keeps a removed sibling or descendant alive.
+    if (depsOnAncestors(deps, el)) rec.deps = deps;
+    else rec.volatile = true;
   }
   const uaMatched: Matched[] = [];
-  if (pseudo === PSEUDO_NONE && el.ns === HTML_NS) collect(uaRuleIndex().main, el, "", null, 0, uaMatched, rec);
+  if (pseudo === PSEUDO_NONE && el.ns === HTML_NS) collect(uaRuleIndex().main, el, "", null, 0, uaMatched);
   cascade(rec, matched, pseudo === PSEUDO_NONE ? inlineBlock(el) : null, uaMatched);
   if (pseudo === PSEUDO_NONE) {
     rec.displayLocked = uaDisplayImportant(el);
@@ -616,13 +682,42 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
   return rec;
 }
 
+function depsOnAncestors(deps: StateDeps, el: NodeImpl): boolean {
+  const els = deps.els;
+  outer: for (let i = 0; i < els.length; i++) {
+    const x = els[i];
+    for (let n: NodeImpl | null = el; n !== null; n = n.parent) if (n === x) continue outer;
+    return false;
+  }
+  return true;
+}
+
+/** A cached record whose matched declarations are still valid (version stamps checked by the caller). */
+function reusable(rec: StyleRecord): boolean {
+  if (rec.volatile) return false;
+  if (rec.deps === null) {
+    if (!rec.inheritsVolatile) return true;
+  } else if (!stateDepsHold(rec.deps)) return false;
+  // Same matched rules; computed values may inherit from ancestors whose volatile state changed,
+  // so they are recomputed.
+  rec.computed = null;
+  rec.custom = null;
+  rec.customDone = false;
+  rec.display = "";
+  rec.visibility = "";
+  rec.pointerEvents = "";
+  rec.before = null;
+  rec.after = null;
+  return true;
+}
+
 /** The (cached) style record of an element. */
 export function styleRecord(el: NodeImpl): StyleRecord {
   const doc = el.doc;
   const sv = currentStyleVersion(doc);
   const c: NodeCache = nodeCache(el);
   const cached = c.style as StyleRecord | null;
-  if (cached !== null && c.styleVersion === doc[$version] && c.styleSheetVersion === sv && !cached.volatile) return cached;
+  if (cached !== null && c.styleVersion === doc[$version] && c.styleSheetVersion === sv && reusable(cached)) return cached;
   const rec = computeRecord(el, PSEUDO_NONE, sv);
   c.style = rec;
   c.styleVersion = doc[$version];
@@ -633,7 +728,7 @@ export function styleRecord(el: NodeImpl): StyleRecord {
 function pseudoRecord(el: NodeImpl, pseudo: number): StyleRecord {
   const owner = styleRecord(el);
   const existing = pseudo === PSEUDO_BEFORE ? owner.before : owner.after;
-  if (existing !== null && !existing.volatile) return existing;
+  if (existing !== null && reusable(existing)) return existing;
   const rec = computeRecord(el, pseudo, el.doc[$styleVersion]);
   if (pseudo === PSEUDO_BEFORE) owner.before = rec;
   else owner.after = rec;

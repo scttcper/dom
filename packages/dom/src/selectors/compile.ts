@@ -40,6 +40,7 @@ import {
 } from "./parser.ts";
 import { predicates, type Predicate, matchesLang, directionality, customState, parentOrHost, shadowHost } from "./state.ts";
 import { $impl, $mode, $shadowRoot, $version } from "../keys.ts";
+import { classHash, idHash, tagHash } from "./filter.ts";
 
 // --- test opcodes ------------------------------------------------------------------------
 
@@ -117,6 +118,8 @@ export class Test {
   memoParent: NodeImpl | null;
   memoCount: number;
   memoCountVersion: number;
+  /** Depends on state outside Document._version (a non-STABLE predicate, :dir(), :state()): evaluations are logged (StateDeps). */
+  volatileTest: boolean;
 
   constructor(op: number) {
     this.op = op;
@@ -139,6 +142,7 @@ export class Test {
     this.memoParent = null;
     this.memoCount = 0;
     this.memoCountVersion = -1;
+    this.volatileTest = false;
   }
 }
 
@@ -615,6 +619,7 @@ function compilePseudoClass(s: Simple, info: CompileInfo): Test | null {
       const dir = s.args[0];
       if (dir !== "ltr" && dir !== "rtl") return new Test(O_NEVER);
       const t = new Test(O_DIR);
+      t.volatileTest = true;
       t.a = dir === "rtl" ? 2 : 1;
       return t;
     }
@@ -627,6 +632,7 @@ function compilePseudoClass(s: Simple, info: CompileInfo): Test | null {
     case P_STATE: {
       info.volatile = true;
       const t = new Test(O_STATE);
+      t.volatileTest = true;
       t.name = s.args[0];
       return t;
     }
@@ -636,8 +642,11 @@ function compilePseudoClass(s: Simple, info: CompileInfo): Test | null {
     fail(info, "unsupported pseudo-class :" + s.name);
     return new Test(O_NEVER);
   }
-  if (!STABLE_PREDICATES.has(s.pseudo)) info.volatile = true;
   const t = new Test(O_PREDICATE);
+  if (!STABLE_PREDICATES.has(s.pseudo)) {
+    info.volatile = true;
+    t.volatileTest = true;
+  }
   t.fn = fn;
   t.name = s.name;
   return t;
@@ -663,6 +672,77 @@ export function resetMemos(info: CompileInfo): void {
     t.memoVersion = -1;
     t.memoCountVersion = -1;
   }
+}
+
+// --- volatile-state dependencies -------------------------------------------------------------
+//
+// A style rule with :hover, :focus, :checked, ... depends on state that Document._version does not
+// cover. WebKit marks elements "affected by" such pseudo-classes during matching and invalidates
+// them when that state changes (Style::Resolver / the childrenAffectedBy* flags,
+// https://github.com/WebKit/WebKit/blob/main/Source/WebCore/style/StyleRelations.h). Without
+// invalidation hooks into every piece of state, this records instead EVERY volatile test the
+// matcher evaluated while matching one element's rules, with its element and result. Matching is
+// deterministic given the DOM (stamped by Document._version) and those results, so while the
+// version is unchanged and every logged test still returns the same result, the matched rules are
+// the same: the cascade may reuse them (`stateDepsHold`).
+
+/** Volatile tests evaluated while recording, with their elements and results. */
+export class StateDeps {
+  tests: Test[];
+  els: NodeImpl[];
+  results: boolean[];
+  constructor() {
+    this.tests = [];
+    this.els = [];
+    this.results = [];
+  }
+}
+
+let depOn = false;
+let depCur: StateDeps | null = null;
+
+function logDep(t: Test, el: NodeImpl, r: boolean): void {
+  const d = (depCur ??= new StateDeps());
+  d.tests.push(t);
+  d.els.push(el);
+  d.results.push(r);
+}
+
+/** Start recording volatile tests; returns the enclosing recording to pass to `endStateDeps`. */
+export function beginStateDeps(): StateDeps | boolean | null {
+  const prev = depOn ? depCur : false;
+  depOn = true;
+  depCur = null;
+  return prev;
+}
+
+/** Stop recording: the tests logged since `beginStateDeps` (null if none). Nested recordings also log into the enclosing one. */
+export function endStateDeps(prev: StateDeps | boolean | null): StateDeps | null {
+  const d = depCur;
+  if (prev === false) {
+    depOn = false;
+    depCur = null;
+  } else {
+    depCur = prev as StateDeps | null;
+    if (d !== null) for (let i = 0; i < d.tests.length; i++) logDep(d.tests[i], d.els[i], d.results[i]);
+  }
+  return d;
+}
+
+/** Whether every logged test still evaluates to its logged result. */
+export function stateDepsHold(d: StateDeps): boolean {
+  const savedOn = depOn;
+  depOn = false;
+  let ok = true;
+  const tests = d.tests;
+  for (let i = 0; i < tests.length; i++) {
+    if (matchTest(tests[i], d.els[i]) !== d.results[i]) {
+      ok = false;
+      break;
+    }
+  }
+  depOn = savedOn;
+  return ok;
 }
 
 // --- matching context ----------------------------------------------------------------------
@@ -765,7 +845,8 @@ function testFn(t: Test): Matcher {
       return (el) => el.ns === ns;
     }
     case O_PREDICATE:
-      return t.fn!;
+      // Volatile predicates go through matchTest, which logs them for StateDeps.
+      return t.volatileTest ? (el) => matchTest(t, el) : t.fn!;
     case O_IS: {
       const list = t.list!;
       return (el) => list.fn(el);
@@ -1008,8 +1089,11 @@ function matchTest(t: Test, el: NodeImpl): boolean {
       return matchAttribute(t, el);
     case O_UNIVERSAL_NS:
       return el.ns === t.ns;
-    case O_PREDICATE:
-      return t.fn!(el);
+    case O_PREDICATE: {
+      const r = t.fn!(el);
+      if (depOn && t.volatileTest) logDep(t, el, r);
+      return r;
+    }
     case O_IS:
       return matchList(t.list!, el);
     case O_NOT:
@@ -1035,10 +1119,16 @@ function matchTest(t: Test, el: NodeImpl): boolean {
       return el === scopeEl;
     case O_LANG:
       return matchesLang(el, t.args);
-    case O_DIR:
-      return directionality(el) === t.a;
-    case O_STATE:
-      return customState(el, t.name);
+    case O_DIR: {
+      const r = directionality(el) === t.a;
+      if (depOn) logDep(t, el, r);
+      return r;
+    }
+    case O_STATE: {
+      const r = customState(el, t.name);
+      if (depOn) logDep(t, el, r);
+      return r;
+    }
     case O_HOST:
       return hostEl !== null && el === hostEl;
     case O_HOST_FN: {
@@ -1324,6 +1414,36 @@ export function subjectKey(cx: CComplex): { kind: number; value: string } {
   if (cls !== "") return { kind: KEY_CLASS, value: cls };
   if (tag !== "") return { kind: KEY_TAG, value: tag };
   return { kind: KEY_NONE, value: "" };
+}
+
+/**
+ * Ancestor hashes for the ancestor filter (filter.ts), as WebKit's
+ * SelectorFilter::collectSelectorHashes
+ * (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/SelectorFilter.cpp): the ids,
+ * classes and type names of compounds joined by a descendant or child combinator. Such a compound
+ * always matches an element ancestor of the subject (the ancestor of the subject, of an ancestor,
+ * or of a sibling of either), so the subject's ancestors must carry every one of these names.
+ * Ids and classes come first (most selective); at most four, as in WebKit.
+ */
+export function ancestorHashes(cx: CComplex): number[] {
+  const out: number[] = [];
+  if (cx.leading !== C_NONE) return out;
+  for (let pass = 0; pass < 3 && out.length < 4; pass++) {
+    for (let k = 1; k <= cx.last && out.length < 4; k++) {
+      const comb = cx.combs[k - 1];
+      if (comb !== C_DESCENDANT && comb !== C_CHILD) continue;
+      const tests = cx.comps[k];
+      for (let i = 0; i < tests.length && out.length < 4; i++) {
+        const t = tests[i];
+        let h = -1;
+        if (pass === 0 && t.op === O_ID) h = idHash(t.name);
+        else if (pass === 1 && t.op === O_CLASS) h = classHash(t.name);
+        else if (pass === 2 && t.op === O_TYPE) h = tagHash(t.lower);
+        if (h !== -1 && out.indexOf(h) === -1) out.push(h);
+      }
+    }
+  }
+  return out;
 }
 
 /** Fast-path shapes for querySelector(All): a single complex with one compound of one test. */

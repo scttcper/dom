@@ -21,6 +21,7 @@ import {
   setHostContext,
   resetMemos,
   subjectKey,
+  ancestorHashes,
   unpackSpecificity,
   packSpecificity,
   KEY_NONE,
@@ -32,6 +33,8 @@ import {
 import { $cx, $info } from "../keys.ts";
 
 export { KEY_NONE, KEY_ID, KEY_CLASS, KEY_TAG, packSpecificity, unpackSpecificity };
+export { buildAncestorFilter, mayMatchAncestors } from "./filter.ts";
+export { beginStateDeps, endStateDeps, stateDepsHold, type StateDeps } from "./compile.ts";
 export { querySelectorAllImpls, isValidSelector, clearSelectorCaches } from "./index.ts";
 export { setHoverTarget, setActiveTarget, setPseudoClassPredicate, interaction, type Predicate } from "./state.ts";
 
@@ -49,6 +52,16 @@ export class CompiledSelector {
   readonly pseudoElement: string;
   /** Depends on state not covered by Document._version (focus, hover, checkedness, values, ...). */
   readonly volatile: boolean;
+  /**
+   * Ancestor-filter hashes (filter.ts; -1 = none): names some ancestor of the subject must have.
+   * Test with `mayMatchAncestors(h0, h1, h2, h3)` after `buildAncestorFilter(el)`.
+   */
+  readonly h0: number;
+  readonly h1: number;
+  readonly h2: number;
+  readonly h3: number;
+  /** Matching needs no :scope, :nth-* memo reset or host context: `matchesSelectorDirect` may skip that setup. */
+  readonly direct: boolean;
   /** @internal */
   readonly [$cx]: CComplex;
   /** @internal */
@@ -62,6 +75,12 @@ export class CompiledSelector {
     this.key = key.value;
     this.pseudoElement = cx.pseudoElement;
     this.volatile = info.volatile;
+    const hashes = ancestorHashes(cx);
+    this.h0 = hashes.length > 0 ? hashes[0] : -1;
+    this.h1 = hashes.length > 1 ? hashes[1] : -1;
+    this.h2 = hashes.length > 2 ? hashes[2] : -1;
+    this.h3 = hashes.length > 3 ? hashes[3] : -1;
+    this.direct = !info.usesScope && info.nthTests.length === 0;
     this[$cx] = cx;
     this[$info] = info;
   }
@@ -165,6 +184,17 @@ export function matchesSelector(sel: CompiledSelector, el: NodeImpl, pseudoEleme
     if (options?.shadowHost !== undefined) setHostContext(prevHost);
     if (sel[$info].nthTests.length !== 0) resetMemos(sel[$info]);
   }
+}
+
+/**
+ * `matchesSelector` for the cascade's hot loop: `pseudoElement` already normalized ("" for the
+ * element itself), no :scope element and no shadow host. Selectors that need no per-call setup
+ * (`direct`) run their matcher without the save/restore and try/finally.
+ */
+export function matchesSelectorDirect(sel: CompiledSelector, el: NodeImpl, pseudoElement: string): boolean {
+  if (sel.pseudoElement !== pseudoElement) return false;
+  if (sel.direct) return sel[$cx].fn(el);
+  return matchesSelector(sel, el, pseudoElement);
 }
 
 /** Whether any selector of the list matches. */
