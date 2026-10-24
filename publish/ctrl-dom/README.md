@@ -233,7 +233,7 @@ Jest):
 | `userAgent`, `platform`, `languages`, `devicePixelRatio`, `referrer` | jsdom-like | navigator / window values |
 | `timeSkip` | `true` | skip idle time on a virtual clock; `false` keeps real-time timers. `CTRL_DOM_TIME_SKIP=0/1` overrides |
 | `compat` | `"jsdom-30"` (Vitest), `"jsdom-26"` (Jest) | which APIs beyond jsdom's are exposed: see below |
-| `layout` | off | `"lite"`: an approximate box model for geometry (`getBoundingClientRect`, `offset*`, `client*`, `scroll*`, ResizeObserver), so virtualizers (TanStack Virtual, react-window) and positioning libraries work without hand-written mocks. Off, geometry is zeros as in jsdom. Details: the repository's `docs/layout.md` |
+| `layout` | off | `"lite"`: an approximate box model for geometry (`getBoundingClientRect`, `offset*`, `client*`, `scroll*`, ResizeObserver), so virtualizers (TanStack Virtual, react-window) and positioning libraries work without hand-written mocks. Off, geometry is zeros as in jsdom. Details: [docs/layout.md](https://github.com/scttcper/dom/blob/main/docs/layout.md) |
 | `compileCache` (Vitest) | `true` with the plugin's Testing Library, else `false` | enable Node's compile cache before importing the DOM (with the plugin: as each worker starts), for every worker after the first. It stays on for everything the worker loads, which only pays off for large files (stock Testing Library's many small ones load slower). `CTRL_DOM_COMPILE_CACHE=0/1` overrides |
 | `nodeFetch` (Jest) | `false` | keep Node's `fetch`/`Request`/`Response` (absent under jest-environment-jsdom) |
 
@@ -249,7 +249,8 @@ missing leaves ours in place instead of its mock. `compat` picks what the test g
 | `"jsdom-30"` | Vitest's jsdom environment; the Vitest default | nothing libraries feature-detect |
 | `"modern"` | everything @ctrl/dom implements | `matchMedia`, `ResizeObserver`, the `inert` IDL attribute, `visualViewport` |
 
-The repository's `docs/deviations.md` lists every API in each profile, with the reason.
+[docs/deviations.md](https://github.com/scttcper/dom/blob/main/docs/deviations.md) lists every API in
+each profile, with the reason.
 
 ## Debugging with coding agents
 
@@ -307,10 +308,10 @@ A line for your `CLAUDE.md` / `AGENTS.md`:
 > When a component test fails, rerun it with `npx ctrl-dom debug <file> [-t <name>]` and read the
 > accessibility snapshot and closest matches instead of adding `screen.debug()`.
 
-Details: the repository's `docs/agent-debugging.md`.
+Details: [docs/agent-debugging.md](https://github.com/scttcper/dom/blob/main/docs/agent-debugging.md).
 
 ## Differences from jsdom
 
 There is no script execution, no navigation and no network, as in jsdom and happy-dom, and no
 layout unless you turn on `layout: "lite"` (otherwise geometry is zeros, as in jsdom). Every
-intentional difference is listed, with the reason, in the repository's `docs/deviations.md`.
+intentional difference is listed, with the reason, in [docs/deviations.md](https://github.com/scttcper/dom/blob/main/docs/deviations.md).

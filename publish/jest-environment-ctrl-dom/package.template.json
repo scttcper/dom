@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "description": "Jest environment for @ctrl/dom, the fast DOM for testing React components (testEnvironment: \"ctrl-dom\").",
   "keywords": ["jest", "jest-environment", "dom", "jsdom", "happy-dom", "testing", "react"],
+  "homepage": "https://github.com/scttcper/dom#readme",
+  "bugs": { "url": "https://github.com/scttcper/dom/issues" },
+  "repository": { "type": "git", "url": "git+https://github.com/scttcper/dom.git", "directory": "publish/jest-environment-ctrl-dom" },
+  "author": "Scott Cooper <scttcper@gmail.com>",
   "type": "module",
-  "engines": { "node": ">=26" }
+  "engines": { "node": ">=26" },
+  "publishConfig": { "access": "public" }
 }

@@ -1,7 +1,8 @@
 // semantic-release plugin: @semantic-release/commit-analyzer and release-notes-generator, fed only
 // the commits that touch this package's paths (tools/release/packages.ts), plus the manifest
-// fix-ups before publishing: `repository` (npm trusted publishing and provenance require it to
-// match the GitHub repository the workflow runs in) and the @ctrl/dom peer range.
+// fix-ups before publishing: `repository.url` (npm trusted publishing and provenance require it
+// to match the GitHub repository the workflow runs in; the template's `directory` is kept) and
+// the @ctrl/dom peer range.
 //
 // Options: { paths: string[], peersOnCtrlDom?: boolean, pkgRoot: string }
 
@@ -74,7 +75,7 @@ function githubRepository(context: any): string {
 export function prepare(options: Options, context: any) {
   const file = join(context.cwd, options.pkgRoot, "package.json");
   const pkg = JSON.parse(readFileSync(file, "utf8"));
-  pkg.repository = { type: "git", url: `git+${githubRepository(context)}.git` };
+  pkg.repository = { ...pkg.repository, type: "git", url: `git+${githubRepository(context)}.git` };
   context.logger.log(`repository = ${pkg.repository.url}`);
   if (options.peersOnCtrlDom) {
     const range = `^${latestCtrlDom(context.cwd)}`;

@@ -16,5 +16,6 @@ module.exports = {
 ```
 
 Per file: `/** @jest-environment ctrl-dom */`. Options (`testEnvironmentOptions`) and the
-differences from jsdom are documented in @ctrl/dom's README. Requires Jest 30+ and Node 26+.
+differences from jsdom are documented in
+[@ctrl/dom's README](https://www.npmjs.com/package/@ctrl/dom). Requires Jest 30+ and Node 26+.
 Test code that imports `@ctrl/dom` (or its subpaths) gets the environment's own instance.

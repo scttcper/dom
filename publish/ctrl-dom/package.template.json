@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "description": "A fast DOM for testing React components: a drop-in replacement for jsdom and happy-dom, with Testing Library, user-event and jest-dom built in.",
   "keywords": ["dom", "jsdom", "happy-dom", "testing", "react", "testing-library", "user-event", "jest-dom", "vitest", "jest"],
+  "homepage": "https://github.com/scttcper/dom#readme",
+  "bugs": { "url": "https://github.com/scttcper/dom/issues" },
+  "repository": { "type": "git", "url": "git+https://github.com/scttcper/dom.git", "directory": "publish/ctrl-dom" },
+  "author": "Scott Cooper <scttcper@gmail.com>",
   "type": "module",
-  "engines": { "node": ">=26" }
+  "engines": { "node": ">=26" },
+  "publishConfig": { "access": "public" }
 }
