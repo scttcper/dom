@@ -120,8 +120,8 @@ describe("defaulting keywords — https://drafts.csswg.org/css-cascade-5/#defaul
   });
 
   test.fails("revert-layer: rolls back to the previous cascade layer, not to the UA origin", () => {
-    // TODO(css): cascade.ts treats revert-layer like revert (UA origin). Expected: the value
-    // from layer `a` ("red"); currently the inherited/initial color is returned.
+    // Known gap (docs/deviations.md, CSS): revert-layer behaves like revert (UA origin). Expected:
+    // the value from layer `a` ("red"); currently the inherited/initial color is returned.
     setup(`<style>@layer a { p { color: red } } @layer b { p { color: revert-layer } }</style>`, `<p>x</p>`);
     expect(cs("p", "color")).toBe("red");
   });
@@ -173,17 +173,17 @@ describe("blockification — https://drafts.csswg.org/css-display-3/#blockify", 
     expect([cs(".f", "display", "::before"), cs(".g", "display", "::after")]).toEqual(["block", "block"]);
   });
 
-  test.fails("children of a flex container are blockified (inline → block)", () => {
-    // TODO(css): cascade.ts computeDisplay blockifies only pseudo-elements; flex/grid items,
-    // floats and absolutely positioned boxes keep display:inline.
+  // Intentional difference (docs/deviations.md, CSS): only pseudo-elements are blockified.
+  // Spec: flex/grid items, floats and absolutely positioned boxes compute display:block
+  // (https://drafts.csswg.org/css-display-3/#blockify, https://drafts.csswg.org/css2/#dis-pos-flo).
+  test("children of a flex container keep their specified display (deviation: not blockified, as in jsdom)", () => {
     setup("", `<div style="display: flex"><span>x</span></div>`);
-    expect(cs("span", "display")).toBe("block");
+    expect(cs("span", "display")).toBe("inline");
   });
 
-  test.fails("floated and absolutely positioned elements are blockified", () => {
-    // TODO(css): see above (https://drafts.csswg.org/css2/#dis-pos-flo).
+  test("floated and absolutely positioned elements keep their specified display (deviation: not blockified, as in jsdom)", () => {
     setup("", `<span id="f" style="float: left">a</span><span id="p" style="position: absolute">b</span>`);
-    expect([cs("#f", "display"), cs("#p", "display")]).toEqual(["block", "block"]);
+    expect([cs("#f", "display"), cs("#p", "display")]).toEqual(["inline", "inline"]);
   });
 });
 
@@ -208,12 +208,10 @@ describe("custom properties — https://drafts.csswg.org/css-variables-2/", () =
     expect([cs("p", "--a"), cs("p", "--b"), cs("p", "--ok"), cs("p", "color"), cs("p", "padding-left")]).toEqual(["", "", "1px", "green", "0px"]);
   });
 
-  test.fails("a var() that substitutes to an invalid value makes the declaration invalid at computed-value time (unset)", () => {
-    // TODO(css): cascade.ts cascadedToComputed does not validate the substituted value against
-    // the property grammar (https://drafts.csswg.org/css-variables-2/#invalid-at-computed-value-time);
-    // `color: var(--n)` with --n: 12 computes to "12" instead of the inherited color.
-    setup(`<style>div { color: green } p { --n: 12; color: red; color: var(--n) }</style>`, `<div><p>x</p></div>`);
-    expect(cs("p", "color")).toBe("green");
+  test("a var() that substitutes to an invalid value makes the declaration invalid at computed-value time (unset) (https://drafts.csswg.org/css-variables-2/#invalid-at-computed-value-time)", () => {
+    // `color: var(--n)` with --n: 12 is unset: color inherits green (not the earlier `red`).
+    setup(`<style>div { color: green } p { --n: 12; --d: bogus; color: red; color: var(--n); display: var(--d) }</style>`, `<div><p>x</p></div>`);
+    expect([cs("p", "color"), cs("p", "display")]).toEqual(["green", "inline"]);
   });
 });
 

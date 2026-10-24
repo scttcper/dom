@@ -54,7 +54,7 @@ import { mediaEnvironment } from "../window/media.ts";
 import { isCustomPropertyName, propertyInfo } from "./properties.ts";
 import { cascadeLonghandsOf, expandCascadeShorthand, expandShorthand, isCascadeOnlyShorthand, isExpandedShorthand, longhandsOf, pendingLonghandsMap, serializeCascadeShorthand, serializeShorthand, MULTI_LAYER } from "./shorthands.ts";
 import { computeColor } from "./colors.ts";
-import { containsVar, formatNumber, grammarFor, G_COLOR, isCSSWideKeyword, splitComponents, TK_DIMENSION, TK_IDENT, TK_PERCENTAGE, TK_STRING, TK_FUNCTION, TK_DELIM, COMP_SPACE } from "./values.ts";
+import { containsVar, formatNumber, grammarFor, G_COLOR, isCSSWideKeyword, normalizeLonghand, splitComponents, TK_DIMENSION, TK_IDENT, TK_PERCENTAGE, TK_STRING, TK_FUNCTION, TK_DELIM, COMP_SPACE } from "./values.ts";
 import { CSSTokenizer, TK_EOF, TK_FUNCTION as TOK_FUNCTION, TK_LPAREN, TK_RPAREN, TK_COMMA, TK_LBRACKET, TK_RBRACKET } from "./tokenizer.ts";
 import { inlineStyleCount } from "./inline-count.ts";
 import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor, validateAdopted } from "./stylesheets.ts";
@@ -1036,7 +1036,9 @@ function cascadedToComputed(rec: StyleRecord, prop: string, v: string | undefine
     v = r === null ? "unset" : r;
   } else if (v !== undefined && containsVar(v)) {
     const r = substitute(v, (n) => customProps(rec)?.get(n) ?? null);
-    v = r === null ? "unset" : r.trim();
+    // https://drafts.csswg.org/css-variables-2/#invalid-at-computed-value-time: a substituted
+    // value the property's grammar rejects makes the declaration behave as `unset`.
+    v = r === null || normalizeLonghand(prop, r) === null ? "unset" : r.trim();
   }
   if (v === undefined) {
     if (prop === "direction" && rec.pseudo === PSEUDO_NONE) {
@@ -1081,7 +1083,10 @@ function computeDisplay(rec: StyleRecord): string {
   if (rec.displayLocked) d = "none";
   else {
     let v = rec.decls?.get("display");
-    if (v !== undefined && containsVar(v)) v = substitute(v, (n) => customProps(rec)?.get(n) ?? null) ?? "unset";
+    if (v !== undefined && containsVar(v)) {
+      const r = substitute(v, (n) => customProps(rec)?.get(n) ?? null);
+      v = r === null || normalizeLonghand("display", r) === null ? "unset" : r.trim();
+    }
     const ua = rec.pseudo === PSEUDO_NONE ? uaDisplay(rec.el) : "inline";
     if (v === undefined || v === "revert" || v === "revert-layer") d = ua;
     else if (v === "inherit") d = inheritedValue(rec, "display");
