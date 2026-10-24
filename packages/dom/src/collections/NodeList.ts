@@ -19,9 +19,10 @@
 //    get accessor properties `0..n` on their own prototype (collections/indexed.ts), so they
 //    never mix with own index properties.
 //
-// Iteration (`forEach`, `entries`, `keys`, `values`, `@@iterator`) uses the Array.prototype
-// functions, exactly as WebIDL specifies for indexed iterable interfaces
-// (https://webidl.spec.whatwg.org/#es-iterable), so iterating a live list sees mutations.
+// Iteration: `forEach`, `entries` and `keys` are the Array.prototype functions, as WebIDL specifies
+// for indexed iterable interfaces (https://webidl.spec.whatwg.org/#es-iterable); `values` and
+// `@@iterator` are collections/iterator.ts, the same semantics (iterating a live list sees
+// mutations) without V8's generic per-element lookups.
 //
 // Internal state lives in private fields so `Object.keys(list)` is just the indices (jest's
 // `equals` and pretty-format enumerate own keys).
@@ -30,6 +31,7 @@ import { F_CHILD_LIST } from "../nodes/constants.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
+import { CollectionIterator, iterableTarget } from "./iterator.ts";
 import { $items, $version } from "../keys.ts";
 
 /** Index getter tables of lazy NodeList subclasses, by prototype. */
@@ -144,6 +146,12 @@ export class NodeList {
     return i < this.#length ? (this as unknown as Node[])[i] : null;
   }
 
+  /** @internal values() / @@iterator: lazy lists are read through their snapshot. */
+  static _values(self: unknown): CollectionIterator {
+    const list = iterableTarget(self);
+    return new CollectionIterator(list, #lazy in list && (list as NodeList).#lazy);
+  }
+
   [index: number]: Node;
   declare forEach: (callback: (value: Node, key: number, parent: NodeList) => void, thisArg?: unknown) => void;
   declare entries: () => ArrayIterator<[number, Node]>;
@@ -152,11 +160,18 @@ export class NodeList {
   declare [Symbol.iterator]: () => ArrayIterator<Node>;
 }
 
+/** One function for both, as WebIDL has it (a method: named "values", not a constructor). */
+const values = {
+  values(this: unknown) {
+    return NodeList._values(this);
+  },
+}.values;
+
 Object.defineProperties(NodeList.prototype, {
   forEach: { value: Array.prototype.forEach, writable: true, enumerable: true, configurable: true },
   entries: { value: Array.prototype.entries, writable: true, enumerable: true, configurable: true },
   keys: { value: Array.prototype.keys, writable: true, enumerable: true, configurable: true },
-  values: { value: Array.prototype.values, writable: true, enumerable: true, configurable: true },
-  [Symbol.iterator]: { value: Array.prototype.values, writable: true, configurable: true },
+  values: { value: values, writable: true, enumerable: true, configurable: true },
+  [Symbol.iterator]: { value: values, writable: true, configurable: true },
   [Symbol.toStringTag]: { value: "NodeList", configurable: true },
 });

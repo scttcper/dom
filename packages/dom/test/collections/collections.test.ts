@@ -40,11 +40,15 @@ describe("NodeList — https://dom.spec.whatwg.org/#interface-nodelist", () => {
     expect(list[0]).toBeUndefined();
   });
 
-  test("iteration uses Array.prototype methods (WebIDL indexed iterable) and sees live changes", () => {
+  test("iteration: forEach/keys/entries are Array.prototype's (WebIDL indexed iterable), values and @@iterator one fast iterator, and it sees live changes", () => {
     const div = document.createElement("div");
     div.append("a", "b");
-    expect(NodeList.prototype[Symbol.iterator]).toBe(Array.prototype.values);
+    // Intentional difference (docs/deviations.md): values/@@iterator are not %Array.prototype.values%.
+    expect(NodeList.prototype[Symbol.iterator]).toBe(NodeList.prototype.values);
+    expect(NodeList.prototype.values).not.toBe(Array.prototype.values);
+    expect(NodeList.prototype.values.name).toBe("values");
     expect(NodeList.prototype.forEach).toBe(Array.prototype.forEach);
+    expect(NodeList.prototype.keys).toBe(Array.prototype.keys);
     expect(Array.from(div.childNodes).length).toBe(2);
     expect([...div.childNodes.keys()]).toEqual([0, 1]);
     const seen: string[] = [];
@@ -54,6 +58,35 @@ describe("NodeList — https://dom.spec.whatwg.org/#interface-nodelist", () => {
     }
     expect(seen).toEqual(["a", "b", "c"]);
     expect(Object.prototype.toString.call(div.childNodes)).toBe("[object NodeList]");
+  });
+
+  test("values() follows %ArrayIteratorPrototype%.next: index and length read each step, done stays done (https://tc39.es/ecma262/#sec-%arrayiteratorprototype%.next)", () => {
+    const div = document.createElement("div");
+    div.append("a");
+    const it = div.childNodes.values();
+    expect(Object.prototype.toString.call(it)).toBe("[object Array Iterator]");
+    expect(it.next()).toEqual({ value: div.firstChild, done: false });
+    expect(it.next()).toEqual({ value: undefined, done: true });
+    div.append("b"); // exhausted iterators stay exhausted, as Array iterators do
+    expect(it.next()).toEqual({ value: undefined, done: true });
+    // Removal during iteration: the next index is read against the current list.
+    div.append("c");
+    const seen: string[] = [];
+    for (const n of div.childNodes) {
+      seen.push(n.textContent!);
+      if (n.textContent === "a") div.removeChild(div.firstChild!);
+    }
+    expect(seen).toEqual(["a", "c"]);
+  });
+
+  test("values() works on static lists, through iterator helpers, and on any array-like like Array.prototype.values", () => {
+    document.body!.innerHTML = "<p>1</p><p>2</p><p>3</p>";
+    const list = document.querySelectorAll("p");
+    expect(Array.from(list).map((p) => p.textContent)).toEqual(["1", "2", "3"]);
+    expect([...list].length).toBe(3);
+    expect(list.values().map((p) => p.textContent).toArray()).toEqual(["1", "2", "3"]);
+    expect([...NodeList.prototype.values.call({ length: 2, 0: "x", 1: "y" } as never)]).toEqual(["x", "y"]);
+    expect(() => NodeList.prototype.values.call(null as never)).toThrow(TypeError);
   });
 
   test("querySelectorAll returns a static NodeList", () => {
@@ -79,6 +112,21 @@ describe("HTMLCollection — https://dom.spec.whatwg.org/#interface-htmlcollecti
     expect(spans.length).toBe(2);
     expect([...spans].length).toBe(2);
     expect(Object.keys(children)).toEqual([]);
+  });
+
+  test("@@iterator reads the live snapshot each step: elements appended or removed while iterating show (https://webidl.spec.whatwg.org/#es-iterable)", () => {
+    document.body!.innerHTML = "<i>1</i><i>2</i>";
+    const items = document.getElementsByTagName("i");
+    expect(HTMLCollection.prototype[Symbol.iterator]).not.toBe(Array.prototype.values); // docs/deviations.md
+    const seen: string[] = [];
+    for (const el of items) {
+      seen.push(el.textContent!);
+      if (seen.length === 1) document.body!.append(Object.assign(document.createElement("i"), { textContent: "3" }));
+      if (seen.length === 2) items[0].remove();
+    }
+    // After "2" (index 1) the first is removed, so index 2 is past the end of [2, 3].
+    expect(seen).toEqual(["1", "2"]);
+    expect(Array.from(document.body!.children).map((e) => e.textContent)).toEqual(["2", "3"]);
   });
 
   test("getElementsBy* return the same collection object for the same root and argument", () => {

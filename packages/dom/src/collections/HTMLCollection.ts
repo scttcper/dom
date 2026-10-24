@@ -31,6 +31,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { attr } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
+import { CollectionIterator, iterableTarget } from "./iterator.ts";
 import { $coll, $impl, $items, $version } from "../keys.ts";
 
 export type ElementFilter = (el: NodeImpl) => boolean;
@@ -178,8 +179,16 @@ export class HTMLCollection {
   declare [Symbol.iterator]: () => ArrayIterator<Element>;
 }
 
+/** @@iterator (collections/iterator.ts): items come from the snapshot, not the index accessors. */
+const values = {
+  values(this: unknown) {
+    const collection = iterableTarget(this);
+    return new CollectionIterator(collection, collection instanceof HTMLCollection);
+  },
+}.values;
+
 Object.defineProperties(HTMLCollection.prototype, {
-  [Symbol.iterator]: { value: Array.prototype.values, writable: true, configurable: true },
+  [Symbol.iterator]: { value: values, writable: true, configurable: true },
   [Symbol.toStringTag]: { value: "HTMLCollection", configurable: true },
 });
 
