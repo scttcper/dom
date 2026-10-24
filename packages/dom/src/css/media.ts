@@ -569,13 +569,15 @@ function evalNode(n: MQNode, env: MediaEnvironment): number {
 function evalFeature(n: MQNode, env: MediaEnvironment): number {
   let name = n.name;
   let op = n.op;
+  // The vendor prefix comes before min-/max- (`-webkit-min-device-pixel-ratio`), so strip it
+  // first (https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio).
+  if (name.startsWith("-webkit-")) name = name.slice(8);
   if (op === ":" && (name.startsWith("min-") || name.startsWith("max-"))) {
     op = name.startsWith("min-") ? ">=" : "<=";
     name = name.slice(4);
   } else if (name.startsWith("min-") || name.startsWith("max-")) {
     return -1;
   }
-  if (name.startsWith("-webkit-")) name = name.slice(8);
   const overrides = env.features;
   const rawOverride = overrides != null ? overrides[name] : undefined;
   const override = rawOverride === undefined ? undefined : String(rawOverride);
