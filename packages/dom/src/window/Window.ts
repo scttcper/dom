@@ -39,7 +39,7 @@ import { windowOrigin } from "./origin.ts";
 import { type TimerList, clearTimers, startTimer } from "./timers.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
-import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
+import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
   /** Document URL. Default "http://localhost/". */
@@ -1014,11 +1014,14 @@ function createNestedWindow(frameElement: Element, parent: Window, src: string |
   let url = "about:blank";
   if (srcdoc !== null) url = "about:srcdoc";
   else if (src !== null && src !== "") url = URL.parse(src, parent.document.baseURI)?.href ?? "about:blank";
-  // TODO(window): set the new document's [$aboutBase] (keys.ts) to parent.document.baseURI for
-  // about:blank/about:srcdoc (https://html.spec.whatwg.org/#concept-document-about-base-url).
-  return new Window(
+  const win = new Window(
     { url, width: parent[$innerWidth], height: parent[$innerHeight], devicePixelRatio: parent[$devicePixelRatio], userAgent: parent[$options].userAgent },
     { parent, frameElement, srcdoc },
   );
+  // https://html.spec.whatwg.org/#concept-document-about-base-url: an about:blank or about:srcdoc
+  // document snapshots its creator's (the container document's) base URL when it is created
+  // (https://html.spec.whatwg.org/#create-a-new-child-navigable; srcdoc documents likewise).
+  if (url === "about:blank" || url === "about:srcdoc") win.document[$aboutBase] = parent.document.baseURI;
+  return win;
 }
 setNestedWindowFactory(createNestedWindow);
