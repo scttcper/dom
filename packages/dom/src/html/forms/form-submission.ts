@@ -41,6 +41,7 @@ import {
   inputType,
 } from "./input-type.ts";
 import { isInvalidCandidate } from "./validation.ts";
+import { setUserValidity } from "./user-validity.ts";
 import { faceEntries, faceReset, isFACE, validatableOf } from "./face.ts";
 import { listOfOptions } from "./collections.ts";
 import { reportNotImplemented, stubbedMethod } from "../../window/not-implemented.ts";
@@ -139,16 +140,21 @@ export function formCheckValidity(form: NodeImpl): boolean {
  */
 export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: boolean): void {
   const f = form.node as unknown as FormLike;
-  // Step 2: if form cannot navigate (not connected), return.
+  // Step 1: if form cannot navigate (not connected), return.
   if ((form.flags & F_CONNECTED) === 0) return;
-  // Step 3: if form's constructing entry list is true, return.
+  // Step 2: if form's constructing entry list is true, return.
   if (f[$constructingEntryList]) return;
-  // Step 6: if submitted from submit() is false:
+  // Step 5: if submitted from submit() is false:
   if (!fromSubmit) {
+    // 5.1-5.2.
     if (f[$firingSubmissionEvents]) return;
     f[$firingSubmissionEvents] = true;
     try {
-      // 6.3: interactively validate constraints unless the submitter's no-validate state is true.
+      // 5.3: set the user validity of every submittable element whose form owner is form
+      // (https://html.spec.whatwg.org/#user-validity, forms/user-validity.ts).
+      const controls = f._controls();
+      for (let i = 0; i < controls.length; i++) if (isSubmittable(controls[i])) setUserValidity(controls[i], true);
+      // 5.4: interactively validate constraints unless the submitter's no-validate state is true.
       const noValidate =
         submitter !== form && attr(submitter, "formnovalidate") !== null ? true : attr(form, "novalidate") !== null;
       if (!noValidate) {
@@ -157,18 +163,18 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
         // like jsdom and happy-dom: focus stays on the submitter (docs/deviations.md).
         if (staticallyValidate(form) !== null) return;
       }
-      // 6.5–6.7: fire submit (SubmitEvent) with submitter (null when the form submits itself).
+      // 5.5–5.8: fire submit (SubmitEvent) with submitter (null when the form submits itself).
       const event = new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitter === form ? null : submitter.node });
       if (!dispatchTrusted(f, event)) return;
     } finally {
       f[$firingSubmissionEvents] = false;
     }
-    // Step 7: form may have been disconnected by a listener.
+    // 5.9: form may have been disconnected by a listener.
     if ((form.flags & F_CONNECTED) === 0) return;
   }
-  // Steps 8-9: method "dialog" closes the form's dialog (html/interactive.ts).
+  // Steps 10-11: method "dialog" closes the form's dialog (html/interactive.ts).
   if (dialogSubmission !== null && dialogSubmission(form, submitter)) return;
-  // Steps 10+: construct the entry list and navigate. We never navigate.
+  // Steps 6-9 and 12+: construct the entry list and navigate. We never navigate.
   if (!fromSubmit) reportNotImplemented(form.doc[$window] as object | null, REQUEST_SUBMIT_NOT_IMPLEMENTED);
 }
 

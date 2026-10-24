@@ -19,6 +19,8 @@ import {
   isReadOnly,
   isReadWrite,
   isRequired,
+  isUserInvalid,
+  isUserValid,
   isValid,
 } from "../html/forms/state.ts";
 import { matchesFocus, matchesFocusVisible, matchesFocusWithin } from "../html/focus.ts";
@@ -46,6 +48,8 @@ Object.assign(predicates, {
   "placeholder-shown": isPlaceholderShown,
   valid: isValid,
   invalid: isInvalid,
+  "user-valid": isUserValid,
+  "user-invalid": isUserInvalid,
   "in-range": isInRange,
   "out-of-range": isOutOfRange,
   autofill: isAutofilled,

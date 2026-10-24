@@ -145,13 +145,92 @@ describe(":user-invalid / :user-valid — https://html.spec.whatwg.org/#selector
     expect([$$(":user-invalid"), $$(":user-valid")]).toEqual([[], []]);
   });
 
-  // TODO(selectors): selectors/state.ts maps :user-invalid/:user-valid to `never`; there is no
-  // user-validity flag (https://html.spec.whatwg.org/#user-validity), which the form submission
-  // algorithm and user edits (input/change followed by blur) set to true.
-  test.fails("match after a form submission attempt sets user validity", () => {
+  test("match after a form submission attempt sets user validity", () => {
     document.body!.innerHTML = `<form id=f><input id=a required><input id=b></form>`;
     byId("f").requestSubmit();
     expect([$$(":user-invalid"), $$(":user-valid")]).toEqual([["a"], ["b"]]);
+  });
+});
+
+/**
+ * The user validity flag itself. A DOM without a UI defines "the user committed a change" as a
+ * `change` event dispatched at the control (html/forms/user-validity.ts, docs/deviations.md).
+ */
+describe("user validity — https://html.spec.whatwg.org/#user-validity", () => {
+  test("a change event at the control sets it (https://html.spec.whatwg.org/#common-input-element-events: 'set its user validity to true and fire an event named change')", () => {
+    document.body!.innerHTML = `<input id=a required><textarea id=b required></textarea><select id=c required><option value="">-</option></select>`;
+    for (const id of ["a", "b", "c"]) byId(id).dispatchEvent(new (window as any).Event("change", { bubbles: true }));
+    expect($$(":user-invalid")).toEqual(["a", "b", "c"]);
+  });
+
+  test("change listeners already see the new state (the flag is set before the event is fired)", () => {
+    document.body!.innerHTML = `<input id=a required>`;
+    let seen: boolean | null = null;
+    byId("a").addEventListener("change", () => (seen = byId("a").matches(":user-invalid")));
+    byId("a").dispatchEvent(new (window as any).Event("change"));
+    expect(seen).toBe(true);
+  });
+
+  test("input events alone do not set it (only a committed change does)", () => {
+    document.body!.innerHTML = `<input id=a required>`;
+    byId("a").dispatchEvent(new (window as any).Event("input", { bubbles: true }));
+    expect($$(":user-invalid")).toEqual([]);
+  });
+
+  test("a change event at an option does not set its select's flag (the select is only a parent in the event path)", () => {
+    document.body!.innerHTML = `<select id=s required><option id=o value="">-</option></select>`;
+    byId("o").dispatchEvent(new (window as any).Event("change", { bubbles: true }));
+    expect($$(":user-invalid")).toEqual([]);
+  });
+
+  test("checkbox activation fires change, which sets it; :user-valid follows the validity afterwards", () => {
+    document.body!.innerHTML = `<input id=c type=checkbox required>`;
+    byId("c").click();
+    expect([$$(":user-invalid"), $$(":user-valid")]).toEqual([[], ["c"]]);
+    byId("c").click();
+    expect([$$(":user-invalid"), $$(":user-valid")]).toEqual([["c"], []]);
+  });
+
+  test("form submission step 5.3 sets it for every submittable control, even when the submitter has formnovalidate (https://html.spec.whatwg.org/#concept-form-submit)", () => {
+    document.body!.innerHTML = `<form id=f><input id=a required><button id=go formnovalidate>go</button></form><input id=out required>`;
+    byId("f").addEventListener("submit", (e: any) => e.preventDefault());
+    byId("go").click();
+    expect($$(":user-invalid")).toEqual(["a"]);
+  });
+
+  test("form.submit() skips step 5 and leaves it false", () => {
+    document.body!.innerHTML = `<form id=f><input id=a required></form>`;
+    try {
+      byId("f").submit();
+    } catch {
+      // not-implemented navigation reports are irrelevant here
+    }
+    expect($$(":user-invalid")).toEqual([]);
+  });
+
+  test("the reset algorithms of input, textarea and select set it back to false (https://html.spec.whatwg.org/#concept-form-reset)", () => {
+    document.body!.innerHTML = `<form id=f><input id=a required><textarea id=b required></textarea><select id=c required><option value="">-</option></select></form>`;
+    byId("f").requestSubmit();
+    expect($$(":user-invalid")).toEqual(["a", "b", "c"]);
+    byId("f").reset();
+    expect($$(":user-invalid")).toEqual([]);
+  });
+
+  test("barred controls match neither even with user validity set", () => {
+    document.body!.innerHTML = `<input id=a required readonly><input id=b required>`;
+    byId("a").dispatchEvent(new (window as any).Event("change"));
+    byId("b").dispatchEvent(new (window as any).Event("change"));
+    byId("b").disabled = true;
+    expect([$$(":user-invalid"), $$(":user-valid")]).toEqual([[], []]);
+  });
+
+  test("style rules with :user-invalid apply once the flag flips (volatile state reuse in the cascade)", () => {
+    document.head!.innerHTML = `<style>input:user-invalid { color: rgb(255, 0, 0) }</style>`;
+    document.body!.innerHTML = `<input id=a required>`;
+    const style = window.getComputedStyle(byId("a"));
+    expect(style.color).not.toBe("rgb(255, 0, 0)");
+    byId("a").dispatchEvent(new (window as any).Event("change"));
+    expect(window.getComputedStyle(byId("a")).color).toBe("rgb(255, 0, 0)");
   });
 });
 

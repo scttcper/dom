@@ -26,7 +26,10 @@ import {
   type ValidityState,
 } from "./validation.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
-import { $customValidity, $dirtiness, $impl, $labels, $options, $selectedOptions, $settled, $updatingSelectedContent, $validity } from "../../keys.ts";
+import { $customValidity, $dirtiness, $impl, $labels, $options, $selectedOptions, $settled, $updatingSelectedContent, $userValidity, $validity } from "../../keys.ts";
+import { noteChangeDispatch } from "./user-validity.ts";
+import type { Event } from "../../events/Event.ts";
+import type { EventTarget } from "../../events/EventTarget.ts";
 
 function opt(o: NodeImpl): HTMLOptionElement {
   return o.node as HTMLOptionElement;
@@ -56,6 +59,8 @@ export class HTMLSelectElement extends HTMLElement {
   [$settled]: boolean;
   /** Re-entrancy guard for `_updateSelectedContent` (it mutates the select's subtree). */
   [$updatingSelectedContent]: boolean;
+  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
+  [$userValidity]: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
@@ -68,6 +73,13 @@ export class HTMLSelectElement extends HTMLElement {
     this[$selectedOptions] = null;
     this[$settled] = false;
     this[$updatingSelectedContent] = false;
+    this[$userValidity] = false;
+  }
+
+  /** Sets user validity when a `change` event is dispatched at this control (forms/user-validity.ts). */
+  override _getTheParent(event: Event): EventTarget | null {
+    noteChangeDispatch(this, event);
+    return super._getTheParent(event);
   }
 
   _ensureSettled(): void {
@@ -311,6 +323,7 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#the-select-element:concept-form-reset-control */
   _reset(): void {
+    this[$userValidity] = false;
     this[$settled] = true;
     const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) {

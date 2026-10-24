@@ -26,7 +26,10 @@ import {
   type ConstraintValidation,
   type ValidityState,
 } from "./validation.ts";
-import { $customValidity, $dirtyValue, $impl, $labels, $rawValue, $selDir, $selEnd, $selStart, $userEdited, $validity, $version } from "../../keys.ts";
+import { $customValidity, $dirtyValue, $impl, $labels, $rawValue, $selDir, $selEnd, $selStart, $userEdited, $userValidity, $validity, $version } from "../../keys.ts";
+import { noteChangeDispatch } from "./user-validity.ts";
+import type { Event } from "../../events/Event.ts";
+import type { EventTarget } from "../../events/EventTarget.ts";
 
 export class HTMLTextAreaElement extends HTMLElement {
   /** Raw value while the dirty value flag is set. */
@@ -41,6 +44,8 @@ export class HTMLTextAreaElement extends HTMLElement {
   [$labels]: LabelsNodeList | null;
   /** The value was last changed by a user edit (tooLong/tooShort only apply then). */
   [$userEdited]: boolean;
+  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
+  [$userValidity]: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
@@ -55,6 +60,13 @@ export class HTMLTextAreaElement extends HTMLElement {
     this[$validity] = null;
     this[$labels] = null;
     this[$userEdited] = false;
+    this[$userValidity] = false;
+  }
+
+  /** Sets user validity when a `change` event is dispatched at this control (forms/user-validity.ts). */
+  override _getTheParent(event: Event): EventTarget | null {
+    noteChangeDispatch(this, event);
+    return super._getTheParent(event);
   }
 
   get type(): string {
@@ -216,6 +228,7 @@ export class HTMLTextAreaElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#the-textarea-element:concept-form-reset-control */
   _reset(): void {
+    this[$userValidity] = false;
     this[$dirtyValue] = false;
     this[$userEdited] = false;
     this[$rawValue] = "";

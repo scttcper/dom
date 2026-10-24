@@ -202,6 +202,7 @@ export const $uri: unique symbol = Symbol.for("rtd.uri");
 export const $url: unique symbol = Symbol.for("rtd.url");
 export const $userActivation: unique symbol = Symbol.for("rtd.userActivation");
 export const $userEdited: unique symbol = Symbol.for("rtd.userEdited");
+export const $userValidity: unique symbol = Symbol.for("rtd.userValidity");
 export const $validity: unique symbol = Symbol.for("rtd.validity");
 export const $value: unique symbol = Symbol.for("rtd.value");
 export const $version: unique symbol = Symbol.for("rtd.version");

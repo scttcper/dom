@@ -91,7 +91,8 @@ import { FileList, createFileList } from "../../window/FileList.ts";
 import { queueElementTask } from "../events.ts";
 import { popoverTargetAttributeActivation } from "../invokers.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
-import { $badInput, $checked, $checkedSet, $customValidity, $dirtyChecked, $dirtyValue, $files, $impl, $indeterminate, $labels, $preApplied, $preChecked, $preCheckedRadio, $preIndeterminate, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $validity, $value, $version } from "../../keys.ts";
+import { $badInput, $checked, $checkedSet, $customValidity, $dirtyChecked, $dirtyValue, $files, $impl, $indeterminate, $labels, $preApplied, $preChecked, $preCheckedRadio, $preIndeterminate, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $userValidity, $validity, $value, $version } from "../../keys.ts";
+import { noteChangeDispatch } from "./user-validity.ts";
 
 /** Accept a FileList or any array-like of File (user-event and tests build lists by hand). */
 function toFileList(value: unknown): FileList {
@@ -408,6 +409,8 @@ export class HTMLInputElement extends HTMLElement {
   [$preCheckedRadio]: NodeImpl | null;
   /** Legacy-pre-activation ran (and changed state) for the current dispatch. */
   [$preApplied]: boolean;
+  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
+  [$userValidity]: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
@@ -433,6 +436,13 @@ export class HTMLInputElement extends HTMLElement {
     this[$preIndeterminate] = false;
     this[$preCheckedRadio] = null;
     this[$preApplied] = false;
+    this[$userValidity] = false;
+  }
+
+  /** Sets user validity when a `change` event is dispatched at this control (forms/user-validity.ts). */
+  override _getTheParent(event: Event): EventTarget | null {
+    noteChangeDispatch(this, event);
+    return super._getTheParent(event);
   }
 
   // --- type ---------------------------------------------------------------------------------
@@ -980,6 +990,7 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control */
   _reset(): void {
+    this[$userValidity] = false;
     this[$dirtyValue] = false;
     this[$dirtyChecked] = false;
     this[$userEdited] = false;

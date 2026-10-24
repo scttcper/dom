@@ -22,6 +22,7 @@ import {
 } from "./input-type.ts";
 import { V_RANGE_OVERFLOW, V_RANGE_UNDERFLOW, type Validatable } from "./validation.ts";
 import { defaultButton } from "./form-submission.ts";
+import { hasUserValidity } from "./user-validity.ts";
 import { isFACE, validatableOf } from "./face.ts";
 import type { HTMLInputElement } from "./HTMLInputElement.ts";
 import { radioGroupHasNoChecked } from "./HTMLInputElement.ts";
@@ -144,6 +145,20 @@ export function isValid(el: NodeImpl): boolean {
 export function isInvalid(el: NodeImpl): boolean {
   if (el.tag === T.form || el.tag === T.fieldset) return hasInvalidControl(el);
   return candidateState(el) === 2;
+}
+
+/**
+ * `:user-valid` — https://html.spec.whatwg.org/#selector-user-valid: input, textarea and select
+ * whose user validity is true (forms/user-validity.ts), candidates for constraint validation
+ * that satisfy their constraints.
+ */
+export function isUserValid(el: NodeImpl): boolean {
+  return hasUserValidity(el) && candidateState(el) === 1;
+}
+
+/** `:user-invalid` — https://html.spec.whatwg.org/#selector-user-invalid: as `:user-valid`, but suffering from a constraint violation. */
+export function isUserInvalid(el: NodeImpl): boolean {
+  return hasUserValidity(el) && candidateState(el) === 2;
 }
 
 function hasRangeLimitations(el: NodeImpl): boolean {
