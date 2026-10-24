@@ -1,6 +1,6 @@
 // Small predicates shared by src/html modules (focus, innerText, HTMLElement).
 
-import { ELEMENT_NODE, HTML_NS } from "../nodes/constants.ts";
+import { DOCUMENT_NODE, ELEMENT_NODE, HTML_NS } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { contentAttr } from "./reflect.ts";
 import { asciiLowercase } from "../nodes/attributes.ts";
@@ -45,22 +45,56 @@ export function contentEditableState(impl: NodeImpl): number {
   return CE_INHERIT;
 }
 
-/** https://html.spec.whatwg.org/#editable — the element is inside an editing host. */
+// Documents whose design mode enabled is true (https://html.spec.whatwg.org/#design-mode-enabled).
+// `designModeUsed` keeps the editability walks free of the WeakSet lookup until a test turns
+// design mode on somewhere.
+const designModeDocs = new WeakSet<object>();
+let designModeUsed = false;
+
+/** https://html.spec.whatwg.org/#dom-document-designmode (getter). */
+export function isDesignModeEnabled(doc: object): boolean {
+  return designModeUsed && designModeDocs.has(doc);
+}
+
+/** https://html.spec.whatwg.org/#dom-document-designmode (setter steps 1–2). */
+export function setDesignModeEnabled(doc: object, enabled: boolean): void {
+  if (enabled) {
+    designModeUsed = true;
+    designModeDocs.add(doc);
+  } else designModeDocs.delete(doc);
+}
+
+/** A child HTML element of a Document whose design mode enabled is true. */
+function isDesignModeRoot(impl: NodeImpl, parent: NodeImpl): boolean {
+  return designModeUsed && parent.type === DOCUMENT_NODE && impl.ns === HTML_NS && designModeDocs.has(parent.node);
+}
+
+/**
+ * https://html.spec.whatwg.org/#editable — the element is an editing host or inside one (what
+ * isContentEditable reports).
+ */
 export function isEditable(impl: NodeImpl): boolean {
-  for (let n: NodeImpl | null = impl; n !== null && n.type === ELEMENT_NODE; n = n.parent) {
-    if (n.ns !== HTML_NS) continue;
-    const s = contentEditableState(n);
-    if (s === CE_TRUE || s === CE_PLAINTEXT) return true;
-    if (s === CE_FALSE) return false;
+  if (impl.type !== ELEMENT_NODE) return false;
+  for (let n = impl; ; ) {
+    if (n.ns === HTML_NS) {
+      const s = contentEditableState(n);
+      if (s === CE_TRUE || s === CE_PLAINTEXT) return true;
+      if (s === CE_FALSE) return false;
+    }
+    const p = n.parent;
+    if (p === null) return false;
+    // https://html.spec.whatwg.org/#editing-host: in design mode the document element is one.
+    if (p.type !== ELEMENT_NODE) return isDesignModeRoot(n, p);
+    n = p;
   }
-  return false;
 }
 
 /** https://html.spec.whatwg.org/#editing-host */
 export function isEditingHost(impl: NodeImpl): boolean {
   if (impl.ns !== HTML_NS) return false;
+  const p = impl.parent;
+  if (p !== null && isDesignModeRoot(impl, p)) return true;
   const s = contentEditableState(impl);
   if (s !== CE_TRUE && s !== CE_PLAINTEXT) return false;
-  const p = impl.parent;
   return p === null || p.type !== ELEMENT_NODE || !isEditable(p);
 }

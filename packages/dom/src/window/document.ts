@@ -7,6 +7,8 @@
 import { Document } from "../nodes/Document.ts";
 import type { Location } from "./Location.ts";
 import { documentParseHTMLUnsafe } from "./fallbacks.ts";
+import { isDesignModeEnabled, setDesignModeEnabled } from "../html/shared.ts";
+import { asciiLowercase } from "../nodes/attributes.ts";
 import type { Window } from "./Window.ts";
 import { $options, $url, $window } from "../keys.ts";
 
@@ -77,10 +79,16 @@ const members: PropertyDescriptorMap = {
   },
   /** https://html.spec.whatwg.org/#dom-document-designmode */
   designMode: {
-    get(): string {
-      return "off";
+    get(this: Document): string {
+      return isDesignModeEnabled(this) ? "on" : "off";
     },
-    set() {},
+    set(this: Document, value: string) {
+      // Step 1: ASCII case-insensitive "on" enables; step 2: "off" disables; other values do
+      // nothing. No selection reset or focus change: there is no editing UI.
+      const v = asciiLowercase(String(value));
+      if (v === "on") setDesignModeEnabled(this, true);
+      else if (v === "off") setDesignModeEnabled(this, false);
+    },
   },
 };
 
