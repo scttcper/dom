@@ -119,4 +119,33 @@ two other agents were running on the machine, so JS moved by a few percent betwe
   allocate no object graphs), `Immutable` on the entity table (data is built once per process
   either way, and V8 owns it on the JS path we ship).
 
+- `Immutable<string[]>` on the HTML tokenizer's literal name tables (`TAG_NAMES` in tags.ts,
+  `ATTR_NAMES` in tokenizer.ts, read on every start/end tag and known attribute): built as a
+  separate addon from a copy of the tokenizer chain, interleaved with an unannotated copy, 9 fresh
+  processes each, median [min–max], identical checksums:
+
+  | variant | addon load | cold 2.5 MB | warm 2.5 MB | 200 × 18 KB fragments | RSS |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | plain | 1.36 [1.24–3.58] | 22.6 [22.0–25.2] | 20.97 [20.76–21.51] | 30.7 [30.1–31.8] | 104.4 MB |
+  | `Immutable` | 1.36 [1.27–3.65] | 22.8 [21.9–24.3] | 20.96 [20.82–21.82] | 30.4 [29.9–31.4] | 104.4 MB |
+
+  No difference: two tables of a few hundred strings are not where the time goes.
+
 **Recommendation: no contracts.** The modules stay in the plain scriptc subset.
+
+## Other scriptc options checked (2026-10-24)
+
+- **Profile-guided optimization:** not available for this addon. `scriptc build --lib` rejects
+  `--profile-use` / `--profile-generate` ("the profile pins the emission and optimization"), and
+  `--profile-generate` only instruments Linux executables.
+- **Worker threads** (`@scriptc/threads`, `publish`) and **`@scriptc/experimental`**
+  (`LifetimeRegion`, `InternTable`, `ThreadSlots`): native threads and pointer-shared graphs exist
+  only in scriptc executables; under Node they fall back to `worker_threads` with cloned messages,
+  and `ProgramLifetime` (what `LifetimeRegion` frees) is rejected in library builds. The DOM runs
+  synchronously inside V8 in test workers, so neither applies.
+- **Native program objects** (`--emit=obj`): an object file defining `main` for linking a whole
+  program into another native build; the `--lib` static archive this addon links is already the
+  right artifact.
+- **`--target-cpu`:** x86-64 only; `--optimization=speed` was measured above (within ±5%).
+- **`wasm32-wasi` library** (a portable reactor instead of per-platform binaries): not tried yet;
+  it needs `zig` and `@scriptc/runtime-wasm32-wasi`.
