@@ -11,7 +11,7 @@
 
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
-import { parseRule, parseStylesheet, RULE_AT, RULE_QUALIFIED, type RawRule } from "./parser.ts";
+import { parseRule, parseStylesheet, RULE_AT, RULE_DECLS, RULE_QUALIFIED, type RawDecl, type RawRule } from "./parser.ts";
 import { DeclBlock } from "./declarations.ts";
 import { CSSStyleDeclaration, type DeclarationOwnerRule } from "./CSSStyleDeclaration.ts";
 import { type MediaQuery, parseMediaQueryList, serializeMediaQueryList } from "./media.ts";
@@ -320,6 +320,10 @@ export class CSSStyleSheet extends StyleSheet {
     let seenOther = false;
     for (const raw of raws) {
       const name = raw.kind === RULE_AT ? raw.name.toLowerCase() : "";
+      // https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet
+      // step 2: constructed sheets drop @import rules (parsed as rules, so text inside strings
+      // and comments is untouched).
+      if (name === "import" && this[$constructed]) continue;
       if (name === "import" || name === "namespace") {
         if (seenOther && name === "import") continue;
         if (seenOther && this[$rules].some((r) => !(r instanceof CSSImportRule) && !(r instanceof CSSNamespaceRule) && !(r instanceof CSSLayerStatementRule))) continue;
@@ -436,7 +440,7 @@ export class CSSStyleSheet extends StyleSheet {
     this[$disallowModification] = true;
     const value = String(text);
     return Promise.resolve().then(() => {
-      this._setText(stripImports(value));
+      this._setText(value);
       this[$disallowModification] = false;
       return this;
     });
@@ -447,7 +451,7 @@ export class CSSStyleSheet extends StyleSheet {
     if (!this[$constructed] || this[$disallowModification]) {
       throw new DOMException("Failed to execute 'replaceSync' on 'CSSStyleSheet': Can't call replaceSync on non-constructed CSSStyleSheets.", "NotAllowedError");
     }
-    this._setText(stripImports(String(text)));
+    this._setText(String(text));
   }
 
   get [Symbol.toStringTag](): string {
@@ -455,11 +459,6 @@ export class CSSStyleSheet extends StyleSheet {
   }
 }
 
-/** Constructed sheets ignore @import rules (https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet). */
-function stripImports(text: string): string {
-  if (text.indexOf("@import") === -1 && text.indexOf("@IMPORT") === -1) return text;
-  return text.replace(/@import[^;]*;/gi, "");
-}
 
 
 // --- rules -------------------------------------------------------------------------------------
@@ -846,19 +845,48 @@ export class CSSScopeRule extends CSSGroupingRule {
     this[$prelude] = prelude;
   }
 
+  /** https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-start — prelude `[(<scope-start>)]? [to (<scope-end>)]?` */
   get start(): string | null {
-    const m = /^\(([^)]*)\)/.exec(this[$prelude]);
-    return m === null ? null : m[1].trim();
+    const p = this[$prelude];
+    return p.charCodeAt(0) === 0x28 /* ( */ ? parenContents(p, 0) : null;
   }
 
+  /** https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-end */
   get end(): string | null {
-    const m = /to\s*\(([^)]*)\)/i.exec(this[$prelude]);
-    return m === null ? null : m[1].trim();
+    const p = this[$prelude];
+    let i = 0;
+    if (p.charCodeAt(0) === 0x28) {
+      i = matchingParen(p, 0);
+      if (i === -1) return null;
+      i++;
+    }
+    const m = /^\s*to\s*\(/i.exec(p.slice(i));
+    return m === null ? null : parenContents(p, i + m[0].length - 1);
   }
 
   override get cssText(): string {
     return blockText(this[$prelude] === "" ? "@scope" : "@scope " + this[$prelude], this[$rules]);
   }
+}
+
+/** Index of the ")" matching the "(" at `open` (nested parentheses and quoted strings skipped), or -1. */
+function matchingParen(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 0x5c /* \ */) i++;
+    else if (c === 0x22 || c === 0x27) {
+      for (i++; i < text.length && text.charCodeAt(i) !== c; i++) if (text.charCodeAt(i) === 0x5c) i++;
+    } else if (c === 0x28) depth++;
+    else if (c === 0x29 && --depth === 0) return i;
+  }
+  return -1;
+}
+
+/** Trimmed text between the "(" at `open` and its matching ")", or null if unbalanced. */
+function parenContents(text: string, open: number): string | null {
+  const close = matchingParen(text, open);
+  return close === -1 ? null : text.slice(open + 1, close).trim();
 }
 
 /** https://drafts.csswg.org/css-transitions-2/#the-cssstartingstylerule-interface — stored, not applied. */
@@ -1189,17 +1217,31 @@ function createKeyframe(raw: RawRule): CSSKeyframeRule | null {
   return new CSSKeyframeRule(key, block);
 }
 
+/** The declarations before the block's first nested rule (all of them when there is none). */
+function leadingDecls(raw: RawRule): RawDecl[] {
+  return raw.leading === raw.decls.length ? raw.decls : raw.decls.slice(0, raw.leading);
+}
+
+function nestedDeclarations(parent: CSSGroupingRule, decls: RawDecl[]): CSSNestedDeclarations {
+  const block = new DeclBlock();
+  block.addRaw(decls);
+  const nd = new CSSNestedDeclarations(block);
+  nd[$parent] = parent;
+  return nd;
+}
+
 /** Creates child rules of a grouping rule (and the nested declarations of a nested group). */
 function fillChildren(rule: CSSGroupingRule, raw: RawRule, sheet: CSSStyleSheet | null, nested: boolean): void {
-  if (nested && raw.decls.length !== 0 && !(rule instanceof CSSStyleRule)) {
-    const block = new DeclBlock();
-    block.addRaw(raw.decls);
-    const nd = new CSSNestedDeclarations(block);
-    nd[$parent] = rule;
-    rule[$rules].push(nd);
-  }
+  const inStyle = nested || rule instanceof CSSStyleRule;
+  if (nested && raw.leading !== 0 && !(rule instanceof CSSStyleRule)) rule[$rules].push(nestedDeclarations(rule, leadingDecls(raw)));
   for (const child of raw.rules) {
-    const c = createRule(child, rule, sheet, nested || rule instanceof CSSStyleRule, false);
+    // Declarations after a nested rule keep their position in the rule list
+    // (https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule); outside style rules they are invalid.
+    if (child.kind === RULE_DECLS) {
+      if (inStyle) rule[$rules].push(nestedDeclarations(rule, child.decls));
+      continue;
+    }
+    const c = createRule(child, rule, sheet, inStyle, false);
     if (c === null || c instanceof CSSImportRule || c instanceof CSSNamespaceRule) continue;
     rule[$rules].push(c);
   }
@@ -1254,7 +1296,9 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     if (!raw.hasBlock) return null;
     if (!isValidSelectorFor(raw.prelude, nested, sheet)) return null;
     const block = new DeclBlock();
-    block.addRaw(raw.decls);
+    // https://drafts.csswg.org/css-syntax-3/#consume-qualified-rule: only the leading
+    // declarations are the style rule's own; later runs become CSSNestedDeclarations.
+    block.addRaw(leadingDecls(raw));
     const sr = new CSSStyleRule(raw.prelude, block);
     sr[$parent] = parent;
     fillChildren(sr, raw, sheet, true);
@@ -1392,6 +1436,21 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
   }
   if (rule !== null) rule[$parent] = parent;
   return rule;
+}
+
+// https://drafts.csswg.org/cssom/#dom-cssrule-csstext: "On setting the cssText attribute must
+// do nothing." A subclass `get cssText` alone shadows CSSRule's accessor pair and would make
+// assignment throw in strict code, so each subclass gets the inherited no-op setter back.
+{
+  const base = Object.getOwnPropertyDescriptor(CSSRule.prototype, "cssText")!;
+  for (const C of [
+    CSSStyleRule, CSSNestedDeclarations, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule,
+    CSSLayerStatementRule, CSSScopeRule, CSSStartingStyleRule, CSSImportRule, CSSNamespaceRule, DescriptorRule,
+    CSSFontFaceRule, CSSPageRule, CSSPropertyRule, CSSKeyframeRule, CSSKeyframesRule,
+  ]) {
+    const own = Object.getOwnPropertyDescriptor(C.prototype, "cssText");
+    if (own !== undefined && own.set === undefined) Object.defineProperty(C.prototype, "cssText", { ...own, set: base.set });
+  }
 }
 
 export interface CSSRuleList {

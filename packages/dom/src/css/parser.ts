@@ -37,6 +37,12 @@ import {
 
 export const RULE_QUALIFIED = 1;
 export const RULE_AT = 2;
+/**
+ * A run of declarations that follows a nested rule inside a block: CSS Syntax's "list of
+ * declarations" item of a block's rules (https://drafts.csswg.org/css-syntax-3/#consume-block-contents),
+ * which becomes a CSSNestedDeclarations rule (https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule).
+ */
+export const RULE_DECLS = 3;
 
 export class RawDecl {
   name: string;
@@ -51,7 +57,7 @@ export class RawDecl {
 }
 
 export class RawRule {
-  /** RULE_QUALIFIED or RULE_AT. */
+  /** RULE_QUALIFIED, RULE_AT or RULE_DECLS. */
   kind: number;
   /** At-rule name without "@" (as written); "" for qualified rules. */
   name: string;
@@ -59,9 +65,14 @@ export class RawRule {
   prelude: string;
   /** Whether the rule ended with a {} block (vs. ";" / EOF). */
   hasBlock: boolean;
-  /** Declarations found directly in the block. */
+  /** Every declaration found directly in the block, in order. */
   decls: RawDecl[];
-  /** Rules found directly in the block. */
+  /**
+   * How many of `decls` precede the first nested rule (the rule's own declarations). The
+   * later ones are also listed, grouped, as RULE_DECLS entries of `rules`.
+   */
+  leading: number;
+  /** Rules found directly in the block, with RULE_DECLS runs between and after them. */
   rules: RawRule[];
 
   constructor(kind: number, name: string, prelude: string, hasBlock: boolean) {
@@ -70,6 +81,7 @@ export class RawRule {
     this.prelude = prelude;
     this.hasBlock = hasBlock;
     this.decls = [];
+    this.leading = 0;
     this.rules = [];
   }
 }
@@ -299,6 +311,19 @@ export class CSSParser {
         const d = this.consumeDeclaration();
         if (d !== null) {
           rule.decls.push(d);
+          // Declarations after a nested rule start a new list of declarations in rules
+          // (https://drafts.csswg.org/css-syntax-3/#consume-block-contents, "decls" handling).
+          const n = rule.rules.length;
+          if (n === 0) rule.leading = rule.decls.length;
+          else {
+            let run = rule.rules[n - 1];
+            if (run.kind !== RULE_DECLS) {
+              run = new RawRule(RULE_DECLS, "", "", false);
+              rule.rules.push(run);
+            }
+            run.decls.push(d);
+            run.leading = run.decls.length;
+          }
           continue;
         }
         this.restore(markPos);
