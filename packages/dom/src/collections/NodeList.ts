@@ -8,9 +8,9 @@
 //    backing store, ~1-9 ns per `list[i]`, vs ~100 ns through a Proxy):
 //    - static lists (querySelectorAll, MutationRecord.addedNodes, ...) are filled once by
 //      `NodeList._static(items)`;
-//    TODO(collections): these own index properties are writable, so `list[0] = x` replaces the
-//    entry instead of throwing (WebIDL: no indexed setter); see the test.fails case in
-//    test/collections/token-lists.test.ts. Fixing it must not slow down the eager updates.
+//    These own index properties are writable, so `list[0] = x` replaces the entry instead of
+//    being ignored (WebIDL: no indexed setter); a deliberate deviation (docs/deviations.md), since
+//    read-only properties would cost a defineProperty per eager update.
 //    - live `childNodes` lists are kept up to date EAGERLY by the mutation algorithms: a
 //      parent whose `childNodes` was materialized carries F_CHILD_LIST, and tree.ts calls
 //      `_appended` / `_popped` / `_rebuild` from link/unlink. Appending is O(1); other changes

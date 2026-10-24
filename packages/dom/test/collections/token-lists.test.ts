@@ -191,7 +191,7 @@ describe("indexed properties — https://webidl.spec.whatwg.org/#dfn-support-ind
   // described in collections/NodeList.ts), so `childNodes[0] = x` silently replaces the entry until
   // the next mutation rebuilds the list. jsdom (and browsers) throw in strict code. Making the
   // properties non-writable costs a defineProperty per eager update on a hot path.
-  test.fails("NodeList indices are read-only too: childNodes[0] = x throws in strict code and leaves the list intact [known gap: writable own index properties]", () => {
+  test.fails("NodeList indices are read-only too: childNodes[0] = x throws in strict code and leaves the list intact [known gap: writable own index properties, docs/deviations.md]", () => {
     const document = createWindow().document;
     document.body!.innerHTML = "<p></p>";
     const list = document.body!.childNodes as unknown as Record<number, unknown>;
