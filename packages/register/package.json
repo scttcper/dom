@@ -1,0 +1,47 @@
+{
+  "name": "@rtd/register",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Installs an @rtd/dom window as the global for test runners without a DOM environment (node:test, bun test).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./pure": "./src/pure.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./pure": {
+        "types": "./dist/types/pure.d.ts",
+        "default": "./dist/pure.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "dependencies": {
+    "@rtd/dom": "workspace:*"
+  },
+  "devDependencies": {
+    "@rtd/jest-dom": "workspace:*",
+    "@rtd/react": "workspace:*",
+    "@rtd/user-event": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "expect": "30.4.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}
