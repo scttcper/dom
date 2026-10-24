@@ -1,7 +1,7 @@
 # Architecture
 
-ctrl-dom (published as `@ctrl/dom`, developed under the workspace name react-testing-dom) is one
-cohesive stack for testing React components on Node.js:
+ctrl-dom (published as `@ctrl/dom`, developed under the workspace name react-testing-dom) is a
+DOM plus the Testing Library stack, for testing React components on Node.js:
 
 ```
 @rtd/react          (drop-in for @testing-library/react)      render, act, renderHook, cleanup
@@ -65,8 +65,8 @@ object anyway (React stores fibers/props as expando properties on it). Putting t
 behind a native boundary therefore makes the hot path slower; the author's earlier
 scriptc-native DOM (`~/gh/vibedom`) reached rough parity with happy-dom for that reason.
 
-So: the node graph lives in V8, written to be as fast as V8 allows. scriptc is used where it
-can actually win and kept available everywhere else:
+So the node graph lives in V8, written to be as fast as V8 allows, and scriptc is limited to the
+modules where it could win:
 
 - Pure algorithmic modules (HTML tokenizer, CSS tokenizer/parser, selector parser, entity
   decoding) are written in the scriptc-compilable subset of TypeScript and marked
@@ -99,9 +99,9 @@ prototypes and therefore many hidden classes; walking fields on wrappers goes me
 | `ns`, `prefix` | element namespace and prefix |
 | `attrs` | `AttrRecord[]` in attribute-list order, or null |
 | `data` | CharacterData data / Attr value |
-| `id` | mirrored id attribute ("" if none) — feeds the id index and `#id` matching |
+| `id` | mirrored id attribute ("" if none); feeds the id index and `#id` matching |
 | `classes` | cached class tokens (null = recompute) |
-| `cache` | `NodeCache` or null — per-node caches for aria/css (nodes/cache.ts) |
+| `cache` | `NodeCache` or null: per-node caches for aria/css (nodes/cache.ts) |
 
 Rules: never add fields outside the constructor; never change a field's value kind; put
 non-hot, type-specific state on the wrapper (e.g. input value lives on `HTMLInputElement`).
@@ -145,7 +145,7 @@ bookkeeping:
 - `F_CONNECTED` on every node of a subtree inserted into / removed from a connected parent;
 - the document id index (`Document._ids`, `_idAdd/_idRemove/_idLookup`);
 - focus fixup (`Document._focused` cleared when the focused element is disconnected);
-- mutation records via `observers/queue.ts` — only when `activeObservers > 0`;
+- mutation records via `observers/queue.ts`, only when `activeObservers > 0`;
 - element hooks, called only when the corresponding flag is set on the element:
   `F_CONNECT_HOOK` → `_connectedSteps/_disconnectedSteps`, `F_ATTR_HOOK` →
   `_attributeChangedSteps`, `F_CHILDREN_HOOK` → `_childrenChangedSteps`; `_cloningSteps`

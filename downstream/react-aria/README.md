@@ -52,8 +52,8 @@ pnpm vitest run --config downstream/vitest.config.ts react-aria   # standalone r
      which is upstream's @swc/jest plus a guard against module-level `await`), our internal
      `@rtd/*` specifiers → their bundles, `react`/`react-dom(/…)` → upstream's copies;
    - `setupFilesAfterEnv: [probe.cjs, ...upstream]`.
-4. **Guards** (`probe.cjs`, first in every test file; receipts in `output/<mode>/environments.jsonl`):
-   jsdom mode really is jsdom; rtd modes run under jest-environment-rtd with **one @rtd/dom per
+4. **Guards** (`probe.cjs`, first in every test file; records in `output/<mode>/environments.jsonl`):
+   jsdom mode runs jsdom; rtd modes run under jest-environment-rtd with **one @rtd/dom per
    worker** (`require('@rtd/dom') === env instance`, `.Node === globalThis.Node`, `document
    instanceof Document`); rtd-full resolves every `@testing-library/*` to our bundles (stock in the
    other modes); **one React**: `renderHook(() => React.useState())` through
@@ -62,7 +62,7 @@ pnpm vitest run --config downstream/vitest.config.ts react-aria   # standalone r
 5. **Run** `node jest.js --config <wrapper> --ci --maxWorkers N <patterns>` under
    `/usr/bin/time -l` with upstream's `yarn test` env (`STRICT_MODE=1 VIRT_ON=1`).
 6. **Report**: `output/<mode>/` is deleted first; it gets `report.json`, `jest.log`,
-   `summary.json`, receipts. `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS (max RSS
+   `summary.json`, records. `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS (max RSS
    of Jest and the workers it reaps), tests passing on jsdom but failing here, missing tests,
    failures by component and by error signature. The exit code is non-zero when a report or probe
    receipt is missing, a probe failed, the jsdom baseline fails, or the discovered test set

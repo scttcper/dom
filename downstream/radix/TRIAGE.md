@@ -18,7 +18,7 @@ parentheses), report `results/2026-10-23-all.md`. No test changed status between
 | | rtd-full | 1128 | 6 | 9 | 8.1s (7.8–8.4) | 242 MiB |
 
 The machine was shared with other heavy agents; RSS is `/usr/bin/time -l` max RSS and moves by
-tens of MiB run to run, so treat it as noise at this suite size. rtd-full fails exactly the same
+tens of MiB run to run, so treat it as noise at this suite size. rtd-full fails the same
 tests as rtd-dom: none of the failures come from our Testing Library packages.
 
 ## Clusters (by count)
@@ -26,7 +26,7 @@ tests as rtd-dom: none of the failures come from our Testing Library packages.
 | # | cluster | owner | rtd-dom | rtd-full | repro |
 | --: | --- | --- | --: | --: | --- |
 | 1 | `for…in` over `ValidityState` yields `_el`, not its WebIDL attributes | html-forms (convention: dom-core) | 4 | 4 | `repros/html-forms-validitystate-for-in.test.ts` |
-| 2 | `HTMLElement.prototype.inert` exists (jsdom 29 has none): fixture assumption | html-elements (decision) | 2 | 2 | `repros/html-elements-inert-jsdom-parity.test.ts` |
+| 2 | `HTMLElement.prototype.inert` exists (jsdom 29 has none): the tests assume jsdom | html-elements (decision) | 2 | 2 | `repros/html-elements-inert-jsdom-parity.test.ts` |
 
 ### 1. `for…in` over ValidityState (html-forms): 4 tests
 
@@ -60,7 +60,7 @@ tests as rtd-dom: none of the failures come from our Testing Library packages.
 - Cause: `supportsInert()` is `HTMLElement.prototype.hasOwnProperty('inert')`; `suppressOthers`
   uses `inert` when supported. @rtd/dom implements the reflected `inert` attribute
   (https://html.spec.whatwg.org/#dom-inert, `packages/dom/src/html/HTMLElement.ts`); jsdom 29 does
-  not. Spec-correct behaviour against a jsdom-only fixture assumption, same category as Base UI's
+  not. Spec-correct behaviour against a test assumption that only holds on jsdom, same category as Base UI's
   visualViewport cluster.
 - Recommendation: keep `inert` (it is spec and drives focus/inertness correctly) and record it in
   `docs/deviations.md` as a known difference from jsdom; the repro then documents the decision.

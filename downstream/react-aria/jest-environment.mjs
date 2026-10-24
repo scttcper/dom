@@ -33,7 +33,7 @@ class TriageEnvironment extends RtdEnvironment {
       // TRIAGE.md "PointerEvent exposed (jsdom 26 has none)": React Aria feature-detects
       // `typeof PointerEvent` and then listens for pointer events, while upstream tests written
       // against jsdom 26 fire mouse/touch events (or define PointerEvent via installPointerEvent).
-      // Not a bug: this only measures how many failures are that fixture assumption.
+      // Not a bug: this only measures how many failures come from that jsdom assumption.
       delete this.global.PointerEvent;
     }
   }

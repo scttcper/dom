@@ -44,7 +44,7 @@ before `trigger.focus()` in that test.
 | 4 | `img.complete` true for a never-fetched `src` | html-elements | 6 | 6 | `repros/html-elements-img-complete-without-fetch.test.ts` |
 | 5 | user-event `yieldBetweenActions` skips the post-action timeout | user-event | 0 | 6 | `repros/user-event-yield-heuristic-skips-timeout.test.ts` |
 | 6 | `validationMessage` precedence: custom error must win | html-forms | 4 | 4 | `repros/html-forms-custom-validity-message-precedence.test.ts` |
-| 7 | `window.visualViewport` exists (jsdom has none): fixture assumption | window (decision) | 4 | 4 | `repros/window-visualviewport-jsdom-parity.test.ts` |
+| 7 | `window.visualViewport` exists (jsdom has none): the tests assume jsdom | window (decision) | 4 | 4 | `repros/window-visualviewport-jsdom-parity.test.ts` |
 | 8 | `<iframe>` has no nested browsing context (documented deviation) | html-elements + window (decision) | 3 | 3 | `repros/html-elements-iframe-browsing-context.test.ts` |
 | 9 | `TouchEvent` rejects touch-like init objects | events (decision) | 2 | 2 | `repros/events-touchevent-plain-touch-init.test.ts` |
 
@@ -158,7 +158,7 @@ before `trigger.focus()` in that test.
 - No differences in failures between rtd-dom and rtd-full apart from cluster 5: our Testing
   Library, React, and jest-dom shims are behaviorally equivalent to the stock packages on this
   suite.
-- Harness check: one React instance (resolution receipts), one `@rtd/dom` instance per worker
+- Harness check: one React instance (resolution records), one `@rtd/dom` instance per worker
   (`globalThis.Node === (await import('@rtd/dom')).Node`), and every `@testing-library/*`
   specifier (including those imported by `@mui/internal-test-utils`) resolved to our packages in
   rtd-full.

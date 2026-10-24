@@ -54,7 +54,7 @@ subset, for bisecting), `--no-build`, `--no-report`.
 ## Guards (per test file; any failure makes the exit code 1)
 
 `probe.cjs` runs first in every file and appends a receipt to `output/<mode>/environments.jsonl`:
-jsdom mode really is jsdom; rtd modes run under jest-environment-rtd with **one @rtd/dom per worker**
+jsdom mode runs jsdom; rtd modes run under jest-environment-rtd with **one @rtd/dom per worker**
 (`require('@rtd/dom') ===` the environment's instance); rtd-full resolves every
 `@testing-library/*` to our bundles (stock elsewhere); **one React** (`renderHook` through the
 Testing Library the tests import, with the React they import). The run also fails when a mode
@@ -63,7 +63,7 @@ different set of tests than jsdom.
 
 ## Output
 
-- `output/<mode>/` (gitignored): Jest JSON, log, `summary.json`, receipts.
+- `output/<mode>/` (gitignored): Jest JSON, log, `summary.json`, records.
 - `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS (`/usr/bin/time -l`), tests that pass
   on jsdom but fail on rtd, failures by test file and error signature.
 - `TRIAGE.md`: what still differs and why; `repros/` (run via `downstream/vitest.config.ts`).

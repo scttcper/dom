@@ -7,15 +7,15 @@ editing them.
 ## 1. DOM differential suite (`test/**`, project `@rtd/compat`)
 
 Every scenario is a function of a window that performs DOM operations and returns plain data.
-It runs on **jsdom** (the oracle — its DOM/forms code is generated from WebIDL and checked
+It runs on **jsdom** (the oracle: its DOM/forms code is generated from WebIDL and checked
 against web-platform-tests) and on **@rtd/dom** in the same process, and the normalized
 observations must be equal (`src/harness.ts`).
 
 When jsdom is wrong or missing an API, the scenario pins the spec-correct value instead, and
 must say why and link the spec:
 
-- `jsdomDeviation: { expected, spec, reason }` — replace jsdom's observation entirely.
-- `jsdomFix: { fix, spec, reason }` — transform jsdom's observation (for one wrong detail in a
+- `jsdomDeviation: { expected, spec, reason }`: replace jsdom's observation entirely.
+- `jsdomFix: { fix, spec, reason }`: transform jsdom's observation (for one wrong detail in a
   large matrix).
 
 Current deviations from jsdom (all follow the HTML Standard and what browsers ship):
@@ -61,7 +61,7 @@ differential. Instead the same files run in three Vitest projects with explicit 
 
 | Project | Environment | Testing Library |
 | --- | --- | --- |
-| `compat:react-jsdom` | jsdom | stock packages — proves every expectation |
+| `compat:react-jsdom` | jsdom | stock packages; proves every expectation |
 | `compat:react-rtd` | `vitest-environment-rtd` | stock packages (DOM swap only) |
 | `compat:react-rtd-full` | `vitest-environment-rtd` | `@rtd/react`, `@rtd/testing-library`, `@rtd/user-event`, `@rtd/jest-dom` aliased over `@testing-library/*` |
 

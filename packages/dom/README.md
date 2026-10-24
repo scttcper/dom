@@ -2,7 +2,7 @@
 
 > Workspace package `@rtd/dom`, published as `@ctrl/dom` (see the root README and scripts/release.ts).
 
-Fast DOM implementation for testing React components — replaces jsdom / happy-dom. Usually
+A DOM for testing React components, replacing jsdom or happy-dom. Usually
 installed through `vitest-environment-ctrl-dom` or `jest-environment-ctrl-dom` rather than used directly.
 
 ```ts

@@ -19,7 +19,7 @@ So suites mock prototypes by hand. In the downstream suites this repo tracks, te
 react-aria (39 files) and sentry (28), mention `getBoundingClientRect` in base-ui (42), react-aria
 (34), sentry (21) and radix (3), and sentry installs its own ResizeObserver mock (18 files).
 
-`layout: "lite"` replaces those zeros with a deliberately simple, predictable box model. It is an
+`layout: "lite"` replaces those zeros with a simple, predictable box model. It is an
 approximation, not a browser: the rules below are the whole model, so a test can state the
 numbers it expects.
 

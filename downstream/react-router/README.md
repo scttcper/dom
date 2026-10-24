@@ -55,7 +55,7 @@ Flags as in downstream/react-hook-form: `--workers N`, `--rounds N`, `--latest`,
 
 ## Guards
 
-`probe.cjs` runs first in every test file (receipts in `output/<mode>/environments.jsonl`). In DOM
+`probe.cjs` runs first in every test file (records in `output/<mode>/environments.jsonl`). In DOM
 files: jsdom mode is jsdom; rtd modes have one @rtd/dom per worker; rtd-full resolves every
 substituted `@testing-library/*` to ours; one React (`renderHook(() => useState())`). In
 `@jest-environment node` files it only checks that no DOM is installed. The run fails on probe

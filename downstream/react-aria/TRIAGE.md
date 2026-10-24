@@ -59,7 +59,7 @@ configurable data properties; @rtd/dom freezes `CSS`, so the assignment throws `
 assign to read only property 'supports' of object '[object CSS]'` and the whole file (63 tests)
 fails to load in both rtd modes.
 
-## 2. window/events: `PointerEvent` exists (fixture assumption, not a bug)
+## 2. window/events: `PointerEvent` exists (the tests assume jsdom; not a bug)
 
 React Aria feature-detects `typeof PointerEvent !== 'undefined'` (useInteractOutside, usePress,
 useMove, …) and then listens for pointer events only. The upstream suite targets jsdom 26, which
@@ -109,7 +109,7 @@ in a rAF and tests flush it with `act(() => jest.runAllTimers())`.
   this.fakeTimersModern = new ModernFakeTimers({ config: config.projectConfig, global: this.global as never });
   ```
 
-  (`@jest/fake-timers` becomes a dependency.) `--triage fake-raf` applies exactly this and fixes
+  (`@jest/fake-timers` becomes a dependency.) `--triage fake-raf` applies this and fixes
   ~20 smoke / ~38 `all` tests. The window fix is still needed for Vitest and real-timer users.
 
 ## 5. jest-environment: interface prototypes are shared across test files of a worker
@@ -182,7 +182,7 @@ RAC Checkbox, CheckboxField, RadioGroup, RadioField "should support press state 
 tracks **14.6.8**. Upstream commit 71a5475 (testing-library/user-event#1325) changed the `click`
 dispatched by a Space keyup from `pointerType: "undefined"` (`String(undefined)`) to `""`. React
 Aria's `usePress` treats `detail === 0 && !pointerType` as a virtual click and presses again, so
-stock 14.6.8 double-presses exactly like ours; the rtd-dom baseline passes only because it runs
+stock 14.6.8 double-presses like ours; the rtd-dom baseline passes only because it runs
 14.6.5. `packages/user-event/test/react/press.test.tsx` runs a usePress-style component under both
 our user-event and stock 14.6.8 and asserts the same event sequence and press count. We keep
 14.6.8's behavior rather than reintroduce the old string.

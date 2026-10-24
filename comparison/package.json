@@ -2,7 +2,7 @@
   "name": "@rtd/comparison",
   "version": "0.0.0",
   "private": true,
-  "description": "How the DOMs people test React components with compare: jsdom, happy-dom and ctrl-dom, under Vitest, measured the same way. Generates the README's benchmark table.",
+  "description": "Benchmarks jsdom, happy-dom and ctrl-dom the same way under Vitest and Jest, and generates the README's benchmark table.",
   "type": "module",
   "scripts": {
     "bench": "node run.ts",

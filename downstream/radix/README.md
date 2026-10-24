@@ -62,8 +62,8 @@ report median wall/RSS and list tests that change status between rounds), `--lat
 
 ## Guards (every run, reported in the results header; any failure makes the exit code 1)
 
-- one `react` module id per mode (resolution receipts plugin, `output/<mode>/resolutions.jsonl`);
-- a setup-file probe per worker (`output/<mode>/environments.jsonl`): jsdom mode really is jsdom;
+- one `react` module id per mode (resolution records plugin, `output/<mode>/resolutions.jsonl`);
+- a setup-file probe per worker (`output/<mode>/environments.jsonl`): jsdom mode runs jsdom;
   rtd modes satisfy `document instanceof Document && Node === dom.Node && window === globalThis`
   against the `@rtd/dom` module the test realm imports (single instance);
 - rtd-full: each aliased specifier imports the same module object as our package entry, and no
@@ -72,7 +72,7 @@ report median wall/RSS and list tests that change status between rounds), `--lat
 
 ## Output
 
-- `output/<mode>/` (gitignored): Vitest JSON, log, `summary.json`, receipts.
+- `output/<mode>/` (gitignored): Vitest JSON, log, `summary.json`, records.
 - `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS (`/usr/bin/time -l`), tests that
   pass on jsdom but fail on rtd, failures by component and error signature.
 - `TRIAGE.md`: clusters with owners and repros (`repros/`, run via `downstream/vitest.config.ts`).

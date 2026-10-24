@@ -29,8 +29,8 @@ install themselves when it is missing) and no `ResizeObserver`. `"modern"` expos
 
 Vitest's default pool starts a fresh worker for every test file, and that spawn (~350 ms) is
 most of what a small test file costs. With `pool: "vmThreads"` (or `"vmForks"`) workers stay up
-and each file gets a fresh vm context instead. That is where this environment shines: its
-`setupVM` + teardown take ~1 ms per file (jsdom builds a whole new window, ~70 ms), and nothing
+and each file gets a fresh vm context instead. This environment's `setupVM` + teardown take
+~1 ms per file (jsdom builds a whole new window, ~70 ms), and nothing
 is retained between files (0.03 MB/file after GC over 100 files; happy-dom 5.4 MB/file). The
 context is a plain (non-contextified) vm global, as in jest-environment-ctrl-dom, so global lookups
 in test and app code are ordinary property loads.

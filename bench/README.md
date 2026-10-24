@@ -31,7 +31,7 @@ directory is git-ignored; copy numbers you want to keep into a doc.
 | --- | --- | --- |
 | `jsdom` | jsdom, installed by Vitest's own `jsdom` environment code | stock `@testing-library/{dom,react,user-event,jest-dom}` |
 | `happy-dom` | happy-dom, via Vitest's own `happy-dom` environment code | stock |
-| `rtd-dom` | `@rtd/dom` via `vitest-environment-rtd` | stock — the "swap only the environment" path |
+| `rtd-dom` | `@rtd/dom` via `vitest-environment-rtd` | stock (the "swap only the environment" path) |
 | `rtd` | `@rtd/dom` | `@rtd/testing-library`, `@rtd/react`, `@rtd/user-event`, `@rtd/jest-dom` |
 | `rtd-dom-dist`, `rtd-dist` | as above, but every `@rtd/*` import resolves to the bundled `packages/*/dist/*.js` | |
 
@@ -130,11 +130,11 @@ sample (fresh process, default pool, interleaved) with:
 - `jsdom`, `happy-dom`: Vitest's built-in environments;
 - `rtd`: `environment: 'rtd'` (vitest-environment-rtd), stock testing-library;
 - `rtd-full`: `rtd` plus `resolve.alias` of `@testing-library/{react,dom,user-event}` and
-  `@testing-library/jest-dom/vitest` to the `@rtd` drop-ins — same test files.
+  `@testing-library/jest-dom/vitest` to the `@rtd` drop-ins, with the same test files.
 
 It reports **wall time** of the whole `vitest run` (what users feel), Vitest's own per-file
 diagnostics summed over files (`environmentSetupDuration`, setup files, collect/import, test
-duration — CPU time across workers, not wall), and per-file worker RSS/heap recorded by the
+duration: CPU time across workers, not wall), and per-file worker RSS/heap recorded by the
 setup file. Only runs where every file passed are timed.
 
 ## Worker startup: where a fresh Vitest worker's time goes

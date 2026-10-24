@@ -24,7 +24,7 @@ node downstream/base-ui/run.ts --files packages/react/src/tabs/list/TabsList.tes
 | `--grep PATTERN` | Vitest `--testNamePattern` |
 | `--shims react,dom,user-event,jest-dom` | rtd-full: substitute only some of our packages (bisect a failure to one package; stock packages left in place are inlined so they bind to the chosen `@testing-library/dom`) |
 | `--cold` | disable Vitest's on-disk module cache (every resolve receipt is recorded; slower) |
-| `--triage` | apply the triage shims in `rtd-environment.ts` (workarounds for blockers already filed in `TRIAGE.md`) to see the failures behind them. Reports are written as `results/<date>-<preset>-triage.md` and labelled; they are **not** compatibility results |
+| `--triage` | apply the workarounds in `rtd-environment.ts` (workarounds for blockers already filed in `TRIAGE.md`) to see the failures behind them. Reports are written as `results/<date>-<preset>-triage.md` and labelled; they are **not** compatibility results |
 | `--no-report` | skip `results/*.md` (raw output is still written) |
 
 ## What it does
@@ -62,7 +62,7 @@ node downstream/base-ui/run.ts --files packages/react/src/tabs/list/TabsList.tes
    `results/<date>-<preset>.md` has per-mode counts, wall time, peak RSS (max RSS of Vitest and the
    workers it reaps, from `time -l`), the tests that pass on jsdom but fail on each rtd mode,
    missing/added/newly-skipped tests vs jsdom, and failures grouped by component and by error
-   signature. Exit code is non-zero when a report is missing, receipts are missing, the jsdom
+   signature. Exit code is non-zero when a report is missing, records are missing, the jsdom
    baseline fails, or the discovered test set differs from jsdom.
 
 ## Modes
@@ -82,12 +82,12 @@ minimal fallback installer for when that is unavailable.
 - **userAgent contains "jsdom"** (`Mozilla/5.0 (darwin) rtd-dom (jsdom-compatible headless)`).
   Base UI and `@mui/internal-test-utils` branch on `/jsdom/.test(navigator.userAgent)` to skip
   tests that need real layout and to install a `setTimeout`-based requestAnimationFrame
-  (`test/setupVitest.ts`). With this UA both engines run exactly the same tests and branches; the
+  (`test/setupVitest.ts`). With this UA both engines run the same tests and branches; the
   runner checks identical discovered/skipped sets. It measures jsdom replacement, not a claim of
   browser-grade layout.
 - Some upstream jsdom-only tests pin jsdom quirks rather than standards (e.g.
   `getViewportRect` expects `window.visualViewport === undefined`); those are listed in
-  `TRIAGE.md` as fixture assumptions, not bugs.
+  `TRIAGE.md` as tests that assume jsdom, not bugs.
 - `@mui/internal-test-utils` also uses stock `dom-accessibility-api` (its `toHaveAccessibleName`
   chai matcher) in every mode; that dependency is not substituted.
 - Our packages change under the runner while other agents work; a report notes "our sources

@@ -48,7 +48,7 @@ node downstream/sentry/run.ts --files static/app/components/core/tabs/tabs.spec.
    (`tests/js/bin/test.mjs`: `NODE_ENV=test`, `TZ=America/New_York`) with `CI=true --ci` (so
    upstream's CI-only owner-stack skip is active, as in their CI) under `/usr/bin/time -l`.
 3. **Guards** (per test file, written to `output/<label>/<mode>/environments.jsonl`; the file
-   fails if a guard fails): jsdom mode really runs jsdom; rtd modes run one `@rtd/dom` instance
+   fails if a guard fails): jsdom mode runs jsdom; rtd modes run one `@rtd/dom` instance
    (the environment's window, the test registry's `require('@rtd/dom')` and `globalThis.Node` are
    the same objects); rtd-full resolves every `@testing-library/*` to our bundles. `resolutions.jsonl`
    records how `react`/`react-dom`/`@testing-library/*` resolve; the report checks there is one
@@ -60,7 +60,7 @@ node downstream/sentry/run.ts --files static/app/components/core/tabs/tabs.spec.
    `setup()`), and the worker's RSS / heap after teardown, giving **memory growth per file per
    worker** (least-squares slope; `--gc` for post-GC heap).
 5. **Report**: `results/<date>-<label>.md`, raw Jest JSON/logs/samples in `output/<label>/`
-   (gitignored). Exit code is non-zero when a report or guard receipts are missing, more than one
+   (gitignored). Exit code is non-zero when a report or guard records are missing, more than one
    React was loaded, or the discovered test set differs from jsdom.
 
 ## Modes
@@ -68,7 +68,7 @@ node downstream/sentry/run.ts --files static/app/components/core/tabs/tabs.spec.
 | mode | environment | Testing Library | Sentry's jsdom hacks |
 | --- | --- | --- | --- |
 | `jsdom` | upstream `tests/js/sentry-test/jest-environment.cjs` (`@sentry/jest-environment/jsdom` → jsdom 30.1.1, `--retain-maps-for-n-gc=0`) | stock (lockfile) | active |
-| `rtd-dom` | `jest-environment-rtd` (exactly what its preset names) wrapped like upstream wraps jsdom: `@sentry/jest-environment`'s `createEnvironment({baseEnvironment})`, `wrapWithStructuredClone`, same V8 flag; preset `moduleNameMapper` for `@rtd/dom(/internal)` | stock | active |
+| `rtd-dom` | `jest-environment-rtd` (what its preset names) wrapped like upstream wraps jsdom: `@sentry/jest-environment`'s `createEnvironment({baseEnvironment})`, `wrapWithStructuredClone`, same V8 flag; preset `moduleNameMapper` for `@rtd/dom(/internal)` | stock | active |
 | `rtd-full` | as rtd-dom | `@testing-library/react` (+`/pure`, `/dont-cleanup-after-each`), `/dom`, `/user-event`, `/jest-dom` (+`/matchers`, `/jest-globals`) → `packages/*/dist/*.cjs`; `@rtd/aria`, `@rtd/testing-library` → their dist | active |
 | `rtd-nohacks` | as rtd-dom | as rtd-full | **experiment**: `harness/nohacks.ts` runs after upstream setup and restores our `getComputedStyle`, real `@floating-ui/react-dom` (`jest.unmock`, verified), our `matchMedia` and `IntersectionObserver` |
 | `rtd-direct` (opt-in) | **experiment**: rtd-dom, but the vm context is created with `vm.constants.DONT_CONTEXTIFY` (as jsdom 30 does) instead of jest-environment-node's contextified GlobalProxy context | stock | active |
@@ -156,7 +156,7 @@ Worker memory (forced GC per file, `results/2026-10-23-components-gc-triage.md`)
 | --- | --: | --: | --: |
 | jsdom | 0.18 MiB | 232 MiB | 1,084 MiB |
 | rtd-dom, timers **not** cleared (window timers leak, TRIAGE.md) | **7.2 MiB** | 1,023 MiB | 1,695 MiB |
-| rtd-dom, timers cleared (triage shim) | 0.17 MiB | 189 MiB | 704 MiB |
+| rtd-dom, timers cleared (workaround) | 0.17 MiB | 189 MiB | 704 MiB |
 | rtd-full, timers cleared | 0.39 MiB | 230 MiB | 535 MiB |
 
 Full suite (`all`, triage, no forced GC): heap growth/file jsdom 0.55 MiB, rtd-dom 0.04 MiB,

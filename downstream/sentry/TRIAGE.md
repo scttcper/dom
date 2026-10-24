@@ -6,7 +6,7 @@ RTL 16.3.2 / DTL 10.4.1 / user-event 14.6.7 / jest-dom 7.0.1. Repros live in `re
 @rtd/dom until fixed). Counts are failing tests that pass on jsdom, from the 2026-10-23 runs of
 `components` (653 files, 6,432 tests) and `views` (9 areas, 1,818 tests) on the tree at that time
 (`results/2026-10-23-{components,views}{,-triage}.md`); `--triage` runs apply the workarounds
-marked "triage shim" to see what is behind them.
+marked "workaround" to see what is behind them.
 
 Full suite with `--triage` (`results/2026-10-23-all-triage.md`): rtd-dom 177 failures, rtd-full
 404 (133 of them rtd-full-only, cluster 3); the as-is full-suite run hit a mid-edit @rtd/dom and
@@ -33,7 +33,7 @@ Not failures, but blocking a fair comparison:
 
 | cluster | effect | owner | repro |
 | --- | --- | --- | --- |
-| **Window timers survive `window.close()`**: `window.setTimeout`/`setInterval` are the host's, so long timers left by app code (TanStack Query GC timers, debounces, polling intervals) keep each finished test file's vm context and module graph alive | worker heap grows **7.2 MiB per test file** after a forced GC (jsdom 0.26 MiB); ~1 GiB retained per worker after ~120 files; with timers cleared (triage shim) rtd grows 0.17 MiB/file and peak worker RSS drops from 1,695 MiB to 704 MiB (jsdom 1,084 MiB). Without a fix Sentry would need `workerIdleMemoryLimit` on rtd | window (timers) + jest-environment (teardown) | `window-timers-survive-close-leak.test.ts` |
+| **Window timers survive `window.close()`**: `window.setTimeout`/`setInterval` are the host's, so long timers left by app code (TanStack Query GC timers, debounces, polling intervals) keep each finished test file's vm context and module graph alive | worker heap grows **7.2 MiB per test file** after a forced GC (jsdom 0.26 MiB); ~1 GiB retained per worker after ~120 files; with timers cleared (workaround) rtd grows 0.17 MiB/file and peak worker RSS drops from 1,695 MiB to 704 MiB (jsdom 1,084 MiB). Without a fix Sentry would need `workerIdleMemoryLimit` on rtd | window (timers) + jest-environment (teardown) | `window-timers-survive-close-leak.test.ts` |
 | **Worker crashes after teardown** (`ReferenceError: window is not defined` from React's scheduler / TanStack notifyManager after uninstall) | 125+ worker deaths per components run, 21 files lost, ~130 workers spawned instead of 6 | jest-environment | **fixed in `cf0a3f9`** during this run (teardown keeps the closed window's globals, like jsdom) |
 
 ## Performance finding (jest-environment)
@@ -45,7 +45,7 @@ constructor) passes the same tests and cuts components CPU from ~348 s to ~315 s
 Proposed: build the environment on a DONT_CONTEXTIFY context (as `~/gh/vibedom/downstream/sentry`
 found for React element creation).
 
-## Triage shims (`run.ts --triage`)
+## Workarounds (`run.ts --triage`)
 
 Applied only to rtd modes, in `harness/env-rtd.cjs`; reports are labelled `-triage`:
 

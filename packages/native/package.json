@@ -2,7 +2,7 @@
   "name": "@rtd/native",
   "version": "0.0.0",
   "private": true,
-  "description": "scriptc-compiled native accelerators (Node-API) for pure algorithmic modules, plus the scriptc compatibility gate.",
+  "description": "scriptc experiments: native and wasm builds of the parser modules (not shipped; see RESULTS.md), plus the scriptc:check gate.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

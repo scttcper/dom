@@ -54,7 +54,7 @@ median wall/RSS, tests that change status between rounds), `--latest` (upstream 
 ## Guards (every run; any failure makes the exit code 1)
 
 - one `react` module id and one `react-dom` copy (inside the checkout) per mode, from the
-  resolution receipts (`output/<mode>/resolutions.jsonl`). react-dom matters here: two of the
+  resolution records (`output/<mode>/resolutions.jsonl`). react-dom matters here: two of the
   packages depend on `react` only, so a bare `react-dom/client` import from our sources would
   otherwise resolve to this workspace's react-dom and its React (TRIAGE.md);
 - a setup-file probe per test file (`output/<mode>/environments.jsonl`): jsdom mode is jsdom; rtd
@@ -65,7 +65,7 @@ median wall/RSS, tests that change status between rounds), `--latest` (upstream 
 
 ## Output
 
-- `output/<mode>/` (gitignored): Vitest JSON, log, `summary.json`, receipts.
+- `output/<mode>/` (gitignored): Vitest JSON, log, `summary.json`, records.
 - `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS, tests that pass on jsdom but fail
   on rtd, failures by file and error signature.
 - `TRIAGE.md`: what differs and why.

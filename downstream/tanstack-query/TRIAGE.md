@@ -33,7 +33,7 @@ The first rtd-full run failed 48 tests in `react-query-persist-client` and `reac
 depend on `react` but not on `react-dom`, so Vite's `resolve.dedupe` found no react-dom from their
 roots and our `@testing-library/react` source's `import "react-dom/client"` fell through to this
 workspace's react-dom 19.3.1, whose natively loaded `require("react")` is a second React. The
-existing guard only looked at `react` receipts. run.ts now pins `react-dom` in rtd-full to the
+existing guard only looked at `react` records. run.ts now pins `react-dom` in rtd-full to the
 copy `react-query` resolves, and the guard also fails the run when react-dom resolves to more than
 one copy or outside the checkout. Not a @rtd bug.
 

@@ -1,8 +1,8 @@
 # @ctrl/dom
 
-The DOM for testing React components. A drop-in replacement for jsdom and happy-dom that is
-several times faster and uses a fraction of the memory, with Testing Library, user-event and
-jest-dom built in.
+A DOM for testing React components. It replaces jsdom or happy-dom, and ships its own Testing
+Library, user-event and jest-dom built on it. A 100-file React suite runs in 3.6 s with the whole
+stack against 14.4 s on jsdom and 9.3 s on happy-dom, in less memory than either.
 
 - **Drop-in.** Same globals as jsdom, and Testing Library implementations with the same
   exports, behavior, error messages and `prettyDOM` output as `@testing-library/dom`, `/react`,
@@ -33,7 +33,7 @@ import { ctrlDom } from "@ctrl/dom/vitest";
 
 export default defineConfig({
   plugins: [ctrlDom()],
-  test: { pool: "vmThreads" }, // optional, and where @ctrl/dom shines: ~1 ms per test file
+  test: { pool: "vmThreads" }, // optional: per-file setup drops to about 1 ms
 });
 ```
 
@@ -311,6 +311,6 @@ Details: the repository's `docs/agent-debugging.md`.
 
 ## Differences from jsdom
 
-There is no layout (geometry is zero unless mocked), no script execution, no navigation and no
-network, as in jsdom and happy-dom. Every intentional difference is listed, with the reason, in
-the repository's `docs/deviations.md`.
+There is no script execution, no navigation and no network, as in jsdom and happy-dom, and no
+layout unless you turn on `layout: "lite"` (otherwise geometry is zeros, as in jsdom). Every
+intentional difference is listed, with the reason, in the repository's `docs/deviations.md`.
