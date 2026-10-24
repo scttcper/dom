@@ -4,8 +4,10 @@
 // so a change in what passes shows up as a diff (.github/workflows/downstream.yml runs every suite
 // on demand and calls this).
 //
-//   node downstream/track.ts [--suites base-ui,radix,react-aria,sentry] [--markdown out.md]
+//   node downstream/track.ts [--suites base-ui,radix,...] [--markdown out.md]
 //   node downstream/track.ts --update [--suites ...]    rewrite the baseline from the latest runs
+//   node downstream/track.ts --readme                   regenerate README.md's "Tested against"
+//                                                       table from the baseline (no runs needed)
 //
 // Exits 1 when a test that passed in the baseline no longer passes (in any mode: a jsdom
 // regression means the upstream run itself is broken), when a mode the baseline tracks has no
@@ -20,12 +22,30 @@ import { parseArgs } from "node:util";
 const here = dirname(fileURLToPath(import.meta.url));
 const BASELINE = join(here, "baseline.json");
 
-/** Each suite's tracked preset and where its runner writes a mode's report. */
-const SUITES: Record<string, { preset: string; output: (mode: string) => string }> = {
-  "base-ui": { preset: "all", output: (mode) => join(here, "base-ui/output", mode) },
-  radix: { preset: "all", output: (mode) => join(here, "radix/output", mode) },
-  "react-aria": { preset: "all", output: (mode) => join(here, "react-aria/output", mode) },
-  sentry: { preset: "components", output: (mode) => join(here, "sentry/output/components", mode) },
+/** Each suite's tracked preset, where its runner writes a mode's report, and its README row label. */
+const SUITES: Record<string, { preset: string; output: (mode: string) => string; title: string; scope: string }> = {
+  "base-ui": { preset: "all", output: (mode) => join(here, "base-ui/output", mode), title: "Base UI", scope: "`@base-ui/react`, Vitest" },
+  radix: { preset: "all", output: (mode) => join(here, "radix/output", mode), title: "Radix Primitives", scope: "`unit` project, Vitest" },
+  "react-aria": {
+    preset: "all",
+    output: (mode) => join(here, "react-aria/output", mode),
+    title: "React Aria",
+    scope: "`react-aria` + `react-aria-components`, Jest",
+  },
+  sentry: { preset: "components", output: (mode) => join(here, "sentry/output/components", mode), title: "Sentry", scope: "`static/app/components`, Jest" },
+  "tanstack-query": {
+    preset: "all",
+    output: (mode) => join(here, "tanstack-query/output", mode),
+    title: "TanStack Query",
+    scope: "React adapter packages, Vitest",
+  },
+  "react-hook-form": { preset: "all", output: (mode) => join(here, "react-hook-form/output", mode), title: "React Hook Form", scope: "`Web` project, Jest" },
+  "react-router": {
+    preset: "all",
+    output: (mode) => join(here, "react-router/output", mode),
+    title: "React Router",
+    scope: "`packages/react-router`, Jest in ESM mode",
+  },
 };
 const MODES = ["jsdom", "rtd-dom", "rtd-full"];
 
@@ -33,6 +53,7 @@ const { values: flags } = parseArgs({
   options: {
     suites: { type: "string", default: Object.keys(SUITES).join(",") },
     update: { type: "boolean", default: false },
+    readme: { type: "boolean", default: false },
     markdown: { type: "string" },
   },
 });
@@ -87,6 +108,47 @@ function readRun(suite: string, mode: string): Run | null {
 const baseline: Baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, "utf8")) : {};
 const suites = flags.suites.split(",").filter(Boolean);
 for (const suite of suites) if (!(suite in SUITES)) throw new Error(`unknown suite ${suite} (have: ${Object.keys(SUITES).join(", ")})`);
+
+if (flags.readme) {
+  // README.md's "Tested against" table, between the downstream:start/end markers. Generated from
+  // the baseline alone, so it always shows what the tracked runs recorded.
+  const README = join(here, "../README.md");
+  const START = /<!-- downstream:start[^>]*-->\n/;
+  const END = "<!-- downstream:end -->";
+  const readme = readFileSync(README, "utf8");
+  const start = START.exec(readme);
+  const end = readme.indexOf(END);
+  if (start === null || end < start.index) throw new Error("README.md has no <!-- downstream:start --> … <!-- downstream:end --> markers");
+  const n = (x: number) => x.toLocaleString("en-US");
+  const rows = ["| Suite | Upstream | Tests | jsdom | ctrl-dom environment | ctrl-dom + its Testing Library | Differences |", "| --- | --- | ---: | ---: | ---: | ---: | --- |"];
+  for (const [suite, meta] of Object.entries(SUITES)) {
+    const tracked = baseline[suite];
+    if (tracked === undefined) throw new Error(`${suite}: not in downstream/baseline.json (run with --update)`);
+    const manifest = JSON.parse(readFileSync(join(here, suite, "manifest.json"), "utf8")) as { repository: string };
+    const repoUrl = manifest.repository.replace(/\.git$/, "");
+    const slug = repoUrl.replace(/^https:\/\/github\.com\//, "");
+    const jsdom = tracked.modes.jsdom;
+    const cell = (mode: string): string => {
+      const c = tracked.modes[mode];
+      if (c === undefined) return "—";
+      const flaky = new Set(c.flaky ?? []);
+      const intermittent = c.failing.filter((k) => flaky.has(k)).length;
+      return n(c.passed) + (intermittent ? ` (${intermittent} intermittent)` : "");
+    };
+    rows.push(
+      `| ${meta.title} (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${n(jsdom.passed + jsdom.failed)} | ${cell("jsdom")} | ${cell("rtd-dom")} | ${cell("rtd-full")} | [TRIAGE.md](downstream/${suite}/TRIAGE.md) |`,
+    );
+  }
+  const table = [
+    "Each suite is the project's own unmodified tests at a pinned commit, run three ways: on **jsdom** (the project's own setup), on the **ctrl-dom environment** (only the test environment swapped; stock Testing Library), and on **ctrl-dom + its Testing Library** (`@testing-library/*` replaced by ours too). Columns count passing tests; skipped tests are left out. Each TRIAGE.md says what still differs and why.",
+    "",
+    ...rows,
+    "",
+  ].join("\n");
+  writeFileSync(README, readme.slice(0, start.index + start[0].length) + table + readme.slice(end));
+  console.log(`wrote ${relative(process.cwd(), README)} (${Object.keys(SUITES).length} suites)`);
+  process.exit(0);
+}
 
 if (flags.update) {
   for (const suite of suites) {

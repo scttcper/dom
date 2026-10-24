@@ -12,7 +12,7 @@ on:
     inputs:
       suites:
         description: Suites to run (JSON array)
-        default: '["base-ui","radix","react-aria","sentry"]'
+        default: '["base-ui","radix","react-aria","sentry","tanstack-query","react-hook-form","react-router"]'
 
 permissions:
   contents: read

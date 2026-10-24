@@ -141,5 +141,108 @@
         ]
       }
     }
+  },
+  "tanstack-query": {
+    "preset": "all",
+    "commit": "9e4253766f8015d1372bcd515f50103fd067a42d",
+    "modes": {
+      "jsdom": {
+        "passed": 477,
+        "failed": 0,
+        "skipped": 0,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-dom": {
+        "passed": 477,
+        "failed": 0,
+        "skipped": 0,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-full": {
+        "passed": 477,
+        "failed": 0,
+        "skipped": 0,
+        "failing": [],
+        "flaky": []
+      }
+    }
+  },
+  "react-hook-form": {
+    "preset": "all",
+    "commit": "ed9345ab9c199cb37afbb6ef73970cf697f4585d",
+    "modes": {
+      "jsdom": {
+        "passed": 1729,
+        "failed": 0,
+        "skipped": 0,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-dom": {
+        "passed": 1728,
+        "failed": 1,
+        "skipped": 0,
+        "failing": [
+          "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
+        ],
+        "flaky": [
+          "src/__tests__/useFieldArray.test.tsx::not corrupt parent state when remove is called with values prop",
+          "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
+        ]
+      },
+      "rtd-full": {
+        "passed": 1728,
+        "failed": 1,
+        "skipped": 0,
+        "failing": [
+          "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
+        ],
+        "flaky": [
+          "src/__tests__/useFieldArray.test.tsx::not corrupt parent state when remove is called with values prop",
+          "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
+        ]
+      }
+    }
+  },
+  "react-router": {
+    "preset": "all",
+    "commit": "bb7c1f021363e96745dd3cfc5d2431e9b80ffe61",
+    "modes": {
+      "jsdom": {
+        "passed": 2569,
+        "failed": 0,
+        "skipped": 15,
+        "failing": [],
+        "flaky": []
+      },
+      "rtd-dom": {
+        "passed": 2565,
+        "failed": 4,
+        "skipped": 15,
+        "failing": [
+          "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher removal uses current page matches and URL when reloading routes after submissions",
+          "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher states loader fetch",
+          "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher states loader submission fetch",
+          "packages/react-router/__tests__/router/router-test.ts::a router data loading (new) sends proper arguments to loaders"
+        ],
+        "flaky": []
+      },
+      "rtd-full": {
+        "passed": 2565,
+        "failed": 4,
+        "skipped": 15,
+        "failing": [
+          "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher removal uses current page matches and URL when reloading routes after submissions",
+          "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher states loader fetch",
+          "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher states loader submission fetch",
+          "packages/react-router/__tests__/router/router-test.ts::a router data loading (new) sends proper arguments to loaders"
+        ],
+        "flaky": [
+          "packages/react-router/__tests__/data-memory-router-test.tsx::createMemoryRouter defer freezes the UI for aborted deferreds"
+        ]
+      }
+    }
   }
 }
