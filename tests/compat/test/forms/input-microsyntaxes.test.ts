@@ -240,7 +240,7 @@ describe("allowed value step — https://html.spec.whatwg.org/#concept-input-ste
       // Week default step base is -259,200,000 (1970-W01's Monday).
       { type: "week", attrs: {}, value: "1970-W02" },
       { type: "datetime-local", attrs: {}, value: "2024-01-01T10:00:01" },
-    ],
+    ] as Array<{ type: string; attrs: Record<string, string>; value: string }>,
     (w, c) => {
       const el = input(w, c.type, c.attrs);
       el.value = c.value;
