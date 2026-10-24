@@ -147,5 +147,46 @@ two other agents were running on the machine, so JS moved by a few percent betwe
   program into another native build; the `--lib` static archive this addon links is already the
   right artifact.
 - **`--target-cpu`:** x86-64 only; `--optimization=speed` was measured above (within ±5%).
-- **`wasm32-wasi` library** (a portable reactor instead of per-platform binaries): not tried yet;
-  it needs `zig` and `@scriptc/runtime-wasm32-wasi`.
+- **`wasm32-wasi` library** (a portable reactor instead of per-platform binaries): measured on
+  scriptc 0.4.4 below; slower than both JS and native.
+
+## scriptc 0.4.4 and the wasm32-wasi reactor (2026-10-24)
+
+Apple M4 Max, Node 26.12.1, zig 0.17.0. `node scripts/bench.ts --samples 5 --impls js,native,wasm`:
+5 fresh processes per cell, implementations rotated per sample, median [min–max] in ms. All three
+return identical results on every op (including non-ASCII entity values).
+
+**0.4.2 → 0.4.4, native only** (same session, same machine, interleaved with JS): selector parsing
+gets ~10% faster (`selector-x10k` warm 8.13 → 7.20, `selector-batch-10k` 7.89 → 7.00), 1 MB of
+entity text 5% (4.13 → 3.93); everything else is unchanged within noise. JS still wins every warm
+case.
+
+**wasm** (`node scripts/build.ts --target wasm32-wasi` → `dist/rtd.wasm`, 448 KB vs the 1.5 MB
+addon; `src/wasm.ts` instantiates it with the four WASI calls it imports and copies strings in as
+UTF-8 through one reusable `scriptc_alloc` buffer):
+
+| op | mode | JS | native | wasm | native/JS | wasm/JS |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| noop ×1M (boundary only) | warm | 0.29 | 12.3 | 4.59 | 42.8× | 15.9× |
+| html-large (2.5 MB) | warm | 17.5 | 21.9 | 25.6 | 1.25× | 1.46× |
+| html-large | cold | 25.9 | 23.4 | 38.5 | 0.91× | 1.49× |
+| html-fragment ×200 | warm | 24.8 | 31.4 | 37.0 | 1.27× | 1.49× |
+| html-tokens-large (decoded by JS) | warm | 13.8 | 46.3 | 50.2 | 3.35× | 3.63× |
+| css-large (600 KB) | warm | 3.57 | 4.30 | 5.43 | 1.21× | 1.52× |
+| css-large | cold | 7.29 | 4.51 | 9.15 | 0.62× | 1.25× |
+| css-inline ×10k | warm | 1.87 | 3.00 | 3.91 | 1.61× | 2.09× |
+| selector parse ×10k | warm | 3.49 | 7.20 | 11.2 | 2.06× | 3.21× |
+| selector parse ×10k | cold | 10.3 | 7.52 | 18.4 | 0.73× | 1.79× |
+| entity decode, attr values ×100k | warm | 5.92 | 17.4 | 35.2 | 2.94× | 5.94× |
+| entity decode, 1 MB text | warm | 1.56 | 3.93 | 3.95 | 2.51× | 2.52× |
+
+Load: JS module import 10.2 ms, addon dlopen + init 1.36 ms, wasm compile + instantiate 4.28 ms.
+
+- A call into wasm is cheaper than a Node-API call (4.6 ns vs 12.3 ns per no-op), but copying every
+  string into linear memory as UTF-8 and the slower code wasm32 gets cost more than that saves.
+- Wasm also loses the cold wins native had (CSS, selectors), and its RSS sits between JS and native.
+- **Recommendation unchanged: JS.** The target, loader and three-way bench stay so this can be
+  re-measured on new scriptc releases; the runtime pack (~28 MB) is not a dependency. To re-run:
+  install zig, `pnpm --filter @rtd/native add -D @scriptc/runtime-wasm32-wasi@<scriptc version>`,
+  `node scripts/build.ts --target wasm32-wasi`, `node scripts/build.ts`, then
+  `node scripts/bench.ts --impls js,native,wasm`.
