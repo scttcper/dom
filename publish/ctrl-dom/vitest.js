@@ -20,7 +20,10 @@ const TESTING_LIBRARY = [
  * @returns {import("vitest/config").Plugin}
  */
 export function ctrlDom(options = {}) {
-  const { testingLibrary = true, ...environmentOptions } = options;
+  const { testingLibrary = true, ...rest } = options;
+  // The compile cache pays off for @ctrl/dom's few large bundles, not for stock Testing Library's
+  // many small files (CtrlDomEnvironmentOptions.compileCache).
+  const environmentOptions = { compileCache: testingLibrary, ...rest };
   return {
     name: "@ctrl/dom",
     config() {

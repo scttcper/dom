@@ -22,16 +22,26 @@ import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { Environment } from "vitest/runtime";
 import type { CompatProfile, WindowOptions } from "@rtd/dom";
 
-// Every Vitest worker pays the DOM import (jsdom-startup README: isolated forks start a fresh
-// worker per file). Node's on-disk compile cache keeps V8 code (and stripped TypeScript)
-// across workers: importing @rtd/dom drops from ~120 ms to ~50 ms after the first worker.
-// Set RTD_COMPILE_CACHE=0 to opt out. Must run before @rtd/dom is imported, hence the
-// dynamic import below.
-if (process.env.RTD_COMPILE_CACHE !== "0") enableCompileCache?.();
-const dom = await import("@rtd/dom");
-const internal = await import("@rtd/dom/internal");
-const { createWindow, installGlobals } = dom;
-const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = internal;
+type Dom = typeof import("@rtd/dom");
+type Internal = typeof import("@rtd/dom/internal");
+
+let dom: Dom | null = null;
+let internal: Internal | null = null;
+
+/**
+ * Imports the DOM on the worker's first setup. Every Vitest worker pays this import
+ * (jsdom-startup README: isolated forks start a fresh worker per file), so with `compileCache`
+ * Node's on-disk compile cache is enabled first: it keeps V8 code (and stripped TypeScript) for
+ * the bundles across workers. Once on, it stays on for every module the worker loads after it,
+ * which only pays off for large files: deserializing hundreds of tiny ones (aria-query's roles,
+ * stock user-event) is slower than compiling them (comparison/: +6% wall time over 100 files with
+ * stock Testing Library, -11% with @ctrl/dom's).
+ */
+async function load(options: Record<string, unknown>): Promise<void> {
+  if (dom !== null) return;
+  if (compileCache(options)) enableCompileCache?.();
+  [dom, internal] = await Promise.all([import("@rtd/dom"), import("@rtd/dom/internal")]);
+}
 
 /**
  * The global key under which the environment publishes the DOM modules it loaded (the same one
@@ -44,7 +54,7 @@ const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDef
 const DOM_MODULES = Symbol.for("rtd.dom.modules");
 
 function publishModules(global: object): void {
-  Object.defineProperty(global, DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+  Object.defineProperty(global, DOM_MODULES, { value: { dom: dom!, internal: internal! }, configurable: true, enumerable: false, writable: false });
 }
 
 /**
@@ -72,6 +82,15 @@ export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * including matchMedia, ResizeObserver and the `inert` IDL attribute).
    */
   compat?: CompatProfile;
+  /**
+   * Enable Node's on-disk compile cache before importing the DOM (default false; the @ctrl/dom
+   * Vitest plugin turns it on when it routes Testing Library to @ctrl/dom's bundles). It applies to
+   * every module the worker loads afterwards: a win for a few large bundles, a loss for many small
+   * CommonJS files such as stock Testing Library's. The CTRL_DOM_COMPILE_CACHE environment
+   * variable ("0"/"1"; also RTD_COMPILE_CACHE) overrides it; NODE_COMPILE_CACHE enables it for the
+   * whole process regardless.
+   */
+  compileCache?: boolean;
 }
 
 /** Same default URL as Vitest's jsdom and happy-dom environments. */
@@ -83,7 +102,7 @@ function ownOptions(options: Record<string, unknown> | undefined): CtrlDomEnviro
 }
 
 function windowOptions(options: Record<string, unknown>): WindowOptions {
-  const { timeSkip: _timeSkip, ...rest } = ownOptions(options);
+  const { timeSkip: _timeSkip, compileCache: _compileCache, ...rest } = ownOptions(options);
   return { ...rest, compat: rest.compat ?? "jsdom-30", url: rest.url ?? DEFAULT_URL };
 }
 
@@ -92,6 +111,13 @@ function timeSkip(options: Record<string, unknown>): boolean {
   if (env === "1") return true;
   if (env === "0") return false;
   return ownOptions(options).timeSkip !== false;
+}
+
+function compileCache(options: Record<string, unknown>): boolean {
+  const env = process.env.CTRL_DOM_COMPILE_CACHE ?? process.env.RTD_COMPILE_CACHE;
+  if (env === "1") return true;
+  if (env === "0") return false;
+  return ownOptions(options).compileCache === true;
 }
 
 // Host globals a fresh vm context needs (the window itself supplies the DOM).
@@ -136,7 +162,10 @@ const environment: Environment = {
   // Setup takes well under a millisecond; prewarming would only compete with the worker.
   prewarmModules: false,
 
-  setup(global, options) {
+  async setup(global, options) {
+    await load(options);
+    const { createWindow, installGlobals } = dom!;
+    const { setUncaughtExceptionHandler, installClock, VirtualClock } = internal!;
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
     publishModules(global);
@@ -158,7 +187,10 @@ const environment: Environment = {
     };
   },
 
-  setupVM(options) {
+  async setupVM(options) {
+    await load(options);
+    const { createWindow, installGlobals } = dom!;
+    const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = internal!;
     const window = createWindow(windowOptions(options));
     // https://nodejs.org/api/vm.html#vmconstantsdont_contextify: the new realm's own global object
     // (usable wherever a contextified object is), so global lookups in test and app code are

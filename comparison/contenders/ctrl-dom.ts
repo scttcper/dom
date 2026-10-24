@@ -65,6 +65,8 @@ export const ctrlDomStack: Contender = {
   environment,
   preload,
   external,
+  // What `ctrlDom()` (@ctrl/dom/vitest) configures when it routes Testing Library to @ctrl/dom.
+  environmentOptions: { "ctrl-dom": { compileCache: true } },
   alias: [
     { find: /^@testing-library\/react$/, replacement: bundle("@rtd/react") },
     { find: /^@testing-library\/dom$/, replacement: bundle("@rtd/testing-library") },

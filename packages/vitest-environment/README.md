@@ -16,8 +16,11 @@ export default defineConfig({
 
 Or per file: `// @vitest-environment ctrl-dom`. Peer dependency: `vitest` >= 5.
 
-`environmentOptions["ctrl-dom"]` takes `createWindow` options (`url`, `width`, `height`, ...) and
-`timeSkip` (below). `compat` defaults to `"jsdom-30"`, what Vitest's jsdom environment exposes:
+`environmentOptions["ctrl-dom"]` takes `createWindow` options (`url`, `width`, `height`, ...),
+`timeSkip` (below) and `compileCache` (enable Node's compile cache before importing the DOM: on
+for this repository's tests and with the `ctrlDom()` plugin's Testing Library; off by default
+because it then applies to every module the worker loads, and stock Testing Library's hundreds
+of small files load slower from it). `compat` defaults to `"jsdom-30"`, what Vitest's jsdom environment exposes:
 no `matchMedia` (suites written for jsdom mock it, and helpers such as mock-match-media only
 install themselves when it is missing) and no `ResizeObserver`. `"modern"` exposes everything,
 `"jsdom-26"` matches jest-environment-jsdom 30. See `docs/deviations.md`.
