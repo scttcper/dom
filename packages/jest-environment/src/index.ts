@@ -152,6 +152,22 @@ function reportToHost(error: unknown): void {
   process.emit("uncaughtException", error as Error, "uncaughtException");
 }
 
+/**
+ * jsdom's "Not implemented" diagnostics (navigation, window.alert, form submission, ...; only
+ * under the jsdom profiles, @rtd/dom window/not-implemented.ts), forwarded to the test file's
+ * console as jest-environment-jsdom does: with jsdom 26 (`sendTo` omitting jsdom errors, then
+ * its "jsdomError" listener) once, as the Error; with jsdom 27+ (`forwardTo`, then the same
+ * listener) as `error.stack`, then as the Error.
+ * https://github.com/jestjs/jest/blob/v30.4.1/packages/jest-environment-jsdom-abstract/src/index.ts
+ */
+function forwardNotImplemented(global: Record<PropertyKey, unknown>): (error: Error & { detail?: unknown }, compat: string) => void {
+  return (error, compat) => {
+    const console = global.console as Console;
+    if (compat !== "jsdom-26") console.error(error.stack, error.detail);
+    console.error(error);
+  };
+}
+
 // Error constructors whose instances our DOM throws from the outer realm.
 const ERROR_CONSTRUCTORS = ["Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "EvalError", "URIError"] as const;
 
@@ -254,6 +270,7 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     // Definitions on interface objects stay configurable, so teardown can undo them.
     internal.guardInterfaceDefinitions(global as never);
     internal.setUncaughtExceptionHandler(reportToHost);
+    internal.setNotImplementedHandler(forwardNotImplemented(global));
   }
 
   async setup(): Promise<void> {}
@@ -275,6 +292,7 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
    */
   async teardown(): Promise<void> {
     internal.setUncaughtExceptionHandler(null);
+    internal.setNotImplementedHandler(null);
     this.fakeTimers?.dispose();
     this.fakeTimersModern?.dispose();
     this.rtdWindow?.close();

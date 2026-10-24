@@ -44,6 +44,30 @@ directly, or an iframe's `contentWindow`, has every interface object, since they
 | members HTMLElement: `accessKeyLabel`, `autocapitalize`, `autocorrect`, `autofocus` and 12 more; HTMLButtonElement: `command`, `commandForElement`, `formAction`, `formEnctype` and 3 more; HTMLInputElement: `formAction`, `formEnctype`, `formMethod`, `height` and 4 more; HTMLDialogElement: `close`, `closedBy`, `requestClose`, `returnValue` and 2 more; HTMLAnchorElement: `ping`, `referrerPolicy`; HTMLAreaElement: `download`, `hreflang`, `ping`, `referrerPolicy` and 1 more; and members of 19 more interfaces | yes | yes | yes | Reflected attributes and element behavior we implement (popover, dialog, invoker commands, innerText). Where jsdom lacks a method, suites assign their own (`HTMLDialogElement.prototype.showModal = vi.fn()`), which replaces ours. |
 <!-- compat:end -->
 
+### jsdom's "Not implemented" errors
+
+The jsdom profiles also report what jsdom reports as not implemented, with jsdom's exact
+`Error` (message and `type`) at the same points, forwarded to the test's `console.error` the way
+that profile's jsdom environment does (Jest with jsdom 26: once, the Error; Jest with jsdom 27+:
+its stack, then the Error; Vitest: `console.error(stack, undefined)`):
+
+| Reported when | `jsdom-26` message | `jsdom-30` message |
+| --- | --- | --- |
+| A navigation goes beyond a fragment change: `location.href`/`assign()`/`replace()`/the URL component setters, `location.reload()`, an activated link whose target is empty, `_self`, `_parent` or `_top` (in a task; `download` is ignored, as in jsdom) | `navigation (except hash changes)` | `navigation to another Document` |
+| `form.submit()`; a submission whose `submit` event was not canceled (`requestSubmit()`, a submit button, implicit submission) | `HTMLFormElement.prototype.submit` / `.requestSubmit` | `HTMLFormElement's submit() method` / `requestSubmit() method` |
+| `window.alert`, `confirm`, `prompt`, `print`, `open`, `focus`, `blur`, `moveTo`, `moveBy`, `resizeTo`, `resizeBy`, `scroll`, `scrollTo`, `scrollBy` | `window.alert` | `Window's alert() method` |
+| `HTMLMediaElement` `play`, `pause`, `load`, `addTextTrack` | `HTMLMediaElement.prototype.play` | `HTMLMediaElement's play() method` |
+| `getComputedStyle(el, pseudo)` with a non-empty pseudo-element | `window.getComputedStyle(elt, pseudoElt)` | `Window's getComputedStyle() method: with pseudo-elements` |
+
+What @ctrl/dom does at these points is unchanged (it implements media playback, scrolling,
+resizing and pseudo-element styles; it never navigates). `modern` reports nothing, and neither
+does a window without an environment (`createWindow()`: install a receiver with
+`setNotImplementedHandler` from `@ctrl/dom/internal`). Differences from jsdom: `requestSubmit()` on
+a disconnected form neither fires `submit` nor reports (spec: it cannot navigate; jsdom does both),
+and a `method="dialog"` submission closes its dialog instead of reporting. tests/compat/test/not-implemented/
+compares every case with the real jsdom 26 and 30. Suites assert on these (Sentry: "JSDOM throws an
+error on navigation"), so a drop-in reports them.
+
 ## In every profile
 
 | Area | Deviation | Reason |

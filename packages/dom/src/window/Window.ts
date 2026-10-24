@@ -38,6 +38,7 @@ import { setNestedWindowFactory } from "./browsing-context.ts";
 import { windowOrigin } from "./origin.ts";
 import { type TimerList, clearTimers, startTimer } from "./timers.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
+import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
 import { $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
@@ -500,26 +501,24 @@ export class Window extends EventTarget {
   /** https://drafts.csswg.org/cssom-view/#dom-window-scroll — no layout: just records the position. */
   scroll(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
     const self = receiver(this, "scroll");
-    if (typeof x === "object" && x !== null) {
-      if (x.left !== undefined) self[$scrollX] = normalizeScroll(x.left);
-      if (x.top !== undefined) self[$scrollY] = normalizeScroll(x.top);
-    } else if (x !== undefined) {
-      self[$scrollX] = normalizeScroll(x);
-      self[$scrollY] = normalizeScroll(y ?? 0);
-    }
+    reportNotImplemented(self, NOT_IMPLEMENTED.scroll);
+    scrollWindow(self, x, y);
   }
 
   scrollTo(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
-    receiver(this, "scrollTo").scroll(x, y);
+    const self = receiver(this, "scrollTo");
+    reportNotImplemented(self, NOT_IMPLEMENTED.scrollTo);
+    scrollWindow(self, x, y);
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-scrollby */
   scrollBy(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
     const self = receiver(this, "scrollBy");
+    reportNotImplemented(self, NOT_IMPLEMENTED.scrollBy);
     if (typeof x === "object" && x !== null) {
-      self.scroll({ left: self[$scrollX] + (Number(x.left) || 0), top: self[$scrollY] + (Number(x.top) || 0) });
+      scrollWindow(self, { left: self[$scrollX] + (Number(x.left) || 0), top: self[$scrollY] + (Number(x.top) || 0) });
     } else {
-      self.scroll(self[$scrollX] + (Number(x) || 0), self[$scrollY] + (Number(y) || 0));
+      scrollWindow(self, self[$scrollX] + (Number(x) || 0), self[$scrollY] + (Number(y) || 0));
     }
   }
 
@@ -529,19 +528,22 @@ export class Window extends EventTarget {
    */
   resizeTo(width: number, height: number): void {
     const self = receiver(this, "resizeTo");
-    self[$innerWidth] = Number(width);
-    self[$innerHeight] = Number(height);
-    if (self[$mediaQueryLists].size !== 0) reportMediaQueryChanges(self);
-    self.dispatchEvent(new Event("resize"));
+    reportNotImplemented(self, NOT_IMPLEMENTED.resizeTo);
+    resizeWindow(self, Number(width), Number(height));
   }
 
   resizeBy(x: number, y: number): void {
     const self = receiver(this, "resizeBy");
-    self.resizeTo(self[$innerWidth] + Number(x), self[$innerHeight] + Number(y));
+    reportNotImplemented(self, NOT_IMPLEMENTED.resizeBy);
+    resizeWindow(self, self[$innerWidth] + Number(x), self[$innerHeight] + Number(y));
   }
 
-  moveTo(_x: number, _y: number): void {}
-  moveBy(_x: number, _y: number): void {}
+  moveTo(_x: number, _y: number): void {
+    reportNotImplemented(receiver(this, "moveTo"), NOT_IMPLEMENTED.moveTo);
+  }
+  moveBy(_x: number, _y: number): void {
+    reportNotImplemented(receiver(this, "moveBy"), NOT_IMPLEMENTED.moveBy);
+  }
 
   // --- CSSOM -----------------------------------------------------------------------------------
 
@@ -549,6 +551,10 @@ export class Window extends EventTarget {
   getComputedStyle(element: Element, pseudoElement?: string | null): CSSStyleDeclaration {
     if (element === null || typeof element !== "object" || !($impl in element) || element[$impl].type !== 1) {
       throw new TypeError("Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.");
+    }
+    // jsdom ignores a pseudo-element and reports it (we compute it).
+    if (pseudoElement !== undefined && pseudoElement !== null && String(pseudoElement) !== "") {
+      reportNotImplemented(receiver(this, "getComputedStyle"), COMPUTED_STYLE_PSEUDO);
     }
     const hook = windowHooks.getComputedStyle ?? domExport<(e: Element, p?: string | null) => unknown>("getComputedStyle") ?? null;
     if (hook !== null) return hook(element, pseudoElement, receiver(this, "getComputedStyle")) as CSSStyleDeclaration;
@@ -727,21 +733,32 @@ export class Window extends EventTarget {
 
   // --- browser chrome no-ops (https://html.spec.whatwg.org/#user-prompts) ----------------------
 
-  alert(_message?: unknown): void {}
+  alert(_message?: unknown): void {
+    reportNotImplemented(receiver(this, "alert"), NOT_IMPLEMENTED.alert);
+  }
   confirm(_message?: unknown): boolean {
+    reportNotImplemented(receiver(this, "confirm"), NOT_IMPLEMENTED.confirm);
     return false;
   }
   prompt(_message?: unknown, _default?: unknown): string | null {
+    reportNotImplemented(receiver(this, "prompt"), NOT_IMPLEMENTED.prompt);
     return null;
   }
-  print(): void {}
+  print(): void {
+    reportNotImplemented(receiver(this, "print"), NOT_IMPLEMENTED.print);
+  }
   /** https://html.spec.whatwg.org/#dom-open — nothing is opened. */
   open(_url?: string, _target?: string, _features?: string): Window | null {
+    reportNotImplemented(receiver(this, "open"), NOT_IMPLEMENTED.open);
     return null;
   }
   stop(): void {}
-  focus(): void {}
-  blur(): void {}
+  focus(): void {
+    reportNotImplemented(receiver(this, "focus"), NOT_IMPLEMENTED.focus);
+  }
+  blur(): void {
+    reportNotImplemented(receiver(this, "blur"), NOT_IMPLEMENTED.blur);
+  }
   captureEvents(): void {}
   releaseEvents(): void {}
 
@@ -831,6 +848,46 @@ function runAnimationFrame(this: Window): void {
     }
   }
   this[$runningFrame] = null;
+}
+
+/**
+ * The Window methods jsdom stubs with a "Not implemented" report (browser/Window.js,
+ * notImplementedMethodWrapper), for the jsdom profiles (window/not-implemented.ts).
+ */
+const NOT_IMPLEMENTED = {
+  alert: stubbedMethod("Window", "alert"),
+  blur: stubbedMethod("Window", "blur"),
+  confirm: stubbedMethod("Window", "confirm"),
+  focus: stubbedMethod("Window", "focus"),
+  moveBy: stubbedMethod("Window", "moveBy"),
+  moveTo: stubbedMethod("Window", "moveTo"),
+  open: stubbedMethod("Window", "open"),
+  print: stubbedMethod("Window", "print"),
+  prompt: stubbedMethod("Window", "prompt"),
+  resizeBy: stubbedMethod("Window", "resizeBy"),
+  resizeTo: stubbedMethod("Window", "resizeTo"),
+  scroll: stubbedMethod("Window", "scroll"),
+  scrollBy: stubbedMethod("Window", "scrollBy"),
+  scrollTo: stubbedMethod("Window", "scrollTo"),
+};
+
+/** scroll()/scrollTo()/scrollBy(): records the position (there is no layout to scroll). */
+function scrollWindow(self: Window, x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
+  if (typeof x === "object" && x !== null) {
+    if (x.left !== undefined) self[$scrollX] = normalizeScroll(x.left);
+    if (x.top !== undefined) self[$scrollY] = normalizeScroll(x.top);
+  } else if (x !== undefined) {
+    self[$scrollX] = normalizeScroll(x);
+    self[$scrollY] = normalizeScroll(y ?? 0);
+  }
+}
+
+/** resizeTo()/resizeBy(): set the viewport size, report media query changes and fire `resize`. */
+function resizeWindow(self: Window, width: number, height: number): void {
+  self[$innerWidth] = width;
+  self[$innerHeight] = height;
+  if (self[$mediaQueryLists].size !== 0) reportMediaQueryChanges(self);
+  self.dispatchEvent(new Event("resize"));
 }
 
 function normalizeScroll(value: unknown): number {

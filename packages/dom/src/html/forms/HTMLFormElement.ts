@@ -13,6 +13,10 @@ import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import { bool, enumerated, str, tokenList, type EnumSpec } from "../reflect.ts";
+import { reportNotImplemented, stubbedMethod } from "../../window/not-implemented.ts";
+
+/** jsdom reports form.submit() as not implemented (window/not-implemented.ts). */
+const SUBMIT_NOT_IMPLEMENTED = stubbedMethod("HTMLFormElement", "submit");
 import { reflectActionURL } from "./common.ts";
 import { formControls, formOwner } from "./form-associated.ts";
 import { createFormControlsCollection, RadioNodeList, type HTMLFormControlsCollection } from "./collections.ts";
@@ -20,7 +24,7 @@ import { contentAttr } from "../reflect.ts";
 import { T } from "../../nodes/tags.ts";
 import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
 import { formCheckValidity, isSubmitButton, resetForm, submitForm } from "./form-submission.ts";
-import { $assocGen, $constructingEntryList, $controlsCache, $controlsDoc, $controlsVersion, $elements, $firingSubmissionEvents, $impl, $lockedForReset, $pastNames, $version } from "../../keys.ts";
+import { $assocGen, $constructingEntryList, $controlsCache, $controlsDoc, $controlsVersion, $elements, $firingSubmissionEvents, $impl, $lockedForReset, $pastNames, $version, $window } from "../../keys.ts";
 
 const ENCTYPE: EnumSpec = {
   keywords: ["application/x-www-form-urlencoded", "multipart/form-data", "text/plain"],
@@ -167,6 +171,7 @@ export class HTMLFormElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-form-submit — no events, no validation, no navigation. */
   submit(): void {
+    reportNotImplemented(this[$impl].doc[$window] as object | null, SUBMIT_NOT_IMPLEMENTED);
     submitForm(this[$impl], this[$impl], true);
   }
 

@@ -13,8 +13,10 @@ import { setAttribute } from "../nodes/attributes.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Event } from "../events/Event.ts";
 import { nextInTree } from "../nodes/traverse.ts";
-import { TEXT_NODE, CDATA_SECTION_NODE } from "../nodes/constants.ts";
-import { $impl, $window } from "../keys.ts";
+import { TEXT_NODE, CDATA_SECTION_NODE, F_CONNECTED } from "../nodes/constants.ts";
+import { querySelector } from "../selectors/index.ts";
+import { NAVIGATION, notImplementedActive, reportNotImplemented } from "../window/not-implemented.ts";
+import { $impl, $parentWindow, $url, $window } from "../keys.ts";
 
 type Hyperlink = HTMLElement;
 
@@ -179,6 +181,49 @@ function followHyperlink(el: Hyperlink): void {
   }
 }
 
+interface LinkWindow {
+  [$parentWindow]: LinkWindow | null;
+  [$url]: URL;
+  _task(callback: () => void, delay: number): unknown;
+}
+
+/**
+ * jsdom-profile diagnostic (window/not-implemented.ts). jsdom follows an activated hyperlink
+ * whose target is "", _self, _parent or _top (it ignores `download` and creates no browsing
+ * context for other names) in a task, and its navigate() reports anything beyond a fragment
+ * change of that window's document, except javascript: URLs.
+ * https://github.com/jsdom/jsdom/blob/30.1.3/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js (_followAHyperlink)
+ */
+function reportFollowedHyperlink(impl: NodeImpl): void {
+  if (!notImplementedActive()) return;
+  // _cannotNavigate: an element other than <a> that is not connected.
+  if (impl.name !== "a" && (impl.flags & F_CONNECTED) === 0) return;
+  const source = impl.doc[$window] as unknown as LinkWindow | null;
+  if (source === null) return;
+  // _getAnElementsTarget: the target attribute, else the first <base target>'s.
+  let target = contentAttr(impl, "target");
+  if (target === null) {
+    const base = querySelector(impl.doc[$impl], "base[target]");
+    target = base === null ? "" : (contentAttr(base, "target") ?? "");
+  }
+  const name = target.toLowerCase();
+  let chosen: LinkWindow | null = null;
+  if (name === "" || name === "_self") chosen = source;
+  else if (name === "_parent") chosen = source[$parentWindow] ?? source;
+  else if (name === "_top") for (chosen = source; chosen[$parentWindow] !== null; ) chosen = chosen[$parentWindow];
+  if (chosen === null) return;
+  const url = linkURL(impl);
+  if (url === null || url.protocol === "javascript:") return;
+  const into = chosen;
+  source._task(() => {
+    const current = new URL(into[$url].href);
+    const next = new URL(url.href);
+    current.hash = "";
+    next.hash = "";
+    if (current.href !== next.href) reportNotImplemented(into, NAVIGATION);
+  }, 0);
+}
+
 /** https://html.spec.whatwg.org/#htmlanchorelement */
 export class HTMLAnchorElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-a-text */
@@ -201,6 +246,7 @@ export class HTMLAnchorElement extends HTMLElement {
   _activationBehavior(_event: Event): void {
     if (contentAttr(this[$impl], "href") === null) return;
     followHyperlink(this);
+    reportFollowedHyperlink(this[$impl]);
   }
 }
 installHyperlinkUtils(HTMLAnchorElement);
@@ -217,6 +263,7 @@ export class HTMLAreaElement extends HTMLElement {
   _activationBehavior(_event: Event): void {
     if (contentAttr(this[$impl], "href") === null) return;
     followHyperlink(this);
+    reportFollowedHyperlink(this[$impl]);
   }
 }
 installHyperlinkUtils(HTMLAreaElement);

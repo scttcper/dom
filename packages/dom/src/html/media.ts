@@ -15,7 +15,18 @@ import { currentDocument } from "../window/current.ts";
 import type { Document } from "../nodes/Document.ts";
 import { setAttribute } from "../nodes/attributes.ts";
 import { HTML_NS } from "../nodes/constants.ts";
-import { $impl } from "../keys.ts";
+import { reportNotImplemented, stubbedMethod } from "../window/not-implemented.ts";
+import { $impl, $window } from "../keys.ts";
+
+/** What jsdom stubs (and reports, window/not-implemented.ts) on HTMLMediaElement; we implement them. */
+const NOT_IMPLEMENTED = {
+  load: stubbedMethod("HTMLMediaElement", "load"),
+  play: stubbedMethod("HTMLMediaElement", "play"),
+  pause: stubbedMethod("HTMLMediaElement", "pause"),
+  addTextTrack: stubbedMethod("HTMLMediaElement", "addTextTrack"),
+};
+
+const windowOf = (el: HTMLElement): object | null => el[$impl].doc[$window] as object | null;
 
 /** Per-element playback state (wrapper-side; media elements are rare). */
 class MediaState {
@@ -180,6 +191,7 @@ export class HTMLMediaElement extends HTMLElement {
   }
   /** https://html.spec.whatwg.org/#dom-media-load */
   load(): void {
+    reportNotImplemented(windowOf(this), NOT_IMPLEMENTED.load);
     const s = state(this);
     const wasPlaying = !s.paused;
     s.currentTime = 0;
@@ -192,6 +204,7 @@ export class HTMLMediaElement extends HTMLElement {
   }
   /** https://html.spec.whatwg.org/#dom-media-play */
   play(): Promise<void> {
+    reportNotImplemented(windowOf(this), NOT_IMPLEMENTED.play);
     const s = state(this);
     if (s.paused) {
       s.paused = false;
@@ -205,6 +218,7 @@ export class HTMLMediaElement extends HTMLElement {
   }
   /** https://html.spec.whatwg.org/#dom-media-pause */
   pause(): void {
+    reportNotImplemented(windowOf(this), NOT_IMPLEMENTED.pause);
     const s = state(this);
     if (!s.paused) {
       s.paused = true;
@@ -224,6 +238,7 @@ export class HTMLMediaElement extends HTMLElement {
     return [];
   }
   addTextTrack(): never {
+    reportNotImplemented(windowOf(this), NOT_IMPLEMENTED.addTextTrack);
     throw new DOMException("Text tracks are not supported.", "NotSupportedError");
   }
   setMediaKeys(): Promise<void> {

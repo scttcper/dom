@@ -67,6 +67,16 @@ function reportToHost(error: unknown): void {
   process.emit("uncaughtException", error as Error, "uncaughtException");
 }
 
+/**
+ * jsdom's "Not implemented" diagnostics (navigation, window.alert, form submission, ...; only
+ * under the jsdom profiles, @rtd/dom window/not-implemented.ts), forwarded as under Vitest's
+ * jsdom environment, whose JSDOM gets jsdom's default virtual console: `console.error(e.stack,
+ * e.detail)` on the test's console.
+ */
+function forwardNotImplemented(global: Record<PropertyKey, unknown>): (error: Error & { detail?: unknown }) => void {
+  return (error) => ((global.console ?? console) as Console).error(error.stack, error.detail);
+}
+
 export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
   /**
    * Skip idle time (default true): timers live on a virtual clock that jumps to the next timer
@@ -165,7 +175,7 @@ const environment: Environment = {
   async setup(global, options) {
     await load(options);
     const { createWindow, installGlobals } = dom!;
-    const { setUncaughtExceptionHandler, installClock, VirtualClock } = internal!;
+    const { setUncaughtExceptionHandler, setNotImplementedHandler, installClock, VirtualClock } = internal!;
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
     publishModules(global);
@@ -176,9 +186,11 @@ const environment: Environment = {
     // so a restore at teardown could never sit between two files — every file the worker runs
     // shares this window, as with jsdom's environment.
     setUncaughtExceptionHandler(reportToHost);
+    setNotImplementedHandler(forwardNotImplemented(global as Record<PropertyKey, unknown>));
     return {
       teardown() {
         setUncaughtExceptionHandler(null);
+        setNotImplementedHandler(null);
         clock.uninstall();
         window.close();
         uninstall();
@@ -190,7 +202,7 @@ const environment: Environment = {
   async setupVM(options) {
     await load(options);
     const { createWindow, installGlobals } = dom!;
-    const { setUncaughtExceptionHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = internal!;
+    const { setUncaughtExceptionHandler, setNotImplementedHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = internal!;
     const window = createWindow(windowOptions(options));
     // https://nodejs.org/api/vm.html#vmconstantsdont_contextify: the new realm's own global object
     // (usable wherever a contextified object is), so global lookups in test and app code are
@@ -214,12 +226,14 @@ const environment: Environment = {
     // Definitions on interface objects stay configurable, so teardown can undo them.
     guardInterfaceDefinitions(context as never);
     setUncaughtExceptionHandler(reportToHost);
+    setNotImplementedHandler(forwardNotImplemented(context as Record<PropertyKey, unknown>));
     return {
       getVmContext() {
         return context;
       },
       teardown() {
         setUncaughtExceptionHandler(null);
+        setNotImplementedHandler(null);
         clock.clock.dispose();
         window.close();
         uninstall();

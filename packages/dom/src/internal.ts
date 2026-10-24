@@ -56,6 +56,7 @@ export { dispatch, getCurrentEvent, retarget, nodeGetTheParent, setAssignedSlotL
 export { fireAnEvent, dispatchTrusted, fireSyntheticPointerEvent } from "./events/fire.ts";
 export { setTrusted, EventState } from "./events/Event.ts";
 export { reportException, setUncaughtExceptionHandler, type UncaughtExceptionHandler } from "./events/report.ts";
+export { setNotImplementedHandler, type NotImplementedError, type NotImplementedHandler } from "./window/not-implemented.ts";
 export { createEvent } from "./events/createEvent.ts";
 export { installEventHandlers, getEventHandler, setEventHandler, GLOBAL_EVENT_HANDLER_EVENTS, WINDOW_EVENT_HANDLER_EVENTS, type EventHandlersKind } from "./events/handlers.ts";
 export { hasListeners, removeAllEventListeners } from "./events/listeners.ts";

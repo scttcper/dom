@@ -43,7 +43,14 @@ import {
 import { isInvalidCandidate } from "./validation.ts";
 import { faceEntries, faceReset, isFACE, validatableOf } from "./face.ts";
 import { listOfOptions } from "./collections.ts";
-import { $constructingEntryList, $firingSubmissionEvents, $lockedForReset } from "../../keys.ts";
+import { reportNotImplemented, stubbedMethod } from "../../window/not-implemented.ts";
+import { $constructingEntryList, $firingSubmissionEvents, $lockedForReset, $window } from "../../keys.ts";
+
+/**
+ * jsdom ends a submission that was not canceled (requestSubmit, a submit button, implicit
+ * submission) with a "Not implemented" report (window/not-implemented.ts).
+ */
+const REQUEST_SUBMIT_NOT_IMPLEMENTED = stubbedMethod("HTMLFormElement", "requestSubmit");
 
 /** https://html.spec.whatwg.org/#attr-fs-enctype (formEnctype: missing → ""). */
 export const FORM_ENCTYPE: EnumSpec = {
@@ -162,6 +169,7 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
   // Steps 8-9: method "dialog" closes the form's dialog (html/interactive.ts).
   if (dialogSubmission !== null && dialogSubmission(form, submitter)) return;
   // Steps 10+: construct the entry list and navigate. We never navigate.
+  if (!fromSubmit) reportNotImplemented(form.doc[$window] as object | null, REQUEST_SUBMIT_NOT_IMPLEMENTED);
 }
 
 /**

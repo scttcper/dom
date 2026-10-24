@@ -6,6 +6,7 @@
 // `popstate` (then, in a separate task, `hashchange` when only the fragment changed).
 
 import { eventInterface } from "./interfaces.ts";
+import { NAVIGATION, reportNotImplemented } from "./not-implemented.ts";
 import type { Window } from "./Window.ts";
 import { $closed, $entries, $index, $scrollRestoration, $url, $window } from "../keys.ts";
 
@@ -149,6 +150,9 @@ export class History {
     const window = this[$window];
     const oldURL = window[$url].href;
     const newURL = url.href;
+    // jsdom (living/window/navigation.js, navigate): a URL that differs beyond its fragment,
+    // other than javascript:, is a navigation to another document, which it reports.
+    if (url.protocol !== "javascript:" && withoutFragment(oldURL) !== withoutFragment(newURL)) reportNotImplemented(window, NAVIGATION);
     // https://html.spec.whatwg.org/#navigate step 12: navigating to the current URL replaces.
     if (newURL === oldURL) replace = true;
     const entry: SessionHistoryEntry = { url: newURL, state: null };

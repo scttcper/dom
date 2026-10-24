@@ -7,6 +7,7 @@
 import type { Window } from "./Window.ts";
 import { type DOMStringList, createDOMStringList } from "./DOMStringList.ts";
 import { windowOrigin } from "./origin.ts";
+import { NAVIGATION, reportNotImplemented } from "./not-implemented.ts";
 import { $closed, $parentWindow, $url, $window } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#location-object-navigate-ish — parse relative to the document URL. */
@@ -192,8 +193,14 @@ export class Location {
     this[$window]._navigate(parseURL(this[$window], url), true);
   }
 
-  /** https://html.spec.whatwg.org/#dom-location-reload — no-op: there is nothing to reload. */
-  reload(): void {}
+  /**
+   * https://html.spec.whatwg.org/#dom-location-reload — no-op: there is nothing to reload.
+   * jsdom navigates with reloadTriggered, which always reports.
+   */
+  reload(): void {
+    if (inactive(this)) return;
+    reportNotImplemented(this[$window], NAVIGATION);
+  }
 
   _set(component: "host" | "hostname" | "port" | "pathname" | "search", value: string): void {
     if (inactive(this)) return;
