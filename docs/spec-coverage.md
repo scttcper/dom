@@ -28,8 +28,8 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [Web IDL](#web-idl) | 33 | 22 | 0 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
+| [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
 | [CSS: selectors](#css-selectors) | 28 | 12 | 4 | 12 |
-| [CSS: cssom-view](#css-cssom-view) | 25 | 14 | 0 | 11 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 5 | 1 | 15 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
@@ -37,45 +37,49 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: html-aam](#w3c-html-aam) | 15 | 8 | 0 | 7 |
 | [CSS: css-cascade](#css-css-cascade) | 12 | 10 | 0 | 2 |
 | [W3C: accname](#w3c-accname) | 11 | 7 | 0 | 4 |
+| [CSS: resize-observer](#css-resize-observer) | 10 | 2 | 0 | 8 |
 | [Infra Standard](#infra-standard) | 10 | 0 | 0 | 10 |
 | [CSS: css-conditional](#css-css-conditional) | 9 | 8 | 1 | 0 |
 | [SVG 2](#svg-2) | 9 | 1 | 0 | 8 |
 | [W3C: DOM-Parsing](#w3c-dom-parsing) | 9 | 2 | 0 | 7 |
+| [CSS: css](#css-css) | 7 | 1 | 0 | 6 |
 | [RFC6265](#rfc6265) | 7 | 5 | 0 | 2 |
 | [W3C: FileAPI](#w3c-fileapi) | 7 | 2 | 0 | 5 |
 | [W3C: clipboard-apis](#w3c-clipboard-apis) | 6 | 3 | 0 | 3 |
 | [W3C: pointerevents](#w3c-pointerevents) | 6 | 2 | 0 | 4 |
 | [CSS: css-animations](#css-css-animations) | 5 | 0 | 2 | 3 |
+| [CSS: css-display](#css-css-display) | 5 | 2 | 0 | 3 |
 | [CSS: mediaqueries](#css-mediaqueries) | 5 | 1 | 0 | 4 |
 | [Fetch Standard](#fetch-standard) | 5 | 3 | 0 | 2 |
 | [W3C: xml](#w3c-xml) | 5 | 0 | 0 | 5 |
-| [CSS: css-display](#css-css-display) | 4 | 2 | 0 | 2 |
 | [CSS: css-nesting](#css-css-nesting) | 4 | 2 | 1 | 1 |
 | [CSS: css-position](#css-css-position) | 4 | 1 | 0 | 3 |
 | [CSS: css-variables](#css-css-variables) | 4 | 4 | 0 | 0 |
 | [W3C: touch-events](#w3c-touch-events) | 4 | 1 | 0 | 3 |
+| [CSS: css-flexbox](#css-css-flexbox) | 3 | 3 | 0 | 0 |
 | [CSS: css-fonts](#css-css-fonts) | 3 | 1 | 2 | 0 |
 | [CSS: css-properties-values-api](#css-css-properties-values-api) | 3 | 0 | 0 | 3 |
 | [CSS: css-scoping](#css-css-scoping) | 3 | 0 | 1 | 2 |
 | [CSS: css-transitions](#css-css-transitions) | 3 | 1 | 0 | 2 |
 | [ECMAScript](#ecmascript) | 3 | 2 | 0 | 1 |
 | [Compatibility Standard](#compatibility-standard) | 2 | 1 | 0 | 1 |
-| [CSS: css-flexbox](#css-css-flexbox) | 2 | 2 | 0 | 0 |
+| [CSS: css-align](#css-css-align) | 2 | 1 | 0 | 1 |
 | [CSS: css-namespaces](#css-css-namespaces) | 2 | 1 | 0 | 1 |
 | [CSS: css-shadow-parts](#css-css-shadow-parts) | 2 | 0 | 1 | 1 |
 | [CSS: css-text](#css-css-text) | 2 | 0 | 1 | 1 |
 | [CSS: geometry](#css-geometry) | 2 | 0 | 0 | 2 |
 | [URL Standard](#url-standard) | 2 | 0 | 0 | 2 |
 | [W3C: IntersectionObserver](#w3c-intersectionobserver) | 2 | 1 | 0 | 1 |
-| [CSS: css-align](#css-css-align) | 1 | 1 | 0 | 0 |
 | [CSS: css-backgrounds](#css-css-backgrounds) | 1 | 0 | 0 | 1 |
 | [CSS: css-contain](#css-css-contain) | 1 | 1 | 0 | 0 |
 | [CSS: css-content](#css-css-content) | 1 | 0 | 0 | 1 |
 | [CSS: css-images](#css-css-images) | 1 | 1 | 0 | 0 |
+| [CSS: css-inline](#css-css-inline) | 1 | 0 | 0 | 1 |
 | [CSS: css-lists](#css-css-lists) | 1 | 1 | 0 | 0 |
 | [CSS: css-overflow](#css-css-overflow) | 1 | 1 | 0 | 0 |
+| [CSS: css-sizing](#css-css-sizing) | 1 | 0 | 0 | 1 |
 | [CSS: css-ui](#css-css-ui) | 1 | 1 | 0 | 0 |
-| [CSS: resize-observer](#css-resize-observer) | 1 | 1 | 0 | 0 |
+| [CSS: css-values](#css-css-values) | 1 | 0 | 0 | 1 |
 | [Encoding Standard](#encoding-standard) | 1 | 0 | 0 | 1 |
 | [RFC9110](#rfc9110) | 1 | 0 | 0 | 1 |
 | [MIME Sniffing Standard](#mime-sniffing-standard) | 1 | 0 | 0 | 1 |
@@ -89,7 +93,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1543 | 737 | 120 | 686 |
+| **All** | 1572 | 746 | 121 | 705 |
 
 ## Web-platform-tests fixtures
 
@@ -994,7 +998,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-node-move-ext](https://dom.spec.whatwg.org/#concept-node-move-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [concept-node-pre-insert](https://dom.spec.whatwg.org/#concept-node-pre-insert) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [concept-node-pre-remove](https://dom.spec.whatwg.org/#concept-node-pre-remove) | `dom/nodes/tree.ts` | `dom/nodes/tree.test.ts` |
-| [concept-node-remove](https://dom.spec.whatwg.org/#concept-node-remove) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/observers/queue.ts` +1 | `dom/nodes/tree.test.ts`, `dom/observers/mutation-observer.test.ts`, `compat/leaks/dom.test.ts` |
+| [concept-node-remove](https://dom.spec.whatwg.org/#concept-node-remove) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/observers/queue.ts` +1 | `dom/nodes/tree.test.ts`, `dom/observers/mutation-observer.test.ts`, `compat/leaks/dom.test.ts`, `compat/leaks/layout.test.ts` |
 | [concept-node-replace](https://dom.spec.whatwg.org/#concept-node-replace) | `dom/nodes/tree.ts` | `dom/nodes/element-node-misc.test.ts`, `dom/nodes/tree.test.ts` |
 | [concept-node-replace-all](https://dom.spec.whatwg.org/#concept-node-replace-all) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [concept-nodeiterator-traverse](https://dom.spec.whatwg.org/#concept-nodeiterator-traverse) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts`; WPT: `dom/traversal/NodeIterator-removal-during-filtering.html` |
@@ -1412,6 +1416,45 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [tokenizer-definitions](https://drafts.csswg.org/css-syntax/#tokenizer-definitions) | `dom/selectors/parser.ts` | **untested** |
 | [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 
+## CSS: cssom-view
+
+<https://drafts.csswg.org/cssom-view/> — 32 sections implemented, 20 tested, 1 by WPT only, 11 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [determine-the-scroll-into-view-position](https://drafts.csswg.org/cssom-view/#determine-the-scroll-into-view-position) | `dom/css/view.ts` | WPT: `css/cssom-view/scrollIntoView-nearest-visible-element.html` |
+| [dom-document-scrollingelement](https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement) | `dom/css/index.ts` | `dom/css/view.test.ts`; WPT: `css/cssom-view/scroll-overflow-clip-quirks-002.html` |
+| [dom-element-checkvisibility](https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/view.test.ts` |
+| [dom-element-clienttop](https://drafts.csswg.org/cssom-view/#dom-element-clienttop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
+| [dom-element-clientwidth](https://drafts.csswg.org/cssom-view/#dom-element-clientwidth) | `dom/css/layout.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollWidthHeight-not-scrollable-fractional-zoom.html` |
+| [dom-element-getboundingclientrect](https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/layout.test.ts`, `dom/nodes/element-node-misc.test.ts` |
+| [dom-element-getclientrects](https://drafts.csswg.org/cssom-view/#dom-element-getclientrects) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
+| [dom-element-scroll](https://drafts.csswg.org/cssom-view/#dom-element-scroll) | `dom/css/view.ts` | **untested** |
+| [dom-element-scrollintoview](https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview) | `dom/css/view.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode-and-rtl-direction.html`, `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode.html` +7 |
+| [dom-element-scrolltop](https://drafts.csswg.org/cssom-view/#dom-element-scrolltop) | `dom/css/view.ts` | `dom/css/layout.test.ts`, `dom/css/view.test.ts` |
+| [dom-htmlelement-offsetparent](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent) | `dom/css/view.ts` | `dom/css/view.test.ts` |
+| [dom-htmlelement-offsettop](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsettop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
+| [dom-mediaquerylist-addlistener](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener) | `dom/window/media.ts` | **untested** |
+| [dom-mediaquerylist-matches](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches) | `dom/window/media.ts` | **untested** |
+| [dom-mediaquerylist-media](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media) | `dom/window/media.ts` | `dom/css/media-queries.test.ts` |
+| [dom-mouseevent-offsetx](https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-mouseevent-pagex](https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-mouseevent-x](https://drafts.csswg.org/cssom-view/#dom-mouseevent-x) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-window-matchmedia](https://drafts.csswg.org/cssom-view/#dom-window-matchmedia) | `dom/css/media.ts`, `dom/window/Window.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [dom-window-screen](https://drafts.csswg.org/cssom-view/#dom-window-screen) | `dom/window/Window.ts` | **untested** |
+| [dom-window-scroll](https://drafts.csswg.org/cssom-view/#dom-window-scroll) | `dom/window/Window.ts` | `dom/window/window.test.ts` |
+| [dom-window-scrollby](https://drafts.csswg.org/cssom-view/#dom-window-scrollby) | `dom/window/Window.ts` | **untested** |
+| [dom-window-visualviewport](https://drafts.csswg.org/cssom-view/#dom-window-visualviewport) | `dom/window/Window.ts` | **untested** |
+| [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [extensions-to-the-htmlelement-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface) | `dom/css/view.ts`, `dom/html/HTMLElement.ts` | `dom/css/layout.test.ts` |
+| [extensions-to-the-mouseevent-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
+| [extensions-to-the-window-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts` |
+| [scrolling-area](https://drafts.csswg.org/cssom-view/#scrolling-area) | `dom/css/view.ts` | **untested** |
+| [the-mediaquerylist-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface) | `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [the-mediaquerylistevent-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylistevent-interface) | `dom/window/events.ts` | **untested** |
+| [the-screen-interface](https://drafts.csswg.org/cssom-view/#the-screen-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts`; WPT: `css/cssom-view/cssom-view-window-screen-interface.html`, `css/cssom-view/window-screen-height-immutable.html` +3 |
+| [the-visualviewport-interface](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts` |
+
 ## CSS: selectors
 
 <https://drafts.csswg.org/selectors/> — 28 sections implemented, 12 tested, 4 by WPT only, 12 untested.
@@ -1446,38 +1489,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [typedef-complex-selector](https://drafts.csswg.org/selectors/#typedef-complex-selector) | `dom/selectors/parser.ts` | **untested** |
 | [typedef-compound-selector](https://drafts.csswg.org/selectors/#typedef-compound-selector) | `dom/selectors/parser.ts` | **untested** |
 | [useraction-pseudos](https://drafts.csswg.org/selectors/#useraction-pseudos) | `dom/selectors/state.ts` | `dom/css/cascade-matching-caches.test.ts`; WPT: `css/selectors/is-where-pseudo-classes.html` |
-
-## CSS: cssom-view
-
-<https://drafts.csswg.org/cssom-view/> — 25 sections implemented, 14 tested, 0 by WPT only, 11 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [dom-document-scrollingelement](https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement) | `dom/css/index.ts` | `dom/css/view.test.ts`; WPT: `css/cssom-view/scroll-overflow-clip-quirks-002.html` |
-| [dom-element-checkvisibility](https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/view.test.ts` |
-| [dom-element-getboundingclientrect](https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect) | `dom/nodes/Element.ts` | `dom/nodes/element-node-misc.test.ts` |
-| [dom-element-scroll](https://drafts.csswg.org/cssom-view/#dom-element-scroll) | `dom/css/view.ts` | **untested** |
-| [dom-element-scrolltop](https://drafts.csswg.org/cssom-view/#dom-element-scrolltop) | `dom/css/view.ts` | `dom/css/view.test.ts` |
-| [dom-htmlelement-offsetparent](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent) | `dom/css/view.ts` | `dom/css/view.test.ts` |
-| [dom-mediaquerylist-addlistener](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener) | `dom/window/media.ts` | **untested** |
-| [dom-mediaquerylist-matches](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches) | `dom/window/media.ts` | **untested** |
-| [dom-mediaquerylist-media](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media) | `dom/window/media.ts` | `dom/css/media-queries.test.ts` |
-| [dom-mouseevent-offsetx](https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-mouseevent-pagex](https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-mouseevent-x](https://drafts.csswg.org/cssom-view/#dom-mouseevent-x) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-window-matchmedia](https://drafts.csswg.org/cssom-view/#dom-window-matchmedia) | `dom/css/media.ts`, `dom/window/Window.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
-| [dom-window-screen](https://drafts.csswg.org/cssom-view/#dom-window-screen) | `dom/window/Window.ts` | **untested** |
-| [dom-window-scroll](https://drafts.csswg.org/cssom-view/#dom-window-scroll) | `dom/window/Window.ts` | `dom/window/window.test.ts` |
-| [dom-window-scrollby](https://drafts.csswg.org/cssom-view/#dom-window-scrollby) | `dom/window/Window.ts` | **untested** |
-| [dom-window-visualviewport](https://drafts.csswg.org/cssom-view/#dom-window-visualviewport) | `dom/window/Window.ts` | **untested** |
-| [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
-| [extensions-to-the-htmlelement-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface) | `dom/html/HTMLElement.ts` | **untested** |
-| [extensions-to-the-mouseevent-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
-| [extensions-to-the-window-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts` |
-| [the-mediaquerylist-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface) | `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
-| [the-mediaquerylistevent-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylistevent-interface) | `dom/window/events.ts` | **untested** |
-| [the-screen-interface](https://drafts.csswg.org/cssom-view/#the-screen-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts`; WPT: `css/cssom-view/cssom-view-window-screen-interface.html`, `css/cssom-view/window-screen-height-immutable.html` +3 |
-| [the-visualviewport-interface](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts` |
 
 ## W3C: selection-api
 
@@ -1640,6 +1651,23 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [step2F](https://w3c.github.io/accname/#step2F) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [step2I](https://w3c.github.io/accname/#step2I) | `aria/accname.ts` | **untested** |
 
+## CSS: resize-observer
+
+<https://drafts.csswg.org/resize-observer/> — 10 sections implemented, 2 tested, 0 by WPT only, 8 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [broadcast-active-resize-observations](https://drafts.csswg.org/resize-observer/#broadcast-active-resize-observations) | `dom/css/resize-observer.ts` | `dom/css/layout.test.ts` |
+| [calculate-box-size](https://drafts.csswg.org/resize-observer/#calculate-box-size) | `dom/css/resize-observer.ts` | **untested** |
+| [create-and-populate-resizeobserverentry](https://drafts.csswg.org/resize-observer/#create-and-populate-resizeobserverentry) | `dom/css/resize-observer.ts` | **untested** |
+| [dom-resizeobservation-resizeobservation](https://drafts.csswg.org/resize-observer/#dom-resizeobservation-resizeobservation) | `dom/css/resize-observer.ts` | **untested** |
+| [dom-resizeobserver-observe](https://drafts.csswg.org/resize-observer/#dom-resizeobserver-observe) | `dom/css/resize-observer.ts` | **untested** |
+| [gather-active-observations-h](https://drafts.csswg.org/resize-observer/#gather-active-observations-h) | `dom/css/resize-observer.ts` | **untested** |
+| [resize-observer-entry-interface](https://drafts.csswg.org/resize-observer/#resize-observer-entry-interface) | `dom/css/resize-observer.ts` | **untested** |
+| [resize-observer-interface](https://drafts.csswg.org/resize-observer/#resize-observer-interface) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
+| [resizeobservation](https://drafts.csswg.org/resize-observer/#resizeobservation) | `dom/css/resize-observer.ts` | **untested** |
+| [resizeobserversize](https://drafts.csswg.org/resize-observer/#resizeobserversize) | `dom/css/resize-observer.ts` | **untested** |
+
 ## Infra Standard
 
 <https://infra.spec.whatwg.org/> — 10 sections implemented, 0 tested, 0 by WPT only, 10 untested.
@@ -1704,6 +1732,20 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dfn-xml-serialization](https://w3c.github.io/DOM-Parsing/#dfn-xml-serialization) | `dom/serializer/index.ts` | `dom/parser/wpt-domparsing.test.ts`, `dom/serializer/serializer.test.ts`, `dom/window/window.test.ts` |
 | [dfn-xml-serialization-algorithm](https://w3c.github.io/DOM-Parsing/#dfn-xml-serialization-algorithm) | `dom/serializer/index.ts` | **untested** |
 | [the-xmlserializer-interface](https://w3c.github.io/DOM-Parsing/#the-xmlserializer-interface) | `dom/window/fallbacks.ts` | `dom/window/window.test.ts` |
+
+## CSS: css
+
+<https://drafts.csswg.org/css/> — 7 sections implemented, 1 tested, 0 by WPT only, 6 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [abs-non-replaced-width](https://drafts.csswg.org/css/#abs-non-replaced-width) | `dom/css/layout.ts` | **untested** |
+| [absolute-positioning](https://drafts.csswg.org/css/#absolute-positioning) | `dom/css/layout.ts` | **untested** |
+| [blockwidth](https://drafts.csswg.org/css/#blockwidth) | `dom/css/layout.ts` | **untested** |
+| [containing-block-details](https://drafts.csswg.org/css/#containing-block-details) | `dom/css/layout.ts` | **untested** |
+| [normal-block](https://drafts.csswg.org/css/#normal-block) | `dom/css/layout.ts` | `dom/css/layout.test.ts` |
+| [normal-flow](https://drafts.csswg.org/css/#normal-flow) | `dom/css/layout.ts` | **untested** |
+| [relative-positioning](https://drafts.csswg.org/css/#relative-positioning) | `dom/css/layout.ts` | **untested** |
 
 ## RFC6265
 
@@ -1771,6 +1813,18 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-animations/#interface-globaleventhandlers-idl) | `dom/events/handlers.ts` | **untested** |
 | [typedef-keyframe-selector](https://drafts.csswg.org/css-animations/#typedef-keyframe-selector) | `dom/css/cssom.ts` | **untested** |
 
+## CSS: css-display
+
+<https://drafts.csswg.org/css-display/> — 5 sections implemented, 2 tested, 0 by WPT only, 3 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [blockify](https://drafts.csswg.org/css-display/#blockify) | `dom/css/cascade.ts`, `dom/html/innerText.ts` | `dom/css/computed-values.test.ts` |
+| [outer-role](https://drafts.csswg.org/css-display/#outer-role) | `dom/css/layout.ts` | **untested** |
+| [the-display-properties](https://drafts.csswg.org/css-display/#the-display-properties) | `aria/style.ts`, `dom/css/values.ts` | **untested** |
+| [valdef-display-none](https://drafts.csswg.org/css-display/#valdef-display-none) | `dom/css/cascade.ts` | **untested** |
+| [visibility](https://drafts.csswg.org/css-display/#visibility) | `aria/style.ts` | `aria/is-inaccessible.test.ts`, `aria/tree-exclusion.test.ts` |
+
 ## CSS: mediaqueries
 
 <https://drafts.csswg.org/mediaqueries/> — 5 sections implemented, 1 tested, 0 by WPT only, 4 untested.
@@ -1806,17 +1860,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [NT-Name](https://w3c.github.io/xml/#NT-Name) | `dom/nodes/names.ts` | **untested** |
 | [NT-NameStartChar](https://w3c.github.io/xml/#NT-NameStartChar) | `dom/nodes/names.ts` | **untested** |
 | [sec-line-ends](https://w3c.github.io/xml/#sec-line-ends) | `dom/parser/xml.ts` | **untested** |
-
-## CSS: css-display
-
-<https://drafts.csswg.org/css-display/> — 4 sections implemented, 2 tested, 0 by WPT only, 2 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [blockify](https://drafts.csswg.org/css-display/#blockify) | `dom/css/cascade.ts`, `dom/html/innerText.ts` | `dom/css/computed-values.test.ts` |
-| [the-display-properties](https://drafts.csswg.org/css-display/#the-display-properties) | `aria/style.ts`, `dom/css/values.ts` | **untested** |
-| [valdef-display-none](https://drafts.csswg.org/css-display/#valdef-display-none) | `dom/css/cascade.ts` | **untested** |
-| [visibility](https://drafts.csswg.org/css-display/#visibility) | `aria/style.ts` | `aria/is-inaccessible.test.ts`, `aria/tree-exclusion.test.ts` |
 
 ## CSS: css-nesting
 
@@ -1861,6 +1904,16 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [touch-interface](https://w3c.github.io/touch-events/#touch-interface) | `dom/events/UIEvents.ts` | **untested** |
 | [touchevent-interface](https://w3c.github.io/touch-events/#touchevent-interface) | `dom/events/UIEvents.ts` | `dom/events/shape.test.ts`, `dom/events/uievents.test.ts` |
 | [touchlist-interface](https://w3c.github.io/touch-events/#touchlist-interface) | `dom/events/UIEvents.ts` | **untested** |
+
+## CSS: css-flexbox
+
+<https://drafts.csswg.org/css-flexbox/> — 3 sections implemented, 3 tested, 0 by WPT only, 0 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [flex-flow-property](https://drafts.csswg.org/css-flexbox/#flex-flow-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
+| [flex-property](https://drafts.csswg.org/css-flexbox/#flex-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
+| [layout-algorithm](https://drafts.csswg.org/css-flexbox/#layout-algorithm) | `dom/css/layout.ts` | `dom/css/layout.test.ts` |
 
 ## CSS: css-fonts
 
@@ -1921,14 +1974,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [css-media-queries-webkit-device-pixel-ratio](https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio) | `dom/css/media.ts` | `dom/css/media-queries.test.ts` |
 | [css-simple-aliases](https://compat.spec.whatwg.org/#css-simple-aliases) | `dom/css/properties.ts` | **untested** |
 
-## CSS: css-flexbox
+## CSS: css-align
 
-<https://drafts.csswg.org/css-flexbox/> — 2 sections implemented, 2 tested, 0 by WPT only, 0 untested.
+<https://drafts.csswg.org/css-align/> — 2 sections implemented, 1 tested, 0 by WPT only, 1 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [flex-flow-property](https://drafts.csswg.org/css-flexbox/#flex-flow-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
-| [flex-property](https://drafts.csswg.org/css-flexbox/#flex-property) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
+| [distribution-values](https://drafts.csswg.org/css-align/#distribution-values) | `dom/css/layout.ts` | **untested** |
+| [gap-shorthand](https://drafts.csswg.org/css-align/#gap-shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
 ## CSS: css-namespaces
 
@@ -1984,14 +2037,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [intersection-observer-interface](https://w3c.github.io/IntersectionObserver/#intersection-observer-interface) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
 | [parse-a-margin](https://w3c.github.io/IntersectionObserver/#parse-a-margin) | `dom/window/observers.ts` | **untested** |
 
-## CSS: css-align
-
-<https://drafts.csswg.org/css-align/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [gap-shorthand](https://drafts.csswg.org/css-align/#gap-shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
-
 ## CSS: css-backgrounds
 
 <https://drafts.csswg.org/css-backgrounds/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
@@ -2024,6 +2069,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | --- | --- | --- |
 | [gradients](https://drafts.csswg.org/css-images/#gradients) | `dom/css/values.ts` | `dom/css/color-serialization.test.ts` |
 
+## CSS: css-inline
+
+<https://drafts.csswg.org/css-inline/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [line-height-property](https://drafts.csswg.org/css-inline/#line-height-property) | `dom/css/layout.ts` | **untested** |
+
 ## CSS: css-lists
 
 <https://drafts.csswg.org/css-lists/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
@@ -2040,6 +2093,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | --- | --- | --- |
 | [propdef-overflow](https://drafts.csswg.org/css-overflow/#propdef-overflow) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
+## CSS: css-sizing
+
+<https://drafts.csswg.org/css-sizing/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [max-content](https://drafts.csswg.org/css-sizing/#max-content) | `dom/css/layout.ts` | **untested** |
+
 ## CSS: css-ui
 
 <https://drafts.csswg.org/css-ui/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
@@ -2048,13 +2109,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | --- | --- | --- |
 | [outline](https://drafts.csswg.org/css-ui/#outline) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 
-## CSS: resize-observer
+## CSS: css-values
 
-<https://drafts.csswg.org/resize-observer/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
+<https://drafts.csswg.org/css-values/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [resize-observer-interface](https://drafts.csswg.org/resize-observer/#resize-observer-interface) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
+| [lengths](https://drafts.csswg.org/css-values/#lengths) | `dom/css/layout.ts` | **untested** |
 
 ## Encoding Standard
 
