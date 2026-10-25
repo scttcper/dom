@@ -9,6 +9,7 @@
  *   HTML Standard §8.10 "Animation frames"
  *     https://html.spec.whatwg.org/#animation-frames
  *     https://html.spec.whatwg.org/#run-the-animation-frame-callbacks
+ *     https://html.spec.whatwg.org/#rendering-opportunity (when frames run is up to the user agent)
  *   Cooperative Scheduling of Background Tasks
  *     https://w3c.github.io/requestidlecallback/#the-requestidlecallback-method
  *   HTML Standard §9.3 "Cross-document messaging"
@@ -21,8 +22,8 @@
  * `window.close()` cancels whatever is pending.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, type Window } from "@ctrl/dom";
-import { $timers } from "@ctrl/dom/internal";
+import { createWindow, installGlobals, type Window } from "@ctrl/dom";
+import { $timers, VirtualClock, installClock } from "@ctrl/dom/internal";
 
 let window: Window;
 
@@ -134,6 +135,58 @@ describe("requestAnimationFrame — https://html.spec.whatwg.org/#dom-animationf
     vi.runAllTimers();
     expect(errors).toEqual([boom]);
     expect(after).toHaveBeenCalled();
+  });
+});
+
+describe("requestAnimationFrame on the idle-skipping clock — https://html.spec.whatwg.org/#rendering-opportunity", () => {
+  type Host = { setTimeout: (cb: () => void, ms?: number) => unknown };
+  let restore: (() => void) | null = null;
+  afterEach(() => {
+    restore?.();
+    restore = null;
+  });
+
+  /** The window installed on a scratch global whose timers, Date and performance are a skipping clock (as in the environments). */
+  function onSkippingClock(): Host {
+    const g = { Date, performance } as unknown as Record<PropertyKey, unknown>;
+    const uninstallGlobals = installGlobals(window, g);
+    const clock = installClock(new VirtualClock({ skip: true }), g);
+    restore = () => {
+      clock.uninstall();
+      uninstallGlobals();
+    };
+    return g as unknown as Host;
+  }
+
+  const sleep = (g: Host, ms: number) => new Promise<void>((resolve) => g.setTimeout(resolve, ms));
+
+  test("a frame requested more than 1 ms after the last frame runs at the next timer turn, before a 0 ms timer set after it", async () => {
+    const g = onSkippingClock();
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+    await sleep(g, 50);
+    const order: string[] = [];
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => order.push("frame"));
+      g.setTimeout(() => {
+        order.push("timer");
+        resolve();
+      }, 0);
+    });
+    expect(order).toEqual(["frame", "timer"]);
+  });
+
+  test("a frame requested by a frame callback (an animation loop) runs one 16 ms frame later", async () => {
+    onSkippingClock();
+    const times: number[] = [];
+    await new Promise<void>((resolve) => {
+      const loop = (t: number) => {
+        times.push(t);
+        if (times.length < 4) window.requestAnimationFrame(loop);
+        else resolve();
+      };
+      window.requestAnimationFrame(loop);
+    });
+    for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1]).toBeGreaterThanOrEqual(16);
   });
 });
 

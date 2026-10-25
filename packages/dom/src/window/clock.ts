@@ -191,11 +191,17 @@ export class VirtualClock {
     return Math.floor(this.epochOffset + realNow() + this.skipped);
   }
 
-  /** https://html.spec.whatwg.org/#timer-initialisation-steps (delay clamped at 0; Node's 1 ms minimum is not imitated). */
+  /**
+   * https://html.spec.whatwg.org/#timer-initialisation-steps, with the delay jsdom's timers end up
+   * with: converted as a WebIDL `long` (https://webidl.spec.whatwg.org/#es-long: truncated,
+   * wrapped to 32 bits, NaN to 0), negative to 0, then Node's 1 ms minimum (jsdom schedules on
+   * Node's setTimeout). The minimum matters while skipping: every setTimeout(0) hop (user-event's
+   * wait between actions, React's scheduler) advances time by 1 ms as it does on Node, so a 16 ms
+   * animation frame runs after as many hops as it would in real time.
+   */
   schedule(callback: Callback, delay: unknown, args: unknown[], repeat: boolean): VirtualTimeout {
-    let ms = Number(delay);
-    if (!(ms > 0)) ms = 0;
-    if (repeat && ms < 1) ms = 1; // an interval of 0 would spin the heap
+    let ms = Number(delay) | 0;
+    if (ms < 1) ms = 1;
     const record = new TimerRecord(this.nextId++, this.now() + ms, this.seq++, ms, repeat, callback, args);
     const handle = new VirtualTimeout(this, record);
     record.handle = handle;
@@ -223,6 +229,17 @@ export class VirtualClock {
       this.remove(record);
       this.armHost();
     }
+    return true;
+  }
+
+  /**
+   * Let `ms` of idle time pass at once, as the idle driver would, unless a timer falls due in it
+   * (the caller then waits for real, so that timer runs first). Returns whether the time passed.
+   */
+  skipIdle(ms: number): boolean {
+    const first = this.heap[0];
+    if (first !== undefined && first.due <= this.now() + ms) return false;
+    this.skipped += ms;
     return true;
   }
 
@@ -352,6 +369,10 @@ export class VirtualClock {
       this.armHost();
       return;
     }
+    // While skipping, a timer run up to 1 ms early (the host timer's ms granularity, or the
+    // continuation below) moves the clock to its due time, so a callback never sees less time
+    // elapsed than its delay.
+    if (this.skip && first.due > this.now()) this.skipped += first.due - this.now();
     this.pop();
     if (first.repeat) {
       first.due = Math.max(first.due + first.delay, this.now());
@@ -523,6 +544,16 @@ let activeClock: VirtualClock | null = null;
 /** performance.now() of the active clock (event.timeStamp, https://dom.spec.whatwg.org/#dom-event-timestamp). */
 export function clockNow(): number {
   return activeClock === null ? realNow() : activeClock.now();
+}
+
+/** Whether a clock that skips idle time is active (the test file's timers run on it). */
+export function clockSkipping(): boolean {
+  return activeClock !== null;
+}
+
+/** The active skipping clock's skipIdle(ms); true without one (there is no clock to move). */
+export function skipIdleTime(ms: number): boolean {
+  return activeClock === null || activeClock.skipIdle(ms);
 }
 
 /** Milliseconds the active clock has skipped (0 without one): what a traced span reads at start and end. */

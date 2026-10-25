@@ -88,7 +88,51 @@ describe("real-time mode (timeSkip: false) — https://html.spec.whatwg.org/#tim
   });
 });
 
+describe("timer initialisation steps, the timeout — https://html.spec.whatwg.org/#timer-initialisation-steps", () => {
+  test("a timeout below 1 ms (0, negative, NaN, fractional) waits 1 ms, as jsdom's Node timers do: a 0 ms timer created after a 1 ms one fires after it", async () => {
+    const g = setup(true);
+    const order: string[] = [];
+    g.setTimeout(() => order.push("1ms"), 1);
+    g.setTimeout(() => order.push("0ms"), 0);
+    g.setTimeout(() => order.push("negative"), -5);
+    g.setTimeout(() => order.push("NaN"), Number.NaN);
+    g.setTimeout(() => order.push("fraction"), 0.9);
+    g.setTimeout(() => order.push("2ms"), 2);
+    await sleep(g, 10);
+    expect(order).toEqual(["1ms", "0ms", "negative", "NaN", "fraction", "2ms"]);
+  });
+
+  test("the timeout is converted to a WebIDL long (https://webidl.spec.whatwg.org/#es-long): 2^31 wraps to a negative timeout, which waits 1 ms", async () => {
+    const g = setup(true);
+    const order: string[] = [];
+    g.setTimeout(() => order.push("2ms"), 2);
+    g.setTimeout(() => order.push("wrapped"), 2 ** 31);
+    g.setTimeout(() => order.push("1.9ms"), 1.9);
+    await sleep(g, 10);
+    expect(order).toEqual(["wrapped", "1.9ms", "2ms"]);
+  });
+});
+
 describe("idle time skipping (timeSkip: true)", () => {
+  test("every setTimeout(0) hop advances time by 1 ms, as on Node: a 16 ms animation frame runs within 16 chained hops", async () => {
+    // user-event waits with setTimeout(0) between actions; React Aria restores focus in an
+    // animation frame after a menu closes. Without the minimum, hops would cost no virtual time
+    // and the frame would run only after 16 ms of real time, many actions later.
+    const g = setup(true);
+    const start = g.performance.now();
+    let elapsed = -1;
+    g.setTimeout(() => (elapsed = g.performance.now() - start), 16);
+    let hops = 0;
+    while (elapsed === -1) {
+      await sleep(g, 0);
+      hops++;
+    }
+    // At most 16: real time passing between hops also moves the clock.
+    expect(hops).toBeLessThanOrEqual(16);
+    // Never early: a timer run by the continuation right after another one still sees its full delay.
+    expect(elapsed).toBeGreaterThanOrEqual(16);
+  });
+
   test("a long timer resolves without waiting; Date and performance advance by the skipped time", async () => {
     const g = setup(true);
     const realStart = performance.now();
@@ -101,6 +145,17 @@ describe("idle time skipping (timeSkip: true)", () => {
     expect(new g.Date().getTime()).toBeGreaterThanOrEqual(dateStart + 10_000);
     expect(new g.Date() instanceof Date).toBe(true);
     expect(typeof (g.Date as unknown as () => string)()).toBe("string");
+  });
+
+  test("skipIdle(ms) lets idle time pass at once, but not past a timer that falls due in it (user-event's waits between actions)", () => {
+    const g = setup(true);
+    const clock = installed!.clock;
+    const start = g.performance.now();
+    expect(clock.skipIdle(1)).toBe(true);
+    expect(g.performance.now() - start).toBeGreaterThanOrEqual(1);
+    g.setTimeout(() => {}, 3);
+    expect(clock.skipIdle(1)).toBe(true);
+    expect(clock.skipIdle(5)).toBe(false);
   });
 
   test("only the earliest timer is skipped to: awaiting 50 ms resumes before a 300 ms debounce fires", async () => {

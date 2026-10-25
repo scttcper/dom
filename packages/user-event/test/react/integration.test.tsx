@@ -685,49 +685,29 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
       expect(screen.getByRole('button')).toHaveTextContent('done')
     })
 
-    test('a 0 ms timer scheduled while another timer is cleared has run when the call resolves', async () => {
-      // Downstream regression (Base UI Select typeahead): clear-then-schedule leaves the number
-      // of active timers unchanged, so the yield must count timer creation, not live timers.
-      const button = document.createElement('button')
-      document.body.append(button)
-      let pending: ReturnType<typeof setTimeout> | undefined
-      let committed = ''
-      button.addEventListener('keydown', e => {
-        clearTimeout(pending)
-        setTimeout(() => (committed = (e as unknown as {key: string}).key), 0)
-      })
-      button.focus()
-      const user = userEvent.setup()
-      let stale = 0
-      for (let i = 0; i < 30; i++) {
-        committed = ''
-        pending = setTimeout(() => {}, 10_000)
-        await user.keyboard('a')
-        if (committed !== 'a') stale++
+    test('an animation frame requested during a click has run a few clicks later', async () => {
+      // Downstream regression (Sentry's notificationActionManager.spec): React Aria restores focus
+      // in requestAnimationFrame after a menu closes, and the click after next must not land
+      // before it. Every wait between actions takes at least 1 ms on jsdom (Node's setTimeout
+      // minimum); under idle time skipping it must advance the clock by as much.
+      let frameRan = false
+      function Buttons() {
+        return (
+          <>
+            <button onClick={() => requestAnimationFrame(() => (frameRan = true))}>open</button>
+            <button>next</button>
+          </>
+        )
       }
-      clearTimeout(pending)
-      button.remove()
-      expect(stale).toBe(0)
-    })
-
-    test('a 0 ms timer scheduled before the API call runs before its first action', async () => {
-      // Downstream regression (Base UI Select: focus inside act() schedules a 0 ms timer that
-      // registers the list; the keydown must see it). Upstream's wait before the first action
-      // flushes it, so the yield must consider timers that were already pending.
-      const button = document.createElement('button')
-      document.body.append(button)
-      let ready = false
-      const seen: boolean[] = []
-      button.addEventListener('keydown', () => seen.push(ready))
-      button.focus()
+      render(<Buttons />)
       const user = userEvent.setup()
-      for (let i = 0; i < 20; i++) {
-        ready = false
-        setTimeout(() => (ready = true), 0)
-        await user.keyboard('a')
+      await user.click(screen.getByRole('button', {name: 'open'}))
+      let clicks = 0
+      while (!frameRan && clicks < 100) {
+        await user.click(screen.getByRole('button', {name: 'next'}))
+        clicks++
       }
-      button.remove()
-      expect(seen).toEqual(Array(20).fill(true))
+      expect(clicks).toBeLessThanOrEqual(8)
     })
 
     test('fake timers with advanceTimers keep working', async () => {

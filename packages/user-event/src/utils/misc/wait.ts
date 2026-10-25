@@ -10,6 +10,10 @@
 // end of every API call) uses it unless all of these hold, in which case it yields with
 // `setImmediate` instead:
 // - `delay: 0`, the default `advanceTimers`, and `setImmediate` is not faked or spied on;
+// - on @ctrl/dom's idle-skipping clock, no timer falls due in the next millisecond: the shortcut
+//   then lets that millisecond pass on the clock, as upstream's wait does there (Node's minimum),
+//   so time between actions advances as in real time and animation frames still run between
+//   actions (React Aria restores focus in one);
 // - the timer globals are still the observing wrappers installed below (fake timers or a
 //   replaced global turn the shortcut off);
 // - no pending timer created through them is due within DUE_SOON_MS — i.e. no timer that
@@ -22,6 +26,7 @@
 // `setImmediate` is still a macrotask boundary: microtasks, React's scheduler tasks (React
 // schedules with `setImmediate` in Node) and their effects run between actions as before.
 
+import {skipIdleTime} from '../../ctrl-dom.ts'
 import {type Instance} from '../../setup/index.ts'
 
 type TimerFn = ((...args: never[]) => unknown) & {clock?: unknown; _isMockFunction?: boolean}
@@ -229,6 +234,7 @@ function canYieldWithImmediate(config: Instance['config']): boolean {
   if (trackedTimerDueSoon()) return false
   const untracked = untrackedTimeouts()
   if (untracked === -1 || untrackedBaseline === -1 || untracked > untrackedBaseline) return false
+  if (!skipIdleTime(1)) return false
   untrackedBaseline = untracked
   return true
 }

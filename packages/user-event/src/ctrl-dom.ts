@@ -88,6 +88,16 @@ export const ctrlDomCss: CtrlDomCss | null = pick<CtrlDomCss>([
   'isVisibilityHidden',
 ])
 
+const skipIdle = internal?.skipIdleTime as ((ms: number) => boolean) | undefined
+
+/**
+ * Let `ms` of idle time pass on @ctrl/dom's idle-skipping clock (src/window/clock.ts), as a real
+ * wait would there; false when a timer falls due in that time. True without such a clock.
+ */
+export function skipIdleTime(ms: number): boolean {
+  return skipIdle === undefined || skipIdle(ms)
+}
+
 const NodeImplClass = (internal?.NodeImpl ?? null) as (abstract new (...args: never[]) => NodeImpl) | null
 
 /** The NodeImpl behind an @ctrl/dom wrapper, or null for nodes of other DOM implementations. */

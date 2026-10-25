@@ -37,10 +37,11 @@ import "./document.ts";
 import { setNestedWindowFactory } from "./browsing-context.ts";
 import { windowOrigin } from "./origin.ts";
 import { type TimerList, clearTimers, startTimer } from "./timers.ts";
+import { clockSkipping } from "./clock.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { type LayoutMode, enableLayout } from "../css/layout-mode.ts";
 import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
-import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
+import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $frameTime, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
 
 export interface WindowOptions {
   /** Document URL. Default "http://localhost/". */
@@ -204,6 +205,8 @@ export class Window extends EventTarget {
   [$frameCallbacks]: Map<number, FrameRequestCallback> | null;
   [$runningFrame]: Map<number, FrameRequestCallback> | null;
   [$frameTask]: PendingTask | null;
+  /** performance.now() of the last frame (-1 before the first). */
+  [$frameTime]: number;
   [$frameId]: number;
   [$idleCallbacks]: Map<number, PendingTask> | null;
   [$idleId]: number;
@@ -269,6 +272,7 @@ export class Window extends EventTarget {
     this[$frameCallbacks] = null;
     this[$runningFrame] = null;
     this[$frameTask] = null;
+    this[$frameTime] = -1;
     this[$frameId] = 0;
     this[$idleCallbacks] = null;
     this[$idleId] = 0;
@@ -608,7 +612,7 @@ export class Window extends EventTarget {
     const pending = self[$frameTask];
     if (pending === null || pending.scheduledWith !== self._hostSetTimeout()) {
       if (pending !== null) self._cancelTask(pending);
-      self[$frameTask] = self._task(runAnimationFrame, 16);
+      self[$frameTask] = self._task(runAnimationFrame, nextFrameDelay(self));
     }
     return id;
   }
@@ -857,6 +861,21 @@ export function setRenderingUpdateHook(fn: ((doc: unknown) => void) | null): voi
   renderingUpdateHook = fn;
 }
 
+/**
+ * When the next animation frame runs (https://html.spec.whatwg.org/#rendering-opportunity is up to
+ * the user agent): 16 ms after the request, like jsdom's frames, except while the virtual clock
+ * skips idle time. Skipping makes a test's steps far faster than a person's, and a browser renders
+ * while a page waits for the user: React Aria restores focus in a frame after a menu closes, and
+ * user-event's next clicks (1 ms per wait) overtook a 16 ms frame. So there a frame runs at the
+ * next timer turn, unless a frame callback requests it or it comes within 1 ms of the last frame
+ * (the promise and scheduler work the callbacks start): animation loops stay 16 ms apart.
+ */
+function nextFrameDelay(window: Window): number {
+  if (!clockSkipping() || window[$runningFrame] !== null) return 16;
+  const last = window[$frameTime];
+  return last !== -1 && (window[$host].performance ?? performance).now() - last < 1 ? 16 : 1;
+}
+
 function runAnimationFrame(this: Window): void {
   this[$frameTask] = null;
   if (renderingUpdateHook !== null) renderingUpdateHook(this.document);
@@ -865,6 +884,7 @@ function runAnimationFrame(this: Window): void {
   this[$frameCallbacks] = null;
   this[$runningFrame] = callbacks;
   const now = (this[$host].performance ?? performance).now();
+  this[$frameTime] = now;
   for (const [id, callback] of callbacks) {
     // Skip callbacks cancelled by an earlier callback in this frame.
     if (!callbacks.has(id)) continue;

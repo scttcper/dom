@@ -86,6 +86,7 @@ export const $frameCallbacks: unique symbol = Symbol.for("ctrl-dom.frameCallback
 export const $frameElement: unique symbol = Symbol.for("ctrl-dom.frameElement");
 export const $frameId: unique symbol = Symbol.for("ctrl-dom.frameId");
 export const $frameTask: unique symbol = Symbol.for("ctrl-dom.frameTask");
+export const $frameTime: unique symbol = Symbol.for("ctrl-dom.frameTime");
 export const $generation: unique symbol = Symbol.for("ctrl-dom.generation");
 export const $globalObject: unique symbol = Symbol.for("ctrl-dom.globalObject");
 export const $hasTransients: unique symbol = Symbol.for("ctrl-dom.hasTransients");
