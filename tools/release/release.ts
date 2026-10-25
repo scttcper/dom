@@ -44,7 +44,7 @@ for (const pkg of selected) {
         ["@semantic-release/npm", { pkgRoot: pkg.pkgRoot }],
         [
           "@semantic-release/github",
-          { successComment: false, failComment: false, failTitle: false, releasedLabels: false },
+          { successCommentCondition: false, failCommentCondition: false, releasedLabels: false },
         ],
       ],
     },
