@@ -80,13 +80,20 @@ Events are tagged with `runner`, `test.file`, `test.name`, `retries` and `flaky`
 | `react.render`, `react.rerender` | `render(<Signup />)` | |
 | `testing-library.query` | `getByRole("button", { name: "Save" })`, `findByText("Saved")` | `matches`, and for `findBy*` `checks` |
 | `testing-library.wait_for` | `waitFor(() => expect(screen.getByText("Saved")).toBeVisible())` | `checks` |
-| `testing-library.fire_event` | `fireEvent.click(<button "Save">)` | |
-| `user-event.<action>` | `user.type(<input "email">, "ada@example.com")` | |
+| `testing-library.fire_event` | `fireEvent.click(button "Save")` | |
+| `user-event.<action>` | `user.type(textbox "Email", "ada@example.com")` | |
+
+Elements are named the way queries find them, by role and accessible name (`button "Save"`,
+`option "Apple"`), else by tag and text. `render` names the component under test through the
+wrappers test helpers add (providers, `StrictMode`, a data router's route element), so a
+Sentry-style `render(ui)` helper still shows `render(<SearchQueryBuilder />)`. Callback source
+reads as written, with Vite's and Babel's import rewriting undone.
 
 Any span during which the virtual clock skipped idle time has `clock.skipped_ms`. A query that
 threw (a `getBy*` retried inside `waitFor`) is a span with status `internal_error`. A test keeps
-at most 300 spans and a file at most 1000 (Sentry's limit); the rest are counted in
-`spans.dropped`.
+at most 300 spans (the rest are counted in `spans.dropped`). A transaction holds at most 1000, so
+a file with more is split by whole tests into further transactions in the same trace, each a
+child of the file's (`<file> (part 2 of 4)`), and no test loses its spans.
 
 Spans come from @ctrl/dom's own Testing Library, React Testing Library and user-event. With stock
 Testing Library (`ctrlDom({ testingLibrary: false })`) a trace has the tests' spans only.

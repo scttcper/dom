@@ -92,13 +92,22 @@ describe("buildReport: a transaction per test file", () => {
     expect(buildReport(file([testCase({ state: "skip" })]), options()).envelopes).toEqual([]);
   });
 
-  test("a transaction keeps at most 1000 spans, test spans first; the rest are counted", () => {
+  test("a file over 1000 spans is split by whole tests into child transactions of the file's, losing none", () => {
     const many = Array.from({ length: 400 }, (_, i) => testCase({ name: `t${i}`, collected: { ...collected(), spans: Array.from({ length: 3 }, (_, j) => ({ ...collected().spans[0], span_id: `${i}-${j}` })) } }));
-    const [tx] = payloads(buildReport(file(many), options()));
-    expect(tx.spans).toHaveLength(1000);
-    expect(tx.spans.filter((s: any) => s.op === "test.case")).toHaveLength(400);
-    // 400 test spans + 1,200 collected: 600 collected spans fit.
-    expect(tx.contexts.trace.data["spans.dropped"]).toBe(600);
+    const report = buildReport(file(many), options());
+    expect(report.traces).toBe(1);
+    const [root, part] = payloads(report);
+    // 400 tests × (1 test span + 3 collected) = 1600 spans: 250 tests per transaction.
+    expect(root.spans).toHaveLength(1000);
+    expect(part.spans).toHaveLength(600);
+    expect(part.contexts.trace).toMatchObject({ trace_id: root.contexts.trace.trace_id, parent_span_id: root.contexts.trace.span_id, data: { "test.part": 2, "test.parts": 2 } });
+    expect(part.transaction).toBe("src/signup.test.tsx (part 2 of 2)");
+    for (const tx of [root, part]) {
+      const ids = new Set(tx.spans.map((s: any) => s.span_id).concat(tx.contexts.trace.span_id));
+      for (const span of tx.spans) expect(ids.has(span.parent_span_id)).toBe(true);
+    }
+    // The file's transaction spans the whole file.
+    expect(root.timestamp).toBeGreaterThanOrEqual(part.timestamp);
   });
 
   test("every kept span's parent is in the transaction: an orphan hangs off its test's span", () => {

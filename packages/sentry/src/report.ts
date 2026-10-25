@@ -102,78 +102,104 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     contexts: { runtime: { name: "node", version: process.version } },
   };
 
-  const spans: Record<string, unknown>[] = [];
-  let dropped = 0;
+  // One group of spans per test: the test's span, then its collected spans in start order (so a
+  // span always follows its parent). A span whose parent is missing (the collector's per-test limit
+  // drops by end time) hangs off the test's span: Relay rejects a parent_span_id that is not there.
   const testSpans = new Map<TestCaseReport, string>();
-  let start = Infinity;
-  let end = -Infinity;
-  // Test spans first (every test keeps one), then the collected spans while the limit allows.
+  const groups: Array<{ test: TestCaseReport; spans: Record<string, unknown>[]; start: number; end: number; dropped: number }> = [];
   for (const test of tests) {
     const id = spanId();
     testSpans.set(test, id);
     const testStart = test.collected?.startedAt ?? test.startedAt;
     const testEnd = test.collected?.endedAt ?? test.startedAt + test.duration / 1000;
-    start = Math.min(start, testStart);
-    end = Math.max(end, testEnd);
-    spans.push({
-      trace_id: traceId,
-      span_id: id,
-      parent_span_id: rootSpanId,
-      op: "test.case",
-      description: test.name,
-      start_timestamp: testStart,
-      timestamp: testEnd,
-      status: test.state === "pass" ? "ok" : "internal_error",
-      origin: "auto.test.ctrl_dom",
-      data: { "test.retries": test.retries, "test.flaky": test.flaky, ...(test.collected?.droppedSpans ? { "spans.dropped": test.collected.droppedSpans } : {}) },
-    });
-  }
-  // In start order, so a span that fits always has its parent before it. A span whose parent was
-  // dropped anyway (the collector's per-test limit drops by end time) hangs off its test's span:
-  // Relay rejects a parent_span_id that is not in the transaction.
-  const kept = new Set<string>(testSpans.values());
-  for (const test of tests) {
-    const testSpan = testSpans.get(test)!;
-    const ordered = [...(test.collected?.spans ?? [])].sort((a, b) => a.start_timestamp - b.start_timestamp);
-    for (const span of ordered) {
-      if (spans.length >= MAX_SPANS) {
-        dropped++;
+    const group = {
+      test,
+      start: testStart,
+      end: testEnd,
+      dropped: 0,
+      spans: [
+        {
+          trace_id: traceId,
+          span_id: id,
+          op: "test.case",
+          description: test.name,
+          start_timestamp: testStart,
+          timestamp: testEnd,
+          status: test.state === "pass" ? "ok" : "internal_error",
+          origin: "auto.test.ctrl_dom",
+          data: { "test.retries": test.retries, "test.flaky": test.flaky, ...(test.collected?.droppedSpans ? { "spans.dropped": test.collected.droppedSpans } : {}) },
+        } as Record<string, unknown>,
+      ],
+    };
+    const kept = new Set<string>([id]);
+    for (const span of [...(test.collected?.spans ?? [])].sort((a, b) => a.start_timestamp - b.start_timestamp)) {
+      if (group.spans.length >= MAX_SPANS) {
+        group.dropped++;
         continue;
       }
-      const parent = span.parent_span_id !== undefined && kept.has(span.parent_span_id) ? span.parent_span_id : testSpan;
       kept.add(span.span_id);
-      spans.push({ ...span, trace_id: traceId, parent_span_id: parent, origin: "auto.test.ctrl_dom" });
+      group.spans.push({ ...span, trace_id: traceId, parent_span_id: span.parent_span_id !== undefined && kept.has(span.parent_span_id) ? span.parent_span_id : id, origin: "auto.test.ctrl_dom" });
     }
+    groups.push(group);
   }
+  // A transaction holds at most 1000 spans. A file with more is split by whole tests into further
+  // transactions in the same trace, each a child of the file's, so no test loses its spans.
+  const chunks: Array<typeof groups> = [[]];
+  let size = 0;
+  for (const group of groups) {
+    if (size + group.spans.length > MAX_SPANS && chunks.at(-1)!.length > 0) {
+      chunks.push([]);
+      size = 0;
+    }
+    chunks.at(-1)!.push(group);
+    size += group.spans.length;
+  }
+  const start = Math.min(...groups.map((g) => g.start));
+  const end = Math.max(...groups.map((g) => g.end));
 
   // Sampled per file: a file's trace is whole or absent, and its issues link to it only when sent.
   const traced = options.traces && tests.length > 0 && (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
   if (traced) {
-    const failed = tests.some((t) => t.state === "fail");
-    const eventId = uuid();
-    out.envelopes.push({
-      eventId,
-      items: [
-        {
-          type: "transaction",
-          payload: {
-            ...base,
+    chunks.forEach((chunk, index) => {
+      const first = index === 0;
+      const chunkSpanId = first ? rootSpanId : spanId();
+      const failed = chunk.some((g) => g.test.state === "fail");
+      const dropped = chunk.reduce((n, g) => n + g.dropped, 0);
+      const eventId = uuid();
+      const spans = chunk.flatMap((g) => g.spans.map((span) => (span.op === "test.case" && span.span_id === testSpans.get(g.test) ? { ...span, parent_span_id: chunkSpanId } : span)));
+      out.envelopes.push({
+        eventId,
+        items: [
+          {
             type: "transaction",
-            event_id: eventId,
-            transaction: file,
-            transaction_info: { source: "custom" },
-            start_timestamp: start,
-            timestamp: end,
-            tags,
-            contexts: {
-              ...base.contexts,
-              trace: { trace_id: traceId, span_id: rootSpanId, op: "test.file", status: failed ? "internal_error" : "ok", origin: "auto.test.ctrl_dom", ...(dropped ? { data: { "spans.dropped": dropped } } : {}) },
+            payload: {
+              ...base,
+              type: "transaction",
+              event_id: eventId,
+              transaction: first ? file : `${file} (part ${index + 1} of ${chunks.length})`,
+              transaction_info: { source: "custom" },
+              // The file's transaction spans the whole file, so the others nest inside it.
+              start_timestamp: first ? start : Math.min(...chunk.map((g) => g.start)),
+              timestamp: first ? end : Math.max(...chunk.map((g) => g.end)),
+              tags,
+              contexts: {
+                ...base.contexts,
+                trace: {
+                  trace_id: traceId,
+                  span_id: chunkSpanId,
+                  ...(first ? {} : { parent_span_id: rootSpanId }),
+                  op: "test.file",
+                  status: (first ? groups.some((g) => g.test.state === "fail") : failed) ? "internal_error" : "ok",
+                  origin: "auto.test.ctrl_dom",
+                  ...(dropped || chunks.length > 1 ? { data: { ...(dropped ? { "spans.dropped": dropped } : {}), ...(chunks.length > 1 ? { "test.part": index + 1, "test.parts": chunks.length } : {}) } } : {}),
+                },
+              },
+              spans,
+              ...(first && report.environmentSetupMs !== undefined ? { measurements: { environment_setup: { value: report.environmentSetupMs, unit: "millisecond" } } } : {}),
             },
-            spans,
-            ...(report.environmentSetupMs !== undefined ? { measurements: { environment_setup: { value: report.environmentSetupMs, unit: "millisecond" } } } : {}),
           },
-        },
-      ],
+        ],
+      });
     });
     out.traces++;
   }
