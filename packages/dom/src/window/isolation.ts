@@ -10,6 +10,7 @@
 // back changed, added and removed properties. Environments call capture at setup (before any
 // test code) and restore at teardown.
 
+import { constants as vmConstants, createContext, runInContext } from "node:vm";
 import { windowInterfaces, Window } from "./Window.ts";
 
 type Snapshot = Map<object, Map<PropertyKey, PropertyDescriptor>>;
@@ -48,6 +49,30 @@ export function captureInterfaceBaseline(): void {
     baseline.set(t, snapshot(t));
     guarded.add(t);
   }
+  ownObjectCreateMaps();
+}
+
+/** A realm that lives as long as the process (see ownObjectCreateMaps). */
+let mapOwner: ((prototypes: object[]) => unknown[]) | null = null;
+/** Objects it made: they keep the maps it owns alive (V8 holds the cache weakly). */
+let ownedObjects: unknown[] = [];
+
+/**
+ * V8 caches the map `Object.create(proto)` builds on `proto`, with the calling realm's `Object`
+ * as its constructor, and reuses it from every realm. For prototypes every test file shares — the
+ * interface prototypes, and the outer realm's Object.prototype, which every `module.exports` Jest
+ * makes inherits from and bundlers' CommonJS interop (`__toESM`) hands to Object.create — the
+ * first test file to call it would own the map, and the objects each later file makes with it
+ * would keep that file's realm (window, document, module graph) alive for the rest of the worker.
+ * So a small permanent realm makes them first. Again after each restore: changing a prototype can
+ * replace its map, and the cache with it.
+ */
+function ownObjectCreateMaps(): void {
+  if (baseline === null) return;
+  const owner = (mapOwner ??= runInContext("(prototypes) => prototypes.map((p) => Object.create(p))", createContext(vmConstants.DONT_CONTEXTIFY)) as (prototypes: object[]) => unknown[]);
+  const prototypes: object[] = [Object.prototype];
+  for (const target of baseline.keys()) if (typeof target !== "function") prototypes.push(target);
+  ownedObjects = owner(prototypes);
 }
 
 type Descriptors = Record<PropertyKey, PropertyDescriptor>;
@@ -143,5 +168,6 @@ export function restoreInterfaces(): number {
       }
     }
   }
+  ownObjectCreateMaps();
   return restored;
 }

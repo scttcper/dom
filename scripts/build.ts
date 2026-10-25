@@ -51,6 +51,25 @@ const CJS_PACKAGES = new Set(["@ctrl/dom/aria", "@ctrl/dom/testing-library", "@c
 
 const external = (id: string) => !id.startsWith(".") && !isAbsolute(id) && !id.startsWith("\0");
 
+/**
+ * rolldown's CommonJS interop helper (`__toESM`) builds a namespace with
+ * `Object.create(Object.getPrototypeOf(module))`. Under Jest every `module.exports` is made in the
+ * outer realm, and V8 caches the map `Object.create` builds on that prototype, with the calling
+ * realm's `Object` as its constructor: the first test file to load a bundle owns the map, and
+ * every later file's namespace objects keep that file's realm (window, document, module graph)
+ * alive for the rest of the worker. An object literal with the same prototype gets a map of its
+ * own realm.
+ */
+const crossRealmInterop = {
+  name: "cross-realm-interop",
+  renderChunk(code: string, _chunk: unknown, options: { format: string }): string | null {
+    if (options.format !== "cjs" || !code.includes("var __toESM =")) return null;
+    const out = code.replace("__create(__getProtoOf(mod))", "{ __proto__: __getProtoOf(mod) }");
+    if (out === code) throw new Error("rolldown's __toESM helper changed: update crossRealmInterop in scripts/build.ts");
+    return out;
+  },
+};
+
 function dirSize(dir: string): number {
   let total = 0;
   for (const e of readdirSync(dir, { withFileTypes: true, recursive: true })) {
@@ -177,6 +196,7 @@ for (const pkg of selected) {
         logLevel: "warn",
         external,
         treeshake: true,
+        plugins: [crossRealmInterop],
         output: { dir: outDir, minify: flags.minify, sourcemap: false, ...format },
       });
     }

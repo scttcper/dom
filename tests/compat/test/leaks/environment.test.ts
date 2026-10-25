@@ -9,6 +9,7 @@
  */
 import { describe, expect, test } from "vitest";
 import { createRequire } from "node:module";
+import { runInContext } from "node:vm";
 import environment from "@ctrl/dom/vitest-environment";
 import { createWindow, currentWindowOrNull, installGlobals } from "@ctrl/dom";
 import { Tracker, heapSlope } from "./gc.ts";
@@ -141,6 +142,54 @@ describe("@ctrl/dom-jest-environment constructor/setup/teardown ×N", () => {
     };
     for (let i = 0; i < 4; i++) await cycle();
     expect(await tracker.alive()).toEqual({});
+  });
+
+  // Each of these kept a finished test file's realm (its global, window, document and module
+  // graph) alive in the worker: the CSS cascade's ancestor filter remembered the last element it
+  // was built for, the getComputedStyle override memo held the replaced function (Sentry's setup
+  // installs one) and its bound copy, and V8's cached Object.create map for the prototype of
+  // Jest's module objects (the outer realm's Object.prototype, which bundlers' CommonJS interop
+  // passes to Object.create) belonged to the first file that made one, so every later file's
+  // objects kept that first realm alive.
+  test("module state and V8's shared Object.create maps do not keep a finished file's realm alive", async () => {
+    let CtrlDomEnvironment: any;
+    try {
+      CtrlDomEnvironment = (await import("../../../../packages/jest-environment/src/index.ts")).default;
+    } catch {
+      return; // @ctrl/dom-jest-environment's dependencies are not installed
+    }
+    const { getComputedStyleOverride, $impl } = await import("@ctrl/dom/internal");
+    const tracker = new Tracker();
+    // Like the next file's interop namespaces: alive after every realm is torn down.
+    let live: unknown = null;
+    const cycle = async () => {
+      const env = new CtrlDomEnvironment(
+        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        { console, docblockPragmas: {}, testPath: "x.test.js" },
+      );
+      await env.setup();
+      const global = env.global;
+      tracker.track("global", global);
+      tracker.track("window", env.ctrlDomWindow);
+      global.outerPrototype = Object.prototype;
+      live = runInContext(
+        `const style = document.createElement("style");
+        style.textContent = "div .a { color: red } div .b { color: blue } div .c { color: green }";
+        document.head.append(style);
+        const div = document.createElement("div");
+        div.innerHTML = '<p class="a b c">x</p>';
+        document.body.append(div);
+        getComputedStyle(div.firstChild).color;
+        window.getComputedStyle = (element) => element.style;
+        Object.create(outerPrototype);`,
+        env.getVmContext(),
+      );
+      getComputedStyleOverride(global.document.body[$impl]);
+      await env.teardown();
+    };
+    for (let i = 0; i < 4; i++) await cycle();
+    expect(await tracker.alive()).toEqual({});
+    expect(live).not.toBeNull();
   });
 });
 

@@ -165,11 +165,12 @@ export type ComputedStyleOverride = (element: Element, pseudoElement?: string) =
 
 const OWN_GET_COMPUTED_STYLE: unknown = Window.prototype.getComputedStyle;
 
-// One-entry memo: (view, function) -> bound override. The view is held weakly so a closed test
-// file's window isn't kept alive by the last query that saw an override.
+// One-entry memo: (view, function) -> bound override. All weak: the function closes over its test
+// file's realm and the bound copy over the window, so a strong reference would keep a finished
+// file's realm alive in a reused worker until another file replaced getComputedStyle.
 let memoView: WeakRef<object> | null = null;
-let memoFn: unknown = null;
-let memoResult: ComputedStyleOverride | null = null;
+let memoFn: WeakRef<object> | null = null;
+let memoResult: WeakRef<ComputedStyleOverride> | null = null;
 
 /**
  * The user-replaced `getComputedStyle` of `node`'s window (`ownerDocument.defaultView`), bound
@@ -181,9 +182,13 @@ export function getComputedStyleOverride(node: NodeImplType): ComputedStyleOverr
   if (view === null || view === undefined) return null;
   const fn = view.getComputedStyle;
   if (fn === OWN_GET_COMPUTED_STYLE || typeof fn !== "function" || installedWindowMethods.has(fn)) return null;
-  if (fn === memoFn && memoView?.deref() === view) return memoResult;
+  if (memoFn?.deref() === fn && memoView?.deref() === view) {
+    const memo = memoResult!.deref();
+    if (memo !== undefined) return memo;
+  }
+  const result = (fn as (...args: unknown[]) => unknown).bind(view) as ComputedStyleOverride;
   memoView = new WeakRef(view);
-  memoFn = fn;
-  memoResult = (fn as (...args: unknown[]) => unknown).bind(view) as ComputedStyleOverride;
-  return memoResult;
+  memoFn = new WeakRef(fn);
+  memoResult = new WeakRef(result);
+  return result;
 }

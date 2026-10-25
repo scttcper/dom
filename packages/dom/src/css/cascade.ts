@@ -545,10 +545,10 @@ class Matched {
 
 /**
  * Element the ancestor filter (selectors/filter.ts) was last built for in this computeRecord, or
- * null. Built lazily, once the element has more than FILTER_AFTER candidate rules with ancestor
- * hashes: for one or two such rules the matcher's own ancestor walk is cheaper than building (or
- * revalidating) the filter, which WebKit amortizes over its tree walk and random-access
- * getComputedStyle cannot.
+ * null (cleared when the computation ends). Built lazily, once the element has more than
+ * FILTER_AFTER candidate rules with ancestor hashes: for one or two such rules the matcher's own
+ * ancestor walk is cheaper than building (or revalidating) the filter, which WebKit amortizes
+ * over its tree walk and random-access getComputedStyle cannot.
  */
 let filterFor: NodeImpl | null = null;
 /** Candidate rules with ancestor hashes seen in this computeRecord. */
@@ -786,6 +786,9 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
     // Popover showing state changes without a DOM mutation: never reuse the cached display.
     if (el.attrs !== null && attr(el, "popover") !== null) rec.volatile = true;
   }
+  // Module state must not keep the element: through its document and window it would keep a
+  // finished test file's whole realm alive in a reused worker.
+  filterFor = null;
   return rec;
 }
 

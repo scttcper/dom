@@ -142,6 +142,18 @@ Interface objects are module-level singletons shared by all windows (no per-wind
 copies; that is most of jsdom's/happy-dom's startup). Constructors that need the "current
 global" (`new Text()`, `new Event()`, `new Image()`) use `window/current.ts`.
 
+Because the modules outlive every window, module state must never keep a node, document or
+window: in a reused test worker that keeps a finished file's realm (its global, window,
+document and module graph) alive. Caches are weak or stamped on the document, pointers that
+only matter during one operation (the cascade's ancestor-filter element, the matcher's scope)
+are cleared when it ends, and memos hold their keys weakly. One trap is V8's own:
+`Object.create(proto)` caches the map it builds on `proto`, owned by the calling realm, so for
+prototypes every test file uses (interface prototypes, and the outer realm's
+`Object.prototype`, which Jest's `module.exports` objects inherit from and bundlers' `__toESM`
+passes to `Object.create`) the first file to call it would stay alive for the whole worker.
+`window/isolation.ts` has a permanent realm build those maps first. The leak suite
+(`tests/compat/test/leaks`) pins all of this.
+
 ### Mutation algorithms (`nodes/tree.ts`, `nodes/attributes.ts`, `nodes/CharacterData.ts`)
 
 All tree, attribute and character-data mutations go through these functions. They own the
