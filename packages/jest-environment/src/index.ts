@@ -218,7 +218,7 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
   /** The file's timers (see CtrlDomTestEnvironmentOptions.timeSkip). */
   clock: InstanceType<typeof internal.VirtualClock> | null;
   /** Only with CTRL_DOM_DEBUG set: failure snapshots (./failure-snapshot.ts); with the Sentry reporter: its collector. */
-  declare handleTestEvent?: (event: Circus.Event) => Promise<void> | void;
+  declare handleTestEvent?: (event: Circus.Event, state: Circus.State) => Promise<void> | void;
   /** The test file, for the Sentry collector's data. */
   #testPath: string;
   /** With @ctrl/dom/sentry's Jest reporter (CTRL_DOM_SENTRY_DIR set): spans and failure snapshots per test. */
@@ -291,9 +291,10 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
       const { createJestCollector } = await import("@rtd/sentry/jest-collector");
       const sentry = createJestCollector({ dir: sentryDir, testPath: this.#testPath, getDocument: () => this.rtdWindow?.document });
       this.#sentry = sentry;
+      // A subclass's own handler (@sentry/jest-environment defines one as a method) keeps its `this`.
       const previous = this.handleTestEvent;
-      this.handleTestEvent = async (event) => {
-        await previous?.(event);
+      this.handleTestEvent = async (event, state) => {
+        await previous?.call(this, event, state);
         sentry.handleTestEvent(event);
       };
     }
