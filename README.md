@@ -59,6 +59,10 @@ Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
 (node:test, Bun) and agent-friendly debug output are in the
 [package README](publish/ctrl-dom/README.md).
 
+To see test runs in Sentry, with each test file as a trace and failing and flaky tests as issues
+with the page attached, turn on `ctrlDom({ sentry: true })` or the Jest reporter:
+[docs/sentry.md](docs/sentry.md).
+
 ## Performance
 
 The same 100 React test files under Vitest and Jest, and benchmarks of what component tests do,

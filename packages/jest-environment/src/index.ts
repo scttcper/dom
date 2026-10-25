@@ -217,10 +217,15 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
   dom: RtdDom | null;
   /** The file's timers (see CtrlDomTestEnvironmentOptions.timeSkip). */
   clock: InstanceType<typeof internal.VirtualClock> | null;
-  /** Only with CTRL_DOM_DEBUG set: failure snapshots (./failure-snapshot.ts). */
+  /** Only with CTRL_DOM_DEBUG set: failure snapshots (./failure-snapshot.ts); with the Sentry reporter: its collector. */
   declare handleTestEvent?: (event: Circus.Event) => Promise<void> | void;
+  /** The test file, for the Sentry collector's data. */
+  #testPath: string;
+  /** With @ctrl/dom/sentry's Jest reporter (CTRL_DOM_SENTRY_DIR set): spans and failure snapshots per test. */
+  #sentry: import("@rtd/sentry/jest-collector").JestCollector | null = null;
 
-  constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
+  constructor(config: JestEnvironmentConfig, environmentContext: EnvironmentContext) {
+    this.#testPath = environmentContext.testPath;
     const { projectConfig } = config;
     const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as CtrlDomTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
@@ -278,7 +283,21 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     if (onTestEvent !== undefined) this.handleTestEvent = onTestEvent;
   }
 
-  async setup(): Promise<void> {}
+  async setup(): Promise<void> {
+    // @ctrl/dom/sentry's Jest reporter sets this before Jest starts its workers. jest-circus reads
+    // handleTestEvent after setup(), so the collector can be added here.
+    const sentryDir = process.env.CTRL_DOM_SENTRY_DIR;
+    if (sentryDir) {
+      const { createJestCollector } = await import("@rtd/sentry/jest-collector");
+      const sentry = createJestCollector({ dir: sentryDir, testPath: this.#testPath, getDocument: () => this.rtdWindow?.document });
+      this.#sentry = sentry;
+      const previous = this.handleTestEvent;
+      this.handleTestEvent = async (event) => {
+        await previous?.(event);
+        sentry.handleTestEvent(event);
+      };
+    }
+  }
 
   exportConditions(): string[] {
     return this.customExportConditions;
@@ -296,6 +315,8 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
    * crashing the worker with a ReferenceError. The vm context is discarded with the file.
    */
   async teardown(): Promise<void> {
+    this.#sentry?.finish();
+    this.#sentry = null;
     internal.setUncaughtExceptionHandler(null);
     internal.setNotImplementedHandler(null);
     this.fakeTimers?.dispose();

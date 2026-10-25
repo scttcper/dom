@@ -43,6 +43,7 @@ What each import is and where its source lives:
 | `@ctrl/dom/jest-dom` | [packages/jest-dom](packages/jest-dom) | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
 | `@ctrl/dom/vitest-environment` | [packages/vitest-environment](packages/vitest-environment) | Vitest's jsdom environment | |
 | `@ctrl/dom/register` | [packages/register](packages/register) | `@happy-dom/global-registrator` | DOM globals for `node --test` and `bun test` |
+| `@ctrl/dom/sentry` | [packages/sentry](packages/sentry) | | test runs in Sentry: traces, failing and flaky tests ([docs/sentry.md](docs/sentry.md)) |
 | `@ctrl/dom-jest-environment` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
 
 Inside the repository each directory under `packages/` is a workspace package named after it

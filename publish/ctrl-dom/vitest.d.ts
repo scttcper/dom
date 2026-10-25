@@ -1,7 +1,8 @@
 import type { Plugin } from "vitest/config";
 import type { CtrlDomEnvironmentOptions } from "./dist/vitest-environment/types/index.js";
+import type { CtrlDomSentryOptions } from "./dist/sentry/types/index.js";
 
-export type { CtrlDomEnvironmentOptions };
+export type { CtrlDomEnvironmentOptions, CtrlDomSentryOptions };
 
 export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
   /**
@@ -19,6 +20,13 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
    * snapshot of `document.body` to every failing test's error, taken before cleanup.
    */
   debug?: "aria" | "compact";
+  /**
+   * Report to Sentry (docs/sentry.md): each test file as a trace, with spans for tests, Testing
+   * Library queries and waitFor, user-event actions and renders; each failing test as an issue
+   * with the page's accessibility snapshot attached; each test that passed only on a retry as a
+   * flaky-test issue. `true` reads SENTRY_DSN / SENTRY_SPOTLIGHT; with neither, nothing is added.
+   */
+  sentry?: boolean | CtrlDomSentryOptions;
 }
 
 /** @ctrl/dom's Vitest environment plus (by default) the Testing Library aliases. */

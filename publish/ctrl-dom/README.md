@@ -307,6 +307,21 @@ A line for your `CLAUDE.md` / `AGENTS.md`:
 
 Details: [docs/agent-debugging.md](https://github.com/scttcper/dom/blob/main/docs/agent-debugging.md).
 
+## Sentry
+
+Test runs can be reported to Sentry: each test file as a trace, with spans for the tests and for
+every Testing Library query, `waitFor`, user-event action and render; each failing test as an
+issue with the page's accessibility snapshot and HTML attached; each test that passed only on a
+retry as a flaky-test issue.
+
+```ts
+plugins: [ctrlDom({ sentry: true })]               // Vitest
+reporters: ["default", "@ctrl/dom/sentry/jest"]    // Jest, with the preset
+```
+
+Set `SENTRY_DSN`, or `SENTRY_SPOTLIGHT=1` to see it locally in Spotlight. With neither, nothing
+is collected. Options: [docs/sentry.md](https://github.com/scttcper/dom/blob/main/docs/sentry.md).
+
 ## Differences from jsdom
 
 There is no script execution, no navigation and no network, as in jsdom and happy-dom, and no

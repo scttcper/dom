@@ -42,7 +42,8 @@
     "jest-mock": "30.4.1",
     "@jest/fake-timers": "30.4.1",
     "jest-util": "30.4.1",
-    "@rtd/testing-library": "workspace:*"
+    "@rtd/testing-library": "workspace:*",
+    "@rtd/sentry": "workspace:*"
   },
   "peerDependencies": {
     "jest": ">=30.0.0"

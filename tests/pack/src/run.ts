@@ -24,6 +24,8 @@
 //         (skipped when bun is not installed; no loader hook, the test's instanceof checks remain)
 //    (f1) `ctrl-dom debug` (the bin) on a failing Vitest test under the ctrlDom() plugin
 //    (f2) `ctrl-dom debug` on a failing Jest test under the preset
+//    (s1) @ctrl/dom/sentry: ctrlDom({ sentry: true }) against a fake Sentry server (sentry.check.mjs)
+//    (s2) @ctrl/dom/sentry: Jest's reporter against a fake Sentry server
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
 //    (es) (e) without skipLibCheck: our .d.ts files (and the module augmentations they make to
 //         vitest and jest) type-check too
@@ -308,6 +310,22 @@ const checks: Check[] = [
     title: "tsc --noEmit with our declarations",
     cmd: ["tsc", "--noEmit", "-p", "tsconfig.json"],
     mustLoad: [],
+  },
+  {
+    id: "s1",
+    title: "@ctrl/dom/sentry, Vitest: ctrlDom({ sentry: true }) against a fake Sentry server",
+    bin: process.execPath,
+    cmd: ["sentry.check.mjs", "vitest"],
+    mustLoad: [],
+    recordLoads: false,
+  },
+  {
+    id: "s2",
+    title: "@ctrl/dom/sentry, Jest: the reporter against a fake Sentry server",
+    bin: process.execPath,
+    cmd: ["sentry.check.mjs", "jest"],
+    mustLoad: [],
+    recordLoads: false,
   },
   {
     id: "es",

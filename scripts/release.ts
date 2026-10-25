@@ -4,7 +4,7 @@
 //   release/ctrl-dom                     @ctrl/dom: packages/dom at the root, the other runtime
 //                                        packages under subpaths (@ctrl/dom/react, /user-event,
 //                                        /jest-dom, /testing-library, /aria, /vitest-environment,
-//                                        /register),
+//                                        /register, /sentry),
 //                                        plus the Jest preset and the Vitest plugin (publish/ctrl-dom)
 //   release/dom-jest-environment         @ctrl/dom-jest-environment: packages/jest-environment
 //                                        (Jest's dependencies stay out of @ctrl/dom for Vitest users)
@@ -39,6 +39,7 @@ const SUBPATHS: Record<string, string> = {
   "@rtd/jest-dom": "jest-dom",
   "vitest-environment-rtd": "vitest-environment",
   "@rtd/register": "register",
+  "@rtd/sentry": "sentry",
 };
 
 /** packages/<dir> for each @ctrl/dom member, in SUBPATHS order. */
@@ -51,6 +52,7 @@ const MEMBER_DIRS: Record<string, string> = {
   "@rtd/jest-dom": "jest-dom",
   "vitest-environment-rtd": "vitest-environment",
   "@rtd/register": "register",
+  "@rtd/sentry": "sentry",
 };
 
 /** Peer ranges where members disagree (jest-dom alone allows older Vitest/Jest than the environments). */
@@ -59,7 +61,7 @@ const PEER_OVERRIDES: Record<string, string> = { vitest: ">=5.0.0", jest: ">=30.
 /** Rewrite workspace package names to the published ones (specifiers, messages, docs). */
 export function rewriteNames(text: string): string {
   return text
-    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom|register)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
+    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom|register|sentry)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
       const sub = SUBPATHS[`@rtd/${pkg}`];
       return `@ctrl/dom${sub ? `/${sub}` : ""}${rest}`;
     })
