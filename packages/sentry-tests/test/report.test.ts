@@ -34,7 +34,7 @@ const options = (overrides: Partial<ResolvedOptions> = {}): ResolvedOptions => (
 
 const span = (span_id: string, op: string, description: string, start: number, end: number, parent?: string, extra: Partial<CollectedSpan> = {}): CollectedSpan => ({
   span_id,
-  ...(parent ? { parent_span_id: parent } : {}),
+  parent_span_id: parent,
   op,
   description,
   start_timestamp: start,
@@ -44,20 +44,29 @@ const span = (span_id: string, op: string, description: string, start: number, e
   ...extra,
 });
 
+// Span ids as the collector makes them: 16 hex characters.
+const SUITE = "5000000000000001";
+const CASE = "c000000000000001";
+const HOOK = "e000000000000001";
+const FN = "f000000000000001";
+const RENDER = "a000000000000001";
+const WAIT = "b000000000000001";
+const QUERY = "d000000000000001";
+
 /** describe("Signup") › test("submits"): a beforeEach hook, then the test function rendering, waiting and querying. */
 const collected = (failures: FailureContext[] = []): CollectedFile => ({
   startedAt: 999.9,
   endedAt: 1000.6,
   droppedSpans: 0,
-  tests: { t1: { spanIds: ["case000000000001"], droppedSpans: 0, failures } },
+  tests: { t1: { spanIds: [CASE], droppedSpans: 0, failures } },
   spans: [
-    span("suite00000000001", "test.suite", "Signup", 999.95, 1000.55),
-    span("case000000000001", "test.case", "Signup > submits", 1000, 1000.5, "suite00000000001"),
-    span("hook000000000001", "test.hook", "beforeEach", 1000, 1000.005, "case000000000001"),
-    span("fn00000000000001", "test.fn", "submits", 1000.005, 1000.4, "case000000000001"),
-    span("aaaaaaaaaaaaaaaa", "react.render", "render(<Signup />)", 1000.01, 1000.02, "fn00000000000001"),
-    span("bbbbbbbbbbbbbbbb", "testing-library.wait_for", "waitFor(() => …)", 1000.1, 1000.3, "fn00000000000001", { data: { checks: 3 } }),
-    span("cccccccccccccccc", "testing-library.query", 'getByText("Done")', 1000.2, 1000.21, "bbbbbbbbbbbbbbbb", { status: "internal_error" }),
+    span(SUITE, "test.suite", "Signup", 999.95, 1000.55),
+    span(CASE, "test.case", "Signup > submits", 1000, 1000.5, SUITE),
+    span(HOOK, "test.hook", "beforeEach", 1000, 1000.005, CASE),
+    span(FN, "test.fn", "submits", 1000.005, 1000.4, CASE),
+    span(RENDER, "react.render", "render(<Signup />)", 1000.01, 1000.02, FN),
+    span(WAIT, "testing-library.wait_for", "waitFor(() => …)", 1000.1, 1000.3, FN, { data: { checks: 3 } }),
+    span(QUERY, "testing-library.query", 'getByText("Done")', 1000.2, 1000.21, WAIT, { status: "internal_error" }),
   ],
 });
 
@@ -65,7 +74,6 @@ const testCase = (overrides: Partial<TestCaseReport>): TestCaseReport => ({
   key: "t1",
   name: "Signup > submits",
   state: "pass",
-  startedAt: 1000,
   duration: 500,
   retries: 0,
   flaky: false,
@@ -95,18 +103,20 @@ describe("buildReport: a transaction per test file", () => {
     const root = tx.contexts.trace.span_id;
     const byOp = (op: string) => tx.spans.find((s: any) => s.op === op);
     expect(byOp("test.suite")).toMatchObject({ description: "Signup", parent_span_id: root });
-    expect(byOp("test.case")).toMatchObject({ description: "Signup > submits", parent_span_id: "suite00000000001", status: "ok", data: { "test.retries": 0, "test.flaky": false }, trace_id: tx.contexts.trace.trace_id });
-    expect(byOp("test.hook")).toMatchObject({ description: "beforeEach", parent_span_id: "case000000000001" });
-    expect(byOp("react.render").parent_span_id).toBe("fn00000000000001");
-    expect(byOp("testing-library.query").parent_span_id).toBe("bbbbbbbbbbbbbbbb");
+    expect(byOp("test.case")).toMatchObject({ description: "Signup > submits", parent_span_id: SUITE, status: "ok", data: { "test.retries": 0, "test.flaky": false }, trace_id: tx.contexts.trace.trace_id });
+    expect(byOp("test.hook")).toMatchObject({ description: "beforeEach", parent_span_id: CASE });
+    expect(byOp("react.render").parent_span_id).toBe(FN);
+    expect(byOp("testing-library.query").parent_span_id).toBe(WAIT);
     expect(tx.start_timestamp).toBe(999.9);
     expect(tx.timestamp).toBe(1000.6);
   });
 
-  test("without the runner's spans, each test is one span from its result", () => {
-    const [tx] = payloads(buildReport(file([testCase({})], null), options()));
-    expect(tx.spans.map((s: any) => [s.op, s.description, s.parent_span_id === tx.contexts.trace.span_id])).toEqual([["test.case", "Signup > submits", true]]);
-    expect(tx.spans[0]).toMatchObject({ start_timestamp: 1000, timestamp: 1000.5 });
+  test("without the runner's spans there is no trace, and a failing test is still an issue", () => {
+    const report = buildReport(file([testCase({ state: "fail", errors: [{ message: "boom" }] })], null), options());
+    expect(report).toMatchObject({ traces: 0, failures: 1 });
+    const [event] = payloads(report);
+    expect(event.contexts.trace).toBeUndefined();
+    expect(event.breadcrumbs.values).toEqual([]);
   });
 
   test("span origins use only what Relay accepts (lowercase letters, underscores, dots)", () => {
@@ -146,11 +156,16 @@ describe("buildReport: a transaction per test file", () => {
 
   test("every span's parent is in the transaction: one whose parent is missing hangs off the file's root", () => {
     const data = collected();
-    data.spans.push(span("dddddddddddddddd", "testing-library.query", "getByText(…)", 1000.25, 1000.26, "0000000000000000"));
+    data.spans.push(span("d000000000000002", "testing-library.query", "getByText(…)", 1000.25, 1000.26, "9999999999999999"));
     const [tx] = payloads(buildReport(file([testCase({})], data), options()));
     const ids = new Set(tx.spans.map((s: any) => s.span_id).concat(tx.contexts.trace.span_id));
     for (const s of tx.spans) expect(ids.has(s.parent_span_id)).toBe(true);
-    expect(tx.spans.find((s: any) => s.span_id === "dddddddddddddddd").parent_span_id).toBe(tx.contexts.trace.span_id);
+    expect(tx.spans.find((s: any) => s.span_id === "d000000000000002").parent_span_id).toBe(tx.contexts.trace.span_id);
+  });
+
+  test("a test file outside the root keeps its full path", () => {
+    const [tx] = payloads(buildReport({ ...file([testCase({})]), file: "/elsewhere/signup.test.tsx" }, options()));
+    expect(tx.transaction).toBe("/elsewhere/signup.test.tsx");
   });
 
   test("traces: false sends no transaction", () => {
@@ -187,7 +202,7 @@ describe("buildReport: an issue per failing test", () => {
       tags: { "test.name": "Signup > submits", flaky: "false", retries: "0" },
       contexts: { clock: { skipped_ms: 200, pending_timers: 1 }, test: { name: "Signup > submits", file: "src/signup.test.tsx" } },
     });
-    expect(event.contexts.trace).toMatchObject({ trace_id: tx.contexts.trace.trace_id, span_id: "case000000000001", parent_span_id: "suite00000000001" });
+    expect(event.contexts.trace).toMatchObject({ trace_id: tx.contexts.trace.trace_id, span_id: CASE, parent_span_id: SUITE });
     expect(tx.spans.find((s: any) => s.op === "test.case").status).toBe("internal_error");
     const exception = event.exception.values[0];
     expect(exception).toMatchObject({ type: "AssertionError", value: "expected 1 to be 2" });
@@ -221,14 +236,36 @@ describe("buildReport: an issue per failing test", () => {
     expect(event.exception.values[0]).toMatchObject({ type: "TestingLibraryElementError", value: "Unable to find role" });
   });
 
-  test("a test file outside the root keeps its full path", () => {
-    const [tx] = payloads(buildReport({ ...file([testCase({})]), file: "/elsewhere/signup.test.tsx" }, options()));
-    expect(tx.transaction).toBe("/elsewhere/signup.test.tsx");
-  });
-
   test("attachments: false attaches nothing; failures: false sends no issue", () => {
     expect(buildReport(file([failing], failingData()), options({ attachments: false })).envelopes[1].items).toHaveLength(1);
     expect(buildReport(file([failing], failingData()), options({ failures: false })).failures).toBe(0);
+  });
+});
+
+describe("buildReport: an issue per flaky test", () => {
+  test("a warning grouped by test, with the failed attempt's error under a FlakyTest exception", () => {
+    const report = buildReport(file([testCase({ retries: 1, flaky: true })], collected([{ error: { name: "Error", message: "timed out" }, attachments: [], contexts: {} }])), options());
+    expect(report.flaky).toBe(1);
+    const event = payloads(report)[1];
+    expect(event.level).toBe("warning");
+    expect(event.fingerprint).toEqual(["sentry-tests.flaky-test", "src/signup.test.tsx", "Signup > submits"]);
+    expect(event.tags).toMatchObject({ flaky: "true", retries: "1" });
+    // One exception, so every UI titles the issue as flaky.
+    expect(event.exception.values.map((v: any) => [v.type, v.value])).toEqual([["FlakyTest", "Signup > submits failed, then passed on retry 1. The failed attempt:\n\nError: timed out"]]);
+  });
+
+  test("with a span per attempt (Jest), the issue links to the failed attempt and shows what it did", () => {
+    const data = collected([{ error: { name: "Error", message: "timed out" }, attachments: [], contexts: {} }]);
+    data.tests.t1.spanIds.push("c000000000000002");
+    data.spans.push(
+      span("c000000000000002", "test.case", "Signup > submits", 1000.6, 1000.7, SUITE, { data: { "test.retry": 1 } }),
+      span("a000000000000002", "react.render", "render(<Retried />)", 1000.61, 1000.62, "c000000000000002"),
+    );
+    const [tx, event] = payloads(buildReport(file([testCase({ retries: 1, flaky: true })], data), options()));
+    expect(event.contexts.trace.span_id).toBe(CASE);
+    expect(event.breadcrumbs.values.map((b: any) => b.message)).not.toContain("render(<Retried />) (10.0 ms)");
+    // The test's result belongs to its last attempt.
+    expect(tx.spans.find((s: any) => s.span_id === "c000000000000002").data).toMatchObject({ "test.retry": 1, "test.retries": 1, "test.flaky": true });
   });
 });
 
@@ -260,40 +297,13 @@ describe("buildReport: console output, files that fail to load, sampling", () =>
   });
 });
 
-describe("Jest test names", () => {
+describe("circusTestName (jest-collector.ts): Jest's test names", () => {
   test("the runner's name for a test matches the reporter's (describe blocks and title joined with ' > ')", () => {
     const root = { name: "ROOT_DESCRIBE_BLOCK" };
     const outer = { name: "Signup", parent: root };
     const inner = { name: "when invalid", parent: outer };
     expect(circusTestName({ name: "shows an error", parent: inner })).toBe(["Signup", "when invalid", "shows an error"].join(" > "));
     expect(circusTestName({ name: "top level", parent: root })).toBe("top level");
-  });
-});
-
-describe("buildReport: an issue per flaky test", () => {
-  test("a warning grouped by test, with the failed attempt's error under a FlakyTest exception", () => {
-    const report = buildReport(file([testCase({ retries: 1, flaky: true })], collected([{ error: { name: "Error", message: "timed out" }, attachments: [], contexts: {} }])), options());
-    expect(report.flaky).toBe(1);
-    const event = payloads(report)[1];
-    expect(event.level).toBe("warning");
-    expect(event.fingerprint).toEqual(["sentry-tests.flaky-test", "src/signup.test.tsx", "Signup > submits"]);
-    expect(event.tags).toMatchObject({ flaky: "true", retries: "1" });
-    // One exception, so every UI titles the issue as flaky.
-    expect(event.exception.values.map((v: any) => [v.type, v.value])).toEqual([["FlakyTest", "Signup > submits failed, then passed on retry 1. The failed attempt:\n\nError: timed out"]]);
-  });
-
-  test("with a span per attempt (Jest), the issue links to the failed attempt and shows what it did", () => {
-    const data = collected([{ error: { name: "Error", message: "timed out" }, attachments: [], contexts: {} }]);
-    data.tests.t1.spanIds.push("case000000000002");
-    data.spans.push(
-      span("case000000000002", "test.case", "Signup > submits", 1000.6, 1000.7, "suite00000000001", { data: { "test.retry": 1 } }),
-      span("eeeeeeeeeeeeeeee", "react.render", "render(<Retried />)", 1000.61, 1000.62, "case000000000002"),
-    );
-    const [tx, event] = payloads(buildReport(file([testCase({ retries: 1, flaky: true })], data), options()));
-    expect(event.contexts.trace.span_id).toBe("case000000000001");
-    expect(event.breadcrumbs.values.map((b: any) => b.message)).not.toContain("render(<Retried />) (10.0 ms)");
-    // The test's result belongs to its last attempt.
-    expect(tx.spans.find((s: any) => s.span_id === "case000000000002").data).toMatchObject({ "test.retry": 1, "test.retries": 1, "test.flaky": true });
   });
 });
 

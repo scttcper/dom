@@ -31,8 +31,6 @@ export interface TestCaseReport {
   /** Full name: describe blocks and the test, joined with " > ". */
   name: string;
   state: "pass" | "fail" | "skip";
-  /** Epoch seconds. */
-  startedAt: number;
   /** Milliseconds. */
   duration: number;
   retries: number;
@@ -58,7 +56,7 @@ export interface TestFileReport {
   file: string;
   project?: string;
   tests: TestCaseReport[];
-  /** What the worker collected (null without the runner: then each test is one span). */
+  /** What the worker's runner collected; without it there is no trace, only the issues. */
   collected: CollectedFile | null;
   environmentSetupMs?: number;
   /** Why the file failed to load or run, when it did (an import error, a syntax error). */
@@ -109,26 +107,18 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     contexts: { runtime: { name: "node", version: process.version } },
   };
 
-  // The file's spans in start order, so a span always follows its parent. A test the worker has
-  // no span for (no runner, or it never started) gets one from its result.
+  // The file's spans in start order, so a span always follows its parent. The result of a test
+  // belongs on its last attempt's span (Jest has one per attempt).
   const spans = [...(report.collected?.spans ?? [])].sort((a, b) => a.start_timestamp - b.start_timestamp);
   const byId = new Map(spans.map((s) => [s.span_id, s]));
-  const attempts = new Map<TestCaseReport, string[]>();
   for (const test of tests) {
     const collected = report.collected?.tests[test.key];
-    const ids = (collected?.spanIds ?? []).filter((id) => byId.has(id));
-    if (ids.length === 0) {
-      const span: CollectedSpan = { span_id: spanId(), op: "test.case", description: test.name, start_timestamp: test.startedAt, timestamp: test.startedAt + test.duration / 1000, status: "ok", data: {} };
-      spans.push(span);
-      byId.set(span.span_id, span);
-      ids.push(span.span_id);
-    }
-    attempts.set(test, ids);
-    const last = byId.get(ids.at(-1)!)!;
-    last.status = test.state === "pass" ? "ok" : "internal_error";
-    last.data = { ...last.data, "test.retries": test.retries, "test.flaky": test.flaky, ...(collected?.droppedSpans ? { "spans.dropped": collected.droppedSpans } : {}) };
+    const last = collected?.spanIds.at(-1);
+    if (last === undefined) continue;
+    const span = byId.get(last)!;
+    span.status = test.state === "pass" ? "ok" : "internal_error";
+    span.data = { ...span.data, "test.retries": test.retries, "test.flaky": test.flaky, ...(collected!.droppedSpans ? { "spans.dropped": collected!.droppedSpans } : {}) };
   }
-  spans.sort((a, b) => a.start_timestamp - b.start_timestamp);
 
   // Each span belongs to the test whose "test.case" span it is under, if any.
   const owners = new Map<string, string | null>();
@@ -163,13 +153,12 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     if (chunks.at(-1)!.length + kept.length > MAX_SPANS && chunks.at(-1)!.length > 0) chunks.push([]);
     chunks.at(-1)!.push(...kept);
   }
-  const startedAt = Math.min(report.collected?.startedAt || Infinity, ...spans.map((s) => s.start_timestamp));
-  const endedAt = Math.max(report.collected?.endedAt ?? 0, ...spans.map((s) => s.timestamp));
   /** The parent each span was sent with: an error event's trace context links to the same. */
   const sentParent = new Map<string, string>();
 
   // Sampled per file: a file's trace is whole or absent, and its issues link to it only when sent.
-  const traced = options.traces && tests.length > 0 && (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
+  const collected = report.collected;
+  const traced = collected !== null && spans.length > 0 && options.traces && (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
   if (traced) {
     chunks.forEach((chunk, index) => {
       const first = index === 0;
@@ -194,8 +183,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
               transaction: first ? file : `${file} (part ${index + 1} of ${chunks.length})`,
               transaction_info: { source: "custom" },
               // The file's transaction spans the whole file, so the others nest inside it.
-              start_timestamp: first ? startedAt : Math.min(...chunk.map((s) => s.start_timestamp)),
-              timestamp: first ? endedAt : Math.max(...chunk.map((s) => s.timestamp)),
+              ...(first ? { start_timestamp: collected.startedAt, timestamp: collected.endedAt } : bounds(chunk)),
               tags,
               contexts: {
                 ...base.contexts,
@@ -222,11 +210,11 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   for (const test of tests) {
     const failed = test.state === "fail";
     if (!(failed ? options.failures : test.flaky && options.flaky)) continue;
-    const failures = report.collected?.tests[test.key]?.failures ?? [];
-    // A failing test's issue shows its last attempt; a flaky test's, the attempt that failed.
-    const context: FailureContext | undefined = failed ? failures.at(-1) : failures[0];
-    const ids = attempts.get(test)!;
-    const attempt = failed || ids.length === 1 ? ids.at(-1)! : ids[0];
+    const collectedTest = report.collected?.tests[test.key];
+    // A failing test's issue shows its last attempt; a flaky test's, the attempt that failed (its
+    // first span under Jest, the one span holding every attempt under Vitest).
+    const context: FailureContext | undefined = failed ? collectedTest?.failures.at(-1) : collectedTest?.failures[0];
+    const attempt = failed ? collectedTest?.spanIds.at(-1) : collectedTest?.spanIds[0];
     // The worker's capture has the error object itself: Jest's results can lose its name
     // (`TestingLibraryElementError` arrives as a plain Error).
     const reported = failed ? (test.errors[0] ?? context?.error) : (context?.error ?? test.errors[0]);
@@ -239,7 +227,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
       exception.value = `${test.name} failed, then passed on retry ${test.retries}. The failed attempt:\n\n${exception.type}: ${exception.value}`;
       exception.type = "FlakyTest";
     }
-    const testSpan = byId.get(attempt)!;
+    const testSpan = attempt === undefined ? undefined : byId.get(attempt);
     const eventId = uuid();
     const items: EnvelopeItem[] = [
       {
@@ -247,7 +235,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
         payload: {
           ...base,
           event_id: eventId,
-          timestamp: testSpan.timestamp,
+          timestamp: testSpan?.timestamp ?? Date.now() / 1000,
           level: failed ? "error" : "warning",
           logger: `${report.runner}.test`,
           transaction: `${file} > ${test.name}`,
@@ -256,11 +244,11 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
           tags: { ...tags, "test.name": tag(test.name), flaky: String(test.flaky), retries: String(test.retries) },
           contexts: {
             ...base.contexts,
-            ...(context?.contexts ?? {}),
-            ...(traced ? { trace: { trace_id: traceId, span_id: attempt, parent_span_id: sentParent.get(attempt) ?? rootSpanId, op: "test.case" } } : {}),
+            ...context?.contexts,
+            ...(traced && attempt !== undefined ? { trace: { trace_id: traceId, span_id: attempt, parent_span_id: sentParent.get(attempt), op: "test.case" } } : {}),
             test: { name: test.name, file, duration_ms: test.duration, retries: test.retries, flaky: test.flaky },
           },
-          breadcrumbs: { values: breadcrumbs(groups.get(attempt) ?? [], test.console ?? []) },
+          breadcrumbs: { values: breadcrumbs((attempt !== undefined && groups.get(attempt)) || [], test.console ?? []) },
         },
       },
     ];
@@ -297,6 +285,17 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     }
   }
   return out;
+}
+
+/** A part transaction's extent: its spans' earliest start and latest end. */
+function bounds(spans: readonly CollectedSpan[]): { start_timestamp: number; timestamp: number } {
+  let start = Infinity;
+  let end = 0;
+  for (const s of spans) {
+    if (s.start_timestamp < start) start = s.start_timestamp;
+    if (s.timestamp > end) end = s.timestamp;
+  }
+  return { start_timestamp: start, timestamp: end };
 }
 
 function tag(value: string): string {

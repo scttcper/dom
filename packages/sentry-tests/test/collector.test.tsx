@@ -7,7 +7,7 @@
  * environment, which subscribes to add the accessibility snapshot and the clock.
  */
 import { channel } from "node:diagnostics_channel";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, onTestFinished, test } from "vitest";
 import { createContext, StrictMode, useState, type ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@ctrl/dom/react";
 import userEvent from "@ctrl/dom/user-event";
@@ -40,6 +40,13 @@ function Save() {
 
 const line = (s: CollectedSpan) => `${s.op} ${s.description}`;
 
+/** A collector subscribed for the rest of the test. */
+function collecting(): Collector {
+  const collector = createCollector();
+  onTestFinished(() => collector.stop());
+  return collector;
+}
+
 /** Run `fn` as a test of `collector`, the way the Vitest runner does, and return the file's spans. */
 async function asTest(collector: Collector, fn: () => Promise<void> | void): Promise<{ spans: CollectedSpan[]; test: CollectedSpan }> {
   const test = collector.open("test.case", "saves", {}, collector.test("t1"));
@@ -50,7 +57,7 @@ async function asTest(collector: Collector, fn: () => Promise<void> | void): Pro
 
 describe("collector: spans from the tracing channel, under the runner's", () => {
   test("render, queries, user-event actions and findBy each record a span under the test, with their data", async () => {
-    const collector = createCollector();
+    const collector = collecting();
     const { spans, test: testSpan } = await asTest(collector, async () => {
       render(<Save />);
       const user = userEvent.setup();
@@ -59,7 +66,6 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
       await user.click(screen.getByRole("button", { name: "Save" }) as never);
       await screen.findByText("Saved");
     });
-    collector.stop();
 
     const lines = spans.map(line);
     expect(lines).toContain("react.render render(<Save />)");
@@ -78,13 +84,12 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
   });
 
   test("a query inside a waitFor callback is the waitFor span's child, across awaits", async () => {
-    const collector = createCollector();
+    const collector = collecting();
     const { spans } = await asTest(collector, async () => {
       render(<Save />);
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
       await waitFor(() => expect(screen.getByText("Saved")).toBeTruthy());
     });
-    collector.stop();
 
     const wait = spans.find((s) => s.op === "testing-library.wait_for")!;
     expect(wait.description).toBe('waitFor(() => expect(screen.getByText("Saved")).toBeTruthy())');
@@ -102,7 +107,7 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
     // A bundler-renamed router provider, as test helpers wrap the UI in: `RouterProvider$1`.
     const RouterProvider = ({ router }: { router: { routes: Array<{ element: ReactNode; children?: Array<{ element: ReactNode }> }> } }) => <>{router.routes[0].children?.[0]?.element}</>;
     Object.defineProperty(RouterProvider, "name", { value: "RouterProvider$1" });
-    const collector = createCollector();
+    const collector = collecting();
     const { spans } = await asTest(collector, async () => {
       // An anonymous wrapper from a factory, under a layout route's <Outlet />.
       const makeProviders = () => ({ children }: { children: ReactNode }) => <AllTheProviders>{children}</AllTheProviders>;
@@ -116,7 +121,6 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
       render(<div><Save /></div>);
       render(<div><Save /><Save /></div>);
     });
-    collector.stop();
     expect(spans.map(line)).toEqual(
       expect.arrayContaining([
         "react.render render(<Save />)",
@@ -129,7 +133,7 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
   });
 
   test("an event-driven runner's entered span takes the spans no async context places (Jest)", () => {
-    const collector = createCollector();
+    const collector = collecting();
     const suite = collector.open("test.suite", "Form");
     collector.enter(suite);
     const hook = collector.open("test.hook", "beforeEach");
@@ -139,13 +143,12 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
     collector.enter(suite);
     collector.close(suite);
     const { spans } = collector.finish();
-    collector.stop();
     expect(hook.span.parent_span_id).toBe(suite.span.span_id);
     expect(spans.find((s) => s.op === "react.render")?.parent_span_id).toBe(hook.span.span_id);
   });
 
   test("past 300 spans a test drops the rest, and what a dropped span starts nests under its parent", () => {
-    const collector = createCollector();
+    const collector = collecting();
     const test = collector.open("test.case", "t", {}, collector.test("t"));
     collector.run(test, () => {
       for (let i = 0; i < 300; i++) traceSync("custom.op", `step ${i}`, () => {});
@@ -153,7 +156,6 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
     });
     collector.close(test);
     const file = collector.finish();
-    collector.stop();
     expect(file.spans.filter((s) => s.op === "custom.op")).toHaveLength(300);
     expect(file.spans.every((s) => s.op !== "custom.op" || s.parent_span_id === test.span.span_id)).toBe(true);
     expect(file.tests.t.droppedSpans).toBe(2);
@@ -161,22 +163,30 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
 
   test("nothing is traced without a subscriber, and spans outside every runner span are not recorded", () => {
     expect(tracing()).toBe(false);
-    const collector = createCollector();
+    const collector = collecting();
     expect(tracing()).toBe(true);
     render(<Save />);
     expect(collector.finish().spans).toEqual([]);
     collector.stop();
     expect(tracing()).toBe(false);
   });
+
+  test("span ids are 16 hex characters, unique within the file (Sentry rejects anything else)", async () => {
+    const collector = collecting();
+    const { spans } = await asTest(collector, () => {
+      for (let i = 0; i < 50; i++) traceSync("custom.op", `step ${i}`, () => {});
+    });
+    for (const span of spans) expect(span.span_id).toMatch(/^[0-9a-f]{16}$/);
+    expect(new Set(spans.map((s) => s.span_id)).size).toBe(spans.length);
+  });
 });
 
 describe("collector: a failed test's capture", () => {
   test("records the error and the page as HTML, plus @ctrl/dom's accessibility snapshot and clock (its environment subscribes)", async () => {
-    const collector = createCollector();
+    const collector = collecting();
     const test = collector.test("t1");
     render(<Save />);
     await collector.captureFailure(test, "saves", new Error("boom"), document);
-    collector.stop();
 
     const [failure] = test.failures;
     expect(failure.error).toMatchObject({ name: "Error", message: "boom" });
@@ -199,19 +209,15 @@ describe("collector: a failed test's capture", () => {
       );
     };
     failures.subscribe(subscriber);
-    try {
-      const collector = createCollector();
-      const test = collector.test("t1");
-      render(<Save />);
-      await collector.captureFailure(test, "Form > saves", new Error("boom"), document);
-      collector.stop();
-      const [failure] = test.failures;
-      expect(failure.contexts.store).toEqual({ user: "ada" });
-      expect(failure.attachments.find((a) => a.filename === "page.html")!.data).toContain("<form>");
-      expect(failure.attachments.find((a) => a.filename === "store.json")!.data).toBe('{"test":"Form > saves"}');
-    } finally {
-      failures.unsubscribe(subscriber);
-    }
+    onTestFinished(() => failures.unsubscribe(subscriber));
+    const collector = collecting();
+    const test = collector.test("t1");
+    render(<Save />);
+    await collector.captureFailure(test, "Form > saves", new Error("boom"), document);
+    const [failure] = test.failures;
+    expect(failure.contexts.store).toEqual({ user: "ada" });
+    expect(failure.attachments.find((a) => a.filename === "page.html")!.data).toContain("<form>");
+    expect(failure.attachments.find((a) => a.filename === "store.json")!.data).toBe('{"test":"Form > saves"}');
   });
 });
 

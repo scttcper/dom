@@ -272,7 +272,7 @@ function sampleFile(): TestFileReport {
   writeFileSync(testFile, ["import { screen } from '@testing-library/react';", "", "test('shows an error', async () => {", "  await screen.findByText('Saved');", "});"].join("\n"));
   const span = (id: string, op: string, description: string, start: number, end: number, parent?: string, data: CollectedSpan["data"] = {}): CollectedSpan => ({
     span_id: id,
-    ...(parent ? { parent_span_id: parent } : {}),
+    parent_span_id: parent,
     op,
     description,
     start_timestamp: now + start,
@@ -321,18 +321,17 @@ function sampleFile(): TestFileReport {
     environmentSetupMs: 2.5,
     collected,
     tests: [
-      { key: "t1", name: "Signup > submits", state: "pass", startedAt: now, duration: 30, retries: 0, flaky: false, errors: [] },
+      { key: "t1", name: "Signup > submits", state: "pass", duration: 30, retries: 0, flaky: false, errors: [] },
       {
         key: "t2",
         name: "Signup > shows an error",
         state: "fail",
-        startedAt: now + 0.05,
         duration: 30,
         retries: 0,
         flaky: false,
         errors: [{ name: "TestingLibraryElementError", message: failureError.message, frames: [{ method: "check", file: testFile, line: 4, column: 3 }] }],
       },
-      { key: "t3", name: "Signup > retries", state: "pass", startedAt: now + 0.1, duration: 30, retries: 1, flaky: true, errors: [] },
+      { key: "t3", name: "Signup > retries", state: "pass", duration: 30, retries: 1, flaky: true, errors: [] },
     ],
   };
 }

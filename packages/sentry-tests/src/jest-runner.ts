@@ -8,20 +8,22 @@
 // the runner writes each file's data there.
 
 import { createRequire } from "node:module";
-import { join } from "node:path";
-import { createJestCollector } from "./jest-collector.ts";
+import { createJestCollector, type JestCollector } from "./jest-collector.ts";
 
-/** jest-circus's runner signature (@jest/test-result's TestFramework). */
-type TestFramework = (globalConfig: unknown, config: { rootDir: string }, environment: Environment, runtime: unknown, testPath: string, sendMessageToJest?: unknown) => Promise<unknown>;
 interface Environment {
   global?: { document?: unknown };
-  handleTestEvent?: (event: never, state: unknown) => void | Promise<void>;
+  handleTestEvent?: (event: Parameters<JestCollector["handleTestEvent"]>[0], state: unknown) => void | Promise<void>;
 }
 
-export default async function sentryTestsRunner(globalConfig: unknown, config: { rootDir: string }, environment: Environment, runtime: unknown, testPath: string, sendMessageToJest?: unknown): Promise<unknown> {
-  const circus = loadCircus(config.rootDir);
+/** jest-circus/runner's signature (Jest's TestFramework); the package ships no types for it. */
+type TestFramework = (globalConfig: unknown, config: unknown, environment: Environment, runtime: unknown, testPath: string, sendMessageToJest?: unknown) => Promise<unknown>;
+
+const circus = (createRequire(import.meta.url)("jest-circus/runner") as { default: TestFramework }).default;
+
+export default async function sentryTestsRunner(...args: Parameters<TestFramework>): Promise<unknown> {
   const dir = process.env.SENTRY_TESTS_DIR;
-  if (!dir) return circus(globalConfig, config, environment, runtime, testPath, sendMessageToJest);
+  if (!dir) return circus(...args);
+  const [, , environment, , testPath] = args;
   const collector = createJestCollector({ dir, testPath, getDocument: () => environment.global?.document });
   // jest-circus binds handleTestEvent when the file starts, after the environment's setup().
   const previous = environment.handleTestEvent;
@@ -30,28 +32,8 @@ export default async function sentryTestsRunner(globalConfig: unknown, config: {
     await collector.handleTestEvent(event);
   };
   try {
-    return await circus(globalConfig, config, environment, runtime, testPath, sendMessageToJest);
+    return await circus(...args);
   } finally {
     collector.finish();
   }
-}
-
-/**
- * Jest's own jest-circus: the project's when it installed one, else the one jest-config (which
- * makes it the default runner) depends on, reached through Jest's dependencies, as a strict
- * pnpm layout hides it from everything but Jest.
- */
-function loadCircus(rootDir: string): TestFramework {
-  const chains = [["jest-circus/runner"], ["jest-config", "jest-circus/runner"], ["jest", "@jest/core", "jest-config", "jest-circus/runner"]];
-  for (const from of [join(rootDir, "package.json"), import.meta.filename]) {
-    for (const chain of chains) {
-      try {
-        let require = createRequire(from);
-        for (const pkg of chain.slice(0, -1)) require = createRequire(require.resolve(`${pkg}/package.json`));
-        const mod = require(chain.at(-1)!) as TestFramework | { default: TestFramework };
-        return typeof mod === "function" ? mod : mod.default;
-      } catch {}
-    }
-  }
-  throw new Error("@ctrl/sentry-tests/jest-runner: cannot find jest-circus, Jest's default test runner.");
 }

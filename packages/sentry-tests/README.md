@@ -95,14 +95,17 @@ forks are unaffected.
 - **With @ctrl/dom**: `plugins: [ctrlDom(), sentryTests()]`.
 - **Projects** (`test.projects`): a project only gets the runner from plugins it has, so give each
   project the plugin, or use `extends: true`.
-- **Your own runner** (`test.runner`): build it on ours, and the plugin leaves it in place.
+- **Your own runner** (`test.runner`): build it on ours and add the reporter instead of the plugin
+  (which refuses to replace your runner).
   ```ts
   // my-runner.ts
   import { withSentry } from "@ctrl/sentry-tests/vitest-runner";
   export default withSentry(MyRunner); // MyRunner extends Vitest's TestRunner
   ```
-- **Reporter only**: `reporters: ["default", "@ctrl/sentry-tests/vitest"]` sends the same issues,
-  with one span per test and no page capture (there is no runner in the worker).
+  ```ts
+  // vitest.config.ts
+  test: { runner: "./my-runner.ts", reporters: ["default", "@ctrl/sentry-tests/vitest"] }
+  ```
 
 ### 2. Jest
 
@@ -116,7 +119,8 @@ module.exports = {
 ```
 
 The test runner is Jest's own (jest-circus), listening to its events; without the reporter it
-does nothing. For flaky-test issues, retry with `jest.retryTimes(1)` in a setup file. Options go
+does nothing. Without the test runner the reporter still sends the issues, with no traces, and its
+summary line says so. For flaky-test issues, retry with `jest.retryTimes(1)` in a setup file. Options go
 in the reporter's entry: `["@ctrl/sentry-tests/jest", { tracesSampleRate: 0.1 }]`.
 
 ### 3. The DSN
@@ -240,8 +244,8 @@ This package:
 
 - Tests running concurrently in one file (`test.concurrent`) under Jest share the span stack:
   their spans can land under each other. Vitest nests them correctly.
-- The page capture reads `globalThis.document` in the worker; in Vitest's browser mode there is no
-  page capture or runner spans (each test is one span).
+- Vitest's browser mode runs its own runner in the browser: there the reporter sends issues
+  without traces or page captures.
 - `page.html` is the page as rendered, so it holds whatever the test rendered. Set
   `attachments: false` if that shouldn't leave CI.
 - Jest reports console output per file, not per test, so Jest failures have no console

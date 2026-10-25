@@ -24,6 +24,9 @@ describe("Cart", () => {
   });
 });
 
+// A file-level hook: top-level tests run it, and so do the describe block's.
+afterEach(() => {});
+
 let attempts = 0;
 test("eventually passes", { retry: 1 }, () => {
   attempts++;

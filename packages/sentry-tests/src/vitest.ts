@@ -34,10 +34,7 @@ export function sentryTests(options: SentryTestsOptions = {}): Plugin {
     config(config) {
       if (resolved === null) return;
       const own = (config as { test?: { runner?: string } }).test?.runner;
-      if (own !== undefined && own !== RUNNER) {
-        console.warn(`@ctrl/sentry-tests: the project has its own runner (${own}), so tests are reported without describe, hook and test function spans. Build it with withSentry() from "@ctrl/sentry-tests/vitest-runner" to get them.`);
-        return;
-      }
+      if (own !== undefined) throw new Error(`@ctrl/sentry-tests: the project has its own test runner (${own}). Build it with withSentry() from "@ctrl/sentry-tests/vitest-runner" and drop sentryTests() from the plugins, adding the reporter instead: reporters: ["default", "@ctrl/sentry-tests/vitest"].`);
       return { test: { runner: RUNNER } };
     },
     // Vitest builds its reporters after this hook, so this one can still join them.
@@ -51,8 +48,8 @@ export function sentryTests(options: SentryTestsOptions = {}): Plugin {
 
 
 /**
- * The reporter alone, which the plugin adds: also `reporters: ["default", "@ctrl/sentry-tests/vitest"]`
- * (each test is then one span, without the runner's).
+ * The reporter, which the plugin adds. With a runner built on withSentry(), add it yourself:
+ * `reporters: ["default", "@ctrl/sentry-tests/vitest"]`.
  */
 export class SentryReporter implements Reporter {
   readonly options: ResolvedOptions | null;
@@ -122,7 +119,6 @@ function toTestCaseReport(test: TestCase): TestCaseReport {
     key: test.id,
     name: test.fullName,
     state: result.state === "passed" ? "pass" : result.state === "failed" ? "fail" : "skip",
-    startedAt: (diagnostic?.startTime ?? Date.now()) / 1000,
     duration: diagnostic?.duration ?? 0,
     retries: diagnostic?.retryCount ?? 0,
     flaky: diagnostic?.flaky ?? false,

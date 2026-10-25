@@ -25,7 +25,6 @@ interface JestAssertionResult {
   title: string;
   status: string;
   duration?: number | null;
-  startAt?: number | null;
   invocations?: number;
   failureMessages: string[];
   failureDetails: unknown[];
@@ -33,7 +32,6 @@ interface JestAssertionResult {
 interface JestTestResult {
   testFilePath: string;
   testResults: JestAssertionResult[];
-  perfStats: { start: number; end: number };
   /** Set when the file could not run (it failed to load). */
   testExecError?: { message: string; stack?: string | null } | null;
 }
@@ -47,6 +45,8 @@ export default class SentryTestsReporter {
   #rootDir: string;
   #dir: string | null = null;
   #delivery: Delivery | null = null;
+  /** Whether any file arrived with the test runner's spans. */
+  #collected = false;
 
   constructor(globalConfig: { rootDir?: string } = {}, reporterOptions: SentryTestsOptions = {}) {
     this.#rootDir = globalConfig.rootDir ?? process.cwd();
@@ -64,6 +64,7 @@ export default class SentryTestsReporter {
   onTestResult(test: JestTest, testResult: JestTestResult): void {
     if (this.options === null || this.#delivery === null) return;
     const data = this.#readCollected(test.path);
+    if (data !== null) this.#collected = true;
     const tests = testResult.testResults.map((a): TestCaseReport => {
       const name = [...a.ancestorTitles, a.title].join(" > ");
       const invocations = a.invocations ?? 1;
@@ -72,7 +73,6 @@ export default class SentryTestsReporter {
         key: name,
         name,
         state,
-        startedAt: (a.startAt ?? testResult.perfStats.start) / 1000,
         duration: a.duration ?? 0,
         retries: invocations - 1,
         flaky: state === "pass" && invocations > 1,
@@ -101,7 +101,7 @@ export default class SentryTestsReporter {
   async onRunComplete(): Promise<void> {
     if (this.#delivery === null) return;
     const summary = await this.#delivery.flush();
-    if (summary !== null) process.stderr.write(`${summary}\n`);
+    if (summary !== null) process.stderr.write(`${summary}${this.#collected ? "" : ' (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")'}\n`);
   }
 
   getLastError(): Error | undefined {

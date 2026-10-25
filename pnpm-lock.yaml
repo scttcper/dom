@@ -465,6 +465,9 @@ importers:
       jest:
         specifier: 30.4.2
         version: 30.4.2(@types/node@26.6.5)(supports-color@8.1.1)
+      jest-circus:
+        specifier: 30.4.2
+        version: 30.4.2(supports-color@8.1.1)
       jsdom:
         specifier: 30.1.3
         version: 30.1.3

@@ -5,23 +5,23 @@
 // into Sentry events in the main process (report.ts).
 //
 // The current span lives in AsyncLocalStorage, so a span started inside a test function's awaits
-// still nests under that test function; Jest's runner, which only reports events, sets a fallback
-// parent instead (`enter`). Times come from perf_hooks' clock, which fake timers and @ctrl/dom's
-// virtual clock leave alone.
+// still nests under that test function. Jest's runner only reports events, so it names the span
+// to nest under directly (`enter`). Times come from perf_hooks' clock, which fake timers and
+// @ctrl/dom's virtual clock leave alone.
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import * as diagnosticsChannel from "node:diagnostics_channel";
+import { randomBytes } from "node:crypto";
+import { channel, tracingChannel } from "node:diagnostics_channel";
 import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { FAILURE_CHANNEL, SPAN_CHANNELS, type Attachment, type FailureMessage, type SpanContext } from "./channels.ts";
-import { spanId } from "./envelope.ts";
 import { pageHtml } from "./html.ts";
 
 /** A finished span, in Sentry's span shape minus the trace id (report.ts adds it). */
 export interface CollectedSpan {
   span_id: string;
-  /** Absent for a span directly under the file. */
-  parent_span_id?: string;
+  /** Undefined for a span directly under the file. */
+  parent_span_id: string | undefined;
   op: string;
   description: string;
   start_timestamp: number;
@@ -62,8 +62,15 @@ export interface CollectedFile {
 /** A span that is still running. */
 export interface OpenSpan {
   readonly span: CollectedSpan;
-  /** The test it belongs to, which its library spans count against. */
-  readonly test: CollectedTest | null;
+  /** The test it belongs to, or the file: what its library spans count against. */
+  readonly owner: Owner;
+}
+
+/** Where library spans count: a test (at most 300), or the file outside any test (at most 1000). */
+interface Owner {
+  kept: number;
+  readonly limit: number;
+  readonly counts: { droppedSpans: number };
 }
 
 /** Library spans kept per test (a waitFor polling a query can publish hundreds), and outside tests. */
@@ -77,6 +84,20 @@ export const realNow = (): number => (performance.timeOrigin + performance.now()
 
 const OPEN = Symbol("sentry-tests.span");
 type Traced = SpanContext & { [OPEN]?: OpenSpan };
+
+/**
+ * Span ids: 16 hex characters, unique within a test file's trace. 4 random bytes per worker and a
+ * counter, hex-encoded in one go: 6x faster than 8 random bytes per span, and a flat string (a
+ * prefix concatenated with the counter would keep both alive as a cons string).
+ */
+function spanIds(): () => string {
+  const bytes = randomBytes(8);
+  let next = 0;
+  return () => {
+    bytes.writeUInt32BE(next++, 4);
+    return bytes.toString("hex");
+  };
+}
 
 export interface Collector {
   /** Start a structure span under the current one; with `test`, a span of that test. */
@@ -100,21 +121,20 @@ export interface Collector {
 
 export function createCollector(): Collector {
   const current = new AsyncLocalStorage<OpenSpan>();
+  const spanId = spanIds();
   let entered: OpenSpan | null = null;
   let file = emptyFile();
+  let fileOwner: Owner = { kept: 0, limit: MAX_FILE_SPANS, counts: file };
+  const owners = new Map<CollectedTest, Owner>();
   const parent = (): OpenSpan | null => current.getStore() ?? entered;
-
-  const counts = new WeakMap<CollectedTest, number>();
-  const countOf = (test: CollectedTest): number => counts.get(test) ?? 0;
-  let fileCount = 0;
 
   const open: Collector["open"] = (op, description, data = {}, test) => {
     const up = parent();
     const now = realNow();
     if (file.startedAt === 0) file.startedAt = now;
     return {
-      span: { span_id: spanId(), ...(up !== null ? { parent_span_id: up.span.span_id } : {}), op, description, start_timestamp: now, timestamp: 0, status: "ok", data },
-      test: test ?? up?.test ?? null,
+      span: { span_id: spanId(), parent_span_id: up?.span.span_id, op, description, start_timestamp: now, timestamp: 0, status: "ok", data },
+      owner: test !== undefined ? owners.get(test)! : (up?.owner ?? fileOwner),
     };
   };
 
@@ -124,14 +144,12 @@ export function createCollector(): Collector {
   const openTraced = (context: Traced): OpenSpan | undefined => {
     const up = parent();
     if (up === null) return undefined;
-    const owner = up.test;
-    if (owner !== null ? countOf(owner) >= MAX_TEST_SPANS : fileCount >= MAX_FILE_SPANS) {
-      if (owner !== null) owner.droppedSpans++;
-      else file.droppedSpans++;
+    const owner = up.owner;
+    if (owner.kept === owner.limit) {
+      owner.counts.droppedSpans++;
       return up;
     }
-    if (owner !== null) counts.set(owner, countOf(owner) + 1);
-    else fileCount++;
+    owner.kept++;
     const span = open(context.op, context.description, context.data);
     context[OPEN] = span;
     return span;
@@ -163,13 +181,12 @@ export function createCollector(): Collector {
     },
     error() {},
   };
-  // Bun and older runtimes may lack tracing channels: then only the runner's spans are recorded.
-  const channels = typeof diagnosticsChannel.tracingChannel === "function" ? SPAN_CHANNELS.map((name) => diagnosticsChannel.tracingChannel<Traced, Traced>(name)) : [];
-  for (const channel of channels) {
-    channel.start.bindStore(current as never, openTraced as never);
-    channel.subscribe(subscribers as never);
+  const channels = SPAN_CHANNELS.map((name) => tracingChannel<Traced, Traced>(name));
+  for (const spans of channels) {
+    spans.start.bindStore(current as never, openTraced as never);
+    spans.subscribe(subscribers as never);
   }
-  const failures = diagnosticsChannel.channel(FAILURE_CHANNEL);
+  const failures = channel(FAILURE_CHANNEL);
 
   return {
     open,
@@ -180,13 +197,19 @@ export function createCollector(): Collector {
       entered = o;
     },
     test(key) {
-      return (file.tests[key] ??= { spanIds: [], droppedSpans: 0, failures: [] });
+      let test = file.tests[key];
+      if (test === undefined) {
+        test = file.tests[key] = { spanIds: [], droppedSpans: 0, failures: [] };
+        owners.set(test, { kept: 0, limit: MAX_TEST_SPANS, counts: test });
+      }
+      return test;
     },
     async captureFailure(test, name, error, document) {
       const context: FailureContext = { attachments: [], contexts: {} };
-      if (error !== null && typeof error === "object" && typeof (error as Error).message === "string") {
+      // Not `instanceof Error`: Jest's test code throws its own realm's errors.
+      if (typeof error === "object" && error !== null && typeof (error as Error).message === "string") {
         const e = error as Error;
-        context.error = { name: e.name, message: e.message, stack: typeof e.stack === "string" ? e.stack : undefined };
+        context.error = { name: e.name, message: e.message, stack: e.stack };
       }
       const html = pageHtml(document, MAX_ATTACHMENT);
       if (html !== undefined) context.attachments.push({ filename: "page.html", contentType: "text/html", data: html });
@@ -196,8 +219,7 @@ export function createCollector(): Collector {
         failures.publish(message);
         if (pending.length > 0) await Promise.race([Promise.allSettled(pending), delay(MAX_WAIT_MS, undefined, { ref: false })]);
         for (const a of message.attachments) {
-          if (typeof a?.filename !== "string" || typeof a.data !== "string" || context.attachments.some((b) => b.filename === a.filename)) continue;
-          context.attachments.push({ filename: a.filename, contentType: a.contentType || "text/plain", data: a.data.length > MAX_ATTACHMENT ? a.data.slice(0, MAX_ATTACHMENT) : a.data });
+          if (!context.attachments.some((b) => b.filename === a.filename)) context.attachments.push({ ...a, data: a.data.slice(0, MAX_ATTACHMENT) });
         }
       }
       test.failures.push(context);
@@ -206,14 +228,15 @@ export function createCollector(): Collector {
       const done = file;
       done.endedAt = realNow();
       file = emptyFile();
-      fileCount = 0;
+      fileOwner = { kept: 0, limit: MAX_FILE_SPANS, counts: file };
+      owners.clear();
       entered = null;
       return done;
     },
     stop() {
-      for (const channel of channels) {
-        channel.unsubscribe(subscribers as never);
-        channel.start.unbindStore(current as never);
+      for (const spans of channels) {
+        spans.unsubscribe(subscribers as never);
+        spans.start.unbindStore(current as never);
       }
     },
   };

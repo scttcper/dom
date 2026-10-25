@@ -161,17 +161,7 @@ const CONTEXT_LINES = 5;
  * installed, the workspace's packages/ here, where @ctrl/dom's packages sit next to it). Frames
  * there (query wrappers, tracing channels, the runner) are not the test's even when linked.
  */
-const OWN_CODE = ownCode();
-
-function ownCode(): string | null {
-  try {
-    return fileURLToPath(new URL("../../", import.meta.url));
-  } catch {
-    // Not loaded from a file (a test runner's module runner): every local frame outside
-    // node_modules counts as the test's.
-    return null;
-  }
-}
+const OWN_CODE = fileURLToPath(new URL("../../", import.meta.url));
 
 /**
  * Sentry frames from parsed ones, oldest first: paths relative to `root`, the test's own code in
@@ -182,7 +172,7 @@ export function toSentryFrames(frames: readonly ParsedFrame[], root: string): Fr
   return frames.map((f) => {
     const absPath = f.file.startsWith("file://") ? fileURLToPath(f.file) : f.file;
     const local = isAbsolute(absPath);
-    const inApp = local && !absPath.includes("/node_modules/") && (OWN_CODE === null || !absPath.startsWith(OWN_CODE));
+    const inApp = local && !absPath.includes("/node_modules/") && !absPath.startsWith(OWN_CODE);
     const frame: Frame = {
       filename: local ? relative(root, absPath) : absPath,
       abs_path: absPath,
