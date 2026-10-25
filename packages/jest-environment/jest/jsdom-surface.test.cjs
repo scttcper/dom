@@ -21,7 +21,7 @@ test("fetch/Request/Response are absent, like jest-environment-jsdom (jest-fetch
   expect(typeof FormData).toBe("function");
 });
 
-test("Object.assign(navigator, {clipboard}) works and navigator.platform is \"\"", async () => {
+test('Object.assign(navigator, {clipboard}) works and navigator.platform is ""', async () => {
   const writeText = jest.fn();
   Object.assign(navigator, { clipboard: { writeText } });
   await navigator.clipboard.writeText("copied");

@@ -11,12 +11,7 @@
 // Mozilla parsererror namespace whose text is the error message — what jsdom does (and the
 // shape Firefox uses), so `doc.getElementsByTagName("parsererror")` checks keep working.
 
-import {
-  ELEMENT_NODE,
-  HTML_NS,
-  XMLNS_NS,
-  XML_NS,
-} from "../nodes/constants.ts";
+import { ELEMENT_NODE, HTML_NS, XMLNS_NS, XML_NS } from "../nodes/constants.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { createElementImpl } from "../nodes/create.ts";
@@ -35,18 +30,35 @@ const PREDEFINED: Record<string, string> = { lt: "<", gt: ">", amp: "&", quot: '
 
 function isNameStartCode(c: number): boolean {
   return (
-    (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 58 || c === 95 ||
-    (c >= 0xc0 && c <= 0xd6) || (c >= 0xd8 && c <= 0xf6) || (c >= 0xf8 && c <= 0x2ff) ||
-    (c >= 0x370 && c <= 0x37d) || (c >= 0x37f && c <= 0x1fff) || (c >= 0x200c && c <= 0x200d) ||
-    (c >= 0x2070 && c <= 0x218f) || (c >= 0x2c00 && c <= 0x2fef) || (c >= 0x3001 && c <= 0xd7ff) ||
-    (c >= 0xf900 && c <= 0xfdcf) || (c >= 0xfdf0 && c <= 0xfffd) || (c >= 0xd800 && c <= 0xdbff)
+    (c >= 97 && c <= 122) ||
+    (c >= 65 && c <= 90) ||
+    c === 58 ||
+    c === 95 ||
+    (c >= 0xc0 && c <= 0xd6) ||
+    (c >= 0xd8 && c <= 0xf6) ||
+    (c >= 0xf8 && c <= 0x2ff) ||
+    (c >= 0x370 && c <= 0x37d) ||
+    (c >= 0x37f && c <= 0x1fff) ||
+    (c >= 0x200c && c <= 0x200d) ||
+    (c >= 0x2070 && c <= 0x218f) ||
+    (c >= 0x2c00 && c <= 0x2fef) ||
+    (c >= 0x3001 && c <= 0xd7ff) ||
+    (c >= 0xf900 && c <= 0xfdcf) ||
+    (c >= 0xfdf0 && c <= 0xfffd) ||
+    (c >= 0xd800 && c <= 0xdbff)
   );
 }
 
 function isNameCode(c: number): boolean {
   return (
-    isNameStartCode(c) || (c >= 48 && c <= 57) || c === 45 || c === 46 || c === 0xb7 ||
-    (c >= 0x300 && c <= 0x36f) || (c >= 0x203f && c <= 0x2040) || (c >= 0xdc00 && c <= 0xdfff)
+    isNameStartCode(c) ||
+    (c >= 48 && c <= 57) ||
+    c === 45 ||
+    c === 46 ||
+    c === 0xb7 ||
+    (c >= 0x300 && c <= 0x36f) ||
+    (c >= 0x203f && c <= 0x2040) ||
+    (c >= 0xdc00 && c <= 0xdfff)
   );
 }
 
@@ -128,12 +140,19 @@ class XMLParser {
       const start = this.pos;
       while (this.pos < src.length && src.charCodeAt(this.pos) !== 59) this.pos++;
       const digits = src.slice(start, this.pos);
-      if (digits === "" || !(hex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/).test(digits)) this.fail("invalid character reference");
+      if (digits === "" || !(hex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/).test(digits))
+        this.fail("invalid character reference");
       this.expect(";");
       const code = parseInt(digits, hex ? 16 : 10);
       if (
-        !(code === 0x9 || code === 0xa || code === 0xd || (code >= 0x20 && code <= 0xd7ff) ||
-          (code >= 0xe000 && code <= 0xfffd) || (code >= 0x10000 && code <= 0x10ffff))
+        !(
+          code === 0x9 ||
+          code === 0xa ||
+          code === 0xd ||
+          (code >= 0x20 && code <= 0xd7ff) ||
+          (code >= 0xe000 && code <= 0xfffd) ||
+          (code >= 0x10000 && code <= 0x10ffff)
+        )
       ) {
         this.fail("character reference to an invalid character");
       }
@@ -250,7 +269,8 @@ class XMLParser {
         this.skipWs();
         if (src.charCodeAt(this.pos) === 34 || src.charCodeAt(this.pos) === 39) {
           const value = this.quoted();
-          if (!parameter && !this.entities.has(name) && !value.includes("<") && !value.includes("&")) this.entities.set(name, value);
+          if (!parameter && !this.entities.has(name) && !value.includes("<") && !value.includes("&"))
+            this.entities.set(name, value);
         }
         this.skipToDeclEnd();
       } else if (this.startsWith("<?")) {
@@ -482,7 +502,11 @@ class XMLParser {
         if (sawDoctype || sawElement) this.fail("unexpected DOCTYPE");
         sawDoctype = true;
         this.doctype(root);
-      } else if (src.charCodeAt(this.pos) === 60 && this.pos + 1 < src.length && isNameStartCode(src.charCodeAt(this.pos + 1))) {
+      } else if (
+        src.charCodeAt(this.pos) === 60 &&
+        this.pos + 1 < src.length &&
+        isNameStartCode(src.charCodeAt(this.pos + 1))
+      ) {
         if (sawElement) this.fail("junk after document element");
         sawElement = true;
         this.element(root, scope);
@@ -549,7 +573,8 @@ export function parseXMLFragment(markup: string, context: NodeImpl): NodeImpl {
   try {
     new XMLParser(String(markup), doc).parseFragment(fragment, { bindings });
   } catch (e) {
-    if (e instanceof XMLParseError) throw new DOMException(`The provided markup is not well-formed XML: ${e.message}.`, "SyntaxError");
+    if (e instanceof XMLParseError)
+      throw new DOMException(`The provided markup is not well-formed XML: ${e.message}.`, "SyntaxError");
     throw e;
   }
   return fragment;

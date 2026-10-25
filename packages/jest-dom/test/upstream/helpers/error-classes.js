@@ -4,7 +4,8 @@
 const stock = process.env.JEST_DOM_IMPL === 'stock'
 
 async function resolveHtmlElementTypeError() {
-  if (!stock) return (await import('../../../src/utils.ts')).HtmlElementTypeError
+  if (!stock)
+    return (await import('../../../src/utils.ts')).HtmlElementTypeError
   const {toBeInTheDocument} = await import('@testing-library/jest-dom/matchers')
   const context = {
     isNot: false,

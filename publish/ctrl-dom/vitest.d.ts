@@ -28,6 +28,10 @@ export declare function ctrlDom(options?: CtrlDomPluginOptions): Plugin;
  * @internal The Node flags `ctrlDom()` adds to a project's worker `execArgv`: the compile cache
  * from process start (with `compileCache`), in every pool.
  */
-export declare function workerExecArgv(project: { pool?: unknown; execArgv?: readonly string[]; compileCache?: boolean }): string[];
+export declare function workerExecArgv(project: {
+  pool?: unknown;
+  execArgv?: readonly string[];
+  compileCache?: boolean;
+}): string[];
 
 export default ctrlDom;

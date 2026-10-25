@@ -42,7 +42,10 @@ describe("cascade sorting order — https://drafts.csswg.org/css-cascade-5/#casc
   });
 
   test("context: an inline style beats any normal rule; an important rule beats a normal inline style", () => {
-    setup(`<style>#a { color: red } #b { color: red !important }</style>`, `<p id="a" style="color: blue">a</p><p id="b" style="color: blue">b</p>`);
+    setup(
+      `<style>#a { color: red } #b { color: red !important }</style>`,
+      `<p id="a" style="color: blue">a</p><p id="b" style="color: blue">b</p>`,
+    );
     expect([cs("#a", "color"), cs("#b", "color")]).toEqual(["blue", "red"]);
   });
 
@@ -62,12 +65,18 @@ describe("cascade sorting order — https://drafts.csswg.org/css-cascade-5/#casc
   });
 
   test(":where() contributes zero specificity; :is() the most specific argument", () => {
-    setup(`<style>p { color: red } :where(#x) { color: green } :is(#y, p) { background-color: blue } #y { background-color: yellow }</style>`, `<p id="x">x</p><p id="y">y</p>`);
+    setup(
+      `<style>p { color: red } :where(#x) { color: green } :is(#y, p) { background-color: blue } #y { background-color: yellow }</style>`,
+      `<p id="x">x</p><p id="y">y</p>`,
+    );
     expect([cs("#x", "color"), cs("#y", "background-color")]).toEqual(["red", "yellow"]);
   });
 
   test("layers: important declarations in an earlier layer beat later layers and unlayered ones", () => {
-    setup(`<style>@layer a, b; @layer a { p { color: red !important } } @layer b { p { color: green !important } } p { color: blue !important }</style>`, `<p>x</p>`);
+    setup(
+      `<style>@layer a, b; @layer a { p { color: red !important } } @layer b { p { color: green !important } } p { color: blue !important }</style>`,
+      `<p>x</p>`,
+    );
     expect(cs("p", "color")).toBe("red");
   });
 });
@@ -75,21 +84,48 @@ describe("cascade sorting order — https://drafts.csswg.org/css-cascade-5/#casc
 describe("initial values — https://drafts.csswg.org/css-cascade-5/#initial-values", () => {
   test("non-inherited properties without declarations take their initial value", () => {
     setup("", `<div>x</div>`);
-    const values = ["position", "opacity", "z-index", "float", "box-sizing", "overflow-x", "pointer-events", "margin-top", "background-color"].map((p) => cs("div", p));
-    expect(values).toEqual(["static", "1", "auto", "none", "content-box", "visible", "auto", "0px", "rgba(0, 0, 0, 0)"]);
+    const values = [
+      "position",
+      "opacity",
+      "z-index",
+      "float",
+      "box-sizing",
+      "overflow-x",
+      "pointer-events",
+      "margin-top",
+      "background-color",
+    ].map((p) => cs("div", p));
+    expect(values).toEqual([
+      "static",
+      "1",
+      "auto",
+      "none",
+      "content-box",
+      "visible",
+      "auto",
+      "0px",
+      "rgba(0, 0, 0, 0)",
+    ]);
   });
 
   test("inherited properties at the root take their initial value", () => {
     setup("", "");
-    const values = ["visibility", "font-style", "font-weight", "white-space", "cursor", "text-transform"].map((p) => cs("html", p));
+    const values = ["visibility", "font-style", "font-weight", "white-space", "cursor", "text-transform"].map((p) =>
+      cs("html", p),
+    );
     expect(values).toEqual(["visible", "normal", "400", "normal", "auto", "none"]);
   });
 });
 
 describe("inheritance — https://drafts.csswg.org/css-cascade-5/#inheriting", () => {
   test("inherited properties take the parent's computed value; others do not", () => {
-    setup(`<style>div { color: green; visibility: hidden; font-style: italic; border-top-style: solid; padding-left: 4px }</style>`, `<div><span>x</span></div>`);
-    expect(["color", "visibility", "font-style", "border-top-style", "padding-left"].map((p) => cs("span", p))).toEqual(["green", "hidden", "italic", "none", "0px"]);
+    setup(
+      `<style>div { color: green; visibility: hidden; font-style: italic; border-top-style: solid; padding-left: 4px }</style>`,
+      `<div><span>x</span></div>`,
+    );
+    expect(["color", "visibility", "font-style", "border-top-style", "padding-left"].map((p) => cs("span", p))).toEqual(
+      ["green", "hidden", "italic", "none", "0px"],
+    );
   });
 
   test("the parent's computed (not specified) value is inherited: font-size em resolves before inheriting", () => {
@@ -110,7 +146,10 @@ describe("defaulting keywords — https://drafts.csswg.org/css-cascade-5/#defaul
   });
 
   test("unset: inherit for inherited properties, initial otherwise", () => {
-    setup(`<style>div { color: green; padding-left: 7px } span { color: red; padding-left: 3px } span.u { color: unset; padding-left: unset }</style>`, `<div><span class="u">x</span></div>`);
+    setup(
+      `<style>div { color: green; padding-left: 7px } span { color: red; padding-left: 3px } span.u { color: unset; padding-left: unset }</style>`,
+      `<div><span class="u">x</span></div>`,
+    );
     expect([cs("span", "color"), cs("span", "padding-left")]).toEqual(["green", "0px"]);
   });
 
@@ -127,29 +166,44 @@ describe("defaulting keywords — https://drafts.csswg.org/css-cascade-5/#defaul
 
 describe("revert-layer — https://drafts.csswg.org/css-cascade-5/#revert-layer", () => {
   test("the spec example: revert-layer in layer two yields layer one's height, ignoring layer two's other declarations", () => {
-    setup(`<style>@layer one { div { height: 100px } } @layer two { div { height: 200px } div { height: revert-layer } }</style>`, `<div>x</div>`);
+    setup(
+      `<style>@layer one { div { height: 100px } } @layer two { div { height: 200px } div { height: revert-layer } }</style>`,
+      `<div>x</div>`,
+    );
     expect(cs("div", "height")).toBe("100px");
   });
 
   test("unlayered declarations roll back to the last layer", () => {
-    setup(`<style>@layer base { p { padding-left: 4px } } p { padding-left: 9px } p.r { padding-left: revert-layer }</style>`, `<p class="r">x</p>`);
+    setup(
+      `<style>@layer base { p { padding-left: 4px } } p { padding-left: 9px } p.r { padding-left: revert-layer }</style>`,
+      `<p class="r">x</p>`,
+    );
     expect(cs("p", "padding-left")).toBe("4px");
   });
 
   test("rolling back repeats while the previous layer's winner is revert-layer too", () => {
-    setup(`<style>@layer a, b, c; @layer a { p { color: green } } @layer b { p { color: revert-layer } } @layer c { p { color: revert-layer } }</style>`, `<p>x</p>`);
+    setup(
+      `<style>@layer a, b, c; @layer a { p { color: green } } @layer b { p { color: revert-layer } } @layer c { p { color: revert-layer } }</style>`,
+      `<p>x</p>`,
+    );
     expect(cs("p", "color")).toBe("green");
   });
 
   test("with no lower layer in the author origin it rolls back to the user-agent origin (div display:block)", () => {
-    setup(`<style>@layer a { div { display: flex } } @layer b { div { display: revert-layer } } @layer c { div { padding-left: revert-layer } }</style>`, `<div>x</div>`);
+    setup(
+      `<style>@layer a { div { display: flex } } @layer b { div { display: revert-layer } } @layer c { div { padding-left: revert-layer } }</style>`,
+      `<div>x</div>`,
+    );
     expect(cs("div", "display")).toBe("flex");
     setup(`<style>@layer only { div { display: revert-layer } }</style>`, `<div>x</div>`);
     expect(cs("div", "display")).toBe("block");
   });
 
   test("the current layer is removed at its normal and important levels", () => {
-    setup(`<style>@layer a { p { color: green } } @layer b { p { color: red !important } p { color: revert-layer !important } }</style>`, `<p>x</p>`);
+    setup(
+      `<style>@layer a { p { color: green } } @layer b { p { color: red !important } p { color: revert-layer !important } }</style>`,
+      `<p>x</p>`,
+    );
     expect(cs("p", "color")).toBe("green");
   });
 
@@ -172,7 +226,10 @@ describe("revert-layer — https://drafts.csswg.org/css-cascade-5/#revert-layer"
   });
 
   test("the rolled-back value is computed like any other (inherit from the previous layer inherits)", () => {
-    setup(`<style>div { padding-left: 6px } @layer a { span { padding-left: inherit } } @layer b { span { padding-left: revert-layer } }</style>`, `<div><span>x</span></div>`);
+    setup(
+      `<style>div { padding-left: 6px } @layer a { span { padding-left: inherit } } @layer b { span { padding-left: revert-layer } }</style>`,
+      `<div><span>x</span></div>`,
+    );
     expect(cs("span", "padding-left")).toBe("6px");
   });
 
@@ -187,23 +244,48 @@ describe("computed values — https://drafts.csswg.org/css-cascade-5/#computed",
     const sizes = ["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large", "xxx-large"];
     setup("", sizes.map((s) => `<p style="font-size: ${s}">x</p>`).join(""));
     expect([...document.querySelectorAll("p")].map((p) => (window.getComputedStyle(p) as any).fontSize)).toEqual([
-      "9px", "10px", "13px", "16px", "18px", "24px", "32px", "48px",
+      "9px",
+      "10px",
+      "13px",
+      "16px",
+      "18px",
+      "24px",
+      "32px",
+      "48px",
     ]);
   });
 
   test("font-size: percentages, rem, smaller/larger and absolute units resolve to px", () => {
-    setup(`<style>html { font-size: 20px } div { font-size: 10px }</style>`, `<div><b style="font-size: 150%">a</b><i style="font-size: 2rem">b</i><u style="font-size: larger">c</u><s style="font-size: 12pt">d</s></div>`);
-    expect([cs("b", "font-size"), cs("i", "font-size"), cs("u", "font-size"), cs("s", "font-size")]).toEqual(["15px", "40px", "12px", "16px"]);
+    setup(
+      `<style>html { font-size: 20px } div { font-size: 10px }</style>`,
+      `<div><b style="font-size: 150%">a</b><i style="font-size: 2rem">b</i><u style="font-size: larger">c</u><s style="font-size: 12pt">d</s></div>`,
+    );
+    expect([cs("b", "font-size"), cs("i", "font-size"), cs("u", "font-size"), cs("s", "font-size")]).toEqual([
+      "15px",
+      "40px",
+      "12px",
+      "16px",
+    ]);
   });
 
   test("font-weight: keywords become numbers; bolder/lighter follow the relative weight table (https://drafts.csswg.org/css-fonts-4/#relative-weights)", () => {
-    setup(`<style>div { font-weight: 300 }</style>`, `<div><b style="font-weight: bolder">a</b><i style="font-weight: lighter">b</i></div><p style="font-weight: bold">c</p>`);
+    setup(
+      `<style>div { font-weight: 300 }</style>`,
+      `<div><b style="font-weight: bolder">a</b><i style="font-weight: lighter">b</i></div><p style="font-weight: bold">c</p>`,
+    );
     expect([cs("b", "font-weight"), cs("i", "font-weight"), cs("p", "font-weight")]).toEqual(["400", "100", "700"]);
   });
 
   test("border widths: thin/medium/thick are 1px/3px/5px, and 0px when the border style is none (https://drafts.csswg.org/css-backgrounds-3/#border-width)", () => {
-    setup("", `<p id="a" style="border: thick solid">a</p><p id="b" style="border-width: 4px">b</p><p id="c" style="border-top: thin dotted">c</p>`);
-    expect([cs("#a", "border-top-width"), cs("#b", "border-top-width"), cs("#c", "border-top-width")]).toEqual(["5px", "0px", "1px"]);
+    setup(
+      "",
+      `<p id="a" style="border: thick solid">a</p><p id="b" style="border-width: 4px">b</p><p id="c" style="border-top: thin dotted">c</p>`,
+    );
+    expect([cs("#a", "border-top-width"), cs("#b", "border-top-width"), cs("#c", "border-top-width")]).toEqual([
+      "5px",
+      "0px",
+      "1px",
+    ]);
   });
 
   test("currentcolor resolves to the element's color", () => {
@@ -219,7 +301,10 @@ describe("computed values — https://drafts.csswg.org/css-cascade-5/#computed",
 
 describe("blockification — https://drafts.csswg.org/css-display-3/#blockify", () => {
   test("::before/::after of a flex or grid container are blockified", () => {
-    setup(`<style>.f::before { content: "a"; display: inline } .g::after { content: "b" }</style>`, `<div class="f" style="display: flex"></div><div class="g" style="display: inline-grid"></div>`);
+    setup(
+      `<style>.f::before { content: "a"; display: inline } .g::after { content: "b" }</style>`,
+      `<div class="f" style="display: flex"></div><div class="g" style="display: inline-grid"></div>`,
+    );
     expect([cs(".f", "display", "::before"), cs(".g", "display", "::after")]).toEqual(["block", "block"]);
   });
 
@@ -249,31 +334,54 @@ describe("custom properties — https://drafts.csswg.org/css-variables-2/", () =
   });
 
   test("var() substitutes, with fallbacks for missing variables (https://drafts.csswg.org/css-variables-2/#substitute-a-var)", () => {
-    setup(`<style>p { --c: green; color: var(--c); background-color: var(--missing, blue); padding: var(--p, 1px 2px) }</style>`, `<p>x</p>`);
+    setup(
+      `<style>p { --c: green; color: var(--c); background-color: var(--missing, blue); padding: var(--p, 1px 2px) }</style>`,
+      `<p>x</p>`,
+    );
     expect([cs("p", "color"), cs("p", "background-color"), cs("p", "padding-left")]).toEqual(["green", "blue", "2px"]);
   });
 
   test("cycles make every variable in the cycle guaranteed-invalid; properties using them are unset (https://drafts.csswg.org/css-variables-2/#cycles)", () => {
-    setup(`<style>div { color: green } p { --a: var(--b); --b: var(--a); --ok: 1px; color: var(--a); padding-left: var(--a) }</style>`, `<div><p>x</p></div>`);
-    expect([cs("p", "--a"), cs("p", "--b"), cs("p", "--ok"), cs("p", "color"), cs("p", "padding-left")]).toEqual(["", "", "1px", "green", "0px"]);
+    setup(
+      `<style>div { color: green } p { --a: var(--b); --b: var(--a); --ok: 1px; color: var(--a); padding-left: var(--a) }</style>`,
+      `<div><p>x</p></div>`,
+    );
+    expect([cs("p", "--a"), cs("p", "--b"), cs("p", "--ok"), cs("p", "color"), cs("p", "padding-left")]).toEqual([
+      "",
+      "",
+      "1px",
+      "green",
+      "0px",
+    ]);
   });
 
   test("a var() that substitutes to an invalid value makes the declaration invalid at computed-value time (unset) (https://drafts.csswg.org/css-variables-2/#invalid-at-computed-value-time)", () => {
     // `color: var(--n)` with --n: 12 is unset: color inherits green (not the earlier `red`).
-    setup(`<style>div { color: green } p { --n: 12; --d: bogus; color: red; color: var(--n); display: var(--d) }</style>`, `<div><p>x</p></div>`);
+    setup(
+      `<style>div { color: green } p { --n: 12; --d: bogus; color: red; color: var(--n); display: var(--d) }</style>`,
+      `<div><p>x</p></div>`,
+    );
     expect([cs("p", "color"), cs("p", "display")]).toEqual(["green", "inline"]);
   });
 });
 
-describe("resolving color values (cssComputedColors: \"rgb\") — https://drafts.csswg.org/css-color-4/#resolving-color-values", () => {
+describe('resolving color values (cssComputedColors: "rgb") — https://drafts.csswg.org/css-color-4/#resolving-color-values', () => {
   beforeEach(() => {
     window = createWindow({ cssComputedColors: "rgb" } as any);
     document = window.document;
   });
 
   test("hex notation: 3, 4, 6 and 8 digits; 8-bit alpha serializes as the shortest decimal that maps back to the same byte (https://drafts.csswg.org/css-color-4/#hex-notation)", () => {
-    setup("", `<p id="a" style="color: #0f0">a</p><p id="b" style="color: #0f08">b</p><p id="c" style="color: #00ff00">c</p><p id="d" style="color: #00ff0080">d</p>`);
-    expect(["#a", "#b", "#c", "#d"].map((s) => cs(s, "color"))).toEqual(["rgb(0, 255, 0)", "rgba(0, 255, 0, 0.533)", "rgb(0, 255, 0)", "rgba(0, 255, 0, 0.5)"]);
+    setup(
+      "",
+      `<p id="a" style="color: #0f0">a</p><p id="b" style="color: #0f08">b</p><p id="c" style="color: #00ff00">c</p><p id="d" style="color: #00ff0080">d</p>`,
+    );
+    expect(["#a", "#b", "#c", "#d"].map((s) => cs(s, "color"))).toEqual([
+      "rgb(0, 255, 0)",
+      "rgba(0, 255, 0, 0.533)",
+      "rgb(0, 255, 0)",
+      "rgba(0, 255, 0, 0.5)",
+    ]);
   });
 
   test("named colors and transparent (https://drafts.csswg.org/css-color-4/#named-colors)", () => {
@@ -282,7 +390,10 @@ describe("resolving color values (cssComputedColors: \"rgb\") — https://drafts
   });
 
   test("hsl() converts to sRGB (https://drafts.csswg.org/css-color-4/#hsl-to-rgb)", () => {
-    setup("", `<p id="a" style="color: hsl(120 100% 25%)">a</p><p id="b" style="color: hsla(0, 100%, 50%, 0.25)">b</p>`);
+    setup(
+      "",
+      `<p id="a" style="color: hsl(120 100% 25%)">a</p><p id="b" style="color: hsla(0, 100%, 50%, 0.25)">b</p>`,
+    );
     expect([cs("#a", "color"), cs("#b", "color")]).toEqual(["rgb(0, 128, 0)", "rgba(255, 0, 0, 0.25)"]);
   });
 

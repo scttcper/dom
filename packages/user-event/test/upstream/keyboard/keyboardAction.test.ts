@@ -20,7 +20,7 @@ cases(
     expect(eventWasFired('keypress')).toBe(hasKeyPress)
   },
   {
-    'characters': {
+    characters: {
       code: 'KeyX',
       hasKeyPress: true,
     },

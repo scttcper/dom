@@ -59,7 +59,7 @@ describe("attachInternals() — https://html.spec.whatwg.org/#dom-attachinternal
     expect(errorName(() => document.createElement("x-undefined").attachInternals())).toBe("NotSupportedError");
   });
 
-  test("disabledFeatures containing \"internals\" makes attachInternals throw", () => {
+  test('disabledFeatures containing "internals" makes attachInternals throw', () => {
     window.customElements.define(
       "x-closed",
       class extends window.HTMLElement {
@@ -79,7 +79,9 @@ describe("setValidity() — https://html.spec.whatwg.org/#dom-elementinternals-s
 
   test("the anchor must be a shadow-including inclusive descendant (NotFoundError)", () => {
     expect(errorName(() => internals.setValidity({ customError: true }, "m", document.body))).toBe("NotFoundError");
-    expect(errorName(() => internals.setValidity({ customError: true }, "m", document.getElementById("inner")))).toBe("none");
+    expect(errorName(() => internals.setValidity({ customError: true }, "m", document.getElementById("inner")))).toBe(
+      "none",
+    );
     const root = el.attachShadow({ mode: "open" });
     const shadowInput = root.appendChild(document.createElement("input"));
     expect(errorName(() => internals.setValidity({ customError: true }, "m", shadowInput))).toBe("none");

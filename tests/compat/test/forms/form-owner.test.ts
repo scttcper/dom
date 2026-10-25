@@ -111,36 +111,50 @@ describe("form.elements — https://html.spec.whatwg.org/#dom-form-elements", ()
     rnl.value = "on";
     const on = [w.document.getElementById("ra").checked, w.document.getElementById("rb").checked];
     rnl.value = "a";
-    return { on, a: [w.document.getElementById("ra").checked, w.document.getElementById("rb").checked], value: rnl.value };
+    return {
+      on,
+      a: [w.document.getElementById("ra").checked, w.document.getElementById("rb").checked],
+      value: rnl.value,
+    };
   });
 
-  differential("form element named properties and the past names map", (w) => {
-    w.document.body.innerHTML = '<form id=f><input name=email id=e><img name=logo id=i></form>';
-    const f = w.document.getElementById("f");
-    const email = f.email;
-    const logo = f.logo;
-    const indexed = f[0];
-    w.document.getElementById("e").name = "renamed";
-    return { email, logo, indexed, afterRename: f.email, renamed: f.renamed, length: f.length };
-  }, {
-    // Node descriptions are taken after the scenario returns, so the input shows its final name.
-    jsdomDeviation: {
-      expected: {
-        email: "<input#e[name=renamed]>",
-        logo: "<img#i[name=logo]>",
-        indexed: "<input#e[name=renamed]>",
-        afterRename: "<input#e[name=renamed]>",
-        renamed: "<input#e[name=renamed]>",
-        length: 1,
-      },
-      spec: "https://html.spec.whatwg.org/#the-form-element:supported-property-names (named getter + past names map)",
-      reason: "jsdom does not implement HTMLFormElement's named property getter; React onSubmit handlers commonly read `event.currentTarget.email.value`",
+  differential(
+    "form element named properties and the past names map",
+    (w) => {
+      w.document.body.innerHTML = "<form id=f><input name=email id=e><img name=logo id=i></form>";
+      const f = w.document.getElementById("f");
+      const email = f.email;
+      const logo = f.logo;
+      const indexed = f[0];
+      w.document.getElementById("e").name = "renamed";
+      return { email, logo, indexed, afterRename: f.email, renamed: f.renamed, length: f.length };
     },
-  });
+    {
+      // Node descriptions are taken after the scenario returns, so the input shows its final name.
+      jsdomDeviation: {
+        expected: {
+          email: "<input#e[name=renamed]>",
+          logo: "<img#i[name=logo]>",
+          indexed: "<input#e[name=renamed]>",
+          afterRename: "<input#e[name=renamed]>",
+          renamed: "<input#e[name=renamed]>",
+          length: 1,
+        },
+        spec: "https://html.spec.whatwg.org/#the-form-element:supported-property-names (named getter + past names map)",
+        reason:
+          "jsdom does not implement HTMLFormElement's named property getter; React onSubmit handlers commonly read `event.currentTarget.email.value`",
+      },
+    },
+  );
 
   differential("document.forms collection", (w) => {
     w.document.body.innerHTML = "<form id=a name=first></form><div><form id=b></form></div>";
-    return { length: w.document.forms.length, first: w.document.forms.first, b: w.document.forms.namedItem("b"), zero: w.document.forms[0] };
+    return {
+      length: w.document.forms.length,
+      first: w.document.forms.first,
+      b: w.document.forms.namedItem("b"),
+      zero: w.document.forms[0],
+    };
   });
 });
 
@@ -157,7 +171,12 @@ describe("disabled state — https://html.spec.whatwg.org/#concept-fe-disabled",
     const ids = ["inLegend", "legendButton", "inSecondLegend", "plain", "s", "t", "b", "inner", "nested", "o", "obj"];
     return ids.map((id) => {
       const el = w.document.getElementById(id);
-      return { id, disabledIdl: el.disabled ?? null, matches: el.matches(":disabled"), willValidate: el.willValidate ?? null };
+      return {
+        id,
+        disabledIdl: el.disabled ?? null,
+        matches: el.matches(":disabled"),
+        willValidate: el.willValidate ?? null,
+      };
     });
   });
 
@@ -175,7 +194,14 @@ describe("disabled state — https://html.spec.whatwg.org/#concept-fe-disabled",
   differential("fieldset.type, name, form, validity", (w) => {
     w.document.body.innerHTML = "<form id=f><fieldset name=n id=fs><input required></fieldset></form>";
     const fs = w.document.getElementById("fs");
-    return { type: fs.type, name: fs.name, form: fs.form, willValidate: fs.willValidate, checkValidity: fs.checkValidity(), valid: fs.validity.valid };
+    return {
+      type: fs.type,
+      name: fs.name,
+      form: fs.form,
+      willValidate: fs.willValidate,
+      checkValidity: fs.checkValidity(),
+      valid: fs.validity.valid,
+    };
   });
 });
 
@@ -206,11 +232,15 @@ describe("labels — https://html.spec.whatwg.org/#the-label-element", () => {
       <label id=l3 for=x><input id=y></label>`;
     const x = w.document.getElementById("x");
     const y = w.document.getElementById("y");
-    return { x: list(x.labels), y: list(y.labels), hidden: (() => {
-      const h = w.document.createElement("input");
-      h.type = "hidden";
-      return h.labels;
-    })() };
+    return {
+      x: list(x.labels),
+      y: list(y.labels),
+      hidden: (() => {
+        const h = w.document.createElement("input");
+        h.type = "hidden";
+        return h.labels;
+      })(),
+    };
   });
 
   differential("labels is live and the same object", (w) => {

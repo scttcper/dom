@@ -28,7 +28,9 @@ interface UISelection {
 export type UIValueString = string & {[UIValue]: true}
 export type UISelectionStart = number & {[UISelection]: true}
 
-export function isUIValue(value: string | UIValueString): value is UIValueString {
+export function isUIValue(
+  value: string | UIValueString,
+): value is UIValueString {
   return typeof value === 'object' && UIValue in value
 }
 
@@ -38,7 +40,10 @@ export function isUISelectionStart(
   return !!start && typeof start === 'object' && UISelection in start
 }
 
-export function setUIValue(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
+export function setUIValue(
+  element: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+) {
   const el = element as EditableElement
   if (el[InitialValue] === undefined) {
     el[InitialValue] = el.value
@@ -65,7 +70,9 @@ export function getUIValue(element: HTMLInputElement | HTMLTextAreaElement) {
 }
 
 /** Flag the IDL value as clean. This does not change the value. */
-export function setUIValueClean(element: HTMLInputElement | HTMLTextAreaElement) {
+export function setUIValueClean(
+  element: HTMLInputElement | HTMLTextAreaElement,
+) {
   if (hasCtrlDomUI(element)) {
     ctrlDomUI!.clearUIValue(element)
     return
@@ -73,11 +80,15 @@ export function setUIValueClean(element: HTMLInputElement | HTMLTextAreaElement)
   ;(element as EditableElement)[UIValue] = undefined
 }
 
-export function clearInitialValue(element: HTMLInputElement | HTMLTextAreaElement) {
+export function clearInitialValue(
+  element: HTMLInputElement | HTMLTextAreaElement,
+) {
   ;(element as EditableElement)[InitialValue] = undefined
 }
 
-export function getInitialValue(element: HTMLInputElement | HTMLTextAreaElement) {
+export function getInitialValue(
+  element: HTMLInputElement | HTMLTextAreaElement,
+) {
   return (element as EditableElement)[InitialValue]
 }
 
@@ -108,11 +119,18 @@ export function setUISelection(
     // anchor for 'modify' (shift-extend); it is remembered next to the DOM state and only
     // trusted while the DOM selection still matches it (a programmatic change resets it).
     const anchorOffset =
-      mode === 'replace' ? sanitizeOffset(anchorOffsetParam) : getUISelection(el).anchorOffset
+      mode === 'replace'
+        ? sanitizeOffset(anchorOffsetParam)
+        : getUISelection(el).anchorOffset
     const focusOffset = sanitizeOffset(focusOffsetParam)
     el[UISelection] = {anchorOffset, focusOffset}
     // Same direction upstream ends up with: it calls `setSelectionRange(start, end)`.
-    ctrlDomUI!.setUISelection(el, Math.min(anchorOffset, focusOffset), Math.max(anchorOffset, focusOffset), 'none')
+    ctrlDomUI!.setUISelection(
+      el,
+      Math.min(anchorOffset, focusOffset),
+      Math.max(anchorOffset, focusOffset),
+      'none',
+    )
     return
   }
 
@@ -151,7 +169,9 @@ export type UISelectionRange = UISelection & {
   endOffset: number
 }
 
-export function getUISelection(element: HTMLInputElement | HTMLTextAreaElement): UISelectionRange {
+export function getUISelection(
+  element: HTMLInputElement | HTMLTextAreaElement,
+): UISelectionRange {
   const el = element as EditableElement
   let sel: UISelection
   if (hasCtrlDomUI(el)) {
@@ -177,11 +197,15 @@ export function getUISelection(element: HTMLInputElement | HTMLTextAreaElement):
   }
 }
 
-export function hasUISelection(element: HTMLInputElement | HTMLTextAreaElement) {
+export function hasUISelection(
+  element: HTMLInputElement | HTMLTextAreaElement,
+) {
   return hasCtrlDomUI(element) || !!(element as EditableElement)[UISelection]
 }
 
 /** Flag the IDL selection as clean. This does not change the selection. */
-export function setUISelectionClean(element: HTMLInputElement | HTMLTextAreaElement) {
+export function setUISelectionClean(
+  element: HTMLInputElement | HTMLTextAreaElement,
+) {
   ;(element as EditableElement)[UISelection] = undefined
 }

@@ -77,7 +77,10 @@ describe("environment globals — https://html.spec.whatwg.org/#the-window-objec
     const form = document.createElement("form");
     form.innerHTML = '<input name="a" value="1"><input name="b" value="2">';
     const data = new FormData(form as never);
-    expect([...data.entries()]).toEqual([["a", "1"], ["b", "2"]]);
+    expect([...data.entries()]).toEqual([
+      ["a", "1"],
+      ["b", "2"],
+    ]);
   });
 });
 

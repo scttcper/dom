@@ -44,7 +44,9 @@ function escape(target: any): void {
 function recordToggles(el: any): string[] {
   const log: string[] = [];
   for (const type of ["beforetoggle", "toggle"]) {
-    el.addEventListener(type, (e: any) => log.push(`${type}:${e.oldState}->${e.newState}${e.cancelable ? " (cancelable)" : ""}`));
+    el.addEventListener(type, (e: any) =>
+      log.push(`${type}:${e.oldState}->${e.newState}${e.cancelable ? " (cancelable)" : ""}`),
+    );
   }
   return log;
 }
@@ -62,7 +64,7 @@ describe("returnValue and close the dialog — https://html.spec.whatwg.org/#clo
     expect(d.returnValue).toBe("5");
   });
 
-  test("step 9: close() without an argument keeps the previous returnValue; close(\"\") overwrites it", () => {
+  test('step 9: close() without an argument keeps the previous returnValue; close("") overwrites it', () => {
     const d = dialog();
     d.show();
     d.close("first");
@@ -109,7 +111,11 @@ describe("queue a dialog toggle event task — https://html.spec.whatwg.org/#que
     d.show();
     d.close();
     await nextTask();
-    expect(log).toEqual(["beforetoggle:closed->open (cancelable)", "beforetoggle:open->closed", "toggle:closed->closed"]);
+    expect(log).toEqual([
+      "beforetoggle:closed->open (cancelable)",
+      "beforetoggle:open->closed",
+      "toggle:closed->closed",
+    ]);
   });
 
   test("showModal() fires a cancelable beforetoggle; canceling leaves the dialog closed and queues no toggle", async () => {
@@ -183,7 +189,7 @@ describe("show() and showModal() preconditions — https://html.spec.whatwg.org/
 });
 
 describe("computed closed-by state — https://html.spec.whatwg.org/#computed-closed-by-state", () => {
-  test("Auto state: \"none\" while not modal, \"closerequest\" while modal", () => {
+  test('Auto state: "none" while not modal, "closerequest" while modal', () => {
     const d = dialog();
     expect(d.closedBy).toBe("none");
     d.show();
@@ -373,7 +379,11 @@ describe("queue a popover toggle event task — https://html.spec.whatwg.org/#qu
     p.showPopover();
     p.hidePopover();
     await nextTask();
-    expect(log).toEqual(["beforetoggle:closed->open (cancelable)", "beforetoggle:open->closed", "toggle:closed->closed"]);
+    expect(log).toEqual([
+      "beforetoggle:closed->open (cancelable)",
+      "beforetoggle:open->closed",
+      "toggle:closed->closed",
+    ]);
   });
 });
 
@@ -386,7 +396,7 @@ describe("popover attribute changes — https://html.spec.whatwg.org/#the-popove
     expect(p.matches(":popover-open")).toBe(false);
   });
 
-  test("an attribute change that keeps the same state (auto → \"\") leaves it showing", () => {
+  test('an attribute change that keeps the same state (auto → "") leaves it showing', () => {
     doc.body.innerHTML = "<div popover=auto id=p></div>";
     const p = doc.getElementById("p");
     p.showPopover();
@@ -413,7 +423,8 @@ describe("popover stacks — https://html.spec.whatwg.org/#topmost-popover-ances
   });
 
   test("an auto popover opened by an invoker inside another auto popover is nested in it", () => {
-    doc.body.innerHTML = '<div popover id=outer><button popovertarget=inner id=btn>i</button></div><div popover id=inner></div>';
+    doc.body.innerHTML =
+      "<div popover id=outer><button popovertarget=inner id=btn>i</button></div><div popover id=inner></div>";
     const outer = doc.getElementById("outer");
     const inner = doc.getElementById("inner");
     outer.showPopover();
@@ -426,7 +437,7 @@ describe("popover stacks — https://html.spec.whatwg.org/#topmost-popover-ances
   });
 
   test("showPopover({ source }) nests the popover under the source's popover", () => {
-    doc.body.innerHTML = '<div popover id=outer><span id=src></span></div><div popover id=inner></div>';
+    doc.body.innerHTML = "<div popover id=outer><span id=src></span></div><div popover id=inner></div>";
     const outer = doc.getElementById("outer");
     const inner = doc.getElementById("inner");
     outer.showPopover();
@@ -451,7 +462,7 @@ describe("popover stacks — https://html.spec.whatwg.org/#topmost-popover-ances
 
 describe("popover focusing steps — https://html.spec.whatwg.org/#popover-focusing-steps", () => {
   test("an autofocus descendant is focused when the popover shows; hiding restores focus to the previously focused element", () => {
-    doc.body.innerHTML = '<button id=opener>o</button><div popover id=p><input id=a><input id=b autofocus></div>';
+    doc.body.innerHTML = "<button id=opener>o</button><div popover id=p><input id=a><input id=b autofocus></div>";
     const opener = doc.getElementById("opener");
     opener.focus();
     const p = doc.getElementById("p");
@@ -462,7 +473,7 @@ describe("popover focusing steps — https://html.spec.whatwg.org/#popover-focus
   });
 
   test("without autofocus, showing a popover does not move focus", () => {
-    doc.body.innerHTML = '<button id=opener>o</button><div popover id=p><input id=a></div>';
+    doc.body.innerHTML = "<button id=opener>o</button><div popover id=p><input id=a></div>";
     const opener = doc.getElementById("opener");
     opener.focus();
     doc.getElementById("p").showPopover();
@@ -470,7 +481,8 @@ describe("popover focusing steps — https://html.spec.whatwg.org/#popover-focus
   });
 
   test("hide popover: focus is not restored when it moved outside the popover meanwhile", () => {
-    doc.body.innerHTML = '<button id=opener>o</button><button id=other>x</button><div popover id=p><input autofocus></div>';
+    doc.body.innerHTML =
+      "<button id=opener>o</button><button id=other>x</button><div popover id=p><input autofocus></div>";
     doc.getElementById("opener").focus();
     const p = doc.getElementById("p");
     p.showPopover();
@@ -494,7 +506,7 @@ describe("popoverTargetAction — https://html.spec.whatwg.org/#attr-popovertarg
 
 describe("details name groups — https://html.spec.whatwg.org/#details-name-group", () => {
   test("insertion steps: an inserted open details is closed when its group already has an open one", () => {
-    doc.body.innerHTML = '<details name=g open id=a><summary>a</summary></details>';
+    doc.body.innerHTML = "<details name=g open id=a><summary>a</summary></details>";
     const b = doc.createElement("details");
     b.name = "g";
     b.open = true;
@@ -504,7 +516,7 @@ describe("details name groups — https://html.spec.whatwg.org/#details-name-gro
   });
 
   test("groups are per tree root and per name (case-sensitive)", () => {
-    doc.body.innerHTML = '<details name=g open id=a></details><details name=G id=b></details>';
+    doc.body.innerHTML = "<details name=g open id=a></details><details name=G id=b></details>";
     doc.getElementById("b").open = true;
     expect(doc.getElementById("a").open).toBe(true);
     const detached = doc.createElement("details");

@@ -9,10 +9,18 @@ export interface Exit {
 }
 
 /** Run a command to completion, capturing output and wall time. */
-export function run(command: string, args: string[], options: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number } = {}): Promise<Exit> {
+export function run(
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number } = {},
+): Promise<Exit> {
   return new Promise((resolve) => {
     const started = performance.now();
-    const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? process.env, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      cwd: options.cwd,
+      env: options.env ?? process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d));

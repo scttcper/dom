@@ -34,11 +34,21 @@ describe.skipIf(sharesDom)("happy-dom's comparison, warm", () => {
   // Queries the way code consumes them: Testing Library and app code Array.from() / spread the
   // result. (A bare `.length` mostly measures a result cache: happy-dom returns the same NodeList
   // until the document changes.)
-  for (const [selector, count] of [["li", 612], [".card", 180], ["[aria-label]", 419], ['[class~="card"]', 180], [":nth-child(2n+1)", null]] as const) {
+  for (const [selector, count] of [
+    ["li", 612],
+    [".card", 180],
+    ["[aria-label]", 419],
+    ['[class~="card"]', 180],
+    [":nth-child(2n+1)", null],
+  ] as const) {
     test(`querySelectorAll ${selector}`, async (ctx) => {
       document.body.innerHTML = PAGE;
       if (count !== null) expect(document.querySelectorAll(selector)).toHaveLength(count);
-      await measure(ctx, `Array.from(querySelectorAll('${selector}'))`, () => Array.from(document.querySelectorAll(selector)).length);
+      await measure(
+        ctx,
+        `Array.from(querySelectorAll('${selector}'))`,
+        () => Array.from(document.querySelectorAll(selector)).length,
+      );
     });
   }
 
@@ -106,7 +116,8 @@ describe.skipIf(sharesDom)("more DOM work component tests do", () => {
   });
 
   test("getComputedStyle", async (ctx) => {
-    document.head.innerHTML = "<style>.hidden { display: none } .card { color: rgb(1, 2, 3) } section > .card:nth-child(odd) { visibility: hidden }</style>";
+    document.head.innerHTML =
+      "<style>.hidden { display: none } .card { color: rgb(1, 2, 3) } section > .card:nth-child(odd) { visibility: hidden }</style>";
     document.body.innerHTML = PAGE;
     const cards = [...document.querySelectorAll(".card")].slice(0, 100);
     await measure(ctx, "getComputedStyle of 100 elements (display, visibility)", () => {

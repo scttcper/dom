@@ -16,7 +16,14 @@ interface Environment {
 }
 
 /** jest-circus/runner's signature (Jest's TestFramework); the package ships no types for it. */
-type TestFramework = (globalConfig: unknown, config: unknown, environment: Environment, runtime: unknown, testPath: string, sendMessageToJest?: unknown) => Promise<unknown>;
+type TestFramework = (
+  globalConfig: unknown,
+  config: unknown,
+  environment: Environment,
+  runtime: unknown,
+  testPath: string,
+  sendMessageToJest?: unknown,
+) => Promise<unknown>;
 
 const circus = (createRequire(import.meta.url)("jest-circus/runner") as { default: TestFramework }).default;
 

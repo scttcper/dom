@@ -13,6 +13,8 @@ export const CONTENDERS: readonly Contender[] = [jsdom, happyDom, ctrlDom, ctrlD
 export function selectContenders(filter: string | undefined): Contender[] {
   if (!filter) return [...CONTENDERS];
   const ids = filter.split(",").filter(Boolean);
-  for (const id of ids) if (!CONTENDERS.some((c) => c.id === id)) throw new Error(`unknown contender ${id} (have: ${CONTENDERS.map((c) => c.id).join(", ")})`);
+  for (const id of ids)
+    if (!CONTENDERS.some((c) => c.id === id))
+      throw new Error(`unknown contender ${id} (have: ${CONTENDERS.map((c) => c.id).join(", ")})`);
   return CONTENDERS.filter((c) => ids.includes(c.id));
 }

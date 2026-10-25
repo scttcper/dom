@@ -25,7 +25,13 @@ const engine = process.env.COMPAT_ENGINE ?? "jsdom";
 const specOnly = (reason: string) => test.skipIf(engine === "jsdom" && reason !== "");
 
 describe("controlled text inputs", () => {
-  function Controlled({ onChange, transform = (v: string) => v }: { onChange?: (v: string) => void; transform?: (v: string) => string }) {
+  function Controlled({
+    onChange,
+    transform = (v: string) => v,
+  }: {
+    onChange?: (v: string) => void;
+    transform?: (v: string) => string;
+  }) {
     const [value, setValue] = useState("");
     return (
       <label>
@@ -159,7 +165,11 @@ describe("checkboxes and radios", () => {
       const [checked, setChecked] = useState(false);
       return (
         <label>
-          <input type="checkbox" checked={checked} onChange={(e) => (onChange(e.target.checked), setChecked(e.target.checked))} />
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => (onChange(e.target.checked), setChecked(e.target.checked))}
+          />
           Accept
         </label>
       );
@@ -177,7 +187,14 @@ describe("checkboxes and radios", () => {
     const onChange = vi.fn();
     function C() {
       const [checked, setChecked] = useState(false);
-      return <input type="checkbox" aria-label="c" checked={checked} onChange={(e) => (onChange(e.target.checked), setChecked(e.target.checked))} />;
+      return (
+        <input
+          type="checkbox"
+          aria-label="c"
+          checked={checked}
+          onChange={(e) => (onChange(e.target.checked), setChecked(e.target.checked))}
+        />
+      );
     }
     render(<C />);
     fireEvent.click(screen.getByRole("checkbox"));
@@ -202,7 +219,13 @@ describe("checkboxes and radios", () => {
           <legend>Pick</legend>
           {["a", "b", "c"].map((v) => (
             <label key={v}>
-              <input type="radio" name="pick" value={v} checked={value === v} onChange={(e) => setValue(e.target.value)} />
+              <input
+                type="radio"
+                name="pick"
+                value={v}
+                checked={value === v}
+                onChange={(e) => setValue(e.target.value)}
+              />
               {v.toUpperCase()}
             </label>
           ))}
@@ -265,7 +288,12 @@ describe("selects and textareas", () => {
     function C() {
       const [v, setV] = useState<string[]>([]);
       return (
-        <select aria-label="many" multiple value={v} onChange={(e) => setV(Array.from(e.target.selectedOptions, (o) => o.value))}>
+        <select
+          aria-label="many"
+          multiple
+          value={v}
+          onChange={(e) => setV(Array.from(e.target.selectedOptions, (o) => o.value))}
+        >
           <option value="a">A</option>
           <option value="b">B</option>
           <option value="c">C</option>
@@ -415,7 +443,10 @@ describe("form submission", () => {
   test("React 19 form action receives FormData and useActionState updates", async () => {
     const user = userEvent.setup();
     function Subscribe() {
-      const [message, action] = useActionState(async (_prev: string, data: FormData) => `Subscribed ${data.get("email")}`, "");
+      const [message, action] = useActionState(
+        async (_prev: string, data: FormData) => `Subscribed ${data.get("email")}`,
+        "",
+      );
       return (
         <form action={action}>
           <input name="email" aria-label="email" />

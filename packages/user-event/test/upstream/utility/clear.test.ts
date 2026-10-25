@@ -117,24 +117,27 @@ describe('throw error when clear is impossible', () => {
 
   // divergence: this patches the instance's `setSelectionRange`, which user-event only calls on
   // DOMs without native UI selection state; on @ctrl/dom it writes the UI selection directly.
-  test.skipIf(isCtrlDomEnv())('abort if selecting content is prevented', async () => {
-    const {element, user} = setup<HTMLInputElement>(`<input value="hello"/>`)
-    // In some environments a `select` event handler can reset the selection before we can clear the input.
-    // In browser the `.clear()` API is done before the event is dispatched.
-    Object.defineProperty(element, 'setSelectionRange', {
-      configurable: true,
-      value(start: number, end: number) {
-        ;(
-          Object.getPrototypeOf(element) as HTMLInputElement
-        ).setSelectionRange.call(this, 1, end)
-        setUISelectionClean(element)
-      },
-    })
+  test.skipIf(isCtrlDomEnv())(
+    'abort if selecting content is prevented',
+    async () => {
+      const {element, user} = setup<HTMLInputElement>(`<input value="hello"/>`)
+      // In some environments a `select` event handler can reset the selection before we can clear the input.
+      // In browser the `.clear()` API is done before the event is dispatched.
+      Object.defineProperty(element, 'setSelectionRange', {
+        configurable: true,
+        value(start: number, end: number) {
+          ;(
+            Object.getPrototypeOf(element) as HTMLInputElement
+          ).setSelectionRange.call(this, 1, end)
+          setUISelectionClean(element)
+        },
+      })
 
-    await expect(
-      user.clear(element),
-    ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `The element content to be cleared could not be selected.`,
-    )
-  })
+      await expect(
+        user.clear(element),
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `The element content to be cleared could not be selected.`,
+      )
+    },
+  )
 })

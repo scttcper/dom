@@ -60,6 +60,8 @@
     "test:pack": "node tests/pack/src/run.ts",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "bench": "pnpm --filter ./bench run bench",
     "build": "node scripts/build.ts",
     "docs:compat": "node scripts/compat-doc.ts",
@@ -75,9 +77,10 @@
   },
   "devDependencies": {
     "@types/node": "26.6.5",
+    "oxfmt": "0.74.0",
     "oxlint": "1.89.0",
+    "rolldown": "1.2.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.5",
-    "rolldown": "1.2.15"
+    "vitest": "5.0.5"
   }
 }

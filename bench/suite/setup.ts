@@ -7,8 +7,13 @@ import { appendFileSync } from "node:fs";
 import { afterAll } from "vitest";
 
 // *-dist environments must really load the bundles (bench/lib/dist-preload.js), not sources.
-if ((process.env.BENCH_ENV ?? "").endsWith("-dist") && !((process as { __ctrlDomDistResolutions?: number }).__ctrlDomDistResolutions! > 0)) {
-  throw new Error(`BENCH_ENV=${process.env.BENCH_ENV}: no @ctrl/dom import was resolved to dist/ (is the preload active?)`);
+if (
+  (process.env.BENCH_ENV ?? "").endsWith("-dist") &&
+  !((process as { __ctrlDomDistResolutions?: number }).__ctrlDomDistResolutions! > 0)
+) {
+  throw new Error(
+    `BENCH_ENV=${process.env.BENCH_ENV}: no @ctrl/dom import was resolved to dist/ (is the preload active?)`,
+  );
 }
 
 afterAll(() => {

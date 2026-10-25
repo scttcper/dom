@@ -133,10 +133,15 @@ function mergeCharacters(tokens: unknown[][]): unknown[][] {
 let total = 0;
 let skipped = 0;
 
-for (const file of readdirSync(dir).filter((f) => f.endsWith(".test")).sort()) {
+for (const file of readdirSync(dir)
+  .filter((f) => f.endsWith(".test"))
+  .sort()) {
   // xmlViolation.test describes an XML-infoset coercion mode we do not implement.
   if (file === "xmlViolation.test") continue;
-  const json = JSON.parse(readFileSync(new URL(file, dir), "utf8")) as { tests?: TokenizerTest[]; xmlViolationTests?: TokenizerTest[] };
+  const json = JSON.parse(readFileSync(new URL(file, dir), "utf8")) as {
+    tests?: TokenizerTest[];
+    xmlViolationTests?: TokenizerTest[];
+  };
   const tests = json.tests ?? [];
   describe(`html5lib tokenizer ${file} — https://html.spec.whatwg.org/#tokenization`, () => {
     for (const raw of tests) {

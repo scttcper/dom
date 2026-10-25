@@ -6,7 +6,12 @@
 // nothing.
 
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { findAttributeByNamespace, isValidAttributeLocalName, removeAttributeRecord, setAttribute } from "../nodes/attributes.ts";
+import {
+  findAttributeByNamespace,
+  isValidAttributeLocalName,
+  removeAttributeRecord,
+  setAttribute,
+} from "../nodes/attributes.ts";
 
 /** camelCase property name → `data-*` attribute name (set/delete conversion). */
 function toAttributeName(name: string): string {

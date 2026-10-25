@@ -14,7 +14,19 @@
  * form; test_invalid_selector → must fail to parse.
  */
 import { describe, expect, test } from "vitest";
-import { parseSelectorList, tokenize, TK_IDENT, TK_HASH, TK_STRING, TK_BAD_STRING, TK_DIMENSION, TK_NUMBER, TK_DELIM, SelectorParser, type Simple } from "../../src/selectors/parser.ts";
+import {
+  parseSelectorList,
+  tokenize,
+  TK_IDENT,
+  TK_HASH,
+  TK_STRING,
+  TK_BAD_STRING,
+  TK_DIMENSION,
+  TK_NUMBER,
+  TK_DELIM,
+  SelectorParser,
+  type Simple,
+} from "../../src/selectors/parser.ts";
 import { serializeSelectorList, serializeIdentifier, serializeAnPlusB } from "../../src/selectors/serialize.ts";
 import { complexSpecificity, unpackSpecificity } from "../../src/selectors/compile.ts";
 import cases from "./wpt/css-selectors-parsing.json" with { type: "json" };
@@ -123,9 +135,12 @@ describe("An+B — https://drafts.csswg.org/css-syntax-3/#anb-microsyntax", () =
     expect(nth(src)).toEqual({ a, b });
   });
 
-  test.each(["+ n", "2 n", "n 1", "2n + +1", "2n+-1", "1.5n", "2.0", "n- +1", "3n 1", "", "x", "- n"])("%j is invalid", (src) => {
-    expect(nth(src)).toBeNull();
-  });
+  test.each(["+ n", "2 n", "n 1", "2n + +1", "2n+-1", "1.5n", "2.0", "n- +1", "3n 1", "", "x", "- n"])(
+    "%j is invalid",
+    (src) => {
+      expect(nth(src)).toBeNull();
+    },
+  );
 
   test("A and B are clamped to the 32-bit int range (as engines; WPT css/selectors/nth-child-large-anplusb-clamp.html)", () => {
     const ser = (sel: string) => serializeSelectorList(parseSelectorList(sel)!);
@@ -144,18 +159,70 @@ describe("An+B — https://drafts.csswg.org/css-syntax-3/#anb-microsyntax", () =
 
 describe("grammar — https://drafts.csswg.org/selectors-4/#grammar", () => {
   test.each([
-    "*", "div", "*|div", "|div", "ns|div", "div.a#b[c][d=e][f~=g i][h|=i s]", "a > b + c ~ d e",
-    ":is()", ":where(:foo, div)", ":not(a, b c)", ":has(> a, + b, ~ c, d)", ":nth-child(2n+1 of .a, b)",
-    "::before", ":before", "a::after", "::part(x)", "::slotted(span)", ":host", ":host(.a)", ":host-context(main)",
-    ":lang(en, \"*-CH\")", ":dir(rtl)", ":state(--x)", "[a=b", ":is(div", ":heading(1, 2)",
+    "*",
+    "div",
+    "*|div",
+    "|div",
+    "ns|div",
+    "div.a#b[c][d=e][f~=g i][h|=i s]",
+    "a > b + c ~ d e",
+    ":is()",
+    ":where(:foo, div)",
+    ":not(a, b c)",
+    ":has(> a, + b, ~ c, d)",
+    ":nth-child(2n+1 of .a, b)",
+    "::before",
+    ":before",
+    "a::after",
+    "::part(x)",
+    "::slotted(span)",
+    ":host",
+    ":host(.a)",
+    ":host-context(main)",
+    ':lang(en, "*-CH")',
+    ":dir(rtl)",
+    ":state(--x)",
+    "[a=b",
+    ":is(div",
+    ":heading(1, 2)",
   ])("%j parses", (sel) => {
     expect(parseSelectorList(sel)).not.toBeNull();
   });
 
   test.each([
-    "", " ", ",", "a,", ",a", "a,,b", ">a", "a >", "a > > b", "#1", ".1", "..a", "[]", "[a=]", "[a=b c]", "[a=b x]",
-    ":not()", ":has()", ":has(:has(a))", ":foo", "::foo", ":nth-child()", ":nth-child(2n of)", ":dir(\"ltr\")",
-    "::before.a", "::before > a", ":not(::before)", ":has(::before)", "a || b", "{", "a!", "a:hover()", ":is",
+    "",
+    " ",
+    ",",
+    "a,",
+    ",a",
+    "a,,b",
+    ">a",
+    "a >",
+    "a > > b",
+    "#1",
+    ".1",
+    "..a",
+    "[]",
+    "[a=]",
+    "[a=b c]",
+    "[a=b x]",
+    ":not()",
+    ":has()",
+    ":has(:has(a))",
+    ":foo",
+    "::foo",
+    ":nth-child()",
+    ":nth-child(2n of)",
+    ':dir("ltr")',
+    "::before.a",
+    "::before > a",
+    ":not(::before)",
+    ":has(::before)",
+    "a || b",
+    "{",
+    "a!",
+    "a:hover()",
+    ":is",
   ])("%j is invalid", (sel) => {
     expect(parseSelectorList(sel)).toBeNull();
   });

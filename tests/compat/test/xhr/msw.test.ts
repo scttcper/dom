@@ -49,12 +49,18 @@ afterAll(() => {
 });
 
 /** Send with the global XMLHttpRequest (whatever MSW put there) and record events. */
-function xhr(method: string, url: string, setup?: (x: AnyRecord) => void, body?: unknown): Promise<{ log: string[]; x: AnyRecord }> {
+function xhr(
+  method: string,
+  url: string,
+  setup?: (x: AnyRecord) => void,
+  body?: unknown,
+): Promise<{ log: string[]; x: AnyRecord }> {
   return new Promise((resolve) => {
     const x = new g.XMLHttpRequest();
     const log: string[] = [];
     x.onreadystatechange = () => log.push(`rs${x.readyState}`);
-    for (const type of ["loadstart", "load", "error", "abort", "timeout"]) x.addEventListener(type, () => log.push(type));
+    for (const type of ["loadstart", "load", "error", "abort", "timeout"])
+      x.addEventListener(type, () => log.push(type));
     x.addEventListener("loadend", () => {
       log.push("loadend");
       resolve({ log, x });
@@ -68,7 +74,12 @@ function xhr(method: string, url: string, setup?: (x: AnyRecord) => void, body?:
 /** Unhandled requests pass through: MSW 3's `onUnhandledFrame`, MSW 2's `onUnhandledRequest`. */
 type ListenOptions = Parameters<ReturnType<MswNode["setupServer"]>["listen"]>[0];
 
-function suite(label: string, load: () => Promise<[Msw, MswNode]>, listenOptions: ListenOptions, mswAnswersXhrItself = false): void {
+function suite(
+  label: string,
+  load: () => Promise<[Msw, MswNode]>,
+  listenOptions: ListenOptions,
+  mswAnswersXhrItself = false,
+): void {
   describe(`${label} — https://xhr.spec.whatwg.org/#the-send()-method`, () => {
     let msw: Msw;
     let server: ReturnType<MswNode["setupServer"]>;
@@ -78,9 +89,15 @@ function suite(label: string, load: () => Promise<[Msw, MswNode]>, listenOptions
       msw = core;
       const { http, HttpResponse, delay } = core;
       server = node.setupServer(
-        http.get("http://localhost/app/api/user", () => HttpResponse.json({ name: "Ada" }, { headers: { "X-Mocked": "yes" } })),
+        http.get("http://localhost/app/api/user", () =>
+          HttpResponse.json({ name: "Ada" }, { headers: { "X-Mocked": "yes" } }),
+        ),
         http.post("http://localhost/app/api/echo", async ({ request }) =>
-          HttpResponse.json({ body: await request.json(), type: request.headers.get("content-type"), custom: request.headers.get("x-custom") }),
+          HttpResponse.json({
+            body: await request.json(),
+            type: request.headers.get("content-type"),
+            custom: request.headers.get("x-custom"),
+          }),
         ),
         http.get("http://localhost/app/api/broken", () => HttpResponse.error()),
         http.get("http://localhost/app/api/slow", async () => {
@@ -96,7 +113,12 @@ function suite(label: string, load: () => Promise<[Msw, MswNode]>, listenOptions
     test("a mocked GET (relative URL) answers with the handler's response and the usual events", async () => {
       const { log, x } = await xhr("GET", "api/user", (r) => (r.responseType = "json"));
       expect(log).toEqual(["rs1", "loadstart", "rs2", "rs3", "rs4", "load", "loadend"]);
-      expect([x.status, x.response, x.getResponseHeader("x-mocked"), x.responseURL]).toEqual([200, { name: "Ada" }, "yes", "http://localhost/app/api/user"]);
+      expect([x.status, x.response, x.getResponseHeader("x-mocked"), x.responseURL]).toEqual([
+        200,
+        { name: "Ada" },
+        "yes",
+        "http://localhost/app/api/user",
+      ]);
       void msw;
     });
 
@@ -115,7 +137,9 @@ function suite(label: string, load: () => Promise<[Msw, MswNode]>, listenOptions
 
     test("HttpResponse.error() is a network error: error then loadend, status 0", async () => {
       const { log, x } = await xhr("GET", "api/broken");
-      expect(log).toEqual(mswAnswersXhrItself ? ["rs1", "rs4", "error", "loadend"] : ["rs1", "loadstart", "rs4", "error", "loadend"]);
+      expect(log).toEqual(
+        mswAnswersXhrItself ? ["rs1", "rs4", "error", "loadend"] : ["rs1", "loadstart", "rs4", "error", "loadend"],
+      );
       expect(x.status).toBe(0);
     });
 
@@ -126,21 +150,33 @@ function suite(label: string, load: () => Promise<[Msw, MswNode]>, listenOptions
 
     test("a timeout shorter than the handler's delay fires timeout — https://xhr.spec.whatwg.org/#request-error-steps", async () => {
       const { log, x } = await xhr("GET", "api/slow", (r) => (r.timeout = 20));
-      expect(log).toEqual(mswAnswersXhrItself ? ["rs1", "loadstart", "rs2", "rs3", "rs4", "load", "loadend"] : ["rs1", "loadstart", "rs4", "timeout", "loadend"]);
+      expect(log).toEqual(
+        mswAnswersXhrItself
+          ? ["rs1", "loadstart", "rs2", "rs3", "rs4", "load", "loadend"]
+          : ["rs1", "loadstart", "rs4", "timeout", "loadend"],
+      );
       expect(x.readyState).toBe(4);
     });
 
     test("axios with its XHR adapter: mocked data, headers, and a rejected network error", async () => {
       const get = await axios.get("http://localhost/app/api/user", { adapter: "xhr" });
       expect([get.status, get.data, get.headers["x-mocked"]]).toEqual([200, { name: "Ada" }, "yes"]);
-      const post = await axios.post("http://localhost/app/api/echo", { b: 2 }, { adapter: "xhr", headers: { "X-Custom": "2" } });
+      const post = await axios.post(
+        "http://localhost/app/api/echo",
+        { b: 2 },
+        { adapter: "xhr", headers: { "X-Custom": "2" } },
+      );
       expect(post.data).toEqual({ body: { b: 2 }, type: "application/json", custom: "2" });
-      await expect(axios.get("http://localhost/app/api/broken", { adapter: "xhr" })).rejects.toMatchObject({ message: "Network Error" });
+      await expect(axios.get("http://localhost/app/api/broken", { adapter: "xhr" })).rejects.toMatchObject({
+        message: "Network Error",
+      });
     });
   });
 }
 
-suite("MSW 3 (setupServer from msw/node)", async () => [await import("msw-3"), await import("msw-3/node")], { onUnhandledFrame: "bypass" });
+suite("MSW 3 (setupServer from msw/node)", async () => [await import("msw-3"), await import("msw-3/node")], {
+  onUnhandledFrame: "bypass",
+});
 suite(
   "MSW 2 (setupServer from msw/node)",
   async () => [(await import("msw-2")) as unknown as Msw, (await import("msw-2/node")) as unknown as MswNode],

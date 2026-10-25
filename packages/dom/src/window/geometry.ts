@@ -143,7 +143,16 @@ export class DOMRectReadOnly {
   }
 
   toJSON(): Record<string, number> {
-    return { x: this[$x], y: this[$y], width: this[$width], height: this[$height], top: this.top, right: this.right, bottom: this.bottom, left: this.left };
+    return {
+      x: this[$x],
+      y: this[$y],
+      width: this[$width],
+      height: this[$height],
+      top: this.top,
+      right: this.right,
+      bottom: this.bottom,
+      left: this.left,
+    };
   }
 }
 
@@ -231,12 +240,18 @@ export class DOMMatrixReadOnly {
         this[$m] = a;
         this[$is2D] = false;
       } else {
-        throw new TypeError(`Failed to construct 'DOMMatrix': The sequence must contain 6 elements for a 2D matrix or 16 elements for a 3D matrix.`);
+        throw new TypeError(
+          `Failed to construct 'DOMMatrix': The sequence must contain 6 elements for a 2D matrix or 16 elements for a 3D matrix.`,
+        );
       }
     } else {
       const m = /^\s*matrix\(([^)]*)\)\s*$/.exec(String(init));
-      if (m === null) throw new DOMException(`Failed to construct 'DOMMatrix': Failed to parse '${String(init)}'.`, "SyntaxError");
-      const a = m[1].split(/[\s,]+/).filter(Boolean).map(Number);
+      if (m === null)
+        throw new DOMException(`Failed to construct 'DOMMatrix': Failed to parse '${String(init)}'.`, "SyntaxError");
+      const a = m[1]
+        .split(/[\s,]+/)
+        .filter(Boolean)
+        .map(Number);
       this[$m] = [a[0], a[1], 0, 0, a[2], a[3], 0, 0, 0, 0, 1, 0, a[4], a[5], 0, 1];
       this[$is2D] = true;
     }
@@ -382,7 +397,24 @@ export class DOMMatrixReadOnly {
 
   toJSON(): Record<string, number | boolean> {
     const o: Record<string, number | boolean> = { a: this.a, b: this.b, c: this.c, d: this.d, e: this.e, f: this.f };
-    const names = ["m11", "m12", "m13", "m14", "m21", "m22", "m23", "m24", "m31", "m32", "m33", "m34", "m41", "m42", "m43", "m44"];
+    const names = [
+      "m11",
+      "m12",
+      "m13",
+      "m14",
+      "m21",
+      "m22",
+      "m23",
+      "m24",
+      "m31",
+      "m32",
+      "m33",
+      "m34",
+      "m41",
+      "m42",
+      "m43",
+      "m44",
+    ];
     for (let i = 0; i < 16; i++) o[names[i]] = this[$m][i];
     o.is2D = this[$is2D];
     o.isIdentity = this.isIdentity;

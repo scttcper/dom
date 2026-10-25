@@ -41,13 +41,19 @@ describe("selectedness setting algorithm — https://html.spec.whatwg.org/#selec
     ["disabled first option is skipped for the default", "<select><option disabled>a<option>b</select>"],
     ["all options disabled: none selected", "<select><option disabled>a<option disabled>b</select>"],
     ["multiple: no default selection", "<select multiple><option>a<option>b</select>"],
-    ["multiple: several selected attributes", "<select multiple><option selected>a<option selected>b<option>c</select>"],
+    [
+      "multiple: several selected attributes",
+      "<select multiple><option selected>a<option selected>b<option>c</select>",
+    ],
     ["size>1: no default selection (display size)", "<select size=3><option>a<option>b</select>"],
     ["size=1 explicit behaves like default", "<select size=1><option>a<option>b</select>"],
     ["size=0 treated as default display size", "<select size=0><option>a<option>b</select>"],
     ["empty select", "<select></select>"],
     ["optgroup options participate", "<select><optgroup label=g><option>a<option>b</optgroup></select>"],
-    ["options in a disabled optgroup are skipped for the default", "<select><optgroup disabled><option>a</optgroup><option>b</select>"],
+    [
+      "options in a disabled optgroup are skipped for the default",
+      "<select><optgroup disabled><option>a</optgroup><option>b</select>",
+    ],
     ["option value attribute vs text", "<select><option value=x>Label X<option>  Plain   text  </select>"],
   ];
   for (const [name, html] of markup) {
@@ -91,17 +97,25 @@ describe("selectedness setting algorithm — https://html.spec.whatwg.org/#selec
 });
 
 describe("select IDL attributes — https://html.spec.whatwg.org/#the-select-element", () => {
-  differential("value setter selects the first option with that value", (w) => {
-    const s = sel(w, "<select><option>a<option value=b>B<option value=b>B2</select>");
-    s.value = "b";
-    return state(s);
-  }, {
-    jsdomFix: {
-      fix: (o: { selected: boolean[]; selectedOptions: number }) => ({ ...o, selected: [false, true, false], selectedOptions: 1 }),
-      spec: "https://html.spec.whatwg.org/#dom-select-value (deselect all, then select the FIRST option whose value matches)",
-      reason: "jsdom selects every matching option in a single select",
+  differential(
+    "value setter selects the first option with that value",
+    (w) => {
+      const s = sel(w, "<select><option>a<option value=b>B<option value=b>B2</select>");
+      s.value = "b";
+      return state(s);
     },
-  });
+    {
+      jsdomFix: {
+        fix: (o: { selected: boolean[]; selectedOptions: number }) => ({
+          ...o,
+          selected: [false, true, false],
+          selectedOptions: 1,
+        }),
+        spec: "https://html.spec.whatwg.org/#dom-select-value (deselect all, then select the FIRST option whose value matches)",
+        reason: "jsdom selects every matching option in a single select",
+      },
+    },
+  );
 
   differential("value setter with no match deselects everything", (w) => {
     const s = sel(w, "<select><option>a<option>b</select>");
@@ -223,8 +237,16 @@ describe("HTMLOptionsCollection — https://html.spec.whatwg.org/#the-htmloption
 
 describe("the option element — https://html.spec.whatwg.org/#the-option-element", () => {
   differential("text strips and collapses ASCII whitespace; label and value fall back to text", (w) => {
-    const s = sel(w, "<select><option>  a \n\t b  </option><option label=L value=V>t</option><option label=''>x</option></select>");
-    return Array.from(s.options as ArrayLike<AnyWindow>).map((o) => ({ text: o.text, label: o.label, value: o.value, textContent: o.textContent }));
+    const s = sel(
+      w,
+      "<select><option>  a \n\t b  </option><option label=L value=V>t</option><option label=''>x</option></select>",
+    );
+    return Array.from(s.options as ArrayLike<AnyWindow>).map((o) => ({
+      text: o.text,
+      label: o.label,
+      value: o.value,
+      textContent: o.textContent,
+    }));
   });
 
   differential("text excludes script descendants", (w) => {

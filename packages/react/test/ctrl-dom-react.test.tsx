@@ -11,7 +11,20 @@ declare const document: any;
 describe("entry points", () => {
   test("the main entry re-exports everything from /pure plus DOM Testing Library", () => {
     for (const key of Object.keys(pure)) expect(main).toHaveProperty(key);
-    for (const key of ["render", "renderHook", "cleanup", "act", "fireEvent", "screen", "within", "waitFor", "configure", "getConfig", "prettyDOM", "queries"]) {
+    for (const key of [
+      "render",
+      "renderHook",
+      "cleanup",
+      "act",
+      "fireEvent",
+      "screen",
+      "within",
+      "waitFor",
+      "configure",
+      "getConfig",
+      "prettyDOM",
+      "queries",
+    ]) {
       expect(typeof (main as any)[key]).not.toBe("undefined");
     }
   });
@@ -26,7 +39,18 @@ describe("render result", () => {
   test("query functions are own enumerable properties bound to baseElement, shared across renders", () => {
     const a = main.render(<p>one</p>);
     const b = main.render(<p>two</p>);
-    expect(Object.keys(a)).toEqual(expect.arrayContaining(["container", "baseElement", "debug", "rerender", "unmount", "asFragment", "getByText", "findAllByRole"]));
+    expect(Object.keys(a)).toEqual(
+      expect.arrayContaining([
+        "container",
+        "baseElement",
+        "debug",
+        "rerender",
+        "unmount",
+        "asFragment",
+        "getByText",
+        "findAllByRole",
+      ]),
+    );
     expect(a).not.toBe(b);
     expect(a.getByText).toBe(b.getByText);
     expect(a.getByText("two")).toBe(b.container.firstChild);

@@ -23,7 +23,16 @@ import {
 } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
-import { $clonable, $delegatesFocus, $impl, $isHTML, $mode, $serializable, $shadowRoot, $slotAssignment } from "../keys.ts";
+import {
+  $clonable,
+  $delegatesFocus,
+  $impl,
+  $isHTML,
+  $mode,
+  $serializable,
+  $shadowRoot,
+  $slotAssignment,
+} from "../keys.ts";
 
 // --- HTML ------------------------------------------------------------------------------------
 
@@ -189,7 +198,12 @@ function htmlElement(el: NodeImpl): void {
   if (attrs !== null) {
     for (let i = 0; i < attrs.length; i++) {
       const a = attrs[i];
-      s += " " + (a.ns === null ? a.localName : serializedAttrName(a.ns, a.name, a.localName)) + '="' + escapeAttribute(a.value) + '"';
+      s +=
+        " " +
+        (a.ns === null ? a.localName : serializedAttrName(a.ns, a.name, a.localName)) +
+        '="' +
+        escapeAttribute(a.value) +
+        '"';
     }
   }
   htmlOut += s + ">";
@@ -235,7 +249,10 @@ function runHtml(node: NodeImpl, serializable: boolean, roots: readonly unknown[
           // A fictional parent with `node` as its only child.
           const p = node.parent;
           if (node.type === TEXT_NODE || node.type === CDATA_SECTION_NODE) {
-            htmlOut = p !== null && p.type === ELEMENT_NODE && p.ns === HTML_NS && isRawTextTag(p.tag) ? node.data : escapeText(node.data);
+            htmlOut =
+              p !== null && p.type === ELEMENT_NODE && p.ns === HTML_NS && isRawTextTag(p.tag)
+                ? node.data
+                : escapeText(node.data);
           } else if (node.type === COMMENT_NODE) htmlOut = "<!--" + node.data + "-->";
           else if (node.type === PROCESSING_INSTRUCTION_NODE) htmlOut = "<?" + node.name + " " + node.data + "?>";
           else if (node.type === DOCUMENT_TYPE_NODE) htmlOut = "<!DOCTYPE " + node.name + ">";
@@ -359,7 +376,9 @@ function hasInvalidXmlChars(s: string): boolean {
 }
 
 function isNameStart(c: number): boolean {
-  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 58 || c === 95 || (c >= 0xc0 && c !== 0xd7 && c !== 0xf7);
+  return (
+    (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 58 || c === 95 || (c >= 0xc0 && c !== 0xd7 && c !== 0xf7)
+  );
 }
 
 /** XML `Name` production (approximation over UTF-16 code units). */
@@ -419,6 +438,7 @@ function prefixBound(map: PrefixMap, prefix: string): boolean {
   return false;
 }
 
+// oxfmt-ignore
 const XML_VOID = new Set([
   "area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input", "keygen", "link",
   "menuitem", "meta", "param", "source", "track", "wbr",
@@ -514,7 +534,13 @@ function serializeAttributes(
   return result;
 }
 
-function serializeElementXML(el: NodeImpl, namespace: string | null, map: PrefixMap, index: PrefixIndex, rwf: boolean): string {
+function serializeElementXML(
+  el: NodeImpl,
+  namespace: string | null,
+  map: PrefixMap,
+  index: PrefixIndex,
+  rwf: boolean,
+): string {
   const localName = el.name;
   if (rwf && (localName.includes(":") || !isXmlName(localName))) invalid("invalid element name");
   let markup = "<";
@@ -539,7 +565,8 @@ function serializeElementXML(el: NodeImpl, namespace: string | null, map: Prefix
     }
     if (candidate !== null) {
       qualifiedName = candidate + ":" + localName;
-      if (localDefaultNs !== null && localDefaultNs !== XML_NS) inheritedNs = localDefaultNs === "" ? null : localDefaultNs;
+      if (localDefaultNs !== null && localDefaultNs !== XML_NS)
+        inheritedNs = localDefaultNs === "" ? null : localDefaultNs;
       markup += qualifiedName;
     } else if (prefix !== null) {
       if (localPrefixes.has(prefix)) prefix = generatePrefix(map, ns, index);
@@ -621,7 +648,13 @@ function xmlNode(node: NodeImpl, namespace: string | null, map: PrefixMap, index
       return s + ">";
     }
     case PROCESSING_INSTRUCTION_NODE: {
-      if (rwf && (node.name.includes(":") || node.name.toLowerCase() === "xml" || hasInvalidXmlChars(node.data) || node.data.includes("?>"))) {
+      if (
+        rwf &&
+        (node.name.includes(":") ||
+          node.name.toLowerCase() === "xml" ||
+          hasInvalidXmlChars(node.data) ||
+          node.data.includes("?>"))
+      ) {
         invalid("invalid processing instruction");
       }
       return "<?" + node.name + " " + node.data + "?>";
@@ -641,7 +674,8 @@ export function serializeXML(node: NodeImpl, requireWellFormed: boolean): string
   try {
     return xmlNode(node, null, map, new PrefixIndex(), requireWellFormed);
   } catch (e) {
-    if (e instanceof XmlError) throw new DOMException(`The node could not be serialized as XML: ${e.message}.`, "InvalidStateError");
+    if (e instanceof XmlError)
+      throw new DOMException(`The node could not be serialized as XML: ${e.message}.`, "InvalidStateError");
     throw e;
   }
 }

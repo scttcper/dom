@@ -32,8 +32,19 @@ function barred(...ids: string[]): DifferentialOptions {
 }
 
 const PSEUDOS = [
-  ":checked", ":default", ":disabled", ":enabled", ":required", ":optional", ":read-only",
-  ":read-write", ":valid", ":invalid", ":in-range", ":out-of-range", ":indeterminate",
+  ":checked",
+  ":default",
+  ":disabled",
+  ":enabled",
+  ":required",
+  ":optional",
+  ":read-only",
+  ":read-write",
+  ":valid",
+  ":invalid",
+  ":in-range",
+  ":out-of-range",
+  ":indeterminate",
   ":placeholder-shown",
 ];
 
@@ -54,19 +65,22 @@ function matrix(w: AnyWindow, html: string, ids: string[]): Record<string, strin
 }
 
 describe("input pseudo-classes — https://html.spec.whatwg.org/#pseudo-classes", () => {
-  differential("text-like inputs", (w) =>
-    matrix(
-      w,
-      `<input id=plain><input id=req required><input id=ro readonly><input id=dis disabled>
+  differential(
+    "text-like inputs",
+    (w) =>
+      matrix(
+        w,
+        `<input id=plain><input id=req required><input id=ro readonly><input id=dis disabled>
        <input id=ph placeholder=hint><input id=phv placeholder=hint value=x><input id=email type=email value=bad>
        <input id=hidden type=hidden><input id=num type=number min=1 max=5 value=9><input id=numok type=number min=1 max=5 value=3>
        <input id=numempty type=number min=1 max=5><input id=range type=range min=0 max=10>`,
-      ["plain", "req", "ro", "dis", "ph", "phv", "email", "hidden", "num", "numok", "numempty", "range"],
-    ),
+        ["plain", "req", "ro", "dis", "ph", "phv", "email", "hidden", "num", "numok", "numempty", "range"],
+      ),
     {
       jsdomFix: {
         spec: "https://html.spec.whatwg.org/#selector-valid and https://html.spec.whatwg.org/#range-state-(type=range) (default value is the midpoint, 5, which is in range)",
-        reason: "jsdom matches :valid on barred controls, and reports a value-less range input with min=0 max=10 as invalid/out-of-range",
+        reason:
+          "jsdom matches :valid on barred controls, and reports a value-less range input with min=0 max=10 as invalid/out-of-range",
         fix: (obs: Record<string, string[]>) => {
           const fixed = barred("ro", "dis", "hidden").jsdomFix!.fix(obs) as Record<string, string[]>;
           fixed.range = fixed.range.map((p) => (p === ":invalid" ? ":valid" : p === ":out-of-range" ? ":in-range" : p));
@@ -76,48 +90,59 @@ describe("input pseudo-classes — https://html.spec.whatwg.org/#pseudo-classes"
     },
   );
 
-  differential("checkboxes, radios and buttons", (w) => {
-    const result = matrix(
-      w,
-      `<form><input type=checkbox id=cb><input type=checkbox id=cbc checked><input type=checkbox id=cbi>
+  differential(
+    "checkboxes, radios and buttons",
+    (w) => {
+      const result = matrix(
+        w,
+        `<form><input type=checkbox id=cb><input type=checkbox id=cbc checked><input type=checkbox id=cbi>
        <input type=radio name=g id=r1><input type=radio name=g id=r2>
        <input type=radio name=h id=h1 checked><input type=radio name=h id=h2>
        <button id=b1>first submit</button><button id=b2>second</button><input type=submit id=s>
        <button type=button id=bb>plain</button><input type=reset id=rs></form>`,
-      ["cb", "cbc", "cbi", "r1", "r2", "h1", "h2", "b1", "b2", "s", "bb", "rs"],
-    );
-    return result;
-  }, barred("bb", "rs"));
+        ["cb", "cbc", "cbi", "r1", "r2", "h1", "h2", "b1", "b2", "s", "bb", "rs"],
+      );
+      return result;
+    },
+    barred("bb", "rs"),
+  );
 
   differential("indeterminate checkbox and progress", (w) => {
-    w.document.body.innerHTML = "<input type=checkbox id=c><progress id=p></progress><progress id=pv value=3></progress>";
+    w.document.body.innerHTML =
+      "<input type=checkbox id=c><progress id=p></progress><progress id=pv value=3></progress>";
     w.document.getElementById("c").indeterminate = true;
     return ["c", "p", "pv"].map((id) => [id, w.document.getElementById(id).matches(":indeterminate")]);
   });
 
-  differential("select, option, optgroup, textarea", (w) =>
-    matrix(
-      w,
-      `<select id=s><option id=o1>a<option id=o2 selected>b</select>
+  differential(
+    "select, option, optgroup, textarea",
+    (w) =>
+      matrix(
+        w,
+        `<select id=s><option id=o1>a<option id=o2 selected>b</select>
        <select id=sr required><option id=empty value="">x</select>
        <select id=sd disabled><option id=od>d</select>
        <select id=m multiple><optgroup id=og disabled><option id=ogo>z</optgroup></select>
        <textarea id=t></textarea><textarea id=tr required></textarea><textarea id=tro readonly></textarea><textarea id=tph placeholder=p></textarea>`,
-      ["s", "o1", "o2", "sr", "empty", "sd", "od", "m", "og", "ogo", "t", "tr", "tro", "tph"],
-    ),
+        ["s", "o1", "o2", "sr", "empty", "sd", "od", "m", "og", "ogo", "t", "tr", "tro", "tph"],
+      ),
     barred("sd", "tro"),
   );
 
   differential("form and fieldset :valid/:invalid reflect their controls", (w) =>
-    matrix(
-      w,
-      `<form id=f><fieldset id=fs><input required id=i></fieldset></form><form id=g><input id=j></form>`,
-      ["f", "fs", "g"],
-    ),
+    matrix(w, `<form id=f><fieldset id=fs><input required id=i></fieldset></form><form id=g><input id=j></form>`, [
+      "f",
+      "fs",
+      "g",
+    ]),
   );
 
   differential(":read-write on contenteditable and non-form elements", (w) =>
-    matrix(w, `<div id=ce contenteditable>x</div><div id=d>y</div><p id=cef contenteditable=false>z</p>`, ["ce", "d", "cef"]),
+    matrix(w, `<div id=ce contenteditable>x</div><div id=d>y</div><p id=cef contenteditable=false>z</p>`, [
+      "ce",
+      "d",
+      "cef",
+    ]),
   );
 
   differential("pseudo-classes update after state changes", (w) => {
@@ -127,6 +152,10 @@ describe("input pseudo-classes — https://html.spec.whatwg.org/#pseudo-classes"
     const before = [i.matches(":invalid"), c.matches(":checked")];
     i.value = "x";
     c.checked = true;
-    return { before, after: [i.matches(":invalid"), c.matches(":checked")], qsa: w.document.querySelectorAll(":checked").length };
+    return {
+      before,
+      after: [i.matches(":invalid"), c.matches(":checked")],
+      qsa: w.document.querySelectorAll(":checked").length,
+    };
   });
 });

@@ -20,15 +20,28 @@ export default class CtrlDomDebugReporter {
       files.push(name);
       if (file.testExecError) {
         const error = file.testExecError;
-        errors.push({ name, message: messageWithoutFrames(error.stack ?? error.message ?? String(error)), at: firstProjectFrame(error.stack, this.root, file.testFilePath) });
+        errors.push({
+          name,
+          message: messageWithoutFrames(error.stack ?? error.message ?? String(error)),
+          at: firstProjectFrame(error.stack, this.root, file.testFilePath),
+        });
       }
       for (const test of file.testResults) {
         if (test.status !== "failed") continue;
         const text = test.failureMessages.join("\n\n");
-        failures.push({ name: test.fullName, message: messageWithoutFrames(text), at: firstProjectFrame(text, this.root, file.testFilePath) });
+        failures.push({
+          name: test.fullName,
+          message: messageWithoutFrames(text),
+          at: firstProjectFrame(text, this.root, file.testFilePath),
+        });
       }
       // Jest buffers a file's console calls (not per test): name them by file.
-      for (const entry of file.console ?? []) logs.push({ name, type: entry.type === "error" || entry.type === "warn" ? "stderr" : "stdout", content: entry.message });
+      for (const entry of file.console ?? [])
+        logs.push({
+          name,
+          type: entry.type === "error" || entry.type === "warn" ? "stderr" : "stdout",
+          content: entry.message,
+        });
     }
     process.stdout.write(
       formatReport({

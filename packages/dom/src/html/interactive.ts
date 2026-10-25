@@ -4,7 +4,15 @@
 import { selectedCoordinates, setDialogSubmission } from "./forms/form-submission.ts";
 import { HTMLElement } from "./HTMLElement.ts";
 import { bool, contentAttr, str } from "./reflect.ts";
-import { ELEMENT_NODE, F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, F_SHADOW_ROOT, HTML_NS, SVG_NS } from "../nodes/constants.ts";
+import {
+  ELEMENT_NODE,
+  F_ATTR_HOOK,
+  F_CONNECT_HOOK,
+  F_CONNECTED,
+  F_SHADOW_ROOT,
+  HTML_NS,
+  SVG_NS,
+} from "../nodes/constants.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Event } from "../events/Event.ts";
@@ -62,7 +70,14 @@ function queueDetailsToggle(el: NodeImpl, oldState: string, newState: string): v
 function nameGroupOthers(el: NodeImpl, name: string, out: NodeImpl[]): NodeImpl[] {
   const root = treeRoot(el);
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
-    if (n !== el && n.type === ELEMENT_NODE && n.tag === T.details && n.ns === HTML_NS && contentAttr(n, "name") === name) out.push(n);
+    if (
+      n !== el &&
+      n.type === ELEMENT_NODE &&
+      n.tag === T.details &&
+      n.ns === HTML_NS &&
+      contentAttr(n, "name") === name
+    )
+      out.push(n);
   }
   return out;
 }
@@ -74,7 +89,12 @@ export class HTMLDetailsElement extends HTMLElement {
     this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
   }
 
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     if (namespace !== null) return;
     const impl = this[$impl];
@@ -148,14 +168,15 @@ export const HTMLSummaryElement: typeof SummaryBase = class HTMLElement extends 
       else setAttribute(details, "open", "");
     });
   }
-}
+};
 
 /** Whether `node` is (inside) interactive content (https://html.spec.whatwg.org/#interactive-content) below `summary`. */
 function inInteractiveContent(node: NodeImpl, summary: NodeImpl): boolean {
   for (let n: NodeImpl | null = node; n !== null && n !== summary; n = n.parent) {
     if (n.type !== ELEMENT_NODE) continue;
     if (n.ns === SVG_NS) {
-      if (n.name === "a" && (contentAttr(n, "href") !== null || n.attrs?.some((a) => a.localName === "href"))) return true;
+      if (n.name === "a" && (contentAttr(n, "href") !== null || n.attrs?.some((a) => a.localName === "href")))
+        return true;
       continue;
     }
     if (n.ns !== HTML_NS) continue;
@@ -209,7 +230,14 @@ const dialogs = new WeakMap<NodeImpl, DialogRecord>();
 function dialogRecord(el: NodeImpl): DialogRecord {
   let r = dialogs.get(el);
   if (r === undefined) {
-    r = { returnValue: "", toggleTracker: null, closeWatcher: null, requestCloseReturnValue: null, requestCloseSource: null, enableCloseWatcherForRequestClose: false };
+    r = {
+      returnValue: "",
+      toggleTracker: null,
+      closeWatcher: null,
+      requestCloseReturnValue: null,
+      requestCloseSource: null,
+      enableCloseWatcherForRequestClose: false,
+    };
     dialogs.set(el, r);
   }
   return r;
@@ -310,7 +338,12 @@ export class HTMLDialogElement extends HTMLElement {
   }
 
   // https://html.spec.whatwg.org/#the-dialog-element:concept-element-attributes-change-ext
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     // 1-2.
     if (namespace !== null || localName !== "open") return;
@@ -350,9 +383,11 @@ function showModalDialog(subject: NodeImpl, source: NodeImpl | null): void {
     if (matchesModal(subject)) return;
     throw new DOMException("The dialog is already open as a non-modal dialog.", "InvalidStateError");
   }
-  if (!isFullyActive(subject.doc)) throw new DOMException("The dialog's document is not fully active.", "InvalidStateError");
+  if (!isFullyActive(subject.doc))
+    throw new DOMException("The dialog's document is not fully active.", "InvalidStateError");
   if ((subject.flags & F_CONNECTED) === 0) throw new DOMException("The dialog is not connected.", "InvalidStateError");
-  if (isPopoverShowing(subject)) throw new DOMException("The dialog is already open as a popover.", "InvalidStateError");
+  if (isPopoverShowing(subject))
+    throw new DOMException("The dialog is already open as a popover.", "InvalidStateError");
   // 6.
   if (!fireToggleEvent(el, "beforetoggle", "closed", "open", true, nodeOf(source))) return;
   // 7-9.
@@ -401,7 +436,8 @@ function closeDialog(subject: NodeImpl, result: string | null, source: NodeImpl 
   if (element !== null) {
     setPreviouslyFocused(subject, null);
     const focused = subject.doc[$focused];
-    if ((focused !== null && isShadowIncludingInclusiveAncestor(subject, focused)) || wasModal) focusElement(element, { preventScroll: true });
+    if ((focused !== null && isShadowIncludingInclusiveAncestor(subject, focused)) || wasModal)
+      focusElement(element, { preventScroll: true });
   }
   // 13.
   queueElementTask(el, () => fireEvent(el, "close"));
@@ -477,7 +513,8 @@ export function submitFormToDialog(form: NodeImpl, submitter: NodeImpl): boolean
   if (method?.toLowerCase() !== "dialog") return false;
   // 9.1-9.2.
   let subject: NodeImpl | null = form.parent;
-  while (subject !== null && !(subject.type === ELEMENT_NODE && subject.tag === T.dialog && subject.ns === HTML_NS)) subject = subject.parent;
+  while (subject !== null && !(subject.type === ELEMENT_NODE && subject.tag === T.dialog && subject.ns === HTML_NS))
+    subject = subject.parent;
   if (subject === null) return true;
   // 9.3-9.5. Image buttons return their selected coordinate ("x,y"; (0,0) without one); a form
   // submitting itself returns "" (as browsers and WPT do), other submitters their optional value.
@@ -541,7 +578,7 @@ function lightDismissOpenDialogs(doc: Document, target: NodeImpl, type: string):
 }
 
 function isShadowIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n: NodeImpl | null = b; n !== null; ) {
+  for (let n: NodeImpl | null = b; n !== null;) {
     if (n === a) return true;
     if (n.parent !== null) n = n.parent;
     else if ((n.flags & F_SHADOW_ROOT) !== 0) {

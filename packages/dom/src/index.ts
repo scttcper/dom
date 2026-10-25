@@ -42,12 +42,19 @@ export { FileList } from "./window/FileList.ts";
 export { MediaQueryListEvent } from "./window/events.ts";
 export { DOMParser, XMLSerializer } from "./window/fallbacks.ts";
 export { ResizeObserver, IntersectionObserver } from "./window/observers.ts";
-export { DOMPointReadOnly, DOMPoint, DOMRectReadOnly, DOMRect, DOMRectList, DOMMatrixReadOnly, DOMMatrix, type DOMRectInit } from "./window/geometry.ts";
+export {
+  DOMPointReadOnly,
+  DOMPoint,
+  DOMRectReadOnly,
+  DOMRect,
+  DOMRectList,
+  DOMMatrixReadOnly,
+  DOMMatrix,
+  type DOMRectInit,
+} from "./window/geometry.ts";
 
 // --- events area ---
-export {
-  Event,
-} from "./events/Event.ts";
+export { Event } from "./events/Event.ts";
 export {
   UIEvent,
   FocusEvent,

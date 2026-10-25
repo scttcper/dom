@@ -24,7 +24,20 @@ import { contentAttr } from "../reflect.ts";
 import { T } from "../../nodes/tags.ts";
 import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
 import { formCheckValidity, isSubmitButton, resetForm, submitForm } from "./form-submission.ts";
-import { $assocGen, $constructingEntryList, $controlsCache, $controlsDoc, $controlsVersion, $elements, $firingSubmissionEvents, $impl, $lockedForReset, $pastNames, $version, $window } from "../../keys.ts";
+import {
+  $assocGen,
+  $constructingEntryList,
+  $controlsCache,
+  $controlsDoc,
+  $controlsVersion,
+  $elements,
+  $firingSubmissionEvents,
+  $impl,
+  $lockedForReset,
+  $pastNames,
+  $version,
+  $window,
+} from "../../keys.ts";
 
 const ENCTYPE: EnumSpec = {
   keywords: ["application/x-www-form-urlencoded", "multipart/form-data", "text/plain"],
@@ -88,7 +101,8 @@ export class HTMLFormElement extends HTMLElement {
       // img elements whose form owner is this form.
       const root = treeRoot(form);
       for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
-        if (n.tag === T.img && (n.id === name || contentAttr(n, "name") === name) && formOwner(n) === form) candidates.push(n);
+        if (n.tag === T.img && (n.id === name || contentAttr(n, "name") === name) && formOwner(n) === form)
+          candidates.push(n);
       }
     }
     if (candidates.length === 0) {
@@ -181,10 +195,15 @@ export class HTMLFormElement extends HTMLElement {
     if (submitter !== null && submitter !== undefined) {
       const impl = (submitter as { [$impl]?: NodeImpl })[$impl];
       if (impl === undefined || !isSubmitButton(impl)) {
-        throw new TypeError("Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not a submit button.");
+        throw new TypeError(
+          "Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not a submit button.",
+        );
       }
       if ((submitter as unknown as { form: Element | null }).form !== this) {
-        throw new DOMException("Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not owned by this form element.", "NotFoundError");
+        throw new DOMException(
+          "Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not owned by this form element.",
+          "NotFoundError",
+        );
       }
       s = impl;
     }
@@ -230,7 +249,9 @@ function supportedNames(form: HTMLFormElement): string[] {
     if (name !== null && name !== "" && !names.includes(name)) names.push(name);
   }
   const past = form[$pastNames];
-  if (past !== null) for (const name of past.keys()) if (!names.includes(name) && form._namedProperty(name) !== undefined) names.push(name);
+  if (past !== null)
+    for (const name of past.keys())
+      if (!names.includes(name) && form._namedProperty(name) !== undefined) names.push(name);
   return names;
 }
 
@@ -305,4 +326,3 @@ const formHandler: ProxyHandler<HTMLFormElement> = {
     return keys;
   },
 };
-

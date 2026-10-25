@@ -1,10 +1,16 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/focus/cursor.ts
 
-import type {ChildNode, Element, HTMLElement, HTMLInputElement, Node, Text} from '../../dom-types.ts'
+import type {
+  ChildNode,
+  Element,
+  HTMLElement,
+  HTMLInputElement,
+  Node,
+  Text,
+} from '../../dom-types.ts'
 import {isContentEditable} from '../edit/isContentEditable.ts'
 import {isElementType} from '../misc/isElementType.ts'
-
 
 export function getNextCursorPosition(
   node: Node,
@@ -13,9 +19,9 @@ export function getNextCursorPosition(
   inputType?: string,
 ):
   | {
-    node: Node
-    offset: number
-  }
+      node: Node
+      offset: number
+    }
   | undefined {
   // The behavior at text node zero offset is inconsistent.
   // When walking backwards:

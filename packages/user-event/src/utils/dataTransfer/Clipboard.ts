@@ -3,10 +3,20 @@
 
 // Clipboard is not available in jsdom
 
-import type {Blob, Clipboard, ClipboardItem, DataTransfer, Document, Window} from '../../dom-types.ts'
+import type {
+  Blob,
+  Clipboard,
+  ClipboardItem,
+  DataTransfer,
+  Document,
+  Window,
+} from '../../dom-types.ts'
 import {getWindow} from '../misc/getWindow.ts'
 import {readBlobText} from './Blob.ts'
-import {createDataTransfer, getBlobFromDataTransferItem} from './DataTransfer.ts'
+import {
+  createDataTransfer,
+  getBlobFromDataTransferItem,
+} from './DataTransfer.ts'
 
 // Clipboard API is only fully available in secure context or for browser extensions.
 
@@ -157,9 +167,7 @@ export function resetClipboardStubOnView(window: Window) {
   }
 }
 
-export function detachClipboardStubFromView(
-  window: Window,
-) {
+export function detachClipboardStubFromView(window: Window) {
   if (isClipboardStub(window.navigator.clipboard)) {
     window.navigator.clipboard[ClipboardStubControl].detachClipboardStub()
   }

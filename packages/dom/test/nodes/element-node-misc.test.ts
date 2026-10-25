@@ -50,9 +50,15 @@ describe("namespace lookups — https://dom.spec.whatwg.org/#locate-a-namespace"
 describe("validate and extract — https://dom.spec.whatwg.org/#validate-and-extract", () => {
   test("prefix and namespace errors", () => {
     expect(() => document.createElementNS(null, "a:b")).toThrow(expect.objectContaining({ name: "NamespaceError" }));
-    expect(() => document.createElementNS("urn:x", "xml:a")).toThrow(expect.objectContaining({ name: "NamespaceError" }));
-    expect(() => document.createElementNS("urn:x", "xmlns")).toThrow(expect.objectContaining({ name: "NamespaceError" }));
-    expect(() => document.createElementNS("urn:x", ":a")).toThrow(expect.objectContaining({ name: "InvalidCharacterError" }));
+    expect(() => document.createElementNS("urn:x", "xml:a")).toThrow(
+      expect.objectContaining({ name: "NamespaceError" }),
+    );
+    expect(() => document.createElementNS("urn:x", "xmlns")).toThrow(
+      expect.objectContaining({ name: "NamespaceError" }),
+    );
+    expect(() => document.createElementNS("urn:x", ":a")).toThrow(
+      expect.objectContaining({ name: "InvalidCharacterError" }),
+    );
     const el = document.createElement("div");
     expect(() => el.setAttributeNS(null, "a:b", "")).toThrow(expect.objectContaining({ name: "NamespaceError" }));
     el.setAttributeNS("urn:x", "p:a", "1");
@@ -61,7 +67,9 @@ describe("validate and extract — https://dom.spec.whatwg.org/#validate-and-ext
   });
 
   test("createDocumentType validates the doctype name", () => {
-    expect(() => document.implementation.createDocumentType("a>b", "", "")).toThrow(expect.objectContaining({ name: "InvalidCharacterError" }));
+    expect(() => document.implementation.createDocumentType("a>b", "", "")).toThrow(
+      expect.objectContaining({ name: "InvalidCharacterError" }),
+    );
   });
 });
 
@@ -142,7 +150,9 @@ describe("util.inspect — short, never the _impl graph", () => {
     const el = document.createElement("div");
     el.id = "app";
     el.className = "x";
-    expect(inspect(el)).toBe('HTMLDivElement <div id="app" class="x" />'.replace("HTMLDivElement", el.constructor.name));
+    expect(inspect(el)).toBe(
+      'HTMLDivElement <div id="app" class="x" />'.replace("HTMLDivElement", el.constructor.name),
+    );
     el.append("hello");
     expect(inspect(el)).toBe(`${el.constructor.name} <div id="app" class="x">`);
     expect(inspect(el.firstChild)).toBe('#text "hello"');

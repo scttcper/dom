@@ -12,7 +12,17 @@ import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
 import { $data, $dropEffect, $effectAllowed, $file, $files, $items, $kind, $owner, $type, $types } from "../keys.ts";
 
 const DROP_EFFECTS = new Set(["none", "copy", "link", "move"]);
-const EFFECT_ALLOWED = new Set(["none", "copy", "copyLink", "copyMove", "link", "linkMove", "move", "all", "uninitialized"]);
+const EFFECT_ALLOWED = new Set([
+  "none",
+  "copy",
+  "copyLink",
+  "copyMove",
+  "link",
+  "linkMove",
+  "move",
+  "all",
+  "uninitialized",
+]);
 
 function asciiLowercase(s: string): string {
   return s.replace(/[A-Z]/g, (c) => c.toLowerCase());
@@ -60,7 +70,10 @@ export class DataTransferItem {
     return null;
   }
 }
-Object.defineProperty(DataTransferItem.prototype, Symbol.toStringTag, { value: "DataTransferItem", configurable: true });
+Object.defineProperty(DataTransferItem.prototype, Symbol.toStringTag, {
+  value: "DataTransferItem",
+  configurable: true,
+});
 
 function makeItem(kind: string, type: string, data: string, file: File | null): DataTransferItem {
   internal = true;
@@ -103,7 +116,10 @@ export class DataTransferItemList {
       const t = asciiLowercase(String(type));
       for (const existing of this[$items]) {
         if (existing[$kind] === "string" && existing[$type] === t) {
-          throw new DOMException(`Failed to execute 'add' on 'DataTransferItemList': An item already exists for type '${t}'.`, "NotSupportedError");
+          throw new DOMException(
+            `Failed to execute 'add' on 'DataTransferItemList': An item already exists for type '${t}'.`,
+            "NotSupportedError",
+          );
         }
       }
       item = makeItem("string", t, String(data), null);
@@ -144,14 +160,18 @@ export class DataTransferItemList {
     for (let i = 0; i < items.length; i++) {
       Object.defineProperty(this, i, { value: items[i], enumerable: true, configurable: true, writable: false });
     }
-    for (let i = items.length; Object.prototype.hasOwnProperty.call(this, i); i++) delete (this as Record<number, unknown>)[i];
+    for (let i = items.length; Object.prototype.hasOwnProperty.call(this, i); i++)
+      delete (this as Record<number, unknown>)[i];
     if (this[$owner] !== null) {
       this[$owner][$types] = null;
       this[$owner][$files] = null;
     }
   }
 }
-Object.defineProperty(DataTransferItemList.prototype, Symbol.toStringTag, { value: "DataTransferItemList", configurable: true });
+Object.defineProperty(DataTransferItemList.prototype, Symbol.toStringTag, {
+  value: "DataTransferItemList",
+  configurable: true,
+});
 
 function makeList(owner: DataTransfer): DataTransferItemList {
   internal = true;
@@ -275,7 +295,8 @@ export class DataTransfer {
   get files(): FileList {
     if (this[$files] !== null) return this[$files];
     const files: File[] = [];
-    for (const item of this[$items][$items]) if (item[$kind] === "file" && item[$file] !== null) files.push(item[$file]);
+    for (const item of this[$items][$items])
+      if (item[$kind] === "file" && item[$file] !== null) files.push(item[$file]);
     return (this[$files] = createFileList(files));
   }
 }

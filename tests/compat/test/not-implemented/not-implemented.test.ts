@@ -64,15 +64,21 @@ async function onCtrlDom(profile: Profile | "modern", scenario: Scenario): Promi
 
 afterEach(() => setNotImplementedHandler(null));
 
-const click = (id: string, init: Record<string, unknown> = {}) => (w: AnyWindow) =>
-  w.document.getElementById(id).dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, ...init }));
-const quietly = (fn: Scenario): Scenario => (w) => {
-  try {
-    fn(w);
-  } catch {
-    // Behavior beyond the report may differ (documented in docs/deviations.md); only reports are compared here.
-  }
-};
+const click =
+  (id: string, init: Record<string, unknown> = {}) =>
+  (w: AnyWindow) =>
+    w.document
+      .getElementById(id)
+      .dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, ...init }));
+const quietly =
+  (fn: Scenario): Scenario =>
+  (w) => {
+    try {
+      fn(w);
+    } catch {
+      // Behavior beyond the report may differ (documented in docs/deviations.md); only reports are compared here.
+    }
+  };
 
 const SCENARIOS: Record<string, Scenario> = {
   // Window methods jsdom stubs (browser/Window.js notImplementedMethodWrapper).
@@ -152,13 +158,32 @@ const SCENARIOS: Record<string, Scenario> = {
 
 /** The scenarios jsdom reports anything for (so an empty-on-both-sides pass cannot hide a broken oracle). */
 const REPORTED = new Set([
-  "window.alert()", "window.confirm()", "window.prompt()", "window.print()", "window.open()", "window.focus() and blur()",
-  "window.moveTo() and moveBy()", "window.resizeTo() and resizeBy()", "window.scroll(), scrollTo(), scrollBy()",
-  "getComputedStyle(el, '::before')", "location.href = '/other'", "location.assign() with a query",
-  "location.replace() another path", "location.search and pathname setters", "location.reload()",
-  "click a link to another page", "click a link with modifier keys", "click a link with target=_top", "click a download link",
-  "a.click() on a disconnected link", "form.submit()", "form.submit() on a disconnected form", "form.requestSubmit()",
-  "click a submit button", "audio.play(), pause(), load()", "audio.addTextTrack()",
+  "window.alert()",
+  "window.confirm()",
+  "window.prompt()",
+  "window.print()",
+  "window.open()",
+  "window.focus() and blur()",
+  "window.moveTo() and moveBy()",
+  "window.resizeTo() and resizeBy()",
+  "window.scroll(), scrollTo(), scrollBy()",
+  "getComputedStyle(el, '::before')",
+  "location.href = '/other'",
+  "location.assign() with a query",
+  "location.replace() another path",
+  "location.search and pathname setters",
+  "location.reload()",
+  "click a link to another page",
+  "click a link with modifier keys",
+  "click a link with target=_top",
+  "click a download link",
+  "a.click() on a disconnected link",
+  "form.submit()",
+  "form.submit() on a disconnected form",
+  "form.requestSubmit()",
+  "click a submit button",
+  "audio.play(), pause(), load()",
+  "audio.addTextTrack()",
 ]);
 
 for (const profile of ["jsdom-26", "jsdom-30"] as const) {

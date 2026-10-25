@@ -79,7 +79,18 @@ const JSDOM_ABSENT_GLOBALS = new Set(["fetch", "Request", "Response"]);
 // The Node globals jest-environment-node copies onto the test global (same deny list; Buffer,
 // ArrayBuffer and Uint8Array are set explicitly below). localStorage/sessionStorage are the
 // window's. Computed once per worker.
-const NODE_GLOBAL_DENY = new Set(["GLOBAL", "root", "global", "globalThis", "Buffer", "ArrayBuffer", "Uint8Array", "jest-symbol-do-not-touch", "localStorage", "sessionStorage"]);
+const NODE_GLOBAL_DENY = new Set([
+  "GLOBAL",
+  "root",
+  "global",
+  "globalThis",
+  "Buffer",
+  "ArrayBuffer",
+  "Uint8Array",
+  "jest-symbol-do-not-touch",
+  "localStorage",
+  "sessionStorage",
+]);
 
 // Node 26 defines these as lazy data properties: reading their value or descriptor loads undici
 // (~10-60 ms). Their shape is fixed (writable, configurable; only fetch enumerable), so they are
@@ -117,7 +128,8 @@ function installNodeGlobals(global: Record<string, unknown>, skip: Set<string>):
     if (realmOwn.has(name) || skip.has(name)) continue;
     const enumerable = descriptor === null ? LAZY_NODE_GLOBALS.get(name)! : descriptor.enumerable;
     if (descriptor === null || descriptor.configurable) {
-      const settle = (value: unknown) => Object.defineProperty(global, name, { value, writable: true, enumerable, configurable: true });
+      const settle = (value: unknown) =>
+        Object.defineProperty(global, name, { value, writable: true, enumerable, configurable: true });
       Object.defineProperty(global, name, {
         get() {
           const value = host[name];
@@ -161,7 +173,9 @@ function reportToHost(error: unknown): void {
  * listener) as `error.stack`, then as the Error.
  * https://github.com/jestjs/jest/blob/v30.4.1/packages/jest-environment-jsdom-abstract/src/index.ts
  */
-function forwardNotImplemented(global: Record<PropertyKey, unknown>): (error: Error & { detail?: unknown }, compat: string) => void {
+function forwardNotImplemented(
+  global: Record<PropertyKey, unknown>,
+): (error: Error & { detail?: unknown }, compat: string) => void {
   return (error, compat) => {
     const console = global.console as Console;
     if (compat !== "jsdom-26") console.error(error.stack, error.detail);
@@ -170,7 +184,15 @@ function forwardNotImplemented(global: Record<PropertyKey, unknown>): (error: Er
 }
 
 // Error constructors whose instances our DOM throws from the outer realm.
-const ERROR_CONSTRUCTORS = ["Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "EvalError", "URIError"] as const;
+const ERROR_CONSTRUCTORS = [
+  "Error",
+  "TypeError",
+  "RangeError",
+  "SyntaxError",
+  "ReferenceError",
+  "EvalError",
+  "URIError",
+] as const;
 
 /**
  * Our DOM runs in the worker's realm while test code runs in the vm context, so a TypeError
@@ -196,7 +218,8 @@ function createDom(window: Window): CtrlDomDom {
     reconfigure(settings) {
       // jsdom: "windowTop" overrides window.top; "url" replaces the document URL (no
       // navigation, no history entry, no events). Only the URL is supported here.
-      if (settings.windowTop !== undefined) throw new TypeError("@ctrl/dom-jest-environment: dom.reconfigure() does not support windowTop");
+      if (settings.windowTop !== undefined)
+        throw new TypeError("@ctrl/dom-jest-environment: dom.reconfigure() does not support windowTop");
       if (settings.url === undefined) return;
       const url = URL.parse(String(settings.url));
       if (url === null) throw new TypeError(`Could not parse "${settings.url}" as a URL`);
@@ -224,7 +247,8 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
 
   constructor(config: JestEnvironmentConfig, _environmentContext: EnvironmentContext) {
     const { projectConfig } = config;
-    const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as CtrlDomTestEnvironmentOptions;
+    const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ??
+      {}) as CtrlDomTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
     this.customExportConditions = customExportConditions ?? ["browser"];
 
@@ -244,14 +268,23 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     // Node's error-message stack size is limited at 10; more is useful when a test fails.
     (global.Error as ErrorConstructor).stackTraceLimit = 100;
 
-    const window = dom.createWindow({ ...windowOptions, compat: windowOptions.compat ?? "jsdom-26", url: windowOptions.url ?? DEFAULT_URL });
+    const window = dom.createWindow({
+      ...windowOptions,
+      compat: windowOptions.compat ?? "jsdom-26",
+      url: windowOptions.url ?? DEFAULT_URL,
+    });
     this.ctrlDomWindow = window;
     this.dom = createDom(window);
     // Baseline for undoing interface prototype patches at teardown (they are shared per worker),
     // taken before the compat profile adjusts prototype members so teardown also undoes that.
     internal.captureInterfaceBaseline();
     dom.installGlobals(window, global);
-    Object.defineProperty(global, CTRL_DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+    Object.defineProperty(global, CTRL_DOM_MODULES, {
+      value: { dom, internal },
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    });
     bridgeErrorRealms(global as Record<string, unknown>);
     // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):
     // window.setTimeout & co. delegate to these globals, and teardown disposes the clock, so a
@@ -271,7 +304,10 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
       moduleMocker: this.moduleMocker,
       timerConfig: { idToRef: (id: number) => id, refToId: (ref: number) => ref },
     });
-    this.fakeTimersModern = new ModernFakeTimers({ config: projectConfig, global: this.global as unknown as typeof globalThis });
+    this.fakeTimersModern = new ModernFakeTimers({
+      config: projectConfig,
+      global: this.global as unknown as typeof globalThis,
+    });
     // Definitions on interface objects stay configurable, so teardown can undo them.
     internal.guardInterfaceDefinitions(global as never);
     internal.setUncaughtExceptionHandler(reportToHost);

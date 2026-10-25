@@ -29,7 +29,8 @@ function machine(): string {
 
 /** The run info a results file was written with; results from before it was recorded must be measured again. */
 export function runOf(data: { run?: RunInfo }, file: string): RunInfo {
-  if (data.run === undefined) throw new Error(`comparison/results/${file} has no run info (date, machine, versions): rerun \`pnpm compare\``);
+  if (data.run === undefined)
+    throw new Error(`comparison/results/${file} has no run info (date, machine, versions): rerun \`pnpm compare\``);
   return data.run;
 }
 

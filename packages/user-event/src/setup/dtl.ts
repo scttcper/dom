@@ -21,7 +21,9 @@ export interface DTLConfig {
 
 export interface DTLModule {
   getConfig(): DTLConfig
-  configure(config: Partial<DTLConfig> | ((existing: DTLConfig) => Partial<DTLConfig>)): void
+  configure(
+    config: Partial<DTLConfig> | ((existing: DTLConfig) => Partial<DTLConfig>),
+  ): void
 }
 
 const defaultConfig: DTLConfig = {
@@ -34,7 +36,9 @@ const defaultConfig: DTLConfig = {
   },
 }
 
-function load(mod: Partial<DTLModule> & {default?: Partial<DTLModule>}): DTLModule | null {
+function load(
+  mod: Partial<DTLModule> & {default?: Partial<DTLModule>},
+): DTLModule | null {
   const getConfig = mod.getConfig ?? mod.default?.getConfig
   const configure = mod.configure ?? mod.default?.configure
   return typeof getConfig === 'function' && typeof configure === 'function'
@@ -42,7 +46,9 @@ function load(mod: Partial<DTLModule> & {default?: Partial<DTLModule>}): DTLModu
     : null
 }
 
-const dtl: DTLModule | null = load(ctrlDomTestingLibrary as unknown as Partial<DTLModule>)
+const dtl: DTLModule | null = load(
+  ctrlDomTestingLibrary as unknown as Partial<DTLModule>,
+)
 /** Which module provides `getConfig` ('default' when none could be loaded). */
 export const dtlSource: string = dtl ? '@ctrl/dom/testing-library' : 'default'
 
@@ -74,7 +80,9 @@ let lastWrapperIsDefault = false
 function isDefaultWrapper(fn: unknown): boolean {
   if (fn === lastWrapper) return lastWrapperIsDefault
   lastWrapper = fn
-  lastWrapperIsDefault = typeof fn === 'function' && /^\(?(\w+)\)?=>\1\(\)$/.test(String(fn).replace(/\s/g, ''))
+  lastWrapperIsDefault =
+    typeof fn === 'function' &&
+    /^\(?(\w+)\)?=>\1\(\)$/.test(String(fn).replace(/\s/g, ''))
   return lastWrapperIsDefault
 }
 
@@ -83,7 +91,10 @@ function ownConfigured(): boolean {
 }
 
 function reactActEnvironment(): boolean {
-  return (globalThis as {IS_REACT_ACT_ENVIRONMENT?: unknown}).IS_REACT_ACT_ENVIRONMENT === true
+  return (
+    (globalThis as {IS_REACT_ACT_ENVIRONMENT?: unknown})
+      .IS_REACT_ACT_ENVIRONMENT === true
+  )
 }
 
 /**
@@ -117,8 +128,11 @@ function loadFallback(): Promise<void> {
   return mod
     .then(
       m => {
-        const other = load(m as Partial<DTLModule> & {default?: Partial<DTLModule>})
-        if (other !== null && other.getConfig !== dtl?.getConfig) fallback = other
+        const other = load(
+          m as Partial<DTLModule> & {default?: Partial<DTLModule>},
+        )
+        if (other !== null && other.getConfig !== dtl?.getConfig)
+          fallback = other
       },
       () => {},
     )
@@ -132,7 +146,8 @@ function loadFallback(): Promise<void> {
  * every later call, so calls stay synchronous up to their first await, like upstream).
  */
 export function resolveConfigSource(): Promise<void> | undefined {
-  if (fallbackSettled || ownConfigured() || !reactActEnvironment()) return undefined
+  if (fallbackSettled || ownConfigured() || !reactActEnvironment())
+    return undefined
   fallbackLoad ??= loadFallback()
   return fallbackLoad
 }

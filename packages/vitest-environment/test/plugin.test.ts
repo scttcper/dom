@@ -10,7 +10,8 @@ import { spawnSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ctrlDom, workerExecArgv } from "../../../publish/ctrl-dom/vitest.js";
 
-const isCompileCacheImport = (arg: string) => arg.startsWith("--import=data:text/javascript,") && arg.includes("enableCompileCache");
+const isCompileCacheImport = (arg: string) =>
+  arg.startsWith("--import=data:text/javascript,") && arg.includes("enableCompileCache");
 
 beforeEach(() => {
   // This repository's Vitest config turns the compile cache on for every test (vitest.config.ts).
@@ -43,7 +44,11 @@ describe("workerExecArgv — worker flags per pool", () => {
   test("the compile-cache preload is a valid --import: Node runs it and the cache is on", () => {
     const [flag] = workerExecArgv({ pool: "threads", compileCache: true });
     const env = { ...process.env, NODE_COMPILE_CACHE: undefined, NODE_DISABLE_COMPILE_CACHE: undefined };
-    const run = spawnSync(process.execPath, [flag, "-e", 'console.log(typeof require("node:module").getCompileCacheDir())'], { encoding: "utf8", env });
+    const run = spawnSync(
+      process.execPath,
+      [flag, "-e", 'console.log(typeof require("node:module").getCompileCacheDir())'],
+      { encoding: "utf8", env },
+    );
     expect(run.stderr).toBe("");
     expect(run.stdout.trim()).toBe("string");
   });

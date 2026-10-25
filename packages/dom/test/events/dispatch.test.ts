@@ -28,7 +28,13 @@ const { CAPTURING_PHASE: C, AT_TARGET: A, BUBBLING_PHASE: B } = Event;
 
 describe("event path and phases — https://dom.spec.whatwg.org/#concept-event-dispatch", () => {
   // https://github.com/web-platform-tests/wpt/blob/master/dom/events/Event-dispatch-bubbles-true.html
-  function testChain(target: EventTarget, targetParents: EventTarget[], phases: number[], type: string, bubbles = true) {
+  function testChain(
+    target: EventTarget,
+    targetParents: EventTarget[],
+    phases: number[],
+    type: string,
+    bubbles = true,
+  ) {
     const targets = [...targetParents, target];
     const expectedTargets = bubbles ? [...targets, ...targets.slice().reverse()] : [...targets, target];
     const actualTargets: unknown[] = [];
@@ -159,7 +165,25 @@ describe("event path and phases — https://dom.spec.whatwg.org/#concept-event-d
   test("listener changes during dispatch: lists are cloned per invoke", () => {
     const t = buildTable(document);
     const targets = [window, document, t.html, t.body, t.table, t.tbody, t.parent, t.target];
-    const expectedTargets = [window, document, t.html, t.body, t.table, t.tbody, t.parent, t.target, t.target, t.target, t.parent, t.tbody, t.table, t.body, t.html, document, window];
+    const expectedTargets = [
+      window,
+      document,
+      t.html,
+      t.body,
+      t.table,
+      t.tbody,
+      t.parent,
+      t.target,
+      t.target,
+      t.target,
+      t.parent,
+      t.tbody,
+      t.table,
+      t.body,
+      t.html,
+      document,
+      window,
+    ];
     const expectedListeners = [0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 1, 1, 1, 1, 1, 1, 1];
     const actualTargets: unknown[] = [];
     const actualListeners: number[] = [];
@@ -214,8 +238,42 @@ describe("event path and phases — https://dom.spec.whatwg.org/#concept-event-d
   test("dispatching another event from a listener (re-entrancy)", () => {
     const t = buildTable(document);
     const targets = [window, document, t.html, t.body, t.table, t.tbody, t.parent, t.target];
-    const expectedTargets = [window, document, t.html, t.body, t.table, t.target, t.parent, t.tbody, t.table, t.body, t.html, document, window, t.tbody, t.parent, t.target];
-    const expectedTypes = ["foo", "foo", "foo", "foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "foo", "foo", "foo"];
+    const expectedTargets = [
+      window,
+      document,
+      t.html,
+      t.body,
+      t.table,
+      t.target,
+      t.parent,
+      t.tbody,
+      t.table,
+      t.body,
+      t.html,
+      document,
+      window,
+      t.tbody,
+      t.parent,
+      t.target,
+    ];
+    const expectedTypes = [
+      "foo",
+      "foo",
+      "foo",
+      "foo",
+      "foo",
+      "bar",
+      "bar",
+      "bar",
+      "bar",
+      "bar",
+      "bar",
+      "bar",
+      "bar",
+      "foo",
+      "foo",
+      "foo",
+    ];
     const actualTargets: unknown[] = [];
     const actualTypes: string[] = [];
     const listener = (evt: Event) => {
@@ -471,7 +529,14 @@ describe("exception reporting — https://html.spec.whatwg.org/#report-an-except
   test("the ErrorEvent carries message, error, filename and position", () => {
     const element = document.createElement("div");
     const error = new Error("kaboom");
-    let ev: { message: string; error: unknown; filename: string; lineno: number; isTrusted: boolean; cancelable: boolean } | null = null;
+    let ev: {
+      message: string;
+      error: unknown;
+      filename: string;
+      lineno: number;
+      isTrusted: boolean;
+      cancelable: boolean;
+    } | null = null;
     window.addEventListener("error", (e) => {
       ev = e as never;
       e.preventDefault();

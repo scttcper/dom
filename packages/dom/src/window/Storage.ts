@@ -104,7 +104,12 @@ const handler: ProxyHandler<Storage> = {
     // Step 2.2: unless the object has an own property P, a String P goes to the named setter
     // (accessor descriptors are rejected). Deviation: function values and accessors become real
     // own properties so `vi.spyOn(localStorage, "getItem")` works like it does on happy-dom.
-    if (typeof key === "string" && !Object.hasOwn(target, key) && "value" in descriptor && typeof descriptor.value !== "function") {
+    if (
+      typeof key === "string" &&
+      !Object.hasOwn(target, key) &&
+      "value" in descriptor &&
+      typeof descriptor.value !== "function"
+    ) {
       target.setItem(key, descriptor.value);
       return true;
     }
@@ -118,7 +123,9 @@ const proxies = new WeakMap<Storage, Storage>();
 /** https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm step 4: too few arguments. */
 function requireArgs(count: number, required: number, method: string): void {
   if (count < required) {
-    throw new TypeError(`Failed to execute '${method}' on 'Storage': ${required} argument${required === 1 ? "" : "s"} required, but only ${count} present.`);
+    throw new TypeError(
+      `Failed to execute '${method}' on 'Storage': ${required} argument${required === 1 ? "" : "s"} required, but only ${count} present.`,
+    );
   }
 }
 

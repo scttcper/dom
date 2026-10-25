@@ -63,9 +63,8 @@ describe('.toHaveSelection', () => {
         <input type="text" value="text selected text" data-testid="text" />
     `)
 
-    expect(() =>
-      expect(queryByTestId('text')).toHaveSelection(),
-    ).toThrowErrorMatchingInlineSnapshot(`
+    expect(() => expect(queryByTestId('text')).toHaveSelection())
+      .toThrowErrorMatchingInlineSnapshot(`
       [Error: expect(element).toHaveSelection(expected)
 
       Expected the element to have selection:
@@ -81,9 +80,8 @@ describe('.toHaveSelection', () => {
     `)
     queryByTestId('text').setSelectionRange(5, 13)
 
-    expect(() =>
-      expect(queryByTestId('text')).not.toHaveSelection(),
-    ).toThrowErrorMatchingInlineSnapshot(`
+    expect(() => expect(queryByTestId('text')).not.toHaveSelection())
+      .toThrowErrorMatchingInlineSnapshot(`
       [Error: expect(element).not.toHaveSelection(expected)
 
       Expected the element not to have selection:
@@ -98,9 +96,8 @@ describe('.toHaveSelection', () => {
         <div data-testid="text">text</div>
     `)
 
-    expect(() =>
-      expect(queryByTestId('text')).toHaveSelection(),
-    ).toThrowErrorMatchingInlineSnapshot(`
+    expect(() => expect(queryByTestId('text')).toHaveSelection())
+      .toThrowErrorMatchingInlineSnapshot(`
       [Error: expect(element).toHaveSelection(expected)
 
       Expected the element to have selection:
@@ -116,9 +113,8 @@ describe('.toHaveSelection', () => {
     `)
     queryByTestId('text').setSelectionRange(0, 4)
 
-    expect(() =>
-      expect(queryByTestId('text')).toHaveSelection('no match'),
-    ).toThrowErrorMatchingInlineSnapshot(`
+    expect(() => expect(queryByTestId('text')).toHaveSelection('no match'))
+      .toThrowErrorMatchingInlineSnapshot(`
       [Error: expect(element).toHaveSelection(no match)
 
       Expected the element to have selection:
@@ -140,7 +136,7 @@ describe('.toHaveSelection', () => {
     const selection = queryByTestId('child').ownerDocument.getSelection()
     const range = queryByTestId('child').ownerDocument.createRange()
     selection.removeAllRanges()
-		selection.empty()
+    selection.empty()
     selection.addRange(range)
 
     range.selectNodeContents(queryByTestId('child'))
@@ -179,6 +175,8 @@ describe('.toHaveSelection', () => {
 
     expect(() =>
       expect(element).toHaveSelection(1),
-    ).toThrowErrorMatchingInlineSnapshot(`[Error: expected selection must be a string or undefined]`)
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: expected selection must be a string or undefined]`,
+    )
   })
 })

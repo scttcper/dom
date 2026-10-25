@@ -36,7 +36,10 @@ export class AttrRecord {
   constructor(localName: string, value: string, ns: string | null, prefix: string | null) {
     this.localName = localName;
     this.value = value;
-    this.rare = ns === null && prefix === null ? null : new AttrRare(prefix === null ? localName : prefix + ":" + localName, ns, prefix);
+    this.rare =
+      ns === null && prefix === null
+        ? null
+        : new AttrRare(prefix === null ? localName : prefix + ":" + localName, ns, prefix);
   }
 
   /** Qualified name (`prefix:localName` or `localName`). */

@@ -128,5 +128,10 @@ type DocumentVisibilityState = "visible" | "hidden";
 
 // https://html.spec.whatwg.org/#dom-parsehtmlunsafe (static)
 if (!Object.hasOwn(Document, "parseHTMLUnsafe")) {
-  Object.defineProperty(Document, "parseHTMLUnsafe", { value: documentParseHTMLUnsafe, writable: true, enumerable: true, configurable: true });
+  Object.defineProperty(Document, "parseHTMLUnsafe", {
+    value: documentParseHTMLUnsafe,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
 }

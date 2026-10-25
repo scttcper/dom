@@ -41,7 +41,14 @@ import {
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
-import { createElementImpl, setCEActive, setCEReactionsFlush, setCEReactionsPending, setCustomElementCloneHooks, setCustomElementCreate } from "../nodes/create.ts";
+import {
+  createElementImpl,
+  setCEActive,
+  setCEReactionsFlush,
+  setCEReactionsPending,
+  setCustomElementCloneHooks,
+  setCustomElementCreate,
+} from "../nodes/create.ts";
 import { attr } from "../nodes/attributes.ts";
 import { setShadowHostCustomStateCheck } from "../nodes/ShadowRoot.ts";
 import { nextInTree } from "../nodes/traverse.ts";
@@ -103,10 +110,12 @@ const RESERVED = new Set([
   "missing-glyph",
 ]);
 // https://html.spec.whatwg.org/#prod-potentialcustomelementname
-const PCEN =
-  // Built from a string: TypeScript's regex checker rejects some astral ranges in literals.
+// Built from a string: TypeScript's regex checker rejects some astral ranges in literals.
+const PCEN = new RegExp(
   // oxlint-disable-next-line no-misleading-character-class -- PCENChar allows U+200C and U+200D on their own
-  new RegExp("^[a-z][\\-.0-9_a-z\\u00B7\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u037D\\u037F-\\u1FFF\\u200C\\u200D\\u203F\\u2040\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}]*$", "u");
+  "^[a-z][\\-.0-9_a-z\\u00B7\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u037D\\u037F-\\u1FFF\\u200C\\u200D\\u203F\\u2040\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}]*$",
+  "u",
+);
 
 /** https://html.spec.whatwg.org/#valid-custom-element-name */
 export function isValidCustomElementName(name: string): boolean {
@@ -145,37 +154,55 @@ export class CustomElementRegistry {
   define(name: string, constructor: Function, options?: ElementDefinitionOptions): void {
     // WebIDL: CustomElementConstructor is a callback function type.
     if (typeof constructor !== "function") {
-      throw new TypeError("Failed to execute 'define' on 'CustomElementRegistry': parameter 2 is not of type 'Function'.");
+      throw new TypeError(
+        "Failed to execute 'define' on 'CustomElementRegistry': parameter 2 is not of type 'Function'.",
+      );
     }
     name = String(name);
     // 1. IsConstructor(constructor) (without observable property gets).
     if (!isConstructor(constructor)) {
-      throw new TypeError("Failed to execute 'define' on 'CustomElementRegistry': The provided value is not a constructor.");
+      throw new TypeError(
+        "Failed to execute 'define' on 'CustomElementRegistry': The provided value is not a constructor.",
+      );
     }
     // 2.
     if (!isValidCustomElementName(name)) {
-      throw new DOMException(`Failed to execute 'define' on 'CustomElementRegistry': "${name}" is not a valid custom element name`, "SyntaxError");
+      throw new DOMException(
+        `Failed to execute 'define' on 'CustomElementRegistry': "${name}" is not a valid custom element name`,
+        "SyntaxError",
+      );
     }
     // 3–4.
     if (this[$byName].has(name)) {
-      throw new DOMException(`Failed to execute 'define' on 'CustomElementRegistry': the name "${name}" has already been used with this registry`, "NotSupportedError");
+      throw new DOMException(
+        `Failed to execute 'define' on 'CustomElementRegistry': the name "${name}" has already been used with this registry`,
+        "NotSupportedError",
+      );
     }
     if (this[$byCtor].has(constructor)) {
-      throw new DOMException("Failed to execute 'define' on 'CustomElementRegistry': this constructor has already been used with this registry", "NotSupportedError");
+      throw new DOMException(
+        "Failed to execute 'define' on 'CustomElementRegistry': this constructor has already been used with this registry",
+        "NotSupportedError",
+      );
     }
     // 5–7.
     let localName = name;
     const ext = options?.extends;
     if (ext !== undefined && ext !== null) {
       const e = String(ext);
-      if (isValidCustomElementName(e)) throw new DOMException(`"${e}" is a valid custom element name and cannot be extended.`, "NotSupportedError");
+      if (isValidCustomElementName(e))
+        throw new DOMException(`"${e}" is a valid custom element name and cannot be extended.`, "NotSupportedError");
       if (elementClassFor(e, HTML_NS).name === "HTMLUnknownElement") {
         throw new DOMException(`"${e}" is not a known HTML element and cannot be extended.`, "NotSupportedError");
       }
       localName = e;
     }
     // 8–9.
-    if (this[$running]) throw new DOMException("Failed to execute 'define' on 'CustomElementRegistry': an element definition is already running.", "NotSupportedError");
+    if (this[$running])
+      throw new DOMException(
+        "Failed to execute 'define' on 'CustomElementRegistry': an element definition is already running.",
+        "NotSupportedError",
+      );
     this[$running] = true;
     // 10.
     let formAssociated = false;
@@ -195,12 +222,18 @@ export class CustomElementRegistry {
     try {
       // 11.1–11.2.
       const prototype = (constructor as { prototype: unknown }).prototype;
-      if (typeof prototype !== "object" || prototype === null) throw new TypeError("Failed to execute 'define' on 'CustomElementRegistry': The prototype of the constructor is not an object.");
+      if (typeof prototype !== "object" || prototype === null)
+        throw new TypeError(
+          "Failed to execute 'define' on 'CustomElementRegistry': The prototype of the constructor is not an object.",
+        );
       const proto = prototype as Record<string, unknown>;
       const cb = (n: string): Callback | null => {
         const v = proto[n];
         if (v === undefined) return null;
-        if (typeof v !== "function") throw new TypeError(`Failed to execute 'define' on 'CustomElementRegistry': The '${n}' callback is not a function.`);
+        if (typeof v !== "function")
+          throw new TypeError(
+            `Failed to execute 'define' on 'CustomElementRegistry': The '${n}' callback is not a function.`,
+          );
         return v as Callback;
       };
       // 11.3–11.4.
@@ -286,7 +319,9 @@ export class CustomElementRegistry {
   /** https://html.spec.whatwg.org/#dom-customelementregistry-getname */
   getName(constructor: Function): string | null {
     if (typeof constructor !== "function") {
-      throw new TypeError("Failed to execute 'getName' on 'CustomElementRegistry': parameter 1 is not of type 'Function'.");
+      throw new TypeError(
+        "Failed to execute 'getName' on 'CustomElementRegistry': parameter 1 is not of type 'Function'.",
+      );
     }
     return this[$byCtor].get(constructor)?.name ?? null;
   }
@@ -344,7 +379,11 @@ function isConstructor(fn: Function): boolean {
 }
 
 function toSequence(v: unknown): Iterable<unknown> {
-  if (v === null || (typeof v !== "object" && typeof v !== "function") || typeof (v as Iterable<unknown>)[Symbol.iterator] !== "function") {
+  if (
+    v === null ||
+    (typeof v !== "object" && typeof v !== "function") ||
+    typeof (v as Iterable<unknown>)[Symbol.iterator] !== "function"
+  ) {
     throw new TypeError("The value provided is not iterable.");
   }
   return Array.from(v as Iterable<unknown>);
@@ -382,7 +421,12 @@ export function customElementRegistryFor(window: object): CustomElementRegistry 
 }
 
 /** https://html.spec.whatwg.org/#look-up-a-custom-element-definition */
-export function lookupDefinition(doc: Document, ns: string | null, localName: string, is: string | null): CustomElementDefinition | null {
+export function lookupDefinition(
+  doc: Document,
+  ns: string | null,
+  localName: string,
+  is: string | null,
+): CustomElementDefinition | null {
   if (definedCount === 0 || ns !== HTML_NS) return null;
   const window = doc[$window];
   if (window === null) return null;
@@ -458,7 +502,8 @@ export function htmlElementConstructorSteps(newTarget: Function): ConstructResul
     }
   }
   if (def.localName === def.name) {
-    if (active !== null && active.name !== "HTMLElement") throw new TypeError("Illegal constructor: autonomous custom elements must extend HTMLElement");
+    if (active !== null && active.name !== "HTMLElement")
+      throw new TypeError("Illegal constructor: autonomous custom elements must extend HTMLElement");
   } else if (active !== null && !usesInterface(active, def.localName)) {
     // (NewTarget not inheriting from any interface, e.g. Reflect.construct(HTMLParagraphElement,
     // [], F): the invoked interface cannot be told apart here, so it is accepted.)
@@ -467,7 +512,10 @@ export function htmlElementConstructorSteps(newTarget: Function): ConstructResul
   // 8. Not an upgrade: create a new element in the registry's (current global's) document.
   const stack = def.constructionStack;
   if (stack.length === 0) {
-    const doc = creatingDocument ?? (def.registry[$window] as { document: Document } | null)?.document ?? (currentWindow() as unknown as { document: Document }).document;
+    const doc =
+      creatingDocument ??
+      (def.registry[$window] as { document: Document } | null)?.document ??
+      (currentWindow() as unknown as { document: Document }).document;
     return { upgrade: null, doc, localName: def.localName, def, active };
   }
   // 9–13. Upgrade: hand back the element being upgraded.
@@ -496,7 +544,12 @@ export function initNewCustomElement(el: Element, def: CustomElementDefinition, 
   // Detected without another Get of NewTarget.prototype: the proto is some realm's
   // Object.prototype (no prototype of its own and is its constructor's prototype).
   const p = Object.getPrototypeOf(el) as { constructor?: { prototype?: unknown } } | null;
-  if (p !== null && Object.getPrototypeOf(p) === null && Object.hasOwn(p, "isPrototypeOf") && p.constructor?.prototype === p) {
+  if (
+    p !== null &&
+    Object.getPrototypeOf(p) === null &&
+    Object.hasOwn(p, "isPrototypeOf") &&
+    p.constructor?.prototype === p
+  ) {
     Object.setPrototypeOf(el, (active ?? elementClassFor("x-x", HTML_NS)).prototype as object);
   }
   markCustom(el, def);
@@ -519,7 +572,13 @@ function markCustom(el: Element, def: CustomElementDefinition): void {
  * https://dom.spec.whatwg.org/#concept-create-element with the synchronous custom elements flag
  * set, for the custom element cases. Returns null for the ordinary case.
  */
-function createElementSync(doc: Document, localName: string, ns: string | null, prefix: string | null, is: string | null): NodeImpl | null {
+function createElementSync(
+  doc: Document,
+  localName: string,
+  ns: string | null,
+  prefix: string | null,
+  is: string | null,
+): NodeImpl | null {
   if (definedCount === 0 && is === null) return null;
   // 3. (scoped registries aside) 4.
   const def = lookupDefinition(doc, ns, localName, is);
@@ -544,11 +603,16 @@ function createElementSync(doc: Document, localName: string, ns: string | null, 
     try {
       const result = new C();
       // 6.1.3–6.1.10.
-      if (result === null || typeof result !== "object" || !(result instanceof (elementClassFor("x-x", HTML_NS) as Function))) {
+      if (
+        result === null ||
+        typeof result !== "object" ||
+        !(result instanceof (elementClassFor("x-x", HTML_NS) as Function))
+      ) {
         throw new TypeError("The custom element constructor did not produce an HTMLElement.");
       }
       const r = result[$impl];
-      if (r.attrs !== null && r.attrs.length !== 0) throw new DOMException("The result must not have attributes", "NotSupportedError");
+      if (r.attrs !== null && r.attrs.length !== 0)
+        throw new DOMException("The result must not have attributes", "NotSupportedError");
       if (r.first !== null) throw new DOMException("The result must not have children", "NotSupportedError");
       if (r.parent !== null) throw new DOMException("The result must not have a parent", "NotSupportedError");
       if (r.doc !== doc) throw new DOMException("The result must be in the same document", "NotSupportedError");
@@ -587,7 +651,13 @@ function failedElement(doc: Document, localName: string, ns: string | null, pref
  * unset, given an "is" value: a defined custom element is created in state "undefined" with an
  * upgrade reaction enqueued (steps 5.3 and 6.2); an undefined one keeps its "is" value.
  */
-function createElementUnsync(doc: Document, localName: string, ns: string | null, prefix: string | null, is: string | null): NodeImpl {
+function createElementUnsync(
+  doc: Document,
+  localName: string,
+  ns: string | null,
+  prefix: string | null,
+  is: string | null,
+): NodeImpl {
   const impl = createElementImpl(doc, localName, ns, prefix);
   if (ns !== HTML_NS) return impl;
   initUnsync(impl, is);
@@ -609,7 +679,13 @@ function initUnsync(impl: NodeImpl, is: string | null): void {
 
 /** https://dom.spec.whatwg.org/#concept-node-clone step 2.1 (nodes/clone.ts hook). */
 function cloneElement(doc: Document, source: NodeImpl): NodeImpl {
-  return createElementUnsync(doc, source.name, source.ns, source.prefix, source.ns === HTML_NS ? (isValues.get(source.node as Element) ?? null) : null);
+  return createElementUnsync(
+    doc,
+    source.name,
+    source.ns,
+    source.prefix,
+    source.ns === HTML_NS ? (isValues.get(source.node as Element) ?? null) : null,
+  );
 }
 
 /**
@@ -697,7 +773,10 @@ function upgrade(el: Element, def: CustomElementDefinition): void {
   try {
     // 9.1.
     if (def.disableShadow && (el as unknown as { [$shadowRoot]: unknown })[$shadowRoot] != null) {
-      throw new DOMException("Failed to upgrade the custom element: its definition disables shadow roots, but it already has one.", "NotSupportedError");
+      throw new DOMException(
+        "Failed to upgrade the custom element: its definition disables shadow roots, but it already has one.",
+        "NotSupportedError",
+      );
     }
     // 9.2. State "precustomized".
     precustomized.add(el);
@@ -708,7 +787,9 @@ function upgrade(el: Element, def: CustomElementDefinition): void {
     // element keeps its original wrapper.
     if (result !== el) {
       if (result === null || typeof result !== "object" || result[$impl] !== impl) {
-        throw new TypeError("Custom element constructors must call super() first and must not return a different object.");
+        throw new TypeError(
+          "Custom element constructors must call super() first and must not return a different object.",
+        );
       }
       impl.node = el;
     }
@@ -812,7 +893,11 @@ function enqueueUpgrade(el: Element, def: CustomElementDefinition): void {
 }
 
 /** https://html.spec.whatwg.org/#enqueue-a-custom-element-callback-reaction */
-function enqueueCallback(el: Element, name: "connectedCallback" | "disconnectedCallback" | "adoptedCallback" | "attributeChangedCallback", args: unknown[]): void {
+function enqueueCallback(
+  el: Element,
+  name: "connectedCallback" | "disconnectedCallback" | "adoptedCallback" | "attributeChangedCallback",
+  args: unknown[],
+): void {
   const def = definitions.get(el);
   if (def === undefined) return;
   const fn = def[name];
@@ -822,7 +907,11 @@ function enqueueCallback(el: Element, name: "connectedCallback" | "disconnectedC
 }
 
 /** Enqueue a form-associated custom element callback (formAssociatedCallback & co.; html/forms/face.ts). */
-export function enqueueFormCallback(el: Element, name: "formAssociatedCallback" | "formResetCallback" | "formDisabledCallback" | "formStateRestoreCallback", args: unknown[]): void {
+export function enqueueFormCallback(
+  el: Element,
+  name: "formAssociatedCallback" | "formResetCallback" | "formDisabledCallback" | "formStateRestoreCallback",
+  args: unknown[],
+): void {
   const def = definitions.get(el);
   if (def === undefined) return;
   const fn = def[name];
@@ -879,8 +968,15 @@ export function ceDisconnected(el: Element): void {
   if ((el[$impl].flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "disconnectedCallback", []);
 }
 
-export function ceAttributeChanged(el: Element, localName: string, oldValue: string | null, value: string | null, ns: string | null): void {
-  if ((el[$impl].flags & F_CE_CUSTOM) !== 0) enqueueCallback(el, "attributeChangedCallback", [localName, oldValue, value, ns]);
+export function ceAttributeChanged(
+  el: Element,
+  localName: string,
+  oldValue: string | null,
+  value: string | null,
+  ns: string | null,
+): void {
+  if ((el[$impl].flags & F_CE_CUSTOM) !== 0)
+    enqueueCallback(el, "attributeChangedCallback", [localName, oldValue, value, ns]);
 }
 
 /**

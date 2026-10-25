@@ -26,6 +26,7 @@ type AnyUserEvent = typeof stockUserEvent
 type User = ReturnType<AnyUserEvent['setup']>
 type Doc = Document
 
+// oxfmt-ignore
 const EVENT_TYPES = [
   'auxclick', 'beforeinput', 'blur', 'click', 'contextmenu', 'copy', 'change', 'cut', 'dblclick',
   'focus', 'focusin', 'focusout', 'keydown', 'keypress', 'keyup', 'paste', 'input', 'mousedown',
@@ -38,7 +39,8 @@ function describeNode(node: unknown): string {
   if (node === null || node === undefined) return 'null'
   const n = node as Element & {nodeType: number}
   if (n.nodeType === 9) return '#document'
-  if (n.nodeType === 3) return `#text(${JSON.stringify((n as unknown as Text).data)})`
+  if (n.nodeType === 3)
+    return `#text(${JSON.stringify((n as unknown as Text).data)})`
   if (n.nodeType !== 1) return `node${n.nodeType}`
   let s = n.tagName.toLowerCase()
   if (n.id) s += `#${n.id}`
@@ -52,12 +54,19 @@ function snapshotTarget(el: unknown): Record<string, unknown> {
   const t = el as HTMLInputElement
   if (t && t.nodeType === 1) {
     const tag = t.tagName.toLowerCase()
-    if (tag === 'input' || tag === 'textarea' || tag === 'select') out.value = t.value
-    if (tag === 'input' && (t.type === 'checkbox' || t.type === 'radio')) out.checked = t.checked
-    if ((tag === 'input' && ['text', 'search', 'url', 'tel', 'password'].includes(t.type)) || tag === 'textarea') {
+    if (tag === 'input' || tag === 'textarea' || tag === 'select')
+      out.value = t.value
+    if (tag === 'input' && (t.type === 'checkbox' || t.type === 'radio'))
+      out.checked = t.checked
+    if (
+      (tag === 'input' &&
+        ['text', 'search', 'url', 'tel', 'password'].includes(t.type)) ||
+      tag === 'textarea'
+    ) {
       out.sel = [t.selectionStart, t.selectionEnd]
     }
-    if (tag === 'div' && t.getAttribute('contenteditable') !== null) out.text = t.textContent
+    if (tag === 'div' && t.getAttribute('contenteditable') !== null)
+      out.text = t.textContent
   }
   return out
 }
@@ -68,18 +77,45 @@ function record(doc: Doc) {
     doc.addEventListener(
       type,
       (e: Event) => {
-        const ev = e as Event & Partial<KeyboardEvent & PointerEvent & InputEvent & FocusEvent & ClipboardEvent>
-        const entry: Record<string, unknown> = {type: e.type, target: describeNode(e.target)}
-        if (ev.key !== undefined) Object.assign(entry, {key: ev.key, code: ev.code, repeat: ev.repeat})
-        if (ev.button !== undefined) Object.assign(entry, {button: ev.button, buttons: ev.buttons})
-        if (ev.pointerType !== undefined) Object.assign(entry, {pointerType: ev.pointerType, pointerId: ev.pointerId, isPrimary: ev.isPrimary})
-        if (ev.detail !== undefined && ev.detail !== 0) entry.detail = ev.detail
-        if (ev.inputType !== undefined) Object.assign(entry, {inputType: ev.inputType, data: ev.data})
-        if ('relatedTarget' in ev && ev.relatedTarget !== undefined) entry.relatedTarget = describeNode(ev.relatedTarget)
-        if (ev.shiftKey || ev.ctrlKey || ev.altKey || ev.metaKey) {
-          entry.mods = [ev.shiftKey && 'shift', ev.ctrlKey && 'ctrl', ev.altKey && 'alt', ev.metaKey && 'meta'].filter(Boolean).join('+')
+        const ev = e as Event &
+          Partial<
+            KeyboardEvent &
+              PointerEvent &
+              InputEvent &
+              FocusEvent &
+              ClipboardEvent
+          >
+        const entry: Record<string, unknown> = {
+          type: e.type,
+          target: describeNode(e.target),
         }
-        if (ev.clipboardData) entry.clipboard = ev.clipboardData.getData('text/plain')
+        if (ev.key !== undefined)
+          Object.assign(entry, {key: ev.key, code: ev.code, repeat: ev.repeat})
+        if (ev.button !== undefined)
+          Object.assign(entry, {button: ev.button, buttons: ev.buttons})
+        if (ev.pointerType !== undefined)
+          Object.assign(entry, {
+            pointerType: ev.pointerType,
+            pointerId: ev.pointerId,
+            isPrimary: ev.isPrimary,
+          })
+        if (ev.detail !== undefined && ev.detail !== 0) entry.detail = ev.detail
+        if (ev.inputType !== undefined)
+          Object.assign(entry, {inputType: ev.inputType, data: ev.data})
+        if ('relatedTarget' in ev && ev.relatedTarget !== undefined)
+          entry.relatedTarget = describeNode(ev.relatedTarget)
+        if (ev.shiftKey || ev.ctrlKey || ev.altKey || ev.metaKey) {
+          entry.mods = [
+            ev.shiftKey && 'shift',
+            ev.ctrlKey && 'ctrl',
+            ev.altKey && 'alt',
+            ev.metaKey && 'meta',
+          ]
+            .filter(Boolean)
+            .join('+')
+        }
+        if (ev.clipboardData)
+          entry.clipboard = ev.clipboardData.getData('text/plain')
         entry.bubbles = e.bubbles
         entry.cancelable = e.cancelable
         Object.assign(entry, snapshotTarget(e.target))
@@ -94,14 +130,24 @@ function record(doc: Doc) {
 }
 
 function finalState(doc: Doc) {
-  const fields = Array.from(doc.querySelectorAll('input, textarea, select, [contenteditable]')).map(el => ({
+  const fields = Array.from(
+    doc.querySelectorAll('input, textarea, select, [contenteditable]'),
+  ).map(el => ({
     node: describeNode(el),
     ...snapshotTarget(el),
     ...(el.tagName === 'SELECT'
-      ? {selected: Array.from((el as HTMLSelectElement).options).map(o => o.selected)}
+      ? {
+          selected: Array.from((el as HTMLSelectElement).options).map(
+            o => o.selected,
+          ),
+        }
       : {}),
     ...(el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'file'
-      ? {files: Array.from((el as HTMLInputElement).files ?? []).map(f => f.name)}
+      ? {
+          files: Array.from((el as HTMLInputElement).files ?? []).map(
+            f => f.name,
+          ),
+        }
       : {}),
   }))
   return {active: describeNode(doc.activeElement), fields}
@@ -114,7 +160,10 @@ interface Scenario {
   options?: Record<string, unknown>
 }
 
-const fields20 = Array.from({length: 20}, (_, i) => `<input id="f${i}" name="f${i}"/>`).join('')
+const fields20 = Array.from(
+  {length: 20},
+  (_, i) => `<input id="f${i}" name="f${i}"/>`,
+).join('')
 
 const scenarios: Scenario[] = [
   {
@@ -126,18 +175,25 @@ const scenarios: Scenario[] = [
     name: 'type with modifiers, arrows, Backspace, Home/End, Delete',
     html: `<input id="a" value="xyz"/>`,
     run: (user, doc) =>
-      user.type(doc.getElementById('a')!, '{Shift>}AB{/Shift}{ArrowLeft}{Backspace}q{Home}w{End}{ArrowLeft}{Delete}'),
+      user.type(
+        doc.getElementById('a')!,
+        '{Shift>}AB{/Shift}{ArrowLeft}{Backspace}q{Home}w{End}{ArrowLeft}{Delete}',
+      ),
   },
   {
     name: 'type into textarea with Enter and maxlength',
     html: `<textarea id="t" maxlength="8"></textarea>`,
-    run: (user, doc) => user.type(doc.getElementById('t')!, 'ab{Enter}cd{Enter}efgh'),
+    run: (user, doc) =>
+      user.type(doc.getElementById('t')!, 'ab{Enter}cd{Enter}efgh'),
   },
   {
     name: 'initialSelectionStart/End replaces the selected range',
     html: `<input id="a" value="0123456789"/>`,
     run: (user, doc) =>
-      user.type(doc.getElementById('a')!, 'X', {initialSelectionStart: 2, initialSelectionEnd: 5}),
+      user.type(doc.getElementById('a')!, 'X', {
+        initialSelectionStart: 2,
+        initialSelectionEnd: 5,
+      }),
   },
   {
     // Only values that are valid floating-point numbers at every step: for intermediate
@@ -146,7 +202,11 @@ const scenarios: Scenario[] = [
     // browser ("-1." -> "", "-1.5e3" stays). See docs/deviations.md and number-input.test.ts.
     name: 'number input',
     html: `<input id="n" type="number"/>`,
-    run: (user, doc) => user.type(doc.getElementById('n')!, '-15{ArrowLeft}2{Backspace}{Backspace}'),
+    run: (user, doc) =>
+      user.type(
+        doc.getElementById('n')!,
+        '-15{ArrowLeft}2{Backspace}{Backspace}',
+      ),
   },
   {
     name: 'click a submit button inside a form',
@@ -233,7 +293,9 @@ const scenarios: Scenario[] = [
     name: 'Space press split across keyboard() calls on checkbox and button',
     html: `<label id="lbl"><input id="c" type="checkbox"/> check</label><button id="b">b</button>`,
     run: async (user, doc) => {
-      doc.getElementById('b')!.addEventListener('keydown', (e: Event) => e.preventDefault())
+      doc
+        .getElementById('b')!
+        .addEventListener('keydown', (e: Event) => e.preventDefault())
       await user.tab()
       await user.keyboard('[Space>]')
       await user.keyboard('[/Space]')
@@ -247,7 +309,9 @@ const scenarios: Scenario[] = [
     html: `<input id="r1" type="radio" name="g" checked/><input id="r2" type="radio" name="g"/><input id="r3" type="radio" name="g" disabled/><input id="r4" type="radio" name="g"/>`,
     run: async (user, doc) => {
       await user.click(doc.getElementById('r1')!)
-      await user.keyboard('{ArrowDown}{ArrowDown}{ArrowUp}{ArrowLeft}{ArrowRight}')
+      await user.keyboard(
+        '{ArrowDown}{ArrowDown}{ArrowUp}{ArrowLeft}{ArrowRight}',
+      )
     },
   },
   {
@@ -298,7 +362,8 @@ const scenarios: Scenario[] = [
   {
     name: 'touch pointer tap',
     html: `<button id="b">b</button>`,
-    run: (user, doc) => user.pointer({keys: '[TouchA]', target: doc.getElementById('b')!}),
+    run: (user, doc) =>
+      user.pointer({keys: '[TouchA]', target: doc.getElementById('b')!}),
   },
   {
     name: 'keyboard repeat and held modifiers',
@@ -340,7 +405,11 @@ const scenarios: Scenario[] = [
     name: 'focus moved during keydown retargets the rest of the key press',
     html: `<input id="a"/><input id="b"/>`,
     run: async (user, doc) => {
-      doc.getElementById('a')!.addEventListener('keydown', () => (doc.getElementById('b') as HTMLElement).focus())
+      doc
+        .getElementById('a')!
+        .addEventListener('keydown', () =>
+          (doc.getElementById('b') as HTMLElement).focus(),
+        )
       await user.type(doc.getElementById('a')!, 'xy')
     },
   },
@@ -381,7 +450,10 @@ const errorScenarios: Scenario[] = [
     name: 'upload on a non-file input',
     html: `<input id="a"/>`,
     run: (user, doc, window) =>
-      user.upload(doc.getElementById('a')!, new (window as unknown as {File: typeof File}).File([''], 'x')),
+      user.upload(
+        doc.getElementById('a')!,
+        new (window as unknown as {File: typeof File}).File([''], 'x'),
+      ),
   },
   {
     name: 'clear on a button',
@@ -402,7 +474,9 @@ interface Env {
 }
 
 function jsdomEnv(html: string): Env {
-  const dom = new JSDOM(`<!doctype html><html><body>${html}</body></html>`, {pretendToBeVisual: true})
+  const dom = new JSDOM(`<!doctype html><html><body>${html}</body></html>`, {
+    pretendToBeVisual: true,
+  })
   return {
     window: dom.window as unknown as Window,
     document: dom.window.document as unknown as Doc,
@@ -418,15 +492,24 @@ function jsdomEnv(html: string): Env {
  * - @ctrl/dom does not yet queue one per `setSelectionRange()`.
  *   TODO(html-forms): fire `select` per https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
  */
-function withoutSelectEvents<T extends {log: Array<Record<string, unknown>>}>(r: T): T {
+function withoutSelectEvents<T extends {log: Array<Record<string, unknown>>}>(
+  r: T,
+): T {
   return {...r, log: r.log.filter(e => e.type !== 'select')}
 }
 
-async function runScenario(userEvent: AnyUserEvent, makeEnv: (html: string) => Env, s: Scenario) {
+async function runScenario(
+  userEvent: AnyUserEvent,
+  makeEnv: (html: string) => Env,
+  s: Scenario,
+) {
   const env = makeEnv(s.html)
   try {
     const log = record(env.document)
-    const user = userEvent.setup({document: env.document, ...s.options} as never)
+    const user = userEvent.setup({
+      document: env.document,
+      ...s.options,
+    } as never)
     let error: string | undefined
     try {
       await s.run(user, env.document, env.window)
@@ -443,7 +526,11 @@ describe('@ctrl/dom/user-event on jsdom vs stock @testing-library/user-event on 
   for (const s of scenarios) {
     test(`same events and DOM state: ${s.name}`, async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-      const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, jsdomEnv, s)
+      const actual = await runScenario(
+        ctrlDomUserEvent as unknown as AnyUserEvent,
+        jsdomEnv,
+        s,
+      )
       expect(expected.error).toBeUndefined()
       expect(expected.log.length).toBeGreaterThan(0)
       expect(withoutSelectEvents(actual)).toEqual(withoutSelectEvents(expected))
@@ -453,7 +540,11 @@ describe('@ctrl/dom/user-event on jsdom vs stock @testing-library/user-event on 
   for (const s of errorScenarios) {
     test(`same error message: ${s.name}`, async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-      const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, jsdomEnv, s)
+      const actual = await runScenario(
+        ctrlDomUserEvent as unknown as AnyUserEvent,
+        jsdomEnv,
+        s,
+      )
       expect(expected.error).toBeTypeOf('string')
       expect(actual.error).toBe(expected.error)
       expect(actual.log).toEqual(expected.log)
@@ -463,7 +554,9 @@ describe('@ctrl/dom/user-event on jsdom vs stock @testing-library/user-event on 
 
 // --- @ctrl/dom ---------------------------------------------------------------------------
 
-type CtrlDomDom = {createWindow(options?: {html?: string}): Window & {close?(): void}}
+type CtrlDomDom = {
+  createWindow(options?: {html?: string}): Window & {close?(): void}
+}
 
 async function loadCtrlDom(): Promise<CtrlDomDom | null> {
   try {
@@ -479,23 +572,41 @@ const ctrlDom = await loadCtrlDom()
 function ctrlDomUnsupportedReason(): string | null {
   if (ctrlDom === null) return '@ctrl/dom failed to import'
   try {
-    const win = ctrlDom.createWindow({html: '<!doctype html><html><body><div><input id="a" value="x"></div></body></html>'})
+    const win = ctrlDom.createWindow({
+      html: '<!doctype html><html><body><div><input id="a" value="x"></div></body></html>',
+    })
     const w = win as unknown as Record<string, unknown>
     const doc = win.document
-    for (const name of ['KeyboardEvent', 'PointerEvent', 'MouseEvent', 'InputEvent', 'FocusEvent', 'HTMLElement']) {
-      if (typeof w[name] !== 'function') return `window.${name} missing (events / window agents)`
+    for (const name of [
+      'KeyboardEvent',
+      'PointerEvent',
+      'MouseEvent',
+      'InputEvent',
+      'FocusEvent',
+      'HTMLElement',
+    ]) {
+      if (typeof w[name] !== 'function')
+        return `window.${name} missing (events / window agents)`
     }
-    if (typeof (w as {getComputedStyle?: unknown}).getComputedStyle !== 'function') return 'window.getComputedStyle missing (css agent)'
-    if (typeof doc.getSelection !== 'function') return 'document.getSelection missing (dom-core agent)'
+    if (
+      typeof (w as {getComputedStyle?: unknown}).getComputedStyle !== 'function'
+    )
+      return 'window.getComputedStyle missing (css agent)'
+    if (typeof doc.getSelection !== 'function')
+      return 'document.getSelection missing (dom-core agent)'
     const input = doc.getElementById('a') as HTMLInputElement | null
     if (!input) return 'getElementById / parser not working'
-    if (input.value !== 'x' || typeof input.setSelectionRange !== 'function') return 'HTMLInputElement value/selection API missing (html-forms agent)'
+    if (input.value !== 'x' || typeof input.setSelectionRange !== 'function')
+      return 'HTMLInputElement value/selection API missing (html-forms agent)'
     let bubbled = false
     doc.addEventListener('test-bubble', () => (bubbled = true))
-    input.dispatchEvent(new (w.Event as typeof Event)('test-bubble', {bubbles: true}))
+    input.dispatchEvent(
+      new (w.Event as typeof Event)('test-bubble', {bubbles: true}),
+    )
     if (!bubbled) return 'event propagation not implemented (events agent)'
     input.focus()
-    if (doc.activeElement !== input) return 'focus() does not update document.activeElement (html-elements agent)'
+    if (doc.activeElement !== input)
+      return 'focus() does not update document.activeElement (html-elements agent)'
     return null
   } catch (e) {
     return `probe threw: ${(e as Error).message}`
@@ -513,36 +624,57 @@ const ctrlDomReason = ctrlDomUnsupportedReason()
  */
 function ctrlDomInheritsPointerEvents(): boolean {
   if (ctrlDomReason !== null) return false
-  const win = ctrlDom!.createWindow({html: '<!doctype html><html><body><div style="pointer-events: none"><b id="b"></b></div></body></html>'})
-  return win.getComputedStyle(win.document.getElementById('b')!).pointerEvents === 'none'
+  const win = ctrlDom!.createWindow({
+    html: '<!doctype html><html><body><div style="pointer-events: none"><b id="b"></b></div></body></html>',
+  })
+  return (
+    win.getComputedStyle(win.document.getElementById('b')!).pointerEvents ===
+    'none'
+  )
 }
 const ctrlDomComputesInheritedPointerEvents = ctrlDomInheritsPointerEvents()
 
 function ctrlDomEnv(html: string): Env {
-  const win = ctrlDom!.createWindow({html: `<!doctype html><html><body>${html}</body></html>`})
+  const win = ctrlDom!.createWindow({
+    html: `<!doctype html><html><body>${html}</body></html>`,
+  })
   return {window: win, document: win.document, close: () => win.close?.()}
 }
 
 describe('@ctrl/dom/user-event on @ctrl/dom vs stock @testing-library/user-event on jsdom', () => {
-  if (ctrlDomReason !== null) test.skip(`@ctrl/dom not ready: ${ctrlDomReason}`, () => {})
+  if (ctrlDomReason !== null)
+    test.skip(`@ctrl/dom not ready: ${ctrlDomReason}`, () => {})
 
   for (const s of scenarios) {
-    test.skipIf(ctrlDomReason !== null)(`same events and DOM state: ${s.name}`, async () => {
-      const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-      const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, ctrlDomEnv, s)
-      expect(withoutSelectEvents(actual)).toEqual(withoutSelectEvents(expected))
-    })
+    test.skipIf(ctrlDomReason !== null)(
+      `same events and DOM state: ${s.name}`,
+      async () => {
+        const expected = await runScenario(stockUserEvent, jsdomEnv, s)
+        const actual = await runScenario(
+          ctrlDomUserEvent as unknown as AnyUserEvent,
+          ctrlDomEnv,
+          s,
+        )
+        expect(withoutSelectEvents(actual)).toEqual(
+          withoutSelectEvents(expected),
+        )
+      },
+    )
   }
 
   for (const s of errorScenarios) {
     const needsInheritance = s.name === 'pointer-events: none on an ancestor'
-    test.skipIf(ctrlDomReason !== null || (needsInheritance && !ctrlDomComputesInheritedPointerEvents))(
-      `same error message: ${s.name}`,
-      async () => {
+    test.skipIf(
+      ctrlDomReason !== null ||
+        (needsInheritance && !ctrlDomComputesInheritedPointerEvents),
+    )(`same error message: ${s.name}`, async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-        const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, ctrlDomEnv, s)
-        expect(actual.error).toBe(expected.error)
-      },
-    )
+      const actual = await runScenario(
+        ctrlDomUserEvent as unknown as AnyUserEvent,
+        ctrlDomEnv,
+        s,
+      )
+      expect(actual.error).toBe(expected.error)
+    })
   }
 })

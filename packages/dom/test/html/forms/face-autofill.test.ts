@@ -24,8 +24,10 @@ beforeEach(() => {
 });
 
 const $ = (id: string) => w.document.getElementById(id);
-const describeNode = (n: any): string => (n === null ? "null" : n === undefined ? "undefined" : n.localName + (n.id ? "#" + n.id : ""));
-const entries = (fd: any) => [...fd.entries()].map(([k, v]: [string, any]) => [k, typeof v === "string" ? v : `File(${v.name})`]);
+const describeNode = (n: any): string =>
+  n === null ? "null" : n === undefined ? "undefined" : n.localName + (n.id ? "#" + n.id : "");
+const entries = (fd: any) =>
+  [...fd.entries()].map(([k, v]: [string, any]) => [k, typeof v === "string" ? v : `File(${v.name})`]);
 
 function defineFace(): void {
   w.customElements.define(
@@ -53,7 +55,12 @@ describe("FACE submission value — https://html.spec.whatwg.org/#face-submissio
     $("c").internals.setFormValue(new w.File(["z"], "z.txt"));
     $("d").internals.setFormValue(null);
     $("e").internals.setFormValue("unnamed");
-    expect(entries(new w.FormData($("f")))).toEqual([["a", "one"], ["x", "1"], ["y", "2"], ["c", "File(z.txt)"]]);
+    expect(entries(new w.FormData($("f")))).toEqual([
+      ["a", "one"],
+      ["x", "1"],
+      ["y", "2"],
+      ["c", "File(z.txt)"],
+    ]);
   });
 
   test("a disabled FACE (own attribute or disabled fieldset) contributes nothing", () => {
@@ -74,7 +81,12 @@ describe("ElementInternals form and labels — https://html.spec.whatwg.org/#dom
       labelsB: Array.from($("b").internals.labels, describeNode),
       labelsC: Array.from($("c").internals.labels, describeNode),
       labelControl: describeNode($("l1").control),
-    }).toEqual({ forms: ["form#f1", "form#f2", "null"], labelsB: ["label#l1"], labelsC: ["label#l2"], labelControl: "x-face#b" });
+    }).toEqual({
+      forms: ["form#f1", "form#f2", "null"],
+      labelsB: ["label#l1"],
+      labelsC: ["label#l2"],
+      labelControl: "x-face#b",
+    });
   });
 
   test("form and labels throw NotSupportedError for a custom element that is not form-associated", () => {
@@ -98,13 +110,41 @@ describe("ElementInternals form and labels — https://html.spec.whatwg.org/#dom
 
 describe("autocomplete — https://html.spec.whatwg.org/#autofill-processing-model", () => {
   test("the IDL attribute returns the normalized autofill value; invalid token lists give '' (https://html.spec.whatwg.org/#autofill-field, https://html.spec.whatwg.org/#dom-fe-autocomplete)", () => {
-    const values = ["on", "OFF", "email", "shipping email", "section-Foo billing tel", "home tel", "work email", "bogus", "email email", "name webauthn", "off email", "cc-number", " email "];
+    const values = [
+      "on",
+      "OFF",
+      "email",
+      "shipping email",
+      "section-Foo billing tel",
+      "home tel",
+      "work email",
+      "bogus",
+      "email email",
+      "name webauthn",
+      "off email",
+      "cc-number",
+      " email ",
+    ];
     const out = values.map((v) => {
       const i = w.document.createElement("input");
       i.setAttribute("autocomplete", v);
       return i.autocomplete;
     });
-    expect(out).toEqual(["on", "off", "email", "shipping email", "section-foo billing tel", "home tel", "work email", "", "", "name webauthn", "", "cc-number", "email"]);
+    expect(out).toEqual([
+      "on",
+      "off",
+      "email",
+      "shipping email",
+      "section-foo billing tel",
+      "home tel",
+      "work email",
+      "",
+      "",
+      "name webauthn",
+      "",
+      "cc-number",
+      "email",
+    ]);
   });
 
   test("textarea exposes the autofill value; form.autocomplete is on/off with on as the default", () => {

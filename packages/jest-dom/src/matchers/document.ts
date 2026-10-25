@@ -204,7 +204,13 @@ function makeDocumentPositionErrorString(documentPosition: number): string {
   return `Unknown document position (${documentPosition})`;
 }
 
-function checkToAppear(context: MatcherContext, methodName: string, targetDocumentPosition: number, element: DOMNode, secondElement: DOMNode): MatcherResult {
+function checkToAppear(
+  context: MatcherContext,
+  methodName: string,
+  targetDocumentPosition: number,
+  element: DOMNode,
+  secondElement: DOMNode,
+): MatcherResult {
   // Upstream passes `toAppearBefore` as the matcher function for both matchers.
   checkHtmlElement(element, toAppearBefore, context);
   checkHtmlElement(secondElement, toAppearBefore, context);

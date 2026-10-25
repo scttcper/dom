@@ -3,7 +3,10 @@
 // GitHub page) without shipping someone else's markup. Generated, so it can grow or change shape
 // in one place.
 
-const WORDS = "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua".split(" ");
+const WORDS =
+  "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua".split(
+    " ",
+  );
 
 function words(seed: number, count: number): string {
   let out = "";
@@ -44,8 +47,16 @@ function field(i: number): string {
 }
 
 function build(): string {
-  const nav = Array.from({ length: 12 }, (_, i) => `<li class="nav-item"><a href="/section/${i}" class="nav-link" aria-label="Section ${i}">Section ${i}</a></li>`).join("");
-  const filters = Array.from({ length: 40 }, (_, i) => `<li class="filter"><label><input type="checkbox" name="filter" value="${i}"> ${words(i, 2)}</label></li>`).join("");
+  const nav = Array.from(
+    { length: 12 },
+    (_, i) =>
+      `<li class="nav-item"><a href="/section/${i}" class="nav-link" aria-label="Section ${i}">Section ${i}</a></li>`,
+  ).join("");
+  const filters = Array.from(
+    { length: 40 },
+    (_, i) =>
+      `<li class="filter"><label><input type="checkbox" name="filter" value="${i}"> ${words(i, 2)}</label></li>`,
+  ).join("");
   return `<header class="site-header flex items-center">
   <a href="/" class="logo" aria-label="Home">Shop</a>
   <nav aria-label="Main"><ul class="nav-list flex">${nav}</ul></nav>

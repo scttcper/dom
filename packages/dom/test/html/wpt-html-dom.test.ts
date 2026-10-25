@@ -28,16 +28,19 @@
 import { describe } from "vitest";
 import { defineWPT, defineWPTDirectory } from "../wpt/harness.ts";
 
-const DIRECTIONALITY = "directionality (`:dir()`) lives in selectors/state.ts: no flat-tree/slot propagation, no non-HTML dir=auto, bdi defaults, input types";
+const DIRECTIONALITY =
+  "directionality (`:dir()`) lives in selectors/state.ts: no flat-tree/slot propagation, no non-HTML dir=auto, bdi defaults, input types";
 const HIDDEN_GETTER = "the hidden getter returns true for until-found, like jsdom/happy-dom (docs/deviations.md)";
-const DATASET = "DOMStringMap edge cases (collections area) and dataset on non-HTML/SVG/MathML elements (nodes/Element.ts)";
+const DATASET =
+  "DOMStringMap edge cases (collections area) and dataset on non-HTML/SVG/MathML elements (nodes/Element.ts)";
 
 describe("HTML §3.1.4 DOM tree accessors (https://html.spec.whatwg.org/#dom-tree-accessors)", () => {
   defineWPTDirectory(
     "html/dom/documents/dom-tree-accessors",
     {
       "document.forms.html": "document.forms own-property iteration (collections area)",
-      "document.images.html": "document.images has no named properties (`images.id`), only the Proxy-wrapped document.forms does (nodes/Document.ts)",
+      "document.images.html":
+        "document.images has no named properties (`images.id`), only the Proxy-wrapped document.forms does (nodes/Document.ts)",
     },
     {},
   );
@@ -61,7 +64,8 @@ describe("HTML §3.2.6 Global attributes (https://html.spec.whatwg.org/#global-a
       "dataset-prototype.html": DATASET,
       "dataset.html": DATASET,
       "dir-auto-div-append-child.html": DIRECTIONALITY,
-      "dir-bdi-script.html": "getComputedStyle().direction does not follow the bdi element's auto directionality (css area)",
+      "dir-bdi-script.html":
+        "getComputedStyle().direction does not follow the bdi element's auto directionality (css area)",
       "dir-slots-directionality.html": DIRECTIONALITY,
     },
     {},
@@ -87,7 +91,9 @@ describe("HTML §3.2.7 innerText / outerText (https://html.spec.whatwg.org/#the-
   );
   for (const ws of ["normal", "pre", "pre-line", "pre-wrap"]) {
     for (const ce of ["", "&contenteditable=true", "&contenteditable=plaintext-only"]) {
-      defineWPT(`html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=${ws}${ce}`);
+      defineWPT(
+        `html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=${ws}${ce}`,
+      );
     }
   }
   defineWPT("html/dom/elements/the-innertext-and-outertext-properties/multiple-text-nodes.window.js");
@@ -104,12 +110,23 @@ describe("HTML §6.8 Editing (https://html.spec.whatwg.org/#editing-2)", () => {
   defineWPTDirectory("html/editing/editing-0/contenteditable", {}, {});
   defineWPTDirectory("html/editing/editing-0/spelling-and-grammar-checking", {}, {});
   defineWPTDirectory("html/editing/editing-0/writing-suggestions", {}, {});
-  defineWPTDirectory("html/editing/the-hidden-attribute", { "hidden-idl.html": HIDDEN_GETTER, "hidden-until-found-idl.html": HIDDEN_GETTER }, {});
+  defineWPTDirectory(
+    "html/editing/the-hidden-attribute",
+    { "hidden-idl.html": HIDDEN_GETTER, "hidden-until-found-idl.html": HIDDEN_GETTER },
+    {},
+  );
   defineWPTDirectory("html/editing/activation", {}, {});
 });
 
 describe("HTML §6.11 Drag and drop (https://html.spec.whatwg.org/#dnd)", () => {
   defineWPTDirectory("html/editing/dnd/dom", {}, {});
   defineWPTDirectory("html/editing/dnd/the-draggable-attribute", {}, {});
-  defineWPTDirectory("html/editing/dnd/synthetic", { "001.html": "DragEvent is not an own property of window, and its dataTransfer init member accepts any object (events area, docs/deviations.md)" }, {});
+  defineWPTDirectory(
+    "html/editing/dnd/synthetic",
+    {
+      "001.html":
+        "DragEvent is not an own property of window, and its dataTransfer init member accepts any object (events area, docs/deviations.md)",
+    },
+    {},
+  );
 });

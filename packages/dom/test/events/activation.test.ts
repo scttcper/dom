@@ -30,9 +30,12 @@ interface Log {
 
 function activatable(el: Element, name: string, log: Log, opts: { pre?: boolean; canceled?: boolean } = {}): Element {
   // Own data properties shadow whatever the element class defines (anchors, inputs, ...).
-  const def = (k: string, value: unknown) => Object.defineProperty(el, k, { value, writable: true, configurable: true });
+  const def = (k: string, value: unknown) =>
+    Object.defineProperty(el, k, { value, writable: true, configurable: true });
   def("_hasActivationBehavior", true);
-  def("_activationBehavior", (e: Event) => log.calls.push(`activate ${name} phase=${e.eventPhase} target=${(e.target as Element | null)?.localName}`));
+  def("_activationBehavior", (e: Event) =>
+    log.calls.push(`activate ${name} phase=${e.eventPhase} target=${(e.target as Element | null)?.localName}`),
+  );
   def("_legacyPreActivationBehavior", opts.pre ? () => log.calls.push(`pre ${name}`) : undefined);
   def("_legacyCanceledActivationBehavior", opts.canceled ? () => log.calls.push(`canceled ${name}`) : undefined);
   return el;

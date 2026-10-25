@@ -10,7 +10,17 @@ import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nextInTree, previousInTree } from "../nodes/traverse.ts";
 import { registerNodeIterator, type IteratorState } from "./live.ts";
-import { $active, $current, $filter, $impl, $inflight, $pointerBeforeReference, $reference, $root, $whatToShow } from "../keys.ts";
+import {
+  $active,
+  $current,
+  $filter,
+  $impl,
+  $inflight,
+  $pointerBeforeReference,
+  $reference,
+  $root,
+  $whatToShow,
+} from "../keys.ts";
 
 /** https://dom.spec.whatwg.org/#interface-nodefilter (constants; the interface object is a plain namespace-like object). */
 export const NodeFilter = Object.freeze({
@@ -130,7 +140,12 @@ export class NodeIterator extends Traverser implements IteratorState {
    */
   #traverse(next: boolean): Node | null {
     const root = this[$root];
-    const pos: IteratorState = { [$root]: root, [$reference]: this[$reference], [$pointerBeforeReference]: this[$pointerBeforeReference], [$inflight]: null };
+    const pos: IteratorState = {
+      [$root]: root,
+      [$reference]: this[$reference],
+      [$pointerBeforeReference]: this[$pointerBeforeReference],
+      [$inflight]: null,
+    };
     this[$inflight] = pos;
     try {
       for (;;) {
@@ -193,7 +208,9 @@ export class TreeWalker extends Traverser {
 
   set currentNode(node: Node) {
     if (node === null || typeof node !== "object" || !($impl in node)) {
-      throw new TypeError("Failed to set the 'currentNode' property on 'TreeWalker': The provided value is not of type 'Node'.");
+      throw new TypeError(
+        "Failed to set the 'currentNode' property on 'TreeWalker': The provided value is not of type 'Node'.",
+      );
     }
     this[$current] = node[$impl];
   }

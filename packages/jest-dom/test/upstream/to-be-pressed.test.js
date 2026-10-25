@@ -75,7 +75,9 @@ describe('.toBePressed', () => {
 
     expect(() =>
       expect(queryByTestId('button')).toBePressed(),
-    ).toThrowErrorMatchingInlineSnapshot(`[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePressed()]`)
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePressed()]`,
+    )
   })
 
   test('throws an error when element is not a button', () => {
@@ -85,6 +87,8 @@ describe('.toBePressed', () => {
 
     expect(() =>
       expect(queryByTestId('span')).toBePressed(),
-    ).toThrowErrorMatchingInlineSnapshot(`[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePressed()]`)
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePressed()]`,
+    )
   })
 })

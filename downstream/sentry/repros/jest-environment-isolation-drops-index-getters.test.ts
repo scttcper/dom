@@ -30,7 +30,11 @@ function testFile(make: () => any, engine: "jsdom" | "ctrl-dom"): string[] {
   // More children than the initial index-getter bound (32), so the table grows after the baseline.
   div.innerHTML = Array.from({ length: 40 }, (_, i) => `<span>${i}</span>`).join("");
   window.document.body.append(div);
-  const seen = [div.children[0]?.textContent, div.children[39]?.textContent, Array.from(div.children).length === 40 && Array.from(div.children).every(Boolean) ? "ok" : "holes"];
+  const seen = [
+    div.children[0]?.textContent,
+    div.children[39]?.textContent,
+    Array.from(div.children).length === 40 && Array.from(div.children).every(Boolean) ? "ok" : "holes",
+  ];
   window.close();
   if (engine === "ctrl-dom") restoreInterfaces(); // CtrlDomEnvironment teardown
   return seen;
@@ -39,6 +43,10 @@ function testFile(make: () => any, engine: "jsdom" | "ctrl-dom"): string[] {
 differential("indexed collection access across Jest test files in one worker", (make, engine) => {
   test("children[i] works in the first and in later files", () => {
     const files = [testFile(make, engine), testFile(make, engine), testFile(make, engine)];
-    expect(files).toEqual([["0", "39", "ok"], ["0", "39", "ok"], ["0", "39", "ok"]]);
+    expect(files).toEqual([
+      ["0", "39", "ok"],
+      ["0", "39", "ok"],
+      ["0", "39", "ok"],
+    ]);
   });
 });

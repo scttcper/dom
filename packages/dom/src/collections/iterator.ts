@@ -43,7 +43,10 @@ export class CollectionIterator extends Iterator<unknown, undefined> {
   }
 }
 
-Object.defineProperty(CollectionIterator.prototype, Symbol.toStringTag, { value: "Array Iterator", configurable: true });
+Object.defineProperty(CollectionIterator.prototype, Symbol.toStringTag, {
+  value: "Array Iterator",
+  configurable: true,
+});
 
 /** Array.prototype.values's ToObject step: collections only ever pass themselves, but `.call(x)` works on any array-like. */
 export function iterableTarget(self: unknown): ArrayLike<unknown> {

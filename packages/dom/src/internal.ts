@@ -47,34 +47,102 @@ export { createFileList } from "./window/FileList.ts";
 export { evaluateMediaQueryList, mediaEnvironment } from "./window/media.ts";
 export { windowInterfaces } from "./window/Window.ts";
 export { captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces } from "./window/isolation.ts";
-export { COMPAT, COMPAT_PROFILES, DEFAULT_COMPAT, compatExposes, deferredCompatMembers, hiddenGlobals, resolveCompat, type CompatEntry, type CompatProfile } from "./window/compat.ts";
+export {
+  COMPAT,
+  COMPAT_PROFILES,
+  DEFAULT_COMPAT,
+  compatExposes,
+  deferredCompatMembers,
+  hiddenGlobals,
+  resolveCompat,
+  type CompatEntry,
+  type CompatProfile,
+} from "./window/compat.ts";
 export { trackGlobalTimers } from "./window/timers.ts";
-export { VirtualClock, VirtualTimeout, installClock, clockNow, clockStats, skipIdleTime, virtualDate, virtualPerformance, type InstalledClock, type VirtualClockOptions } from "./window/clock.ts";
-export { FAILURE_CHANNEL, SPAN_CHANNEL, describeCall, describeNode, quote, setFailureSnapshot, setNodeDescriber, spanChannel, subscribeTestFailures, tracePromise, traceSync, tracing, type SpanContext } from "./trace.ts";
+export {
+  VirtualClock,
+  VirtualTimeout,
+  installClock,
+  clockNow,
+  clockStats,
+  skipIdleTime,
+  virtualDate,
+  virtualPerformance,
+  type InstalledClock,
+  type VirtualClockOptions,
+} from "./window/clock.ts";
+export {
+  FAILURE_CHANNEL,
+  SPAN_CHANNEL,
+  describeCall,
+  describeNode,
+  quote,
+  setFailureSnapshot,
+  setNodeDescriber,
+  spanChannel,
+  subscribeTestFailures,
+  tracePromise,
+  traceSync,
+  tracing,
+  type SpanContext,
+} from "./trace.ts";
 
 // --- events area ---
 export { dispatch, getCurrentEvent, retarget, nodeGetTheParent, setAssignedSlotLookup } from "./events/dispatch.ts";
 export { fireAnEvent, dispatchTrusted, fireSyntheticPointerEvent } from "./events/fire.ts";
 export { setTrusted, EventState } from "./events/Event.ts";
 export { reportException, setUncaughtExceptionHandler, type UncaughtExceptionHandler } from "./events/report.ts";
-export { setNotImplementedHandler, type NotImplementedError, type NotImplementedHandler } from "./window/not-implemented.ts";
+export {
+  setNotImplementedHandler,
+  type NotImplementedError,
+  type NotImplementedHandler,
+} from "./window/not-implemented.ts";
 export { createEvent } from "./events/createEvent.ts";
-export { installEventHandlers, getEventHandler, setEventHandler, GLOBAL_EVENT_HANDLER_EVENTS, WINDOW_EVENT_HANDLER_EVENTS, type EventHandlersKind } from "./events/handlers.ts";
+export {
+  installEventHandlers,
+  getEventHandler,
+  setEventHandler,
+  GLOBAL_EVENT_HANDLER_EVENTS,
+  WINDOW_EVENT_HANDLER_EVENTS,
+  type EventHandlersKind,
+} from "./events/handlers.ts";
 export { hasListeners, removeAllEventListeners } from "./events/listeners.ts";
 export type { ActivationTarget } from "./events/activation.ts";
 
 // --- dom-core ---
 export { NodeList } from "./collections/NodeList.ts";
-export { HTMLCollection, withNamedProperties, ensureCollectionIndexGetters, type ElementFilter } from "./collections/HTMLCollection.ts";
+export {
+  HTMLCollection,
+  withNamedProperties,
+  ensureCollectionIndexGetters,
+  type ElementFilter,
+} from "./collections/HTMLCollection.ts";
 export { indexGetterTable, ensureIndexGetters, type IndexGetterTable } from "./collections/indexed.ts";
 export { notifyMutationObservers, activeObservers } from "./observers/queue.ts";
 export { compareBoundaryPoints, nodeLength } from "./traversal/Range.ts";
-export { findSlot, assignedNodes, assignedElements, assignManually, findFlattenedSlottables, assignedSlot } from "./nodes/slots.ts";
-export { attachShadowRoot, getElementsByTagName, getElementsByTagNameNS, getElementsByClassName } from "./nodes/Element.ts";
+export {
+  findSlot,
+  assignedNodes,
+  assignedElements,
+  assignManually,
+  findFlattenedSlottables,
+  assignedSlot,
+} from "./nodes/slots.ts";
+export {
+  attachShadowRoot,
+  getElementsByTagName,
+  getElementsByTagNameNS,
+  getElementsByClassName,
+} from "./nodes/Element.ts";
 export { attrNode } from "./nodes/attr-nodes.ts";
 export { replaceData, splitText } from "./nodes/character-data.ts";
 export { inspectNode } from "./nodes/inspect.ts";
-export { validateAndExtract, isValidElementLocalName, isValidNamespacePrefix, isValidDoctypeName } from "./nodes/names.ts";
+export {
+  validateAndExtract,
+  isValidElementLocalName,
+  isValidNamespacePrefix,
+  isValidDoctypeName,
+} from "./nodes/names.ts";
 
 // --- forms area (html/forms) ---
 export {

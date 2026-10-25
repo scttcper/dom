@@ -4,7 +4,8 @@ import { tracingChannel } from "node:diagnostics_channel";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "vitest";
 
 const spans = tracingChannel("sentry-tests:span");
-const traced = <T>(op: string, description: string, fn: () => T): T => spans.traceSync(fn, { op, description, data: { rows: 1 }, async: false });
+const traced = <T>(op: string, description: string, fn: () => T): T =>
+  spans.traceSync(fn, { op, description, data: { rows: 1 }, async: false });
 
 describe("Cart", () => {
   beforeEach(() => {

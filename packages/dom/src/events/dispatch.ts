@@ -224,7 +224,9 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
   // Step 1.
   s.flags |= EF_DISPATCH;
   // Step 2.
-  const targetOverride = legacyTargetOverride ? ((target as unknown as { document: EventTarget }).document ?? target) : target;
+  const targetOverride = legacyTargetOverride
+    ? ((target as unknown as { document: EventTarget }).document ?? target)
+    : target;
   // Step 3.
   let activationTarget: EventTarget | null = null;
   // Step 4.
@@ -237,7 +239,10 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
   try {
     // Step 6.
     if (target !== relatedTarget || target === eventRelatedTarget) {
-      const touchList = (s.flags & EF_TOUCH_EVENT) !== 0 ? (event as unknown as { _touchTargetList(): EventTarget[] })._touchTargetList() : null;
+      const touchList =
+        (s.flags & EF_TOUCH_EVENT) !== 0
+          ? (event as unknown as { _touchTargetList(): EventTarget[] })._touchTargetList()
+          : null;
       s.pathStart = base;
       s.pathLength = 0;
       const targetImpl = (target as MaybeNode)[$impl];
@@ -246,7 +251,14 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       let targetRootIsShadow = targetRoot !== null && (targetRoot.flags & F_SHADOW_ROOT) !== 0;
       // Step 6.3. A Window target is exposed as its installed global (PF_WINDOW).
       const windowTarget = targetImpl === undefined && isWindowInstance(target);
-      appendToEventPath(target, windowTarget ? exposedWindow(target) : targetOverride, relatedTarget, retargetList(touchList, target), false, curRoot);
+      appendToEventPath(
+        target,
+        windowTarget ? exposedWindow(target) : targetOverride,
+        relatedTarget,
+        retargetList(touchList, target),
+        false,
+        curRoot,
+      );
       if (windowTarget) PATH[base + 4] = (PATH[base + 4] as number) | PF_WINDOW;
       s.pathLength = 1;
       // Offset of the last struct with a shadow-adjusted target (clearTargetsStruct, step 6.10).
@@ -270,7 +282,11 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
         // 6.9.1.
         if (slottable) {
           slottable = false;
-          if (parentRoot !== null && (parentRoot.flags & F_SHADOW_ROOT) !== 0 && (parentRoot.node as unknown as ShadowRootLike).mode === "closed") {
+          if (
+            parentRoot !== null &&
+            (parentRoot.flags & F_SHADOW_ROOT) !== 0 &&
+            (parentRoot.node as unknown as ShadowRootLike).mode === "closed"
+          ) {
             slotInClosedTree = true;
           }
         }
@@ -280,11 +296,16 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
         relatedTarget = relatedSlow ? retarget(eventRelatedTarget, parent) : eventRelatedTarget;
         const touchTargets = retargetList(touchList, parent);
         // 6.9.5.
-        if (pi === undefined || (targetRoot !== null && (!targetRootIsShadow || isShadowIncludingInclusiveAncestor(targetRoot, pi)))) {
-          if (isActivationEvent && bubbles && activationTarget === null && hasActivationBehavior(parent)) activationTarget = parent;
+        if (
+          pi === undefined ||
+          (targetRoot !== null && (!targetRootIsShadow || isShadowIncludingInclusiveAncestor(targetRoot, pi)))
+        ) {
+          if (isActivationEvent && bubbles && activationTarget === null && hasActivationBehavior(parent))
+            activationTarget = parent;
           appendToEventPath(parent, null, relatedTarget, touchTargets, slotInClosedTree, parentRoot);
           // The only non-node parent is a document's Window.
-          if (pi === undefined && isWindowInstance(parent)) PATH[pathStack.top - STRIDE + 4] = (PATH[pathStack.top - STRIDE + 4] as number) | PF_WINDOW;
+          if (pi === undefined && isWindowInstance(parent))
+            PATH[pathStack.top - STRIDE + 4] = (PATH[pathStack.top - STRIDE + 4] as number) | PF_WINDOW;
           s.pathLength++;
         } else if (parent === relatedTarget) {
           // 6.9.6.
@@ -294,7 +315,8 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
           target = parent;
           targetRoot = parentRoot;
           targetRootIsShadow = targetRoot !== null && (targetRoot.flags & F_SHADOW_ROOT) !== 0;
-          if (isActivationEvent && activationTarget === null && hasActivationBehavior(target)) activationTarget = target;
+          if (isActivationEvent && activationTarget === null && hasActivationBehavior(target))
+            activationTarget = target;
           lastShadowAdjusted = pathStack.top;
           appendToEventPath(parent, target, relatedTarget, touchTargets, slotInClosedTree, parentRoot);
           s.pathLength++;
@@ -311,10 +333,12 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       // Steps 6.10-6.11.
       {
         const o = lastShadowAdjusted;
-        if (inShadowTree(PATH[o + 1] as EventTarget) || inShadowTree(PATH[o + 2] as EventTarget | null)) clearTargets = true;
+        if (inShadowTree(PATH[o + 1] as EventTarget) || inShadowTree(PATH[o + 2] as EventTarget | null))
+          clearTargets = true;
         else {
           const touches = PATH[o + 3] as EventTarget[] | null;
-          if (touches !== null) for (let i = 0; i < touches.length; i++) if (inShadowTree(touches[i])) clearTargets = true;
+          if (touches !== null)
+            for (let i = 0; i < touches.length; i++) if (inShadowTree(touches[i])) clearTargets = true;
         }
       }
       // Step 6.12.
@@ -423,7 +447,16 @@ function invoke(event: Event, s: EventState, o: number, phase: number): void {
  * https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke — `item` holds the listeners;
  * `currentTarget` is what script sees (the installed global for a Window item).
  */
-function innerInvoke(event: Event, s: EventState, item: EventTarget, currentTarget: EventTarget, type: string, list: ListenerList, phase: number, inShadow: boolean): boolean {
+function innerInvoke(
+  event: Event,
+  s: EventState,
+  item: EventTarget,
+  currentTarget: EventTarget,
+  type: string,
+  list: ListenerList,
+  phase: number,
+  inShadow: boolean,
+): boolean {
   let found = false;
   // The snapshot: mutations while iterating copy-on-write (see listeners.ts).
   const items = list.items;
@@ -449,7 +482,8 @@ function innerInvoke(event: Event, s: EventState, item: EventTarget, currentTarg
         if (typeof callback === "function") callback.call(currentTarget, event);
         else {
           const handleEvent = callback.handleEvent;
-          if (typeof handleEvent !== "function") throw new TypeError("The provided callback is not a function and has no callable 'handleEvent' property.");
+          if (typeof handleEvent !== "function")
+            throw new TypeError("The provided callback is not a function and has no callable 'handleEvent' property.");
           handleEvent.call(callback, event);
         }
       } catch (error) {

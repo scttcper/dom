@@ -13,7 +13,9 @@ const checkout = fileURLToPath(new URL("../checkout/", import.meta.url));
 export const hasCheckout = existsSync(`${checkout}node_modules/jest-environment-jsdom/package.json`);
 const requireFromCheckout = createRequire(`${checkout}package.json`);
 const requireFromReact = createRequire(new URL("../../../packages/react/package.json", import.meta.url));
-export const { JSDOM } = requireFromReact("jsdom") as { JSDOM: new (html: string, options?: object) => { window: any } };
+export const { JSDOM } = requireFromReact("jsdom") as {
+  JSDOM: new (html: string, options?: object) => { window: any };
+};
 
 export type AnyEnvironment = {
   global: any;
@@ -27,7 +29,14 @@ export function jestConfig(testEnvironmentOptions: Record<string, unknown> = {})
   return {
     config: {
       globalConfig: {},
-      projectConfig: { rootDir: "/", testEnvironmentOptions, globals: {}, fakeTimers: {}, setupFiles: [], snapshotSerializers: [] },
+      projectConfig: {
+        rootDir: "/",
+        testEnvironmentOptions,
+        globals: {},
+        fakeTimers: {},
+        setupFiles: [],
+        snapshotSerializers: [],
+      },
     },
     context: { console, docblockPragmas: {}, testPath: "/repro.test.js" },
   };
@@ -48,14 +57,22 @@ export const environments: Record<"jsdom" | "ctrl-dom", () => Promise<AnyEnviron
 };
 
 export const windows: Record<"jsdom" | "ctrl-dom", () => any> = {
-  jsdom: () => new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/", pretendToBeVisual: true }).window,
+  jsdom: () =>
+    new JSDOM("<!doctype html><html><head></head><body></body></html>", {
+      url: "http://localhost/",
+      pretendToBeVisual: true,
+    }).window,
   "ctrl-dom": () => createWindow({ url: "http://localhost/" }),
 };
 
 export { installGlobals };
 
 /** Run a Jest fixture (repros/fixtures) with the upstream checkout's Jest under one environment. */
-export function runJestFixture(fixture: string, engine: "jsdom" | "ctrl-dom", extraArgs: string[] = []): { failures: string[]; message: string } | null {
+export function runJestFixture(
+  fixture: string,
+  engine: "jsdom" | "ctrl-dom",
+  extraArgs: string[] = [],
+): { failures: string[]; message: string } | null {
   if (!hasCheckout) return null;
   const { spawnSync } = requireFromReact("node:child_process") as typeof import("node:child_process");
   const environment = engine === "jsdom" ? "jsdom" : fileURLToPath(new URL("../jest-environment.mjs", import.meta.url));
@@ -74,7 +91,12 @@ export function runJestFixture(fixture: string, engine: "jsdom" | "ctrl-dom", ex
   );
   const json = JSON.parse(run.stdout);
   return {
-    failures: json.testResults.flatMap((r: any) => r.assertionResults.filter((a: any) => a.status !== "passed").map((a: any) => a.title)),
-    message: json.testResults.map((r: any) => r.message).join("\n").trim(),
+    failures: json.testResults.flatMap((r: any) =>
+      r.assertionResults.filter((a: any) => a.status !== "passed").map((a: any) => a.title),
+    ),
+    message: json.testResults
+      .map((r: any) => r.message)
+      .join("\n")
+      .trim(),
   };
 }

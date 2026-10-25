@@ -12,7 +12,12 @@ import { ERROR_MAX_LINES, envDebugFormat } from "./agent-debug.ts";
 import { prettyDOM } from "./pretty-dom.ts";
 import { $impl } from "@ctrl/dom/internal";
 
-export { AriaTemplateError, matchAriaSnapshot, parseAriaTemplate, type AriaSnapshotMatch } from "./aria-snapshot-match.ts";
+export {
+  AriaTemplateError,
+  matchAriaSnapshot,
+  parseAriaTemplate,
+  type AriaSnapshotMatch,
+} from "./aria-snapshot-match.ts";
 export { envDebugFormat } from "./agent-debug.ts";
 
 /** Line budget for "what changed" in a failure report. */
@@ -56,12 +61,15 @@ export function captureFailureSnapshot(document: any): FailureSnapshot | null {
  * (a failed query under `CTRL_DOM_DEBUG=aria` prints one) is not repeated.
  */
 export function formatFailureSnapshot(snapshot: FailureSnapshot, errorMessage: string): string {
-  if (snapshot.format === "compact") return `DOM of <body> when the test failed (CTRL_DOM_DEBUG=compact):\n${snapshot.text}`;
-  if (errorMessage.includes(snapshot.text)) return "Accessibility snapshot of <body> when the test failed: the same as above.";
+  if (snapshot.format === "compact")
+    return `DOM of <body> when the test failed (CTRL_DOM_DEBUG=compact):\n${snapshot.text}`;
+  if (errorMessage.includes(snapshot.text))
+    return "Accessibility snapshot of <body> when the test failed: the same as above.";
   let report = `Accessibility snapshot of <body> when the test failed (CTRL_DOM_DEBUG=aria):\n${snapshot.text}`;
   if (snapshot.previous !== undefined) {
     if (snapshot.previous === snapshot.full) report += "\n\nUnchanged since the previous snapshot in this test.";
-    else report += `\n\nChanges since the previous snapshot in this test:\n${budgetLines(diffAriaSnapshots(snapshot.previous, snapshot.full).split("\n"), CHANGES_MAX_LINES).join("\n")}`;
+    else
+      report += `\n\nChanges since the previous snapshot in this test:\n${budgetLines(diffAriaSnapshots(snapshot.previous, snapshot.full).split("\n"), CHANGES_MAX_LINES).join("\n")}`;
   }
   return report;
 }

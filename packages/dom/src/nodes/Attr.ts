@@ -16,7 +16,15 @@ export class Attr extends Node {
   [$owner]: Element | null;
 
   /** @internal */
-  constructor(doc: Document, localName: string, value: string, ns: string | null, prefix: string | null, owner: Element | null, record: AttrRecord | null = null) {
+  constructor(
+    doc: Document,
+    localName: string,
+    value: string,
+    ns: string | null,
+    prefix: string | null,
+    owner: Element | null,
+    record: AttrRecord | null = null,
+  ) {
     super(ATTRIBUTE_NODE, doc);
     const impl = this[$impl];
     impl.name = localName;

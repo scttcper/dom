@@ -14,7 +14,10 @@ export function ctrlDomEnvironment(path = ENVIRONMENT): Plugin {
   return {
     name: "ctrl-dom-environment",
     enforce: "pre",
-    config: (config) => ((config as { test?: { environment?: string } }).test?.environment === "ctrl-dom" ? { test: { environment: path } } : undefined),
+    config: (config) =>
+      (config as { test?: { environment?: string } }).test?.environment === "ctrl-dom"
+        ? { test: { environment: path } }
+        : undefined,
     resolveId: (id) => (id === "vitest-environment-ctrl-dom" ? path : null),
   };
 }

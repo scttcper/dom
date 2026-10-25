@@ -1,7 +1,11 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/document/interceptor.ts
 
-import type {Element, HTMLInputElement, HTMLTextAreaElement} from '../dom-types.ts'
+import type {
+  Element,
+  HTMLInputElement,
+  HTMLTextAreaElement,
+} from '../dom-types.ts'
 import {isElementType} from '../utils/index.ts'
 import {startTrackValue, trackOrSetValue} from './trackValue.ts'
 import {

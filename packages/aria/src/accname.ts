@@ -349,7 +349,7 @@ function querySelectorAllSubtree(el: NodeImpl, name: string, value: string | nul
 }
 
 function collectDescendantsWithAttr(root: NodeImpl, name: string, value: string | null, out: NodeImpl[]): void {
-  for (let n = root.first; n !== null; ) {
+  for (let n = root.first; n !== null;) {
     if (n.type === ELEMENT_NODE) {
       const v = attr(n, name);
       if (v !== null && (value === null || v === value)) out.push(n);
@@ -555,7 +555,10 @@ function prohibitsNaming(role: string | null, flavor: Flavor): boolean {
  * the replacement is passed explicitly, keeping upstream's `computedStyleSupportsPseudoElements`
  * default (`false` when the caller did not pass `getComputedStyle`).
  */
-export function withStyleOverride(root: NodeImpl, options: ComputeTextAlternativeOptions | undefined): ComputeTextAlternativeOptions | undefined {
+export function withStyleOverride(
+  root: NodeImpl,
+  options: ComputeTextAlternativeOptions | undefined,
+): ComputeTextAlternativeOptions | undefined {
   if (options !== undefined && options.getComputedStyle !== undefined) return options;
   const gcs = getComputedStyleOverride(root);
   if (gcs === null) return options;

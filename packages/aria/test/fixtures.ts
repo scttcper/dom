@@ -284,6 +284,7 @@ fixtures.push(
 
 // Combinatorial fixtures: every element name aria-query / dom-accessibility-api know about,
 // crossed with the attributes their role tables branch on.
+// oxfmt-ignore
 const TAGS = [
   "a", "abbr", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "blockquote", "button",
   "canvas", "caption", "cite", "code", "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div",
@@ -313,13 +314,13 @@ const ATTR_SETS = [
   'type="text" list="lbl"',
   'type="search"',
   'type="number" value="3"',
-  'multiple',
+  "multiple",
   'size="4"',
   'size="1"',
-  'hidden',
+  "hidden",
   'aria-hidden="true"',
   'style="display:none"',
-  'disabled',
+  "disabled",
   'title="Title only"',
 ];
 export const comboFixtures: Fixture[] = ATTR_SETS.map((attrs) => ({

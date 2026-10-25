@@ -27,10 +27,14 @@ import { describe, expect, test } from "vitest";
 import { runJestFixture } from "./engines.ts";
 
 describe.each(["jsdom", "ctrl-dom"] as const)("jest-environment-%s", (engine) => {
-  test("requestAnimationFrame keeps working after a frame was requested under fake timers that were uninstalled", { timeout: 60_000 }, () => {
-    const result = runJestFixture("raf-fake-timers.fixture.cjs", engine);
-    if (result === null) return; // needs the upstream checkout (pnpm downstream:react-aria --install)
-    expect(result.message).toBe("");
-    expect(result.failures).toEqual([]);
-  });
+  test(
+    "requestAnimationFrame keeps working after a frame was requested under fake timers that were uninstalled",
+    { timeout: 60_000 },
+    () => {
+      const result = runJestFixture("raf-fake-timers.fixture.cjs", engine);
+      if (result === null) return; // needs the upstream checkout (pnpm downstream:react-aria --install)
+      expect(result.message).toBe("");
+      expect(result.failures).toEqual([]);
+    },
+  );
 });

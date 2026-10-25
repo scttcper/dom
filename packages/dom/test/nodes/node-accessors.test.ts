@@ -60,16 +60,43 @@ function everyNodeType() {
 describe("Node attribute accessors live on Node.prototype — https://webidl.spec.whatwg.org/#es-attributes", () => {
   test("every regular attribute of interface Node is an accessor own property of Node.prototype", () => {
     const names = [
-      "nodeType", "nodeName", "baseURI", "isConnected", "ownerDocument", "parentNode", "parentElement",
-      "childNodes", "firstChild", "lastChild", "previousSibling", "nextSibling", "nodeValue", "textContent",
+      "nodeType",
+      "nodeName",
+      "baseURI",
+      "isConnected",
+      "ownerDocument",
+      "parentNode",
+      "parentElement",
+      "childNodes",
+      "firstChild",
+      "lastChild",
+      "previousSibling",
+      "nextSibling",
+      "nodeValue",
+      "textContent",
     ];
-    const missing = names.filter((n) => typeof Object.getOwnPropertyDescriptor(window.Node.prototype, n)?.get !== "function");
+    const missing = names.filter(
+      (n) => typeof Object.getOwnPropertyDescriptor(window.Node.prototype, n)?.get !== "function",
+    );
     expect(missing).toEqual([]);
-    for (const n of ["nodeValue", "textContent"]) expect(typeof Object.getOwnPropertyDescriptor(window.Node.prototype, n)!.set).toBe("function");
+    for (const n of ["nodeValue", "textContent"])
+      expect(typeof Object.getOwnPropertyDescriptor(window.Node.prototype, n)!.set).toBe("function");
   });
 
   test("subclass prototypes do not shadow nodeName / nodeValue / textContent (one accessor, as in jsdom and browsers)", () => {
-    for (const I of ["Element", "HTMLElement", "CharacterData", "Text", "Comment", "CDATASection", "ProcessingInstruction", "DocumentType", "DocumentFragment", "Document", "Attr"]) {
+    for (const I of [
+      "Element",
+      "HTMLElement",
+      "CharacterData",
+      "Text",
+      "Comment",
+      "CDATASection",
+      "ProcessingInstruction",
+      "DocumentType",
+      "DocumentFragment",
+      "Document",
+      "Attr",
+    ]) {
       for (const n of ["nodeName", "nodeValue", "textContent"]) {
         expect(Object.getOwnPropertyDescriptor(window[I].prototype, n), `${I}.prototype.${n}`).toBeUndefined();
       }

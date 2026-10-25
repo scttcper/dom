@@ -35,7 +35,9 @@ differential("Node constants are exposed on the prototype", (make) => {
 
   test("stock dom-accessibility-api computes aria-label / content names", () => {
     const window = make();
-    const { computeAccessibleName } = requireFromReact("dom-accessibility-api") as typeof import("dom-accessibility-api");
+    const { computeAccessibleName } = requireFromReact(
+      "dom-accessibility-api",
+    ) as typeof import("dom-accessibility-api");
     window.document.body.innerHTML = '<span role="checkbox" aria-label="lease.pdf"></span><button>Submit</button>';
     const [checkbox, button] = window.document.body.children;
     expect(computeAccessibleName(checkbox)).toBe("lease.pdf");

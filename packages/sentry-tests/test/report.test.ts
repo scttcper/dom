@@ -11,7 +11,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vitest";
-import { parseDsn, parseStack, sendEnvelope, serializeEnvelope, toSentryFrames, type Envelope } from "../src/envelope.ts";
+import {
+  parseDsn,
+  parseStack,
+  sendEnvelope,
+  serializeEnvelope,
+  toSentryFrames,
+  type Envelope,
+} from "../src/envelope.ts";
 import { Delivery } from "../src/delivery.ts";
 import { resolveOptions, type ResolvedOptions } from "../src/options.ts";
 import { buildReport, FILE_FAILURE, type TestCaseReport, type TestFileReport } from "../src/report.ts";
@@ -32,7 +39,15 @@ const options = (overrides: Partial<ResolvedOptions> = {}): ResolvedOptions => (
   ...overrides,
 });
 
-const span = (span_id: string, op: string, description: string, start: number, end: number, parent?: string, extra: Partial<CollectedSpan> = {}): CollectedSpan => ({
+const span = (
+  span_id: string,
+  op: string,
+  description: string,
+  start: number,
+  end: number,
+  parent?: string,
+  extra: Partial<CollectedSpan> = {},
+): CollectedSpan => ({
   span_id,
   parent_span_id: parent,
   op,
@@ -81,9 +96,17 @@ const testCase = (overrides: Partial<TestCaseReport>): TestCaseReport => ({
   ...overrides,
 });
 
-const file = (tests: TestCaseReport[], data: CollectedFile | null = collected()): TestFileReport => ({ runner: "vitest", root: ROOT, file: `${ROOT}/src/signup.test.tsx`, tests, collected: data, environmentSetupMs: 2.3 });
+const file = (tests: TestCaseReport[], data: CollectedFile | null = collected()): TestFileReport => ({
+  runner: "vitest",
+  root: ROOT,
+  file: `${ROOT}/src/signup.test.tsx`,
+  tests,
+  collected: data,
+  environmentSetupMs: 2.3,
+});
 
-const payloads = (report: ReturnType<typeof buildReport>) => report.envelopes.flatMap((e) => e.items.map((i) => i.payload as any));
+const payloads = (report: ReturnType<typeof buildReport>) =>
+  report.envelopes.flatMap((e) => e.items.map((i) => i.payload as any));
 
 describe("buildReport: a transaction per test file", () => {
   test("the collected tree as the file's spans: describe block, test, hook, test function, and the library spans under them", () => {
@@ -103,7 +126,13 @@ describe("buildReport: a transaction per test file", () => {
     const root = tx.contexts.trace.span_id;
     const byOp = (op: string) => tx.spans.find((s: any) => s.op === op);
     expect(byOp("test.suite")).toMatchObject({ description: "Signup", parent_span_id: root });
-    expect(byOp("test.case")).toMatchObject({ description: "Signup > submits", parent_span_id: SUITE, status: "ok", data: { "test.retries": 0, "test.flaky": false }, trace_id: tx.contexts.trace.trace_id });
+    expect(byOp("test.case")).toMatchObject({
+      description: "Signup > submits",
+      parent_span_id: SUITE,
+      status: "ok",
+      data: { "test.retries": 0, "test.flaky": false },
+      trace_id: tx.contexts.trace.trace_id,
+    });
     expect(byOp("test.hook")).toMatchObject({ description: "beforeEach", parent_span_id: CASE });
     expect(byOp("react.render").parent_span_id).toBe(FN);
     expect(byOp("testing-library.query").parent_span_id).toBe(WAIT);
@@ -135,8 +164,15 @@ describe("buildReport: a transaction per test file", () => {
       startedAt: 1000,
       endedAt: 1001,
       droppedSpans: 0,
-      tests: Object.fromEntries(tests.map((t, i) => [t.key, { spanIds: [`case-${i}`], droppedSpans: 0, failures: [] }])),
-      spans: tests.flatMap((t, i) => [span(`case-${i}`, "test.case", t.name, 1000 + i / 1000, 1000 + (i + 1) / 1000), ...Array.from({ length: 3 }, (_, j) => span(`${i}-${j}`, "react.render", "render(<A />)", 1000 + i / 1000, 1000 + i / 1000, `case-${i}`))]),
+      tests: Object.fromEntries(
+        tests.map((t, i) => [t.key, { spanIds: [`case-${i}`], droppedSpans: 0, failures: [] }]),
+      ),
+      spans: tests.flatMap((t, i) => [
+        span(`case-${i}`, "test.case", t.name, 1000 + i / 1000, 1000 + (i + 1) / 1000),
+        ...Array.from({ length: 3 }, (_, j) =>
+          span(`${i}-${j}`, "react.render", "render(<A />)", 1000 + i / 1000, 1000 + i / 1000, `case-${i}`),
+        ),
+      ]),
     };
     const report = buildReport(file(tests, data), options());
     expect(report.traces).toBe(1);
@@ -144,7 +180,11 @@ describe("buildReport: a transaction per test file", () => {
     // 400 tests × (1 test span + 3 under it) = 1600 spans: 250 tests per transaction.
     expect(root.spans).toHaveLength(1000);
     expect(part.spans).toHaveLength(600);
-    expect(part.contexts.trace).toMatchObject({ trace_id: root.contexts.trace.trace_id, parent_span_id: root.contexts.trace.span_id, data: { "test.part": 2, "test.parts": 2 } });
+    expect(part.contexts.trace).toMatchObject({
+      trace_id: root.contexts.trace.trace_id,
+      parent_span_id: root.contexts.trace.span_id,
+      data: { "test.part": 2, "test.parts": 2 },
+    });
     expect(part.transaction).toBe("src/signup.test.tsx (part 2 of 2)");
     for (const tx of [root, part]) {
       const ids = new Set(tx.spans.map((s: any) => s.span_id).concat(tx.contexts.trace.span_id));
@@ -156,7 +196,9 @@ describe("buildReport: a transaction per test file", () => {
 
   test("every span's parent is in the transaction: one whose parent is missing hangs off the file's root", () => {
     const data = collected();
-    data.spans.push(span("d000000000000002", "testing-library.query", "getByText(…)", 1000.25, 1000.26, "9999999999999999"));
+    data.spans.push(
+      span("d000000000000002", "testing-library.query", "getByText(…)", 1000.25, 1000.26, "9999999999999999"),
+    );
     const [tx] = payloads(buildReport(file([testCase({})], data), options()));
     const ids = new Set(tx.spans.map((s: any) => s.span_id).concat(tx.contexts.trace.span_id));
     for (const s of tx.spans) expect(ids.has(s.parent_span_id)).toBe(true);
@@ -187,7 +229,16 @@ describe("buildReport: an issue per failing test", () => {
     ]);
   const failing = testCase({
     state: "fail",
-    errors: [{ name: "AssertionError", message: "expected 1 to be 2", frames: [{ method: "inner", file: `${ROOT}/src/a.ts`, line: 3, column: 5 }, { method: "outer", file: `${ROOT}/node_modules/x/index.js`, line: 9, column: 1 }] }],
+    errors: [
+      {
+        name: "AssertionError",
+        message: "expected 1 to be 2",
+        frames: [
+          { method: "inner", file: `${ROOT}/src/a.ts`, line: 3, column: 5 },
+          { method: "outer", file: `${ROOT}/node_modules/x/index.js`, line: 9, column: 1 },
+        ],
+      },
+    ],
   });
 
   test("fingerprinted by file and test name, linked to the test's span, with what the test did as breadcrumbs and the page attached", () => {
@@ -200,9 +251,16 @@ describe("buildReport: an issue per failing test", () => {
       fingerprint: ["sentry-tests.test-failure", "src/signup.test.tsx", "Signup > submits"],
       transaction: "src/signup.test.tsx > Signup > submits",
       tags: { "test.name": "Signup > submits", flaky: "false", retries: "0" },
-      contexts: { clock: { skipped_ms: 200, pending_timers: 1 }, test: { name: "Signup > submits", file: "src/signup.test.tsx" } },
+      contexts: {
+        clock: { skipped_ms: 200, pending_timers: 1 },
+        test: { name: "Signup > submits", file: "src/signup.test.tsx" },
+      },
     });
-    expect(event.contexts.trace).toMatchObject({ trace_id: tx.contexts.trace.trace_id, span_id: CASE, parent_span_id: SUITE });
+    expect(event.contexts.trace).toMatchObject({
+      trace_id: tx.contexts.trace.trace_id,
+      span_id: CASE,
+      parent_span_id: SUITE,
+    });
     expect(tx.spans.find((s: any) => s.op === "test.case").status).toBe("internal_error");
     const exception = event.exception.values[0];
     expect(exception).toMatchObject({ type: "AssertionError", value: "expected 1 to be 2" });
@@ -213,51 +271,91 @@ describe("buildReport: an issue per failing test", () => {
     ]);
     // Hooks and library calls, not the test's own structure spans; the details are in the message
     // (Spotlight shows a breadcrumb's data instead of its message).
-    expect(event.breadcrumbs.values.map((b: any) => b.message)).toEqual(["beforeEach (5.0 ms)", "render(<Signup />) (10.0 ms)", "waitFor(() => …) (200 ms, 3 checks)", 'getByText("Done") (10.0 ms)']);
+    expect(event.breadcrumbs.values.map((b: any) => b.message)).toEqual([
+      "beforeEach (5.0 ms)",
+      "render(<Signup />) (10.0 ms)",
+      "waitFor(() => …) (200 ms, 3 checks)",
+      'getByText("Done") (10.0 ms)',
+    ]);
     expect(event.breadcrumbs.values.every((b: any) => b.data === undefined)).toBe(true);
-    expect(errorEnvelope.items.filter((i) => i.type === "attachment").map((i: any) => [i.filename, i.contentType, i.payload])).toEqual([
+    expect(
+      errorEnvelope.items
+        .filter((i) => i.type === "attachment")
+        .map((i: any) => [i.filename, i.contentType, i.payload]),
+    ).toEqual([
       ["page.html", "text/html", "<body></body>"],
       ["accessibility-snapshot.txt", "text/plain", '- button "Save"'],
     ]);
   });
 
   test("the message loses terminal colors, and its page dump when the page is attached", () => {
-    const message = "Unable to find role=\"option\" and name \"Option Three\"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  <div />";
+    const message =
+      'Unable to find role="option" and name "Option Three"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  <div />';
     const withPage = testCase({ state: "fail", errors: [{ name: "TestingLibraryElementError", message }] });
-    expect(payloads(buildReport(file([withPage], failingData()), options()))[1].exception.values[0].value).toBe('Unable to find role="option" and name "Option Three"\n\n(The page when the test failed is attached: page.html, accessibility-snapshot.txt.)');
-    const withoutPage = payloads(buildReport(file([withPage], failingData()), options({ attachments: false })))[1].exception.values[0].value;
+    expect(payloads(buildReport(file([withPage], failingData()), options()))[1].exception.values[0].value).toBe(
+      'Unable to find role="option" and name "Option Three"\n\n(The page when the test failed is attached: page.html, accessibility-snapshot.txt.)',
+    );
+    const withoutPage = payloads(buildReport(file([withPage], failingData()), options({ attachments: false })))[1]
+      .exception.values[0].value;
     expect(withoutPage).toContain("Ignored nodes: comments, script, style\n<body>\n  <div />");
     expect(withoutPage).not.toContain("\u001b[");
   });
 
   test("a test that failed on every attempt reports its last attempt's error, the one its page is from", () => {
-    const data = collected([{ error: { message: "save failed" }, attachments: [{ filename: "page.html", contentType: "text/html", data: "<body>saving</body>" }], contexts: {} }]);
-    const failing = testCase({ state: "fail", retries: 1, errors: [{ message: "loading failed" }, { message: "save failed" }] });
+    const data = collected([
+      {
+        error: { message: "save failed" },
+        attachments: [{ filename: "page.html", contentType: "text/html", data: "<body>saving</body>" }],
+        contexts: {},
+      },
+    ]);
+    const failing = testCase({
+      state: "fail",
+      retries: 1,
+      errors: [{ message: "loading failed" }, { message: "save failed" }],
+    });
     expect(payloads(buildReport(file([failing], data), options()))[1].exception.values[0].value).toBe("save failed");
   });
 
   test("an error whose name the runner lost (Jest's results) takes it from the worker's capture", () => {
-    const data = collected([{ error: { name: "TestingLibraryElementError", message: "Unable to find role" }, attachments: [], contexts: {} }]);
-    const event = payloads(buildReport(file([testCase({ state: "fail", errors: [{ message: "Unable to find role" }] })], data), options()))[1];
-    expect(event.exception.values[0]).toMatchObject({ type: "TestingLibraryElementError", value: "Unable to find role" });
+    const data = collected([
+      { error: { name: "TestingLibraryElementError", message: "Unable to find role" }, attachments: [], contexts: {} },
+    ]);
+    const event = payloads(
+      buildReport(file([testCase({ state: "fail", errors: [{ message: "Unable to find role" }] })], data), options()),
+    )[1];
+    expect(event.exception.values[0]).toMatchObject({
+      type: "TestingLibraryElementError",
+      value: "Unable to find role",
+    });
   });
 
   test("attachments: false attaches nothing; failures: false sends no issue", () => {
-    expect(buildReport(file([failing], failingData()), options({ attachments: false })).envelopes[1].items).toHaveLength(1);
+    expect(
+      buildReport(file([failing], failingData()), options({ attachments: false })).envelopes[1].items,
+    ).toHaveLength(1);
     expect(buildReport(file([failing], failingData()), options({ failures: false })).failures).toBe(0);
   });
 });
 
 describe("buildReport: an issue per flaky test", () => {
   test("a warning grouped by test, with the failed attempt's error under a FlakyTest exception", () => {
-    const report = buildReport(file([testCase({ retries: 1, flaky: true })], collected([{ error: { name: "Error", message: "timed out" }, attachments: [], contexts: {} }])), options());
+    const report = buildReport(
+      file(
+        [testCase({ retries: 1, flaky: true })],
+        collected([{ error: { name: "Error", message: "timed out" }, attachments: [], contexts: {} }]),
+      ),
+      options(),
+    );
     expect(report.flaky).toBe(1);
     const event = payloads(report)[1];
     expect(event.level).toBe("warning");
     expect(event.fingerprint).toEqual(["sentry-tests.flaky-test", "src/signup.test.tsx", "Signup > submits"]);
     expect(event.tags).toMatchObject({ flaky: "true", retries: "1" });
     // One exception, so every UI titles the issue as flaky.
-    expect(event.exception.values.map((v: any) => [v.type, v.value])).toEqual([["FlakyTest", "Signup > submits failed, then passed on retry 1. The failed attempt:\n\nError: timed out"]]);
+    expect(event.exception.values.map((v: any) => [v.type, v.value])).toEqual([
+      ["FlakyTest", "Signup > submits failed, then passed on retry 1. The failed attempt:\n\nError: timed out"],
+    ]);
   });
 
   test("with a span per attempt (Jest), the issue links to the failed attempt and shows what it did", () => {
@@ -271,13 +369,27 @@ describe("buildReport: an issue per flaky test", () => {
     expect(event.contexts.trace.span_id).toBe(CASE);
     expect(event.breadcrumbs.values.map((b: any) => b.message)).not.toContain("render(<Retried />) (10.0 ms)");
     // The test's result belongs to its last attempt.
-    expect(tx.spans.find((s: any) => s.span_id === "c000000000000002").data).toMatchObject({ "test.retry": 1, "test.retries": 1, "test.flaky": true });
+    expect(tx.spans.find((s: any) => s.span_id === "c000000000000002").data).toMatchObject({
+      "test.retry": 1,
+      "test.retries": 1,
+      "test.flaky": true,
+    });
   });
 });
 
 describe("buildReport: console output, files that fail to load, sampling", () => {
   test("a test's console output joins its spans in the failure's breadcrumbs, in time order", () => {
-    const failing = testCase({ state: "fail", errors: [{ message: "boom" }], console: [{ timestamp: 1000.15, stream: "stderr", message: "Warning: An update to Signup inside a test was not wrapped in act(...)" }] });
+    const failing = testCase({
+      state: "fail",
+      errors: [{ message: "boom" }],
+      console: [
+        {
+          timestamp: 1000.15,
+          stream: "stderr",
+          message: "Warning: An update to Signup inside a test was not wrapped in act(...)",
+        },
+      ],
+    });
     const event = payloads(buildReport(file([failing]), options()))[1];
     expect(event.breadcrumbs.values.map((b: any) => [b.category, b.level])).toEqual([
       ["test.hook", "info"],
@@ -289,7 +401,13 @@ describe("buildReport: console output, files that fail to load, sampling", () =>
   });
 
   test("a file that failed to load is an issue of its own, with no trace", () => {
-    const report = buildReport({ ...file([], null), outsideTests: [{ name: FILE_FAILURE, error: { name: "SyntaxError", message: "Unexpected token" } }] }, options());
+    const report = buildReport(
+      {
+        ...file([], null),
+        outsideTests: [{ name: FILE_FAILURE, error: { name: "SyntaxError", message: "Unexpected token" } }],
+      },
+      options(),
+    );
     expect(report).toMatchObject({ traces: 0, failures: 1 });
     const [event] = payloads(report);
     expect(event.fingerprint).toEqual(["sentry-tests.test-failure", "src/signup.test.tsx", FILE_FAILURE]);
@@ -297,7 +415,10 @@ describe("buildReport: console output, files that fail to load, sampling", () =>
   });
 
   test("tracesSampleRate 0 sends no trace, and failures still go out without a trace link", () => {
-    const report = buildReport(file([testCase({ state: "fail", errors: [{ message: "boom" }] })]), options({ tracesSampleRate: 0 }));
+    const report = buildReport(
+      file([testCase({ state: "fail", errors: [{ message: "boom" }] })]),
+      options({ tracesSampleRate: 0 }),
+    );
     expect(report).toMatchObject({ traces: 0, failures: 1 });
     expect(payloads(report)[0].contexts.trace).toBeUndefined();
   });
@@ -308,7 +429,9 @@ describe("circusTestName (jest-collector.ts): Jest's test names", () => {
     const root = { name: "ROOT_DESCRIBE_BLOCK" };
     const outer = { name: "Signup", parent: root };
     const inner = { name: "when invalid", parent: outer };
-    expect(circusTestName({ name: "shows an error", parent: inner })).toBe(["Signup", "when invalid", "shows an error"].join(" > "));
+    expect(circusTestName({ name: "shows an error", parent: inner })).toBe(
+      ["Signup", "when invalid", "shows an error"].join(" > "),
+    );
     expect(circusTestName({ name: "top level", parent: root })).toBe("top level");
   });
 });
@@ -317,33 +440,69 @@ describe("envelopes and DSNs", () => {
   test("a DSN becomes the envelope endpoint with the key in the query", () => {
     const dsn = parseDsn("https://abc@o1.ingest.sentry.io/42");
     expect(dsn).toMatchObject({ host: "o1.ingest.sentry.io", projectId: "42" });
-    expect(dsn.url).toBe("https://o1.ingest.sentry.io/api/42/envelope/?sentry_key=abc&sentry_version=7&sentry_client=ctrl.sentry-tests%2F0.0.0");
-    expect(parseDsn("http://k@localhost:9000/prefix/7").url).toMatch(/^http:\/\/localhost:9000\/prefix\/api\/7\/envelope\/\?/);
+    expect(dsn.url).toBe(
+      "https://o1.ingest.sentry.io/api/42/envelope/?sentry_key=abc&sentry_version=7&sentry_client=ctrl.sentry-tests%2F0.0.0",
+    );
+    expect(parseDsn("http://k@localhost:9000/prefix/7").url).toMatch(
+      /^http:\/\/localhost:9000\/prefix\/api\/7\/envelope\/\?/,
+    );
     expect(() => parseDsn("not a dsn")).toThrow(/invalid DSN/);
     expect(() => parseDsn("https://o1.ingest.sentry.io/42")).toThrow(/expected https:\/\/<key>@<host>\/<project>/);
   });
 
   test("serialization: a header line, then each item's header (with its byte length) and payload", () => {
-    const envelope: Envelope = { eventId: "e".repeat(32), items: [{ type: "event", payload: { message: "café" } }, { type: "attachment", filename: "a.txt", contentType: "text/plain", payload: "é" }] };
+    const envelope: Envelope = {
+      eventId: "e".repeat(32),
+      items: [
+        { type: "event", payload: { message: "café" } },
+        { type: "attachment", filename: "a.txt", contentType: "text/plain", payload: "é" },
+      ],
+    };
     const text = new TextDecoder().decode(serializeEnvelope(envelope, parseDsn("https://k@h/1")));
     const lines = text.split("\n");
-    expect(JSON.parse(lines[0])).toMatchObject({ event_id: "e".repeat(32), dsn: "https://k@h/1", sdk: { name: "ctrl.sentry-tests" } });
+    expect(JSON.parse(lines[0])).toMatchObject({
+      event_id: "e".repeat(32),
+      dsn: "https://k@h/1",
+      sdk: { name: "ctrl.sentry-tests" },
+    });
     expect(JSON.parse(lines[1])).toEqual({ type: "event", length: 19 });
     expect(lines[2]).toBe('{"message":"café"}');
-    expect(JSON.parse(lines[3])).toEqual({ type: "attachment", length: 2, filename: "a.txt", content_type: "text/plain", attachment_type: "event.attachment" });
+    expect(JSON.parse(lines[3])).toEqual({
+      type: "attachment",
+      length: 2,
+      filename: "a.txt",
+      content_type: "text/plain",
+      attachment_type: "event.attachment",
+    });
     expect(lines[4]).toBe("é");
   });
 
   test("V8 stack lines become frames, oldest first, with source context; frames from the packages next to this one are not in app", () => {
     const dir = mkdtempSync(join(tmpdir(), "sentry-tests-frames-"));
     const testFile = join(dir, "signup.test.tsx");
-    writeFileSync(testFile, ["import x from 'y';", "", "test('a', async () => {", "  await screen.findByRole('option');", "});"].join("\n"));
-    const [own, test] = toSentryFrames([{ method: "find", file: fileURLToPath(import.meta.url), line: 1, column: 1 }, { method: "Object.findByRole", file: testFile, line: 4, column: 3 }], dir);
+    writeFileSync(
+      testFile,
+      ["import x from 'y';", "", "test('a', async () => {", "  await screen.findByRole('option');", "});"].join("\n"),
+    );
+    const [own, test] = toSentryFrames(
+      [
+        { method: "find", file: fileURLToPath(import.meta.url), line: 1, column: 1 },
+        { method: "Object.findByRole", file: testFile, line: 4, column: 3 },
+      ],
+      dir,
+    );
     // This file lives in the workspace's packages/, next to @ctrl/dom's packages: library code.
     expect(own.in_app).toBe(false);
-    expect(test).toMatchObject({ filename: "signup.test.tsx", in_app: true, context_line: "  await screen.findByRole('option');", pre_context: ["import x from 'y';", "", "test('a', async () => {"] });
+    expect(test).toMatchObject({
+      filename: "signup.test.tsx",
+      in_app: true,
+      context_line: "  await screen.findByRole('option');",
+      pre_context: ["import x from 'y';", "", "test('a', async () => {"],
+    });
     rmSync(dir, { recursive: true, force: true });
-    expect(parseStack("Error: x\n    at fn (/a/b.js:1:2)\n    at async run (file:///c/d.js:3:4)\n    at /e/f.js:5:6")).toEqual([
+    expect(
+      parseStack("Error: x\n    at fn (/a/b.js:1:2)\n    at async run (file:///c/d.js:3:4)\n    at /e/f.js:5:6"),
+    ).toEqual([
       { method: undefined, file: "/e/f.js", line: 5, column: 6 },
       { method: "run", file: "file:///c/d.js", line: 3, column: 4 },
       { method: "fn", file: "/a/b.js", line: 1, column: 2 },
@@ -373,13 +532,29 @@ describe("delivery", () => {
 
   test("envelopes go to the DSN's endpoint and to Spotlight; flush waits for them and summarizes", async () => {
     const { requests, port } = await fakeSentry();
-    const resolved = resolveOptions({ dsn: `http://public@127.0.0.1:${port}/42`, spotlight: `http://127.0.0.1:${port}/stream`, release: "r1" }, {})!;
+    const resolved = resolveOptions(
+      { dsn: `http://public@127.0.0.1:${port}/42`, spotlight: `http://127.0.0.1:${port}/stream`, release: "r1" },
+      {},
+    )!;
     expect(resolved.targets.map((t) => t.label)).toEqual([`127.0.0.1:${port}`, "Spotlight"]);
     const delivery = new Delivery(resolved, sendEnvelope);
-    delivery.add(buildReport(file([testCase({}), testCase({ key: "t2", name: "Signup > fails", state: "fail", errors: [{ message: "boom" }] })]), resolved));
+    delivery.add(
+      buildReport(
+        file([
+          testCase({}),
+          testCase({ key: "t2", name: "Signup > fails", state: "fail", errors: [{ message: "boom" }] }),
+        ]),
+        resolved,
+      ),
+    );
     const summary = await delivery.flush();
     expect(summary).toBe(`@ctrl/sentry-tests: 1 trace, 1 failed test, 0 flaky tests → 127.0.0.1:${port} and Spotlight`);
-    expect(requests.map((r) => r.url.split("?")[0]).sort()).toEqual(["/api/42/envelope/", "/api/42/envelope/", "/stream", "/stream"]);
+    expect(requests.map((r) => r.url.split("?")[0]).sort()).toEqual([
+      "/api/42/envelope/",
+      "/api/42/envelope/",
+      "/stream",
+      "/stream",
+    ]);
     expect(requests.every((r) => r.type === "application/x-sentry-envelope")).toBe(true);
     const items = requests.filter((r) => r.url.startsWith("/api")).map((r) => JSON.parse(r.body.split("\n")[1]).type);
     expect(items.sort()).toEqual(["event", "transaction"]);
@@ -408,8 +583,14 @@ describe("delivery", () => {
     expect(resolveOptions({}, {})).toBeNull();
     expect(resolveOptions({}, { SENTRY_SPOTLIGHT: "1" })!.targets[0].url).toBe("http://localhost:8969/stream");
     expect(resolveOptions({}, { SENTRY_SPOTLIGHT: "false" })).toBeNull();
-    expect(resolveOptions({}, { SENTRY_DSN: "https://k@h/1", CI: "true", SENTRY_RELEASE: "v1" })).toMatchObject({ environment: "ci", release: "v1", tracesSampleRate: 1 });
-    expect(resolveOptions({}, { SENTRY_DSN: "https://k@h/1", SENTRY_TRACES_SAMPLE_RATE: "0.25" })!.tracesSampleRate).toBe(0.25);
+    expect(resolveOptions({}, { SENTRY_DSN: "https://k@h/1", CI: "true", SENTRY_RELEASE: "v1" })).toMatchObject({
+      environment: "ci",
+      release: "v1",
+      tracesSampleRate: 1,
+    });
+    expect(
+      resolveOptions({}, { SENTRY_DSN: "https://k@h/1", SENTRY_TRACES_SAMPLE_RATE: "0.25" })!.tracesSampleRate,
+    ).toBe(0.25);
     expect(resolveOptions({ tracesSampleRate: 7 }, { SENTRY_DSN: "https://k@h/1" })!.tracesSampleRate).toBe(1);
   });
 });

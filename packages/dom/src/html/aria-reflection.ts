@@ -191,7 +191,8 @@ function sameContents(a: readonly Element[], b: NodeImpl[]): boolean {
 }
 
 function toElement(v: unknown, prop: string): NodeImpl {
-  if (!(v instanceof Element)) throw new TypeError(`Failed to set the '${prop}' property on 'Element': Failed to convert value to 'Element'.`);
+  if (!(v instanceof Element))
+    throw new TypeError(`Failed to set the '${prop}' property on 'Element': Failed to convert value to 'Element'.`);
   return v[$impl];
 }
 
@@ -242,7 +243,9 @@ for (const [idl, content] of ELEMENTS_REFS) {
       }
       // WebIDL sequence<Element> conversion.
       if (typeof v !== "object" || typeof v[Symbol.iterator] !== "function") {
-        throw new TypeError(`Failed to set the '${idl}' property on 'Element': The provided value cannot be converted to a sequence.`);
+        throw new TypeError(
+          `Failed to set the '${idl}' property on 'Element': The provided value cannot be converted to a sequence.`,
+        );
       }
       const refs: WeakRef<NodeImpl>[] = [];
       for (const item of v as Iterable<unknown>) refs.push(new WeakRef(toElement(item, idl)));

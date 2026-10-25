@@ -27,16 +27,30 @@ function record(w: AnyWindow): string[] {
 }
 
 describe("click() — https://html.spec.whatwg.org/#dom-click", () => {
-  differential("step 3: fires a synthetic pointer event click: untrusted, bubbling, cancelable, composed, with zeroed MouseEvent fields", (w) => {
-    w.document.body.innerHTML = "<div id=d></div>";
-    let seen: AnyWindow = null;
-    const d = w.document.getElementById("d");
-    d.addEventListener("click", (e: AnyWindow) => {
-      seen = { isTrusted: e.isTrusted, bubbles: e.bubbles, cancelable: e.cancelable, composed: e.composed, mouse: e instanceof w.MouseEvent, button: e.button, buttons: e.buttons, clientX: e.clientX, screenX: e.screenX, view: e.view === w };
-    });
-    d.click();
-    return seen;
-  });
+  differential(
+    "step 3: fires a synthetic pointer event click: untrusted, bubbling, cancelable, composed, with zeroed MouseEvent fields",
+    (w) => {
+      w.document.body.innerHTML = "<div id=d></div>";
+      let seen: AnyWindow = null;
+      const d = w.document.getElementById("d");
+      d.addEventListener("click", (e: AnyWindow) => {
+        seen = {
+          isTrusted: e.isTrusted,
+          bubbles: e.bubbles,
+          cancelable: e.cancelable,
+          composed: e.composed,
+          mouse: e instanceof w.MouseEvent,
+          button: e.button,
+          buttons: e.buttons,
+          clientX: e.clientX,
+          screenX: e.screenX,
+          view: e.view === w,
+        };
+      });
+      d.click();
+      return seen;
+    },
+  );
 
   differential("step 1: click() on a disabled form control does nothing", (w) => {
     w.document.body.innerHTML = "<fieldset disabled><button id=b>b</button><input type=checkbox id=c></fieldset>";
@@ -79,13 +93,16 @@ describe("activation target — https://dom.spec.whatwg.org/#concept-event-dispa
 
   // (Where the followed fragment link lands differs by timing — jsdom follows hyperlinks in a
   // task — so only the absence of a submission is compared.)
-  differential("nested activation behaviors: the innermost wins (a link inside a submit button does not submit)", (w) => {
-    w.document.body.innerHTML = '<form id=f><button id=b><a id=a href="#inner">x</a></button></form>';
-    const log = record(w);
-    w.document.getElementById("f").addEventListener("submit", (e: AnyWindow) => e.preventDefault());
-    w.document.getElementById("a").click();
-    return log;
-  });
+  differential(
+    "nested activation behaviors: the innermost wins (a link inside a submit button does not submit)",
+    (w) => {
+      w.document.body.innerHTML = '<form id=f><button id=b><a id=a href="#inner">x</a></button></form>';
+      const log = record(w);
+      w.document.getElementById("f").addEventListener("submit", (e: AnyWindow) => e.preventDefault());
+      w.document.getElementById("a").click();
+      return log;
+    },
+  );
 
   differential("a checkbox inside a link toggles; the link is not followed", (w) => {
     w.document.body.innerHTML = '<a href="#followed"><input type=checkbox id=c></a>';
@@ -170,7 +187,8 @@ describe("summary activation behavior — https://html.spec.whatwg.org/#the-summ
 
 describe("button and input activation — https://html.spec.whatwg.org/#the-button-element:activation-behaviour", () => {
   differential("type=reset buttons and input type=reset reset the form; type=button does nothing", (w) => {
-    w.document.body.innerHTML = '<form id=f><input id=t value=init><button type=reset id=r>r</button><input type=reset id=ir><button type=button id=n>n</button></form>';
+    w.document.body.innerHTML =
+      "<form id=f><input id=t value=init><button type=reset id=r>r</button><input type=reset id=ir><button type=button id=n>n</button></form>";
     const t = w.document.getElementById("t");
     const out: string[] = [];
     for (const id of ["n", "r", "ir"]) {
@@ -182,7 +200,7 @@ describe("button and input activation — https://html.spec.whatwg.org/#the-butt
   });
 
   differential("input type=submit and type=image submit with themselves as submitter", (w) => {
-    w.document.body.innerHTML = '<form id=f><input type=submit id=s><input type=image id=i alt=go></form>';
+    w.document.body.innerHTML = "<form id=f><input type=submit id=s><input type=image id=i alt=go></form>";
     const submitters: string[] = [];
     w.document.getElementById("f").addEventListener("submit", (e: AnyWindow) => {
       submitters.push(describeNode(e.submitter));
@@ -194,9 +212,10 @@ describe("button and input activation — https://html.spec.whatwg.org/#the-butt
   });
 
   differential("a button's form attribute picks the form it submits", (w) => {
-    w.document.body.innerHTML = '<form id=a></form><form id=b><button form=a id=btn>x</button></form>';
+    w.document.body.innerHTML = "<form id=a></form><form id=b><button form=a id=btn>x</button></form>";
     const seen: string[] = [];
-    for (const id of ["a", "b"]) w.document.getElementById(id).addEventListener("submit", (e: AnyWindow) => (seen.push(id), e.preventDefault()));
+    for (const id of ["a", "b"])
+      w.document.getElementById(id).addEventListener("submit", (e: AnyWindow) => (seen.push(id), e.preventDefault()));
     w.document.getElementById("btn").click();
     return seen;
   });

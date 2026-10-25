@@ -53,7 +53,8 @@ export function budget(text, max) {
   return `${lines.slice(0, max).join("\n")}\n… ${lines.length - max} more lines`;
 }
 
-const CONSOLE_MAX_LINES = Number(process.env.CTRL_DOM_DEBUG_CONSOLE_LINES) > 0 ? Number(process.env.CTRL_DOM_DEBUG_CONSOLE_LINES) : 150;
+const CONSOLE_MAX_LINES =
+  Number(process.env.CTRL_DOM_DEBUG_CONSOLE_LINES) > 0 ? Number(process.env.CTRL_DOM_DEBUG_CONSOLE_LINES) : 150;
 const FAILURE_MAX_LINES = 400;
 
 /**
@@ -99,8 +100,13 @@ export function formatReport(r) {
     if (cut > 0) out.push(`… ${cut} more console messages (CTRL_DOM_DEBUG_CONSOLE_LINES raises the budget)`);
     out.push("");
   }
-  const counts = [r.failed && `${r.failed} failed`, r.passed && `${r.passed} passed`, r.skipped && `${r.skipped} skipped`].filter(Boolean).join(", ") || "no tests ran";
-  out.push(`${counts} · ${r.runner} · ${r.files.join(", ") || "(no test files)"} · ${(r.durationMs / 1000).toFixed(1)} s`);
+  const counts =
+    [r.failed && `${r.failed} failed`, r.passed && `${r.passed} passed`, r.skipped && `${r.skipped} skipped`]
+      .filter(Boolean)
+      .join(", ") || "no tests ran";
+  out.push(
+    `${counts} · ${r.runner} · ${r.files.join(", ") || "(no test files)"} · ${(r.durationMs / 1000).toFixed(1)} s`,
+  );
   return `${out.join("\n")}\n`;
 }
 

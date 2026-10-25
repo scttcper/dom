@@ -3,7 +3,21 @@
 // jsdom, happy-dom and @ctrl/dom alike. <style> and <script> contents are left out (CSS-in-JS
 // fills them with kilobytes of rules), and so are comments.
 
-const VOID = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
+const VOID = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "source",
+  "track",
+  "wbr",
+]);
 const SKIP_CONTENT = new Set(["style", "script", "template"]);
 
 interface DomNode {
@@ -67,7 +81,8 @@ function attributes(node: DomNode): string {
   const list = node.attributes;
   if (list === undefined) return "";
   let out = "";
-  for (let i = 0; i < list.length; i++) out += ` ${list[i].name}="${list[i].value.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`;
+  for (let i = 0; i < list.length; i++)
+    out += ` ${list[i].name}="${list[i].value.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`;
   return out;
 }
 

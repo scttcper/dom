@@ -44,7 +44,9 @@ test("does not warn about act when there are nested acts", () => {
   fireEvent.click(button);
 
   expect(button).toHaveTextContent("open:true effect:1 event:1");
-  const actWarnings = errorSpy.mock.calls.map((args) => String(args[0])).filter((message) => message.includes("not wrapped in act"));
+  const actWarnings = errorSpy.mock.calls
+    .map((args) => String(args[0]))
+    .filter((message) => message.includes("not wrapped in act"));
   expect(actWarnings).toEqual([]);
 
   errorSpy.mockRestore();

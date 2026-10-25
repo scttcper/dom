@@ -8,12 +8,37 @@ import {
   type Compound,
   type Simple,
   type SelectorList,
-  S_TYPE, S_UNIVERSAL, S_ID, S_CLASS, S_ATTR, S_PSEUDO_CLASS, S_PSEUDO_ELEMENT,
-  NS_ANY, NS_NONE, NS_PREFIX,
-  OP_EQUALS, OP_INCLUDES, OP_DASH, OP_PREFIX, OP_SUFFIX, OP_SUBSTRING,
-  CASE_INSENSITIVE, CASE_SENSITIVE,
-  C_DESCENDANT, C_CHILD, C_NEXT_SIBLING, C_SUBSEQUENT_SIBLING, C_NONE,
-  P_NTH_CHILD, P_NTH_LAST_CHILD, P_NTH_OF_TYPE, P_NTH_LAST_OF_TYPE, P_LANG, P_DIR, P_STATE, P_HEADING,
+  S_TYPE,
+  S_UNIVERSAL,
+  S_ID,
+  S_CLASS,
+  S_ATTR,
+  S_PSEUDO_CLASS,
+  S_PSEUDO_ELEMENT,
+  NS_ANY,
+  NS_NONE,
+  NS_PREFIX,
+  OP_EQUALS,
+  OP_INCLUDES,
+  OP_DASH,
+  OP_PREFIX,
+  OP_SUFFIX,
+  OP_SUBSTRING,
+  CASE_INSENSITIVE,
+  CASE_SENSITIVE,
+  C_DESCENDANT,
+  C_CHILD,
+  C_NEXT_SIBLING,
+  C_SUBSEQUENT_SIBLING,
+  C_NONE,
+  P_NTH_CHILD,
+  P_NTH_LAST_CHILD,
+  P_NTH_OF_TYPE,
+  P_NTH_LAST_OF_TYPE,
+  P_LANG,
+  P_DIR,
+  P_STATE,
+  P_HEADING,
   PE_PART,
 } from "./parser.ts";
 
@@ -38,7 +63,14 @@ export function serializeIdentifier(s: string): string {
       out += "\\" + hex(c) + " ";
     } else if (i === 0 && c === 0x2d && len === 1) {
       out += "\\-";
-    } else if (c >= 0x80 || c === 0x2d || c === 0x5f || (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)) {
+    } else if (
+      c >= 0x80 ||
+      c === 0x2d ||
+      c === 0x5f ||
+      (c >= 0x30 && c <= 0x39) ||
+      (c >= 0x41 && c <= 0x5a) ||
+      (c >= 0x61 && c <= 0x7a)
+    ) {
       out += s[i];
     } else {
       out += "\\" + s[i];
@@ -49,7 +81,7 @@ export function serializeIdentifier(s: string): string {
 
 /** https://drafts.csswg.org/cssom/#serialize-a-string */
 export function serializeString(s: string): string {
-  let out = "\"";
+  let out = '"';
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);
     if (c === 0) out += "�";
@@ -57,7 +89,7 @@ export function serializeString(s: string): string {
     else if (c === 0x22 || c === 0x5c) out += "\\" + s[i];
     else out += s[i];
   }
-  return out + "\"";
+  return out + '"';
 }
 
 /** https://drafts.csswg.org/css-syntax-3/#serializing-anb */
@@ -118,12 +150,18 @@ function prefixIsDefault(prefix: string): boolean {
 
 function attrOp(op: number): string {
   switch (op) {
-    case OP_EQUALS: return "=";
-    case OP_INCLUDES: return "~=";
-    case OP_DASH: return "|=";
-    case OP_PREFIX: return "^=";
-    case OP_SUFFIX: return "$=";
-    case OP_SUBSTRING: return "*=";
+    case OP_EQUALS:
+      return "=";
+    case OP_INCLUDES:
+      return "~=";
+    case OP_DASH:
+      return "|=";
+    case OP_PREFIX:
+      return "^=";
+    case OP_SUFFIX:
+      return "$=";
+    case OP_SUBSTRING:
+      return "*=";
   }
   return "";
 }
@@ -204,7 +242,15 @@ export function serializeCompound(c: Compound): string {
   const n = c.simples.length;
   for (let i = 0; i < n; i++) {
     const s = c.simples[i];
-    if (i === 0 && n > 1 && s.kind === S_UNIVERSAL && ((s.nsKind === NS_ANY && !hasDefaultNamespace()) || s.nsKind === 0 || (s.nsKind === NS_PREFIX && prefixIsDefault(s.nsPrefix)))) continue;
+    if (
+      i === 0 &&
+      n > 1 &&
+      s.kind === S_UNIVERSAL &&
+      ((s.nsKind === NS_ANY && !hasDefaultNamespace()) ||
+        s.nsKind === 0 ||
+        (s.nsKind === NS_PREFIX && prefixIsDefault(s.nsPrefix)))
+    )
+      continue;
     out += serializeSimple(s);
   }
   return out;
@@ -212,10 +258,14 @@ export function serializeCompound(c: Compound): string {
 
 function combinator(c: number): string {
   switch (c) {
-    case C_DESCENDANT: return " ";
-    case C_CHILD: return " > ";
-    case C_NEXT_SIBLING: return " + ";
-    case C_SUBSEQUENT_SIBLING: return " ~ ";
+    case C_DESCENDANT:
+      return " ";
+    case C_CHILD:
+      return " > ";
+    case C_NEXT_SIBLING:
+      return " + ";
+    case C_SUBSEQUENT_SIBLING:
+      return " ~ ";
   }
   return " ";
 }

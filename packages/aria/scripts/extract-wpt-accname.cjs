@@ -7,7 +7,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const dir = path.resolve(process.argv[2]);
 const out = [];
-for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".html")).sort()) {
+for (const file of fs
+  .readdirSync(dir)
+  .filter((f) => f.endsWith(".html"))
+  .sort()) {
   const src = fs.readFileSync(path.join(dir, file), "utf8");
   const m = /new ATTAcomm\(\s*([\s\S]*?)\)\s*;/.exec(src);
   if (!m) continue;

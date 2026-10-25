@@ -29,8 +29,10 @@ export function cssInJsSheet(n = 200): string {
 
 /** Markup of the styled form (fixtures/components.tsx StyledForm), for the DOM-only benchmark. */
 export function styledFormHTML(fields = 40): string {
-  let html = '<div class="app css-199"><div class="toolbar css-198"><button type="button" class="primary css-197">New</button></div>';
-  html += '<form aria-label="Styled form" class="css-195"><h2 class="css-194">Profile</h2><fieldset class="css-193"><legend>Fields</legend>';
+  let html =
+    '<div class="app css-199"><div class="toolbar css-198"><button type="button" class="primary css-197">New</button></div>';
+  html +=
+    '<form aria-label="Styled form" class="css-195"><h2 class="css-194">Profile</h2><fieldset class="css-193"><legend>Fields</legend>';
   for (let i = 0; i < fields; i++) {
     html += `<div class="css-${i} field"><label for="s-${i}" class="css-${100 + (i % 50)}">Field ${i}</label>`;
     html += `<input id="s-${i}" type="text" class="css-${150 + (i % 50)}" value="v${i}">`;

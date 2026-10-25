@@ -151,6 +151,11 @@ describe("declarative shadow root attributes — https://html.spec.whatwg.org/#d
     t.shadowRootDelegatesFocus = true;
     t.shadowRootClonable = true;
     t.shadowRootSerializable = true;
-    expect(t.getAttributeNames().sort()).toEqual(["shadowrootclonable", "shadowrootdelegatesfocus", "shadowrootserializable", "shadowrootslotassignment"]);
+    expect(t.getAttributeNames().sort()).toEqual([
+      "shadowrootclonable",
+      "shadowrootdelegatesfocus",
+      "shadowrootserializable",
+      "shadowrootslotassignment",
+    ]);
   });
 });

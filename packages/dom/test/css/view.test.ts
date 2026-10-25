@@ -146,7 +146,11 @@ describe("offsetParent — https://drafts.csswg.org/cssom-view/#dom-htmlelement-
 
 describe("CSS namespace object — https://webidl.spec.whatwg.org/#es-namespaces", () => {
   test("operations are writable/configurable data properties; the object is not frozen", () => {
-    expect(Object.getOwnPropertyDescriptor(CSS, "supports")).toMatchObject({ writable: true, enumerable: true, configurable: true });
+    expect(Object.getOwnPropertyDescriptor(CSS, "supports")).toMatchObject({
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
     expect(Object.isFrozen(CSS)).toBe(false);
     expect(Object.prototype.toString.call(CSS)).toBe("[object CSS]");
     expect((window as unknown as { CSS: unknown }).CSS).toBe(CSS);

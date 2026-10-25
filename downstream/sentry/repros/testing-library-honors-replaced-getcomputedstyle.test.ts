@@ -29,11 +29,14 @@ differential("ByRole honours a user-replaced window.getComputedStyle", (make, en
     const window = make();
     const { document } = window;
     document.head.innerHTML = "<style>.overflow { display: none }</style>";
-    document.body.innerHTML = '<ul role="tablist"><li role="tab">Details</li><li role="tab" class="overflow">Attachments</li></ul>';
+    document.body.innerHTML =
+      '<ul role="tablist"><li role="tab">Details</li><li role="tab" class="overflow">Attachments</li></ul>';
     window.getComputedStyle = (el: any) => el.style;
     // jsdom: stock Testing Library (Sentry's baseline); ctrl-dom: @ctrl/dom/testing-library (ctrl-dom-full).
     const lib = engine === "jsdom" ? stock : ours;
-    const names = await withGlobals(window, engine, () => lib.queryAllByRole(document.body, "tab").map((t: any) => t.textContent));
+    const names = await withGlobals(window, engine, () =>
+      lib.queryAllByRole(document.body, "tab").map((t: any) => t.textContent),
+    );
     expect(names).toEqual(["Details", "Attachments"]);
   });
 });

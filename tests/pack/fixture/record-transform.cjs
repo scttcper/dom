@@ -4,7 +4,8 @@ const { appendFileSync } = require("node:fs");
 
 module.exports = {
   process(sourceText, sourcePath) {
-    if (process.env.CTRL_DOM_LOAD_LOG) appendFileSync(process.env.CTRL_DOM_LOAD_LOG, `${process.pid}\tjest\t${sourcePath}\n`);
+    if (process.env.CTRL_DOM_LOAD_LOG)
+      appendFileSync(process.env.CTRL_DOM_LOAD_LOG, `${process.pid}\tjest\t${sourcePath}\n`);
     return { code: sourceText };
   },
 };

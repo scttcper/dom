@@ -34,12 +34,18 @@ function setup(css: string, markup: string): void {
   document.head!.append(style);
   document.body!.innerHTML = markup;
 }
-const color = (id: string, w: Window = window, d: Document = document) => w.getComputedStyle(d.getElementById(id) as Element).color;
+const color = (id: string, w: Window = window, d: Document = document) =>
+  w.getComputedStyle(d.getElementById(id) as Element).color;
 
 describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/selectors-4/#combinators", () => {
   // Rules that never match, so every element has more candidate rules with ancestor hashes than
   // the cascade's threshold for building the filter (FILTER_AFTER) and the filter path runs.
-  const filler = ["span", "b", "em", "i"].map((t) => Array.from({ length: 6 }, (_, k) => `.no${k} ${t}, #no${k} > ${t}`).join(", ") + " { color: rgb(0, 0, 99) }").join("\n");
+  const filler = ["span", "b", "em", "i"]
+    .map(
+      (t) =>
+        Array.from({ length: 6 }, (_, k) => `.no${k} ${t}, #no${k} > ${t}`).join(", ") + " { color: rgb(0, 0, 99) }",
+    )
+    .join("\n");
 
   test("descendant and child rules apply exactly when the ancestors carry the names", () => {
     setup(
@@ -70,14 +76,19 @@ describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/s
   });
 
   test("type selectors on mixed-case non-HTML ancestors (foreignObject)", () => {
-    setup(`foreignObject p { color: rgb(5, 0, 0) } FOREIGNOBJECT i { color: rgb(6, 0, 0) }`, `<svg><foreignObject><p id=p></p><i id=i></i></foreignObject></svg>`);
+    setup(
+      `foreignObject p { color: rgb(5, 0, 0) } FOREIGNOBJECT i { color: rgb(6, 0, 0) }`,
+      `<svg><foreignObject><p id=p></p><i id=i></i></foreignObject></svg>`,
+    );
     expect(color("p")).toBe("rgb(5, 0, 0)");
     // Type selectors match non-HTML elements case-sensitively.
     expect(color("i")).not.toBe("rgb(6, 0, 0)");
   });
 
   test("quirks mode: ancestor classes and ids match ASCII case-insensitively", () => {
-    const w = createWindow({ html: `<style>.Outer span { color: rgb(7, 0, 0) } #BOX i { color: rgb(8, 0, 0) }</style><div class=outer><span id=s></span></div><div id=box><i id=i></i></div>` });
+    const w = createWindow({
+      html: `<style>.Outer span { color: rgb(7, 0, 0) } #BOX i { color: rgb(8, 0, 0) }</style><div class=outer><span id=s></span></div><div id=box><i id=i></i></div>`,
+    });
     expect((w.document as AnyEl).compatMode).toBe("BackCompat");
     expect(color("s", w, w.document)).toBe("rgb(7, 0, 0)");
     expect(color("i", w, w.document)).toBe("rgb(8, 0, 0)");
@@ -94,7 +105,10 @@ describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/s
 
 describe("matched rules reused while volatile state holds — https://drafts.csswg.org/selectors-4/#useraction-pseudos", () => {
   test(":hover rules follow the hover target without a DOM mutation", () => {
-    setup(`.btn:hover { color: rgb(0, 0, 9) } .btn { color: rgb(0, 0, 1) }`, `<div id=wrap><button id=b class=btn></button></div>`);
+    setup(
+      `.btn:hover { color: rgb(0, 0, 9) } .btn { color: rgb(0, 0, 1) }`,
+      `<div id=wrap><button id=b class=btn></button></div>`,
+    );
     expect(color("b")).toBe("rgb(0, 0, 1)");
     expect(color("b")).toBe("rgb(0, 0, 1)");
     setHoverTarget((document.getElementById("b") as AnyEl)[$impl]);
@@ -107,7 +121,10 @@ describe("matched rules reused while volatile state holds — https://drafts.css
   });
 
   test("inherited values are recomputed when an ancestor's volatile state changes", () => {
-    setup(`.p:hover { color: rgb(9, 0, 0) } .c:focus { outline-style: solid }`, `<div id=p class=p><input id=c class=c></div>`);
+    setup(
+      `.p:hover { color: rgb(9, 0, 0) } .c:focus { outline-style: solid }`,
+      `<div id=p class=p><input id=c class=c></div>`,
+    );
     expect(color("c")).not.toBe("rgb(9, 0, 0)");
     setHoverTarget((document.getElementById("p") as AnyEl)[$impl]);
     try {
@@ -133,7 +150,10 @@ describe("matched rules reused while volatile state holds — https://drafts.css
   });
 
   test(":focus and :focus-within follow focus changes", () => {
-    setup(`input:focus { color: rgb(0, 9, 0) } form:focus-within { color: rgb(0, 5, 0) }`, `<form id=f><input id=i></form>`);
+    setup(
+      `input:focus { color: rgb(0, 9, 0) } form:focus-within { color: rgb(0, 5, 0) }`,
+      `<form id=f><input id=i></form>`,
+    );
     const input = document.getElementById("i") as AnyEl;
     expect(color("i")).not.toBe("rgb(0, 9, 0)");
     expect(color("f")).not.toBe("rgb(0, 5, 0)");
@@ -146,7 +166,10 @@ describe("matched rules reused while volatile state holds — https://drafts.css
   });
 
   test(":checked on a sibling (state of another element) follows checkedness — https://html.spec.whatwg.org/#selector-checked", () => {
-    setup(`input:checked + label { color: rgb(0, 0, 7) } input:checked { color: rgb(0, 0, 8) }`, `<input id=c type=checkbox><label id=l>x</label>`);
+    setup(
+      `input:checked + label { color: rgb(0, 0, 7) } input:checked { color: rgb(0, 0, 8) }`,
+      `<input id=c type=checkbox><label id=l>x</label>`,
+    );
     const box = document.getElementById("c") as AnyEl;
     expect(color("l")).not.toBe("rgb(0, 0, 7)");
     box.checked = true;

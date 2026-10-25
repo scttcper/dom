@@ -133,7 +133,9 @@ test('it should throw if element is not valid', () => {
     errorMessage = err.message
   }
 
-  expect(errorMessage).toMatchInlineSnapshot(`".toHaveDisplayValue() currently supports only input, textarea or select elements, try with another matcher instead."`)
+  expect(errorMessage).toMatchInlineSnapshot(
+    `".toHaveDisplayValue() currently supports only input, textarea or select elements, try with another matcher instead."`,
+  )
 
   try {
     expect(queryByTestId('radio')).toHaveDisplayValue('Something')
@@ -141,7 +143,9 @@ test('it should throw if element is not valid', () => {
     errorMessage = err.message
   }
 
-  expect(errorMessage).toMatchInlineSnapshot(`".toHaveDisplayValue() currently does not support input[type="radio"], try with another matcher instead."`)
+  expect(errorMessage).toMatchInlineSnapshot(
+    `".toHaveDisplayValue() currently does not support input[type="radio"], try with another matcher instead."`,
+  )
 
   try {
     expect(queryByTestId('checkbox')).toHaveDisplayValue(true)
@@ -149,7 +153,9 @@ test('it should throw if element is not valid', () => {
     errorMessage = err.message
   }
 
-  expect(errorMessage).toMatchInlineSnapshot(`".toHaveDisplayValue() currently does not support input[type="checkbox"], try with another matcher instead."`)
+  expect(errorMessage).toMatchInlineSnapshot(
+    `".toHaveDisplayValue() currently does not support input[type="checkbox"], try with another matcher instead."`,
+  )
 })
 
 test('it should work with numbers', () => {

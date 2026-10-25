@@ -158,7 +158,9 @@ describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-frag
   test("update document for history step application step 6.3: popstate fires synchronously with the new entry's null state", () => {
     window.history.replaceState({ old: true }, "");
     const order: string[] = [];
-    window.addEventListener("popstate", (e) => order.push(`popstate:${JSON.stringify((e as unknown as { state: unknown }).state)}:${window.location.hash}`));
+    window.addEventListener("popstate", (e) =>
+      order.push(`popstate:${JSON.stringify((e as unknown as { state: unknown }).state)}:${window.location.hash}`),
+    );
     window.addEventListener("hashchange", () => order.push("hashchange"));
     window.location.hash = "next";
     order.push("after setter");

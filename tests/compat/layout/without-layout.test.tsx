@@ -14,7 +14,12 @@ import { describe, expect, test } from "vitest";
 
 function List() {
   const parentRef = useRef<HTMLDivElement>(null);
-  const v = useVirtualizer({ count: 1000, getScrollElement: () => parentRef.current, estimateSize: () => 35, overscan: 2 });
+  const v = useVirtualizer({
+    count: 1000,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 35,
+    overscan: 2,
+  });
   return (
     <div ref={parentRef} data-testid="scroller" style={{ height: 400, overflow: "auto" }}>
       <div style={{ height: v.getTotalSize(), position: "relative" }}>
@@ -33,7 +38,16 @@ describe("layout: none — geometry stays zero (https://drafts.csswg.org/cssom-v
     render(<List />);
     const scroller = screen.getByTestId("scroller");
     expect([scroller.offsetHeight, scroller.clientHeight, scroller.scrollHeight]).toEqual([0, 0, 0]);
-    expect(scroller.getBoundingClientRect().toJSON()).toEqual({ x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 });
+    expect(scroller.getBoundingClientRect().toJSON()).toEqual({
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
     expect(screen.queryAllByRole("row").length).toBeLessThanOrEqual(3);
   });
 

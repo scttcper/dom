@@ -48,7 +48,10 @@ describe("explicit role — https://w3c.github.io/aria/#document-handling_author
 	});
 });
 
-function createElementFactory(tagName: string, attributes: Record<string, unknown>) {
+function createElementFactory(
+	tagName: string,
+	attributes: Record<string, unknown>,
+) {
 	return () => {
 		const element = document.createElement(tagName);
 
@@ -202,7 +205,6 @@ const cases: Array<[string, string | null, () => ReturnType<typeof document.crea
 	["presentational <div /> with prohibited aria attributes", null, createElementFactory("div", {'aria-label': "hello", role: "none"})],
 ];
 
-
 describe("implicit roles — https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings", () => {
 	it.each(cases)("%s has the role %s (0.6.3)", (name, role, elementFactory) => {
 		const element = elementFactory();
@@ -211,10 +213,13 @@ describe("implicit roles — https://www.w3.org/TR/html-aam-1.0/#html-element-ro
 	});
 
 	// 0.5.16: role="none" is an ordinary explicit role (not a presentation synonym).
-	it.each(cases)("%s has the role %s (0.5.16)", (name, role, elementFactory) => {
-		const element = elementFactory();
-		const expected = element.getAttribute("role") === "none" ? "none" : role;
+	it.each(cases)(
+		"%s has the role %s (0.5.16)",
+		(name, role, elementFactory) => {
+			const element = elementFactory();
+			const expected = element.getAttribute("role") === "none" ? "none" : role;
 
-		expect(getRole(element)).toEqual(expected);
-	});
+			expect(getRole(element)).toEqual(expected);
+		},
+	);
 });

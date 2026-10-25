@@ -22,7 +22,12 @@ function testFiles(dir: string): string[] {
     }
     if (/-ref\.html?$|-manual\.|-iframe\.html$|\.sub\.|\.https\.|-crash\.html$/.test(name)) continue;
     const source = readFileSync(join(FIXTURES, rel), "utf8");
-    if (JS_TEST.test(name) ? jsTestRunsInWindow(source) : /\.html?$/.test(name) && source.includes("/resources/testharness.js")) out.push(rel);
+    if (
+      JS_TEST.test(name)
+        ? jsTestRunsInWindow(source)
+        : /\.html?$/.test(name) && source.includes("/resources/testharness.js")
+    )
+      out.push(rel);
   }
   return out;
 }
@@ -44,33 +49,37 @@ function stock(el: any, kind: "role" | "label"): string {
   return wptRoleName(role);
 }
 
-test.skipIf(!process.env.TRIAGE_OUT)("triage", async () => {
-  const dirs = (process.env.WPT_DIRS ?? "wai-aria,accname,html-aam").split(",");
-  const report: any[] = [];
-  for (const d of dirs) {
-    for (const file of testFiles(d)) {
-      const calls: any[] = [];
-      const td = () => ({
-        get_computed_role: async (el: Element) => {
-          const ours = wptComputedRole(el);
-          calls.push({ kind: "role", html: el.outerHTML, ours, stock: stock(el, "role") });
-          return ours;
-        },
-        get_computed_label: async (el: Element) => {
-          const ours = computeAccessibleName(el);
-          calls.push({ kind: "label", html: el.outerHTML, ours, stock: stock(el, "label") });
-          return ours;
-        },
-      });
-      let results;
-      try {
-        results = await runWPT(file, { testdriver: td });
-      } catch (e) {
-        report.push({ file, crash: String(e) });
-        continue;
+test.skipIf(!process.env.TRIAGE_OUT)(
+  "triage",
+  async () => {
+    const dirs = (process.env.WPT_DIRS ?? "wai-aria,accname,html-aam").split(",");
+    const report: any[] = [];
+    for (const d of dirs) {
+      for (const file of testFiles(d)) {
+        const calls: any[] = [];
+        const td = () => ({
+          get_computed_role: async (el: Element) => {
+            const ours = wptComputedRole(el);
+            calls.push({ kind: "role", html: el.outerHTML, ours, stock: stock(el, "role") });
+            return ours;
+          },
+          get_computed_label: async (el: Element) => {
+            const ours = computeAccessibleName(el);
+            calls.push({ kind: "label", html: el.outerHTML, ours, stock: stock(el, "label") });
+            return ours;
+          },
+        });
+        let results;
+        try {
+          results = await runWPT(file, { testdriver: td });
+        } catch (e) {
+          report.push({ file, crash: String(e) });
+          continue;
+        }
+        report.push({ file, results, calls });
       }
-      report.push({ file, results, calls });
     }
-  }
-  writeFileSync(process.env.TRIAGE_OUT!, JSON.stringify(report, null, 1));
-}, 3_600_000);
+    writeFileSync(process.env.TRIAGE_OUT!, JSON.stringify(report, null, 1));
+  },
+  3_600_000,
+);

@@ -32,5 +32,8 @@ describe("Timers — https://html.spec.whatwg.org/#timers", () => {
   ]) {
     defineWPT(`${T}/${name}.any.js`);
   }
-  defineWPT(`${T}/settimeout-setinterval-handles.html`, "handles are the host's Timeout objects so fake timers keep working (deviation)");
+  defineWPT(
+    `${T}/settimeout-setinterval-handles.html`,
+    "handles are the host's Timeout objects so fake timers keep working (deviation)",
+  );
 });

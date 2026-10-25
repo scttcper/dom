@@ -70,7 +70,10 @@ let ownedObjects: unknown[] = [];
  */
 function ownObjectCreateMaps(): void {
   if (baseline === null) return;
-  const owner = (mapOwner ??= runInContext("(prototypes) => prototypes.map((p) => Object.create(p))", createContext(vmConstants.DONT_CONTEXTIFY)) as (prototypes: object[]) => unknown[]);
+  const owner = (mapOwner ??= runInContext(
+    "(prototypes) => prototypes.map((p) => Object.create(p))",
+    createContext(vmConstants.DONT_CONTEXTIFY),
+  ) as (prototypes: object[]) => unknown[]);
   const prototypes: object[] = [Object.prototype];
   for (const target of baseline.keys()) if (typeof target !== "function") prototypes.push(target);
   ownedObjects = owner(prototypes);
@@ -81,7 +84,9 @@ type RealmGlobal = { Object: ObjectConstructor; Reflect: typeof Reflect };
 
 /** `desc` with `configurable: true` when it would define a non-configurable property. */
 function configurableDescriptor(desc: PropertyDescriptor): PropertyDescriptor {
-  return desc !== null && typeof desc === "object" && desc.configurable !== true ? { ...desc, configurable: true } : desc;
+  return desc !== null && typeof desc === "object" && desc.configurable !== true
+    ? { ...desc, configurable: true }
+    : desc;
 }
 
 /**
@@ -110,7 +115,8 @@ export function guardInterfaceDefinitions(realm: RealmGlobal): void {
       if (!set.has(o as object) || props === null || typeof props !== "object") return defineProperties(o, props);
       const coerced: Descriptors = {};
       for (const key of Reflect.ownKeys(props)) {
-        if (Object.getOwnPropertyDescriptor(props, key)?.enumerable) coerced[key as string] = configurableDescriptor((props as Record<PropertyKey, PropertyDescriptor>)[key]);
+        if (Object.getOwnPropertyDescriptor(props, key)?.enumerable)
+          coerced[key as string] = configurableDescriptor((props as Record<PropertyKey, PropertyDescriptor>)[key]);
       }
       return defineProperties(o, coerced);
     },
@@ -120,9 +126,24 @@ export function guardInterfaceDefinitions(realm: RealmGlobal): void {
   };
   // Same names and lengths as the originals; data properties like the intrinsics'.
   Object.defineProperty(wrappers.reflectDefineProperty, "name", { value: "defineProperty" });
-  Object.defineProperty(O, "defineProperty", { value: wrappers.defineProperty, writable: true, configurable: true, enumerable: false });
-  Object.defineProperty(O, "defineProperties", { value: wrappers.defineProperties, writable: true, configurable: true, enumerable: false });
-  Object.defineProperty(R, "defineProperty", { value: wrappers.reflectDefineProperty, writable: true, configurable: true, enumerable: false });
+  Object.defineProperty(O, "defineProperty", {
+    value: wrappers.defineProperty,
+    writable: true,
+    configurable: true,
+    enumerable: false,
+  });
+  Object.defineProperty(O, "defineProperties", {
+    value: wrappers.defineProperties,
+    writable: true,
+    configurable: true,
+    enumerable: false,
+  });
+  Object.defineProperty(R, "defineProperty", {
+    value: wrappers.reflectDefineProperty,
+    writable: true,
+    configurable: true,
+    enumerable: false,
+  });
 }
 
 /** https://tc39.es/ecma262/#array-index (canonical numeric strings below 2^32 - 1). */

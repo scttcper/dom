@@ -120,7 +120,18 @@ function expandBox(longhands: string[], value: string): string[] | null {
   return [t, r, b, l];
 }
 
-const STYLE_KEYWORDS = new Set(["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"]);
+const STYLE_KEYWORDS = new Set([
+  "none",
+  "hidden",
+  "dotted",
+  "dashed",
+  "solid",
+  "double",
+  "groove",
+  "ridge",
+  "inset",
+  "outset",
+]);
 
 /** <line-width> || <line-style> || <color> → [width, style, color] (missing = initial). */
 function parseBorderSide(value: string): string[] | null {
@@ -164,7 +175,8 @@ function expandFlex(value: string): string[] | null {
     if (parts[0].lower === "auto") return ["1", "1", "auto"];
   }
   const gb = grammarFor("flex-basis");
-  const num = (p: Comp | undefined): string | null => (p !== undefined && p.type === TK_NUMBER && p.num >= 0 ? formatNumber(p.num) : null);
+  const num = (p: Comp | undefined): string | null =>
+    p !== undefined && p.type === TK_NUMBER && p.num >= 0 ? formatNumber(p.num) : null;
   const basisOf = (p: Comp): string | null => {
     if (p.type === TK_IDENT && !FLEX_BASIS_KEYWORDS.has(p.lower)) return null;
     return normalizeComponent(p, gb);
@@ -200,9 +212,23 @@ const REPEAT_KEYWORDS = new Set(["repeat-x", "repeat-y", "repeat", "space", "rou
 const ATTACHMENT_KEYWORDS = new Set(["scroll", "fixed", "local"]);
 const BOX_KEYWORDS = new Set(["border-box", "padding-box", "content-box"]);
 const IMAGE_FUNCTIONS = new Set([
-  "linear-gradient", "radial-gradient", "conic-gradient", "repeating-linear-gradient", "repeating-radial-gradient",
-  "repeating-conic-gradient", "image-set", "-webkit-image-set", "image", "cross-fade", "element", "paint",
-  "-webkit-linear-gradient", "-webkit-radial-gradient", "-webkit-gradient", "-moz-linear-gradient", "-moz-radial-gradient",
+  "linear-gradient",
+  "radial-gradient",
+  "conic-gradient",
+  "repeating-linear-gradient",
+  "repeating-radial-gradient",
+  "repeating-conic-gradient",
+  "image-set",
+  "-webkit-image-set",
+  "image",
+  "cross-fade",
+  "element",
+  "paint",
+  "-webkit-linear-gradient",
+  "-webkit-radial-gradient",
+  "-webkit-gradient",
+  "-moz-linear-gradient",
+  "-moz-radial-gradient",
 ]);
 
 function isPositionComp(p: Comp): boolean {
@@ -273,7 +299,8 @@ function parseBackgroundLayer(parts: Comp[], final: boolean): string[] | null {
     }
     if (p.type === TK_URL || (p.type === TK_FUNCTION && (p.lower === "url" || IMAGE_FUNCTIONS.has(p.lower)))) {
       if (image !== "") return null;
-      image = p.type === TK_URL ? serializeUrl(p.value) : normalizeComponent(p, grammarFor("background-image")) ?? p.text;
+      image =
+        p.type === TK_URL ? serializeUrl(p.value) : (normalizeComponent(p, grammarFor("background-image")) ?? p.text);
       i++;
       continue;
     }
@@ -346,7 +373,14 @@ const FONT_STYLE = new Set(["italic", "oblique"]);
 const FONT_VARIANT = new Set(["small-caps"]);
 const FONT_WEIGHT = new Set(["bold", "bolder", "lighter"]);
 const FONT_STRETCH = new Set([
-  "ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded",
+  "ultra-condensed",
+  "extra-condensed",
+  "condensed",
+  "semi-condensed",
+  "semi-expanded",
+  "expanded",
+  "extra-expanded",
+  "ultra-expanded",
 ]);
 
 /** https://drafts.csswg.org/css-fonts-4/#font-prop → [style, variant, weight, size, line-height, family]. */
@@ -437,7 +471,21 @@ export function expandShorthand(name: string, value: string): string[] | null {
     case "border": {
       const side = parseBorderSide(value);
       if (side === null) return null;
-      return [side[0], side[0], side[0], side[0], side[1], side[1], side[1], side[1], side[2], side[2], side[2], side[2], "none"];
+      return [
+        side[0],
+        side[0],
+        side[0],
+        side[0],
+        side[1],
+        side[1],
+        side[1],
+        side[1],
+        side[2],
+        side[2],
+        side[2],
+        side[2],
+        "none",
+      ];
     }
     case "flex":
       return expandFlex(value);
@@ -587,10 +635,16 @@ export function expandCascadeShorthand(name: string, value: string): string[] | 
       let type = "";
       let nones = 0;
       for (const p of parts) {
-        if (p.type === TK_IDENT && (p.lower === "inside" || p.lower === "outside") && position === "") position = p.lower;
+        if (p.type === TK_IDENT && (p.lower === "inside" || p.lower === "outside") && position === "")
+          position = p.lower;
         else if (p.type === TK_IDENT && p.lower === "none") nones++;
-        else if ((p.type === TK_URL || (p.type === TK_FUNCTION && IMAGE_FUNCTIONS.has(p.lower))) && image === "") image = p.type === TK_URL ? serializeUrl(p.value) : p.text;
-        else if ((p.type === TK_IDENT || p.type === TK_STRING || (p.type === TK_FUNCTION && p.lower === "symbols")) && type === "") type = p.type === TK_IDENT ? p.lower : p.text;
+        else if ((p.type === TK_URL || (p.type === TK_FUNCTION && IMAGE_FUNCTIONS.has(p.lower))) && image === "")
+          image = p.type === TK_URL ? serializeUrl(p.value) : p.text;
+        else if (
+          (p.type === TK_IDENT || p.type === TK_STRING || (p.type === TK_FUNCTION && p.lower === "symbols")) &&
+          type === ""
+        )
+          type = p.type === TK_IDENT ? p.lower : p.text;
         else return null;
       }
       if (nones > (image === "" ? 1 : 0) + (type === "" ? 1 : 0)) return null;

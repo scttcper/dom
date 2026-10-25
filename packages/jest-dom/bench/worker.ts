@@ -22,7 +22,10 @@ if (stack === "ctrl-dom") {
   const { Window } = await import("happy-dom");
   document = new Window().document;
 }
-const matchers: any = stack === "ctrl-dom" ? await import("@ctrl/dom/jest-dom/matchers") : await import("@testing-library/jest-dom/matchers");
+const matchers: any =
+  stack === "ctrl-dom"
+    ? await import("@ctrl/dom/jest-dom/matchers")
+    : await import("@testing-library/jest-dom/matchers");
 const setupMs = performance.now() - t0;
 
 document.body.innerHTML = `

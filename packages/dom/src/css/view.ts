@@ -20,7 +20,21 @@ import { T } from "../nodes/tags.ts";
 import { computedValue, computedPosition, inheritanceParent, isDisplayNone, computedVisibility } from "./cascade.ts";
 import { $impl, $scrollX, $scrollY } from "../keys.ts";
 import { layoutEnabled } from "./layout-mode.ts";
-import { BOX_FIXED, BOX_FIXED_SELF, BOX_INLINE, BOX_ROOT, BOX_SCROLLER, type Box, boxOf, clientHeightOf, clientWidthOf, knownBox, layoutOn, scrollExtent, viewport } from "./layout.ts";
+import {
+  BOX_FIXED,
+  BOX_FIXED_SELF,
+  BOX_INLINE,
+  BOX_ROOT,
+  BOX_SCROLLER,
+  type Box,
+  boxOf,
+  clientHeightOf,
+  clientWidthOf,
+  knownBox,
+  layoutOn,
+  scrollExtent,
+  viewport,
+} from "./layout.ts";
 import { DOMRect, DOMRectList } from "../window/geometry.ts";
 import { fireAnEvent } from "../events/fire.ts";
 
@@ -123,8 +137,10 @@ export function scrollElement(el: NodeImpl, by: boolean, x: unknown, y: unknown,
     const o = slot(el);
     o.top = beforeTop;
     o.left = beforeLeft;
-    if (left !== undefined && !Number.isNaN(left)) o.left = Math.min(clamp(by ? beforeLeft + left : left), maxScroll(el, b, false));
-    if (top !== undefined && !Number.isNaN(top)) o.top = Math.min(clamp(by ? beforeTop + top : top), maxScroll(el, b, true));
+    if (left !== undefined && !Number.isNaN(left))
+      o.left = Math.min(clamp(by ? beforeLeft + left : left), maxScroll(el, b, false));
+    if (top !== undefined && !Number.isNaN(top))
+      o.top = Math.min(clamp(by ? beforeTop + top : top), maxScroll(el, b, true));
     if (o.top !== beforeTop || o.left !== beforeLeft) fireAnEvent("scroll", el.node as Element);
     return;
   }
@@ -247,7 +263,14 @@ export function clientRects(el: NodeImpl): DOMRectList {
   return new DOMRectList([new DOMRect(RX, RY, b.w, b.h)]);
 }
 
-const Metric = { ClientTop: 0, ClientLeft: 1, ClientWidth: 2, ClientHeight: 3, ScrollWidth: 4, ScrollHeight: 5 } as const;
+const Metric = {
+  ClientTop: 0,
+  ClientLeft: 1,
+  ClientWidth: 2,
+  ClientHeight: 3,
+  ScrollWidth: 4,
+  ScrollHeight: 5,
+} as const;
 
 /** https://drafts.csswg.org/cssom-view/#dom-element-clienttop and the client/scroll sizes after it. */
 export function elementMetric(el: NodeImpl, m: number): number {
@@ -255,12 +278,18 @@ export function elementMetric(el: NodeImpl, m: number): number {
   const b = boxOf(el);
   if (b === null) return 0;
   switch (m) {
-    case Metric.ClientTop: return (b.flags & BOX_INLINE) !== 0 ? 0 : Math.round(b.bt);
-    case Metric.ClientLeft: return (b.flags & BOX_INLINE) !== 0 ? 0 : Math.round(b.bl);
-    case Metric.ClientWidth: return Math.round(clientWidthOf(b, el));
-    case Metric.ClientHeight: return Math.round(clientHeightOf(b, el));
-    case Metric.ScrollWidth: return Math.round(scrollSize(el, b, false));
-    case Metric.ScrollHeight: return Math.round(scrollSize(el, b, true));
+    case Metric.ClientTop:
+      return (b.flags & BOX_INLINE) !== 0 ? 0 : Math.round(b.bt);
+    case Metric.ClientLeft:
+      return (b.flags & BOX_INLINE) !== 0 ? 0 : Math.round(b.bl);
+    case Metric.ClientWidth:
+      return Math.round(clientWidthOf(b, el));
+    case Metric.ClientHeight:
+      return Math.round(clientHeightOf(b, el));
+    case Metric.ScrollWidth:
+      return Math.round(scrollSize(el, b, false));
+    case Metric.ScrollHeight:
+      return Math.round(scrollSize(el, b, true));
   }
   return 0;
 }
@@ -315,9 +344,12 @@ export function scrollElementIntoView(el: NodeImpl, arg: unknown): void {
 /** https://drafts.csswg.org/cssom-view/#determine-the-scroll-into-view-position */
 function alignDelta(mode: string, start: number, size: number, client: number): number {
   switch (mode) {
-    case "start": return start;
-    case "end": return start + size - client;
-    case "center": return start + size / 2 - client / 2;
+    case "start":
+      return start;
+    case "end":
+      return start + size - client;
+    case "center":
+      return start + size / 2 - client / 2;
   }
   // "nearest"
   const end = start + size;
@@ -341,10 +373,30 @@ export function installHTMLElementView(HTMLElementClass: { prototype: object }):
     configurable: true,
   });
   const getters: [string, (this: Element) => number][] = [
-    ["offsetTop", function offsetTop(this: Element) { return layoutEnabled ? offsetMetric(this[$impl], Offset.Top) : 0; }],
-    ["offsetLeft", function offsetLeft(this: Element) { return layoutEnabled ? offsetMetric(this[$impl], Offset.Left) : 0; }],
-    ["offsetWidth", function offsetWidth(this: Element) { return layoutEnabled ? offsetMetric(this[$impl], Offset.Width) : 0; }],
-    ["offsetHeight", function offsetHeight(this: Element) { return layoutEnabled ? offsetMetric(this[$impl], Offset.Height) : 0; }],
+    [
+      "offsetTop",
+      function offsetTop(this: Element) {
+        return layoutEnabled ? offsetMetric(this[$impl], Offset.Top) : 0;
+      },
+    ],
+    [
+      "offsetLeft",
+      function offsetLeft(this: Element) {
+        return layoutEnabled ? offsetMetric(this[$impl], Offset.Left) : 0;
+      },
+    ],
+    [
+      "offsetWidth",
+      function offsetWidth(this: Element) {
+        return layoutEnabled ? offsetMetric(this[$impl], Offset.Width) : 0;
+      },
+    ],
+    [
+      "offsetHeight",
+      function offsetHeight(this: Element) {
+        return layoutEnabled ? offsetMetric(this[$impl], Offset.Height) : 0;
+      },
+    ],
   ];
   for (const [name, get] of getters) {
     Object.defineProperty(get, "name", { value: `get ${name}` });
@@ -413,7 +465,11 @@ export function installElementView(ElementClass: { prototype: object }): void {
       setScrollLeft(this[$impl], v);
     },
   });
-  for (const [name, by] of [["scroll", false], ["scrollTo", false], ["scrollBy", true]] as const) {
+  for (const [name, by] of [
+    ["scroll", false],
+    ["scrollTo", false],
+    ["scrollBy", true],
+  ] as const) {
     def(name, {
       writable: true,
       value: function (this: Element, x?: unknown, y?: unknown): void {

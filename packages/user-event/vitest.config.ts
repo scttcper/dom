@@ -13,9 +13,7 @@ const stack = process.env.CTRL_DOM_STACK ?? "ctrl-dom";
 // so differences caused by the environment (jsdom 30 vs the jsdom 20 upstream was written
 // against) can be told apart from differences in our port.
 const impl = process.env.CTRL_DOM_UE_IMPL ?? "ctrl-dom";
-const stockDist = fileURLToPath(
-  new URL("./node_modules/@testing-library/user-event/dist/esm/", import.meta.url),
-);
+const stockDist = fileURLToPath(new URL("./node_modules/@testing-library/user-event/dist/esm/", import.meta.url));
 
 export default defineProject({
   plugins: [ctrlDomEnvironment()],
@@ -38,9 +36,7 @@ export default defineProject({
   test: {
     name: "@ctrl/dom/user-event",
     include:
-      impl === "stock"
-        ? ["test/upstream/**/*.test.{ts,tsx}"]
-        : ["test/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      impl === "stock" ? ["test/upstream/**/*.test.{ts,tsx}"] : ["test/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
     environment: stack,
     globals: true,
     setupFiles: ["./test/_setup.ts"],

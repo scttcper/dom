@@ -72,7 +72,10 @@ export class FileReader extends EventTarget {
     }
     // Step 1: InvalidStateError while a read is in progress.
     if (this[$readyState] === 1) {
-      throw new DOMException("Failed to execute 'readAs" + kind + "' on 'FileReader': The object is already busy reading Blobs.", "InvalidStateError");
+      throw new DOMException(
+        "Failed to execute 'readAs" + kind + "' on 'FileReader': The object is already busy reading Blobs.",
+        "InvalidStateError",
+      );
     }
     this[$readyState] = 1;
     this[$result] = null;
@@ -121,12 +124,21 @@ for (const type of ["loadstart", "progress", "load", "abort", "error", "loadend"
     configurable: true,
   });
 }
-for (const [name, value] of [["EMPTY", 0], ["LOADING", 1], ["DONE", 2]] as const) {
+for (const [name, value] of [
+  ["EMPTY", 0],
+  ["LOADING", 1],
+  ["DONE", 2],
+] as const) {
   Object.defineProperty(FileReader.prototype, name, { value, enumerable: true });
 }
 
 /** https://w3c.github.io/FileAPI/#packaging-data */
-function packageData(buffer: ArrayBuffer, kind: ReadKind, type: string, encoding: string | undefined): string | ArrayBuffer {
+function packageData(
+  buffer: ArrayBuffer,
+  kind: ReadKind,
+  type: string,
+  encoding: string | undefined,
+): string | ArrayBuffer {
   switch (kind) {
     case "ArrayBuffer":
       return buffer;

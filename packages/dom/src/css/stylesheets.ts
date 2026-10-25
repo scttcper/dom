@@ -279,18 +279,28 @@ export function adoptedStyleSheetsOf(root: NodeImpl): CSSStyleSheet[] {
 /** Setter: every entry must be a constructed sheet of the same document. */
 export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
   if (value === null || typeof value !== "object" || typeof (value as { length?: unknown }).length !== "number") {
-    throw new TypeError("Failed to set the 'adoptedStyleSheets' property: The provided value cannot be converted to a sequence.");
+    throw new TypeError(
+      "Failed to set the 'adoptedStyleSheets' property: The provided value cannot be converted to a sequence.",
+    );
   }
   const list = Array.from(value as ArrayLike<unknown>);
   for (const s of list) {
     if (!(s instanceof CSSStyleSheet)) {
-      throw new TypeError("Failed to set the 'adoptedStyleSheets' property: Failed to convert value to 'CSSStyleSheet'.");
+      throw new TypeError(
+        "Failed to set the 'adoptedStyleSheets' property: Failed to convert value to 'CSSStyleSheet'.",
+      );
     }
     if (!s[$constructed]) {
-      throw new DOMException("Failed to set the 'adoptedStyleSheets' property: Can't adopt non-constructed stylesheets.", "NotAllowedError");
+      throw new DOMException(
+        "Failed to set the 'adoptedStyleSheets' property: Can't adopt non-constructed stylesheets.",
+        "NotAllowedError",
+      );
     }
     if (s[$doc] !== null && s[$doc] !== root.doc) {
-      throw new DOMException("Failed to set the 'adoptedStyleSheets' property: Sharing constructed stylesheets in multiple documents is not allowed", "NotAllowedError");
+      throw new DOMException(
+        "Failed to set the 'adoptedStyleSheets' property: Sharing constructed stylesheets in multiple documents is not allowed",
+        "NotAllowedError",
+      );
     }
   }
   const rs = rootStylesFor(root, true)!;

@@ -27,7 +27,13 @@ import { Location } from "./Location.ts";
 import { History } from "./History.ts";
 import { Navigator } from "./Navigator.ts";
 import { Screen, VisualViewport } from "./Screen.ts";
-import { type StorageShed, type Storage, createStorageShed, createLocalStorage, createSessionStorage } from "./Storage.ts";
+import {
+  type StorageShed,
+  type Storage,
+  createStorageShed,
+  createLocalStorage,
+  createSessionStorage,
+} from "./Storage.ts";
 import { MediaQueryList, reportMediaQueryChanges } from "./media.ts";
 import { CookieJar } from "./cookies.ts";
 import { installEventHandlers } from "../events/handlers.ts";
@@ -41,7 +47,43 @@ import { clockSkipping } from "./clock.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { type LayoutMode, enableLayout } from "../css/layout-mode.ts";
 import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
-import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $frameTime, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport } from "../keys.ts";
+import {
+  $aboutBase,
+  $childWindows,
+  $closed,
+  $cookieJar,
+  $customElements,
+  $devicePixelRatio,
+  $frameCallbacks,
+  $frameElement,
+  $frameId,
+  $frameTask,
+  $frameTime,
+  $globalObject,
+  $history,
+  $host,
+  $idleCallbacks,
+  $idleId,
+  $impl,
+  $innerHeight,
+  $innerWidth,
+  $localStorage,
+  $location,
+  $mediaQueryLists,
+  $navigator,
+  $options,
+  $parentWindow,
+  $runningFrame,
+  $screen,
+  $scrollX,
+  $scrollY,
+  $sessionStorage,
+  $shed,
+  $tasks,
+  $timers,
+  $url,
+  $visualViewport,
+} from "../keys.ts";
 
 export interface WindowOptions {
   /** Document URL. Default "http://localhost/". */
@@ -170,7 +212,12 @@ function receiver(self: Window | null | undefined, operation: string): Window {
 }
 
 function otherReceiver(self: unknown, operation: string): Window {
-  const window = self == null ? currentWindowOrNull() : typeof self === "object" || typeof self === "function" ? installedWindows.get(self) : undefined;
+  const window =
+    self == null
+      ? currentWindowOrNull()
+      : typeof self === "object" || typeof self === "function"
+        ? installedWindows.get(self)
+        : undefined;
   if (window == null) throw new TypeError(`Failed to execute '${operation}' on 'Window': Illegal invocation`);
   return window;
 }
@@ -289,7 +336,11 @@ export class Window extends EventTarget {
     this[$globalObject] = null;
     if (this[$shed] !== null) this[$shed].windows.add(this);
     if (options.visualViewport ?? compatExposes(this[$options].compat, "visualViewport")) {
-      Object.defineProperty(this, "visualViewport", { get: visualViewportGetter, enumerable: true, configurable: true });
+      Object.defineProperty(this, "visualViewport", {
+        get: visualViewportGetter,
+        enumerable: true,
+        configurable: true,
+      });
     }
     if (nested !== undefined) {
       // A nested browsing context never becomes the current window, uses its parent's host
@@ -374,7 +425,12 @@ export class Window extends EventTarget {
     // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy steps 3-6: secure
     // schemes and file, the loopback ranges 127.0.0.0/8 and ::1/128, and localhost names.
     if (protocol === "https:" || protocol === "wss:" || protocol === "file:") return true;
-    return hostname === "localhost" || hostname.endsWith(".localhost") || /^127\.\d+\.\d+\.\d+$/.test(hostname) || hostname === "[::1]";
+    return (
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      /^127\.\d+\.\d+\.\d+$/.test(hostname) ||
+      hostname === "[::1]"
+    );
   }
 
   get crossOriginIsolated(): boolean {
@@ -575,7 +631,8 @@ export class Window extends EventTarget {
     if (pseudoElement !== undefined && pseudoElement !== null && String(pseudoElement) !== "") {
       reportNotImplemented(receiver(this, "getComputedStyle"), COMPUTED_STYLE_PSEUDO);
     }
-    const hook = windowHooks.getComputedStyle ?? domExport<(e: Element, p?: string | null) => unknown>("getComputedStyle") ?? null;
+    const hook =
+      windowHooks.getComputedStyle ?? domExport<(e: Element, p?: string | null) => unknown>("getComputedStyle") ?? null;
     if (hook !== null) return hook(element, pseudoElement, receiver(this, "getComputedStyle")) as CSSStyleDeclaration;
     // TODO(css): register windowHooks.getComputedStyle. Fallback: the inline declarations only.
     return new CSSStyleDeclaration(element);
@@ -583,7 +640,8 @@ export class Window extends EventTarget {
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-matchmedia */
   matchMedia(query: string): MediaQueryList {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'matchMedia' on 'Window': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError("Failed to execute 'matchMedia' on 'Window': 1 argument required, but only 0 present.");
     return new MediaQueryList(receiver(this, "matchMedia"), String(query).trim());
   }
 
@@ -599,7 +657,9 @@ export class Window extends EventTarget {
   /** https://html.spec.whatwg.org/#dom-animationframeprovider-requestanimationframe */
   requestAnimationFrame(callback: FrameRequestCallback): number {
     if (typeof callback !== "function") {
-      throw new TypeError("Failed to execute 'requestAnimationFrame' on 'Window': The callback provided as parameter 1 is not a function.");
+      throw new TypeError(
+        "Failed to execute 'requestAnimationFrame' on 'Window': The callback provided as parameter 1 is not a function.",
+      );
     }
     const self = receiver(this, "requestAnimationFrame");
     const id = ++self[$frameId];
@@ -627,7 +687,9 @@ export class Window extends EventTarget {
   /** https://w3c.github.io/requestidlecallback/#the-requestidlecallback-method */
   requestIdleCallback(callback: (deadline: IdleDeadline) => void, options?: { timeout?: number }): number {
     if (typeof callback !== "function") {
-      throw new TypeError("Failed to execute 'requestIdleCallback' on 'Window': The callback provided as parameter 1 is not a function.");
+      throw new TypeError(
+        "Failed to execute 'requestIdleCallback' on 'Window': The callback provided as parameter 1 is not a function.",
+      );
     }
     void options;
     const self = receiver(this, "requestIdleCallback");
@@ -671,7 +733,9 @@ export class Window extends EventTarget {
   /** @internal The global whose timer functions this window uses right now. */
   _timerHost(): Record<string, unknown> {
     const host = this[$host];
-    return typeof host.setTimeout === "function" ? (host as unknown as Record<string, unknown>) : (globalThis as unknown as Record<string, unknown>);
+    return typeof host.setTimeout === "function"
+      ? (host as unknown as Record<string, unknown>)
+      : (globalThis as unknown as Record<string, unknown>);
   }
 
   /**
@@ -682,7 +746,11 @@ export class Window extends EventTarget {
     if (this[$closed]) return null;
     const tasks = (this[$tasks] ??= new Set());
     const host = typeof this[$host].setTimeout === "function" ? this[$host] : globalThis;
-    const task: PendingTask = { handle: undefined, clear: host.clearTimeout as PendingTask["clear"], scheduledWith: host.setTimeout };
+    const task: PendingTask = {
+      handle: undefined,
+      clear: host.clearTimeout as PendingTask["clear"],
+      scheduledWith: host.setTimeout,
+    };
     task.handle = host.setTimeout(() => {
       tasks.delete(task);
       callback.call(this);
@@ -720,18 +788,33 @@ export class Window extends EventTarget {
   // --- messaging & errors --------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#dom-window-postmessage */
-  postMessage(message: unknown, targetOrigin?: string | { targetOrigin?: string; transfer?: unknown[] }, transfer?: unknown[]): void {
+  postMessage(
+    message: unknown,
+    targetOrigin?: string | { targetOrigin?: string; transfer?: unknown[] },
+    transfer?: unknown[],
+  ): void {
     const self = receiver(this, "postMessage");
-    let origin = typeof targetOrigin === "object" && targetOrigin !== null ? (targetOrigin.targetOrigin ?? "/") : (targetOrigin ?? "/");
+    let origin =
+      typeof targetOrigin === "object" && targetOrigin !== null
+        ? (targetOrigin.targetOrigin ?? "/")
+        : (targetOrigin ?? "/");
     origin = String(origin);
     if (origin === "/") origin = self.origin;
     else if (origin !== "*") {
       const parsed = URL.parse(origin);
-      if (parsed === null) throw new DOMException(`Failed to execute 'postMessage' on 'Window': Invalid target origin '${origin}' in a call to 'postMessage'.`, "SyntaxError");
+      if (parsed === null)
+        throw new DOMException(
+          `Failed to execute 'postMessage' on 'Window': Invalid target origin '${origin}' in a call to 'postMessage'.`,
+          "SyntaxError",
+        );
       origin = parsed.origin;
     }
     if (origin !== "*" && origin !== self.origin) return;
-    const transferList = Array.isArray(transfer) ? transfer : typeof targetOrigin === "object" && targetOrigin !== null ? targetOrigin.transfer : undefined;
+    const transferList = Array.isArray(transfer)
+      ? transfer
+      : typeof targetOrigin === "object" && targetOrigin !== null
+        ? targetOrigin.transfer
+        : undefined;
     // Step 5: StructuredSerializeWithTransfer, synchronously (DataCloneError is thrown to the
     // caller). The transfer list rides along in the clone so the deserialized transferred values
     // come back even when the message does not reference them.
@@ -1018,7 +1101,9 @@ function preparePrototype(): void {
     if (name in proto) continue;
     descriptors[name] = {
       get(this: Window) {
-        return (this[$host] as unknown as Record<string, unknown>)[name] ?? (globalThis as Record<string, unknown>)[name];
+        return (
+          (this[$host] as unknown as Record<string, unknown>)[name] ?? (globalThis as Record<string, unknown>)[name]
+        );
       },
       set(this: Window, value: unknown) {
         Object.defineProperty(this, name, { value, writable: true, enumerable: true, configurable: true });
@@ -1050,7 +1135,14 @@ function createNestedWindow(frameElement: Element, parent: Window, src: string |
   if (srcdoc !== null) url = "about:srcdoc";
   else if (src !== null && src !== "") url = URL.parse(src, parent.document.baseURI)?.href ?? "about:blank";
   const win = new Window(
-    { url, width: parent[$innerWidth], height: parent[$innerHeight], devicePixelRatio: parent[$devicePixelRatio], userAgent: parent[$options].userAgent, layout: parent[$options].layout },
+    {
+      url,
+      width: parent[$innerWidth],
+      height: parent[$innerHeight],
+      devicePixelRatio: parent[$devicePixelRatio],
+      userAgent: parent[$options].userAgent,
+      layout: parent[$options].layout,
+    },
     { parent, frameElement, srcdoc },
   );
   // https://html.spec.whatwg.org/#concept-document-about-base-url: an about:blank or about:srcdoc

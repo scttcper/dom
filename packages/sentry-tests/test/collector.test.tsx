@@ -48,7 +48,10 @@ function collecting(): Collector {
 }
 
 /** Run `fn` as a test of `collector`, the way the Vitest runner does, and return the file's spans. */
-async function asTest(collector: Collector, fn: () => Promise<void> | void): Promise<{ spans: CollectedSpan[]; test: CollectedSpan }> {
+async function asTest(
+  collector: Collector,
+  fn: () => Promise<void> | void,
+): Promise<{ spans: CollectedSpan[]; test: CollectedSpan }> {
   const test = collector.open("test.case", "saves", {}, collector.test("t1"));
   await collector.run(test, fn);
   collector.close(test);
@@ -98,28 +101,72 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
     expect(children.every((s) => s.description === 'getByText("Saved")')).toBe(true);
     // Retries that threw are errored spans; the last one found the text.
     expect(children.at(-1)!.status).toBe("ok");
-    expect(spans.find((s) => s.op === "testing-library.fire_event")?.description).toBe('fireEvent.click(button "Save")');
+    expect(spans.find((s) => s.op === "testing-library.fire_event")?.description).toBe(
+      'fireEvent.click(button "Save")',
+    );
   });
 
   test("descriptions name what the test wrote: the component inside test-helper wrappers, CommonJS callback source cleaned up, <body> alone", async () => {
     const Theme = createContext("light");
     const AllTheProviders = ({ children }: { children: ReactNode }) => <Theme value="dark">{children}</Theme>;
     // A bundler-renamed router provider, as test helpers wrap the UI in: `RouterProvider$1`.
-    const RouterProvider = ({ router }: { router: { routes: Array<{ element: ReactNode; children?: Array<{ element: ReactNode }> }> } }) => <>{router.routes[0].children?.[0]?.element}</>;
+    const RouterProvider = ({
+      router,
+    }: {
+      router: { routes: Array<{ element: ReactNode; children?: Array<{ element: ReactNode }> }> };
+    }) => <>{router.routes[0].children?.[0]?.element}</>;
     Object.defineProperty(RouterProvider, "name", { value: "RouterProvider$1" });
     const collector = collecting();
     const { spans } = await asTest(collector, async () => {
       // An anonymous wrapper from a factory, under a layout route's <Outlet />.
-      const makeProviders = () => ({ children }: { children: ReactNode }) => <AllTheProviders>{children}</AllTheProviders>;
+      const makeProviders =
+        () =>
+        ({ children }: { children: ReactNode }) => <AllTheProviders>{children}</AllTheProviders>;
       const Providers = makeProviders();
       const Outlet = () => null;
-      render(<RouterProvider router={{ routes: [{ element: <Outlet />, children: [{ element: <Providers><StrictMode><Save /></StrictMode></Providers> }] }] } as never} />);
+      render(
+        <RouterProvider
+          router={
+            {
+              routes: [
+                {
+                  element: <Outlet />,
+                  children: [
+                    {
+                      element: (
+                        <Providers>
+                          <StrictMode>
+                            <Save />
+                          </StrictMode>
+                        </Providers>
+                      ),
+                    },
+                  ],
+                },
+              ],
+            } as never
+          }
+        />,
+      );
       // Babel/SWC CommonJS output: an interop object and a braced single statement.
-      const babelStyle = new Function("_reactTestingLibrary", "expect", "return ()=>{ expect(_reactTestingLibrary.screen.getByText('Name')).toBeTruthy(); }")({ screen }, expect);
+      const babelStyle = new Function(
+        "_reactTestingLibrary",
+        "expect",
+        "return ()=>{ expect(_reactTestingLibrary.screen.getByText('Name')).toBeTruthy(); }",
+      )({ screen }, expect);
       await waitFor(babelStyle);
       fireEvent.click(document.body);
-      render(<div><Save /></div>);
-      render(<div><Save /><Save /></div>);
+      render(
+        <div>
+          <Save />
+        </div>,
+      );
+      render(
+        <div>
+          <Save />
+          <Save />
+        </div>,
+      );
     });
     expect(spans.map(line)).toEqual(
       expect.arrayContaining([
@@ -201,7 +248,10 @@ describe("collector: a failed test's capture", () => {
     expect(failure.attachments.map((a) => a.filename)).toEqual(["page.html", "accessibility-snapshot.txt"]);
     expect(failure.attachments[0].data).toContain("<button>Save</button>");
     expect(failure.attachments[1].data).toContain('button "Save"');
-    expect(failure.contexts.clock).toMatchObject({ skipped_ms: expect.any(Number), pending_timers: expect.any(Number) });
+    expect(failure.contexts.clock).toMatchObject({
+      skipped_ms: expect.any(Number),
+      pending_timers: expect.any(Number),
+    });
   });
 
   test('"sentry-tests:failure" subscribers add attachments and contexts, can hold the capture with waitUntil, and cannot replace page.html', async () => {
@@ -212,7 +262,11 @@ describe("collector: a failed test's capture", () => {
       m.attachments.push({ filename: "page.html", contentType: "text/html", data: "not this one" });
       m.waitUntil(
         new Promise<void>((resolve) => setImmediate(resolve)).then(() => {
-          m.attachments.push({ filename: "store.json", contentType: "application/json", data: `{"test":${JSON.stringify(m.test)}}` });
+          m.attachments.push({
+            filename: "store.json",
+            contentType: "application/json",
+            data: `{"test":${JSON.stringify(m.test)}}`,
+          });
         }),
       );
     };
@@ -239,11 +293,29 @@ describe("pageHtml: the failure's page.html", () => {
       </div>,
     );
     document.body.firstElementChild!.append(document.createComment("hidden"));
-    expect(pageHtml(document)).toBe(['<body>', "  <div>", "    <div>", "      <style></style>", '      <p title="say &quot;hi&quot; &amp; go">Short</p>', '      <input disabled="" />', "    </div>", "  </div>", "</body>"].join("\n"));
+    expect(pageHtml(document)).toBe(
+      [
+        "<body>",
+        "  <div>",
+        "    <div>",
+        "      <style></style>",
+        '      <p title="say &quot;hi&quot; &amp; go">Short</p>',
+        '      <input disabled="" />',
+        "    </div>",
+        "  </div>",
+        "</body>",
+      ].join("\n"),
+    );
   });
 
   test("cuts at the limit, and has nothing for a document without a body", () => {
-    render(<ul>{Array.from({ length: 50 }, (_, i) => <li key={i}>item {i}</li>)}</ul>);
+    render(
+      <ul>
+        {Array.from({ length: 50 }, (_, i) => (
+          <li key={i}>item {i}</li>
+        ))}
+      </ul>,
+    );
     const html = pageHtml(document, 200)!;
     expect(html.endsWith("<!-- truncated -->")).toBe(true);
     expect(html.length).toBeLessThan(300);

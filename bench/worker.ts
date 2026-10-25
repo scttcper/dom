@@ -50,7 +50,10 @@ function memory() {
   };
 }
 
-async function runStartup(w: StartupWorkload, config: ConfigName): Promise<Omit<SampleResult, keyof ReturnType<typeof memory>>> {
+async function runStartup(
+  w: StartupWorkload,
+  config: ConfigName,
+): Promise<Omit<SampleResult, keyof ReturnType<typeof memory>>> {
   await prepare(config);
   if (w.id === "startup/import") {
     const t = performance.now();

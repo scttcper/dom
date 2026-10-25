@@ -49,7 +49,8 @@ function sweep(list: TimerList): void {
   const handles = list.handles;
   for (const handle of handles.keys()) {
     // Node sets `_destroyed` once a one-shot Timeout ran or any Timeout was cleared.
-    if (typeof handle === "object" && handle !== null && (handle as { _destroyed?: boolean })._destroyed === true) handles.delete(handle);
+    if (typeof handle === "object" && handle !== null && (handle as { _destroyed?: boolean })._destroyed === true)
+      handles.delete(handle);
   }
   list.sweepAt = Math.max(SWEEP_MIN, handles.size * 2);
 }
@@ -74,7 +75,14 @@ export function clearTimers(window: Window): void {
  * current host global, so fake timers apply): returns 0 and schedules nothing once the window
  * is closed (jsdom), otherwise the host's handle, tracked so close() clears it.
  */
-export function startTimer(window: Window, host: Record<string, unknown>, repeat: boolean, handler: unknown, timeout: unknown, args: unknown[]): unknown {
+export function startTimer(
+  window: Window,
+  host: Record<string, unknown>,
+  repeat: boolean,
+  handler: unknown,
+  timeout: unknown,
+  args: unknown[],
+): unknown {
   if (window[$closed]) return 0;
   const start = host[repeat ? "setInterval" : "setTimeout"] as HostTimerFunction;
   const handle = args.length === 0 ? start(handler, timeout) : start(handler, timeout, ...args);
@@ -119,9 +127,15 @@ export function trackGlobalTimers(window: Window, target: Record<PropertyKey, un
   const saved: [string, PropertyDescriptor | undefined][] = [];
   for (const repeat of [false, true]) {
     const name = repeat ? "setInterval" : "setTimeout";
-    if (typeof target[name] !== "function" || typeof target[repeat ? "clearInterval" : "clearTimeout"] !== "function") continue;
+    if (typeof target[name] !== "function" || typeof target[repeat ? "clearInterval" : "clearTimeout"] !== "function")
+      continue;
     saved.push([name, Object.getOwnPropertyDescriptor(target, name)]);
-    Object.defineProperty(target, name, { value: wrapTimer(window, target, repeat), writable: true, enumerable: true, configurable: true });
+    Object.defineProperty(target, name, {
+      value: wrapTimer(window, target, repeat),
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   }
   return function restore(): void {
     for (const [name, descriptor] of saved) {

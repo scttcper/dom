@@ -24,7 +24,9 @@ type QueryMatcher = (this: MatcherContext, actual: DOMNode, ...args: unknown[]) 
 function createQueryMatcher(quantity: "Any" | "One", queryName: string): QueryMatcher {
   const strategy = toPascalCase(queryName);
   const matcherName = `toContain${quantity}By${strategy}`;
-  const query = (queries as unknown as Record<string, (container: DOMNode, ...args: unknown[]) => DOMNode[]>)[`queryAllBy${strategy}`];
+  const query = (queries as unknown as Record<string, (container: DOMNode, ...args: unknown[]) => DOMNode[]>)[
+    `queryAllBy${strategy}`
+  ];
 
   function queryMatcher(this: MatcherContext, actual: DOMNode, ...args: unknown[]): MatcherResult {
     checkHtmlElement(actual, queryMatcher, this);
@@ -38,9 +40,18 @@ function createQueryMatcher(quantity: "Any" | "One", queryName: string): QueryMa
           secondArgument: args[1] === undefined ? undefined : this.utils.printExpected(args[1]),
         });
         const parts = [
-          getMessage(this, hint, `Expected element ${to} contain ${quantity.toLowerCase()} descendant by ${queryName}`, args[0], "Received", elements.length),
+          getMessage(
+            this,
+            hint,
+            `Expected element ${to} contain ${quantity.toLowerCase()} descendant by ${queryName}`,
+            args[0],
+            "Received",
+            elements.length,
+          ),
         ];
-        const prettyElements = elements.map((element) => prettyDOM(element)).filter((value): value is string => typeof value === "string");
+        const prettyElements = elements
+          .map((element) => prettyDOM(element))
+          .filter((value): value is string => typeof value === "string");
 
         if (prettyElements.length) {
           parts.push("Here are the matching elements:", ...prettyElements);

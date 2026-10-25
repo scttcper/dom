@@ -8,7 +8,12 @@
 import { Attr } from "./Attr.ts";
 import type { Element } from "./Element.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
-import { appendAttribute, findAttributeByNamespace, handleAttributeChanges, removeAttributeRecord } from "./attributes.ts";
+import {
+  appendAttribute,
+  findAttributeByNamespace,
+  handleAttributeChanges,
+  removeAttributeRecord,
+} from "./attributes.ts";
 import { $impl, $owner, $record } from "../keys.ts";
 
 /** The Attr wrapper for `record` on element `el`, created on first use. */

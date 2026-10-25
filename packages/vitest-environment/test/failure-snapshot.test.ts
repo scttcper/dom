@@ -34,22 +34,42 @@ function spawnVitest(env: Record<string, string | undefined>): Map<string, strin
   const merged: Record<string, string | undefined> = { ...process.env, ...env };
   for (const key of Object.keys(env)) if (env[key] === undefined) delete merged[key];
   const file = join(out, `run-${runs.size}.json`);
-  spawnSync("pnpm", ["exec", "vitest", "run", "--config", "test/failure-snapshot/vitest.config.ts", "--reporter=json", `--outputFile.json=${file}`], {
-    cwd: pkg,
-    encoding: "utf8",
-    env: merged,
-  });
+  spawnSync(
+    "pnpm",
+    [
+      "exec",
+      "vitest",
+      "run",
+      "--config",
+      "test/failure-snapshot/vitest.config.ts",
+      "--reporter=json",
+      `--outputFile.json=${file}`,
+    ],
+    {
+      cwd: pkg,
+      encoding: "utf8",
+      env: merged,
+    },
+  );
   const json = JSON.parse(readFileSync(file, "utf8")) as VitestJson;
   return new Map(json.testResults[0].assertionResults.map((a) => [a.title, a.failureMessages.join("\n")]));
 }
 
-const BEFORE_CLICK = ["- main:", '  - heading "Checkout" [level=1]', '  - form "Payment":', '    - textbox "Email"', '    - button "Options" [expanded=false]'].join("\n");
+const BEFORE_CLICK = [
+  "- main:",
+  '  - heading "Checkout" [level=1]',
+  '  - form "Payment":',
+  '    - textbox "Email"',
+  '    - button "Options" [expanded=false]',
+].join("\n");
 
 describe("failure snapshots under CTRL_DOM_DEBUG (setup file, onTestFailed)", () => {
   test("each failure gets the body as it was before Testing Library's cleanup", { timeout: 60_000 }, () => {
     const messages = vitest({ CTRL_DOM_DEBUG: "aria", CTRL_DOM_DEBUG_LINES: undefined });
     const header = "Accessibility snapshot of <body> when the test failed (CTRL_DOM_DEBUG=aria):";
-    expect(messages.get("a failed expect")).toContain(`to be 'Cart' // Object.is equality\n\n${header}\n${BEFORE_CLICK}\n    at `);
+    expect(messages.get("a failed expect")).toContain(
+      `to be 'Cart' // Object.is equality\n\n${header}\n${BEFORE_CLICK}\n    at `,
+    );
     expect(messages.get("a thrown error")).toContain(`Error: boom\n\n${header}\n${BEFORE_CLICK}\n    at `);
     expect(messages.get("passes")).toBe("");
   });
@@ -73,12 +93,16 @@ describe("failure snapshots under CTRL_DOM_DEBUG (setup file, onTestFailed)", ()
   test("a snapshot the error already printed (a failed query) is not repeated", { timeout: 60_000 }, () => {
     const messages = vitest({ CTRL_DOM_DEBUG: "aria", CTRL_DOM_DEBUG_LINES: undefined });
     const message = messages.get("a failed query that printed the snapshot already")!;
-    expect(message).toContain(`Accessibility snapshot of <body> (CTRL_DOM_DEBUG=aria):\n${BEFORE_CLICK}\n\nAccessibility snapshot of <body> when the test failed: the same as above.`);
+    expect(message).toContain(
+      `Accessibility snapshot of <body> (CTRL_DOM_DEBUG=aria):\n${BEFORE_CLICK}\n\nAccessibility snapshot of <body> when the test failed: the same as above.`,
+    );
   });
 
   test("CTRL_DOM_DEBUG_LINES budgets the snapshot", { timeout: 60_000 }, () => {
     const messages = vitest({ CTRL_DOM_DEBUG: "aria", CTRL_DOM_DEBUG_LINES: "2" });
-    expect(messages.get("a thrown error")).toContain(`- main:\n  - heading "Checkout" [level=1]\n# … 3 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)\n`);
+    expect(messages.get("a thrown error")).toContain(
+      `- main:\n  - heading "Checkout" [level=1]\n# … 3 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)\n`,
+    );
   });
 
   test("without CTRL_DOM_DEBUG the setup file registers nothing", { timeout: 60_000 }, () => {

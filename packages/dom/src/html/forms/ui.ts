@@ -36,7 +36,21 @@ import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
 import { createFileList } from "../../window/FileList.ts";
 import { optionSelect } from "./HTMLOptionElement.ts";
 import type { HTMLSelectElement } from "./HTMLSelectElement.ts";
-import { $badInput, $dirtiness, $dirtyValue, $files, $impl, $rawValue, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $value, $version } from "../../keys.ts";
+import {
+  $badInput,
+  $dirtiness,
+  $dirtyValue,
+  $files,
+  $impl,
+  $rawValue,
+  $selDir,
+  $selEnd,
+  $selStart,
+  $uiValue,
+  $userEdited,
+  $value,
+  $version,
+} from "../../keys.ts";
 
 type El = Element | NodeImpl;
 
@@ -139,7 +153,12 @@ export function getUISelection(el: El): UISelection {
 }
 
 /** Set the caret/selection as the user would (no exceptions for email/number inputs). */
-export function setUISelection(el: El, start: number, end: number = start, direction: UISelection["direction"] = "none"): void {
+export function setUISelection(
+  el: El,
+  start: number,
+  end: number = start,
+  direction: UISelection["direction"] = "none",
+): void {
   const impl = implOf(el);
   if (impl.tag !== T.input && impl.tag !== T.textarea) return;
   const host = impl.node as unknown as { [$selStart]: number; [$selEnd]: number; [$selDir]: UISelection["direction"] };

@@ -36,7 +36,9 @@ function logFocusEvents(w: AnyWindow, ...els: AnyWindow[]): string[] {
   for (const el of els) {
     for (const type of ["focus", "blur", "focusin", "focusout"]) {
       el.addEventListener(type, (e: AnyWindow) => {
-        log.push(`${type}@${describeNode(e.target)} related=${describeNode(e.relatedTarget)} bubbles=${e.bubbles} composed=${e.composed} ${e.constructor.name}`);
+        log.push(
+          `${type}@${describeNode(e.target)} related=${describeNode(e.relatedTarget)} bubbles=${e.bubbles} composed=${e.composed} ${e.constructor.name}`,
+        );
       });
     }
   }
@@ -53,12 +55,14 @@ describe("focusable area — https://html.spec.whatwg.org/#focusable-area", () =
     ),
   );
 
-  differential("disabled controls (own attribute or disabled fieldset) are not focusable; the first legend's are", (w) =>
-    tryFocus(
-      w,
-      `<input disabled data-k=disabledInput><button disabled data-k=disabledButton>b</button>
+  differential(
+    "disabled controls (own attribute or disabled fieldset) are not focusable; the first legend's are",
+    (w) =>
+      tryFocus(
+        w,
+        `<input disabled data-k=disabledInput><button disabled data-k=disabledButton>b</button>
        <fieldset disabled><legend><input data-k=inLegend></legend><input data-k=inFieldset></fieldset>`,
-    ),
+      ),
   );
 
   differential("input type=hidden is not focusable; a disabled element with tabindex is still not focusable", (w) =>
@@ -73,19 +77,25 @@ describe("focusable area — https://html.spec.whatwg.org/#focusable-area", () =
 });
 
 describe("tabIndex IDL attribute — https://html.spec.whatwg.org/#dom-tabindex", () => {
-  differential("defaults: 0 for interactive elements, -1 otherwise; the attribute wins when valid", (w) => {
-    w.document.body.innerHTML = `<a id=a></a><a id=ah href=x></a><button id=b></button><input id=i><select id=s></select><textarea id=t></textarea>
+  differential(
+    "defaults: 0 for interactive elements, -1 otherwise; the attribute wins when valid",
+    (w) => {
+      w.document.body.innerHTML = `<a id=a></a><a id=ah href=x></a><button id=b></button><input id=i><select id=s></select><textarea id=t></textarea>
       <div id=d></div><div id=dt tabindex="3"></div><div id=dbad tabindex="x"></div><span id=neg tabindex="-5"></span>`;
-    const out: Record<string, number> = {};
-    for (const el of Array.from(w.document.querySelectorAll("[id]") as ArrayLike<AnyWindow>)) out[el.id] = el.tabIndex;
-    return out;
-  }, {
-    jsdomFix: {
-      fix: (o) => ({ ...o, dbad: -1 }),
-      spec: "https://html.spec.whatwg.org/#dom-tabindex",
-      reason: "The getter returns the default (-1 for a div) when parsing the attribute as an integer fails; jsdom returns 0 for an unparsable tabindex.",
+      const out: Record<string, number> = {};
+      for (const el of Array.from(w.document.querySelectorAll("[id]") as ArrayLike<AnyWindow>))
+        out[el.id] = el.tabIndex;
+      return out;
     },
-  });
+    {
+      jsdomFix: {
+        fix: (o) => ({ ...o, dbad: -1 }),
+        spec: "https://html.spec.whatwg.org/#dom-tabindex",
+        reason:
+          "The getter returns the default (-1 for a div) when parsing the attribute as an integer fails; jsdom returns 0 for an unparsable tabindex.",
+      },
+    },
+  );
 
   differential("setter writes the attribute", (w) => {
     const el = w.document.createElement("div");
@@ -97,21 +107,25 @@ describe("tabIndex IDL attribute — https://html.spec.whatwg.org/#dom-tabindex"
 });
 
 describe("focus update steps — https://html.spec.whatwg.org/#focus-update-steps", () => {
-  differential("moving focus: blur, focusout on the old element, then focus, focusin on the new one, with relatedTarget", (w) => {
-    w.document.body.innerHTML = "<input id=a><input id=b>";
-    const a = w.document.getElementById("a");
-    const b = w.document.getElementById("b");
-    a.focus();
-    const log = logFocusEvents(w, a, b);
-    b.focus();
-    return log;
-  });
+  differential(
+    "moving focus: blur, focusout on the old element, then focus, focusin on the new one, with relatedTarget",
+    (w) => {
+      w.document.body.innerHTML = "<input id=a><input id=b>";
+      const a = w.document.getElementById("a");
+      const b = w.document.getElementById("b");
+      a.focus();
+      const log = logFocusEvents(w, a, b);
+      b.focus();
+      return log;
+    },
+  );
 
   differential("focusin and focusout bubble to ancestors; focus and blur do not", (w) => {
     w.document.body.innerHTML = "<div id=wrap><input id=a><input id=b></div>";
     const wrap = w.document.getElementById("wrap");
     const seen: string[] = [];
-    for (const type of ["focus", "blur", "focusin", "focusout"]) wrap.addEventListener(type, (e: AnyWindow) => seen.push(`${type}@${e.target.id}`));
+    for (const type of ["focus", "blur", "focusin", "focusout"])
+      wrap.addEventListener(type, (e: AnyWindow) => seen.push(`${type}@${e.target.id}`));
     w.document.getElementById("a").focus();
     w.document.getElementById("b").focus();
     return seen;
@@ -189,12 +203,15 @@ describe("activeElement — https://html.spec.whatwg.org/#dom-documentorshadowro
     };
   });
 
-  differential("focus inside a shadow tree: document.activeElement is the host, shadowRoot.activeElement the element", (w) => {
-    w.document.body.innerHTML = "<div id=host></div>";
-    const host = w.document.getElementById("host");
-    const root = host.attachShadow({ mode: "open" });
-    root.innerHTML = "<input id=inner>";
-    root.getElementById("inner").focus();
-    return { doc: describeNode(w.document.activeElement), shadow: describeNode(root.activeElement) };
-  });
+  differential(
+    "focus inside a shadow tree: document.activeElement is the host, shadowRoot.activeElement the element",
+    (w) => {
+      w.document.body.innerHTML = "<div id=host></div>";
+      const host = w.document.getElementById("host");
+      const root = host.attachShadow({ mode: "open" });
+      root.innerHTML = "<input id=inner>";
+      root.getElementById("inner").focus();
+      return { doc: describeNode(w.document.activeElement), shadow: describeNode(root.activeElement) };
+    },
+  );
 });

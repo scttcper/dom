@@ -52,11 +52,13 @@ beforeEach(() => {
 
 const $ = (id: string) => doc.getElementById(id);
 const nextTask = () => new Promise((r) => setTimeout(r, 1));
-const escape = (target: any) => target.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+const escape = (target: any) =>
+  target.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
 
 function toggles(el: any): string[] {
   const log: string[] = [];
-  for (const type of ["beforetoggle", "toggle"]) el.addEventListener(type, (e: any) => log.push(`${type}:${e.oldState}->${e.newState}`));
+  for (const type of ["beforetoggle", "toggle"])
+    el.addEventListener(type, (e: any) => log.push(`${type}:${e.oldState}->${e.newState}`));
   return log;
 }
 
@@ -90,7 +92,8 @@ describe("showPopover / hidePopover / togglePopover — https://html.spec.whatwg
 
   test("methods on an element without a popover attribute throw NotSupportedError", () => {
     doc.body.innerHTML = `<div id=d></div>`;
-    for (const m of ["showPopover", "hidePopover", "togglePopover"]) expect(() => $("d")[m]()).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
+    for (const m of ["showPopover", "hidePopover", "togglePopover"])
+      expect(() => $("d")[m]()).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
   });
 
   test("a disconnected popover throws InvalidStateError on show", () => {
@@ -221,20 +224,47 @@ describe("popover target attributes — https://html.spec.whatwg.org/#popover-ta
 describe("commands — https://html.spec.whatwg.org/#dom-button-command", () => {
   test("command reflects known keywords (ASCII case-insensitive), custom --commands as is, and '' otherwise", () => {
     const b = doc.createElement("button");
-    const values = ["show-modal", "CLOSE", "request-close", "toggle-popover", "show-popover", "hide-popover", "--Custom", "-x", "bogus", ""];
-    expect(values.map((v) => ((b.setAttribute("command", v), b.command)))).toEqual(["show-modal", "close", "request-close", "toggle-popover", "show-popover", "hide-popover", "--Custom", "", "", ""]);
+    const values = [
+      "show-modal",
+      "CLOSE",
+      "request-close",
+      "toggle-popover",
+      "show-popover",
+      "hide-popover",
+      "--Custom",
+      "-x",
+      "bogus",
+      "",
+    ];
+    expect(values.map((v) => (b.setAttribute("command", v), b.command))).toEqual([
+      "show-modal",
+      "close",
+      "request-close",
+      "toggle-popover",
+      "show-popover",
+      "hide-popover",
+      "--Custom",
+      "",
+      "",
+      "",
+    ]);
   });
 
   test("a command button fires a cancelable CommandEvent at its target with source and command; canceling skips the action (https://html.spec.whatwg.org/#the-commandevent-interface, https://html.spec.whatwg.org/#dom-commandevent-source)", () => {
     doc.body.innerHTML = `<button id=b commandfor=d command=show-modal>b</button><dialog id=d>d</dialog>`;
     const log: string[] = [];
-    $("d").addEventListener("command", (e: any) => log.push(`${e.constructor.name} ${e.command} ${e.source?.id} cancelable=${e.cancelable} bubbles=${e.bubbles}`));
+    $("d").addEventListener("command", (e: any) =>
+      log.push(`${e.constructor.name} ${e.command} ${e.source?.id} cancelable=${e.cancelable} bubbles=${e.bubbles}`),
+    );
     $("d").addEventListener("command", (e: any) => e.preventDefault(), { once: true });
     $("b").click();
     expect($("d").open).toBe(false);
     $("b").click();
     expect([$("d").open, $("d").matches(":modal")]).toEqual([true, true]);
-    expect(log).toEqual(["CommandEvent show-modal b cancelable=true bubbles=false", "CommandEvent show-modal b cancelable=true bubbles=false"]);
+    expect(log).toEqual([
+      "CommandEvent show-modal b cancelable=true bubbles=false",
+      "CommandEvent show-modal b cancelable=true bubbles=false",
+    ]);
   });
 
   test("dialog command steps: close passes the button's value as the return value; request-close fires cancel (https://html.spec.whatwg.org/#the-dialog-element:command-steps, https://html.spec.whatwg.org/#request-close-return-value)", () => {
@@ -247,7 +277,12 @@ describe("commands — https://html.spec.whatwg.org/#dom-button-command", () => 
     const afterRequest = [$("d").open, $("d").returnValue];
     $("d").showModal();
     $("c").click();
-    expect([afterRequest, $("d").open, $("d").returnValue, log.includes("cancel")]).toEqual([[false, "asked"], false, "done", true]);
+    expect([afterRequest, $("d").open, $("d").returnValue, log.includes("cancel")]).toEqual([
+      [false, "asked"],
+      false,
+      "done",
+      true,
+    ]);
   });
 
   test("custom commands only fire the event; unknown commands and commands the target has no steps for fire nothing (https://html.spec.whatwg.org/#determine-if-a-command-is-valid)", () => {
@@ -280,7 +315,13 @@ describe("ToggleEvent — https://html.spec.whatwg.org/#the-toggleevent-interfac
   test("oldState / newState default to '', source to null", () => {
     const e = new win.ToggleEvent("toggle", { oldState: "closed", newState: "open" });
     const d = new win.ToggleEvent("toggle");
-    expect([e.oldState, e.newState, d.oldState, d.newState, d.source ?? null]).toEqual(["closed", "open", "", "", null]);
+    expect([e.oldState, e.newState, d.oldState, d.newState, d.source ?? null]).toEqual([
+      "closed",
+      "open",
+      "",
+      "",
+      null,
+    ]);
   });
 });
 
@@ -296,7 +337,8 @@ describe("close watchers — https://html.spec.whatwg.org/#close-requests-and-cl
   test("a modal dialog's close watcher fires cancel then close (https://html.spec.whatwg.org/#dialog-close-watcher, https://html.spec.whatwg.org/#establish-a-close-watcher)", () => {
     doc.body.innerHTML = `<dialog id=d>d</dialog>`;
     const log: string[] = [];
-    for (const t of ["cancel", "close"]) $("d").addEventListener(t, (e: any) => log.push(`${t} cancelable=${e.cancelable}`));
+    for (const t of ["cancel", "close"])
+      $("d").addEventListener(t, (e: any) => log.push(`${t} cancelable=${e.cancelable}`));
     $("d").showModal();
     escape(doc.body);
     return nextTask().then(() => expect(log).toEqual(["cancel cancelable=true", "close cancelable=false"]));

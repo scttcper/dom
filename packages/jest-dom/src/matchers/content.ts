@@ -44,7 +44,9 @@ export function toHaveTextContent(
       return getMessage(
         this,
         this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toHaveTextContent`, "element", ""),
-        checkingWithEmptyString ? `Checking with empty string will always match, use .toBeEmptyDOMElement() instead` : `Expected element ${to} have text content`,
+        checkingWithEmptyString
+          ? `Checking with empty string will always match, use .toBeEmptyDOMElement() instead`
+          : `Expected element ${to} have text content`,
         checkWith,
         "Received",
         textContent,
@@ -60,10 +62,17 @@ function printAttribute(stringify: (v: unknown) => string, name: string, value: 
 }
 
 function getAttributeComment(stringify: (v: unknown) => string, name: string, value: unknown): string {
-  return value === undefined ? `element.hasAttribute(${stringify(name)})` : `element.getAttribute(${stringify(name)}) === ${stringify(value)}`;
+  return value === undefined
+    ? `element.hasAttribute(${stringify(name)})`
+    : `element.getAttribute(${stringify(name)}) === ${stringify(value)}`;
 }
 
-export function toHaveAttribute(this: MatcherContext, htmlElement: DOMNode, name: string, expectedValue?: unknown): MatcherResult {
+export function toHaveAttribute(
+  this: MatcherContext,
+  htmlElement: DOMNode,
+  name: string,
+  expectedValue?: unknown,
+): MatcherResult {
   checkHtmlElement(htmlElement, toHaveAttribute, this);
   const isExpectedValuePresent = expectedValue !== undefined;
   const hasAttribute = htmlElement.hasAttribute(name);
@@ -73,11 +82,23 @@ export function toHaveAttribute(this: MatcherContext, htmlElement: DOMNode, name
     message: () => {
       const to = this.isNot ? "not to" : "to";
       const receivedAttribute = hasAttribute ? printAttribute(this.utils.stringify, name, receivedValue) : null;
-      const matcher = this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toHaveAttribute`, "element", this.utils.printExpected(name), {
-        secondArgument: isExpectedValuePresent ? this.utils.printExpected(expectedValue) : undefined,
-        comment: getAttributeComment(this.utils.stringify, name, expectedValue),
-      });
-      return getMessage(this, matcher, `Expected the element ${to} have attribute`, printAttribute(this.utils.stringify, name, expectedValue), "Received", receivedAttribute);
+      const matcher = this.utils.matcherHint(
+        `${this.isNot ? ".not" : ""}.toHaveAttribute`,
+        "element",
+        this.utils.printExpected(name),
+        {
+          secondArgument: isExpectedValuePresent ? this.utils.printExpected(expectedValue) : undefined,
+          comment: getAttributeComment(this.utils.stringify, name, expectedValue),
+        },
+      );
+      return getMessage(
+        this,
+        matcher,
+        `Expected the element ${to} have attribute`,
+        printAttribute(this.utils.stringify, name, expectedValue),
+        "Received",
+        receivedAttribute,
+      );
     },
   };
 }
@@ -86,7 +107,10 @@ export function toHaveAttribute(this: MatcherContext, htmlElement: DOMNode, name
 
 type ClassArg = string | RegExp | null | undefined | false;
 
-function getExpectedClassNamesAndOptions(params: unknown[]): { expectedClassNames: ClassArg[]; options: { exact?: boolean } } {
+function getExpectedClassNamesAndOptions(params: unknown[]): {
+  expectedClassNames: ClassArg[];
+  options: { exact?: boolean };
+} {
   const lastParam = params.pop();
   let expectedClassNames: ClassArg[];
   let options: { exact?: boolean };
@@ -108,7 +132,9 @@ function splitClassNames(str: string | null | undefined | false): string[] {
 
 function isSubset(subset: Array<string | RegExp>, superset: string[]): boolean {
   return subset.every((strOrRegexp) =>
-    typeof strOrRegexp === "string" ? superset.includes(strOrRegexp) : superset.some((className) => strOrRegexp.test(className)),
+    typeof strOrRegexp === "string"
+      ? superset.includes(strOrRegexp)
+      : superset.some((className) => strOrRegexp.test(className)),
   );
 }
 
@@ -118,7 +144,8 @@ export function toHaveClass(this: MatcherContext, htmlElement: DOMNode, ...param
 
   const received = splitClassNames(htmlElement.getAttribute("class"));
   const expected = expectedClassNames.reduce<Array<string | RegExp>>(
-    (acc, className) => acc.concat(typeof className === "string" || !className ? splitClassNames(className as string) : className),
+    (acc, className) =>
+      acc.concat(typeof className === "string" || !className ? splitClassNames(className as string) : className),
     [],
   );
 
@@ -134,7 +161,11 @@ export function toHaveClass(this: MatcherContext, htmlElement: DOMNode, ...param
         const to = this.isNot ? "not to" : "to";
         return getMessage(
           this,
-          this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toHaveClass`, "element", this.utils.printExpected(expected.join(" "))),
+          this.utils.matcherHint(
+            `${this.isNot ? ".not" : ""}.toHaveClass`,
+            "element",
+            this.utils.printExpected(expected.join(" ")),
+          ),
           `Expected the element ${to} have EXACTLY defined classes`,
           expected.join(" "),
           "Received",
@@ -151,7 +182,11 @@ export function toHaveClass(this: MatcherContext, htmlElement: DOMNode, ...param
           const to = this.isNot ? "not to" : "to";
           return getMessage(
             this,
-            this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toHaveClass`, "element", this.utils.printExpected(expected.join(" "))),
+            this.utils.matcherHint(
+              `${this.isNot ? ".not" : ""}.toHaveClass`,
+              "element",
+              this.utils.printExpected(expected.join(" ")),
+            ),
             `Expected the element ${to} have class`,
             expected.join(" "),
             "Received",
@@ -163,8 +198,17 @@ export function toHaveClass(this: MatcherContext, htmlElement: DOMNode, ...param
         pass: this.isNot ? received.length > 0 : false,
         message: () =>
           this.isNot
-            ? getMessage(this, this.utils.matcherHint(".not.toHaveClass", "element", ""), "Expected the element to have classes", "(none)", "Received", received.join(" "))
-            : [this.utils.matcherHint(`.toHaveClass`, "element"), "At least one expected class must be provided."].join("\n"),
+            ? getMessage(
+                this,
+                this.utils.matcherHint(".not.toHaveClass", "element", ""),
+                "Expected the element to have classes",
+                "(none)",
+                "Received",
+                received.join(" "),
+              )
+            : [this.utils.matcherHint(`.toHaveClass`, "element"), "At least one expected class must be provided."].join(
+                "\n",
+              ),
       };
 }
 
@@ -194,8 +238,19 @@ export function toHaveValue(this: MatcherContext, htmlElement: DOMNode, expected
     pass: expectsValue ? compareAsSet(receivedValue, expectedValue) : Boolean(receivedValue),
     message: () => {
       const to = this.isNot ? "not to" : "to";
-      const matcher = this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toHaveValue`, "element", expectedValue as string);
-      return getMessage(this, matcher, `Expected the element ${to} have value`, expectsValue ? expectedTypedValue : "(any)", "Received", receivedTypedValue);
+      const matcher = this.utils.matcherHint(
+        `${this.isNot ? ".not" : ""}.toHaveValue`,
+        "element",
+        expectedValue as string,
+      );
+      return getMessage(
+        this,
+        matcher,
+        `Expected the element ${to} have value`,
+        expectsValue ? expectedTypedValue : "(any)",
+        "Received",
+        receivedTypedValue,
+      );
     },
   };
 }
@@ -221,11 +276,15 @@ export function toHaveDisplayValue(this: MatcherContext, htmlElement: DOMNode, e
   const tagName = htmlElement.tagName.toLowerCase();
 
   if (!["select", "input", "textarea"].includes(tagName)) {
-    throw new Error(".toHaveDisplayValue() currently supports only input, textarea or select elements, try with another matcher instead.");
+    throw new Error(
+      ".toHaveDisplayValue() currently supports only input, textarea or select elements, try with another matcher instead.",
+    );
   }
 
   if (tagName === "input" && ["radio", "checkbox"].includes(htmlElement.type)) {
-    throw new Error(`.toHaveDisplayValue() currently does not support input[type="${htmlElement.type}"], try with another matcher instead.`);
+    throw new Error(
+      `.toHaveDisplayValue() currently does not support input[type="${htmlElement.type}"], try with another matcher instead.`,
+    );
   }
 
   const values = getValues(tagName, htmlElement);
@@ -288,7 +347,7 @@ function getFormValue(container: DOMNode, name: string): unknown {
 
 // Strips the `[]` suffix off a form value name
 function getPureName(name: string): string {
-  return name.endsWith('[]') ? name.slice(0, -2) : name;
+  return name.endsWith("[]") ? name.slice(0, -2) : name;
 }
 
 function getAllFormValues(container: DOMNode): Record<string, unknown> {
@@ -300,7 +359,11 @@ function getAllFormValues(container: DOMNode): Record<string, unknown> {
   return values;
 }
 
-export function toHaveFormValues(this: MatcherContext, formElement: DOMNode, expectedValues: Record<string, unknown>): MatcherResult {
+export function toHaveFormValues(
+  this: MatcherContext,
+  formElement: DOMNode,
+  expectedValues: Record<string, unknown>,
+): MatcherResult {
   checkHtmlElement(formElement, toHaveFormValues, this);
   if (!formElement.elements) {
     // TODO: Change condition to use instanceof against the appropriate element classes instead
@@ -308,7 +371,9 @@ export function toHaveFormValues(this: MatcherContext, formElement: DOMNode, exp
   }
   const formValues = getAllFormValues(formElement);
   return {
-    pass: Object.entries(expectedValues).every(([name, expectedValue]) => compareAsSet(formValues[name], expectedValue)),
+    pass: Object.entries(expectedValues).every(([name, expectedValue]) =>
+      compareAsSet(formValues[name], expectedValue),
+    ),
     message: () => {
       const to = this.isNot ? "not to" : "to";
       const matcher = `${this.isNot ? ".not" : ""}.toHaveFormValues`;
@@ -316,9 +381,11 @@ export function toHaveFormValues(this: MatcherContext, formElement: DOMNode, exp
       for (const key of Object.keys(formValues)) {
         if (Object.prototype.hasOwnProperty.call(expectedValues, key)) commonKeyValues[key] = formValues[key];
       }
-      return [this.utils.matcherHint(matcher, "element", ""), `Expected the element ${to} have form values`, this.utils.diff(expectedValues, commonKeyValues)].join(
-        "\n\n",
-      );
+      return [
+        this.utils.matcherHint(matcher, "element", ""),
+        `Expected the element ${to} have form values`,
+        this.utils.diff(expectedValues, commonKeyValues),
+      ].join("\n\n");
     },
   };
 }
@@ -351,8 +418,10 @@ function getSelection(element: DOMNode): string {
     // Element contains selection, nothing to do
   } else {
     // Element is partially selected
-    const selectionStartsWithinElement = element === originalRange.startContainer || element.contains(originalRange.startContainer);
-    const selectionEndsWithinElement = element === originalRange.endContainer || element.contains(originalRange.endContainer);
+    const selectionStartsWithinElement =
+      element === originalRange.startContainer || element.contains(originalRange.startContainer);
+    const selectionEndsWithinElement =
+      element === originalRange.endContainer || element.contains(originalRange.endContainer);
     selection.removeAllRanges();
 
     if (selectionStartsWithinElement || selectionEndsWithinElement) {
@@ -392,8 +461,19 @@ export function toHaveSelection(this: MatcherContext, htmlElement: DOMNode, expe
     pass: expectsSelection ? compareAsSet(receivedSelection, expectedSelection) : Boolean(receivedSelection),
     message: () => {
       const to = this.isNot ? "not to" : "to";
-      const matcher = this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toHaveSelection`, "element", expectedSelection);
-      return getMessage(this, matcher, `Expected the element ${to} have selection`, expectsSelection ? expectedSelection : "(any)", "Received", receivedSelection);
+      const matcher = this.utils.matcherHint(
+        `${this.isNot ? ".not" : ""}.toHaveSelection`,
+        "element",
+        expectedSelection,
+      );
+      return getMessage(
+        this,
+        matcher,
+        `Expected the element ${to} have selection`,
+        expectsSelection ? expectedSelection : "(any)",
+        "Received",
+        receivedSelection,
+      );
     },
   };
 }

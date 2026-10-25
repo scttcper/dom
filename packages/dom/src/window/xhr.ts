@@ -151,9 +151,23 @@ function defineHandlers(proto: object, types: readonly string[]): void {
 }
 
 // https://xhr.spec.whatwg.org/#handler-xhr-onloadstart and siblings
-defineHandlers(XMLHttpRequestEventTarget.prototype, ["loadstart", "progress", "abort", "error", "load", "timeout", "loadend"]);
+defineHandlers(XMLHttpRequestEventTarget.prototype, [
+  "loadstart",
+  "progress",
+  "abort",
+  "error",
+  "load",
+  "timeout",
+  "loadend",
+]);
 
-function fireProgress(target: EventTarget, type: string, loaded: number, total: number, lengthComputable = total > 0): void {
+function fireProgress(
+  target: EventTarget,
+  type: string,
+  loaded: number,
+  total: number,
+  lengthComputable = total > 0,
+): void {
   fireAnEvent(type, target, eventInterface("ProgressEvent") as never, { loaded, total, lengthComputable } as never);
 }
 
@@ -169,7 +183,8 @@ const state = (xhr: XMLHttpRequest): XhrState => {
   return s;
 };
 
-const invalidState = (operation: string, message: string) => new DOMException(`Failed to ${operation} 'XMLHttpRequest': ${message}`, "InvalidStateError");
+const invalidState = (operation: string, message: string) =>
+  new DOMException(`Failed to ${operation} 'XMLHttpRequest': ${message}`, "InvalidStateError");
 
 /** https://xhr.spec.whatwg.org/#interface-xmlhttprequest */
 export class XMLHttpRequest extends XMLHttpRequestEventTarget {
@@ -202,21 +217,32 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   open(method: string, url: string, async?: boolean, username?: string | null, password?: string | null): void {
     const s = state(this);
     if (arguments.length < 2) {
-      throw new TypeError(`Failed to execute 'open' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
+      throw new TypeError(
+        `Failed to execute 'open' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`,
+      );
     }
     // Step 2: the document must be fully active.
-    if (s.window !== null && s.window[$closed]) throw invalidState("execute 'open' on", "The document is not fully active.");
+    if (s.window !== null && s.window[$closed])
+      throw invalidState("execute 'open' on", "The document is not fully active.");
     // Steps 3-5: method.
     method = String(method);
-    if (!TOKEN.test(method)) throw new DOMException(`Failed to execute 'open' on 'XMLHttpRequest': '${method}' is not a valid HTTP method.`, "SyntaxError");
+    if (!TOKEN.test(method))
+      throw new DOMException(
+        `Failed to execute 'open' on 'XMLHttpRequest': '${method}' is not a valid HTTP method.`,
+        "SyntaxError",
+      );
     const upper = method.toUpperCase();
     if (upper === "CONNECT" || upper === "TRACE" || upper === "TRACK") {
-      throw new DOMException(`Failed to execute 'open' on 'XMLHttpRequest': '${method}' HTTP method is unsupported.`, "SecurityError");
+      throw new DOMException(
+        `Failed to execute 'open' on 'XMLHttpRequest': '${method}' HTTP method is unsupported.`,
+        "SecurityError",
+      );
     }
     if (NORMALIZED_METHODS.has(upper)) method = upper;
     // Steps 6-8: URL, against the document's base URL.
     const parsed = URL.parse(String(url), s.window?.document.baseURI ?? undefined);
-    if (parsed === null) throw new DOMException("Failed to execute 'open' on 'XMLHttpRequest': Invalid URL", "SyntaxError");
+    if (parsed === null)
+      throw new DOMException("Failed to execute 'open' on 'XMLHttpRequest': Invalid URL", "SyntaxError");
     // Steps 9-10.
     const asyncFlag = arguments.length < 3 ? true : !!async;
     if (parsed.host !== "") {
@@ -225,7 +251,10 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
     // Step 11: no synchronous requests with a timeout or responseType from a window.
     if (!asyncFlag && (s.timeout !== 0 || s.responseType !== "")) {
-      throw new DOMException("Failed to execute 'open' on 'XMLHttpRequest': Synchronous requests from a document must not set a timeout or responseType.", "InvalidAccessError");
+      throw new DOMException(
+        "Failed to execute 'open' on 'XMLHttpRequest': Synchronous requests from a document must not set a timeout or responseType.",
+        "InvalidAccessError",
+      );
     }
     // Step 12: terminate the ongoing fetch.
     terminate(s);
@@ -248,14 +277,25 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   setRequestHeader(name: string, value: string): void {
     const s = state(this);
     if (arguments.length < 2) {
-      throw new TypeError(`Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
+      throw new TypeError(
+        `Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`,
+      );
     }
-    if (s.state !== OPENED || s.send) throw invalidState("execute 'setRequestHeader' on", "The object's state must be OPENED.");
+    if (s.state !== OPENED || s.send)
+      throw invalidState("execute 'setRequestHeader' on", "The object's state must be OPENED.");
     name = String(name);
     // Step 3: normalize (strip leading and trailing HTTP whitespace).
     value = String(value).replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, "");
-    if (!TOKEN.test(name)) throw new DOMException(`Failed to execute 'setRequestHeader' on 'XMLHttpRequest': '${name}' is not a valid HTTP header field name.`, "SyntaxError");
-    if (/[\0\r\n]/.test(value)) throw new DOMException(`Failed to execute 'setRequestHeader' on 'XMLHttpRequest': '${value}' is not a valid HTTP header field value.`, "SyntaxError");
+    if (!TOKEN.test(name))
+      throw new DOMException(
+        `Failed to execute 'setRequestHeader' on 'XMLHttpRequest': '${name}' is not a valid HTTP header field name.`,
+        "SyntaxError",
+      );
+    if (/[\0\r\n]/.test(value))
+      throw new DOMException(
+        `Failed to execute 'setRequestHeader' on 'XMLHttpRequest': '${value}' is not a valid HTTP header field value.`,
+        "SyntaxError",
+      );
     // Step 5: forbidden request headers are ignored.
     const lower = name.toLowerCase();
     if (FORBIDDEN_REQUEST_HEADERS.has(lower) || lower.startsWith("proxy-") || lower.startsWith("sec-")) return;
@@ -271,7 +311,10 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   set timeout(value: number) {
     const s = state(this);
     if (s.sync && s.state !== UNSENT) {
-      throw new DOMException("Failed to set the 'timeout' property on 'XMLHttpRequest': Timeouts cannot be set for synchronous requests made from a document.", "InvalidAccessError");
+      throw new DOMException(
+        "Failed to set the 'timeout' property on 'XMLHttpRequest': Timeouts cannot be set for synchronous requests made from a document.",
+        "InvalidAccessError",
+      );
     }
     s.timeout = Number(value) >>> 0;
     // Changed while a request is in flight: measured from when it started.
@@ -285,7 +328,10 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   set withCredentials(value: boolean) {
     const s = state(this);
     if ((s.state !== UNSENT && s.state !== OPENED) || s.send) {
-      throw invalidState("set the 'withCredentials' property on", "The value may only be set if the object's state is UNSENT or OPENED.");
+      throw invalidState(
+        "set the 'withCredentials' property on",
+        "The value may only be set if the object's state is UNSENT or OPENED.",
+      );
     }
     s.withCredentials = !!value;
   }
@@ -300,7 +346,8 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
     const s = state(this);
     // Steps 1-2.
     if (s.state !== OPENED || s.send) throw invalidState("execute 'send' on", "The object's state must be OPENED.");
-    if (s.window !== null && s.window[$closed]) throw invalidState("execute 'send' on", "The document is not fully active.");
+    if (s.window !== null && s.window[$closed])
+      throw invalidState("execute 'send' on", "The document is not fully active.");
     if (s.sync) {
       throw new DOMException(
         "Failed to execute 'send' on 'XMLHttpRequest': Synchronous XMLHttpRequest is not supported by @ctrl/dom (docs/deviations.md).",
@@ -315,7 +362,9 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
       if (author !== undefined) {
         // A string or document body is always sent as UTF-8.
         if (typeof body === "string" || body instanceof Document) {
-          author[1] = author[1].replace(/;\s*charset=("[^"]*"|[^;]*)/i, (m) => (/utf-8/i.test(m) ? m : ";charset=UTF-8"));
+          author[1] = author[1].replace(/;\s*charset=("[^"]*"|[^;]*)/i, (m) =>
+            /utf-8/i.test(m) ? m : ";charset=UTF-8",
+          );
         }
       } else if (extracted.type !== null) {
         s.headers.set("content-type", ["Content-Type", extracted.type]);
@@ -338,7 +387,8 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   abort(): void {
     const s = state(this);
     terminate(s);
-    if ((s.state === OPENED && s.send) || s.state === HEADERS_RECEIVED || s.state === LOADING) requestErrorSteps(this, s, "abort");
+    if ((s.state === OPENED && s.send) || s.state === HEADERS_RECEIVED || s.state === LOADING)
+      requestErrorSteps(this, s, "abort");
     // Step 3: no readystatechange for this transition.
     if (s.state === DONE) {
       s.state = UNSENT;
@@ -396,7 +446,11 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   /** https://xhr.spec.whatwg.org/#dom-xmlhttprequest-overridemimetype */
   overrideMimeType(mime: string): void {
     const s = state(this);
-    if (s.state === LOADING || s.state === DONE) throw invalidState("execute 'overrideMimeType' on", "MimeType cannot be overridden when the state is LOADING or DONE.");
+    if (s.state === LOADING || s.state === DONE)
+      throw invalidState(
+        "execute 'overrideMimeType' on",
+        "MimeType cannot be overridden when the state is LOADING or DONE.",
+      );
     s.overrideMime = parseMime(String(mime)) === null ? "application/octet-stream" : String(mime);
   }
 
@@ -409,9 +463,16 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
     value = String(value);
     // Not a member of the XMLHttpRequestResponseType enum: ignored (WebIDL).
     if (!RESPONSE_TYPES.has(value)) return;
-    if (s.state === LOADING || s.state === DONE) throw invalidState("set the 'responseType' property on", "The response type cannot be set if the object's state is LOADING or DONE.");
+    if (s.state === LOADING || s.state === DONE)
+      throw invalidState(
+        "set the 'responseType' property on",
+        "The response type cannot be set if the object's state is LOADING or DONE.",
+      );
     if (s.sync && s.state !== UNSENT) {
-      throw new DOMException("Failed to set the 'responseType' property on 'XMLHttpRequest': The response type cannot be changed for synchronous requests made from a document.", "InvalidAccessError");
+      throw new DOMException(
+        "Failed to set the 'responseType' property on 'XMLHttpRequest': The response type cannot be changed for synchronous requests made from a document.",
+        "InvalidAccessError",
+      );
     }
     s.responseType = value;
   }
@@ -426,7 +487,8 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
     let object: unknown = null;
     if (!s.error) {
       if (type === "arraybuffer") object = new Uint8Array(bytes(s)).buffer;
-      else if (type === "blob") object = new Blob([bytes(s) as Uint8Array<ArrayBuffer>], { type: finalMime(s)?.serialized ?? "" });
+      else if (type === "blob")
+        object = new Blob([bytes(s) as Uint8Array<ArrayBuffer>], { type: finalMime(s)?.serialized ?? "" });
       else if (type === "document") object = documentResponse(s);
       else if (type === "json") object = jsonResponse(s);
     }
@@ -438,7 +500,10 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   get responseText(): string {
     const s = state(this);
     if (s.responseType !== "" && s.responseType !== "text") {
-      throw invalidState("read the 'responseText' property from", `The value is only accessible if the object's 'responseType' is '' or 'text' (was '${s.responseType}').`);
+      throw invalidState(
+        "read the 'responseText' property from",
+        `The value is only accessible if the object's 'responseType' is '' or 'text' (was '${s.responseType}').`,
+      );
     }
     return s.state === LOADING || s.state === DONE ? text(s) : "";
   }
@@ -447,7 +512,10 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   get responseXML(): Document | null {
     const s = state(this);
     if (s.responseType !== "" && s.responseType !== "document") {
-      throw invalidState("read the 'responseXML' property from", `The value is only accessible if the object's 'responseType' is '' or 'document' (was '${s.responseType}').`);
+      throw invalidState(
+        "read the 'responseXML' property from",
+        `The value is only accessible if the object's 'responseType' is '' or 'document' (was '${s.responseType}').`,
+      );
     }
     if (s.state !== DONE || s.error) return null;
     if (s.object === undefined) s.object = documentResponse(s);
@@ -457,7 +525,13 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
 
 // https://xhr.spec.whatwg.org/#handler-xhr-onreadystatechange
 defineHandlers(XMLHttpRequest.prototype, ["readystatechange"]);
-for (const [name, value] of [["UNSENT", UNSENT], ["OPENED", OPENED], ["HEADERS_RECEIVED", HEADERS_RECEIVED], ["LOADING", LOADING], ["DONE", DONE]] as const) {
+for (const [name, value] of [
+  ["UNSENT", UNSENT],
+  ["OPENED", OPENED],
+  ["HEADERS_RECEIVED", HEADERS_RECEIVED],
+  ["LOADING", LOADING],
+  ["DONE", DONE],
+] as const) {
   Object.defineProperty(XMLHttpRequest.prototype, name, { value, enumerable: true });
 }
 
@@ -468,6 +542,7 @@ const TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const NORMALIZED_METHODS = new Set(["DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT"]);
 const RESPONSE_TYPES = new Set(["", "arraybuffer", "blob", "document", "json", "text"]);
 /** https://fetch.spec.whatwg.org/#forbidden-request-header */
+// oxfmt-ignore
 const FORBIDDEN_REQUEST_HEADERS = new Set([
   "accept-charset", "accept-encoding", "access-control-request-headers", "access-control-request-method", "connection",
   "content-length", "cookie", "cookie2", "date", "dnt", "expect", "host", "keep-alive", "origin", "referer", "set-cookie",
@@ -574,9 +649,11 @@ function dispatchRequest(
   headers: Map<string, [string, string]>,
   redirects: number,
 ): void {
-  if (url.protocol === "data:") return void queueMicrotask(() => s.generation === gen && respondFromData(xhr, s, gen, url));
+  if (url.protocol === "data:")
+    return void queueMicrotask(() => s.generation === gen && respondFromData(xhr, s, gen, url));
   if (url.protocol === "blob:") return void respondFromBlob(xhr, s, gen, url);
-  if (url.protocol !== "http:" && url.protocol !== "https:") return void queueMicrotask(() => s.generation === gen && networkError(xhr, s));
+  if (url.protocol !== "http:" && url.protocol !== "https:")
+    return void queueMicrotask(() => s.generation === gen && networkError(xhr, s));
 
   const window = s.window;
   const documentURL = window?.document.URL ?? "about:blank";
@@ -631,17 +708,24 @@ function dispatchRequest(
     }
     const status = res.statusCode ?? 0;
     const setCookie = res.headers["set-cookie"];
-    if (credentials && window !== null && setCookie !== undefined) for (const c of setCookie) window._cookieStore.set(c, url);
+    if (credentials && window !== null && setCookie !== undefined)
+      for (const c of setCookie) window._cookieStore.set(c, url);
     // https://fetch.spec.whatwg.org/#http-redirect-fetch
     const location = res.headers.location;
-    if ((status === 301 || status === 302 || status === 303 || status === 307 || status === 308) && location !== undefined) {
+    if (
+      (status === 301 || status === 302 || status === 303 || status === 307 || status === 308) &&
+      location !== undefined
+    ) {
       res.resume();
       const next = URL.parse(location, url);
       if (next === null || redirects >= MAX_REDIRECTS) return networkError(xhr, s);
       let nextMethod = method;
       let nextBody = body;
       const nextHeaders = new Map(headers);
-      if (((status === 301 || status === 302) && method === "POST") || (status === 303 && method !== "GET" && method !== "HEAD")) {
+      if (
+        ((status === 301 || status === 302) && method === "POST") ||
+        (status === 303 && method !== "GET" && method !== "HEAD")
+      ) {
         nextMethod = "GET";
         nextBody = null;
         for (const name of BODY_HEADERS) nextHeaders.delete(name);
@@ -651,8 +735,11 @@ function dispatchRequest(
       return;
     }
     const fields: Array<[string, string]> = [];
-    for (let i = 0; i < res.rawHeaders.length; i += 2) fields.push([res.rawHeaders[i].toLowerCase(), res.rawHeaders[i + 1]]);
-    const encoding = String(res.headers["content-encoding"] ?? "").trim().toLowerCase();
+    for (let i = 0; i < res.rawHeaders.length; i += 2)
+      fields.push([res.rawHeaders[i].toLowerCase(), res.rawHeaders[i + 1]]);
+    const encoding = String(res.headers["content-encoding"] ?? "")
+      .trim()
+      .toLowerCase();
     const zlib = process.getBuiltinModule("node:zlib");
     const decoder =
       encoding === "gzip" || encoding === "x-gzip"
@@ -663,7 +750,17 @@ function dispatchRequest(
             ? zlib.createBrotliDecompress()
             : null;
     const length = Number(res.headers["content-length"] ?? 0) || 0;
-    processResponse(xhr, s, gen, url, status, res.statusMessage ?? "", fields, decoder === null ? res : res.pipe(decoder), decoder === null ? length : 0);
+    processResponse(
+      xhr,
+      s,
+      gen,
+      url,
+      status,
+      res.statusMessage ?? "",
+      fields,
+      decoder === null ? res : res.pipe(decoder),
+      decoder === null ? length : 0,
+    );
   });
   if (body !== null) request.end(body);
   else request.end();
@@ -756,7 +853,8 @@ function respondFromData(xhr: XMLHttpRequest, s: XhrState, gen: number, url: URL
 
 function respondFromBlob(xhr: XMLHttpRequest, s: XhrState, gen: number, url: URL): void {
   const blob = process.getBuiltinModule("node:buffer").resolveObjectURL(url.href);
-  if (blob === undefined || s.method !== "GET") return void queueMicrotask(() => s.generation === gen && networkError(xhr, s));
+  if (blob === undefined || s.method !== "GET")
+    return void queueMicrotask(() => s.generation === gen && networkError(xhr, s));
   blob.arrayBuffer().then(
     (buffer) => {
       if (s.generation !== gen) return;
@@ -814,7 +912,11 @@ function extractBody(body: unknown): Body {
     return { bytes, type: html ? "text/html;charset=UTF-8" : "application/xml;charset=UTF-8", length: bytes.length };
   }
   if (body instanceof Blob) {
-    return { bytes: body.arrayBuffer().then((b) => new Uint8Array(b)), type: body.type === "" ? null : body.type, length: body.size };
+    return {
+      bytes: body.arrayBuffer().then((b) => new Uint8Array(b)),
+      type: body.type === "" ? null : body.type,
+      length: body.size,
+    };
   }
   if (ArrayBuffer.isView(body)) {
     const bytes = new Uint8Array(body.buffer, body.byteOffset, body.byteLength).slice();
@@ -852,7 +954,11 @@ function multipart(form: FormData): Body {
       const head = Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="${n}"; filename="${escape(file.name ?? "blob")}"\r\nContent-Type: ${file.type || "application/octet-stream"}\r\n\r\n`,
       );
-      parts.push(head, file.arrayBuffer().then((b) => new Uint8Array(b)), Buffer.from("\r\n"));
+      parts.push(
+        head,
+        file.arrayBuffer().then((b) => new Uint8Array(b)),
+        Buffer.from("\r\n"),
+      );
       length += head.length + file.size + 2;
       pending = true;
     }
@@ -878,7 +984,13 @@ function parseMime(input: string): Mime | null {
   const semi = input.indexOf(";");
   const essence = (semi === -1 ? input : input.slice(0, semi)).trim().toLowerCase();
   const slash = essence.indexOf("/");
-  if (slash <= 0 || slash === essence.length - 1 || !TOKEN.test(essence.slice(0, slash)) || !TOKEN.test(essence.slice(slash + 1))) return null;
+  if (
+    slash <= 0 ||
+    slash === essence.length - 1 ||
+    !TOKEN.test(essence.slice(0, slash)) ||
+    !TOKEN.test(essence.slice(slash + 1))
+  )
+    return null;
   let charset: string | null = null;
   if (semi !== -1) {
     const m = /(?:^|;)\s*charset\s*=\s*("([^"]*)"|[^;]*)/i.exec(input.slice(semi));
@@ -931,7 +1043,8 @@ function jsonResponse(s: XhrState): unknown {
   }
 }
 
-const isXMLMime = (essence: string) => essence === "text/xml" || essence === "application/xml" || essence.endsWith("+xml");
+const isXMLMime = (essence: string) =>
+  essence === "text/xml" || essence === "application/xml" || essence.endsWith("+xml");
 
 /** https://xhr.spec.whatwg.org/#document-response */
 function documentResponse(s: XhrState): Document | null {

@@ -18,7 +18,8 @@ export function dispatchUIEvent<K extends EventType>(
 ) {
   // Upstream merges `{...init, ...getUIEventModifiers()}`; createEvent writes the modifiers into
   // the init copy it makes anyway (same members, same precedence: modifiers win).
-  const modifiers = isMouseEvent(type) || isKeyboardEvent(type) ? this.system : undefined
+  const modifiers =
+    isMouseEvent(type) || isKeyboardEvent(type) ? this.system : undefined
 
   const event = createEvent(type, target, init, modifiers)
 

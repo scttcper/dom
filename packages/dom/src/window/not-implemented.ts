@@ -44,7 +44,10 @@ export type Operation = readonly [string, string];
 export const NAVIGATION: Operation = ["navigation (except hash changes)", "navigation to another Document"];
 
 /** jsdom's getComputedStyle with a non-empty pseudoElt (the pseudo-element is ignored there). */
-export const COMPUTED_STYLE_PSEUDO: Operation = ["window.getComputedStyle(elt, pseudoElt)", "Window's getComputedStyle() method: with pseudo-elements"];
+export const COMPUTED_STYLE_PSEUDO: Operation = [
+  "window.getComputedStyle(elt, pseudoElt)",
+  "Window's getComputedStyle() method: with pseudo-elements",
+];
 
 /**
  * A method jsdom stubs: "window.alert", "HTMLMediaElement.prototype.play" in jsdom 26;

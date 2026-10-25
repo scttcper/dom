@@ -100,7 +100,12 @@ function spanIds(): () => string {
 
 export interface Collector {
   /** Start a structure span under the current one; with `test`, a span of that test. */
-  open(op: string, description: string, data?: Record<string, string | number | boolean>, test?: CollectedTest): OpenSpan;
+  open(
+    op: string,
+    description: string,
+    data?: Record<string, string | number | boolean>,
+    test?: CollectedTest,
+  ): OpenSpan;
   close(open: OpenSpan, failed?: boolean): void;
   /** Run `fn` with `open` as the current span. */
   run<T>(open: OpenSpan, fn: () => T): T;
@@ -135,7 +140,16 @@ export function createCollector(): Collector {
     const now = realNow();
     if (file.startedAt === 0) file.startedAt = now;
     return {
-      span: { span_id: spanId(), parent_span_id: up?.span.span_id, op, description, start_timestamp: now, timestamp: 0, status: "ok", data },
+      span: {
+        span_id: spanId(),
+        parent_span_id: up?.span.span_id,
+        op,
+        description,
+        start_timestamp: now,
+        timestamp: 0,
+        status: "ok",
+        data,
+      },
       owner: test !== undefined ? owners.get(test)! : (up?.owner ?? fileOwner),
     };
   };
@@ -217,11 +231,20 @@ export function createCollector(): Collector {
       if (html !== undefined) context.attachments.push({ filename: "page.html", contentType: "text/html", data: html });
       if (failures.hasSubscribers) {
         const pending: Promise<unknown>[] = [];
-        const message: FailureMessage = { test: name, error, document, attachments: [], contexts: context.contexts, waitUntil: (p) => void pending.push(p) };
+        const message: FailureMessage = {
+          test: name,
+          error,
+          document,
+          attachments: [],
+          contexts: context.contexts,
+          waitUntil: (p) => void pending.push(p),
+        };
         failures.publish(message);
-        if (pending.length > 0) await Promise.race([Promise.allSettled(pending), delay(MAX_WAIT_MS, undefined, { ref: false })]);
+        if (pending.length > 0)
+          await Promise.race([Promise.allSettled(pending), delay(MAX_WAIT_MS, undefined, { ref: false })]);
         for (const a of message.attachments) {
-          if (!context.attachments.some((b) => b.filename === a.filename)) context.attachments.push({ ...a, data: a.data.slice(0, MAX_ATTACHMENT) });
+          if (!context.attachments.some((b) => b.filename === a.filename))
+            context.attachments.push({ ...a, data: a.data.slice(0, MAX_ATTACHMENT) });
         }
       }
       test.failures.push(context);
@@ -246,5 +269,11 @@ export function createCollector(): Collector {
 
 function emptyFile(): CollectedFile {
   // No prototype: a test named "constructor" or "toString" is a key like any other.
-  return { startedAt: 0, endedAt: 0, spans: [], tests: Object.create(null) as Record<string, CollectedTest>, droppedSpans: 0 };
+  return {
+    startedAt: 0,
+    endedAt: 0,
+    spans: [],
+    tests: Object.create(null) as Record<string, CollectedTest>,
+    droppedSpans: 0,
+  };
 }

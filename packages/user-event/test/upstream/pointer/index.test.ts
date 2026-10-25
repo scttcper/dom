@@ -134,14 +134,12 @@ test('no mousedown/mouseup on disabled elements', async () => {
 describe('check for pointer-events', () => {
   let getComputedStyle: SpyInstance<Window['getComputedStyle']>
   beforeAll(() => {
-    getComputedStyle = vi
-      .spyOn(window, 'getComputedStyle')
-      .mockImplementation(
-        () =>
-          ({
-            pointerEvents: 'foo',
-          } as CSSStyleDeclaration),
-      )
+    getComputedStyle = vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      () =>
+        ({
+          pointerEvents: 'foo',
+        }) as CSSStyleDeclaration,
+    )
   })
   beforeEach(() => {
     getComputedStyle.mockClear()
@@ -279,18 +277,22 @@ test('apply default event properties', async () => {
 
   await user.pointer({target: element})
 
-  expect(getEvents('pointermove')[0]).toEqual(expect.objectContaining({
-    width: 1,
-    height: 1,
-    pressure: 0,
-  }))
+  expect(getEvents('pointermove')[0]).toEqual(
+    expect.objectContaining({
+      width: 1,
+      height: 1,
+      pressure: 0,
+    }),
+  )
 
   clearEventCalls()
   await user.pointer([{keys: '[MouseLeft>]'}, {coords: {x: 20}}])
 
-  expect(getEvents('pointermove')[0]).toEqual(expect.objectContaining({
-    width: 1,
-    height: 1,
-    pressure: 0.5,
-  }))
+  expect(getEvents('pointermove')[0]).toEqual(
+    expect.objectContaining({
+      width: 1,
+      height: 1,
+      pressure: 0.5,
+    }),
+  )
 })

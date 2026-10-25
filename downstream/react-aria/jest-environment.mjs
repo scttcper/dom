@@ -25,7 +25,9 @@ class TriageEnvironment extends CtrlDomEnvironment {
       // its ModernFakeTimers (which snapshot the global's timer functions) before the window is
       // installed, so jest.useFakeTimers() never fakes requestAnimationFrame, and a frame
       // scheduled on a fake clock that is later uninstalled wedges @ctrl/dom's rAF batching.
-      const require = createRequire(createRequire(import.meta.url).resolve("../../packages/jest-environment/package.json"));
+      const require = createRequire(
+        createRequire(import.meta.url).resolve("../../packages/jest-environment/package.json"),
+      );
       const { ModernFakeTimers } = createRequire(require.resolve("jest-environment-node"))("@jest/fake-timers");
       this.fakeTimersModern = new ModernFakeTimers({ config: config.projectConfig, global: this.global });
     }

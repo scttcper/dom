@@ -3,14 +3,7 @@
 
 import { argumentsRequired, hideInternals } from "../webidl-runtime.ts";
 import { installEventHandlers } from "../events/handlers.ts";
-import {
-  DOCUMENT_NODE,
-  ELEMENT_NODE,
-  HTML_NS,
-  SVG_NS,
-  DOCUMENT_TYPE_NODE,
-  F_CONNECTED,
-} from "./constants.ts";
+import { DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, SVG_NS, DOCUMENT_TYPE_NODE, F_CONNECTED } from "./constants.ts";
 import { Node } from "./Node.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import type { Element } from "./Element.ts";
@@ -23,7 +16,12 @@ import { asciiLowercase, attr, isValidAttributeLocalName } from "./attributes.ts
 import { firstElementChild, nextElementInTree } from "./traverse.ts";
 import { cloneNode } from "./clone.ts";
 import { adopt } from "./tree.ts";
-import { installNonElementParentNode, installParentNode, type NonElementParentNode, type ParentNode } from "./mixins.ts";
+import {
+  installNonElementParentNode,
+  installParentNode,
+  type NonElementParentNode,
+  type ParentNode,
+} from "./mixins.ts";
 import { cachedCollection, getElementsByClassName, getElementsByTagName, getElementsByTagNameNS } from "./Element.ts";
 import { isValidDoctypeName, isValidElementLocalName, isXMLName, validateAndExtract } from "./names.ts";
 import { Range } from "../traversal/Range.ts";
@@ -38,7 +36,31 @@ import type { ElementCreationOptions } from "../webidl.ts";
 import type { Event } from "../events/Event.ts";
 import { createEvent } from "../events/createEvent.ts";
 import { parseDocument } from "../parser/index.ts";
-import { $aboutBase, $baseFor, $baseOverride, $baseURL, $baseVersion, $contentType, $css, $derived, $doc, $focused, $forms, $ids, $impl, $implementation, $isHTML, $mode, $ranges, $selection, $styleVersion, $url, $version, $window, $writeBuffer } from "../keys.ts";
+import {
+  $aboutBase,
+  $baseFor,
+  $baseOverride,
+  $baseURL,
+  $baseVersion,
+  $contentType,
+  $css,
+  $derived,
+  $doc,
+  $focused,
+  $forms,
+  $ids,
+  $impl,
+  $implementation,
+  $isHTML,
+  $mode,
+  $ranges,
+  $selection,
+  $styleVersion,
+  $url,
+  $version,
+  $window,
+  $writeBuffer,
+} from "../keys.ts";
 
 export class Document extends Node {
   /** Browsing context's window, or null for documents created via DOMImplementation / new Document(). */
@@ -211,7 +233,8 @@ export class Document extends Node {
   }
 
   get doctype(): DocumentType | null {
-    for (let c = this[$impl].first; c !== null; c = c.next) if (c.type === DOCUMENT_TYPE_NODE) return c.node as DocumentType;
+    for (let c = this[$impl].first; c !== null; c = c.next)
+      if (c.type === DOCUMENT_TYPE_NODE) return c.node as DocumentType;
     return null;
   }
 
@@ -224,7 +247,8 @@ export class Document extends Node {
   get head(): Element | null {
     const html = firstElementChild(this[$impl]);
     if (html === null || html.tag !== T.html) return null;
-    for (let c = html.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.head) return c.node as Element;
+    for (let c = html.first; c !== null; c = c.next)
+      if (c.type === ELEMENT_NODE && c.tag === T.head) return c.node as Element;
     return null;
   }
 
@@ -270,14 +294,24 @@ export class Document extends Node {
     if (this[$isHTML]) name = asciiLowercase(name);
     const ns = this[$isHTML] || this[$contentType] === "application/xhtml+xml" ? HTML_NS : null;
     // Synchronous custom element construction + customized built-ins (`is`): html/custom-elements.ts.
-    const is = typeof _options === "object" && _options !== null && _options.is !== undefined ? String(_options.is) : null;
+    const is =
+      typeof _options === "object" && _options !== null && _options.is !== undefined ? String(_options.is) : null;
     return createElementImplSync(this, name, ns, null, is).node as Element;
   }
 
   /** https://dom.spec.whatwg.org/#dom-document-createelementns */
-  createElementNS(namespace: string | null, qualifiedName: string, _options?: string | ElementCreationOptions): Element {
-    const { namespace: ns, prefix, localName } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "element");
-    const is = typeof _options === "object" && _options !== null && _options.is !== undefined ? String(_options.is) : null;
+  createElementNS(
+    namespace: string | null,
+    qualifiedName: string,
+    _options?: string | ElementCreationOptions,
+  ): Element {
+    const {
+      namespace: ns,
+      prefix,
+      localName,
+    } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "element");
+    const is =
+      typeof _options === "object" && _options !== null && _options.is !== undefined ? String(_options.is) : null;
     return createElementImplSync(this, localName, ns, prefix, is).node as Element;
   }
 
@@ -290,7 +324,8 @@ export class Document extends Node {
   }
 
   createCDATASection(data: string): CDATASection {
-    if (this[$isHTML]) throw new DOMException("CDATA sections are not supported in HTML documents.", "NotSupportedError");
+    if (this[$isHTML])
+      throw new DOMException("CDATA sections are not supported in HTML documents.", "NotSupportedError");
     if (String(data).includes("]]>")) throw new DOMException('Data contains "]]>".', "InvalidCharacterError");
     return new CDATASection(String(data), this);
   }
@@ -301,20 +336,26 @@ export class Document extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction */
   createProcessingInstruction(target: string, data: string): ProcessingInstruction {
-    if (!isXMLName(String(target))) throw new DOMException(`"${target}" is not a valid processing instruction target.`, "InvalidCharacterError");
+    if (!isXMLName(String(target)))
+      throw new DOMException(`"${target}" is not a valid processing instruction target.`, "InvalidCharacterError");
     if (String(data).includes("?>")) throw new DOMException('Data contains "?>".', "InvalidCharacterError");
     return new ProcessingInstruction(String(target), String(data), this);
   }
 
   createAttribute(localName: string): Attr {
     let name = String(localName);
-    if (!isValidAttributeLocalName(name)) throw new DOMException(`"${name}" is not a valid attribute name.`, "InvalidCharacterError");
+    if (!isValidAttributeLocalName(name))
+      throw new DOMException(`"${name}" is not a valid attribute name.`, "InvalidCharacterError");
     if (this[$isHTML]) name = asciiLowercase(name);
     return new Attr(this, name, "", null, null, null);
   }
 
   createAttributeNS(namespace: string | null, qualifiedName: string): Attr {
-    const { namespace: ns, prefix, localName } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "attribute");
+    const {
+      namespace: ns,
+      prefix,
+      localName,
+    } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "attribute");
     return new Attr(this, localName, "", ns, prefix, null);
   }
 
@@ -329,7 +370,8 @@ export class Document extends Node {
   /** https://dom.spec.whatwg.org/#dom-document-adoptnode */
   adoptNode<T extends Node>(node: T): T {
     if (node[$impl].type === DOCUMENT_NODE) throw new DOMException("Documents cannot be adopted.", "NotSupportedError");
-    if ((node[$impl].flags & 0x20) !== 0) throw new DOMException("Shadow roots cannot be adopted.", "HierarchyRequestError");
+    if ((node[$impl].flags & 0x20) !== 0)
+      throw new DOMException("Shadow roots cannot be adopted.", "HierarchyRequestError");
     adopt(node[$impl], this);
     // [CEReactions]: adoptedCallback reactions (html/custom-elements.ts).
     if (ceReactionsPending) flushCEReactions();
@@ -357,7 +399,9 @@ export class Document extends Node {
 
   /** document.forms supports named access (`document.forms.login`), so it is the Proxy-wrapped variant. */
   get forms(): HTMLCollection {
-    return (this[$forms] ??= withNamedProperties(cachedCollection(this[$impl], "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS)));
+    return (this[$forms] ??= withNamedProperties(
+      cachedCollection(this[$impl], "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS),
+    ));
   }
 
   get images(): HTMLCollection {
@@ -378,12 +422,20 @@ export class Document extends Node {
 
   /** a and area elements with an href attribute. */
   get links(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001links", (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null);
+    return cachedCollection(
+      this[$impl],
+      "\u0001links",
+      (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null,
+    );
   }
 
   /** a elements with a name attribute. */
   get anchors(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001anchors", (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null);
+    return cachedCollection(
+      this[$impl],
+      "\u0001anchors",
+      (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null,
+    );
   }
 
   get applets(): HTMLCollection {
@@ -421,7 +473,8 @@ export class Document extends Node {
    * `open(url, name, features)` is window.open.
    */
   open(...args: unknown[]): Document | Window | null {
-    if (args.length >= 3) return (this[$window] as unknown as { open?: (...a: unknown[]) => Window | null })?.open?.(...args) ?? null;
+    if (args.length >= 3)
+      return (this[$window] as unknown as { open?: (...a: unknown[]) => Window | null })?.open?.(...args) ?? null;
     if (!this[$isHTML]) throw new DOMException("Only HTML documents can be opened.", "InvalidStateError");
     this._replaceAll(null);
     this[$writeBuffer] = "";
@@ -464,7 +517,8 @@ export class Document extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-document-createevent (table and algorithm in events/createEvent.ts) */
   createEvent(interfaceName: string): Event {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'createEvent' on 'Document': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError("Failed to execute 'createEvent' on 'Document': 1 argument required, but only 0 present.");
     return createEvent(interfaceName);
   }
 
@@ -484,7 +538,8 @@ installEventHandlers(Document.prototype, "document"); // GlobalEventHandlers + o
 function documentBaseURL(doc: Document): string {
   // https://html.spec.whatwg.org/#fallback-base-url
   const url = doc[$url];
-  const fallback = doc[$aboutBase] !== null && (url === "about:blank" || url === "about:srcdoc") ? doc[$aboutBase] : url;
+  const fallback =
+    doc[$aboutBase] !== null && (url === "about:blank" || url === "about:srcdoc") ? doc[$aboutBase] : url;
   const root = doc[$impl];
   // Step 1: the frozen base URL of the first base element with an href attribute, in tree order.
   for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
@@ -520,7 +575,8 @@ export class DOMImplementation {
 
   /** https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype */
   createDocumentType(qualifiedName: string, publicId: string, systemId: string): DocumentType {
-    if (!isValidDoctypeName(String(qualifiedName))) throw new DOMException(`"${qualifiedName}" is not a valid doctype name.`, "InvalidCharacterError");
+    if (!isValidDoctypeName(String(qualifiedName)))
+      throw new DOMException(`"${qualifiedName}" is not a valid doctype name.`, "InvalidCharacterError");
     return new DocumentType(this[$doc], String(qualifiedName), String(publicId), String(systemId));
   }
 
@@ -541,7 +597,11 @@ export class DOMImplementation {
   }
 
   /** https://dom.spec.whatwg.org/#dom-domimplementation-createdocument */
-  createDocument(namespace: string | null, qualifiedName: string | null, doctype: DocumentType | null = null): XMLDocument {
+  createDocument(
+    namespace: string | null,
+    qualifiedName: string | null,
+    doctype: DocumentType | null = null,
+  ): XMLDocument {
     if (arguments.length < 2) argumentsRequired("createDocument", "DOMImplementation", 2, arguments.length);
     // Step 1: a new XMLDocument.
     const doc = new XMLDocument();
@@ -556,4 +616,3 @@ export class DOMImplementation {
     return true;
   }
 }
-

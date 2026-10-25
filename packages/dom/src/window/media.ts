@@ -48,7 +48,11 @@ export class MediaQueryList extends EventTarget {
     this.removeEventListener("change", callback);
   }
 
-  override addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void {
+  override addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ): void {
     super.addEventListener(type, callback, options);
     if (callback !== null && type === "change") this._watch();
   }
@@ -171,7 +175,10 @@ function evaluateQuery(q: string, env: MediaFeatureEnvironment, features: Featur
   if (m === null) return null;
   const [, modifier, type, rest] = m;
   let result: boolean | null = type === "all" || type === env.mediaType;
-  if (type !== "all" && !["screen", "print", "speech", "tv", "tty", "projection", "handheld", "braille", "embossed", "aural"].includes(type)) {
+  if (
+    type !== "all" &&
+    !["screen", "print", "speech", "tv", "tty", "projection", "handheld", "braille", "embossed", "aural"].includes(type)
+  ) {
     result = false;
   }
   if (rest !== undefined && result) result = evaluateCondition(rest, env, features);
@@ -210,7 +217,8 @@ function evaluateCondition(s: string, env: MediaFeatureEnvironment, features: Fe
   let result = evaluateInParens(parts[0].trim(), env, features);
   for (let i = 1; i < parts.length; i++) {
     const value = evaluateInParens(parts[i].trim(), env, features);
-    if (ops[i - 1] === "and") result = result === false || value === false ? false : result === null || value === null ? null : true;
+    if (ops[i - 1] === "and")
+      result = result === false || value === false ? false : result === null || value === null ? null : true;
     else result = result === true || value === true ? true : result === null || value === null ? null : false;
   }
   return result;
@@ -219,7 +227,8 @@ function evaluateCondition(s: string, env: MediaFeatureEnvironment, features: Fe
 function evaluateInParens(s: string, env: MediaFeatureEnvironment, features: Features): boolean | null {
   if (s[0] !== "(" || s[s.length - 1] !== ")") return null;
   const inner = s.slice(1, -1).trim();
-  if (inner[0] === "(" || inner.startsWith("not ") || inner.startsWith("not(")) return evaluateCondition(inner, env, features);
+  if (inner[0] === "(" || inner.startsWith("not ") || inner.startsWith("not("))
+    return evaluateCondition(inner, env, features);
   return evaluateFeature(inner, env, features);
 }
 
@@ -293,7 +302,13 @@ function featureValue(name: string, env: MediaFeatureEnvironment, features: Feat
   return DISCRETE[name];
 }
 
-function compareFeature(name: string, op: string, raw: string, env: MediaFeatureEnvironment, features: Features): boolean | null {
+function compareFeature(
+  name: string,
+  op: string,
+  raw: string,
+  env: MediaFeatureEnvironment,
+  features: Features,
+): boolean | null {
   if (name === "-webkit-min-device-pixel-ratio") op = ">=";
   else if (name === "-webkit-max-device-pixel-ratio") op = "<=";
   const actual = featureValue(name, env, features);

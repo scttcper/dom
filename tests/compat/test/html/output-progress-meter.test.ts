@@ -32,7 +32,7 @@ function outputState(o: AnyWindow) {
 }
 
 describe("the output element — https://html.spec.whatwg.org/#the-output-element", () => {
-  differential("type is \"output\"; value and defaultValue start as the descendant text content", (w) => {
+  differential('type is "output"; value and defaultValue start as the descendant text content', (w) => {
     const o = output(w, "<output>a<b>b</b>c</output>");
     return { type: o.type, ...outputState(o) };
   });
@@ -207,7 +207,7 @@ describe("the meter element — https://html.spec.whatwg.org/#the-meter-element"
 describe("labelable elements — https://html.spec.whatwg.org/#category-label", () => {
   differential("output, progress and meter are labelable: labels lists the associated labels", (w) => {
     w.document.body.innerHTML =
-      '<label for=o>O</label><output id=o></output><label>P <progress></progress></label><label for=m>M</label><meter id=m></meter>';
+      "<label for=o>O</label><output id=o></output><label>P <progress></progress></label><label for=m>M</label><meter id=m></meter>";
     const d = w.document;
     return {
       output: d.querySelector("output").labels.length,

@@ -13,7 +13,11 @@ export type Engine = "jsdom" | "ctrl-dom";
 
 export const engines: Record<Engine, () => AnyWindow> = {
   // Sentry's environment (@jest/environment-jsdom-abstract) uses pretendToBeVisual.
-  jsdom: () => new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/", pretendToBeVisual: true }).window,
+  jsdom: () =>
+    new JSDOM("<!doctype html><html><head></head><body></body></html>", {
+      url: "http://localhost/",
+      pretendToBeVisual: true,
+    }).window,
   "ctrl-dom": () => createWindow({ url: "http://localhost/" }),
 };
 
@@ -34,11 +38,18 @@ export async function withGlobals<T>(window: AnyWindow, engine: Engine, body: ()
   }
   const keys = ["window", "document", "navigator", "HTMLElement", "Element", "Node", "Event", "getComputedStyle"];
   const saved = keys.map((k) => Object.getOwnPropertyDescriptor(globalThis, k));
-  for (const k of keys) Object.defineProperty(globalThis, k, { value: k === "window" ? window : window[k], configurable: true, writable: true });
+  for (const k of keys)
+    Object.defineProperty(globalThis, k, {
+      value: k === "window" ? window : window[k],
+      configurable: true,
+      writable: true,
+    });
   try {
     return await body();
   } finally {
-    keys.forEach((k, i) => (saved[i] ? Object.defineProperty(globalThis, k, saved[i]!) : delete (globalThis as any)[k]));
+    keys.forEach((k, i) =>
+      saved[i] ? Object.defineProperty(globalThis, k, saved[i]!) : delete (globalThis as any)[k],
+    );
   }
 }
 

@@ -31,7 +31,11 @@ import { repoRoot } from "./lib/packages.ts";
 import { fmt, summarize } from "./lib/stats.ts";
 
 const { values: flags } = parseArgs({
-  options: { samples: { type: "string", default: "15" }, warm: { type: "boolean", default: false }, keep: { type: "boolean", default: false } },
+  options: {
+    samples: { type: "string", default: "15" },
+    warm: { type: "boolean", default: false },
+    keep: { type: "boolean", default: false },
+  },
 });
 
 const distIndex = join(repoRoot, "packages/dom/dist/index.js");
@@ -105,16 +109,30 @@ console.log(JSON.stringify({ snapshot: globalThis[Symbol.for("ctrl-dom.dom.snaps
 );
 
 let t = performance.now();
-await build({ input: join(dir, "entry.mjs"), platform: "node", logLevel: "warn", output: { file: join(dir, "entry.cjs"), format: "cjs" } });
+await build({
+  input: join(dir, "entry.mjs"),
+  platform: "node",
+  logLevel: "warn",
+  output: { file: join(dir, "entry.cjs"), format: "cjs" },
+});
 const bundleMs = performance.now() - t;
 t = performance.now();
-execFileSync(process.execPath, ["--snapshot-blob", join(dir, "dom.blob"), "--build-snapshot", join(dir, "entry.cjs")], { stdio: "inherit" });
+execFileSync(process.execPath, ["--snapshot-blob", join(dir, "dom.blob"), "--build-snapshot", join(dir, "entry.cjs")], {
+  stdio: "inherit",
+});
 const blobMs = performance.now() - t;
 // A snapshot of Node alone, to separate Node's own heap from the DOM's in the blob size.
 writeFileSync(join(dir, "empty.cjs"), "globalThis.__empty = true;\n");
-execFileSync(process.execPath, ["--snapshot-blob", join(dir, "empty.blob"), "--build-snapshot", join(dir, "empty.cjs")]);
+execFileSync(process.execPath, [
+  "--snapshot-blob",
+  join(dir, "empty.blob"),
+  "--build-snapshot",
+  join(dir, "empty.cjs"),
+]);
 const mb = (file: string) => (statSync(join(dir, file)).size / 2 ** 20).toFixed(1);
-console.log(`CJS entry ${mb("entry.cjs")} MB (rolldown ${bundleMs.toFixed(0)} ms); blob ${mb("dom.blob")} MB (Node alone: ${mb("empty.blob")} MB), built in ${blobMs.toFixed(0)} ms${flags.warm ? " (warmed)" : ""}`);
+console.log(
+  `CJS entry ${mb("entry.cjs")} MB (rolldown ${bundleMs.toFixed(0)} ms); blob ${mb("dom.blob")} MB (Node alone: ${mb("empty.blob")} MB), built in ${blobMs.toFixed(0)} ms${flags.warm ? " (warmed)" : ""}`,
+);
 
 const cache = join(dir, "compile-cache");
 const variants = [
@@ -124,7 +142,10 @@ const variants = [
   { name: "empty snapshot", args: ["--snapshot-blob", join(dir, "empty.blob")], env: { NODE_COMPILE_CACHE: cache } },
 ];
 const run = (v: (typeof variants)[number]) => {
-  const r = spawnSync(process.execPath, ["--expose-gc", ...v.args, join(dir, "child.mjs")], { encoding: "utf8", env: { ...process.env, ...v.env } });
+  const r = spawnSync(process.execPath, ["--expose-gc", ...v.args, join(dir, "child.mjs")], {
+    encoding: "utf8",
+    env: { ...process.env, ...v.env },
+  });
   if (r.status !== 0) throw new Error(`${v.name}: ${r.stderr}`);
   return JSON.parse(r.stdout.trim().split("\n").at(-1)!) as Record<string, number | boolean>;
 };
@@ -133,11 +154,21 @@ const samples = new Map(variants.map((v) => [v.name, [] as Record<string, number
 for (let s = 0; s < Number(flags.samples); s++) {
   for (const v of s % 2 ? variants.toReversed() : variants) samples.get(v.name)!.push(run(v));
 }
-const metrics = ["bootMs", "importMs", "createWindowMs", "installGlobalsMs", "firstUseMs", "totalMs", "heapMB", "rssMB"];
+const metrics = [
+  "bootMs",
+  "importMs",
+  "createWindowMs",
+  "installGlobalsMs",
+  "firstUseMs",
+  "totalMs",
+  "heapMB",
+  "rssMB",
+];
 console.log(`\n${flags.samples} fresh processes per row, interleaved: median [min–max]\n`);
 console.log(`| | ${metrics.join(" | ")} |\n| --- |${" ---: |".repeat(metrics.length)}`);
 for (const [name, xs] of samples) {
-  if (name === "snapshot" && !xs.every((x) => x.snapshot)) throw new Error("the snapshot run did not start from the snapshot");
+  if (name === "snapshot" && !xs.every((x) => x.snapshot))
+    throw new Error("the snapshot run did not start from the snapshot");
   const cells = metrics.map((k) => {
     const s = summarize(xs.map((x) => x[k] as number));
     return `${fmt(s.median)} [${fmt(s.min)}–${fmt(s.max)}]`;

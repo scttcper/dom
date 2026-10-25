@@ -54,7 +54,11 @@ if (only.has("bench")) {
   if (result.status !== 0) throw new Error(`vitest bench exited ${result.status}`);
 }
 if (only.has("startup")) await startup(contenders, Number(values.samples));
-const suiteOptions = { samples: Number(values["suite-samples"]), files: Number(values.files), workers: Number(values.workers) };
+const suiteOptions = {
+  samples: Number(values["suite-samples"]),
+  files: Number(values.files),
+  workers: Number(values.workers),
+};
 if (only.has("suite")) await suite(contenders, suiteOptions);
 if (only.has("vm")) await suite(contenders, { ...suiteOptions, pool: "vmForks" });
 if (only.has("jest")) await jestSuite(contenders, suiteOptions);

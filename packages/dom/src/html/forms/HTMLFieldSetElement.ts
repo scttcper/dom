@@ -8,7 +8,12 @@ import { HTMLCollection } from "../../collections/HTMLCollection.ts";
 import { T } from "../../nodes/tags.ts";
 import { bool, str } from "../reflect.ts";
 import { formOwner, isListed } from "./form-associated.ts";
-import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./validation.ts";
+import {
+  installConstraintValidation,
+  V_CUSTOM_ERROR,
+  type ConstraintValidation,
+  type ValidityState,
+} from "./validation.ts";
 import { $customValidity, $elements, $impl, $validity } from "../../keys.ts";
 
 export class HTMLFieldSetElement extends HTMLElement {

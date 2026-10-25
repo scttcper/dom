@@ -9,6 +9,8 @@
 pnpm install
 pnpm test                 # all packages + compat suites
 pnpm typecheck
+pnpm lint                 # oxlint (.oxlintrc.json)
+pnpm fmt                  # oxfmt (.oxfmtrc.json); CI runs pnpm fmt:check
 pnpm build                # dist/: ESM (+ CJS) bundles and .d.ts per package
 pnpm test:pack            # pack, install into a fresh project, run Vitest/Jest/tsc against the tarballs
 pnpm bench                # vs jsdom / happy-dom
@@ -56,8 +58,8 @@ in the member's `exports` and the root's.
 
 ## CI and releases
 
-- `CI` (every push and pull request): typecheck, lint, tests, build, and the packed-tarball
-  checks (`pnpm test:pack`).
+- `CI` (every push and pull request): typecheck, lint, format check, tests, build, and the
+  packed-tarball checks (`pnpm test:pack`).
 - `Benchmarks` (pull requests touching packages or bench): `bench/compare.ts` on clean checkouts
   of the PR's base and head; fails on a >10% regression in median time or allocation.
 - `Downstream` (run by hand): the seven projects' own suites in

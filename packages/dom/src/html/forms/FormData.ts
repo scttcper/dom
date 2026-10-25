@@ -65,7 +65,10 @@ export class FormData {
         throw new TypeError("Failed to construct 'FormData': The specified element is not a submit button.");
       }
       if (formOwner(s) !== formImpl) {
-        throw new DOMException("Failed to construct 'FormData': The specified element is not owned by this form element.", "NotFoundError");
+        throw new DOMException(
+          "Failed to construct 'FormData': The specified element is not owned by this form element.",
+          "NotFoundError",
+        );
       }
       submitterImpl = s;
     }
@@ -79,7 +82,10 @@ export class FormData {
       dispatchTrusted(form, new FormDataEvent("formdata", { bubbles: true, cancelable: false, formData: self }));
     });
     if (entries === null) {
-      throw new DOMException("Failed to construct 'FormData': The form is already constructing its entry list.", "InvalidStateError");
+      throw new DOMException(
+        "Failed to construct 'FormData': The form is already constructing its entry list.",
+        "InvalidStateError",
+      );
     }
     return self;
   }

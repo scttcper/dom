@@ -36,7 +36,11 @@ const rawDir = join(dirname(fileURLToPath(import.meta.url)), "..", "results", "r
 /** Row order in reports: file, then registration order within it. */
 let sequence = 0;
 
-const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const slug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 type Hook = () => void | Promise<void>;
 type Hooks = { beforeEach?: Hook; afterEach?: Hook; beforeAll?: Hook; afterAll?: Hook };

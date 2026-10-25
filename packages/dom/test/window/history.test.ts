@@ -52,7 +52,9 @@ describe("pushState / replaceState — https://html.spec.whatwg.org/#shared-hist
   });
 
   test("step 4: unserializable state throws DataCloneError", () => {
-    expect(() => window.history.pushState({ fn() {} }, "")).toThrow(expect.objectContaining({ name: "DataCloneError" }));
+    expect(() => window.history.pushState({ fn() {} }, "")).toThrow(
+      expect.objectContaining({ name: "DataCloneError" }),
+    );
   });
 
   test("step 6.3: cross-origin URLs throw SecurityError", () => {
@@ -131,7 +133,9 @@ describe("traversal — https://html.spec.whatwg.org/#traverse-the-history-by-a-
     window.history.pushState(null, "", "#a");
     const order: string[] = [];
     window.addEventListener("popstate", () => order.push("popstate"));
-    window.addEventListener("hashchange", (e) => order.push(`hashchange ${(e as unknown as { newURL: string }).newURL}`));
+    window.addEventListener("hashchange", (e) =>
+      order.push(`hashchange ${(e as unknown as { newURL: string }).newURL}`),
+    );
     window.history.back();
     vi.runAllTimers();
     expect(order).toEqual(["popstate", "hashchange http://localhost:3000/start"]);

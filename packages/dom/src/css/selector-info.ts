@@ -3,7 +3,18 @@
 // CSS Nesting resolution (the engine does not parse `&`).
 // https://drafts.csswg.org/css-nesting-1/#nest-selector
 
-import { CSSTokenizer, TK_COMMA, TK_DELIM, TK_EOF, TK_FUNCTION, TK_LBRACKET, TK_LPAREN, TK_RBRACKET, TK_RPAREN, TK_WHITESPACE } from "./tokenizer.ts";
+import {
+  CSSTokenizer,
+  TK_COMMA,
+  TK_DELIM,
+  TK_EOF,
+  TK_FUNCTION,
+  TK_LBRACKET,
+  TK_LPAREN,
+  TK_RBRACKET,
+  TK_RPAREN,
+  TK_WHITESPACE,
+} from "./tokenizer.ts";
 
 /** Splits a selector list on top-level commas (trimmed parts). */
 export function splitSelectorList(text: string): string[] {
@@ -46,7 +57,8 @@ export function containsNesting(text: string): boolean {
  */
 export function resolveNested(child: string, parents: string[]): string[] {
   const out: string[] = [];
-  const parentText = parents.length === 1 && isGluableCompound(parents[0]) ? parents[0] : ":is(" + parents.join(", ") + ")";
+  const parentText =
+    parents.length === 1 && isGluableCompound(parents[0]) ? parents[0] : ":is(" + parents.join(", ") + ")";
   for (const raw of splitSelectorList(child)) {
     if (raw === "") continue;
     let sel = raw;
@@ -68,7 +80,13 @@ function isGluableCompound(sel: string): boolean {
     if (type === TK_EOF) return true;
     if (type === TK_FUNCTION || type === TK_LPAREN || type === TK_LBRACKET) depth++;
     else if (type === TK_RPAREN || type === TK_RBRACKET) depth--;
-    else if (depth === 0 && (type === TK_WHITESPACE || type === TK_COMMA || (type === TK_DELIM && (t.value === ">" || t.value === "+" || t.value === "~" || t.value === "|")))) return false;
+    else if (
+      depth === 0 &&
+      (type === TK_WHITESPACE ||
+        type === TK_COMMA ||
+        (type === TK_DELIM && (t.value === ">" || t.value === "+" || t.value === "~" || t.value === "|")))
+    )
+      return false;
   }
 }
 

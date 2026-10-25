@@ -46,7 +46,10 @@ const reporting = new WeakSet<object>();
 
 function windowFor(target: EventTarget | null): EventTarget | null {
   if (target !== null) {
-    const t = target as unknown as { [$impl]?: { doc: { [$window]: EventTarget | null } }; document?: { [$window]?: unknown } };
+    const t = target as unknown as {
+      [$impl]?: { doc: { [$window]: EventTarget | null } };
+      document?: { [$window]?: unknown };
+    };
     if (t[$impl] !== undefined) return t[$impl].doc[$window];
     const doc = t.document;
     if (doc !== undefined && doc !== null && doc[$window] === target) return target;

@@ -22,15 +22,27 @@ export interface MatcherOptions {
   suggest?: boolean;
 }
 
-export type MatchFn = (textToMatch: string | null, node: any, matcher: Matcher | null, normalizer: NormalizerFn) => boolean;
+export type MatchFn = (
+  textToMatch: string | null,
+  node: any,
+  matcher: Matcher | null,
+  normalizer: NormalizerFn,
+) => boolean;
 
 function assertNotNullOrUndefined<T>(matcher: T): asserts matcher is NonNullable<T> {
   if (matcher === null || matcher === undefined) {
-    throw new Error(`It looks like ${matcher} was passed instead of a matcher. Did you do something like getByText(${matcher})?`);
+    throw new Error(
+      `It looks like ${matcher} was passed instead of a matcher. Did you do something like getByText(${matcher})?`,
+    );
   }
 }
 
-export function fuzzyMatches(textToMatch: string | null, node: any, matcher: Matcher | null, normalizer: NormalizerFn): boolean {
+export function fuzzyMatches(
+  textToMatch: string | null,
+  node: any,
+  matcher: Matcher | null,
+  normalizer: NormalizerFn,
+): boolean {
   if (typeof textToMatch !== "string") {
     return false;
   }
@@ -47,7 +59,12 @@ export function fuzzyMatches(textToMatch: string | null, node: any, matcher: Mat
   }
 }
 
-export function matches(textToMatch: string | null, node: any, matcher: Matcher | null, normalizer: NormalizerFn): boolean {
+export function matches(
+  textToMatch: string | null,
+  node: any,
+  matcher: Matcher | null,
+  normalizer: NormalizerFn,
+): boolean {
   if (typeof textToMatch !== "string") {
     return false;
   }
@@ -106,7 +123,10 @@ function changedByNormalizing(s: string, trim: boolean, collapse: boolean): bool
 
 const WHITESPACE_RUN = /\s+/g;
 
-export function getDefaultNormalizer({ trim = true, collapseWhitespace = true }: DefaultNormalizerOptions = {}): NormalizerFn {
+export function getDefaultNormalizer({
+  trim = true,
+  collapseWhitespace = true,
+}: DefaultNormalizerOptions = {}): NormalizerFn {
   return (text) => {
     if (!changedByNormalizing(text, trim, collapseWhitespace)) return text;
     let normalizedText = text;
@@ -135,7 +155,7 @@ export function makeNormalizer({ trim, collapseWhitespace, normalizer }: Normali
     // They've also specified a value for trim or collapseWhitespace
     throw new Error(
       "trim and collapseWhitespace are not supported with a normalizer. " +
-        'If you want to use the default trim and collapseWhitespace logic in your normalizer, ' +
+        "If you want to use the default trim and collapseWhitespace logic in your normalizer, " +
         'use "getDefaultNormalizer({trim, collapseWhitespace})" and compose that into your normalizer',
     );
   }

@@ -86,7 +86,9 @@ describe("controlled inputs — https://html.spec.whatwg.org/#dom-input-value", 
     const seen: boolean[] = [];
     function C() {
       const [on, setOn] = useState(false);
-      return <input type="checkbox" checked={on} onChange={(e) => (seen.push(e.target.checked), setOn(e.target.checked))} />;
+      return (
+        <input type="checkbox" checked={on} onChange={(e) => (seen.push(e.target.checked), setOn(e.target.checked))} />
+      );
     }
     render(<C />);
     const el = container.firstChild;
@@ -104,7 +106,14 @@ describe("controlled inputs — https://html.spec.whatwg.org/#dom-input-value", 
       return (
         <div>
           {["a", "b"].map((x) => (
-            <input key={x} type="radio" name="g" value={x} checked={v === x} onChange={(e) => (seen.push(e.target.value), setV(x))} />
+            <input
+              key={x}
+              type="radio"
+              name="g"
+              value={x}
+              checked={v === x}
+              onChange={(e) => (seen.push(e.target.value), setV(x))}
+            />
           ))}
         </div>
       );

@@ -49,10 +49,17 @@ function getRegExpMatcher(string: string): RegExp {
   return new RegExp(escapeRegExp(string.toLowerCase()), "i");
 }
 
-function makeSuggestion(queryName: string, element: any, content: string, { variant, name }: { variant: string; name?: string }): Suggestion {
+function makeSuggestion(
+  queryName: string,
+  element: any,
+  content: string,
+  { variant, name }: { variant: string; name?: string },
+): Suggestion {
   let warning = "";
   const queryOptions: Record<string, RegExp | boolean> = {};
-  const queryArgs: Suggestion["queryArgs"] = [["Role", "TestId"].includes(queryName) ? content : getRegExpMatcher(content)];
+  const queryArgs: Suggestion["queryArgs"] = [
+    ["Role", "TestId"].includes(queryName) ? content : getRegExpMatcher(content),
+  ];
 
   if (name) {
     queryOptions.name = getRegExpMatcher(name);

@@ -347,7 +347,12 @@ describe("passive option — https://dom.spec.whatwg.org/#dom-addeventlistenerop
     expect(supportsPassive).toBe(false);
   });
 
-  function testPassiveValue(optionsValue: unknown, expectedDefaultPrevented: boolean, existing?: EventTarget, viaReturnValue = false) {
+  function testPassiveValue(
+    optionsValue: unknown,
+    expectedDefaultPrevented: boolean,
+    existing?: EventTarget,
+    viaReturnValue = false,
+  ) {
     let defaultPrevented: boolean | undefined;
     const handler = (e: Event) => {
       expect(e.defaultPrevented).toBe(false);
@@ -420,7 +425,13 @@ describe("passive option — https://dom.spec.whatwg.org/#dom-addeventlistenerop
 
 // https://github.com/web-platform-tests/wpt/blob/master/dom/events/passive-by-default.html
 describe("default passive value — https://dom.spec.whatwg.org/#default-passive-value", () => {
-  const eventNames: Record<string, boolean> = { touchstart: true, touchmove: true, wheel: true, mousewheel: true, touchend: false };
+  const eventNames: Record<string, boolean> = {
+    touchstart: true,
+    touchmove: true,
+    wheel: true,
+    mousewheel: true,
+    touchend: false,
+  };
 
   function isListenerPassive(eventName: string, eventTarget: EventTarget, passive: unknown, expectPassive: boolean) {
     let defaultPrevented: boolean | null = null;

@@ -12,7 +12,18 @@ import { DocumentFragment } from "./DocumentFragment.ts";
 import { treeRoot } from "./traverse.ts";
 import { parseFragment, setHTMLUnsafe } from "../parser/index.ts";
 import { getHTML, serializeChildren, type GetHTMLOptions } from "../serializer/index.ts";
-import { $availableToElementInternals, $clonable, $declarative, $delegatesFocus, $focused, $host, $impl, $mode, $serializable, $slotAssignment } from "../keys.ts";
+import {
+  $availableToElementInternals,
+  $clonable,
+  $declarative,
+  $delegatesFocus,
+  $focused,
+  $host,
+  $impl,
+  $mode,
+  $serializable,
+  $slotAssignment,
+} from "../keys.ts";
 
 export type ShadowRootMode = "open" | "closed";
 export type SlotAssignmentMode = "manual" | "named";
@@ -41,7 +52,15 @@ export class ShadowRoot extends DocumentFragment {
   [$availableToElementInternals]: boolean;
 
   /** @internal Use Element.attachShadow. */
-  constructor(doc: Document, host: Element, mode: ShadowRootMode, delegatesFocus: boolean, slotAssignment: SlotAssignmentMode, clonable: boolean, serializable: boolean) {
+  constructor(
+    doc: Document,
+    host: Element,
+    mode: ShadowRootMode,
+    delegatesFocus: boolean,
+    slotAssignment: SlotAssignmentMode,
+    clonable: boolean,
+    serializable: boolean,
+  ) {
     if (arguments.length < 3) throw new TypeError("Illegal constructor");
     super(doc);
     const impl = this[$impl];

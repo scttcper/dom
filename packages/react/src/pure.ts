@@ -169,18 +169,30 @@ export interface RenderHookOptions<
 }
 
 /** @deprecated */
-export type BaseRenderHookOptions<Props, Q extends Queries, Container extends RendererableContainer | HydrateableContainer, BaseElement extends RendererableContainer | HydrateableContainer> =
-  RenderHookOptions<Props, Q, Container, BaseElement>;
+export type BaseRenderHookOptions<
+  Props,
+  Q extends Queries,
+  Container extends RendererableContainer | HydrateableContainer,
+  BaseElement extends RendererableContainer | HydrateableContainer,
+> = RenderHookOptions<Props, Q, Container, BaseElement>;
 
 /** @deprecated */
-export interface ClientRenderHookOptions<Props, Q extends Queries, Container extends RendererableContainer, BaseElement extends RendererableContainer = Container>
-  extends BaseRenderHookOptions<Props, Q, Container, BaseElement> {
+export interface ClientRenderHookOptions<
+  Props,
+  Q extends Queries,
+  Container extends RendererableContainer,
+  BaseElement extends RendererableContainer = Container,
+> extends BaseRenderHookOptions<Props, Q, Container, BaseElement> {
   hydrate?: false | undefined;
 }
 
 /** @deprecated */
-export interface HydrateHookOptions<Props, Q extends Queries, Container extends HydrateableContainer, BaseElement extends HydrateableContainer = Container>
-  extends BaseRenderHookOptions<Props, Q, Container, BaseElement> {
+export interface HydrateHookOptions<
+  Props,
+  Q extends Queries,
+  Container extends HydrateableContainer,
+  BaseElement extends HydrateableContainer = Container,
+> extends BaseRenderHookOptions<Props, Q, Container, BaseElement> {
   hydrate: true;
 }
 
@@ -260,7 +272,9 @@ const mountedContainers = new Set<unknown>();
 const mountedRootEntries: Array<{ container: any; root: RootHandle }> = [];
 
 function strictModeIfNeeded(innerElement: React.ReactNode, reactStrictMode: boolean | undefined): React.ReactNode {
-  return (reactStrictMode ?? getConfig().reactStrictMode) ? React.createElement(React.StrictMode, null, innerElement) : innerElement;
+  return (reactStrictMode ?? getConfig().reactStrictMode)
+    ? React.createElement(React.StrictMode, null, innerElement)
+    : innerElement;
 }
 
 function wrapUiIfNeeded(innerElement: React.ReactNode, wrapperComponent: RenderOptions["wrapper"]): React.ReactNode {
@@ -283,10 +297,14 @@ function createConcurrentRoot(
   let root!: ReactDOMClient.Root;
   if (hydrate) {
     act(() => {
-      root = ReactDOMClient.hydrateRoot(container, strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode), {
-        onCaughtError,
-        onRecoverableError,
-      } as ReactDOMClient.HydrationOptions);
+      root = ReactDOMClient.hydrateRoot(
+        container,
+        strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode),
+        {
+          onCaughtError,
+          onRecoverableError,
+        } as ReactDOMClient.HydrationOptions,
+      );
     });
   } else {
     root = ReactDOMClient.createRoot(container, {
@@ -317,7 +335,8 @@ function createConcurrentRoot(
 const defaultBoundQueries = new WeakMap<object, Record<string, unknown>>();
 
 function boundQueriesFor(baseElement: any, customQueries: Queries | undefined): Record<string, unknown> {
-  if (customQueries !== undefined) return getQueriesForElement(baseElement, customQueries as any) as Record<string, unknown>;
+  if (customQueries !== undefined)
+    return getQueriesForElement(baseElement, customQueries as any) as Record<string, unknown>;
   let bound = defaultBoundQueries.get(baseElement);
   if (bound === undefined) {
     bound = getQueriesForElement(baseElement) as Record<string, unknown>;
@@ -445,7 +464,12 @@ function describeTree(element: React.ReactElement, depth: number): string {
 function componentName(type: unknown): string {
   if (typeof type === "string") return type;
   if (typeof type === "symbol") return type.description?.replace(/^react\./, "") ?? "";
-  const t = type as { displayName?: string; name?: string; render?: { name?: string }; type?: { name?: string } } | null;
+  const t = type as {
+    displayName?: string;
+    name?: string;
+    render?: { name?: string };
+    type?: { name?: string };
+  } | null;
   const name = t?.displayName ?? t?.name ?? t?.render?.name ?? t?.type?.name ?? "";
   return name.replace(/\$\d+$/, "");
 }
@@ -459,7 +483,10 @@ const WRAPPER = /(?:Providers?|Context|Router|Wrapper|Fragment|StrictMode|Suspen
 function isWrapper(element: React.ReactElement): boolean {
   if (typeof element.type === "symbol") return true;
   const name = componentName(element.type);
-  return WRAPPER.test(name) || (name === "" && onlyElement((element.props as { children?: React.ReactNode }).children) !== null);
+  return (
+    WRAPPER.test(name) ||
+    (name === "" && onlyElement((element.props as { children?: React.ReactNode }).children) !== null)
+  );
 }
 
 interface Route {

@@ -1,7 +1,11 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/behavior/keypress.ts
 
-import {isContentEditable, isEditable, isElementType} from '../../utils/index.ts'
+import {
+  isContentEditable,
+  isEditable,
+  isElementType,
+} from '../../utils/index.ts'
 import {input} from '../input.ts'
 import {behavior} from './registry.ts'
 
@@ -11,7 +15,7 @@ behavior.keypress = (event, target, instance) => {
       isElementType(target, 'button') ||
       (isElementType(target, 'input') &&
         ClickInputOnEnter.includes(target.type)) ||
-        (isElementType(target, 'a') && Boolean(target.href))
+      (isElementType(target, 'a') && Boolean(target.href))
     ) {
       return () => {
         instance.dispatchUIEvent(target, 'click')

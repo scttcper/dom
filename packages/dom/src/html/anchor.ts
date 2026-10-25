@@ -37,7 +37,11 @@ const RELS = ["noreferrer", "noopener", "opener"] as const;
 /** Install HTMLHyperlinkElementUtils on `C`. */
 function installHyperlinkUtils(C: { prototype: object }): void {
   const proto = C.prototype;
-  const define = (name: string, get: (u: URL | null, impl: NodeImpl) => string, set?: (u: URL, v: string) => boolean) => {
+  const define = (
+    name: string,
+    get: (u: URL | null, impl: NodeImpl) => string,
+    set?: (u: URL, v: string) => boolean,
+  ) => {
     Object.defineProperty(proto, name, {
       get(this: Hyperlink) {
         const impl = this[$impl];
@@ -210,7 +214,7 @@ function reportFollowedHyperlink(impl: NodeImpl): void {
   let chosen: LinkWindow | null = null;
   if (name === "" || name === "_self") chosen = source;
   else if (name === "_parent") chosen = source[$parentWindow] ?? source;
-  else if (name === "_top") for (chosen = source; chosen[$parentWindow] !== null; ) chosen = chosen[$parentWindow];
+  else if (name === "_top") for (chosen = source; chosen[$parentWindow] !== null;) chosen = chosen[$parentWindow];
   if (chosen === null) return;
   const url = linkURL(impl);
   if (url === null || url.protocol === "javascript:") return;
@@ -230,7 +234,8 @@ export class HTMLAnchorElement extends HTMLElement {
   get text(): string {
     const root = this[$impl];
     let s = "";
-    for (let n = root.first; n !== null; n = nextInTree(n, root)) if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
+    for (let n = root.first; n !== null; n = nextInTree(n, root))
+      if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
     return s;
   }
 

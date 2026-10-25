@@ -16,10 +16,27 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { createWindow } from "@ctrl/dom";
 
-const table: [string, string][] = new Function(readFileSync(new URL("./wpt/semantics/interfaces.js", import.meta.url), "utf8") + "\nreturn elements;")();
+const table: [string, string][] = new Function(
+  readFileSync(new URL("./wpt/semantics/interfaces.js", import.meta.url), "utf8") + "\nreturn elements;",
+)();
 
 // Elements with special parser insertion modes are skipped by the original test's parser variant.
-const SKIP_PARSER = ["foo-BAR", "tbody", "td", "tfoot", "th", "thead", "tr", "å-bar", "caption", "col", "colgroup", "frame", "image", "frameset"];
+const SKIP_PARSER = [
+  "foo-BAR",
+  "tbody",
+  "td",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "å-bar",
+  "caption",
+  "col",
+  "colgroup",
+  "frame",
+  "image",
+  "frameset",
+];
 
 const window = createWindow() as any;
 const document = window.document;

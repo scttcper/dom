@@ -28,7 +28,9 @@ beforeEach(() => {
 });
 
 function styleAfterSetting(property: string, value: string): string {
-  const el = document.createElement("span") as unknown as { style: { setProperty(p: string, v: string): void; getPropertyValue(p: string): string } };
+  const el = document.createElement("span") as unknown as {
+    style: { setProperty(p: string, v: string): void; getPropertyValue(p: string): string };
+  };
   el.style.setProperty(property, value);
   return el.style.getPropertyValue(property);
 }
@@ -49,7 +51,15 @@ describe("sRGB colors — https://drafts.csswg.org/css-color-4/#serializing-sRGB
   });
 
   test("every color-valued longhand and the border shorthand convert hex", () => {
-    for (const p of ["background-color", "border-top-color", "border-left-color", "outline-color", "text-decoration-color", "caret-color", "column-rule-color"]) {
+    for (const p of [
+      "background-color",
+      "border-top-color",
+      "border-left-color",
+      "outline-color",
+      "text-decoration-color",
+      "caret-color",
+      "column-rule-color",
+    ]) {
       expect(styleAfterSetting(p, "#f00")).toBe("rgb(255, 0, 0)");
     }
     expect(styleAfterSetting("border", "1px solid #f00")).toBe("1px solid rgb(255, 0, 0)");
@@ -59,19 +69,33 @@ describe("sRGB colors — https://drafts.csswg.org/css-color-4/#serializing-sRGB
 
 describe("color-mix() — https://drafts.csswg.org/css-color-5/#serial-color-mix", () => {
   test("nested colors serialize as specified values and keywords are lower-cased (Sentry ansiText)", () => {
-    expect(styleAfterSetting("color", "color-mix(in srgb, #ff8700 80%, currentColor)")).toBe("color-mix(in srgb, rgb(255, 135, 0) 80%, currentcolor)");
-    expect(styleAfterSetting("color", "COLOR-MIX(IN SRGB, RED 20%, #00f)")).toBe("color-mix(in srgb, red 20%, rgb(0, 0, 255))");
-    expect(styleAfterSetting("color", "color-mix(in oklch longer hue, #f00, #00f)")).toBe("color-mix(in oklch longer hue, rgb(255, 0, 0), rgb(0, 0, 255))");
+    expect(styleAfterSetting("color", "color-mix(in srgb, #ff8700 80%, currentColor)")).toBe(
+      "color-mix(in srgb, rgb(255, 135, 0) 80%, currentcolor)",
+    );
+    expect(styleAfterSetting("color", "COLOR-MIX(IN SRGB, RED 20%, #00f)")).toBe(
+      "color-mix(in srgb, red 20%, rgb(0, 0, 255))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in oklch longer hue, #f00, #00f)")).toBe(
+      "color-mix(in oklch longer hue, rgb(255, 0, 0), rgb(0, 0, 255))",
+    );
     expect(styleAfterSetting("color", "color-mix(in srgb, color-mix(in srgb, #f00, #0f0), #00f)")).toBe(
       "color-mix(in srgb, color-mix(in srgb, rgb(255, 0, 0), rgb(0, 255, 0)), rgb(0, 0, 255))",
     );
   });
 
   test("percentages: a lone 50% is omitted, a lone second percentage becomes the first's complement, two are kept", () => {
-    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 50%, #00f)")).toBe("color-mix(in srgb, rgb(255, 0, 0), rgb(0, 0, 255))");
-    expect(styleAfterSetting("color", "color-mix(in srgb, #f00, #00f 30%)")).toBe("color-mix(in srgb, rgb(255, 0, 0) 70%, rgb(0, 0, 255))");
-    expect(styleAfterSetting("color", "color-mix(in srgb, 30% #f00, #00f)")).toBe("color-mix(in srgb, rgb(255, 0, 0) 30%, rgb(0, 0, 255))");
-    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 20%, #00f 80%)")).toBe("color-mix(in srgb, rgb(255, 0, 0) 20%, rgb(0, 0, 255) 80%)");
+    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 50%, #00f)")).toBe(
+      "color-mix(in srgb, rgb(255, 0, 0), rgb(0, 0, 255))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in srgb, #f00, #00f 30%)")).toBe(
+      "color-mix(in srgb, rgb(255, 0, 0) 70%, rgb(0, 0, 255))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in srgb, 30% #f00, #00f)")).toBe(
+      "color-mix(in srgb, rgb(255, 0, 0) 30%, rgb(0, 0, 255))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 20%, #00f 80%)")).toBe(
+      "color-mix(in srgb, rgb(255, 0, 0) 20%, rgb(0, 0, 255) 80%)",
+    );
   });
 
   test("invalid: no interpolation method, three colors, both percentages 0%, a percentage above 100%", () => {
@@ -82,7 +106,9 @@ describe("color-mix() — https://drafts.csswg.org/css-color-5/#serial-color-mix
   });
 
   test("light-dark() serializes both of its colors", () => {
-    expect(styleAfterSetting("color", "light-dark(#fff, rgb(0 0 0 / 50%))")).toBe("light-dark(rgb(255, 255, 255), rgba(0, 0, 0, 0.5))");
+    expect(styleAfterSetting("color", "light-dark(#fff, rgb(0 0 0 / 50%))")).toBe(
+      "light-dark(rgb(255, 255, 255), rgba(0, 0, 0, 0.5))",
+    );
   });
 
   test("relative colors keep their channel keywords and serialize the origin color", () => {
@@ -117,12 +143,18 @@ describe("lab() / lch() / oklab() / oklch() / color() — https://drafts.csswg.o
 
 describe("colors in <gradient> and <paint> values — https://drafts.csswg.org/css-images-4/#gradients", () => {
   test("gradient color stops serialize as colors; keywords and units are lower-cased; default direction omitted", () => {
-    expect(styleAfterSetting("background-image", "LINEAR-GRADIENT(to bottom, #F00 10PX, RED)")).toBe("linear-gradient(rgb(255, 0, 0) 10px, red)");
-    expect(styleAfterSetting("background-image", "radial-gradient(ellipse farthest-corner at 10px 20px, #f00, #00f)")).toBe(
-      "radial-gradient(at 10px 20px, rgb(255, 0, 0), rgb(0, 0, 255))",
+    expect(styleAfterSetting("background-image", "LINEAR-GRADIENT(to bottom, #F00 10PX, RED)")).toBe(
+      "linear-gradient(rgb(255, 0, 0) 10px, red)",
     );
-    expect(styleAfterSetting("background", "#f00 linear-gradient(#f00, #00f)")).toBe("linear-gradient(rgb(255, 0, 0), rgb(0, 0, 255)) rgb(255, 0, 0)");
-    expect(styleAfterSetting("list-style-image", "linear-gradient(#f00,#00f)")).toBe("linear-gradient(rgb(255, 0, 0), rgb(0, 0, 255))");
+    expect(
+      styleAfterSetting("background-image", "radial-gradient(ellipse farthest-corner at 10px 20px, #f00, #00f)"),
+    ).toBe("radial-gradient(at 10px 20px, rgb(255, 0, 0), rgb(0, 0, 255))");
+    expect(styleAfterSetting("background", "#f00 linear-gradient(#f00, #00f)")).toBe(
+      "linear-gradient(rgb(255, 0, 0), rgb(0, 0, 255)) rgb(255, 0, 0)",
+    );
+    expect(styleAfterSetting("list-style-image", "linear-gradient(#f00,#00f)")).toBe(
+      "linear-gradient(rgb(255, 0, 0), rgb(0, 0, 255))",
+    );
   });
 
   test("a gradient needs two color stops and no empty arguments", () => {

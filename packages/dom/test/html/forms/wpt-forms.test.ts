@@ -23,10 +23,11 @@ import { defineWPT } from "../../wpt/harness.ts";
 
 const READONLY_BARRING =
   "readonly bars only the types it applies to, as jsdom (tests/compat validation scenario: a readOnly required checkbox still validates); spec/Chromium bar every input (deviation)";
-const PARSER_FORM_POINTER = "harness limitation: the harness builds markup with parse5 + DOM calls, so the parser's form element pointer association is lost";
+const PARSER_FORM_POINTER =
+  "harness limitation: the harness builds markup with parse5 + DOM calls, so the parser's form element pointer association is lost";
 const NAVIGATION = "needs form submission navigation (out of scope)";
-const INSERTED_SELECTED = "an inserted option that is already selected does not win over the last selected option (selectedness setting algorithm keeps the last; Chromium prefers the inserted one)";
-
+const INSERTED_SELECTED =
+  "an inserted option that is already selected does not win over the last selected option (selectedness setting algorithm keeps the last; Chromium prefers the inserted one)";
 
 describe("attributes-common-to-form-controls — https://github.com/web-platform-tests/wpt/tree/master/html/semantics/forms/attributes-common-to-form-controls", () => {
   defineWPT("html/semantics/forms/attributes-common-to-form-controls/disabled-elements-01.html");
@@ -75,7 +76,10 @@ describe("form-control-infrastructure — https://github.com/web-platform-tests/
 });
 
 describe("form-submission-0 — https://github.com/web-platform-tests/wpt/tree/master/html/semantics/forms/form-submission-0", () => {
-  defineWPT("html/semantics/forms/form-submission-0/SubmitEvent.window.js", "SubmitEvent init dictionary is not type-checked (events area) and submitter retargeting after shadow-tree dispatch");
+  defineWPT(
+    "html/semantics/forms/form-submission-0/SubmitEvent.window.js",
+    "SubmitEvent init dictionary is not type-checked (events area) and submitter retargeting after shadow-tree dispatch",
+  );
   defineWPT("html/semantics/forms/form-submission-0/form-submit-invalid.html");
   defineWPT("html/semantics/forms/form-submission-0/form-submitters.html");
   defineWPT("html/semantics/forms/form-submission-0/historical.window.js");
@@ -161,7 +165,10 @@ describe("the-form-element — https://github.com/web-platform-tests/wpt/tree/ma
   defineWPT("html/semantics/forms/the-form-element/form-indexed-element.html");
   defineWPT("html/semantics/forms/the-form-element/form-indexed-property-names.html");
   defineWPT("html/semantics/forms/the-form-element/form-length.html");
-  defineWPT("html/semantics/forms/the-form-element/form-nameditem.html", "[LegacyOverrideBuiltIns] is not implemented: built-in members win over named controls (deviation; a Proxy lookup on every form property read)");
+  defineWPT(
+    "html/semantics/forms/the-form-element/form-nameditem.html",
+    "[LegacyOverrideBuiltIns] is not implemented: built-in members win over named controls (deviation; a Proxy lookup on every form property read)",
+  );
 });
 
 describe("the-input-element — https://github.com/web-platform-tests/wpt/tree/master/html/semantics/forms/the-input-element", () => {
@@ -170,7 +177,10 @@ describe("the-input-element — https://github.com/web-platform-tests/wpt/tree/m
   defineWPT("html/semantics/forms/the-input-element/checkbox-click-events.html");
   defineWPT("html/semantics/forms/the-input-element/checkbox.html");
   defineWPT("html/semantics/forms/the-input-element/clone.html");
-  defineWPT("html/semantics/forms/the-input-element/color.html", "color value sanitization only accepts simple colors, as jsdom (tests/compat input-value scenarios); CSS colors become #000000 (deviation)");
+  defineWPT(
+    "html/semantics/forms/the-input-element/color.html",
+    "color value sanitization only accepts simple colors, as jsdom (tests/compat input-value scenarios); CSS colors become #000000 (deviation)",
+  );
   defineWPT("html/semantics/forms/the-input-element/date.html");
   defineWPT("html/semantics/forms/the-input-element/datetime-local-trailing-zeros.html");
   defineWPT("html/semantics/forms/the-input-element/datetime-local-valueasdate.html");
@@ -179,7 +189,10 @@ describe("the-input-element — https://github.com/web-platform-tests/wpt/tree/m
   defineWPT("html/semantics/forms/the-input-element/datetime.html");
   defineWPT("html/semantics/forms/the-input-element/default-type.html");
   defineWPT("html/semantics/forms/the-input-element/email.html");
-  defineWPT("html/semantics/forms/the-input-element/files.html", "files accepts array-likes of File (user-event and tests assign plain lists; deviation)");
+  defineWPT(
+    "html/semantics/forms/the-input-element/files.html",
+    "files accepts array-likes of File (user-event and tests assign plain lists; deviation)",
+  );
   defineWPT("html/semantics/forms/the-input-element/hidden.html");
   defineWPT("html/semantics/forms/the-input-element/input-checkvalidity.html");
   defineWPT("html/semantics/forms/the-input-element/input-height.html");
@@ -204,7 +217,10 @@ describe("the-input-element — https://github.com/web-platform-tests/wpt/tree/m
   defineWPT("html/semantics/forms/the-input-element/input-valueasdate-null.html");
   defineWPT("html/semantics/forms/the-input-element/input-valueasdate-stepping.html");
   defineWPT("html/semantics/forms/the-input-element/input-valueasdate-typeerror.html");
-  defineWPT("html/semantics/forms/the-input-element/input-valueasdate.html", "harness realm: the test compares against Dates of its vm context, valueAsDate returns host-realm Dates");
+  defineWPT(
+    "html/semantics/forms/the-input-element/input-valueasdate.html",
+    "harness realm: the test compares against Dates of its vm context, valueAsDate returns host-realm Dates",
+  );
   defineWPT("html/semantics/forms/the-input-element/input-valueasnumber-invalidstateerr.html");
   defineWPT("html/semantics/forms/the-input-element/input-valueasnumber-nan.html");
   defineWPT("html/semantics/forms/the-input-element/input-valueasnumber-stepping.html");
@@ -222,7 +238,10 @@ describe("the-input-element — https://github.com/web-platform-tests/wpt/tree/m
   defineWPT("html/semantics/forms/the-input-element/pattern_attribute.html");
   defineWPT("html/semantics/forms/the-input-element/pattern_attribute_v_flag.html");
   defineWPT("html/semantics/forms/the-input-element/radio-click-events.html");
-  defineWPT("html/semantics/forms/the-input-element/radio-disconnected-group-owner.html", "radio group check runs on connection, not on insertion into a disconnected form (no insertion hook for disconnected trees)");
+  defineWPT(
+    "html/semantics/forms/the-input-element/radio-disconnected-group-owner.html",
+    "radio group check runs on connection, not on insertion into a disconnected form (no insertion hook for disconnected trees)",
+  );
   defineWPT("html/semantics/forms/the-input-element/radio-form-owner.html");
   defineWPT("html/semantics/forms/the-input-element/radio-groupname-case.html");
   defineWPT("html/semantics/forms/the-input-element/radio-input-cancel.html");
@@ -315,7 +334,10 @@ describe("the-select-element — https://github.com/web-platform-tests/wpt/tree/
   defineWPT("html/semantics/forms/the-select-element/select-add.html");
   defineWPT("html/semantics/forms/the-select-element/select-ancestor-subtree-removal.html");
   defineWPT("html/semantics/forms/the-select-element/select-ask-for-reset.html");
-  defineWPT("html/semantics/forms/the-select-element/select-attribute-change-reset.html", "removing multiple keeps the LAST selected option, as jsdom (tests/compat select-option scenario); Chromium keeps the first");
+  defineWPT(
+    "html/semantics/forms/the-select-element/select-attribute-change-reset.html",
+    "removing multiple keeps the LAST selected option, as jsdom (tests/compat select-option scenario); Chromium keeps the first",
+  );
   defineWPT("html/semantics/forms/the-select-element/select-click-does-not-open-picker.html");
   defineWPT("html/semantics/forms/the-select-element/select-defineProperty.html");
   defineWPT("html/semantics/forms/the-select-element/select-insertion-inherited-style.html");

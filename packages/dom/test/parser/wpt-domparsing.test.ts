@@ -27,7 +27,7 @@ describe("DOM parsing and serialization — https://html.spec.whatwg.org/#dom-pa
       "DOMParser-parseFromString-xml-scripting-support-disabled.html":
         "the svg-script subtests read Document.rootElement (SVG Document extension, not implemented)",
       "XMLSerializer-serializeToString.html":
-        "browsers keep a redundant xmlns=\"\" when a prefix is bound to the empty namespace; no spec rule to follow",
+        'browsers keep a redundant xmlns="" when a prefix is bound to the empty namespace; no spec rule to follow',
       "createContextualFragment.html": "no script execution",
       "outerhtml-03.html": "the <body> case loads a document into an iframe (no navigation)",
     },

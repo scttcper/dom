@@ -44,7 +44,8 @@ if (flags.base === undefined) {
 const sides = { base: resolve(flags.base), head: resolve(flags.head) } as const;
 type Side = keyof typeof sides;
 for (const [side, dir] of Object.entries(sides)) {
-  if (!existsSync(join(dir, "bench/worker.ts"))) throw new Error(`--${side} ${dir} is not a checkout of this repository`);
+  if (!existsSync(join(dir, "bench/worker.ts")))
+    throw new Error(`--${side} ${dir} is not a checkout of this repository`);
 }
 
 /**
@@ -58,7 +59,8 @@ function configsOf(dir: string): string[] {
   if (list === undefined) throw new Error(`${dir}: no CONFIGS in bench/lib/configs.ts`);
   return [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 }
-if (configNames.base.length !== configNames.head.length) throw new Error(`base and head list different configurations: ${configNames.base} vs ${configNames.head}`);
+if (configNames.base.length !== configNames.head.length)
+  throw new Error(`base and head list different configurations: ${configNames.base} vs ${configNames.head}`);
 const configOf = (side: Side, config: string): string => configNames[side][configNames.head.indexOf(config)];
 
 /** Workload → configuration measured: our full stack for React rows, the DOM alone otherwise; startup from the bundles users load. */
@@ -105,10 +107,14 @@ const timeoutMs = Number(flags.timeout) * 1000;
 function runSample(side: Side, workload: string, config: string): Promise<SampleResult> {
   const dir = sides[side];
   return new Promise((done) => {
-    const child = spawn(process.execPath, ["--expose-gc", "--no-warnings", join(dir, "bench/worker.ts"), workload, configOf(side, config)], {
-      cwd: join(dir, "bench"),
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(
+      process.execPath,
+      ["--expose-gc", "--no-warnings", join(dir, "bench/worker.ts"), workload, configOf(side, config)],
+      {
+        cwd: join(dir, "bench"),
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
     let out = "";
     let err = "";
     child.stdout.on("data", (d) => (out += d));
@@ -118,7 +124,12 @@ function runSample(side: Side, workload: string, config: string): Promise<Sample
       clearTimeout(timer);
       const line = out.split("\n").findLast((l) => l.startsWith("@@RESULT "));
       if (line) return done(JSON.parse(line.slice("@@RESULT ".length)));
-      done({ ok: false, workload, config, error: `${side}: worker exited ${code ?? signal}\n${err.trim().split("\n").slice(-4).join("\n")}` } as SampleResult);
+      done({
+        ok: false,
+        workload,
+        config,
+        error: `${side}: worker exited ${code ?? signal}\n${err.trim().split("\n").slice(-4).join("\n")}`,
+      } as SampleResult);
     });
   });
 }
@@ -167,7 +178,8 @@ function metric(row: Row, read: (r: SampleResult) => number | undefined, floor: 
 
 const fmt = (x: number, digits = 2) => (Math.abs(x) >= 100 ? x.toFixed(0) : x.toFixed(digits));
 const pct = (m: Metric) => `${m.ratio >= 1 ? "+" : ""}${((m.ratio - 1) * 100).toFixed(1)}%`;
-const cell = (m: Metric | null, unit: string) => (m === null ? "–" : `${fmt(m.base)} → ${fmt(m.head)} ${unit} (${pct(m)})${m.regressed ? " **regressed**" : ""}`);
+const cell = (m: Metric | null, unit: string) =>
+  m === null ? "–" : `${fmt(m.base)} → ${fmt(m.head)} ${unit} (${pct(m)})${m.regressed ? " **regressed**" : ""}`;
 
 const lines = [
   `## Benchmark: head vs base`,
@@ -195,13 +207,24 @@ for (const row of rows) {
   const alloc = metric(row, (r) => r.extra?.allocMB, minAllocMB);
   const heap = metric(row, (r) => r.heapMB, null);
   const rss = metric(row, (r) => r.maxRssMB, null);
-  for (const [name, m] of [["time", time], ["allocation", alloc]] as const) {
+  for (const [name, m] of [
+    ["time", time],
+    ["allocation", alloc],
+  ] as const) {
     if (m?.regressed) failures.push(`${row.workload} (${row.config}): ${name} ${pct(m)}`);
   }
-  lines.push(`| ${row.workload} | ${row.config} | ${cell(time, "ms")} | ${cell(alloc, "MB")} | ${cell(heap, "MB")} | ${cell(rss, "MB")} |`);
+  lines.push(
+    `| ${row.workload} | ${row.config} | ${cell(time, "ms")} | ${cell(alloc, "MB")} | ${cell(heap, "MB")} | ${cell(rss, "MB")} |`,
+  );
   report.push({ workload: row.workload, config: row.config, time, alloc, heap, rss, base: row.base, head: row.head });
 }
-lines.push("", failures.length ? `**${failures.length} regression(s)**:\n\n${failures.map((f) => `- ${f}`).join("\n")}` : "No regressions.", "");
+lines.push(
+  "",
+  failures.length
+    ? `**${failures.length} regression(s)**:\n\n${failures.map((f) => `- ${f}`).join("\n")}`
+    : "No regressions.",
+  "",
+);
 
 const markdown = lines.join("\n");
 console.log(markdown);

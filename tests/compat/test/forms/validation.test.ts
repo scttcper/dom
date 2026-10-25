@@ -166,14 +166,21 @@ describe("custom validity and the API — https://html.spec.whatwg.org/#the-cons
   differential("custom validity on a barred element: validity reflects it but willValidate is false", (w) => {
     const el = make(w, "<input disabled>");
     el.setCustomValidity("x");
-    return { willValidate: el.willValidate, customError: el.validity.customError, message: el.validationMessage, check: el.checkValidity() };
+    return {
+      willValidate: el.willValidate,
+      customError: el.validity.customError,
+      message: el.validationMessage,
+      check: el.checkValidity(),
+    };
   });
 
   differential("checkValidity fires a cancelable, non-bubbling invalid event", (w) => {
     w.document.body.innerHTML = "<form id=f><input required id=i></form>";
     const i = w.document.getElementById("i");
     const seen: unknown[] = [];
-    i.addEventListener("invalid", (e: AnyWindow) => seen.push({ bubbles: e.bubbles, cancelable: e.cancelable, trusted: e.isTrusted, type: e.type }));
+    i.addEventListener("invalid", (e: AnyWindow) =>
+      seen.push({ bubbles: e.bubbles, cancelable: e.cancelable, trusted: e.isTrusted, type: e.type }),
+    );
     let formSaw = 0;
     w.document.getElementById("f").addEventListener("invalid", () => formSaw++);
     const result = i.checkValidity();
@@ -181,7 +188,8 @@ describe("custom validity and the API — https://html.spec.whatwg.org/#the-cons
   });
 
   differential("form.checkValidity fires invalid on each invalid control in tree order", (w) => {
-    w.document.body.innerHTML = "<form id=f><input required id=a><input id=b><textarea required id=c></textarea><select required id=d><option value=''>x</select></form>";
+    w.document.body.innerHTML =
+      "<form id=f><input required id=a><input id=b><textarea required id=c></textarea><select required id=d><option value=''>x</select></form>";
     const log = recordEvents(w.document, ["invalid"]);
     const result = w.document.getElementById("f").checkValidity();
     return { result, log };
@@ -190,7 +198,11 @@ describe("custom validity and the API — https://html.spec.whatwg.org/#the-cons
   differential("reportValidity behaves like checkValidity without UI", (w) => {
     w.document.body.innerHTML = "<form id=f><input required id=a></form>";
     const log = recordEvents(w.document, ["invalid"]);
-    return { input: w.document.getElementById("a").reportValidity(), form: w.document.getElementById("f").reportValidity(), log };
+    return {
+      input: w.document.getElementById("a").reportValidity(),
+      form: w.document.getElementById("f").reportValidity(),
+      log,
+    };
   });
 
   differential("validity is a live object of type ValidityState", (w) => {

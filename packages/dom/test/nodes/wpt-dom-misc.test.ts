@@ -15,6 +15,11 @@
  */
 import { defineWPT } from "../wpt/harness.ts";
 
-for (const f of ["attributes-are-nodes.html", "eventPathRemoved.html", "historical.html", "historical-mutation-events.html"]) {
+for (const f of [
+  "attributes-are-nodes.html",
+  "eventPathRemoved.html",
+  "historical.html",
+  "historical-mutation-events.html",
+]) {
   defineWPT(`dom/${f}`);
 }

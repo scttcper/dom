@@ -55,11 +55,15 @@ export function isSubtreeInaccessible(element: any): boolean {
   return gcs(element).display === "none";
 }
 
-export function isInaccessible(element: any, options: { isSubtreeInaccessible?: (element: any) => boolean } = {}): boolean {
+export function isInaccessible(
+  element: any,
+  options: { isSubtreeInaccessible?: (element: any) => boolean } = {},
+): boolean {
   const impl = implOf(element);
   const custom = options.isSubtreeInaccessible;
   const gcs = styleOverride(impl);
-  if (custom === undefined) return gcs === null ? isInaccessibleImpl(impl) : aria.isInaccessibleWithStyle(impl, gcs, null);
+  if (custom === undefined)
+    return gcs === null ? isInaccessibleImpl(impl) : aria.isInaccessibleWithStyle(impl, gcs, null);
   // since visibility is inherited we can exit early
   if (gcs !== null ? gcs(element).visibility === "hidden" : isVisibilityHidden(impl)) return true;
   for (let current: NodeImpl | null = impl; current !== null; current = parentElement(current)) {
@@ -84,7 +88,10 @@ export function getRoles(container: any, { hidden = false }: { hidden?: boolean 
   const gcs = hidden !== false ? null : styleOverride(root);
   const memo = gcs !== null ? new Map<NodeImpl, boolean>() : null;
   const visit = (node: NodeImpl) => {
-    if (hidden !== false || (gcs === null ? isInaccessibleImpl(node) : aria.isInaccessibleWithStyle(node, gcs, memo)) === false) {
+    if (
+      hidden !== false ||
+      (gcs === null ? isInaccessibleImpl(node) : aria.isInaccessibleWithStyle(node, gcs, memo)) === false
+    ) {
       // TODO: This violates html-aria which does not allow any role on every element
       const explicit = attr(node, "role");
       const nodeRoles = explicit !== null ? explicit.split(" ").slice(0, 1) : getImplicitAriaRolesImpl(node);
@@ -105,7 +112,10 @@ export function getRoles(container: any, { hidden = false }: { hidden?: boolean 
 // Always HTML, also under CTRL_DOM_DEBUG (a shallow clone has no accessible content to snapshot).
 const PRETTY = { format: "pretty" } as const;
 
-export function prettyRoles(dom: any, { hidden, includeDescription }: { hidden?: boolean; includeDescription?: boolean }): string {
+export function prettyRoles(
+  dom: any,
+  { hidden, includeDescription }: { hidden?: boolean; includeDescription?: boolean },
+): string {
   const roles = getRoles(dom, { hidden });
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
   const gcs = styleOverride(implOf(dom));
@@ -131,7 +141,8 @@ export function prettyRoles(dom: any, { hidden, includeDescription }: { hidden?:
     .join("\n");
 }
 
-export const logRoles = (dom: any, { hidden = false }: { hidden?: boolean } = {}): void => console.log(prettyRoles(dom, { hidden }));
+export const logRoles = (dom: any, { hidden = false }: { hidden?: boolean } = {}): void =>
+  console.log(prettyRoles(dom, { hidden }));
 
 function checkBooleanAttribute(element: NodeImpl, attribute: string): boolean | undefined {
   const attributeValue = attr(element, attribute);

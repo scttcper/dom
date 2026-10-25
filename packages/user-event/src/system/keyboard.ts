@@ -32,7 +32,7 @@ const modifierKeys = [
   'Shift',
   'Symbol',
 ] as const
-type ModififierKey = typeof modifierKeys[number]
+type ModififierKey = (typeof modifierKeys)[number]
 
 function isModifierKey(key?: string): key is ModififierKey {
   return modifierKeys.includes(key as ModififierKey)
@@ -45,7 +45,7 @@ const modifierLocks = [
   'ScrollLock',
   'SymbolLock',
 ] as const
-type ModififierLockKey = typeof modifierLocks[number]
+type ModififierLockKey = (typeof modifierLocks)[number]
 
 function isModifierLock(key?: string): key is ModififierLockKey {
   return modifierLocks.includes(key as ModififierLockKey)
@@ -101,7 +101,7 @@ export class KeyboardHost {
     }
     values() {
       return Object.values(this.registry) as NonNullable<
-        typeof this.registry[string]
+        (typeof this.registry)[string]
       >[]
     }
   })()
@@ -118,7 +118,11 @@ export class KeyboardHost {
   }
 
   /** Press a key */
-  async keydown(instance: Instance, keyDef: keyboardKey, repeat: boolean = false) {
+  async keydown(
+    instance: Instance,
+    keyDef: keyboardKey,
+    repeat: boolean = false,
+  ) {
     const key = String(keyDef.key)
     const code = String(keyDef.code)
 

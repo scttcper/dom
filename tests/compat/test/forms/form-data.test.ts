@@ -60,17 +60,19 @@ line2</textarea>
     ),
   );
 
-  differential("selects: single, multiple, none selected, disabled options", (w) =>
-    formData(
-      w,
-      `<form>
+  differential(
+    "selects: single, multiple, none selected, disabled options",
+    (w) =>
+      formData(
+        w,
+        `<form>
         <select name=one><option>a<option selected>b</select>
         <select name=many multiple><option selected>x<option>y<option selected value=zv>z</select>
         <select name=none multiple><option>q</select>
         <select name=dis><option disabled selected>d<option>e</select>
         <select name=empty></select>
       </form>`,
-    ),
+      ),
     {
       jsdomFix: {
         fix: (entries: unknown[][]) => entries.filter(([name]) => name !== "dis"),
@@ -120,7 +122,10 @@ line2</textarea>
   );
 
   differential("controls associated with form= outside the form, in tree order", (w) =>
-    formData(w, "<input name=before value=b form=f><form id=f><input name=inside value=i></form><input name=after value=a form=f>"),
+    formData(
+      w,
+      "<input name=before value=b form=f><form id=f><input name=inside value=i></form><input name=after value=a form=f>",
+    ),
   );
 
   differential("dirname adds a direction entry", (w) =>
@@ -132,7 +137,10 @@ line2</textarea>
     (w) => formData(w, "<form><input type=hidden name=_charset_><input type=hidden name=_CHARSET_ value=keep></form>"),
     {
       jsdomDeviation: {
-        expected: [["_charset_", "UTF-8"], ["_CHARSET_", "UTF-8"]],
+        expected: [
+          ["_charset_", "UTF-8"],
+          ["_CHARSET_", "UTF-8"],
+        ],
         spec: "https://html.spec.whatwg.org/#constructing-the-form-data-set (Hidden state, name ASCII case-insensitively _charset_)",
         reason: "jsdom submits the input's value instead of the encoding name",
       },
@@ -173,20 +181,30 @@ describe("FormData constructor errors — https://xhr.spec.whatwg.org/#dom-formd
 });
 
 describe("formdata event — https://html.spec.whatwg.org/#constructing-the-form-data-set (step 6)", () => {
-  differential("constructing fires formdata at the form; listeners can append", (w) => {
-    w.document.body.innerHTML = "<form><input name=a value=1></form>";
-    const form = w.document.querySelector("form");
-    const seen: unknown[] = [];
-    form.addEventListener("formdata", (e: AnyWindow) => {
-      seen.push({ type: e.type, bubbles: e.bubbles, cancelable: e.cancelable, hasFormData: !!e.formData });
-      e.formData.append("extra", "x");
-    });
-    return { seen, entries: entries(new w.FormData(form)) };
-  }, {
-    jsdomDeviation: {
-      expected: { seen: [{ type: "formdata", bubbles: true, cancelable: false, hasFormData: true }], entries: [["a", "1"], ["extra", "x"]] },
-      spec: "https://html.spec.whatwg.org/#constructing-the-form-data-set (fire formdata with bubbles true) via https://xhr.spec.whatwg.org/#dom-formdata",
-      reason: "jsdom does not fire formdata when constructing FormData from a form",
+  differential(
+    "constructing fires formdata at the form; listeners can append",
+    (w) => {
+      w.document.body.innerHTML = "<form><input name=a value=1></form>";
+      const form = w.document.querySelector("form");
+      const seen: unknown[] = [];
+      form.addEventListener("formdata", (e: AnyWindow) => {
+        seen.push({ type: e.type, bubbles: e.bubbles, cancelable: e.cancelable, hasFormData: !!e.formData });
+        e.formData.append("extra", "x");
+      });
+      return { seen, entries: entries(new w.FormData(form)) };
     },
-  });
+    {
+      jsdomDeviation: {
+        expected: {
+          seen: [{ type: "formdata", bubbles: true, cancelable: false, hasFormData: true }],
+          entries: [
+            ["a", "1"],
+            ["extra", "x"],
+          ],
+        },
+        spec: "https://html.spec.whatwg.org/#constructing-the-form-data-set (fire formdata with bubbles true) via https://xhr.spec.whatwg.org/#dom-formdata",
+        reason: "jsdom does not fire formdata when constructing FormData from a form",
+      },
+    },
+  );
 });

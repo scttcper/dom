@@ -89,7 +89,12 @@ export function register(options: RegisterOptions = {}): Registration {
   const { timeSkip: skip, testHooks, ...rest } = options;
   const window = dom.createWindow({ ...rest, compat: rest.compat ?? "jsdom-30", url: rest.url ?? DEFAULT_URL });
   const uninstall = dom.installGlobals(window, host);
-  Object.defineProperty(host, DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+  Object.defineProperty(host, DOM_MODULES, {
+    value: { dom, internal },
+    configurable: true,
+    enumerable: false,
+    writable: false,
+  });
   const clock = internal.installClock(new internal.VirtualClock({ skip: timeSkip(skip) }), host);
   internal.setUncaughtExceptionHandler(reportToHost);
   internal.setNotImplementedHandler((error: Error & { detail?: unknown }) => console.error(error.stack, error.detail));
@@ -155,7 +160,10 @@ function endOfRun(): void {
 
 /** Under `node --test` (child processes, or --test-isolation=none in the runner's process). */
 function underNodeTest(): boolean {
-  return process.env.NODE_TEST_CONTEXT !== undefined || process.execArgv.some((arg) => arg === "--test" || arg.startsWith("--test-"));
+  return (
+    process.env.NODE_TEST_CONTEXT !== undefined ||
+    process.execArgv.some((arg) => arg === "--test" || arg.startsWith("--test-"))
+  );
 }
 
 /** Returns a function removing the globals it defined. */

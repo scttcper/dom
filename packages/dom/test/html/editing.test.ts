@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 describe("contentEditable IDL attribute — https://html.spec.whatwg.org/#dom-contenteditable", () => {
-  test("getter maps the attribute's state: empty and true → \"true\", ASCII case-insensitive keywords, invalid → \"inherit\"", () => {
+  test('getter maps the attribute\'s state: empty and true → "true", ASCII case-insensitive keywords, invalid → "inherit"', () => {
     const el = document.createElement("div");
     const states: string[] = [];
     for (const v of [null, "", "true", "TRUE", "false", "Plaintext-Only", "yes"]) {
@@ -45,7 +45,7 @@ describe("contentEditable IDL attribute — https://html.spec.whatwg.org/#dom-co
     expect(el.getAttribute("contenteditable")).toBe("false");
   });
 
-  test("setter: \"inherit\" removes the attribute; anything else throws SyntaxError and leaves it alone", () => {
+  test('setter: "inherit" removes the attribute; anything else throws SyntaxError and leaves it alone', () => {
     const el = document.createElement("div");
     el.setAttribute("contenteditable", "true");
     expect(() => (el.contentEditable = "")).toThrow(expect.objectContaining({ name: "SyntaxError" }));
@@ -58,25 +58,29 @@ describe("contentEditable IDL attribute — https://html.spec.whatwg.org/#dom-co
 
 describe("isContentEditable — https://html.spec.whatwg.org/#dom-iscontenteditable", () => {
   test("an editing host (true or plaintext-only state) and its descendants are editable", () => {
-    document.body.innerHTML = '<div id=a contenteditable><p><b id=b>x</b></p></div><div id=c contenteditable="plaintext-only"><i id=d></i></div>';
+    document.body.innerHTML =
+      '<div id=a contenteditable><p><b id=b>x</b></p></div><div id=c contenteditable="plaintext-only"><i id=d></i></div>';
     const ids = ["a", "b", "c", "d"].map((id) => document.getElementById(id).isContentEditable);
     expect(ids).toEqual([true, true, true, true]);
   });
 
   test("editable step 2: a false-state descendant and its subtree are not editable", () => {
-    document.body.innerHTML = '<div contenteditable><section contenteditable="false"><span id=s></span></section></div>';
+    document.body.innerHTML =
+      '<div contenteditable><section contenteditable="false"><span id=s></span></section></div>';
     expect(document.querySelector("section").isContentEditable).toBe(false);
     expect(document.getElementById("s").isContentEditable).toBe(false);
   });
 
   test("a true-state element inside a non-editable island is an editing host again", () => {
-    document.body.innerHTML = '<div contenteditable><p contenteditable="false"><em contenteditable="true"><u id=u></u></em></p></div>';
+    document.body.innerHTML =
+      '<div contenteditable><p contenteditable="false"><em contenteditable="true"><u id=u></u></em></p></div>';
     expect(document.querySelector("em").isContentEditable).toBe(true);
     expect(document.getElementById("u").isContentEditable).toBe(true);
   });
 
   test("an invalid value is the inherit state: the element follows its parent", () => {
-    document.body.innerHTML = '<div contenteditable><span contenteditable="bogus" id=x></span></div><span contenteditable="bogus" id=y></span>';
+    document.body.innerHTML =
+      '<div contenteditable><span contenteditable="bogus" id=x></span></div><span contenteditable="bogus" id=y></span>';
     expect(document.getElementById("x").isContentEditable).toBe(true);
     expect(document.getElementById("y").isContentEditable).toBe(false);
   });
@@ -91,7 +95,7 @@ describe("isContentEditable — https://html.spec.whatwg.org/#dom-iscontentedita
   });
 
   test("is live: removing the host's attribute makes descendants non-editable", () => {
-    document.body.innerHTML = '<div contenteditable><span id=s></span></div>';
+    document.body.innerHTML = "<div contenteditable><span id=s></span></div>";
     const s = document.getElementById("s");
     expect(s.isContentEditable).toBe(true);
     document.querySelector("div").removeAttribute("contenteditable");
@@ -101,7 +105,7 @@ describe("isContentEditable — https://html.spec.whatwg.org/#dom-iscontentedita
 
 describe("editing hosts are focusable areas — https://html.spec.whatwg.org/#focusable-area", () => {
   test("focus() on an editing host focuses it; an editable descendant that is not a host is not a focusable area", () => {
-    document.body.innerHTML = '<div id=host contenteditable><p id=p>text</p></div>';
+    document.body.innerHTML = "<div id=host contenteditable><p id=p>text</p></div>";
     const host = document.getElementById("host");
     document.getElementById("p").focus();
     expect(document.activeElement).toBe(document.body);
@@ -117,13 +121,13 @@ describe("editing hosts are focusable areas — https://html.spec.whatwg.org/#fo
 });
 
 describe("designMode — https://html.spec.whatwg.org/#dom-document-designmode", () => {
-  test("getter: \"off\" by default", () => {
+  test('getter: "off" by default', () => {
     expect(document.designMode).toBe("off");
     expect(document.body.isContentEditable).toBe(false);
   });
 
-  test("setter step 1: \"on\" (ASCII case-insensitive) enables design mode; the document's elements become editable", () => {
-    document.body.innerHTML = '<p><b id=b></b></p>';
+  test('setter step 1: "on" (ASCII case-insensitive) enables design mode; the document\'s elements become editable', () => {
+    document.body.innerHTML = "<p><b id=b></b></p>";
     document.designMode = "ON";
     expect(document.designMode).toBe("on");
     // https://html.spec.whatwg.org/#editing-host: a child HTML element of a Document whose design
@@ -139,7 +143,7 @@ describe("designMode — https://html.spec.whatwg.org/#dom-document-designmode",
     expect(document.getElementById("b").isContentEditable).toBe(false);
   });
 
-  test("setter step 2: \"off\" disables it again; other values are ignored", () => {
+  test('setter step 2: "off" disables it again; other values are ignored', () => {
     document.designMode = "on";
     document.designMode = "maybe";
     expect(document.designMode).toBe("on");

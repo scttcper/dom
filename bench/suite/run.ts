@@ -104,7 +104,7 @@ function runOnce(env: string, s: number): Promise<SuiteSample> {
     child.on("close", (code) => {
       clearTimeout(timer);
       const wallMs = performance.now() - t0;
-      const read = <T,>(f: string): T[] =>
+      const read = <T>(f: string): T[] =>
         existsSync(f)
           ? readFileSync(f, "utf8")
               .split("\n")
@@ -187,7 +187,19 @@ const rows: Row[] = envs.map((env) => {
   return row;
 });
 
-const header = ["env", "wall s", "min–max", "env setup Σ s", "env/file ms", "setup Σ s", "import Σ s", "tests Σ s", "worker RSS MB", "worker heap MB", "runs"];
+const header = [
+  "env",
+  "wall s",
+  "min–max",
+  "env setup Σ s",
+  "env/file ms",
+  "setup Σ s",
+  "import Σ s",
+  "tests Σ s",
+  "worker RSS MB",
+  "worker heap MB",
+  "runs",
+];
 const table = rows.map((r) =>
   r.wall
     ? [
@@ -207,7 +219,9 @@ const table = rows.map((r) =>
 );
 
 const widths = header.map((h, i) => Math.max(h.length, ...table.map((r) => r[i].length)));
-console.log(`\n${[header, ...table].map((r) => r.map((v, i) => (i ? v.padStart(widths[i]) : v.padEnd(widths[i]))).join("  ")).join("\n")}\n`);
+console.log(
+  `\n${[header, ...table].map((r) => r.map((v, i) => (i ? v.padStart(widths[i]) : v.padEnd(widths[i]))).join("  ")).join("\n")}\n`,
+);
 for (const r of rows) if (r.error) console.log(`${r.env} failure:\n${r.error}\n`);
 
 if (!flags["no-save"]) {

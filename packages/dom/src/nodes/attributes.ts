@@ -48,7 +48,17 @@ export function isValidAttributeLocalName(name: string): boolean {
   if (len === 0) return false;
   for (let i = 0; i < len; i++) {
     const c = name.charCodeAt(i);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0c || c === 0x0d || c === 0x00 || c === 0x2f || c === 0x3d || c === 0x3e) {
+    if (
+      c === 0x20 ||
+      c === 0x09 ||
+      c === 0x0a ||
+      c === 0x0c ||
+      c === 0x0d ||
+      c === 0x00 ||
+      c === 0x2f ||
+      c === 0x3d ||
+      c === 0x3e
+    ) {
       return false;
     }
   }
@@ -188,7 +198,12 @@ export function removeAttribute(el: NodeImpl, qualifiedName: string): AttrRecord
  * https://dom.spec.whatwg.org/#handle-attribute-changes plus this implementation's core
  * attribute bookkeeping (id index, class token cache, style flag, document version).
  */
-export function handleAttributeChanges(el: NodeImpl, a: AttrRecord, oldValue: string | null, newValue: string | null): void {
+export function handleAttributeChanges(
+  el: NodeImpl,
+  a: AttrRecord,
+  oldValue: string | null,
+  newValue: string | null,
+): void {
   if (activeObservers !== 0) queueAttributeMutationRecord(el, a.localName, a.ns, oldValue);
   if (a.ns === null) {
     coreAttributeSteps(el, a.localName, newValue);
@@ -231,7 +246,13 @@ function coreAttributeSteps(el: NodeImpl, localName: string, value: string | nul
  * records, hooks or version bumps, but with core bookkeeping (id mirror, style flag).
  * The caller guarantees no attribute with this name exists yet.
  */
-export function appendAttributeDetached(el: NodeImpl, localName: string, value: string, ns: string | null, prefix: string | null): void {
+export function appendAttributeDetached(
+  el: NodeImpl,
+  localName: string,
+  value: string,
+  ns: string | null,
+  prefix: string | null,
+): void {
   addRecord(el, new AttrRecord(localName, value, ns, prefix));
   if (ns === null) {
     if (localName === "id") el.id = value;

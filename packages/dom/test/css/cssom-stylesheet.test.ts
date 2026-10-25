@@ -66,7 +66,9 @@ describe("insertRule — https://drafts.csswg.org/cssom/#dom-cssstylesheet-inser
 
   test("step 5: @import after a style rule throws HierarchyRequestError", () => {
     const s = styleElementSheet(`.x {}`);
-    expect(() => s.insertRule("@import url(a.css);", 1)).toThrow(expect.objectContaining({ name: "HierarchyRequestError" }));
+    expect(() => s.insertRule("@import url(a.css);", 1)).toThrow(
+      expect.objectContaining({ name: "HierarchyRequestError" }),
+    );
   });
 
   test("step 4 (constructed): @import rules throw SyntaxError in constructed sheets", () => {
@@ -154,7 +156,7 @@ describe("replace / replaceSync — https://drafts.csswg.org/cssom/#synchronousl
     expect(s.cssRules[0].selectorText).toBe(".b");
   });
 
-  test("text that merely contains \"@import\" inside a string or comment is kept intact", () => {
+  test('text that merely contains "@import" inside a string or comment is kept intact', () => {
     const s = sheet(`/* @import url(x.css); */ .a::before { content: "@import x;" } .b { color: red }`);
     expect(s.cssRules.length).toBe(2);
     expect(s.cssRules[0].style.content).toBe(`"@import x;"`);
@@ -189,7 +191,9 @@ describe("replace / replaceSync — https://drafts.csswg.org/cssom/#synchronousl
 
   test("adopting a non-constructed sheet throws NotAllowedError", () => {
     const s = styleElementSheet(".a {}");
-    expect(() => ((document as any).adoptedStyleSheets = [s])).toThrow(expect.objectContaining({ name: "NotAllowedError" }));
+    expect(() => ((document as any).adoptedStyleSheets = [s])).toThrow(
+      expect.objectContaining({ name: "NotAllowedError" }),
+    );
   });
 });
 
@@ -212,15 +216,9 @@ describe("document.styleSheets — https://drafts.csswg.org/cssom/#dom-documento
   test("StyleSheet attributes: type, ownerNode, media from the media attribute, title, disabled (https://drafts.csswg.org/cssom/#the-stylesheet-interface)", () => {
     document.head!.innerHTML = `<style media="print" title="Alt">.a {}</style>`;
     const s = (document as any).styleSheets[0];
-    expect([s.type, s.ownerNode.localName, s.media.mediaText, s.title, s.disabled, s.href, s.parentStyleSheet]).toEqual([
-      "text/css",
-      "style",
-      "print",
-      "Alt",
-      false,
-      null,
-      null,
-    ]);
+    expect([s.type, s.ownerNode.localName, s.media.mediaText, s.title, s.disabled, s.href, s.parentStyleSheet]).toEqual(
+      ["text/css", "style", "print", "Alt", false, null, null],
+    );
   });
 
   test("a disabled sheet stops applying", () => {
@@ -259,14 +257,20 @@ describe("CSSGroupingRule — https://drafts.csswg.org/cssom/#the-cssgroupingrul
 
   test("@import inside a grouping rule throws HierarchyRequestError", () => {
     const media = sheet("@media screen { }").cssRules[0];
-    expect(() => media.insertRule("@import url(a.css);")).toThrow(expect.objectContaining({ name: "HierarchyRequestError" }));
+    expect(() => media.insertRule("@import url(a.css);")).toThrow(
+      expect.objectContaining({ name: "HierarchyRequestError" }),
+    );
   });
 });
 
 describe("conditional rules — https://drafts.csswg.org/css-conditional-3/#the-cssconditionrule-interface", () => {
   test("CSSMediaRule: media list and conditionText (https://drafts.csswg.org/css-conditional-3/#the-cssmediarule-interface)", () => {
     const r = sheet("@media screen and (min-width: 100px) { .a {} }").cssRules[0];
-    expect([r.constructor.name, r.media.mediaText, r.conditionText]).toEqual(["CSSMediaRule", "screen and (min-width: 100px)", "screen and (min-width: 100px)"]);
+    expect([r.constructor.name, r.media.mediaText, r.conditionText]).toEqual([
+      "CSSMediaRule",
+      "screen and (min-width: 100px)",
+      "screen and (min-width: 100px)",
+    ]);
   });
 
   test("CSSSupportsRule: conditionText (https://drafts.csswg.org/css-conditional-3/#the-csssupportsrule-interface)", () => {
@@ -281,8 +285,14 @@ describe("conditional rules — https://drafts.csswg.org/css-conditional-3/#the-
   });
 
   test("CSSContainerRule: containerName and containerQuery (https://drafts.csswg.org/css-contain-3/#the-csscontainerrule-interface)", () => {
-    const [named, anonymous] = [...sheet("@container card (min-width: 400px) { .a {} } @container (width > 1px) { .b {} }").cssRules];
-    expect([named.containerName, named.containerQuery, named.conditionText]).toEqual(["card", "(min-width: 400px)", "card (min-width: 400px)"]);
+    const [named, anonymous] = [
+      ...sheet("@container card (min-width: 400px) { .a {} } @container (width > 1px) { .b {} }").cssRules,
+    ];
+    expect([named.containerName, named.containerQuery, named.conditionText]).toEqual([
+      "card",
+      "(min-width: 400px)",
+      "card (min-width: 400px)",
+    ]);
     expect([anonymous.containerName, anonymous.containerQuery]).toEqual(["", "(width > 1px)"]);
   });
 });
@@ -290,7 +300,12 @@ describe("conditional rules — https://drafts.csswg.org/css-conditional-3/#the-
 describe("layer APIs — https://drafts.csswg.org/css-cascade-5/#layer-apis", () => {
   test("CSSLayerBlockRule.name; anonymous layers have an empty name (https://drafts.csswg.org/css-cascade-5/#the-csslayerblockrule-interface)", () => {
     const [named, anon] = [...sheet("@layer base { .a {} } @layer { .b {} }").cssRules];
-    expect([named.constructor.name, named.name, anon.name, anon.cssText]).toEqual(["CSSLayerBlockRule", "base", "", "@layer {\n  .b { }\n}"]);
+    expect([named.constructor.name, named.name, anon.name, anon.cssText]).toEqual([
+      "CSSLayerBlockRule",
+      "base",
+      "",
+      "@layer {\n  .b { }\n}",
+    ]);
   });
 
   test("CSSLayerStatementRule.nameList is a frozen array of the declared names (https://drafts.csswg.org/css-cascade-5/#the-csslayerstatementrule-interface)", () => {
@@ -306,8 +321,17 @@ describe("layer APIs — https://drafts.csswg.org/css-cascade-5/#layer-apis", ()
 
 describe("CSSScopeRule — https://drafts.csswg.org/css-cascade-6/#the-cssscoperule-interface", () => {
   test("start and end are the scope boundaries' selector texts; null when absent", () => {
-    const [both, startOnly, bare] = [...sheet("@scope (.card) to (.content) { img {} } @scope (.a) { b {} } @scope { c {} }").cssRules];
-    expect([both.start, both.end, startOnly.start, startOnly.end, bare.start, bare.end]).toEqual([".card", ".content", ".a", null, null, null]);
+    const [both, startOnly, bare] = [
+      ...sheet("@scope (.card) to (.content) { img {} } @scope (.a) { b {} } @scope { c {} }").cssRules,
+    ];
+    expect([both.start, both.end, startOnly.start, startOnly.end, bare.start, bare.end]).toEqual([
+      ".card",
+      ".content",
+      ".a",
+      null,
+      null,
+      null,
+    ]);
   });
 
   test("boundaries containing parentheses (functional pseudo-classes) are kept whole", () => {
@@ -332,13 +356,21 @@ describe("CSSNestedDeclarations — https://drafts.csswg.org/css-nesting-1/#cssn
     document.body!.innerHTML = `<p class="t">x</p>`;
     const rule = (document as any).styleSheets[0].cssRules[0];
     const nested = rule.cssRules[1];
-    expect([nested.constructor.name, nested.style.backgroundColor, nested.parentRule]).toEqual(["CSSNestedDeclarations", "green", rule]);
+    expect([nested.constructor.name, nested.style.backgroundColor, nested.parentRule]).toEqual([
+      "CSSNestedDeclarations",
+      "green",
+      rule,
+    ]);
     expect((window.getComputedStyle(document.querySelector(".t")!) as any).backgroundColor).toBe("green");
   });
 
   test("only the declarations before the first nested rule belong to the style rule itself (https://drafts.csswg.org/css-syntax-3/#consume-block-contents)", () => {
     const rule = sheet(".t { color: red; & .x { color: blue } width: 1px; height: 2px }").cssRules[0];
-    expect([rule.style.cssText, rule.cssRules.length, rule.cssRules[1].style.cssText]).toEqual(["color: red;", 2, "width: 1px; height: 2px;"]);
+    expect([rule.style.cssText, rule.cssRules.length, rule.cssRules[1].style.cssText]).toEqual([
+      "color: red;",
+      2,
+      "width: 1px; height: 2px;",
+    ]);
   });
 
   test("nested declarations cascade after the nested rule that precedes them (same specificity, later order wins)", () => {
@@ -350,7 +382,11 @@ describe("CSSNestedDeclarations — https://drafts.csswg.org/css-nesting-1/#cssn
   test("declarations after a nested rule inside a nested @media become CSSNestedDeclarations of that @media", () => {
     const rule = sheet(".t { @media screen { color: red; .x { color: blue } width: 1px } }").cssRules[0];
     const media = rule.cssRules[0];
-    expect([...media.cssRules].map((r: any) => r.constructor.name)).toEqual(["CSSNestedDeclarations", "CSSStyleRule", "CSSNestedDeclarations"]);
+    expect([...media.cssRules].map((r: any) => r.constructor.name)).toEqual([
+      "CSSNestedDeclarations",
+      "CSSStyleRule",
+      "CSSNestedDeclarations",
+    ]);
     expect([media.cssRules[0].style.cssText, media.cssRules[2].style.cssText]).toEqual(["color: red;", "width: 1px;"]);
   });
 });
@@ -358,7 +394,13 @@ describe("CSSNestedDeclarations — https://drafts.csswg.org/css-nesting-1/#cssn
 describe("CSSImportRule — https://drafts.csswg.org/cssom/#the-cssimportrule-interface", () => {
   test("href, media, layerName, supportsText; styleSheet is null (never fetched)", () => {
     const r = styleElementSheet(`@import url("a.css") layer(base) supports(display: grid) screen;`).cssRules[0];
-    expect([r.href, r.media.mediaText, r.layerName, r.supportsText, r.styleSheet]).toEqual(["a.css", "screen", "base", "display: grid", null]);
+    expect([r.href, r.media.mediaText, r.layerName, r.supportsText, r.styleSheet]).toEqual([
+      "a.css",
+      "screen",
+      "base",
+      "display: grid",
+      null,
+    ]);
     expect(r.cssText).toBe(`@import url("a.css") layer(base) supports(display: grid) screen;`);
   });
 });

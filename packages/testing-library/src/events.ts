@@ -9,7 +9,9 @@ import { describeNode, traceSync, tracing } from "@ctrl/dom/internal";
 function fireEvent_(element: any, event: any): boolean {
   // Ours: a span per event when something subscribes to @ctrl/dom's tracing channel.
   if (tracing() && event && element) {
-    return traceSync("testing-library.fire_event", `fireEvent.${event.type}(${describeNode(element)})`, () => fireEventUntraced(element, event));
+    return traceSync("testing-library.fire_event", `fireEvent.${event.type}(${describeNode(element)})`, () =>
+      fireEventUntraced(element, event),
+    );
   }
   return fireEventUntraced(element, event);
 }
@@ -26,7 +28,12 @@ function fireEventUntraced(element: any, event: any): boolean {
   }) as unknown as boolean;
 }
 
-function createEvent_(eventName: string, node: any, init?: any, { EventType = "Event", defaultInit = {} }: { EventType?: string; defaultInit?: any } = {}): any {
+function createEvent_(
+  eventName: string,
+  node: any,
+  init?: any,
+  { EventType = "Event", defaultInit = {} }: { EventType?: string; defaultInit?: any } = {},
+): any {
   if (!node) {
     throw new Error(`Unable to fire a "${eventName}" event - please provide a DOM element.`);
   }
@@ -104,7 +111,12 @@ function setNativeValue(element: any, value: unknown): void {
 
 type FireFunction = (element: any, event: any) => boolean;
 type FireObject = Record<string, (element: any, options?: {}) => boolean>;
-type CreateFunction = (eventName: string, node: any, init?: {}, options?: { EventType?: string; defaultInit?: {} }) => any;
+type CreateFunction = (
+  eventName: string,
+  node: any,
+  init?: {},
+  options?: { EventType?: string; defaultInit?: {} },
+) => any;
 type CreateObject = Record<string, (element: any, options?: {}) => any>;
 
 // Keep upstream's function names (`fireEvent.name === "fireEvent"`).

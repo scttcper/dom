@@ -53,7 +53,10 @@ function installFailureSnapshots(): void {
       state = null;
       const error = context.task.result?.errors?.[0];
       if (snapshot === null || error === undefined) return;
-      appendToErrorMessage(error, formatFailureSnapshot(snapshot, typeof error.message === "string" ? error.message : ""));
+      appendToErrorMessage(
+        error,
+        formatFailureSnapshot(snapshot, typeof error.message === "string" ? error.message : ""),
+      );
     });
   });
 

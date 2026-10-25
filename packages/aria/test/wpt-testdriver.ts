@@ -51,6 +51,8 @@ export function ariaTestDriver(): Record<string, unknown> {
     get_computed_role: async (el: Element) => wptComputedRole(el),
     get_computed_label: async (el: Element) => computeAccessibleName(el),
     get_accessibility_properties_for_element: unsupported("get_accessibility_properties_for_element"),
-    get_accessibility_properties_for_accessibility_node: unsupported("get_accessibility_properties_for_accessibility_node"),
+    get_accessibility_properties_for_accessibility_node: unsupported(
+      "get_accessibility_properties_for_accessibility_node",
+    ),
   };
 }

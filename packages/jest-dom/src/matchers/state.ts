@@ -13,13 +13,26 @@
 // already cheap on @ctrl/dom.
 
 import { roles } from "@ctrl/dom/aria";
-import { checkHtmlElement, getMessage, getTag, toSentence, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
+import {
+  checkHtmlElement,
+  getMessage,
+  getTag,
+  toSentence,
+  type DOMNode,
+  type MatcherContext,
+  type MatcherResult,
+} from "../utils.ts";
 
 // Roles whose aria-query definition has an `aria-checked` prop, in `roles.keys()` order —
 // upstream's `roles.keys().filter(roleSupportsChecked)`, over @ctrl/dom/aria's aria-query data:
 // checkbox, menuitemcheckbox, menuitemradio, option, radio, switch, treeitem.
-const ariaRoles = roles as unknown as { keys(): string[]; get(role: string): { props: Record<string, unknown> } | undefined };
-const ROLES_SUPPORTING_CHECKED: string[] = ariaRoles.keys().filter((role) => ariaRoles.get(role)?.props["aria-checked"] !== undefined);
+const ariaRoles = roles as unknown as {
+  keys(): string[];
+  get(role: string): { props: Record<string, unknown> } | undefined;
+};
+const ROLES_SUPPORTING_CHECKED: string[] = ariaRoles
+  .keys()
+  .filter((role) => ariaRoles.get(role)?.props["aria-checked"] !== undefined);
 
 function roleSupportsChecked(role: string | null): boolean {
   return role !== null && ROLES_SUPPORTING_CHECKED.includes(role);
@@ -40,7 +53,10 @@ export function toBeChecked(this: MatcherContext, element: DOMNode): MatcherResu
   };
 
   const isValidAriaElement = () => {
-    return roleSupportsChecked(element.getAttribute("role")) && ["true", "false"].includes(element.getAttribute("aria-checked"));
+    return (
+      roleSupportsChecked(element.getAttribute("role")) &&
+      ["true", "false"].includes(element.getAttribute("aria-checked"))
+    );
   };
 
   if (!isValidInput() && !isValidAriaElement()) {
@@ -162,7 +178,8 @@ export function toBePartiallyPressed(this: MatcherContext, element: DOMNode): Ma
 
   const isButton = isButtonLike(element);
   const pressedAttribute = element.getAttribute("aria-pressed");
-  const isValidAriaElement = pressedAttribute === "true" || pressedAttribute === "false" || pressedAttribute === "mixed";
+  const isValidAriaElement =
+    pressedAttribute === "true" || pressedAttribute === "false" || pressedAttribute === "mixed";
 
   if (!isButton || !isValidAriaElement) {
     return {
@@ -182,7 +199,14 @@ export function toBePartiallyPressed(this: MatcherContext, element: DOMNode): Ma
 
       const matcher = this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toBePartiallyPressed`, "element", "");
 
-      return getMessage(this, matcher, `Expected element ${to} have`, `aria-pressed="mixed"`, `Received`, `aria-pressed="${pressedAttribute}"`);
+      return getMessage(
+        this,
+        matcher,
+        `Expected element ${to} have`,
+        `aria-pressed="mixed"`,
+        `Received`,
+        `aria-pressed="${pressedAttribute}"`,
+      );
     },
   };
 }
@@ -280,7 +304,16 @@ export function toBeEnabled(this: MatcherContext, element: DOMNode): MatcherResu
 const REQUIRED_FORM_TAGS = ["select", "textarea"];
 const ARIA_FORM_TAGS = ["input", "select", "textarea"];
 const UNSUPPORTED_INPUT_TYPES = ["color", "hidden", "range", "submit", "image", "reset"];
-const SUPPORTED_ARIA_ROLES = ["checkbox", "combobox", "gridcell", "listbox", "radiogroup", "spinbutton", "textbox", "tree"];
+const SUPPORTED_ARIA_ROLES = [
+  "checkbox",
+  "combobox",
+  "gridcell",
+  "listbox",
+  "radiogroup",
+  "spinbutton",
+  "textbox",
+  "tree",
+];
 
 function isRequiredOnFormTagsExceptInput(element: DOMNode): boolean {
   return REQUIRED_FORM_TAGS.includes(getTag(element)) && element.hasAttribute("required");
@@ -290,7 +323,8 @@ function isRequiredOnSupportedInput(element: DOMNode): boolean {
   return (
     getTag(element) === "input" &&
     element.hasAttribute("required") &&
-    ((element.hasAttribute("type") && !UNSUPPORTED_INPUT_TYPES.includes(element.getAttribute("type"))) || !element.hasAttribute("type"))
+    ((element.hasAttribute("type") && !UNSUPPORTED_INPUT_TYPES.includes(element.getAttribute("type"))) ||
+      !element.hasAttribute("type"))
   );
 }
 
@@ -298,14 +332,16 @@ function isElementRequiredByARIA(element: DOMNode): boolean {
   return (
     element.hasAttribute("aria-required") &&
     element.getAttribute("aria-required") === "true" &&
-    (ARIA_FORM_TAGS.includes(getTag(element)) || (element.hasAttribute("role") && SUPPORTED_ARIA_ROLES.includes(element.getAttribute("role"))))
+    (ARIA_FORM_TAGS.includes(getTag(element)) ||
+      (element.hasAttribute("role") && SUPPORTED_ARIA_ROLES.includes(element.getAttribute("role"))))
   );
 }
 
 export function toBeRequired(this: MatcherContext, element: DOMNode): MatcherResult {
   checkHtmlElement(element, toBeRequired, this);
 
-  const isRequired = isRequiredOnFormTagsExceptInput(element) || isRequiredOnSupportedInput(element) || isElementRequiredByARIA(element);
+  const isRequired =
+    isRequiredOnFormTagsExceptInput(element) || isRequiredOnSupportedInput(element) || isElementRequiredByARIA(element);
 
   return {
     pass: isRequired,

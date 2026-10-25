@@ -31,6 +31,7 @@ export const I_RESET = 20;
 export const I_BUTTON = 21;
 
 /** Canonical keyword per type id (what the `type` IDL attribute returns). */
+// oxfmt-ignore
 export const INPUT_TYPE_NAMES = [
   "hidden", "text", "search", "tel", "url", "email", "password", "date", "month", "week", "time",
   "datetime-local", "number", "range", "color", "checkbox", "radio", "file", "submit", "image",

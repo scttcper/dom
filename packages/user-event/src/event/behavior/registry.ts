@@ -10,8 +10,7 @@ export interface BehaviorPlugin<Type extends EventType> {
     event: DocumentEventMap[Type],
     target: Element,
     instance: Instance,
-  ):
-  void | (() => void)
+  ): void | (() => void)
 }
 
 export const behavior: {

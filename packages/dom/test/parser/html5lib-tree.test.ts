@@ -78,7 +78,8 @@ function dump(parent: NodeImpl, depth: number, out: string[]): void {
     const indent = "| " + "  ".repeat(depth);
     switch (n.type) {
       case 1: {
-        const prefix = n.ns === SVG_NS ? "svg " : n.ns === MATHML_NS ? "math " : n.ns === HTML_NS ? "" : (n.ns ?? "") + " ";
+        const prefix =
+          n.ns === SVG_NS ? "svg " : n.ns === MATHML_NS ? "math " : n.ns === HTML_NS ? "" : (n.ns ?? "") + " ";
         out.push(`${indent}<${prefix}${n.name}>`);
         const attrs = (n.attrs ?? []).map((a) => [attrDisplayName(a.ns, a.prefix, a.localName), a.value] as const);
         attrs.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
@@ -102,7 +103,8 @@ function dump(parent: NodeImpl, depth: number, out: string[]): void {
         break;
       case 10: {
         const dt = n.node as unknown as { publicId: string; systemId: string };
-        if (dt.publicId !== "" || dt.systemId !== "") out.push(`${indent}<!DOCTYPE ${n.name} "${dt.publicId}" "${dt.systemId}">`);
+        if (dt.publicId !== "" || dt.systemId !== "")
+          out.push(`${indent}<!DOCTYPE ${n.name} "${dt.publicId}" "${dt.systemId}">`);
         else out.push(`${indent}<!DOCTYPE ${n.name}>`);
         break;
       }
@@ -131,7 +133,9 @@ export function runTreeTest(t: TreeTest): string {
 }
 
 let total = 0;
-for (const file of readdirSync(dir).filter((f) => f.endsWith(".dat")).sort()) {
+for (const file of readdirSync(dir)
+  .filter((f) => f.endsWith(".dat"))
+  .sort()) {
   const tests = parseDat(readFileSync(new URL(file, dir), "utf8"));
   describe(`html5lib tree-construction ${file} — https://html.spec.whatwg.org/#tree-construction`, () => {
     for (const t of tests) {

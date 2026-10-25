@@ -3,7 +3,14 @@
 // https://github.com/testing-library/jest-dom/blob/v7.0.1/src/to-have-style.js
 
 import { sameColor } from "../color.ts";
-import { checkHtmlElement, parseCSS, picoRed, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
+import {
+  checkHtmlElement,
+  parseCSS,
+  picoRed,
+  type DOMNode,
+  type MatcherContext,
+  type MatcherResult,
+} from "../utils.ts";
 
 // --- toBeVisible ------------------------------------------------------------------------
 
@@ -21,7 +28,8 @@ function isAttributeVisible(element: DOMNode, previousElement: DOMNode | undefin
   let detailsVisibility: boolean;
 
   if (previousElement) {
-    detailsVisibility = element.nodeName === "DETAILS" && previousElement.nodeName !== "SUMMARY" ? element.hasAttribute("open") : true;
+    detailsVisibility =
+      element.nodeName === "DETAILS" && previousElement.nodeName !== "SUMMARY" ? element.hasAttribute("open") : true;
   } else {
     detailsVisibility = element.nodeName === "DETAILS" ? element.hasAttribute("open") : true;
   }
@@ -86,7 +94,8 @@ function isSubset(styles: Record<string, string>, computedStyle: DOMNode): boole
     if (valueMatches(computedStyle[prop], value) || valueMatches(computedStyle.getPropertyValue(prop), value)) continue;
     if (!isCustomProperty) {
       const lower = prop.toLowerCase();
-      if (valueMatches(computedStyle[lower], value) || valueMatches(computedStyle.getPropertyValue(lower), value)) continue;
+      if (valueMatches(computedStyle[lower], value) || valueMatches(computedStyle.getPropertyValue(lower), value))
+        continue;
     }
     return false;
   }
@@ -102,7 +111,11 @@ function printoutStyles(styles: Record<string, string>): string {
 
 // Highlights only style rules that were expected but were not found in the received computed
 // styles
-function expectedDiff(diffFn: MatcherContext["utils"]["diff"], expected: Record<string, string>, computedStyles: DOMNode): string {
+function expectedDiff(
+  diffFn: MatcherContext["utils"]["diff"],
+  expected: Record<string, string>,
+  computedStyles: DOMNode,
+): string {
   const received: Record<string, string> = {};
   for (const prop of Array.from(computedStyles as ArrayLike<string>)) {
     if (expected[prop] !== undefined) received[prop] = computedStyles.getPropertyValue(prop);
@@ -112,7 +125,11 @@ function expectedDiff(diffFn: MatcherContext["utils"]["diff"], expected: Record<
   return diffOutput.replace(`${picoRed("+ Received")}\n`, "");
 }
 
-export function toHaveStyle(this: MatcherContext, htmlElement: DOMNode, css: string | Record<string, unknown>): MatcherResult {
+export function toHaveStyle(
+  this: MatcherContext,
+  htmlElement: DOMNode,
+  css: string | Record<string, unknown>,
+): MatcherResult {
   checkHtmlElement(htmlElement, toHaveStyle, this);
   const parsedCSS = typeof css === "object" ? css : parseCSS(css, toHaveStyle, this);
   const { getComputedStyle } = htmlElement.ownerDocument.defaultView;
@@ -126,7 +143,9 @@ export function toHaveStyle(this: MatcherContext, htmlElement: DOMNode, css: str
     pass: isSubset(expected, received),
     message: () => {
       const matcher = `${this.isNot ? ".not" : ""}.toHaveStyle`;
-      return [this.utils.matcherHint(matcher, "element", ""), expectedDiff(this.utils.diff, expected, received)].join("\n\n");
+      return [this.utils.matcherHint(matcher, "element", ""), expectedDiff(this.utils.diff, expected, received)].join(
+        "\n\n",
+      );
     },
   };
 }

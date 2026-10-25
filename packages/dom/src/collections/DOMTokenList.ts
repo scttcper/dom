@@ -9,7 +9,14 @@
 // element's `NodeImpl.classes` split when it has no duplicates.
 
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { attr, classTokens, isAsciiWhitespace, removeAttribute, setAttribute, splitOnAsciiWhitespace } from "../nodes/attributes.ts";
+import {
+  attr,
+  classTokens,
+  isAsciiWhitespace,
+  removeAttribute,
+  setAttribute,
+  splitOnAsciiWhitespace,
+} from "../nodes/attributes.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
 
 const EMPTY: string[] = [];
@@ -35,7 +42,10 @@ function validateToken(token: string): void {
   if (token === "") throw new DOMException("The token provided must not be empty.", "SyntaxError");
   for (let i = 0; i < token.length; i++) {
     if (isAsciiWhitespace(token.charCodeAt(i))) {
-      throw new DOMException(`The token provided ('${token}') contains HTML space characters, which are not valid in tokens.`, "InvalidCharacterError");
+      throw new DOMException(
+        `The token provided ('${token}') contains HTML space characters, which are not valid in tokens.`,
+        "InvalidCharacterError",
+      );
     }
   }
 }

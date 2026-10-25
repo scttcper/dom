@@ -37,7 +37,12 @@ export interface MediaEnvironment {
   features?: Record<string, string | number> | null;
 }
 
-export const DEFAULT_MEDIA_ENV: MediaEnvironment = { width: 1024, height: 768, devicePixelRatio: 1, mediaType: "screen" };
+export const DEFAULT_MEDIA_ENV: MediaEnvironment = {
+  width: 1024,
+  height: 768,
+  devicePixelRatio: 1,
+  mediaType: "screen",
+};
 
 class Tok {
   type: number;
@@ -61,7 +66,9 @@ function tokenize(text: string): Tok[] {
     const type = t.next();
     if (type === TK_EOF) break;
     const lower = type === TK_IDENT || type === TK_FUNCTION ? t.value.toLowerCase() : type === TK_DELIM ? t.value : "";
-    out.push(new Tok(type, text.slice(t.start, t.end), lower, t.num, type === TK_DIMENSION ? t.unit.toLowerCase() : ""));
+    out.push(
+      new Tok(type, text.slice(t.start, t.end), lower, t.num, type === TK_DIMENSION ? t.unit.toLowerCase() : ""),
+    );
   }
   return out;
 }
@@ -253,7 +260,12 @@ class MQParser {
     const c = t.lower;
     if (c !== "<" && c !== ">" && c !== "=") return "";
     this.i++;
-    if (c !== "=" && this.i < this.toks.length && this.toks[this.i].type === TK_DELIM && this.toks[this.i].lower === "=") {
+    if (
+      c !== "=" &&
+      this.i < this.toks.length &&
+      this.toks[this.i].type === TK_DELIM &&
+      this.toks[this.i].lower === "="
+    ) {
       this.i++;
       return c + "=";
     }
@@ -327,7 +339,19 @@ function flip(op: string): string {
   return op;
 }
 
-const MEDIA_TYPES = new Set(["all", "screen", "print", "speech", "tty", "tv", "projection", "handheld", "braille", "embossed", "aural"]);
+const MEDIA_TYPES = new Set([
+  "all",
+  "screen",
+  "print",
+  "speech",
+  "tty",
+  "tv",
+  "projection",
+  "handheld",
+  "braille",
+  "embossed",
+  "aural",
+]);
 
 /** Serializes tokens of a query: collapsed whitespace, lowercase idents, `: ` after colons. */
 function serializeTokens(toks: Tok[]): string {
@@ -374,7 +398,13 @@ function parseQuery(toks: Tok[]): MediaQuery {
   const invalid = new MediaQuery("not all", false, "all", null, true);
   if (p.atEnd()) return invalid;
   const first = p.peek()!;
-  if (first.type === TK_IDENT && first.lower !== "not" && first.lower !== "only" && first.lower !== "and" && first.lower !== "or") {
+  if (
+    first.type === TK_IDENT &&
+    first.lower !== "not" &&
+    first.lower !== "only" &&
+    first.lower !== "and" &&
+    first.lower !== "or"
+  ) {
     // [ not | only ]? <media-type> [ and <media-condition-without-or> ]?
     const type = first.lower;
     p.i++;
@@ -392,7 +422,14 @@ function parseQuery(toks: Tok[]): MediaQuery {
     const word = first.lower;
     p.i++;
     const t = p.peek();
-    if (t !== null && t.type === TK_IDENT && t.lower !== "and" && t.lower !== "or" && t.lower !== "not" && t.lower !== "only") {
+    if (
+      t !== null &&
+      t.type === TK_IDENT &&
+      t.lower !== "and" &&
+      t.lower !== "or" &&
+      t.lower !== "not" &&
+      t.lower !== "only"
+    ) {
       p.i++;
       let cond: MQNode | null = null;
       if (p.ident("and")) {

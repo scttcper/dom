@@ -24,6 +24,7 @@ import { isWindow } from "./UIEvents.ts";
 import { $impl, $window } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#globaleventhandlers (+ pointer, touch, animation, transition, selection events). */
+// oxfmt-ignore
 export const GLOBAL_EVENT_HANDLER_EVENTS: readonly string[] = [
   "abort", "auxclick", "beforeinput", "beforematch", "beforetoggle", "blur", "cancel", "canplay",
   "canplaythrough", "change", "click", "close", "command", "contextlost", "contextmenu",
@@ -50,6 +51,7 @@ export const GLOBAL_EVENT_HANDLER_EVENTS: readonly string[] = [
 ];
 
 /** https://html.spec.whatwg.org/#windoweventhandlers */
+// oxfmt-ignore
 export const WINDOW_EVENT_HANDLER_EVENTS: readonly string[] = [
   "afterprint", "beforeprint", "beforeunload", "hashchange", "languagechange", "message",
   "messageerror", "offline", "online", "pagehide", "pagereveal", "pageshow", "pageswap", "popstate",
@@ -112,7 +114,8 @@ export function getEventHandler(target: EventTarget, type: string): Handler | nu
 /** https://html.spec.whatwg.org/#event-handler-idl-attributes (setter) */
 export function setEventHandler(target: EventTarget, type: string, value: unknown): void {
   // [LegacyTreatNonObjectAsNull]
-  const handler = value !== null && (typeof value === "object" || typeof value === "function") ? (value as Handler) : null;
+  const handler =
+    value !== null && (typeof value === "object" || typeof value === "function") ? (value as Handler) : null;
   let map = handlerMaps.get(target);
   if (handler === null) {
     // Deactivate: https://html.spec.whatwg.org/#deactivate-an-event-handler
@@ -181,7 +184,11 @@ const HANDLER_EVENT_TYPES: Readonly<Record<string, string>> = {
   webkittransitionend: "webkitTransitionEnd",
 };
 
-function addHandler(descriptors: PropertyDescriptorMap, name: string, resolve: ((self: EventTarget) => EventTarget | null) | null): void {
+function addHandler(
+  descriptors: PropertyDescriptorMap,
+  name: string,
+  resolve: ((self: EventTarget) => EventTarget | null) | null,
+): void {
   const { get, set } = handlerAccessor(HANDLER_EVENT_TYPES[name] ?? name, resolve);
   descriptors["on" + name] = { configurable: true, enumerable: true, get, set };
 }

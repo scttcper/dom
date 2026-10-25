@@ -113,8 +113,20 @@ export function stripComments(text: string): string {
 }
 
 function needsSeparator(a: number, b: number): boolean {
-  const aWord = (a >= 0x30 && a <= 0x39) || (a >= 0x41 && a <= 0x5a) || (a >= 0x61 && a <= 0x7a) || a === 0x2d || a === 0x5f || a >= 0x80;
-  const bWord = (b >= 0x30 && b <= 0x39) || (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a) || b === 0x2d || b === 0x5f || b >= 0x80;
+  const aWord =
+    (a >= 0x30 && a <= 0x39) ||
+    (a >= 0x41 && a <= 0x5a) ||
+    (a >= 0x61 && a <= 0x7a) ||
+    a === 0x2d ||
+    a === 0x5f ||
+    a >= 0x80;
+  const bWord =
+    (b >= 0x30 && b <= 0x39) ||
+    (b >= 0x41 && b <= 0x5a) ||
+    (b >= 0x61 && b <= 0x7a) ||
+    b === 0x2d ||
+    b === 0x5f ||
+    b >= 0x80;
   return aWord && bWord;
 }
 
@@ -231,19 +243,34 @@ export class CSSParser {
     while (true) {
       const type = this.advance();
       if (type === TK_SEMICOLON || type === TK_EOF) {
-        return new RawRule(RULE_AT, name, preludeStart === -1 ? "" : this.text(preludeStart, preludeEnd, commentsBefore), false);
+        return new RawRule(
+          RULE_AT,
+          name,
+          preludeStart === -1 ? "" : this.text(preludeStart, preludeEnd, commentsBefore),
+          false,
+        );
       }
       if (type === TK_RBRACE) {
         if (nested) {
           this.reconsume();
-          return new RawRule(RULE_AT, name, preludeStart === -1 ? "" : this.text(preludeStart, preludeEnd, commentsBefore), false);
+          return new RawRule(
+            RULE_AT,
+            name,
+            preludeStart === -1 ? "" : this.text(preludeStart, preludeEnd, commentsBefore),
+            false,
+          );
         }
         if (preludeStart === -1) preludeStart = this.t.start;
         preludeEnd = this.t.end;
         continue;
       }
       if (type === TK_LBRACE) {
-        const rule = new RawRule(RULE_AT, name, preludeStart === -1 ? "" : this.text(preludeStart, preludeEnd, commentsBefore), true);
+        const rule = new RawRule(
+          RULE_AT,
+          name,
+          preludeStart === -1 ? "" : this.text(preludeStart, preludeEnd, commentsBefore),
+          true,
+        );
         this.consumeBlockContents(rule);
         return rule;
       }
@@ -388,7 +415,8 @@ export class CSSParser {
       else if (type === TK_IDENT && isAsciiCaseInsensitive(this.t.value, "important")) kind = 2;
       if (type === TK_LBRACE) this.valueHasBlock = true;
       else this.valueOtherCount++;
-      if (type === TK_FUNCTION || type === TK_LPAREN || type === TK_LBRACKET || type === TK_LBRACE) this.skipBlock(type);
+      if (type === TK_FUNCTION || type === TK_LPAREN || type === TK_LBRACKET || type === TK_LBRACE)
+        this.skipBlock(type);
       e3 = e2;
       e2 = e1;
       e1 = this.t.end;

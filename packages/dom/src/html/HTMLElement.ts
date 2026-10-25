@@ -48,7 +48,15 @@ import { ARIA_STRING_ATTRIBUTES } from "./aria-reflection.ts";
 import { fireSyntheticClick } from "./events.ts";
 import { clearParserAssociation, formOwner, isActuallyDisabled, parserAssociateForm } from "./forms/form-associated.ts";
 import { I_EMAIL, I_PASSWORD, I_URL, inputType } from "./forms/input-type.ts";
-import { checkPopoverValidity, hidePopover, isInTopLayer, isPopoverShowing, popoverAttributeChanged, showPopover, topLayerRemovingSteps } from "./top-layer.ts";
+import {
+  checkPopoverValidity,
+  hidePopover,
+  isInTopLayer,
+  isPopoverShowing,
+  popoverAttributeChanged,
+  showPopover,
+  topLayerRemovingSteps,
+} from "./top-layer.ts";
 import { ShadowRoot } from "../nodes/ShadowRoot.ts";
 import { Document as DocumentClass } from "../nodes/Document.ts";
 import { $availableToElementInternals, $impl, $shadowRoot, $states, $style, $target, $value } from "../keys.ts";
@@ -115,10 +123,16 @@ export class HTMLElement extends Element {
     parserAssociateForm(this[$impl], form[$impl]);
   }
 
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     if (localName === "popover" && namespace === null) popoverAttributeChanged(this[$impl], oldValue, value);
     if (definitionOf(this) !== undefined) ceAttributeChanged(this, localName, oldValue, value, namespace);
-    if ((this[$impl].flags & F_FACE) !== 0 && namespace === null && (localName === "form" || localName === "disabled")) faceStateMaybeChanged(this[$impl]);
+    if ((this[$impl].flags & F_FACE) !== 0 && namespace === null && (localName === "form" || localName === "disabled"))
+      faceStateMaybeChanged(this[$impl]);
   }
 
   // --- ElementCSSInlineStyle ------------------------------------------------------------
@@ -159,8 +173,17 @@ export class HTMLElement extends Element {
   }
 
   set hidden(value: boolean | string | number | null) {
-    if (typeof value === "string" && asciiLowercase(value) === "until-found") setAttribute(this[$impl], "hidden", "until-found");
-    else if (value === false || value === "" || value === null || value === undefined || value === 0 || Number.isNaN(value)) removeAttribute(this[$impl], "hidden");
+    if (typeof value === "string" && asciiLowercase(value) === "until-found")
+      setAttribute(this[$impl], "hidden", "until-found");
+    else if (
+      value === false ||
+      value === "" ||
+      value === null ||
+      value === undefined ||
+      value === 0 ||
+      Number.isNaN(value)
+    )
+      removeAttribute(this[$impl], "hidden");
     else setAttribute(this[$impl], "hidden", "");
   }
 
@@ -237,7 +260,11 @@ export class HTMLElement extends Element {
     const k = asciiLowercase(String(value));
     if (k === "inherit") removeAttribute(this[$impl], "contenteditable");
     else if (k === "true" || k === "false" || k === "plaintext-only") setAttribute(this[$impl], "contenteditable", k);
-    else throw new DOMException(`Failed to set the 'contentEditable' property on 'HTMLElement': The value provided ('${value}') is not one of 'true', 'false', 'plaintext-only', or 'inherit'.`, "SyntaxError");
+    else
+      throw new DOMException(
+        `Failed to set the 'contentEditable' property on 'HTMLElement': The value provided ('${value}') is not one of 'true', 'false', 'plaintext-only', or 'inherit'.`,
+        "SyntaxError",
+      );
   }
 
   /**
@@ -333,11 +360,18 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-attachinternals */
   attachInternals(): ElementInternals {
-    if (isValueOf(this) !== null) throw new DOMException("Unable to attach ElementInternals to a customized built-in element.", "NotSupportedError");
+    if (isValueOf(this) !== null)
+      throw new DOMException(
+        "Unable to attach ElementInternals to a customized built-in element.",
+        "NotSupportedError",
+      );
     const def = definitionOf(this);
-    if (def === undefined) throw new DOMException("Unable to attach ElementInternals to non-custom elements.", "NotSupportedError");
-    if (def.disableInternals) throw new DOMException("ElementInternals is disabled by disabledFeature static field.", "NotSupportedError");
-    if (attachedInternals.has(this)) throw new DOMException("ElementInternals for the specified element was already attached.", "NotSupportedError");
+    if (def === undefined)
+      throw new DOMException("Unable to attach ElementInternals to non-custom elements.", "NotSupportedError");
+    if (def.disableInternals)
+      throw new DOMException("ElementInternals is disabled by disabledFeature static field.", "NotSupportedError");
+    if (attachedInternals.has(this))
+      throw new DOMException("ElementInternals for the specified element was already attached.", "NotSupportedError");
     const internals = new ElementInternals(this);
     attachedInternals.set(this, internals);
     return internals;
@@ -445,7 +479,11 @@ function computedWritingSuggestions(impl: NodeImpl): boolean {
   return true;
 }
 
-function mergeWithPrevious(text: { previousSibling: { nodeType: number; data?: string } | null; data?: string; remove?: () => void }): void {
+function mergeWithPrevious(text: {
+  previousSibling: { nodeType: number; data?: string } | null;
+  data?: string;
+  remove?: () => void;
+}): void {
   const prev = text.previousSibling;
   if (prev === null || prev.nodeType !== 3) return;
   (prev as { data: string }).data += text.data!;
@@ -485,9 +523,18 @@ defineAccessor(
     setAttribute(this[$impl], "writingsuggestions", String(v));
   },
 );
-enumerated(HTMLElement, "enterKeyHint=enterkeyhint", { keywords: ["enter", "done", "go", "next", "previous", "search", "send"] });
-enumerated(HTMLElement, "inputMode=inputmode", { keywords: ["none", "text", "tel", "url", "email", "numeric", "decimal", "search"] });
-enumerated(HTMLElement, "popover", { keywords: ["auto", "manual", "hint"], missing: null, invalid: "manual", empty: "auto" });
+enumerated(HTMLElement, "enterKeyHint=enterkeyhint", {
+  keywords: ["enter", "done", "go", "next", "previous", "search", "send"],
+});
+enumerated(HTMLElement, "inputMode=inputmode", {
+  keywords: ["none", "text", "tel", "url", "email", "numeric", "decimal", "search"],
+});
+enumerated(HTMLElement, "popover", {
+  keywords: ["auto", "manual", "hint"],
+  missing: null,
+  invalid: "manual",
+  empty: "auto",
+});
 
 // --- ElementInternals (minimal) -------------------------------------------------------------
 
@@ -593,7 +640,10 @@ for (const item of ARIA_STRING_ATTRIBUTES.split(" ")) {
 // explicitly set elements, held weakly; arrays keep their identity while the contents are equal
 // (https://html.spec.whatwg.org/#reflecting-content-attributes-in-idl-attributes, element and
 // FrozenArray<Element> cases). No in-scope filtering: internals have no content attribute.
-const internalsAriaElements = new WeakMap<ElementInternals, Map<string, { refs: WeakRef<Element>[]; cached: readonly Element[] | null }>>();
+const internalsAriaElements = new WeakMap<
+  ElementInternals,
+  Map<string, { refs: WeakRef<Element>[]; cached: readonly Element[] | null }>
+>();
 for (const [name, many] of [
   ["ariaActiveDescendantElement", false],
   ["ariaControlsElements", true],
@@ -605,7 +655,10 @@ for (const [name, many] of [
   ["ariaOwnsElements", true],
 ] as const) {
   const toElement = (v: unknown): Element => {
-    if (!(v instanceof Element)) throw new TypeError(`Failed to set the '${name}' property on 'ElementInternals': Failed to convert value to 'Element'.`);
+    if (!(v instanceof Element))
+      throw new TypeError(
+        `Failed to set the '${name}' property on 'ElementInternals': Failed to convert value to 'Element'.`,
+      );
     return v;
   };
   Object.defineProperty(ElementInternals.prototype, name, {
@@ -632,7 +685,9 @@ for (const [name, many] of [
       if (!many) refs = [new WeakRef(toElement(v))];
       else {
         if (typeof v !== "object" || typeof (v as Iterable<unknown>)[Symbol.iterator] !== "function") {
-          throw new TypeError(`Failed to set the '${name}' property on 'ElementInternals': The provided value cannot be converted to a sequence.`);
+          throw new TypeError(
+            `Failed to set the '${name}' property on 'ElementInternals': The provided value cannot be converted to a sequence.`,
+          );
         }
         refs = [];
         for (const item of v as Iterable<unknown>) refs.push(new WeakRef(toElement(item)));
@@ -670,7 +725,11 @@ export function installHTMLOrSVGElement(C: ElementCtor): void {
       return current ?? "";
     },
     function (v) {
-      Object.defineProperty(this, NONCE, { value: [String(v), contentAttr(this[$impl], "nonce")], writable: true, configurable: true });
+      Object.defineProperty(this, NONCE, {
+        value: [String(v), contentAttr(this[$impl], "nonce")],
+        writable: true,
+        configurable: true,
+      });
     },
   );
   bool(C, "autofocus");
@@ -735,6 +794,9 @@ function popoverSource(options: unknown): NodeImpl | null {
   if (options === undefined || options === null || typeof options !== "object") return null;
   const source = (options as { source?: unknown }).source;
   if (source === undefined) return null;
-  if (!(source instanceof HTMLElement)) throw new TypeError("Failed to read the 'source' property from the options: The provided value is not of type 'HTMLElement'.");
+  if (!(source instanceof HTMLElement))
+    throw new TypeError(
+      "Failed to read the 'source' property from the options: The provided value is not of type 'HTMLElement'.",
+    );
   return source[$impl];
 }

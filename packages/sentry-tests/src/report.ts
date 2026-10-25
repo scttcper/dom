@@ -15,7 +15,16 @@
 import { relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import type { CollectedFile, CollectedSpan, FailureContext } from "./collector.ts";
-import { parseStack, SDK, spanId, toSentryFrames, uuid, type Envelope, type EnvelopeItem, type ParsedFrame } from "./envelope.ts";
+import {
+  parseStack,
+  SDK,
+  spanId,
+  toSentryFrames,
+  uuid,
+  type Envelope,
+  type EnvelopeItem,
+  type ParsedFrame,
+} from "./envelope.ts";
 import type { ResolvedOptions } from "./options.ts";
 
 export interface ErrorInfo {
@@ -122,7 +131,12 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     if (record === undefined || last === undefined) continue;
     const span = byId.get(last)!;
     span.status = test.state === "pass" ? "ok" : "internal_error";
-    span.data = { ...span.data, "test.retries": test.retries, "test.flaky": test.flaky, ...(record.droppedSpans ? { "spans.dropped": record.droppedSpans } : {}) };
+    span.data = {
+      ...span.data,
+      "test.retries": test.retries,
+      "test.flaky": test.flaky,
+      ...(record.droppedSpans ? { "spans.dropped": record.droppedSpans } : {}),
+    };
   }
 
   // Each span belongs to the test whose "test.case" span it is under, if any.
@@ -162,7 +176,11 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   const sentParent = new Map<string, string>();
 
   // Sampled per file: a file's trace is whole or absent, and its issues link to it only when sent.
-  const traced = collected !== null && spans.length > 0 && options.traces && (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
+  const traced =
+    collected !== null &&
+    spans.length > 0 &&
+    options.traces &&
+    (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
   if (traced) {
     chunks.forEach((chunk, index) => {
       const first = index === 0;
@@ -170,7 +188,8 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
       const ids = new Set(chunk.map((s) => s.span_id));
       const eventId = uuid();
       const payloadSpans = chunk.map((span) => {
-        const parent = span.parent_span_id !== undefined && ids.has(span.parent_span_id) ? span.parent_span_id : chunkSpanId;
+        const parent =
+          span.parent_span_id !== undefined && ids.has(span.parent_span_id) ? span.parent_span_id : chunkSpanId;
         sentParent.set(span.span_id, parent);
         return { ...span, trace_id: traceId, parent_span_id: parent, origin: ORIGIN };
       });
@@ -198,11 +217,20 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
                   op: "test.file",
                   status: (first ? tests.some((t) => t.state === "fail") : failed) ? "internal_error" : "ok",
                   origin: ORIGIN,
-                  ...((first && dropped) || chunks.length > 1 ? { data: { ...(first && dropped ? { "spans.dropped": dropped } : {}), ...(chunks.length > 1 ? { "test.part": index + 1, "test.parts": chunks.length } : {}) } } : {}),
+                  ...((first && dropped) || chunks.length > 1
+                    ? {
+                        data: {
+                          ...(first && dropped ? { "spans.dropped": dropped } : {}),
+                          ...(chunks.length > 1 ? { "test.part": index + 1, "test.parts": chunks.length } : {}),
+                        },
+                      }
+                    : {}),
                 },
               },
               spans: payloadSpans,
-              ...(first && report.environmentSetupMs !== undefined ? { measurements: { environment_setup: { value: report.environmentSetupMs, unit: "millisecond" } } } : {}),
+              ...(first && report.environmentSetupMs !== undefined
+                ? { measurements: { environment_setup: { value: report.environmentSetupMs, unit: "millisecond" } } }
+                : {}),
             },
           },
         ],
@@ -223,9 +251,16 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     // capture is from. The capture has the error object itself: Jest's results can lose its name
     // (`TestingLibraryElementError` arrives as a plain Error).
     const reported = failed ? (test.errors.at(-1) ?? context?.error) : (context?.error ?? test.errors[0]);
-    const error = reported !== undefined && !reported.name && context?.error?.name ? { ...reported, name: context.error.name } : reported;
+    const error =
+      reported !== undefined && !reported.name && context?.error?.name
+        ? { ...reported, name: context.error.name }
+        : reported;
     const attached = options.attachments ? (context?.attachments ?? []) : [];
-    const exception = toException(error ?? { message: "Test failed" }, report.root, attached.map((a) => a.filename));
+    const exception = toException(
+      error ?? { message: "Test failed" },
+      report.root,
+      attached.map((a) => a.filename),
+    );
     // A flaky test's issue reads as one in every UI: the failed attempt's error under a FlakyTest
     // title (a chained exception would be titled by its first or last link depending on the UI).
     if (!failed) {
@@ -250,14 +285,26 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
           contexts: {
             ...base.contexts,
             ...context?.contexts,
-            ...(traced && attempt !== undefined ? { trace: { trace_id: traceId, span_id: attempt, parent_span_id: sentParent.get(attempt), op: "test.case" } } : {}),
+            ...(traced && attempt !== undefined
+              ? {
+                  trace: {
+                    trace_id: traceId,
+                    span_id: attempt,
+                    parent_span_id: sentParent.get(attempt),
+                    op: "test.case",
+                  },
+                }
+              : {}),
             test: { name: test.name, file, duration_ms: test.duration, retries: test.retries, flaky: test.flaky },
           },
-          breadcrumbs: { values: breadcrumbs((attempt !== undefined && groups.get(attempt)) || [], test.console ?? []) },
+          breadcrumbs: {
+            values: breadcrumbs((attempt !== undefined && groups.get(attempt)) || [], test.console ?? []),
+          },
         },
       },
     ];
-    for (const a of attached) items.push({ type: "attachment", filename: a.filename, contentType: a.contentType, payload: a.data });
+    for (const a of attached)
+      items.push({ type: "attachment", filename: a.filename, contentType: a.contentType, payload: a.data });
     out.envelopes.push({ eventId, items });
     if (failed) out.failures++;
     else out.flaky++;
@@ -311,13 +358,19 @@ function tag(value: string): string {
  * Where a Testing Library message starts dumping the page: the DOM (`Ignored nodes: …` then the
  * markup), the role listing, or @ctrl/dom's agent mode snapshot. Redundant once the page is attached.
  */
-const PAGE_DUMP = /\n\n(?:Ignored nodes: |Here are the accessible roles:|Accessibility snapshot of <body>|DOM of <body>|<body)/;
+const PAGE_DUMP =
+  /\n\n(?:Ignored nodes: |Here are the accessible roles:|Accessibility snapshot of <body>|DOM of <body>|<body)/;
 
-function toException(error: ErrorInfo, root: string, attachments: readonly string[] = []): { type: string; value: string; [key: string]: unknown } {
+function toException(
+  error: ErrorInfo,
+  root: string,
+  attachments: readonly string[] = [],
+): { type: string; value: string; [key: string]: unknown } {
   // Without terminal colors: Testing Library highlights the DOM in its messages under Jest.
   let text = stripVTControlCharacters(error.message);
   const dump = attachments.length > 0 ? PAGE_DUMP.exec(text) : null;
-  if (dump !== null) text = `${text.slice(0, dump.index)}\n\n(The page when the test failed is attached: ${attachments.join(", ")}.)`;
+  if (dump !== null)
+    text = `${text.slice(0, dump.index)}\n\n(The page when the test failed is attached: ${attachments.join(", ")}.)`;
   const message = text.length > MAX_MESSAGE ? `${text.slice(0, MAX_MESSAGE - 1)}…` : text;
   // Vitest's parsed frames come newest first, like V8 prints them; Sentry wants oldest first.
   const frames = error.frames !== undefined ? [...error.frames].reverse() : parseStack(error.stack);

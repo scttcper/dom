@@ -15,7 +15,8 @@ defineWPTDirectory(
   "dom/nodes",
   {
     "MutationObserver-cross-realm-callback-report-exception.html": "needs real iframes (frames[0])",
-    "MutationObserver-document.html": "records produced by the HTML parser while loading the document (no streaming parse)",
+    "MutationObserver-document.html":
+      "records produced by the HTML parser while loading the document (no streaming parse)",
   },
   { "MutationObserver-nested-crash.html": "crash test needs a navigable iframe" },
   (f) => f.includes("/MutationObserver-"),

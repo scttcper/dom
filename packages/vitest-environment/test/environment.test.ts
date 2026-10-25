@@ -22,7 +22,9 @@ describe("Environment object — https://html.spec.whatwg.org/#the-window-object
 describe("setup(global, options) / teardown", () => {
   test("installs a window on the given global with environmentOptions['ctrl-dom'], and teardown restores it", async () => {
     const global: Record<string, unknown> = { Event: "node-event", setTimeout };
-    const env = await environment.setup(global, { "ctrl-dom": { url: "http://example.test/a", width: 640, height: 480 } });
+    const env = await environment.setup(global, {
+      "ctrl-dom": { url: "http://example.test/a", width: 640, height: 480 },
+    });
     expect(global.window).toBe(global);
     expect((global.location as Location).href).toBe("http://example.test/a");
     expect(global.innerWidth).toBe(640);
@@ -115,7 +117,9 @@ describe("setupVM(options)", () => {
     const context = vm.getVmContext();
     expect(runInContext("window === globalThis && location.href", context)).toBe("http://localhost:5173/");
     expect(runInContext("document.createElement('p').tagName", context)).toBe("P");
-    expect(runInContext("typeof setTimeout + typeof URL + typeof requestAnimationFrame", context)).toBe("functionfunctionfunction");
+    expect(runInContext("typeof setTimeout + typeof URL + typeof requestAnimationFrame", context)).toBe(
+      "functionfunctionfunction",
+    );
     await vm.teardown();
     expect(runInContext("typeof document", context)).toBe("undefined");
   });

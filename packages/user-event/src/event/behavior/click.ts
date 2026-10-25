@@ -1,7 +1,12 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/behavior/click.ts
 
-import {cloneEvent, getWindow, isElementType, isFocusable} from '../../utils/index.ts'
+import {
+  cloneEvent,
+  getWindow,
+  isElementType,
+  isFocusable,
+} from '../../utils/index.ts'
 import {blurElement, focusElement} from '../focus.ts'
 import {behavior} from './registry.ts'
 

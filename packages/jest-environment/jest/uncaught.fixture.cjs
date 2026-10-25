@@ -10,11 +10,15 @@ const { render, fireEvent } = require("@testing-library/react");
 
 test("throwing onClick", () => {
   const { container } = render(
-    React.createElement("button", {
-      onClick: () => {
-        throw new Error("boom from onClick");
+    React.createElement(
+      "button",
+      {
+        onClick: () => {
+          throw new Error("boom from onClick");
+        },
       },
-    }, "x"),
+      "x",
+    ),
   );
   fireEvent.click(container.querySelector("button"));
 });

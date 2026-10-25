@@ -37,7 +37,7 @@ describe("HTML fragment serialization — https://html.spec.whatwg.org/#serialis
     expect(div("a &amp; &lt;b&gt; &nbsp;").innerHTML).toBe("a &amp; &lt;b&gt; &nbsp;");
   });
 
-  test("escaping a string (attribute mode): & \" < > and U+00A0 are escaped", () => {
+  test('escaping a string (attribute mode): & " < > and U+00A0 are escaped', () => {
     const el = document.createElement("p");
     el.setAttribute("title", `a&"<> '`);
     expect(el.outerHTML).toBe(`<p title="a&amp;&quot;&lt;&gt;&nbsp;'"></p>`);
@@ -74,7 +74,10 @@ describe("HTML fragment serialization — https://html.spec.whatwg.org/#serialis
     el.appendChild(document.createProcessingInstruction("t", "d"));
     expect(el.innerHTML).toBe("<!--c--><?t d?>");
     const doc = document.implementation.createHTMLDocument("x");
-    expect((doc as unknown as Document)[$impl].first?.node && (doc.documentElement as Element).outerHTML.startsWith("<html>")).toBe(true);
+    expect(
+      (doc as unknown as Document)[$impl].first?.node &&
+        (doc.documentElement as Element).outerHTML.startsWith("<html>"),
+    ).toBe(true);
   });
 
   test("no extra U+000A is serialized for pre/textarea/listing (the parser dropped it)", () => {
@@ -184,7 +187,9 @@ describe("XML parsing — https://html.spec.whatwg.org/#dom-domparser-parsefroms
   }
 
   test("namespaces, prefixes, CDATA, comments and processing instructions", () => {
-    const doc = xml('<?xml version="1.0"?><r xmlns="urn:a" xmlns:x="urn:x"><x:c x:at="1">t<![CDATA[<raw>]]></x:c><!--c--><?pi d?></r>');
+    const doc = xml(
+      '<?xml version="1.0"?><r xmlns="urn:a" xmlns:x="urn:x"><x:c x:at="1">t<![CDATA[<raw>]]></x:c><!--c--><?pi d?></r>',
+    );
     const r = doc.documentElement!;
     expect(r.namespaceURI).toBe("urn:a");
     const c = r.firstElementChild!;

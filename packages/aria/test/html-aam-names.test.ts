@@ -19,7 +19,10 @@ function expectName(html: string, expected: string): void {
 }
 
 function expectDescription(html: string, expected: string): void {
-  expect(both(html, (api, doc) => api.description(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
+  expect(both(html, (api, doc) => api.description(testNode(doc)))).toEqual({
+    "ctrl-dom": expected,
+    upstream: expected,
+  });
 }
 
 const AAM = "https://w3c.github.io/html-aam/";
@@ -192,7 +195,9 @@ describe(`4.1.13 a element — ${AAM}#a-element-accessible-name-computation`, ()
 describe(`4.1.14 area element — ${AAM}#area-element-accessible-name-computation`, () => {
   test("alt names the area (display:none in the UA sheet, so only with hidden content included)", () => {
     expect(
-      both(`<map name="m"><area data-test href="/a" alt="North"></map>`, (api, doc) => api.name(testNode(doc), { hidden: true })),
+      both(`<map name="m"><area data-test href="/a" alt="North"></map>`, (api, doc) =>
+        api.name(testNode(doc), { hidden: true }),
+      ),
     ).toEqual({ "ctrl-dom": "North", upstream: "North" });
   });
 });
@@ -221,7 +226,10 @@ describe(`4.1.17 text-level elements — ${AAM}#text-level-element-accessible-na
 
 describe(`4.2 accessible description computation — ${AAM}#accessible-description-computation`, () => {
   test("aria-describedby, joined in IDREF order", () => {
-    expectDescription(`<span id="a">One</span><span id="b">Two</span><button data-test aria-describedby="b a">x</button>`, "Two One");
+    expectDescription(
+      `<span id="a">One</span><span id="b">Two</span><button data-test aria-describedby="b a">x</button>`,
+      "Two One",
+    );
   });
 
   test("title is the description when it was not used for the name", () => {
@@ -229,7 +237,10 @@ describe(`4.2 accessible description computation — ${AAM}#accessible-descripti
   });
 
   test("aria-describedby wins over title", () => {
-    expectDescription(`<span id="a">Ref</span><button data-test title="More" aria-describedby="a">Save</button>`, "Ref");
+    expectDescription(
+      `<span id="a">Ref</span><button data-test title="More" aria-describedby="a">Save</button>`,
+      "Ref",
+    );
   });
 
   test("oracle: title is also returned when it was already used as the name", () => {
@@ -242,6 +253,9 @@ describe(`4.2 accessible description computation — ${AAM}#accessible-descripti
   });
 
   test("described-by content is computed from the referenced subtree, including hidden roots", () => {
-    expectDescription(`<div id="d" hidden>Hidden <b>help</b></div><input data-test aria-describedby="d">`, "Hidden help");
+    expectDescription(
+      `<div id="d" hidden>Hidden <b>help</b></div><input data-test aria-describedby="d">`,
+      "Hidden help",
+    );
   });
 });

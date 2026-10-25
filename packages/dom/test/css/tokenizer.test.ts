@@ -15,9 +15,31 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import {
   CSSTokenizer,
-  TK_AT_KEYWORD, TK_BAD_STRING, TK_BAD_URL, TK_CDC, TK_CDO, TK_COLON, TK_COMMA, TK_DELIM, TK_DIMENSION, TK_EOF,
-  TK_FUNCTION, TK_HASH, TK_IDENT, TK_LBRACE, TK_LBRACKET, TK_LPAREN, TK_NUMBER, TK_PERCENTAGE, TK_RBRACE,
-  TK_RBRACKET, TK_RPAREN, TK_SEMICOLON, TK_STRING, TK_URL, TK_WHITESPACE,
+  TK_AT_KEYWORD,
+  TK_BAD_STRING,
+  TK_BAD_URL,
+  TK_CDC,
+  TK_CDO,
+  TK_COLON,
+  TK_COMMA,
+  TK_DELIM,
+  TK_DIMENSION,
+  TK_EOF,
+  TK_FUNCTION,
+  TK_HASH,
+  TK_IDENT,
+  TK_LBRACE,
+  TK_LBRACKET,
+  TK_LPAREN,
+  TK_NUMBER,
+  TK_PERCENTAGE,
+  TK_RBRACE,
+  TK_RBRACKET,
+  TK_RPAREN,
+  TK_SEMICOLON,
+  TK_STRING,
+  TK_URL,
+  TK_WHITESPACE,
 } from "../../src/css/tokenizer.ts";
 
 type Expected = [type: string, raw: string, start: number, end: number, structured: Record<string, unknown> | null];
@@ -26,24 +48,52 @@ const fixture = JSON.parse(readFileSync(new URL("./fixtures/css-tokenizer-tests.
 };
 
 const NAMES: Record<number, string> = {
-  [TK_IDENT]: "ident-token", [TK_FUNCTION]: "function-token", [TK_AT_KEYWORD]: "at-keyword-token", [TK_HASH]: "hash-token",
-  [TK_STRING]: "string-token", [TK_BAD_STRING]: "bad-string-token", [TK_URL]: "url-token", [TK_BAD_URL]: "bad-url-token",
-  [TK_DELIM]: "delim-token", [TK_NUMBER]: "number-token", [TK_PERCENTAGE]: "percentage-token", [TK_DIMENSION]: "dimension-token",
-  [TK_WHITESPACE]: "whitespace-token", [TK_CDO]: "CDO-token", [TK_CDC]: "CDC-token", [TK_COLON]: "colon-token",
-  [TK_SEMICOLON]: "semicolon-token", [TK_COMMA]: "comma-token", [TK_LBRACKET]: "[-token", [TK_RBRACKET]: "]-token",
-  [TK_LPAREN]: "(-token", [TK_RPAREN]: ")-token", [TK_LBRACE]: "{-token", [TK_RBRACE]: "}-token",
+  [TK_IDENT]: "ident-token",
+  [TK_FUNCTION]: "function-token",
+  [TK_AT_KEYWORD]: "at-keyword-token",
+  [TK_HASH]: "hash-token",
+  [TK_STRING]: "string-token",
+  [TK_BAD_STRING]: "bad-string-token",
+  [TK_URL]: "url-token",
+  [TK_BAD_URL]: "bad-url-token",
+  [TK_DELIM]: "delim-token",
+  [TK_NUMBER]: "number-token",
+  [TK_PERCENTAGE]: "percentage-token",
+  [TK_DIMENSION]: "dimension-token",
+  [TK_WHITESPACE]: "whitespace-token",
+  [TK_CDO]: "CDO-token",
+  [TK_CDC]: "CDC-token",
+  [TK_COLON]: "colon-token",
+  [TK_SEMICOLON]: "semicolon-token",
+  [TK_COMMA]: "comma-token",
+  [TK_LBRACKET]: "[-token",
+  [TK_RBRACKET]: "]-token",
+  [TK_LPAREN]: "(-token",
+  [TK_RPAREN]: ")-token",
+  [TK_LBRACE]: "{-token",
+  [TK_RBRACE]: "}-token",
 };
 
 function structured(t: CSSTokenizer): Record<string, unknown> | null {
   switch (t.type) {
-    case TK_IDENT: case TK_FUNCTION: case TK_AT_KEYWORD: case TK_STRING: case TK_URL: case TK_DELIM:
+    case TK_IDENT:
+    case TK_FUNCTION:
+    case TK_AT_KEYWORD:
+    case TK_STRING:
+    case TK_URL:
+    case TK_DELIM:
       return { value: t.value };
     case TK_HASH:
       return { value: t.value, type: t.hashId ? "id" : "unrestricted" };
-    case TK_NUMBER: case TK_PERCENTAGE:
-      return t.sign === "" ? { value: t.num, type: t.isInteger ? "integer" : "number" } : { value: t.num, type: t.isInteger ? "integer" : "number", signCharacter: t.sign };
+    case TK_NUMBER:
+    case TK_PERCENTAGE:
+      return t.sign === ""
+        ? { value: t.num, type: t.isInteger ? "integer" : "number" }
+        : { value: t.num, type: t.isInteger ? "integer" : "number", signCharacter: t.sign };
     case TK_DIMENSION:
-      return t.sign === "" ? { value: t.num, type: t.isInteger ? "integer" : "number", unit: t.unit } : { value: t.num, type: t.isInteger ? "integer" : "number", unit: t.unit, signCharacter: t.sign };
+      return t.sign === ""
+        ? { value: t.num, type: t.isInteger ? "integer" : "number", unit: t.unit }
+        : { value: t.num, type: t.isInteger ? "integer" : "number", unit: t.unit, signCharacter: t.sign };
   }
   return null;
 }

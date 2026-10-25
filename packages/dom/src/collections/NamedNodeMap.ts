@@ -16,7 +16,12 @@
 import { F_HTML } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Attr } from "../nodes/Attr.ts";
-import { asciiLowercase, findAttributeByName, findAttributeByNamespace, removeAttributeRecord } from "../nodes/attributes.ts";
+import {
+  asciiLowercase,
+  findAttributeByName,
+  findAttributeByNamespace,
+  removeAttributeRecord,
+} from "../nodes/attributes.ts";
 import { attrNode, setAttributeNode } from "../nodes/attr-nodes.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
 
@@ -88,7 +93,8 @@ export class NamedNodeMap {
   constructor(el: NodeImpl) {
     // Configurable (Proxy invariants let ownKeys hide it), non-enumerable.
     Object.defineProperty(this, $el, { value: el, configurable: true });
-    if (table === null) table = indexGetterTable(NamedNodeMap.prototype, (self, i) => (self as NamedNodeMap).item(i) ?? undefined, 16);
+    if (table === null)
+      table = indexGetterTable(NamedNodeMap.prototype, (self, i) => (self as NamedNodeMap).item(i) ?? undefined, 16);
     // A constructor may return an object: the Proxy is the instance (and what Element caches).
     return new Proxy(this, handler);
   }
@@ -116,7 +122,11 @@ export class NamedNodeMap {
 
   getNamedItemNS(namespace: string | null, localName: string): Attr | null {
     const el = this[$el];
-    const a = findAttributeByNamespace(el, namespace === "" || namespace === undefined ? null : namespace, String(localName));
+    const a = findAttributeByNamespace(
+      el,
+      namespace === "" || namespace === undefined ? null : namespace,
+      String(localName),
+    );
     return a === null ? null : attrNode(el, a);
   }
 
@@ -140,8 +150,13 @@ export class NamedNodeMap {
 
   removeNamedItemNS(namespace: string | null, localName: string): Attr {
     const el = this[$el];
-    const a = findAttributeByNamespace(el, namespace === "" || namespace === undefined ? null : namespace, String(localName));
-    if (a === null) throw new DOMException(`No item with name '${namespace}::${localName}' was found.`, "NotFoundError");
+    const a = findAttributeByNamespace(
+      el,
+      namespace === "" || namespace === undefined ? null : namespace,
+      String(localName),
+    );
+    if (a === null)
+      throw new DOMException(`No item with name '${namespace}::${localName}' was found.`, "NotFoundError");
     const node = attrNode(el, a);
     removeAttributeRecord(el, a);
     return node;

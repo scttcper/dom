@@ -24,7 +24,14 @@ import type { Document } from "../nodes/Document.ts";
 import type { DocumentFragment } from "../nodes/DocumentFragment.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { childAt, indexOf, isInclusiveAncestor, nextInTree, nextSkippingChildren, treeRoot } from "../nodes/traverse.ts";
+import {
+  childAt,
+  indexOf,
+  isInclusiveAncestor,
+  nextInTree,
+  nextSkippingChildren,
+  treeRoot,
+} from "../nodes/traverse.ts";
 import { append, ensurePreInsertionValidity, preInsert, remove, replaceAll } from "../nodes/tree.ts";
 import { cloneNode } from "../nodes/clone.ts";
 import { replaceData, splitText } from "../nodes/character-data.ts";
@@ -175,13 +182,20 @@ export interface StaticRangeInit {
 /** https://dom.spec.whatwg.org/#interface-staticrange */
 export class StaticRange extends AbstractRange {
   constructor(init: StaticRangeInit) {
-    if (init === null || typeof init !== "object") throw new TypeError("Failed to construct 'StaticRange': 1 argument required.");
+    if (init === null || typeof init !== "object")
+      throw new TypeError("Failed to construct 'StaticRange': 1 argument required.");
     for (const k of ["startContainer", "startOffset", "endContainer", "endOffset"] as const) {
-      if (init[k] === undefined) throw new TypeError(`Failed to construct 'StaticRange': required member ${k} is undefined.`);
+      if (init[k] === undefined)
+        throw new TypeError(`Failed to construct 'StaticRange': required member ${k} is undefined.`);
     }
     const sc = toNodeImpl(init.startContainer, "constructor", "StaticRange");
     const ec = toNodeImpl(init.endContainer, "constructor", "StaticRange");
-    if (sc.type === DOCUMENT_TYPE_NODE || sc.type === ATTRIBUTE_NODE || ec.type === DOCUMENT_TYPE_NODE || ec.type === ATTRIBUTE_NODE) {
+    if (
+      sc.type === DOCUMENT_TYPE_NODE ||
+      sc.type === ATTRIBUTE_NODE ||
+      ec.type === DOCUMENT_TYPE_NODE ||
+      ec.type === ATTRIBUTE_NODE
+    ) {
       throw new DOMException("Failed to construct 'StaticRange': Invalid boundary container.", "InvalidNodeTypeError");
     }
     super(sc, Number(init.startOffset) >>> 0, ec, Number(init.endOffset) >>> 0);
@@ -229,7 +243,8 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#concept-range-bp-set */
   _setStart(node: NodeImpl, offset: number): void {
-    if (node.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    if (node.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
     if (treeRoot(node) !== this._treeRoot() || compareBoundaryPoints(node, offset, this[$ec], this[$eo]) > 0) {
       this[$ec] = node;
@@ -241,7 +256,8 @@ export class Range extends AbstractRange {
   }
 
   _setEnd(node: NodeImpl, offset: number): void {
-    if (node.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    if (node.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
     if (treeRoot(node) !== this._treeRoot() || compareBoundaryPoints(node, offset, this[$sc], this[$so]) < 0) {
       this[$sc] = node;
@@ -317,7 +333,8 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#dom-range-selectnodecontents */
   _selectContents(n: NodeImpl): void {
-    if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    if (n.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     this[$sc] = n;
     this[$so] = 0;
     this[$ec] = n;
@@ -341,7 +358,8 @@ export class Range extends AbstractRange {
     if (!(sourceRange instanceof Range)) {
       throw new TypeError("Failed to execute 'compareBoundaryPoints' on 'Range': parameter 2 is not of type 'Range'.");
     }
-    if (this._treeRoot() !== sourceRange._treeRoot()) throw new DOMException("The two Ranges are not in the same tree.", "WrongDocumentError");
+    if (this._treeRoot() !== sourceRange._treeRoot())
+      throw new DOMException("The two Ranges are not in the same tree.", "WrongDocumentError");
     switch (h) {
       case START_TO_START:
         return compareBoundaryPoints(this[$sc], this[$so], sourceRange[$sc], sourceRange[$so]);
@@ -356,7 +374,10 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#contained */
   _contains(n: NodeImpl): boolean {
-    return compareBoundaryPoints(n, 0, this[$sc], this[$so]) > 0 && compareBoundaryPoints(n, nodeLength(n), this[$ec], this[$eo]) < 0;
+    return (
+      compareBoundaryPoints(n, 0, this[$sc], this[$so]) > 0 &&
+      compareBoundaryPoints(n, nodeLength(n), this[$ec], this[$eo]) < 0
+    );
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-deletecontents */
@@ -432,7 +453,10 @@ export class Range extends AbstractRange {
     // Step 2.
     const t = np.type;
     if (t === DOCUMENT_NODE || t === DOCUMENT_TYPE_NODE || t === DOCUMENT_FRAGMENT_NODE) {
-      throw new DOMException("The node provided is a Document, DocumentType or DocumentFragment.", "InvalidNodeTypeError");
+      throw new DOMException(
+        "The node provided is a Document, DocumentType or DocumentFragment.",
+        "InvalidNodeTypeError",
+      );
     }
     // Steps 3-7.
     const fragment = extract(this, this[$sc], this[$so], this[$ec], this[$eo]);
@@ -455,17 +479,22 @@ export class Range extends AbstractRange {
     const n = toNodeImpl(node, "isPointInRange");
     const o = Number(offset) >>> 0;
     if (treeRoot(n) !== this._treeRoot()) return false;
-    if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    if (n.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
-    return compareBoundaryPoints(n, o, this[$sc], this[$so]) >= 0 && compareBoundaryPoints(n, o, this[$ec], this[$eo]) <= 0;
+    return (
+      compareBoundaryPoints(n, o, this[$sc], this[$so]) >= 0 && compareBoundaryPoints(n, o, this[$ec], this[$eo]) <= 0
+    );
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-comparepoint */
   comparePoint(node: Node, offset: number): number {
     const n = toNodeImpl(node, "comparePoint");
     const o = Number(offset) >>> 0;
-    if (treeRoot(n) !== this._treeRoot()) throw new DOMException("The node provided and the Range are not in the same tree.", "WrongDocumentError");
-    if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    if (treeRoot(n) !== this._treeRoot())
+      throw new DOMException("The node provided and the Range are not in the same tree.", "WrongDocumentError");
+    if (n.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
     if (compareBoundaryPoints(n, o, this[$sc], this[$so]) < 0) return -1;
     if (compareBoundaryPoints(n, o, this[$ec], this[$eo]) > 0) return 1;
@@ -479,7 +508,10 @@ export class Range extends AbstractRange {
     const parent = n.parent;
     if (parent === null) return true;
     const offset = indexOf(n);
-    return compareBoundaryPoints(parent, offset, this[$ec], this[$eo]) < 0 && compareBoundaryPoints(parent, offset + 1, this[$sc], this[$so]) > 0;
+    return (
+      compareBoundaryPoints(parent, offset, this[$ec], this[$eo]) < 0 &&
+      compareBoundaryPoints(parent, offset + 1, this[$sc], this[$so]) > 0
+    );
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-stringifier */
@@ -501,7 +533,10 @@ export class Range extends AbstractRange {
 
   /** https://html.spec.whatwg.org/#dom-range-createcontextualfragment */
   createContextualFragment(fragment: string): DocumentFragment {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'createContextualFragment' on 'Range': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'createContextualFragment' on 'Range': 1 argument required, but only 0 present.",
+      );
     const node = this[$sc];
     let element: NodeImpl | null;
     switch (node.type) {
@@ -581,7 +616,8 @@ function rangeContents(sc: NodeImpl, so: number, ec: NodeImpl, eo: number) {
   let child = first === null ? childAt(ca, so) : first.next;
   const stop = last === null ? childAt(ca, eo) : last;
   for (; child !== null && child !== stop; child = child.next) {
-    if (child.type === DOCUMENT_TYPE_NODE) throw new DOMException("A DocumentType node cannot be extracted.", "HierarchyRequestError");
+    if (child.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("A DocumentType node cannot be extracted.", "HierarchyRequestError");
     contained.push(child);
   }
   return { first, last, contained };
@@ -685,7 +721,12 @@ function insertIntoRange(range: Range, node: NodeImpl): void {
   const sn = range[$sc];
   const so = range[$so];
   // Step 1.
-  if (sn.type === PROCESSING_INSTRUCTION_NODE || sn.type === COMMENT_NODE || (isText(sn) && sn.parent === null) || sn === node) {
+  if (
+    sn.type === PROCESSING_INSTRUCTION_NODE ||
+    sn.type === COMMENT_NODE ||
+    (isText(sn) && sn.parent === null) ||
+    sn === node
+  ) {
     throw new DOMException("The Range's start node cannot contain the inserted node.", "HierarchyRequestError");
   }
   // Steps 2-4.

@@ -78,7 +78,9 @@ describe("CustomElementRegistry.define — https://html.spec.whatwg.org/#dom-cus
   test.each(["a", "A-B", "1-a", "a-B", "annotation-xml", "font-face", "missing-glyph", "a_b", "-a"])(
     "step 2: invalid name %s throws SyntaxError",
     (name) => {
-      expect(() => customElements.define(name, class extends HTMLElement {})).toThrow(expect.objectContaining({ name: "SyntaxError" }));
+      expect(() => customElements.define(name, class extends HTMLElement {})).toThrow(
+        expect.objectContaining({ name: "SyntaxError" }),
+      );
     },
   );
 
@@ -89,13 +91,19 @@ describe("CustomElementRegistry.define — https://html.spec.whatwg.org/#dom-cus
   test("steps 3–4: reusing a name or a constructor throws NotSupportedError", () => {
     class A extends HTMLElement {}
     customElements.define("dup-a", A);
-    expect(() => customElements.define("dup-a", class extends HTMLElement {})).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
+    expect(() => customElements.define("dup-a", class extends HTMLElement {})).toThrow(
+      expect.objectContaining({ name: "NotSupportedError" }),
+    );
     expect(() => customElements.define("dup-b", A)).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
   });
 
   test("step 5: extends must be a known non-custom HTML element", () => {
-    expect(() => customElements.define("ext-a", class extends HTMLElement {}, { extends: "my-thing" })).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
-    expect(() => customElements.define("ext-b", class extends HTMLElement {}, { extends: "bogus" })).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
+    expect(() => customElements.define("ext-a", class extends HTMLElement {}, { extends: "my-thing" })).toThrow(
+      expect.objectContaining({ name: "NotSupportedError" }),
+    );
+    expect(() => customElements.define("ext-b", class extends HTMLElement {}, { extends: "bogus" })).toThrow(
+      expect.objectContaining({ name: "NotSupportedError" }),
+    );
   });
 
   test("step 7: lifecycle callbacks are read from the prototype and must be callable", () => {
@@ -303,7 +311,15 @@ describe("custom element reactions — https://html.spec.whatwg.org/#custom-elem
     const el = document.createElement(ce.name);
     ce.takeLog();
     el.setAttribute("title", "foo");
-    expect(ce.takeLog()).toEqual([expect.objectContaining({ type: "attributeChanged", name: "title", oldValue: null, newValue: "foo", namespace: null })]);
+    expect(ce.takeLog()).toEqual([
+      expect.objectContaining({
+        type: "attributeChanged",
+        name: "title",
+        oldValue: null,
+        newValue: "foo",
+        namespace: null,
+      }),
+    ]);
     el.removeAttribute("title");
     expect(ce.takeLog()).toEqual([expect.objectContaining({ name: "title", oldValue: "foo", newValue: null })]);
   });
@@ -313,7 +329,9 @@ describe("custom element reactions — https://html.spec.whatwg.org/#custom-elem
     const el = document.createElement(ce.name);
     ce.takeLog();
     el.setAttributeNS("http://www.w3.org/2000/svg", "title", "hello");
-    expect(ce.takeLog()).toEqual([expect.objectContaining({ name: "title", newValue: "hello", namespace: "http://www.w3.org/2000/svg" })]);
+    expect(ce.takeLog()).toEqual([
+      expect.objectContaining({ name: "title", newValue: "hello", namespace: "http://www.w3.org/2000/svg" }),
+    ]);
   });
 
   test("unobserved attributes do not enqueue callbacks", () => {
@@ -358,7 +376,9 @@ describe("custom element reactions — https://html.spec.whatwg.org/#custom-elem
     const host = document.createElement("div");
     host.innerHTML = "<filler-el></filler-el><filler-el></filler-el>";
     document.body.appendChild(host);
-    expect(host.innerHTML).toBe('<filler-el><span id="inner">filled</span></filler-el><filler-el><span id="inner">filled</span></filler-el>');
+    expect(host.innerHTML).toBe(
+      '<filler-el><span id="inner">filled</span></filler-el><filler-el><span id="inner">filled</span></filler-el>',
+    );
     expect(document.getElementById("inner")).toBe(host.firstChild.firstChild);
     host.firstChild.remove();
     expect(document.getElementById("inner")).toBe(host.firstChild.firstChild);
@@ -402,7 +422,9 @@ describe("ElementInternals — https://html.spec.whatwg.org/#dom-attachinternals
     const internals = el.attachInternals();
     expect(internals).toBeInstanceOf(window.ElementInternals);
     expect(() => el.attachInternals()).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
-    expect(() => document.createElement("div").attachInternals()).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
+    expect(() => document.createElement("div").attachInternals()).toThrow(
+      expect.objectContaining({ name: "NotSupportedError" }),
+    );
     internals.states.add("--busy");
     expect(internals.states.has("--busy")).toBe(true);
     internals.role = "button";

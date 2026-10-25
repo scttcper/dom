@@ -36,7 +36,11 @@ function getCodeFrame(frame: string): string {
   const frameLocation = frame.slice(locationStart, locationEnd);
 
   const frameLocationElements = frameLocation.split(":");
-  const [filename, line, column] = [frameLocationElements[0], parseInt(frameLocationElements[1], 10), parseInt(frameLocationElements[2], 10)];
+  const [filename, line, column] = [
+    frameLocationElements[0],
+    parseInt(frameLocationElements[1], 10),
+    parseInt(frameLocationElements[2], 10),
+  ];
 
   let rawFileContents = "";
   try {
@@ -45,7 +49,11 @@ function getCodeFrame(frame: string): string {
     return "";
   }
 
-  const codeFrame = codeFrameColumns(rawFileContents, { start: { line, column } }, { highlightCode: true, linesBelow: 0 });
+  const codeFrame = codeFrameColumns(
+    rawFileContents,
+    { start: { line, column } },
+    { highlightCode: true, linesBelow: 0 },
+  );
   return `${picocolors.dim(frameLocation)}\n${codeFrame}\n`;
 }
 

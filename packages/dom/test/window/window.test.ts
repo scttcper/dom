@@ -68,7 +68,9 @@ describe("Window attributes — https://html.spec.whatwg.org/#the-window-object"
   });
 
   test("viewport defaults to 1024x768 and is configurable", () => {
-    expect([window.innerWidth, window.innerHeight, window.outerWidth, window.outerHeight]).toEqual([1024, 768, 1024, 768]);
+    expect([window.innerWidth, window.innerHeight, window.outerWidth, window.outerHeight]).toEqual([
+      1024, 768, 1024, 768,
+    ]);
     const w = createWindow({ width: 375, height: 812, devicePixelRatio: 3 });
     expect([w.innerWidth, w.innerHeight, w.devicePixelRatio]).toEqual([375, 812, 3]);
     expect(w.screen.width).toBe(375);
@@ -176,9 +178,11 @@ describe("Navigator — https://html.spec.whatwg.org/#the-navigator-object", () 
   // https://html.spec.whatwg.org/#dom-navigator-platform is implementation-defined; jsdom always
   // returns "" (lib/jsdom/living/navigator/NavigatorID-impl.js). Host-independent defaults keep
   // React Aria's isMac() (/^Mac/i.test(navigator.platform)) false on every machine.
-  test("platform defaults to \"\" and userAgent to a fixed string, whatever the host OS (jsdom parity)", () => {
+  test('platform defaults to "" and userAgent to a fixed string, whatever the host OS (jsdom parity)', () => {
     expect(window.navigator.platform).toBe("");
-    expect(window.navigator.userAgent).toBe("Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) ctrl-dom/0.0.0");
+    expect(window.navigator.userAgent).toBe(
+      "Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) ctrl-dom/0.0.0",
+    );
     expect(window.navigator.appVersion).toBe("5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) ctrl-dom/0.0.0");
   });
 
@@ -197,7 +201,12 @@ describe("Navigator — https://html.spec.whatwg.org/#the-navigator-object", () 
       const stub = { writeText: vi.fn() };
       Object.assign(window.navigator, { clipboard: stub });
       expect(window.navigator.clipboard).toBe(stub);
-      expect(Object.getOwnPropertyDescriptor(window.navigator, "clipboard")).toEqual({ value: stub, writable: true, enumerable: true, configurable: true });
+      expect(Object.getOwnPropertyDescriptor(window.navigator, "clipboard")).toEqual({
+        value: stub,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
       const second = { writeText: vi.fn() };
       (window.navigator as unknown as { clipboard: unknown }).clipboard = second;
       expect(window.navigator.clipboard).toBe(second);
@@ -235,7 +244,8 @@ describe("Navigator — https://html.spec.whatwg.org/#the-navigator-object", () 
     const items = await clipboard.read();
     expect(items[0].types).toEqual(["text/plain"]);
     expect(await (await items[0].getType("text/plain")).text()).toBe("hello");
-    const ClipboardItem = (window as unknown as { ClipboardItem: new (i: Record<string, string>) => never }).ClipboardItem;
+    const ClipboardItem = (window as unknown as { ClipboardItem: new (i: Record<string, string>) => never })
+      .ClipboardItem;
     await clipboard.write([new ClipboardItem({ "text/html": "<b>x</b>" })]);
     expect(await clipboard.readText()).toBe("");
   });
@@ -298,16 +308,22 @@ describe("Document state — https://html.spec.whatwg.org/#the-document-object",
     expect(doc.visibilityState).toBe("visible");
     expect(doc.hidden).toBe(false);
     expect(doc.referrer).toBe("");
-    expect((createWindow({ referrer: "http://ref/" }).document as unknown as Record<string, unknown>).referrer).toBe("http://ref/");
+    expect((createWindow({ referrer: "http://ref/" }).document as unknown as Record<string, unknown>).referrer).toBe(
+      "http://ref/",
+    );
   });
 });
 
 describe("FileReader — https://w3c.github.io/FileAPI/#APIASynch", () => {
-  function read(kind: "readAsText" | "readAsDataURL" | "readAsArrayBuffer" | "readAsBinaryString", blob: Blob): Promise<{ reader: FileReader; events: string[] }> {
+  function read(
+    kind: "readAsText" | "readAsDataURL" | "readAsArrayBuffer" | "readAsBinaryString",
+    blob: Blob,
+  ): Promise<{ reader: FileReader; events: string[] }> {
     return new Promise((resolve) => {
       const reader = new FileReader();
       const events: string[] = [];
-      for (const type of ["loadstart", "progress", "load", "loadend"]) reader.addEventListener(type, () => events.push(type));
+      for (const type of ["loadstart", "progress", "load", "loadend"])
+        reader.addEventListener(type, () => events.push(type));
       reader.addEventListener("loadend", () => resolve({ reader, events }));
       reader[kind](blob);
       expect(reader.readyState).toBe(FileReader.LOADING);

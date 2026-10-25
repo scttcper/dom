@@ -8,7 +8,9 @@ import { writeFileSync } from "node:fs";
 
 const require = createRequire(new URL("../../../package.json", import.meta.url));
 const jsdomDir = require.resolve("jsdom/package.json").replace(/package\.json$/, "");
-const defs: Map<string, { inherited?: string; initial?: string; longhands?: string[] }> = require(jsdomDir + "lib/generated/css-property-definitions.js");
+const defs: Map<string, { inherited?: string; initial?: string; longhands?: string[] }> = require(
+  jsdomDir + "lib/generated/css-property-definitions.js",
+);
 
 const names = [...defs.keys()].sort();
 const lines: string[] = [];

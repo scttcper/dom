@@ -40,7 +40,7 @@ const nextTask = () => new Promise((r) => setTimeout(r, 1));
 
 describe("global attributes — https://html.spec.whatwg.org/#global-attributes", () => {
   // Deviation (docs/deviations.md): the getter returns true for until-found, like jsdom/happy-dom.
-  test("hidden: the setter writes \"until-found\"; the getter is a boolean", () => {
+  test('hidden: the setter writes "until-found"; the getter is a boolean', () => {
     const d = document.createElement("div");
     expect(d.hidden).toBe(false);
     d.hidden = true;
@@ -253,7 +253,7 @@ describe("<details> and <summary> — https://html.spec.whatwg.org/#the-details-
   });
 
   test("details name groups are exclusive", () => {
-    document.body.innerHTML = '<details name=g open id=a></details><details name=g id=b></details>';
+    document.body.innerHTML = "<details name=g open id=a></details><details name=g id=b></details>";
     document.getElementById("b").open = true;
     expect(document.getElementById("a").open).toBe(false);
   });
@@ -347,7 +347,9 @@ describe("popover — https://html.spec.whatwg.org/#the-popover-attribute", () =
   });
 
   test("errors: no popover attribute → NotSupportedError, disconnected → InvalidStateError", () => {
-    expect(() => document.createElement("div").showPopover()).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
+    expect(() => document.createElement("div").showPopover()).toThrow(
+      expect.objectContaining({ name: "NotSupportedError" }),
+    );
     const p = document.createElement("div");
     p.popover = "auto";
     expect(() => p.showPopover()).toThrow(expect.objectContaining({ name: "InvalidStateError" }));
@@ -528,7 +530,14 @@ describe("document metadata — https://html.spec.whatwg.org/#document-metadata"
       expect(s.sheet).toBeNull();
       s.type = "";
       s.remove();
-      expect(calls).toEqual(["create a{}", "remove a{}", "create a{}b{}", "remove a{}b{}", "create a{}b{}", "remove a{}b{}"]);
+      expect(calls).toEqual([
+        "create a{}",
+        "remove a{}",
+        "create a{}b{}",
+        "remove a{}b{}",
+        "create a{}b{}",
+        "remove a{}b{}",
+      ]);
     } finally {
       Object.assign(styleSheetHooks, saved);
     }
@@ -545,7 +554,8 @@ describe("document metadata — https://html.spec.whatwg.org/#document-metadata"
 
 describe("tables — https://html.spec.whatwg.org/#the-table-element", () => {
   test("rows orders thead, body rows, tfoot; insertRow/deleteRow; cells", () => {
-    document.body.innerHTML = "<table><tfoot><tr id=f></tr></tfoot><tbody><tr id=b></tr></tbody><thead><tr id=h></tr></thead></table>";
+    document.body.innerHTML =
+      "<table><tfoot><tr id=f></tr></tfoot><tbody><tr id=b></tr></tbody><thead><tr id=h></tr></thead></table>";
     const t = document.body.firstChild;
     expect([...t.rows].map((r: any) => r.id)).toEqual(["h", "b", "f"]);
     expect(document.getElementById("b").rowIndex).toBe(1);
@@ -571,7 +581,9 @@ describe("tables — https://html.spec.whatwg.org/#the-table-element", () => {
     expect(t.tBodies.length).toBe(1);
     // createTBody inserts after the last tbody, or at the end of the table.
     expect(t.innerHTML).toBe("<caption></caption><thead></thead><tfoot></tfoot><tbody></tbody>");
-    expect(() => (t.tHead = document.createElement("div"))).toThrow(expect.objectContaining({ name: "HierarchyRequestError" }));
+    expect(() => (t.tHead = document.createElement("div"))).toThrow(
+      expect.objectContaining({ name: "HierarchyRequestError" }),
+    );
   });
 
   test("colSpan/rowSpan are clamped", () => {
@@ -599,7 +611,8 @@ describe("<slot> — https://html.spec.whatwg.org/#the-slot-element", () => {
 
 describe("invokers — https://html.spec.whatwg.org/#popoverinvokerelement", () => {
   test("popovertarget toggles/shows/hides the target popover on click", () => {
-    document.body.innerHTML = '<button id=b popovertarget=p>b</button><button id=h popovertarget=p popovertargetaction=hide>h</button><div popover id=p></div>';
+    document.body.innerHTML =
+      "<button id=b popovertarget=p>b</button><button id=h popovertarget=p popovertargetaction=hide>h</button><div popover id=p></div>";
     const p = document.getElementById("p");
     const b = document.getElementById("b");
     expect(b.popoverTargetElement).toBe(p);
@@ -625,7 +638,8 @@ describe("invokers — https://html.spec.whatwg.org/#popoverinvokerelement", () 
   });
 
   test("commandfor runs built-in dialog commands after a cancelable command event", () => {
-    document.body.innerHTML = '<button id=open commandfor=d command=show-modal></button><dialog id=d><button id=close commandfor=d command=close value=ok></button></dialog>';
+    document.body.innerHTML =
+      "<button id=open commandfor=d command=show-modal></button><dialog id=d><button id=close commandfor=d command=close value=ok></button></dialog>";
     const d = document.getElementById("d");
     const events: string[] = [];
     d.addEventListener("command", (e: any) => events.push(e.command));
@@ -639,7 +653,7 @@ describe("invokers — https://html.spec.whatwg.org/#popoverinvokerelement", () 
   });
 
   test("a submit button inside a form does not invoke its popover target", () => {
-    document.body.innerHTML = '<form><button id=b popovertarget=p>b</button></form><div popover id=p></div>';
+    document.body.innerHTML = "<form><button id=b popovertarget=p>b</button></form><div popover id=p></div>";
     document.querySelector("form").addEventListener("submit", (e: any) => e.preventDefault());
     document.getElementById("b").click();
     expect(document.getElementById("p").matches(":popover-open")).toBe(false);

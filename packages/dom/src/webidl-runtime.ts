@@ -30,7 +30,8 @@ export function exposeMembers(...ctors: Ctor[]): void {
  */
 export function hideInternals(obj: object): void {
   for (const key of Reflect.ownKeys(obj)) {
-    if (typeof key === "symbol" || key.charCodeAt(0) === 95 /* _ */) Object.defineProperty(obj, key, { enumerable: false });
+    if (typeof key === "symbol" || key.charCodeAt(0) === 95 /* _ */)
+      Object.defineProperty(obj, key, { enumerable: false });
   }
 }
 

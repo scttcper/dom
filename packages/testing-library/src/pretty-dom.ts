@@ -12,7 +12,14 @@
 // loaded lazily, so output stays identical in every case.
 
 import { createRequire } from "node:module";
-import { COMMENT_NODE, DOCUMENT_FRAGMENT_NODE, ELEMENT_NODE, TEXT_NODE, serializeNode, type NodeImpl } from "@ctrl/dom/internal";
+import {
+  COMMENT_NODE,
+  DOCUMENT_FRAGMENT_NODE,
+  ELEMENT_NODE,
+  TEXT_NODE,
+  serializeNode,
+  type NodeImpl,
+} from "@ctrl/dom/internal";
 import { getUserCodeFrame } from "./get-user-code-frame.ts";
 import { getDocument } from "./helpers.ts";
 import { getConfig } from "./config.ts";
@@ -74,7 +81,9 @@ const shouldHighlight = (): boolean => {
 
 // https://github.com/facebook/jest/blob/615084195ae1ae61ddd56162c62bbdda17587569/packages/pretty-format/src/plugins/DOMElement.ts#L50
 function filterCommentsAndDefaultIgnoreTagsTags(value: any): boolean {
-  return value.nodeType !== COMMENT_NODE && (value.nodeType !== ELEMENT_NODE || !value.matches(getConfig().defaultIgnore));
+  return (
+    value.nodeType !== COMMENT_NODE && (value.nodeType !== ELEMENT_NODE || !value.matches(getConfig().defaultIgnore))
+  );
 }
 
 // --- the DOMElement printer ---
@@ -144,7 +153,10 @@ const ctorIsElementName = new WeakMap<object, boolean>();
 
 function isCustomElement(val: any): boolean {
   const { tagName } = val;
-  return Boolean((typeof tagName === "string" && tagName.includes("-")) || (typeof val.hasAttribute === "function" && val.hasAttribute("is")));
+  return Boolean(
+    (typeof tagName === "string" && tagName.includes("-")) ||
+    (typeof val.hasAttribute === "function" && val.hasAttribute("is")),
+  );
 }
 
 /** DOMElementFilter `test()` for a node we are about to print. */
@@ -226,7 +238,9 @@ function printProps(impl: NodeImpl, config: PrintConfig, indentation: string): s
 function isNoiseAttribute(impl: NodeImpl, name: string): boolean {
   if (name === "class" || name === "style") return true;
   // Inside <svg> only what queries read survives (role, aria-*, data-testid, id).
-  return impl.ns === SVG_NS && name !== "role" && name !== "id" && !name.startsWith("aria-") && !name.startsWith("data-");
+  return (
+    impl.ns === SVG_NS && name !== "role" && name !== "id" && !name.startsWith("aria-") && !name.startsWith("data-")
+  );
 }
 
 const COMPACT_MAX_TEXT = 200;
@@ -245,7 +259,10 @@ function printChildren(impl: NodeImpl, config: PrintConfig, indentation: string,
 function printNode(impl: NodeImpl, config: PrintConfig, indentation: string, depth: number): string {
   if (!pluginHandles(impl)) throw DELEGATE;
   if (impl.type === TEXT_NODE) {
-    const data = config.compact && impl.data.length > COMPACT_MAX_TEXT ? impl.data.slice(0, COMPACT_MAX_TEXT - 1) + "…" : impl.data;
+    const data =
+      config.compact && impl.data.length > COMPACT_MAX_TEXT
+        ? impl.data.slice(0, COMPACT_MAX_TEXT - 1) + "…"
+        : impl.data;
     return config.colors.content.open + escapeHTML(data) + config.colors.content.close;
   }
   if (impl.type === COMMENT_NODE) {
@@ -277,7 +294,10 @@ function printNode(impl: NodeImpl, config: PrintConfig, indentation: string, dep
 }
 
 /** pretty-format's option validation + config construction for the fast path; null = delegate. */
-function makePrintConfig(options: Record<string, any>, filterNode: ((node: any) => boolean) | null): PrintConfig | null {
+function makePrintConfig(
+  options: Record<string, any>,
+  filterNode: ((node: any) => boolean) | null,
+): PrintConfig | null {
   for (const key of Object.keys(options)) {
     if (!KNOWN_OPTIONS.has(key)) return null; // pretty-format throws `Unknown option`
   }
@@ -301,7 +321,12 @@ function makePrintConfig(options: Record<string, any>, filterNode: ((node: any) 
   };
 }
 
-function formatDOM(dom: any, filterNode: ((node: any) => boolean) | undefined, prettyFormatOptions: Record<string, any>, compact = false): string {
+function formatDOM(
+  dom: any,
+  filterNode: ((node: any) => boolean) | undefined,
+  prettyFormatOptions: Record<string, any>,
+  compact = false,
+): string {
   const allOptions = { printFunctionName: false, highlight: shouldHighlight(), ...prettyFormatOptions };
   const impl: NodeImpl | undefined = dom[$impl];
   const effectiveFilter = filterNode ?? filterCommentsAndDefaultIgnoreTagsTags;
@@ -320,7 +345,11 @@ function formatDOM(dom: any, filterNode: ((node: any) => boolean) | undefined, p
 }
 
 /** Upstream's exact formatting call (also the oracle for the fast printer's tests). */
-export function formatWithPrettyFormat(dom: any, filterNode: (node: any) => boolean, options: Record<string, any>): string {
+export function formatWithPrettyFormat(
+  dom: any,
+  filterNode: (node: any) => boolean,
+  options: Record<string, any>,
+): string {
   const pf = loadPrettyFormat();
   return pf.format(dom, {
     plugins: [createDOMElementFilter(filterNode), pf.plugins.DOMCollection],
@@ -329,7 +358,11 @@ export function formatWithPrettyFormat(dom: any, filterNode: (node: any) => bool
 }
 
 /** The fast printer alone (null when it would delegate); for tests. */
-export function formatWithFastPrinter(dom: any, filterNode: ((node: any) => boolean) | undefined, options: Record<string, any>): string | null {
+export function formatWithFastPrinter(
+  dom: any,
+  filterNode: ((node: any) => boolean) | undefined,
+  options: Record<string, any>,
+): string | null {
   const config = makePrintConfig(options, filterNode ?? null);
   if (config === null) return null;
   try {
@@ -348,7 +381,8 @@ export function prettyDOM(dom?: any, maxLength?: any, options: Record<string, an
   }
   const explicitMaxLength: number | undefined = typeof maxLength === "number" ? maxLength : undefined;
   if (typeof maxLength !== "number") {
-    maxLength = (typeof process !== "undefined" && typeof process.env !== "undefined" && process.env.DEBUG_PRINT_LIMIT) || 7000;
+    maxLength =
+      (typeof process !== "undefined" && typeof process.env !== "undefined" && process.env.DEBUG_PRINT_LIMIT) || 7000;
   }
 
   if (maxLength === 0) {
@@ -375,8 +409,16 @@ export function prettyDOM(dom?: any, maxLength?: any, options: Record<string, an
   if (format !== null || "format" in options) {
     const { format: _format, hidden, maxLines, maxTextLength, collapseAfter, urls, ...rest } = options;
     if (format === "aria") {
-      const snapshot = ariaSnapshot(dom, { hidden, maxLines, maxTextLength, collapseAfter, urls } satisfies AriaSnapshotOptions);
-      return explicitMaxLength !== undefined && snapshot.length > explicitMaxLength ? `${snapshot.slice(0, explicitMaxLength)}...` : snapshot;
+      const snapshot = ariaSnapshot(dom, {
+        hidden,
+        maxLines,
+        maxTextLength,
+        collapseAfter,
+        urls,
+      } satisfies AriaSnapshotOptions);
+      return explicitMaxLength !== undefined && snapshot.length > explicitMaxLength
+        ? `${snapshot.slice(0, explicitMaxLength)}...`
+        : snapshot;
     }
     options = rest;
     if (format === "compact") {
@@ -391,7 +433,9 @@ export function prettyDOM(dom?: any, maxLength?: any, options: Record<string, an
   const { filterNode, ...prettyFormatOptions } = options;
 
   const debugContent = formatDOM(dom, filterNode, prettyFormatOptions);
-  return maxLength !== undefined && outerHTMLLength(dom) > maxLength ? `${debugContent.slice(0, maxLength)}...` : debugContent;
+  return maxLength !== undefined && outerHTMLLength(dom) > maxLength
+    ? `${debugContent.slice(0, maxLength)}...`
+    : debugContent;
 }
 
 function outerHTMLLength(dom: any): number {
@@ -412,7 +456,15 @@ export const logDOM = (...args: [any?, any?, any?]): void => {
 // --- delegation: the upstream DOMElementFilter plugin, verbatim, for pretty-format itself ---
 
 function createDOMElementFilter(filterNode: (node: any) => boolean): any {
-  const printPropsPF = (keys: string[], props: Record<string, unknown>, config: any, indentation: string, depth: number, refs: any, printer: any): string => {
+  const printPropsPF = (
+    keys: string[],
+    props: Record<string, unknown>,
+    config: any,
+    indentation: string,
+    depth: number,
+    refs: any,
+    printer: any,
+  ): string => {
     const indentationNext = indentation + config.indent;
     const colors = config.colors;
     return keys
@@ -425,15 +477,34 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
           }
           printed = "{" + printed + "}";
         }
-        return config.spacingInner + indentation + colors.prop.open + key + colors.prop.close + "=" + colors.value.open + printed + colors.value.close;
+        return (
+          config.spacingInner +
+          indentation +
+          colors.prop.open +
+          key +
+          colors.prop.close +
+          "=" +
+          colors.value.open +
+          printed +
+          colors.value.close
+        );
       })
       .join("");
   };
-  const printText = (text: string, config: any) => config.colors.content.open + escapeHTML(text) + config.colors.content.close;
-  const printChildrenPF = (children: any[], config: any, indentation: string, depth: number, refs: any, printer: any): string =>
+  const printText = (text: string, config: any) =>
+    config.colors.content.open + escapeHTML(text) + config.colors.content.close;
+  const printChildrenPF = (
+    children: any[],
+    config: any,
+    indentation: string,
+    depth: number,
+    refs: any,
+    printer: any,
+  ): string =>
     children
       .map((child) => {
-        const printedChild = typeof child === "string" ? printText(child, config) : printer(child, config, indentation, depth, refs);
+        const printedChild =
+          typeof child === "string" ? printText(child, config) : printer(child, config, indentation, depth, refs);
         if (printedChild === "" && typeof child === "object" && child !== null && child.nodeType !== TEXT_NODE) {
           // A plugin serialized this Node to '' meaning we should ignore it.
           return "";
@@ -441,7 +512,13 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
         return config.spacingOuter + indentation + printedChild;
       })
       .join("");
-  const printElement = (type: string, printedProps: string, printedChildren: string, config: any, indentation: string): string => {
+  const printElement = (
+    type: string,
+    printedProps: string,
+    printedChildren: string,
+    config: any,
+    indentation: string,
+  ): string => {
     const tagColor = config.colors.tag;
     return (
       tagColor.open +
@@ -482,7 +559,11 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
       return printElement(
         type,
         printPropsPF(
-          isFragment ? [] : Array.from(node.attributes as ArrayLike<any>).map((attr) => attr.name).sort(),
+          isFragment
+            ? []
+            : Array.from(node.attributes as ArrayLike<any>)
+                .map((attr) => attr.name)
+                .sort(),
           isFragment
             ? {}
             : Array.from(node.attributes as ArrayLike<any>).reduce<Record<string, string>>((props, attribute) => {
@@ -495,7 +576,14 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
           refs,
           printer,
         ),
-        printChildrenPF(Array.prototype.slice.call(node.childNodes || node.children).filter(filterNode), config, indentation + config.indent, depth, refs, printer),
+        printChildrenPF(
+          Array.prototype.slice.call(node.childNodes || node.children).filter(filterNode),
+          config,
+          indentation + config.indent,
+          depth,
+          refs,
+          printer,
+        ),
         config,
         indentation,
       );

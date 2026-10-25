@@ -153,7 +153,9 @@ if (arg !== undefined) {
   const results: Record<string, Record<string, number[]>> = {};
   for (let s = 0; s < 5; s++) {
     for (const impl of impls) {
-      const json = JSON.parse(execFileSync(process.execPath, ["--expose-gc", file, impl], { encoding: "utf8" })) as Record<string, number>;
+      const json = JSON.parse(
+        execFileSync(process.execPath, ["--expose-gc", file, impl], { encoding: "utf8" }),
+      ) as Record<string, number>;
       for (const [k, v] of Object.entries(json)) ((results[k] ??= {})[impl] ??= []).push(v);
     }
   }

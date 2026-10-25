@@ -149,7 +149,9 @@ export function isSupportedSelector(text: string): boolean {
 export function serializeSelector(text: string, namespaces?: NamespaceContext): string | null {
   const ast = new SelectorParser(text).parseSelectorList();
   if (ast === null) return null;
-  return namespaces === undefined ? serializeSelectorList(ast) : withNamespaceContext(namespaces, () => serializeSelectorList(ast));
+  return namespaces === undefined
+    ? serializeSelectorList(ast)
+    : withNamespaceContext(namespaces, () => serializeSelectorList(ast));
 }
 
 export interface MatchOptions {
@@ -170,8 +172,14 @@ function normalizePseudo(p: string): string {
  * Whether `sel` matches `el` (or, with `pseudoElement`, that pseudo-element of `el`).
  * A selector with a pseudo-element only matches when the same pseudo-element is requested.
  */
-export function matchesSelector(sel: CompiledSelector, el: NodeImpl, pseudoElement?: string | null, options?: MatchOptions): boolean {
-  const want = pseudoElement === undefined || pseudoElement === null || pseudoElement === "" ? "" : normalizePseudo(pseudoElement);
+export function matchesSelector(
+  sel: CompiledSelector,
+  el: NodeImpl,
+  pseudoElement?: string | null,
+  options?: MatchOptions,
+): boolean {
+  const want =
+    pseudoElement === undefined || pseudoElement === null || pseudoElement === "" ? "" : normalizePseudo(pseudoElement);
   if (sel.pseudoElement !== want) return false;
   const prevScope = setScope(options?.scope ?? null);
   const prevHost = options?.shadowHost !== undefined ? setHostContext(options.shadowHost) : null;
@@ -198,14 +206,24 @@ export function matchesSelectorDirect(sel: CompiledSelector, el: NodeImpl, pseud
 }
 
 /** Whether any selector of the list matches. */
-export function matchesSelectorList(list: CompiledSelectorList, el: NodeImpl, pseudoElement?: string | null, options?: MatchOptions): boolean {
+export function matchesSelectorList(
+  list: CompiledSelectorList,
+  el: NodeImpl,
+  pseudoElement?: string | null,
+  options?: MatchOptions,
+): boolean {
   const s = list.selectors;
   for (let i = 0; i < s.length; i++) if (matchesSelector(s[i], el, pseudoElement, options)) return true;
   return false;
 }
 
 /** Highest specificity among the selectors of `list` that match `el` (-1 when none match). */
-export function matchingSpecificity(list: CompiledSelectorList, el: NodeImpl, pseudoElement?: string | null, options?: MatchOptions): number {
+export function matchingSpecificity(
+  list: CompiledSelectorList,
+  el: NodeImpl,
+  pseudoElement?: string | null,
+  options?: MatchOptions,
+): number {
   let best = -1;
   const s = list.selectors;
   for (let i = 0; i < s.length; i++) {

@@ -66,7 +66,9 @@ describe("cssText — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-cs
   });
 
   test("getter: longhands that complete a shorthand serialize as the shorthand (preferred order)", () => {
-    expect(onBoth((s) => ((s.cssText = "margin-top:1px;margin-right:2px;margin-bottom:1px;margin-left:2px"), s.cssText))).toEqual({
+    expect(
+      onBoth((s) => ((s.cssText = "margin-top:1px;margin-right:2px;margin-bottom:1px;margin-left:2px"), s.cssText)),
+    ).toEqual({
       "ctrl-dom": "margin: 1px 2px;",
       jsdom: "margin: 1px 2px;",
     });
@@ -89,7 +91,9 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
   test("step 1: a computed (readonly) declaration throws NoModificationAllowedError", () => {
     document.body!.innerHTML = `<p>x</p>`;
     const cs = window.getComputedStyle(document.querySelector("p")!) as any;
-    expect(() => cs.setProperty("color", "red")).toThrow(expect.objectContaining({ name: "NoModificationAllowedError" }));
+    expect(() => cs.setProperty("color", "red")).toThrow(
+      expect.objectContaining({ name: "NoModificationAllowedError" }),
+    );
   });
 
   test("step 2: property names are ASCII lower-cased unless custom properties", () => {
@@ -106,7 +110,7 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
     });
   });
 
-  test("step 5: a priority other than \"important\" (ASCII case-insensitive) or \"\" makes the call a no-op", () => {
+  test('step 5: a priority other than "important" (ASCII case-insensitive) or "" makes the call a no-op', () => {
     // jsdom (cssstyle) differs: it rejects "IMPORTANT" and stores the value for any other priority.
     const s = style();
     s.setProperty("color", "red", "IMPORTANT");
@@ -115,13 +119,20 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
   });
 
   test("step 6: an unparsable value is ignored and keeps the old value", () => {
-    expect(onBoth((s) => (s.setProperty("width", "1px"), s.setProperty("width", "wide"), s.width))).toEqual({ "ctrl-dom": "1px", jsdom: "1px" });
+    expect(onBoth((s) => (s.setProperty("width", "1px"), s.setProperty("width", "wide"), s.width))).toEqual({
+      "ctrl-dom": "1px",
+      jsdom: "1px",
+    });
   });
 
   test("step 8: a shorthand sets each longhand with the priority", () => {
     const s = style();
     s.setProperty("padding", "1px 2px", "important");
-    expect([s.paddingLeft, s.getPropertyPriority("padding-left"), s.getPropertyPriority("padding")]).toEqual(["2px", "important", "important"]);
+    expect([s.paddingLeft, s.getPropertyPriority("padding-left"), s.getPropertyPriority("padding")]).toEqual([
+      "2px",
+      "important",
+      "important",
+    ]);
   });
 
   test("step 9: setting the same value does not rewrite the style attribute (no mutation record)", () => {
@@ -136,8 +147,8 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
 });
 
 describe("removeProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty", () => {
-  test("returns the old value; removing a missing property returns \"\"", () => {
-    expect(onBoth((s) => (s.color = "red", [s.removeProperty("color"), s.removeProperty("color")]))).toEqual({
+  test('returns the old value; removing a missing property returns ""', () => {
+    expect(onBoth((s) => ((s.color = "red"), [s.removeProperty("color"), s.removeProperty("color")]))).toEqual({
       "ctrl-dom": ["red", ""],
       jsdom: ["red", ""],
     });
@@ -167,14 +178,14 @@ describe("getPropertyValue / getPropertyPriority — https://drafts.csswg.org/cs
     expect([s.getPropertyPriority("margin"), s.getPropertyPriority("margin-left")]).toEqual(["", "important"]);
   });
 
-  test("unknown properties return \"\"", () => {
+  test('unknown properties return ""', () => {
     const s = style();
     expect([s.getPropertyValue("nope"), s.getPropertyPriority("nope")]).toEqual(["", ""]);
   });
 });
 
 describe("length / item — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item", () => {
-  test("shorthands count as their longhands; item() out of range returns \"\"", () => {
+  test('shorthands count as their longhands; item() out of range returns ""', () => {
     // jsdom (cssstyle) differs: it also lists the shorthand itself as an item.
     const s = style();
     s.cssText = "padding: 1px; color: red";
@@ -203,7 +214,11 @@ describe("cssFloat and named attributes — https://drafts.csswg.org/cssom/#dom-
     const s = style();
     s.borderTopLeftRadius = "2px";
     s.webkitLineClamp = "2";
-    expect([s.getPropertyValue("border-top-left-radius"), s["border-top-left-radius"], s.WebkitLineClamp]).toEqual(["2px", "2px", "2"]);
+    expect([s.getPropertyValue("border-top-left-radius"), s["border-top-left-radius"], s.WebkitLineClamp]).toEqual([
+      "2px",
+      "2px",
+      "2",
+    ]);
   });
 });
 
@@ -215,8 +230,16 @@ describe("cascade-only shorthands — https://drafts.csswg.org/css-cascade-5/#sh
   }
 
   test("overflow: <'overflow-block'>{1,2} sets overflow-x and overflow-y (https://drafts.csswg.org/css-overflow-3/#propdef-overflow)", () => {
-    expect(computed("overflow: hidden", "overflow-x", "overflow-y", "overflow")).toEqual(["hidden", "hidden", "hidden"]);
-    expect(computed("overflow: hidden auto", "overflow-x", "overflow-y", "overflow")).toEqual(["hidden", "auto", "hidden auto"]);
+    expect(computed("overflow: hidden", "overflow-x", "overflow-y", "overflow")).toEqual([
+      "hidden",
+      "hidden",
+      "hidden",
+    ]);
+    expect(computed("overflow: hidden auto", "overflow-x", "overflow-y", "overflow")).toEqual([
+      "hidden",
+      "auto",
+      "hidden auto",
+    ]);
   });
 
   test("gap: <'row-gap'> <'column-gap'>? (https://drafts.csswg.org/css-align-3/#gap-shorthand)", () => {
@@ -234,8 +257,16 @@ describe("cascade-only shorthands — https://drafts.csswg.org/css-cascade-5/#sh
   });
 
   test("list-style: none sets whichever of image/type is not otherwise set (https://drafts.csswg.org/css-lists-3/#list-style-property)", () => {
-    expect(computed("list-style: inside none", "list-style-position", "list-style-image", "list-style-type")).toEqual(["inside", "none", "none"]);
-    expect(computed("list-style: square", "list-style-position", "list-style-image", "list-style-type")).toEqual(["outside", "none", "square"]);
+    expect(computed("list-style: inside none", "list-style-position", "list-style-image", "list-style-type")).toEqual([
+      "inside",
+      "none",
+      "none",
+    ]);
+    expect(computed("list-style: square", "list-style-position", "list-style-image", "list-style-type")).toEqual([
+      "outside",
+      "none",
+      "square",
+    ]);
   });
 
   test("outline: <outline-color> || <outline-line-style> || <outline-line-width> (https://drafts.csswg.org/css-ui-4/#outline)", () => {
@@ -243,7 +274,10 @@ describe("cascade-only shorthands — https://drafts.csswg.org/css-cascade-5/#sh
   });
 
   test("the declaration block keeps the shorthand as written (jsdom-compatible style.overflow)", () => {
-    expect(onBoth((s) => ((s.overflow = "hidden"), s.cssText))).toEqual({ "ctrl-dom": "overflow: hidden;", jsdom: "overflow: hidden;" });
+    expect(onBoth((s) => ((s.overflow = "hidden"), s.cssText))).toEqual({
+      "ctrl-dom": "overflow: hidden;",
+      jsdom: "overflow: hidden;",
+    });
   });
 });
 
@@ -264,14 +298,20 @@ describe("expanded shorthands — https://drafts.csswg.org/cssom/#concept-shorth
   });
 
   test("border: sets width/style/color on four sides and resets border-image", () => {
-    expect(onBoth((s) => ((s.border = "1px solid red"), [s.borderLeftWidth, s.borderTopStyle, s.borderBottomColor, s.border]))).toEqual({
+    expect(
+      onBoth(
+        (s) => ((s.border = "1px solid red"), [s.borderLeftWidth, s.borderTopStyle, s.borderBottomColor, s.border]),
+      ),
+    ).toEqual({
       "ctrl-dom": ["1px", "solid", "red", "1px solid red"],
       jsdom: ["1px", "solid", "red", "1px solid red"],
     });
   });
 
   test("margin with one to four values expands per the box model", () => {
-    expect(onBoth((s) => ((s.margin = "1px 2px 3px"), [s.marginTop, s.marginRight, s.marginBottom, s.marginLeft]))).toEqual({
+    expect(
+      onBoth((s) => ((s.margin = "1px 2px 3px"), [s.marginTop, s.marginRight, s.marginBottom, s.marginLeft])),
+    ).toEqual({
       "ctrl-dom": ["1px", "2px", "3px", "2px"],
       jsdom: ["1px", "2px", "3px", "2px"],
     });

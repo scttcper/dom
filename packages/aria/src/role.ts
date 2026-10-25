@@ -81,7 +81,9 @@ function implicitRoleImpl(impl: NodeImpl, jd: boolean): string {
       return "complementary";
     case T.form:
       if (jd) {
-        return attr(impl, "aria-label") !== null || attr(impl, "aria-labelledby") !== null || attr(impl, "name") !== null
+        return attr(impl, "aria-label") !== null ||
+          attr(impl, "aria-labelledby") !== null ||
+          attr(impl, "name") !== null
           ? "form"
           : "";
       }
@@ -215,7 +217,14 @@ function inputRole(impl: NodeImpl, jd: boolean): string {
   const typeIsText = impl.ns === HTML_NS && inputType(impl) === "text";
   const listSet = jd ? list !== null : list !== null && list !== "";
   // input[list][type=email|search|tel|text|url] → combobox
-  if (listSet && (typeIsText || eqCI(typeAttr, "email") || eqCI(typeAttr, "search") || eqCI(typeAttr, "tel") || eqCI(typeAttr, "url"))) {
+  if (
+    listSet &&
+    (typeIsText ||
+      eqCI(typeAttr, "email") ||
+      eqCI(typeAttr, "search") ||
+      eqCI(typeAttr, "tel") ||
+      eqCI(typeAttr, "url"))
+  ) {
     return "combobox";
   }
   if (list === null) {
@@ -273,24 +282,61 @@ export type Flavor = 5 | 6;
 const DAA_ROLE_BY_TAG: string[] = [];
 {
   const m: Record<string, string> = {
-    article: "article", aside: "complementary", button: "button", datalist: "listbox", dd: "definition",
-    details: "group", dialog: "dialog", dt: "term", fieldset: "group", figure: "figure", form: "form",
-    footer: "contentinfo", h1: "heading", h2: "heading", h3: "heading", h4: "heading", h5: "heading",
-    h6: "heading", header: "banner", hr: "separator", html: "document", legend: "legend", li: "listitem",
-    math: "math", main: "main", menu: "list", nav: "navigation", ol: "list", optgroup: "group",
-    option: "option", output: "status", progress: "progressbar", section: "region", summary: "button",
-    table: "table", tbody: "rowgroup", textarea: "textbox", tfoot: "rowgroup", td: "cell",
-    th: "columnheader", thead: "rowgroup", tr: "row", ul: "list",
+    article: "article",
+    aside: "complementary",
+    button: "button",
+    datalist: "listbox",
+    dd: "definition",
+    details: "group",
+    dialog: "dialog",
+    dt: "term",
+    fieldset: "group",
+    figure: "figure",
+    form: "form",
+    footer: "contentinfo",
+    h1: "heading",
+    h2: "heading",
+    h3: "heading",
+    h4: "heading",
+    h5: "heading",
+    h6: "heading",
+    header: "banner",
+    hr: "separator",
+    html: "document",
+    legend: "legend",
+    li: "listitem",
+    math: "math",
+    main: "main",
+    menu: "list",
+    nav: "navigation",
+    ol: "list",
+    optgroup: "group",
+    option: "option",
+    output: "status",
+    progress: "progressbar",
+    section: "region",
+    summary: "button",
+    table: "table",
+    tbody: "rowgroup",
+    textarea: "textbox",
+    tfoot: "rowgroup",
+    td: "cell",
+    th: "columnheader",
+    thead: "rowgroup",
+    tr: "row",
+    ul: "list",
   };
   for (const [name, role] of Object.entries(m)) DAA_ROLE_BY_TAG[tagId(name)] = role;
 }
 
 /** https://rawgit.com/w3c/aria/stable/#global_states as listed by dom-accessibility-api. */
+// oxfmt-ignore
 const GLOBAL_ARIA_05 = [
   "aria-atomic", "aria-busy", "aria-controls", "aria-current", "aria-describedby", "aria-details",
   "aria-dropeffect", "aria-flowto", "aria-grabbed", "aria-hidden", "aria-keyshortcuts", "aria-label",
   "aria-labelledby", "aria-live", "aria-owns", "aria-relevant", "aria-roledescription",
 ];
+// oxfmt-ignore
 const GLOBAL_ARIA_06 = [
   "aria-atomic", "aria-busy", "aria-controls", "aria-current", "aria-description", "aria-describedby",
   "aria-details", "aria-dropeffect", "aria-flowto", "aria-grabbed", "aria-hidden", "aria-keyshortcuts",

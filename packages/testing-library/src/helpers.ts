@@ -37,7 +37,12 @@ export function advanceFakeTimersByTime(ms: number): void {
     return;
   }
   const vi = (globalThis as any).vi;
-  if (vi != null && typeof vi.advanceTimersByTime === "function" && typeof vi.isFakeTimers === "function" && vi.isFakeTimers()) {
+  if (
+    vi != null &&
+    typeof vi.advanceTimersByTime === "function" &&
+    typeof vi.isFakeTimers === "function" &&
+    vi.isFakeTimers()
+  ) {
     vi.advanceTimersByTime(ms);
     return;
   }
@@ -89,7 +94,9 @@ export function checkContainerType(container: unknown): void {
     !(typeof (container as any).querySelector === "function") ||
     !(typeof (container as any).querySelectorAll === "function")
   ) {
-    throw new TypeError(`Expected container to be an Element, a Document or a DocumentFragment but got ${getTypeName(container)}.`);
+    throw new TypeError(
+      `Expected container to be an Element, a Document or a DocumentFragment but got ${getTypeName(container)}.`,
+    );
   }
 }
 

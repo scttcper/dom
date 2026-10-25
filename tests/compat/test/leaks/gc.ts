@@ -81,7 +81,10 @@ export function slope(points: ReadonlyArray<readonly [number, number]>): number 
  * Run `cycle` `warmup + samples * every` times, sampling heap-after-GC every `every` cycles after
  * the warmup, and return the least-squares slope in bytes per cycle.
  */
-export async function heapSlope(cycle: (i: number) => void | Promise<void>, { warmup = 50, samples = 8, every = 50 } = {}): Promise<{ bytesPerCycle: number; points: Array<[number, number]> }> {
+export async function heapSlope(
+  cycle: (i: number) => void | Promise<void>,
+  { warmup = 50, samples = 8, every = 50 } = {},
+): Promise<{ bytesPerCycle: number; points: Array<[number, number]> }> {
   let i = 0;
   for (; i < warmup; i++) await cycle(i);
   const points: Array<[number, number]> = [[i, await heapAfterGC()]];

@@ -1,18 +1,22 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/edit/isEditable.ts
 
-import type {Element, HTMLInputElement, HTMLTextAreaElement} from '../../dom-types.ts'
+import type {
+  Element,
+  HTMLInputElement,
+  HTMLTextAreaElement,
+} from '../../dom-types.ts'
 import {isElementType} from '../misc/isElementType.ts'
 import {isContentEditable} from './isContentEditable.ts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type GuardedType<T> = T extends (x: any) => x is infer R ? R : never
+type GuardedType<T> = T extends ((x: any) => x is infer R) ? R : never
 
 export function isEditable(
   element: Element,
 ): element is
-| GuardedType<typeof isContentEditable>
-| (EditableInputOrTextarea & {readOnly: false}) {
+  | GuardedType<typeof isContentEditable>
+  | (EditableInputOrTextarea & {readOnly: false}) {
   return (
     (isEditableInputOrTextArea(element) && !element.readOnly) ||
     isContentEditable(element)

@@ -29,7 +29,11 @@ type UE = typeof stockUserEvent
 type RTL = Pick<typeof stockRTL, 'render' | 'screen' | 'cleanup' | 'act'>
 
 const impls: Array<[string, UE, RTL]> = [
-  ['@ctrl/dom/user-event', ctrlDomUserEvent as unknown as UE, ctrlDomRTL as unknown as RTL],
+  [
+    '@ctrl/dom/user-event',
+    ctrlDomUserEvent as unknown as UE,
+    ctrlDomRTL as unknown as RTL,
+  ],
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 
@@ -58,13 +62,19 @@ function BlurFromEffect({log}: {log: string[]}) {
   )
 }
 
-async function run([, userEvent, {render, screen, cleanup, act}]: [string, UE, RTL]) {
+async function run([, userEvent, {render, screen, cleanup, act}]: [
+  string,
+  UE,
+  RTL,
+]) {
   const log: string[] = []
   const errors: string[] = []
-  const spy = vi.spyOn(console, 'error').mockImplementation((message: unknown) => {
-    const line = String(message).split('\n')[0]
-    if (line.startsWith('An update to')) errors.push(line)
-  })
+  const spy = vi
+    .spyOn(console, 'error')
+    .mockImplementation((message: unknown) => {
+      const line = String(message).split('\n')[0]
+      if (line.startsWith('An update to')) errors.push(line)
+    })
   try {
     render(<BlurFromEffect log={log} />)
     const input = screen.getByRole('textbox')
@@ -88,6 +98,8 @@ describe('change on blur from an effect inside an async act() flush (React)', ()
     expect(ours).toEqual(stock)
     expect(ours.log).toEqual(['change'])
     // 14.6.8: the act() around the change empties React's act queue mid-flush.
-    expect(ours.errors).toEqual(['An update to %s inside a test was not wrapped in act(...).'])
+    expect(ours.errors).toEqual([
+      'An update to %s inside a test was not wrapped in act(...).',
+    ])
   })
 })

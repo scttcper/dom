@@ -159,7 +159,9 @@ export class Event {
     let flags = EF_INITIALIZED;
     if (eventInitDict !== undefined && eventInitDict !== null) {
       if (typeof eventInitDict !== "object" && typeof eventInitDict !== "function") {
-        throw new TypeError(`Failed to construct '${new.target.name}': The provided value is not of type '${new.target.name}Init'.`);
+        throw new TypeError(
+          `Failed to construct '${new.target.name}': The provided value is not of type '${new.target.name}Init'.`,
+        );
       }
       if (eventInitDict.bubbles) flags |= EF_BUBBLES;
       if (eventInitDict.cancelable) flags |= EF_CANCELABLE;
@@ -331,7 +333,9 @@ export function setCanceledFlag(s: EventState): void {
 /** https://dom.spec.whatwg.org/#concept-event-initialize */
 export function initializeEvent(s: EventState, type: string, bubbles: boolean, cancelable: boolean): void {
   // Steps 1-4: set initialized; unset stop propagation, stop immediate, canceled; isTrusted false.
-  let f = (s.flags | EF_INITIALIZED) & ~(EF_STOP_PROPAGATION | EF_STOP_IMMEDIATE | EF_CANCELED | EF_TRUSTED | EF_BUBBLES | EF_CANCELABLE);
+  let f =
+    (s.flags | EF_INITIALIZED) &
+    ~(EF_STOP_PROPAGATION | EF_STOP_IMMEDIATE | EF_CANCELED | EF_TRUSTED | EF_BUBBLES | EF_CANCELABLE);
   if (bubbles) f |= EF_BUBBLES;
   if (cancelable) f |= EF_CANCELABLE;
   s.flags = f;

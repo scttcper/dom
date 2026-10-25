@@ -22,7 +22,15 @@ import { HTMLDetailsElement, HTMLDialogElement, HTMLSummaryElement } from "./int
 import { HTMLTemplateElement } from "./template.ts";
 import { HTMLSlotElement } from "./slot.ts";
 import { HTMLLinkElement, HTMLScriptElement, HTMLStyleElement, HTMLTitleElement } from "./resources.ts";
-import { SVGElement, SVGGeometryElement, SVGGradientElement, SVGGraphicsElement, SVGTextContentElement, SVGTextPositioningElement, svgElements } from "./SVGElement.ts";
+import {
+  SVGElement,
+  SVGGeometryElement,
+  SVGGradientElement,
+  SVGGraphicsElement,
+  SVGTextContentElement,
+  SVGTextPositioningElement,
+  svgElements,
+} from "./SVGElement.ts";
 import { MathMLElement } from "./MathMLElement.ts";
 import { formElementClasses } from "./forms/index.ts";
 import { installCommandInvoker, installPopoverInvoker } from "./invokers.ts";
@@ -103,6 +111,7 @@ const html = new Map<string, Ctor>([
 ]);
 
 // Elements whose interface is HTMLElement itself.
+// oxfmt-ignore
 for (const name of [
   "abbr", "address", "article", "aside", "b", "bdi", "bdo", "cite", "code", "dd", "dfn", "dt", "em",
   "figcaption", "figure", "footer", "header", "hgroup", "i", "kbd", "main", "mark", "nav", "noscript",
@@ -169,7 +178,22 @@ function setClassString(C: Function): void {
   }
 }
 
-for (const C of [HTMLElement, E.HTMLUnknownElement, HTMLMediaElement, SVGElement, MathMLElement, ...html.values(), ...svgElements.values()]) {
+for (const C of [
+  HTMLElement,
+  E.HTMLUnknownElement,
+  HTMLMediaElement,
+  SVGElement,
+  MathMLElement,
+  ...html.values(),
+  ...svgElements.values(),
+]) {
   if (C.name !== "HTMLElement" || C === HTMLElement) setClassString(C);
 }
-for (const C of [SVGGraphicsElement, SVGGeometryElement, SVGTextContentElement, SVGTextPositioningElement, SVGGradientElement]) setClassString(C);
+for (const C of [
+  SVGGraphicsElement,
+  SVGGeometryElement,
+  SVGTextContentElement,
+  SVGTextPositioningElement,
+  SVGGradientElement,
+])
+  setClassString(C);

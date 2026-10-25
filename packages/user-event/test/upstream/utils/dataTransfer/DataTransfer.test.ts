@@ -5,7 +5,10 @@
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
 import {waitFor} from '@testing-library/dom'
-import {createDataTransfer, getBlobFromDataTransferItem} from '#src/utils/index.ts'
+import {
+  createDataTransfer,
+  getBlobFromDataTransferItem,
+} from '#src/utils/index.ts'
 
 describe('create DataTransfer', () => {
   test('plain string', async () => {

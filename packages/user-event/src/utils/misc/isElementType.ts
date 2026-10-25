@@ -14,7 +14,11 @@ const UPPERCASE = /[A-Z]/
  */
 function lowerTagName(element: Element): string {
   const localName = element.localName
-  if (element.prefix == null && typeof localName === 'string' && !UPPERCASE.test(localName)) {
+  if (
+    element.prefix == null &&
+    typeof localName === 'string' &&
+    !UPPERCASE.test(localName)
+  ) {
     return localName
   }
   return element.tagName.toLowerCase()

@@ -76,7 +76,8 @@ export function splitComponents(value: string): Comp[] | null {
     if (type === TK_EOF) break;
     switch (type) {
       case TK_WHITESPACE:
-        if (out.length !== 0 && out[out.length - 1].type !== COMP_SPACE) out.push(new Comp(COMP_SPACE, " ", "", 0, true, ""));
+        if (out.length !== 0 && out[out.length - 1].type !== COMP_SPACE)
+          out.push(new Comp(COMP_SPACE, " ", "", 0, true, ""));
         continue;
       case TK_BAD_STRING:
       case TK_BAD_URL:
@@ -109,12 +110,22 @@ export function splitComponents(value: string): Comp[] | null {
         }
         // Auto-close an unterminated block (https://drafts.csswg.org/css-syntax-3/#consume-simple-block).
         let text = value.slice(start, t.end);
-        for (let i = stack.length - 1; i >= 0; i--) text += stack[i] === TK_RPAREN ? ")" : stack[i] === TK_RBRACKET ? "]" : "}";
+        for (let i = stack.length - 1; i >= 0; i--)
+          text += stack[i] === TK_RPAREN ? ")" : stack[i] === TK_RBRACKET ? "]" : "}";
         out.push(new Comp(type, text, lower, 0, true, ""));
         continue;
       }
       default:
-        out.push(new Comp(type, value.slice(t.start, t.end), type === TK_IDENT ? t.value.toLowerCase() : type === TK_DIMENSION ? t.unit.toLowerCase() : "", t.num, t.isInteger, t.value));
+        out.push(
+          new Comp(
+            type,
+            value.slice(t.start, t.end),
+            type === TK_IDENT ? t.value.toLowerCase() : type === TK_DIMENSION ? t.unit.toLowerCase() : "",
+            t.num,
+            t.isInteger,
+            t.value,
+          ),
+        );
     }
   }
   if (out.length !== 0 && out[out.length - 1].type === COMP_SPACE) out.pop();
@@ -140,6 +151,7 @@ export function formatNumber(n: number): string {
   return n.toFixed(0);
 }
 
+// oxfmt-ignore
 const LENGTH_UNITS = new Set([
   "px", "em", "rem", "ex", "rex", "ch", "rch", "cap", "rcap", "ic", "ric", "lh", "rlh",
   "vw", "vh", "vi", "vb", "vmin", "vmax", "svw", "svh", "svi", "svb", "svmin", "svmax",
@@ -148,6 +160,7 @@ const LENGTH_UNITS = new Set([
 ]);
 const TIME_UNITS = new Set(["s", "ms"]);
 const ANGLE_UNITS = new Set(["deg", "grad", "rad", "turn"]);
+// oxfmt-ignore
 const MATH_FUNCTIONS = new Set([
   "calc", "min", "max", "clamp", "round", "mod", "rem", "sin", "cos", "tan", "asin", "acos", "atan", "atan2",
   "pow", "sqrt", "hypot", "log", "exp", "abs", "sign", "env", "-webkit-calc", "-moz-calc", "calc-size", "anchor", "anchor-size",
@@ -209,15 +222,33 @@ export function grammar(spec: string): Grammar {
     const code = item.endsWith("+") ? item.slice(0, -1) : item;
     if (item.endsWith("+") && code.length === 1) types |= G_NONNEG;
     switch (code) {
-      case "L": types |= G_LENGTH; continue;
-      case "P": types |= G_PERCENT; continue;
-      case "N": types |= G_NUMBER; continue;
-      case "I": types |= G_INTEGER; continue;
-      case "C": types |= G_COLOR; continue;
-      case "T": types |= G_TIME; continue;
-      case "A": types |= G_ANGLE; continue;
-      case "S": types |= G_STRING; continue;
-      case "U": types |= G_URL; continue;
+      case "L":
+        types |= G_LENGTH;
+        continue;
+      case "P":
+        types |= G_PERCENT;
+        continue;
+      case "N":
+        types |= G_NUMBER;
+        continue;
+      case "I":
+        types |= G_INTEGER;
+        continue;
+      case "C":
+        types |= G_COLOR;
+        continue;
+      case "T":
+        types |= G_TIME;
+        continue;
+      case "A":
+        types |= G_ANGLE;
+        continue;
+      case "S":
+        types |= G_STRING;
+        continue;
+      case "U":
+        types |= G_URL;
+        continue;
     }
     if (item === "#") types |= G_LIST;
     else if (item.startsWith("*")) max = Number(item.slice(1));
@@ -227,8 +258,10 @@ export function grammar(spec: string): Grammar {
   return new Grammar(types, keywords, fns, max);
 }
 
-const SIZE = "L+ P+ auto min-content max-content fit-content stretch -webkit-fill-available -moz-available -webkit-min-content -webkit-max-content -webkit-fit-content fit-content()";
-const MAX_SIZE = "L+ P+ none min-content max-content fit-content stretch -webkit-fill-available -moz-available fit-content()";
+const SIZE =
+  "L+ P+ auto min-content max-content fit-content stretch -webkit-fill-available -moz-available -webkit-min-content -webkit-max-content -webkit-fit-content fit-content()";
+const MAX_SIZE =
+  "L+ P+ none min-content max-content fit-content stretch -webkit-fill-available -moz-available fit-content()";
 const INSET = "L P auto";
 const MARGIN = "L P auto";
 const PADDING = "L+ P+";
@@ -240,45 +273,113 @@ const OVERFLOW = "visible hidden clip scroll auto overlay -webkit-paged-x -webki
 
 /** Grammar specs for longhands whose values tests and frameworks commonly set or read. */
 const GRAMMAR_SPECS: Record<string, string> = {
-  width: SIZE, height: SIZE, "min-width": SIZE, "min-height": SIZE, "inline-size": SIZE, "block-size": SIZE,
-  "min-inline-size": SIZE, "min-block-size": SIZE,
-  "max-width": MAX_SIZE, "max-height": MAX_SIZE, "max-inline-size": MAX_SIZE, "max-block-size": MAX_SIZE,
-  top: INSET, right: INSET, bottom: INSET, left: INSET,
-  "inset-block-start": INSET, "inset-block-end": INSET, "inset-inline-start": INSET, "inset-inline-end": INSET,
-  "margin-top": MARGIN, "margin-right": MARGIN, "margin-bottom": MARGIN, "margin-left": MARGIN,
-  "margin-block-start": MARGIN, "margin-block-end": MARGIN, "margin-inline-start": MARGIN, "margin-inline-end": MARGIN,
-  "padding-top": PADDING, "padding-right": PADDING, "padding-bottom": PADDING, "padding-left": PADDING,
-  "padding-block-start": PADDING, "padding-block-end": PADDING, "padding-inline-start": PADDING, "padding-inline-end": PADDING,
-  "border-top-width": BORDER_WIDTH, "border-right-width": BORDER_WIDTH, "border-bottom-width": BORDER_WIDTH, "border-left-width": BORDER_WIDTH,
-  "outline-width": BORDER_WIDTH, "column-rule-width": BORDER_WIDTH,
-  "border-top-style": BORDER_STYLE, "border-right-style": BORDER_STYLE, "border-bottom-style": BORDER_STYLE, "border-left-style": BORDER_STYLE,
-  "outline-style": BORDER_STYLE + " auto", "column-rule-style": BORDER_STYLE,
-  "border-block-start-color": COLOR, "border-block-end-color": COLOR, "border-inline-start-color": COLOR, "border-inline-end-color": COLOR,
-  "border-top-color": COLOR, "border-right-color": COLOR, "border-bottom-color": COLOR, "border-left-color": COLOR,
-  color: COLOR, "background-color": COLOR, "outline-color": COLOR + " invert", "caret-color": COLOR + " auto",
-  "text-decoration-color": COLOR, "column-rule-color": COLOR, "accent-color": COLOR + " auto", "flood-color": COLOR,
-  "lighting-color": COLOR, "stop-color": COLOR, "text-emphasis-color": COLOR, "-webkit-text-fill-color": COLOR, "-webkit-text-stroke-color": COLOR,
-  "border-top-left-radius": RADIUS, "border-top-right-radius": RADIUS, "border-bottom-right-radius": RADIUS, "border-bottom-left-radius": RADIUS,
-  opacity: "N P", "fill-opacity": "N P", "stroke-opacity": "N P", "flood-opacity": "N P", "stop-opacity": "N P",
-  "z-index": "I auto", order: "I", "flex-grow": "N+", "flex-shrink": "N+",
+  width: SIZE,
+  height: SIZE,
+  "min-width": SIZE,
+  "min-height": SIZE,
+  "inline-size": SIZE,
+  "block-size": SIZE,
+  "min-inline-size": SIZE,
+  "min-block-size": SIZE,
+  "max-width": MAX_SIZE,
+  "max-height": MAX_SIZE,
+  "max-inline-size": MAX_SIZE,
+  "max-block-size": MAX_SIZE,
+  top: INSET,
+  right: INSET,
+  bottom: INSET,
+  left: INSET,
+  "inset-block-start": INSET,
+  "inset-block-end": INSET,
+  "inset-inline-start": INSET,
+  "inset-inline-end": INSET,
+  "margin-top": MARGIN,
+  "margin-right": MARGIN,
+  "margin-bottom": MARGIN,
+  "margin-left": MARGIN,
+  "margin-block-start": MARGIN,
+  "margin-block-end": MARGIN,
+  "margin-inline-start": MARGIN,
+  "margin-inline-end": MARGIN,
+  "padding-top": PADDING,
+  "padding-right": PADDING,
+  "padding-bottom": PADDING,
+  "padding-left": PADDING,
+  "padding-block-start": PADDING,
+  "padding-block-end": PADDING,
+  "padding-inline-start": PADDING,
+  "padding-inline-end": PADDING,
+  "border-top-width": BORDER_WIDTH,
+  "border-right-width": BORDER_WIDTH,
+  "border-bottom-width": BORDER_WIDTH,
+  "border-left-width": BORDER_WIDTH,
+  "outline-width": BORDER_WIDTH,
+  "column-rule-width": BORDER_WIDTH,
+  "border-top-style": BORDER_STYLE,
+  "border-right-style": BORDER_STYLE,
+  "border-bottom-style": BORDER_STYLE,
+  "border-left-style": BORDER_STYLE,
+  "outline-style": BORDER_STYLE + " auto",
+  "column-rule-style": BORDER_STYLE,
+  "border-block-start-color": COLOR,
+  "border-block-end-color": COLOR,
+  "border-inline-start-color": COLOR,
+  "border-inline-end-color": COLOR,
+  "border-top-color": COLOR,
+  "border-right-color": COLOR,
+  "border-bottom-color": COLOR,
+  "border-left-color": COLOR,
+  color: COLOR,
+  "background-color": COLOR,
+  "outline-color": COLOR + " invert",
+  "caret-color": COLOR + " auto",
+  "text-decoration-color": COLOR,
+  "column-rule-color": COLOR,
+  "accent-color": COLOR + " auto",
+  "flood-color": COLOR,
+  "lighting-color": COLOR,
+  "stop-color": COLOR,
+  "text-emphasis-color": COLOR,
+  "-webkit-text-fill-color": COLOR,
+  "-webkit-text-stroke-color": COLOR,
+  "border-top-left-radius": RADIUS,
+  "border-top-right-radius": RADIUS,
+  "border-bottom-right-radius": RADIUS,
+  "border-bottom-left-radius": RADIUS,
+  opacity: "N P",
+  "fill-opacity": "N P",
+  "stroke-opacity": "N P",
+  "flood-opacity": "N P",
+  "stop-opacity": "N P",
+  "z-index": "I auto",
+  order: "I",
+  "flex-grow": "N+",
+  "flex-shrink": "N+",
   "flex-basis": "L+ P+ auto content min-content max-content fit-content",
   "line-height": "N+ L+ P+ normal",
   "font-size": "L+ P+ xx-small x-small small medium large x-large xx-large xxx-large larger smaller math",
   "font-weight": "N+ normal bold bolder lighter",
   "font-style": "normal italic oblique",
   "font-variant": "normal none small-caps all-small-caps petite-caps all-petite-caps unicase titling-caps",
-  "font-stretch": "P+ normal ultra-condensed extra-condensed condensed semi-condensed semi-expanded expanded extra-expanded ultra-expanded",
+  "font-stretch":
+    "P+ normal ultra-condensed extra-condensed condensed semi-condensed semi-expanded expanded extra-expanded ultra-expanded",
   visibility: "visible hidden collapse",
   "pointer-events": "auto none visiblepainted visiblefill visiblestroke visible painted fill stroke all bounding-box",
   position: "static relative absolute fixed sticky -webkit-sticky",
   float: "left right none inline-start inline-end",
   clear: "none left right both inline-start inline-end",
   "box-sizing": "content-box border-box",
-  "overflow-x": OVERFLOW, "overflow-y": OVERFLOW, "overflow-block": OVERFLOW, "overflow-inline": OVERFLOW,
-  "text-align": "start end left right center justify match-parent justify-all -webkit-left -webkit-right -webkit-center -moz-left -moz-right -moz-center",
+  "overflow-x": OVERFLOW,
+  "overflow-y": OVERFLOW,
+  "overflow-block": OVERFLOW,
+  "overflow-inline": OVERFLOW,
+  "text-align":
+    "start end left right center justify match-parent justify-all -webkit-left -webkit-right -webkit-center -moz-left -moz-right -moz-center",
   "white-space": "normal pre nowrap pre-wrap break-spaces pre-line",
-  "user-select": "auto text none contain all", "-webkit-user-select": "auto text none contain all",
-  "background-image": "U none # linear-gradient() radial-gradient() conic-gradient() repeating-linear-gradient() repeating-radial-gradient() repeating-conic-gradient() image-set() -webkit-image-set() url() image() cross-fade() element() paint() -webkit-linear-gradient() -webkit-radial-gradient() -webkit-gradient()",
+  "user-select": "auto text none contain all",
+  "-webkit-user-select": "auto text none contain all",
+  "background-image":
+    "U none # linear-gradient() radial-gradient() conic-gradient() repeating-linear-gradient() repeating-radial-gradient() repeating-conic-gradient() image-set() -webkit-image-set() url() image() cross-fade() element() paint() -webkit-linear-gradient() -webkit-radial-gradient() -webkit-gradient()",
   "background-attachment": "# scroll fixed local",
   "background-origin": "# border-box padding-box content-box",
   "background-clip": "# border-box padding-box content-box text border-area",
@@ -296,25 +397,31 @@ const GRAMMAR_SPECS: Record<string, string> = {
   "list-style-position": "inside outside",
   resize: "none both horizontal vertical block inline",
   "object-fit": "fill contain cover none scale-down",
-  "isolation": "auto isolate",
-  "mix-blend-mode": "normal multiply screen overlay darken lighten color-dodge color-burn hard-light soft-light difference exclusion hue saturation color luminosity plus-darker plus-lighter",
+  isolation: "auto isolate",
+  "mix-blend-mode":
+    "normal multiply screen overlay darken lighten color-dodge color-burn hard-light soft-light difference exclusion hue saturation color luminosity plus-darker plus-lighter",
   "backface-visibility": "visible hidden",
   "flex-direction": "row row-reverse column column-reverse",
   "flex-wrap": "nowrap wrap wrap-reverse",
-  "animation-duration": "# T+ auto", "transition-duration": "# T+",
-  "animation-delay": "# T", "transition-delay": "# T",
+  "animation-duration": "# T+ auto",
+  "transition-duration": "# T+",
+  "animation-delay": "# T",
+  "transition-delay": "# T",
   "animation-iteration-count": "# N+ infinite",
   "animation-direction": "# normal reverse alternate alternate-reverse",
   "animation-fill-mode": "# none forwards backwards both",
   "animation-play-state": "# running paused",
   "tab-size": "N+ L+",
-  "row-gap": "L+ P+ normal", "column-gap": "L+ P+ normal",
+  "row-gap": "L+ P+ normal",
+  "column-gap": "L+ P+ normal",
   "outline-offset": "L",
-  "letter-spacing": "L P normal", "word-spacing": "L P normal",
+  "letter-spacing": "L P normal",
+  "word-spacing": "L P normal",
   "text-indent": "L P",
   "aspect-ratio": "*1",
   inset: "L P auto *4",
-  cursor: "# U N *3 auto default none context-menu help pointer progress wait cell crosshair text vertical-text alias copy move no-drop not-allowed grab grabbing e-resize n-resize ne-resize nw-resize s-resize se-resize sw-resize w-resize ew-resize ns-resize nesw-resize nwse-resize col-resize row-resize all-scroll zoom-in zoom-out -webkit-grab -webkit-grabbing -webkit-zoom-in -webkit-zoom-out hand",
+  cursor:
+    "# U N *3 auto default none context-menu help pointer progress wait cell crosshair text vertical-text alias copy move no-drop not-allowed grab grabbing e-resize n-resize ne-resize nw-resize s-resize se-resize sw-resize w-resize ew-resize ns-resize nesw-resize nwse-resize col-resize row-resize all-scroll zoom-in zoom-out -webkit-grab -webkit-grabbing -webkit-zoom-in -webkit-zoom-out hand",
   "unicode-bidi": "normal embed isolate bidi-override isolate-override plaintext",
   direction: "ltr rtl",
   "writing-mode": "horizontal-tb vertical-rl vertical-lr sideways-rl sideways-lr",
@@ -322,7 +429,8 @@ const GRAMMAR_SPECS: Record<string, string> = {
   "scroll-behavior": "auto smooth",
   "touch-action": "*1",
   "will-change": "*1",
-  appearance: "none auto menulist-button textfield base-select button checkbox listbox menulist meter progress-bar push-button radio searchfield slider-horizontal square-button textarea",
+  appearance:
+    "none auto menulist-button textfield base-select button checkbox listbox menulist meter progress-bar push-button radio searchfield slider-horizontal square-button textarea",
   "-webkit-appearance": "*1",
 };
 
@@ -341,7 +449,9 @@ export function grammarFor(name: string): Grammar {
 // --- normalization ------------------------------------------------------------------------
 
 export function isCSSWideKeyword(lower: string): boolean {
-  return lower === "inherit" || lower === "initial" || lower === "unset" || lower === "revert" || lower === "revert-layer";
+  return (
+    lower === "inherit" || lower === "initial" || lower === "unset" || lower === "revert" || lower === "revert-layer"
+  );
 }
 
 /** Normalizes one component against a grammar; null if it does not match. */
@@ -383,7 +493,8 @@ export function normalizeComponent(c: Comp, g: Grammar): string | null {
         if (inner !== null && inner.length === 1 && inner[0].type === TK_STRING) return serializeUrl(inner[0].value);
         return c.text;
       }
-      if ((types & (G_LENGTH | G_PERCENT | G_NUMBER | G_INTEGER | G_TIME | G_ANGLE)) !== 0 && MATH_FUNCTIONS.has(name)) return c.text;
+      if ((types & (G_LENGTH | G_PERCENT | G_NUMBER | G_INTEGER | G_TIME | G_ANGLE)) !== 0 && MATH_FUNCTIONS.has(name))
+        return c.text;
       if ((types & G_COLOR) !== 0) {
         const color = normalizeColor(c.text);
         if (color !== null) return color;
@@ -398,7 +509,12 @@ export function normalizeComponent(c: Comp, g: Grammar): string | null {
 // --- gradients ----------------------------------------------------------------------------
 
 const GRADIENT_FUNCTIONS = new Set([
-  "linear-gradient", "radial-gradient", "conic-gradient", "repeating-linear-gradient", "repeating-radial-gradient", "repeating-conic-gradient",
+  "linear-gradient",
+  "radial-gradient",
+  "conic-gradient",
+  "repeating-linear-gradient",
+  "repeating-radial-gradient",
+  "repeating-conic-gradient",
 ]);
 
 /**
@@ -534,6 +650,7 @@ type Special = (comps: Comp[]) => string | null;
 
 const DISPLAY_OUTSIDE = new Set(["block", "inline", "run-in"]);
 const DISPLAY_INSIDE = new Set(["flow", "flow-root", "table", "flex", "grid", "ruby", "math"]);
+// oxfmt-ignore
 const DISPLAY_SINGLE = new Set([
   "none", "contents", "block", "inline", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "flow-root",
   "list-item", "table", "inline-table", "table-row", "table-cell", "table-column", "table-column-group",
@@ -592,7 +709,11 @@ function normalizeContent(comps: Comp[]): string | null {
     if (c.type === TK_COMMA) return null;
     if (c.type === TK_STRING) out += serializeString(c.value);
     else if (c.type === TK_URL) out += serializeUrl(c.value);
-    else if (c.type === TK_IDENT) out += isCSSWideKeyword(c.lower) || c.lower === "none" || c.lower === "normal" || c.lower.endsWith("-quote") ? c.lower : c.text;
+    else if (c.type === TK_IDENT)
+      out +=
+        isCSSWideKeyword(c.lower) || c.lower === "none" || c.lower === "normal" || c.lower.endsWith("-quote")
+          ? c.lower
+          : c.text;
     else out += c.text;
   }
   return out === "" ? null : out;
@@ -665,4 +786,15 @@ export function normalizeCustom(value: string): string | null {
 }
 
 /** Re-exported token type ids used by shorthand parsers. */
-export { TK_COMMA, TK_DELIM, TK_DIMENSION, TK_FUNCTION, TK_HASH, TK_IDENT, TK_NUMBER, TK_PERCENTAGE, TK_STRING, TK_URL };
+export {
+  TK_COMMA,
+  TK_DELIM,
+  TK_DIMENSION,
+  TK_FUNCTION,
+  TK_HASH,
+  TK_IDENT,
+  TK_NUMBER,
+  TK_PERCENTAGE,
+  TK_STRING,
+  TK_URL,
+};

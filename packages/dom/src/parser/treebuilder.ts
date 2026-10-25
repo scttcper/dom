@@ -89,6 +89,7 @@ const props = new Int32Array(T.ID_LIMIT);
 function mark(bits: number, ids: number[]): void {
   for (let i = 0; i < ids.length; i++) props[ids[i]] |= bits;
 }
+// oxfmt-ignore
 mark(B_SCOPE, [
   T.T_APPLET, T.T_CAPTION, T.T_HTML, T.T_TABLE, T.T_TD, T.T_TH, T.T_MARQUEE, T.T_OBJECT, T.T_SELECT, T.T_TEMPLATE,
   T.F_MI, T.F_MO, T.F_MN, T.F_MS, T.F_MTEXT, T.F_ANNOTATION_XML, T.F_FOREIGNOBJECT, T.F_DESC, T.F_SVG_TITLE,
@@ -96,6 +97,7 @@ mark(B_SCOPE, [
 mark(B_LIST_SCOPE, [T.T_OL, T.T_UL]);
 mark(B_BUTTON_SCOPE, [T.T_BUTTON]);
 mark(B_TABLE_SCOPE, [T.T_HTML, T.T_TABLE, T.T_TEMPLATE]);
+// oxfmt-ignore
 mark(B_SPECIAL, [
   T.T_ADDRESS, T.T_APPLET, T.T_AREA, T.T_ARTICLE, T.T_ASIDE, T.T_BASE, T.T_BASEFONT, T.T_BGSOUND, T.T_BLOCKQUOTE,
   T.T_BODY, T.T_BR, T.T_BUTTON, T.T_CAPTION, T.T_CENTER, T.T_COL, T.T_COLGROUP, T.T_DD, T.T_DETAILS, T.T_DIR, T.T_DIV,
@@ -108,20 +110,24 @@ mark(B_SPECIAL, [
   T.F_MI, T.F_MO, T.F_MN, T.F_MS, T.F_MTEXT, T.F_ANNOTATION_XML, T.F_FOREIGNOBJECT, T.F_DESC, T.F_SVG_TITLE,
 ]);
 mark(B_IMPLIED, [T.T_DD, T.T_DT, T.T_LI, T.T_OPTGROUP, T.T_OPTION, T.T_P, T.T_RB, T.T_RP, T.T_RT, T.T_RTC]);
+// oxfmt-ignore
 mark(B_THOROUGH, [
   T.T_CAPTION, T.T_COLGROUP, T.T_DD, T.T_DT, T.T_LI, T.T_OPTGROUP, T.T_OPTION, T.T_P, T.T_RB, T.T_RP, T.T_RT,
   T.T_RTC, T.T_TBODY, T.T_TD, T.T_TFOOT, T.T_TH, T.T_THEAD, T.T_TR,
 ]);
+// oxfmt-ignore
 mark(B_FORMATTING, [
   T.T_A, T.T_B, T.T_BIG, T.T_CODE, T.T_EM, T.T_FONT, T.T_I, T.T_NOBR, T.T_S, T.T_SMALL, T.T_STRIKE, T.T_STRONG, T.T_TT,
   T.T_U,
 ]);
+// oxfmt-ignore
 mark(B_FOREIGN_BREAKOUT, [
   T.T_B, T.T_BIG, T.T_BLOCKQUOTE, T.T_BODY, T.T_BR, T.T_CENTER, T.T_CODE, T.T_DD, T.T_DIV, T.T_DL, T.T_DT, T.T_EM,
   T.T_EMBED, T.T_H1, T.T_H2, T.T_H3, T.T_H4, T.T_H5, T.T_H6, T.T_HEAD, T.T_HR, T.T_I, T.T_IMG, T.T_LI, T.T_LISTING,
   T.T_MENU, T.T_META, T.T_NOBR, T.T_OL, T.T_P, T.T_PRE, T.T_RUBY, T.T_S, T.T_SMALL, T.T_SPAN, T.T_STRONG, T.T_STRIKE,
   T.T_SUB, T.T_SUP, T.T_TABLE, T.T_TT, T.T_U, T.T_UL, T.T_VAR,
 ]);
+// oxfmt-ignore
 mark(B_FORM_ASSOCIATED, [
   T.T_BUTTON, T.T_FIELDSET, T.T_INPUT, T.T_OBJECT, T.T_OUTPUT, T.T_SELECT, T.T_TEXTAREA, T.T_IMG,
 ]);
@@ -137,6 +143,7 @@ export function parserTagId(lowerName: string): number {
 }
 
 // https://html.spec.whatwg.org/#adjust-svg-attributes
+// oxfmt-ignore
 const SVG_ATTRS: string[] = [
   "attributeName", "attributeType", "baseFrequency", "baseProfile", "calcMode", "clipPathUnits", "diffuseConstant",
   "edgeMode", "filterUnits", "glyphRef", "gradientTransform", "gradientUnits", "kernelMatrix", "kernelUnitLength",
@@ -149,6 +156,7 @@ const SVG_ATTRS: string[] = [
   "xChannelSelector", "yChannelSelector", "zoomAndPan",
 ];
 // https://html.spec.whatwg.org/#parsing-main-inforeign (SVG tag name adjustments)
+// oxfmt-ignore
 const SVG_TAGS: string[] = [
   "altGlyph", "altGlyphDef", "altGlyphItem", "animateColor", "animateMotion", "animateTransform", "clipPath",
   "feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting",
@@ -164,29 +172,61 @@ for (let i = 0; i < SVG_TAGS.length; i++) svgTagMap.set(SVG_TAGS[i].toLowerCase(
 
 // https://html.spec.whatwg.org/#the-initial-insertion-mode (quirks mode public identifiers)
 const QUIRKS_PUBLIC_PREFIXES: string[] = [
-  "+//silmaril//dtd html pro v0r11 19970101//", "-//as//dtd html 3.0 aswedit + extensions//",
-  "-//advasoft ltd//dtd html 3.0 aswedit + extensions//", "-//ietf//dtd html 2.0 level 1//",
-  "-//ietf//dtd html 2.0 level 2//", "-//ietf//dtd html 2.0 strict level 1//", "-//ietf//dtd html 2.0 strict level 2//",
-  "-//ietf//dtd html 2.0 strict//", "-//ietf//dtd html 2.0//", "-//ietf//dtd html 2.1e//", "-//ietf//dtd html 3.0//",
-  "-//ietf//dtd html 3.2 final//", "-//ietf//dtd html 3.2//", "-//ietf//dtd html 3//", "-//ietf//dtd html level 0//",
-  "-//ietf//dtd html level 1//", "-//ietf//dtd html level 2//", "-//ietf//dtd html level 3//",
-  "-//ietf//dtd html strict level 0//", "-//ietf//dtd html strict level 1//", "-//ietf//dtd html strict level 2//",
-  "-//ietf//dtd html strict level 3//", "-//ietf//dtd html strict//", "-//ietf//dtd html//",
-  "-//metrius//dtd metrius presentational//", "-//microsoft//dtd internet explorer 2.0 html strict//",
-  "-//microsoft//dtd internet explorer 2.0 html//", "-//microsoft//dtd internet explorer 2.0 tables//",
-  "-//microsoft//dtd internet explorer 3.0 html strict//", "-//microsoft//dtd internet explorer 3.0 html//",
-  "-//microsoft//dtd internet explorer 3.0 tables//", "-//netscape comm. corp.//dtd html//",
-  "-//netscape comm. corp.//dtd strict html//", "-//o'reilly and associates//dtd html 2.0//",
-  "-//o'reilly and associates//dtd html extended 1.0//", "-//o'reilly and associates//dtd html extended relaxed 1.0//",
+  "+//silmaril//dtd html pro v0r11 19970101//",
+  "-//as//dtd html 3.0 aswedit + extensions//",
+  "-//advasoft ltd//dtd html 3.0 aswedit + extensions//",
+  "-//ietf//dtd html 2.0 level 1//",
+  "-//ietf//dtd html 2.0 level 2//",
+  "-//ietf//dtd html 2.0 strict level 1//",
+  "-//ietf//dtd html 2.0 strict level 2//",
+  "-//ietf//dtd html 2.0 strict//",
+  "-//ietf//dtd html 2.0//",
+  "-//ietf//dtd html 2.1e//",
+  "-//ietf//dtd html 3.0//",
+  "-//ietf//dtd html 3.2 final//",
+  "-//ietf//dtd html 3.2//",
+  "-//ietf//dtd html 3//",
+  "-//ietf//dtd html level 0//",
+  "-//ietf//dtd html level 1//",
+  "-//ietf//dtd html level 2//",
+  "-//ietf//dtd html level 3//",
+  "-//ietf//dtd html strict level 0//",
+  "-//ietf//dtd html strict level 1//",
+  "-//ietf//dtd html strict level 2//",
+  "-//ietf//dtd html strict level 3//",
+  "-//ietf//dtd html strict//",
+  "-//ietf//dtd html//",
+  "-//metrius//dtd metrius presentational//",
+  "-//microsoft//dtd internet explorer 2.0 html strict//",
+  "-//microsoft//dtd internet explorer 2.0 html//",
+  "-//microsoft//dtd internet explorer 2.0 tables//",
+  "-//microsoft//dtd internet explorer 3.0 html strict//",
+  "-//microsoft//dtd internet explorer 3.0 html//",
+  "-//microsoft//dtd internet explorer 3.0 tables//",
+  "-//netscape comm. corp.//dtd html//",
+  "-//netscape comm. corp.//dtd strict html//",
+  "-//o'reilly and associates//dtd html 2.0//",
+  "-//o'reilly and associates//dtd html extended 1.0//",
+  "-//o'reilly and associates//dtd html extended relaxed 1.0//",
   "-//sq//dtd html 2.0 hotmetal + extensions//",
   "-//softquad software//dtd hotmetal pro 6.0::19990601::extensions to html 4.0//",
-  "-//softquad//dtd hotmetal pro 4.0::19971010::extensions to html 4.0//", "-//spyglass//dtd html 2.0 extended//",
-  "-//sun microsystems corp.//dtd hotjava html//", "-//sun microsystems corp.//dtd hotjava strict html//",
-  "-//w3c//dtd html 3 1995-03-24//", "-//w3c//dtd html 3.2 draft//", "-//w3c//dtd html 3.2 final//",
-  "-//w3c//dtd html 3.2//", "-//w3c//dtd html 3.2s draft//", "-//w3c//dtd html 4.0 frameset//",
-  "-//w3c//dtd html 4.0 transitional//", "-//w3c//dtd html experimental 19960712//",
-  "-//w3c//dtd html experimental 970421//", "-//w3c//dtd w3 html//", "-//w3o//dtd w3 html 3.0//",
-  "-//webtechs//dtd mozilla html 2.0//", "-//webtechs//dtd mozilla html//",
+  "-//softquad//dtd hotmetal pro 4.0::19971010::extensions to html 4.0//",
+  "-//spyglass//dtd html 2.0 extended//",
+  "-//sun microsystems corp.//dtd hotjava html//",
+  "-//sun microsystems corp.//dtd hotjava strict html//",
+  "-//w3c//dtd html 3 1995-03-24//",
+  "-//w3c//dtd html 3.2 draft//",
+  "-//w3c//dtd html 3.2 final//",
+  "-//w3c//dtd html 3.2//",
+  "-//w3c//dtd html 3.2s draft//",
+  "-//w3c//dtd html 4.0 frameset//",
+  "-//w3c//dtd html 4.0 transitional//",
+  "-//w3c//dtd html experimental 19960712//",
+  "-//w3c//dtd html experimental 970421//",
+  "-//w3c//dtd w3 html//",
+  "-//w3o//dtd w3 html 3.0//",
+  "-//webtechs//dtd mozilla html 2.0//",
+  "-//webtechs//dtd mozilla html//",
 ];
 
 function asciiLower(s: string): string {
@@ -974,7 +1014,12 @@ export class TreeBuilder {
     if (tag === T.T_TEMPLATE) this.hContents[h] = this.sink.templateContents(h);
     // Form owner association for form-associated elements.
     const form = this.formElement;
-    if (form >= 0 && (props[tag] & B_FORM_ASSOCIATED) !== 0 && this.fragmentContext < 0 && !this.parsingTemplateContents()) {
+    if (
+      form >= 0 &&
+      (props[tag] & B_FORM_ASSOCIATED) !== 0 &&
+      this.fragmentContext < 0 &&
+      !this.parsingTemplateContents()
+    ) {
       if ((props[tag] & B_LISTED) === 0 || !withAttrs || !this.tokenHasAttr("form")) this.sink.associateForm(h, form);
     }
     return h;
@@ -1045,8 +1090,15 @@ export class TreeBuilder {
       }
       // https://html.spec.whatwg.org/#adjust-foreign-attributes
       if (an.charCodeAt(0) === 120) {
-        if (an === "xlink:actuate" || an === "xlink:arcrole" || an === "xlink:href" || an === "xlink:role" ||
-          an === "xlink:show" || an === "xlink:title" || an === "xlink:type") {
+        if (
+          an === "xlink:actuate" ||
+          an === "xlink:arcrole" ||
+          an === "xlink:href" ||
+          an === "xlink:role" ||
+          an === "xlink:show" ||
+          an === "xlink:title" ||
+          an === "xlink:type"
+        ) {
           ans = ANS_XLINK;
           an = an.slice(6);
         } else if (an === "xml:lang" || an === "xml:space") {
@@ -1161,7 +1213,17 @@ export class TreeBuilder {
     }
     const name = this.ptName[t];
     const tag = this.ptId[t];
-    const h = this.sink.createElement(name, NS_HTML, this.locParent, this.locRef, names, values, this.emptyNumbers, count, false);
+    const h = this.sink.createElement(
+      name,
+      NS_HTML,
+      this.locParent,
+      this.locRef,
+      names,
+      values,
+      this.emptyNumbers,
+      count,
+      false,
+    );
     this.recordElement(h, NS_HTML, tag, name);
     return h;
   }
@@ -1364,7 +1426,11 @@ export class TreeBuilder {
     const pub = tok.hasPublicId ? asciiLower(tok.publicId) : "";
     const sys = tok.hasSystemId ? asciiLower(tok.systemId) : "";
     if (tok.hasPublicId) {
-      if (pub === "-//w3o//dtd w3 html strict 3.0//en//" || pub === "-/w3c/dtd html 4.0 transitional/en" || pub === "html") {
+      if (
+        pub === "-//w3o//dtd w3 html strict 3.0//en//" ||
+        pub === "-/w3c/dtd html 4.0 transitional/en" ||
+        pub === "html"
+      ) {
         return MODE_QUIRKS;
       }
       for (let i = 0; i < QUIRKS_PUBLIC_PREFIXES.length; i++) {
@@ -1373,10 +1439,14 @@ export class TreeBuilder {
     }
     if (tok.hasSystemId && sys === "http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtd") return MODE_QUIRKS;
     if (tok.hasPublicId) {
-      const html401 = pub.startsWith("-//w3c//dtd html 4.01 frameset//") || pub.startsWith("-//w3c//dtd html 4.01 transitional//");
+      const html401 =
+        pub.startsWith("-//w3c//dtd html 4.01 frameset//") || pub.startsWith("-//w3c//dtd html 4.01 transitional//");
       const sysMissingOrEmpty = !tok.hasSystemId || sys === "";
       if (sysMissingOrEmpty && html401) return MODE_QUIRKS;
-      if (pub.startsWith("-//w3c//dtd xhtml 1.0 frameset//") || pub.startsWith("-//w3c//dtd xhtml 1.0 transitional//")) {
+      if (
+        pub.startsWith("-//w3c//dtd xhtml 1.0 frameset//") ||
+        pub.startsWith("-//w3c//dtd xhtml 1.0 transitional//")
+      ) {
         return MODE_LIMITED_QUIRKS;
       }
       if (!sysMissingOrEmpty && html401) return MODE_LIMITED_QUIRKS;
@@ -2131,8 +2201,12 @@ export class TreeBuilder {
       case T.T_H5:
       case T.T_H6: {
         if (
-          !this.inScope(T.T_H1, 0) && !this.inScope(T.T_H2, 0) && !this.inScope(T.T_H3, 0) &&
-          !this.inScope(T.T_H4, 0) && !this.inScope(T.T_H5, 0) && !this.inScope(T.T_H6, 0)
+          !this.inScope(T.T_H1, 0) &&
+          !this.inScope(T.T_H2, 0) &&
+          !this.inScope(T.T_H3, 0) &&
+          !this.inScope(T.T_H4, 0) &&
+          !this.inScope(T.T_H5, 0) &&
+          !this.inScope(T.T_H6, 0)
         ) {
           return;
         }
@@ -2236,7 +2310,14 @@ export class TreeBuilder {
         const cur = this.currentNode();
         if (this.hNs[cur] === NS_HTML) {
           const t = this.hTag[cur];
-          if (t === T.T_TABLE || t === T.T_TBODY || t === T.T_TEMPLATE || t === T.T_TFOOT || t === T.T_THEAD || t === T.T_TR) {
+          if (
+            t === T.T_TABLE ||
+            t === T.T_TBODY ||
+            t === T.T_TEMPLATE ||
+            t === T.T_TFOOT ||
+            t === T.T_THEAD ||
+            t === T.T_TR
+          ) {
             this.pendingTableText = "";
             this.pendingTableNonWs = false;
             this.originalMode = this.mode;
@@ -2394,8 +2475,15 @@ export class TreeBuilder {
     const id = tok.tagId;
     if (
       (type === TK_START &&
-        (id === T.T_CAPTION || id === T.T_COL || id === T.T_COLGROUP || id === T.T_TBODY || id === T.T_TD ||
-          id === T.T_TFOOT || id === T.T_TH || id === T.T_THEAD || id === T.T_TR)) ||
+        (id === T.T_CAPTION ||
+          id === T.T_COL ||
+          id === T.T_COLGROUP ||
+          id === T.T_TBODY ||
+          id === T.T_TD ||
+          id === T.T_TFOOT ||
+          id === T.T_TH ||
+          id === T.T_THEAD ||
+          id === T.T_TR)) ||
       (type === TK_END && id === T.T_TABLE)
     ) {
       if (!this.inScope(T.T_CAPTION, B_TABLE_SCOPE)) return;
@@ -2408,8 +2496,16 @@ export class TreeBuilder {
     }
     if (
       type === TK_END &&
-      (id === T.T_BODY || id === T.T_COL || id === T.T_COLGROUP || id === T.T_HTML || id === T.T_TBODY ||
-        id === T.T_TD || id === T.T_TFOOT || id === T.T_TH || id === T.T_THEAD || id === T.T_TR)
+      (id === T.T_BODY ||
+        id === T.T_COL ||
+        id === T.T_COLGROUP ||
+        id === T.T_HTML ||
+        id === T.T_TBODY ||
+        id === T.T_TD ||
+        id === T.T_TFOOT ||
+        id === T.T_TH ||
+        id === T.T_THEAD ||
+        id === T.T_TR)
     ) {
       return;
     }
@@ -2487,8 +2583,19 @@ export class TreeBuilder {
         this.reprocess = true;
         return;
       }
-      if (id === T.T_CAPTION || id === T.T_COL || id === T.T_COLGROUP || id === T.T_TBODY || id === T.T_TFOOT || id === T.T_THEAD) {
-        if (!this.inScope(T.T_TBODY, B_TABLE_SCOPE) && !this.inScope(T.T_THEAD, B_TABLE_SCOPE) && !this.inScope(T.T_TFOOT, B_TABLE_SCOPE)) {
+      if (
+        id === T.T_CAPTION ||
+        id === T.T_COL ||
+        id === T.T_COLGROUP ||
+        id === T.T_TBODY ||
+        id === T.T_TFOOT ||
+        id === T.T_THEAD
+      ) {
+        if (
+          !this.inScope(T.T_TBODY, B_TABLE_SCOPE) &&
+          !this.inScope(T.T_THEAD, B_TABLE_SCOPE) &&
+          !this.inScope(T.T_TFOOT, B_TABLE_SCOPE)
+        ) {
           return;
         }
         this.clearStackBackTo(T.T_TBODY, T.T_TFOOT, T.T_THEAD);
@@ -2506,7 +2613,11 @@ export class TreeBuilder {
         return;
       }
       if (id === T.T_TABLE) {
-        if (!this.inScope(T.T_TBODY, B_TABLE_SCOPE) && !this.inScope(T.T_THEAD, B_TABLE_SCOPE) && !this.inScope(T.T_TFOOT, B_TABLE_SCOPE)) {
+        if (
+          !this.inScope(T.T_TBODY, B_TABLE_SCOPE) &&
+          !this.inScope(T.T_THEAD, B_TABLE_SCOPE) &&
+          !this.inScope(T.T_TFOOT, B_TABLE_SCOPE)
+        ) {
           return;
         }
         this.clearStackBackTo(T.T_TBODY, T.T_TFOOT, T.T_THEAD);
@@ -2515,7 +2626,16 @@ export class TreeBuilder {
         this.reprocess = true;
         return;
       }
-      if (id === T.T_BODY || id === T.T_CAPTION || id === T.T_COL || id === T.T_COLGROUP || id === T.T_HTML || id === T.T_TD || id === T.T_TH || id === T.T_TR) {
+      if (
+        id === T.T_BODY ||
+        id === T.T_CAPTION ||
+        id === T.T_COL ||
+        id === T.T_COLGROUP ||
+        id === T.T_HTML ||
+        id === T.T_TD ||
+        id === T.T_TH ||
+        id === T.T_TR
+      ) {
         return;
       }
     }
@@ -2535,7 +2655,15 @@ export class TreeBuilder {
         this.insertMarker();
         return;
       }
-      if (id === T.T_CAPTION || id === T.T_COL || id === T.T_COLGROUP || id === T.T_TBODY || id === T.T_TFOOT || id === T.T_THEAD || id === T.T_TR) {
+      if (
+        id === T.T_CAPTION ||
+        id === T.T_COL ||
+        id === T.T_COLGROUP ||
+        id === T.T_TBODY ||
+        id === T.T_TFOOT ||
+        id === T.T_THEAD ||
+        id === T.T_TR
+      ) {
         if (!this.inScope(T.T_TR, B_TABLE_SCOPE)) return;
         this.clearStackBackTo(T.T_TR, T.T_TR, T.T_TR);
         this.pop();
@@ -2568,7 +2696,15 @@ export class TreeBuilder {
         this.reprocess = true;
         return;
       }
-      if (id === T.T_BODY || id === T.T_CAPTION || id === T.T_COL || id === T.T_COLGROUP || id === T.T_HTML || id === T.T_TD || id === T.T_TH) {
+      if (
+        id === T.T_BODY ||
+        id === T.T_CAPTION ||
+        id === T.T_COL ||
+        id === T.T_COLGROUP ||
+        id === T.T_HTML ||
+        id === T.T_TD ||
+        id === T.T_TH
+      ) {
         return;
       }
     }
@@ -2610,8 +2746,15 @@ export class TreeBuilder {
       }
     } else if (type === TK_START) {
       if (
-        id === T.T_CAPTION || id === T.T_COL || id === T.T_COLGROUP || id === T.T_TBODY || id === T.T_TD ||
-        id === T.T_TFOOT || id === T.T_TH || id === T.T_THEAD || id === T.T_TR
+        id === T.T_CAPTION ||
+        id === T.T_COL ||
+        id === T.T_COLGROUP ||
+        id === T.T_TBODY ||
+        id === T.T_TD ||
+        id === T.T_TFOOT ||
+        id === T.T_TH ||
+        id === T.T_THEAD ||
+        id === T.T_TR
       ) {
         if (!this.inScope(T.T_TD, B_TABLE_SCOPE) && !this.inScope(T.T_TH, B_TABLE_SCOPE)) return;
         this.closeCell();

@@ -3,7 +3,11 @@
 
 import type {PointerEventInit} from '../../dom-types.ts'
 import {type Instance} from '../../setup/index.ts'
-import {assertPointerEvents, getTreeDiff, hasPointerEvents} from '../../utils/index.ts'
+import {
+  assertPointerEvents,
+  getTreeDiff,
+  hasPointerEvents,
+} from '../../utils/index.ts'
 import {isDifferentPointerPosition, type PointerPosition} from './shared.ts'
 import {Buttons, getMouseEventButton, MouseButton} from './buttons.ts'
 

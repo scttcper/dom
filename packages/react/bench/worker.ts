@@ -27,7 +27,9 @@ function installWindowGlobals(win: any): void {
 const t0 = performance.now();
 if (stack === "jsdom") {
   const { JSDOM } = await import("jsdom");
-  installWindowGlobals(new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/" }).window);
+  installWindowGlobals(
+    new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/" }).window,
+  );
 } else if (stack === "happy-dom") {
   const { Window } = await import("happy-dom");
   installWindowGlobals(new Window({ url: "http://localhost/" }));
@@ -42,7 +44,9 @@ g.IS_REACT_ACT_ENVIRONMENT = true;
 
 const stockLib = stack === "jsdom" || stack === "happy-dom";
 const rtl: any = stockLib ? await import("@testing-library/react/pure.js") : await import("@ctrl/dom/react/pure");
-const matchers: any = stockLib ? await import("@testing-library/jest-dom/matchers") : await import("@ctrl/dom/jest-dom/matchers");
+const matchers: any = stockLib
+  ? await import("@testing-library/jest-dom/matchers")
+  : await import("@ctrl/dom/jest-dom/matchers");
 const setupMs = performance.now() - t0;
 
 // Minimal matcher context: only the pass path runs in the benchmark.
@@ -89,11 +93,22 @@ function LoginForm() {
     { "aria-label": "login" },
     h("h1", null, "Sign in"),
     h("label", { htmlFor: "user" }, "Username"),
-    h("input", { id: "user", name: "user", value: user, onChange: (e: any) => setUser(e.target.value), required: true }),
+    h("input", {
+      id: "user",
+      name: "user",
+      value: user,
+      onChange: (e: any) => setUser(e.target.value),
+      required: true,
+    }),
     h("label", { htmlFor: "pass" }, "Password"),
     h("input", { id: "pass", name: "pass", type: "password", required: true }),
     h("label", null, h("input", { type: "checkbox", name: "remember", defaultChecked: true }), " Remember me"),
-    h("select", { "aria-label": "Region", defaultValue: "eu" }, h("option", { value: "us" }, "US"), h("option", { value: "eu" }, "EU")),
+    h(
+      "select",
+      { "aria-label": "Region", defaultValue: "eu" },
+      h("option", { value: "us" }, "US"),
+      h("option", { value: "eu" }, "EU"),
+    ),
     h("p", { "data-testid": "hint" }, "Use your work account"),
     h("a", { href: "/forgot" }, "Forgot password?"),
     h("button", { type: "submit", disabled: user === "" }, "Sign in"),

@@ -10,34 +10,39 @@
 // that imports user-event fails to load with a SyntaxError. This is a known blocker filed in
 // TRIAGE.md (cluster "user-event: top-level await") with a repro; the receipts count the rewrites
 // so the report shows whether it is still needed. Upstream files are never rewritten.
-'use strict';
-const {appendFileSync} = require('node:fs');
+"use strict";
+const { appendFileSync } = require("node:fs");
 
 const TLA = /^(\s*[\w$]+\s*=\s*)await import\(("[^"]+")\);$/gm;
 
 module.exports = {
-  createTransformer({swc, checkout, repo}) {
-    const swcJest = require(require.resolve('@swc/jest', {paths: [checkout]}));
+  createTransformer({ swc, checkout, repo }) {
+    const swcJest = require(require.resolve("@swc/jest", { paths: [checkout] }));
     const inner = swcJest.createTransformer(swc);
     const dist = `${repo}/packages/`;
     const rewrite = (source, file, log = false) => {
-      if (!file.startsWith(dist) || !file.includes('/dist/')) return source;
+      if (!file.startsWith(dist) || !file.includes("/dist/")) return source;
       let n = 0;
       const out = source.replace(TLA, (_, lhs, spec) => {
         n++;
         return `${lhs}require(${spec});`;
       });
       if (n && log && process.env.CTRL_DOM_RA_TRANSFORMS) {
-        appendFileSync(process.env.CTRL_DOM_RA_TRANSFORMS, JSON.stringify({file: file.slice(repo.length + 1), rewrites: n}) + '\n');
+        appendFileSync(
+          process.env.CTRL_DOM_RA_TRANSFORMS,
+          JSON.stringify({ file: file.slice(repo.length + 1), rewrites: n }) + "\n",
+        );
       }
       return out;
     };
     return {
       canInstrument: inner.canInstrument,
       process: (source, file, options) => inner.process(rewrite(source, file), file, options),
-      processAsync: inner.processAsync && ((source, file, options) => inner.processAsync(rewrite(source, file), file, options)),
+      processAsync:
+        inner.processAsync && ((source, file, options) => inner.processAsync(rewrite(source, file), file, options)),
       // getCacheKey runs for every load (cache hit or miss), so it records the receipt.
-      getCacheKey: (source, file, options) => `${inner.getCacheKey(rewrite(source, file, true), file, options)}:ctrl-dom-tla-1`
+      getCacheKey: (source, file, options) =>
+        `${inner.getCacheKey(rewrite(source, file, true), file, options)}:ctrl-dom-tla-1`,
     };
-  }
+  },
 };

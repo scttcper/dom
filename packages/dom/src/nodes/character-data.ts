@@ -16,7 +16,8 @@ export function replaceData(node: NodeImpl, offset: number, count: number, data:
   const old = node.data;
   const length = old.length;
   // Steps 2-3.
-  if (offset > length) throw new DOMException(`The offset ${offset} is greater than the node's length (${length}).`, "IndexSizeError");
+  if (offset > length)
+    throw new DOMException(`The offset ${offset} is greater than the node's length (${length}).`, "IndexSizeError");
   if (offset + count > length) count = length - offset;
   // Step 4.
   if (activeObservers !== 0) queueCharacterDataMutationRecord(node, old);
@@ -34,7 +35,8 @@ export function replaceData(node: NodeImpl, offset: number, count: number, data:
 export function splitText(node: NodeImpl, offset: number): NodeImpl {
   const length = node.data.length;
   // Step 2.
-  if (offset > length) throw new DOMException(`The offset ${offset} is larger than the Text node's length.`, "IndexSizeError");
+  if (offset > length)
+    throw new DOMException(`The offset ${offset} is larger than the Text node's length.`, "IndexSizeError");
   // Steps 3-6.
   const count = length - offset;
   const newData = node.data.slice(offset);
@@ -49,4 +51,3 @@ export function splitText(node: NodeImpl, offset: number): NodeImpl {
   replaceData(node, offset, count, "");
   return newNode;
 }
-

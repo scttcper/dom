@@ -23,7 +23,16 @@ import { $assocGen } from "../../keys.ts";
 /** https://html.spec.whatwg.org/#category-listed — button, fieldset, input, object, output, select, textarea. */
 export function isListed(el: NodeImpl): boolean {
   const t = el.tag;
-  return (el.flags & F_FACE) !== 0 || t === T.input || t === T.button || t === T.select || t === T.textarea || t === T.fieldset || t === T.output || t === T.object;
+  return (
+    (el.flags & F_FACE) !== 0 ||
+    t === T.input ||
+    t === T.button ||
+    t === T.select ||
+    t === T.textarea ||
+    t === T.fieldset ||
+    t === T.output ||
+    t === T.object
+  );
 }
 
 /** https://html.spec.whatwg.org/#category-submit — button, input, select, textarea (object is never submitted here). */
@@ -163,7 +172,11 @@ function parserAssociationValid(el: NodeImpl, a: ParserAssociation): boolean {
 /** All listed elements (excluding image buttons) whose form owner is `form`, in tree order: form.elements. */
 export function formControls(form: NodeImpl, out: NodeImpl[], includeImages: boolean): NodeImpl[] {
   const root = treeRoot(form);
-  for (let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
+  for (
+    let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
+    n !== null;
+    n = nextElementInTree(n, root)
+  ) {
     if (!isListed(n)) continue;
     if (!includeImages && n.tag === T.input && inputType(n) === I_IMAGE) continue;
     if (formOwner(n) === form) out.push(n);
@@ -243,7 +256,11 @@ export function labeledControl(label: NodeImpl): NodeImpl | null {
 /** Label elements whose labeled control is `el`, in tree order. https://html.spec.whatwg.org/#dom-lfe-labels */
 export function labelsFor(el: NodeImpl, out: NodeImpl[]): NodeImpl[] {
   const root = treeRoot(el);
-  for (let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
+  for (
+    let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
+    n !== null;
+    n = nextElementInTree(n, root)
+  ) {
     if (n.tag === T.label && labeledControl(n) === el) out.push(n);
   }
   return out;

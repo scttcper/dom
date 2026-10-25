@@ -29,10 +29,20 @@ export function parseDsn(dsn: string): Dsn {
   }
   const segments = parsed.pathname.split("/").filter(Boolean);
   const projectId = segments.pop();
-  if (!parsed.username || projectId === undefined) throw new Error(`@ctrl/sentry-tests: invalid DSN ${JSON.stringify(dsn)} (expected https://<key>@<host>/<project>)`);
+  if (!parsed.username || projectId === undefined)
+    throw new Error(`@ctrl/sentry-tests: invalid DSN ${JSON.stringify(dsn)} (expected https://<key>@<host>/<project>)`);
   const prefix = segments.length > 0 ? `/${segments.join("/")}` : "";
-  const query = new URLSearchParams({ sentry_key: parsed.username, sentry_version: "7", sentry_client: `${SDK.name}/${SDK.version}` });
-  return { dsn, url: `${parsed.protocol}//${parsed.host}${prefix}/api/${projectId}/envelope/?${query}`, host: parsed.host, projectId };
+  const query = new URLSearchParams({
+    sentry_key: parsed.username,
+    sentry_version: "7",
+    sentry_client: `${SDK.name}/${SDK.version}`,
+  });
+  return {
+    dsn,
+    url: `${parsed.protocol}//${parsed.host}${prefix}/api/${projectId}/envelope/?${query}`,
+    host: parsed.host,
+    projectId,
+  };
 }
 
 export const SDK = { name: "ctrl.sentry-tests", version: "0.0.0" };
@@ -57,12 +67,25 @@ const encoder = new TextEncoder();
 export function serializeEnvelope(envelope: Envelope, dsn: Dsn | null): Uint8Array<ArrayBuffer> {
   const parts: Uint8Array[] = [];
   const line = (text: string) => parts.push(encoder.encode(`${text}\n`));
-  line(JSON.stringify({ event_id: envelope.eventId, sent_at: new Date().toISOString(), sdk: SDK, ...(dsn ? { dsn: dsn.dsn } : {}) }));
+  line(
+    JSON.stringify({
+      event_id: envelope.eventId,
+      sent_at: new Date().toISOString(),
+      sdk: SDK,
+      ...(dsn ? { dsn: dsn.dsn } : {}),
+    }),
+  );
   for (const item of envelope.items) {
     const payload = encoder.encode(typeof item.payload === "string" ? item.payload : JSON.stringify(item.payload));
     const header =
       item.type === "attachment"
-        ? { type: "attachment", length: payload.byteLength, filename: item.filename, content_type: item.contentType, attachment_type: "event.attachment" }
+        ? {
+            type: "attachment",
+            length: payload.byteLength,
+            filename: item.filename,
+            content_type: item.contentType,
+            attachment_type: "event.attachment",
+          }
         : { type: item.type, length: payload.byteLength };
     line(JSON.stringify(header));
     parts.push(payload, encoder.encode("\n"));

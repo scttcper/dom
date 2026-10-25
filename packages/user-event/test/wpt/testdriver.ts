@@ -70,7 +70,11 @@ export function userEventTestDriver(window: dom.Window, document: dom.Document):
 
   /** https://w3c.github.io/webdriver/#element-send-keys steps: focus the element unless it is already active, then type. */
   async function send_keys(element: dom.Element, keys: string): Promise<void> {
-    if ((document as unknown as { activeElement: unknown }).activeElement !== element && element !== document.body && element !== document.documentElement) {
+    if (
+      (document as unknown as { activeElement: unknown }).activeElement !== element &&
+      element !== document.body &&
+      element !== document.documentElement
+    ) {
       (element as unknown as { focus(): void }).focus();
     }
     let text = "";
@@ -156,7 +160,9 @@ export function userEventTestDriver(window: dom.Window, document: dom.Document):
             break;
           case "move": {
             if (!(step.origin instanceof ElementCtor)) {
-              throw new Error("test_driver.Actions: pointer moves to viewport coordinates need layout (no hit testing here)");
+              throw new Error(
+                "test_driver.Actions: pointer moves to viewport coordinates need layout (no hit testing here)",
+              );
             }
             target = step.origin as dom.Element;
             // Touch pointers have no hover position; the press carries the target.

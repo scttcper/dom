@@ -33,7 +33,7 @@ type Ctor = { prototype: object };
 const explicit = new WeakMap<NodeImpl, Map<string, WeakRef<Element>>>();
 
 function isShadowIncludingAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n: NodeImpl | null = b; n !== null; ) {
+  for (let n: NodeImpl | null = b; n !== null;) {
     const p: NodeImpl | null = n.parent;
     if (p !== null) n = p;
     else if ((n.flags & F_SHADOW_ROOT) !== 0) {
@@ -90,7 +90,11 @@ function elementReflection(C: Ctor, idl: string, content: string): void {
 /** PopoverTargetAttributes: popoverTargetElement, popoverTargetAction. */
 export function installPopoverInvoker(C: Ctor): void {
   elementReflection(C, "popoverTargetElement", "popovertarget");
-  enumerated(C, "popoverTargetAction=popovertargetaction", { keywords: ["toggle", "show", "hide"], missing: "toggle", invalid: "toggle" });
+  enumerated(C, "popoverTargetAction=popovertargetaction", {
+    keywords: ["toggle", "show", "hide"],
+    missing: "toggle",
+    invalid: "toggle",
+  });
 }
 
 const BUILTIN_COMMANDS = ["toggle-popover", "show-popover", "hide-popover", "show-modal", "close", "request-close"];
@@ -153,7 +157,12 @@ export function popoverTargetAttributeActivation(node: NodeImpl, eventTarget: No
   const popover = popoverTargetElement(node);
   if (popover === null) return;
   // 3. Activating something inside the popover that is itself inside the invoker does nothing.
-  if (eventTarget !== null && (eventTarget === popover || isShadowIncludingAncestor(popover, eventTarget)) && isShadowIncludingAncestor(node, popover)) return;
+  if (
+    eventTarget !== null &&
+    (eventTarget === popover || isShadowIncludingAncestor(popover, eventTarget)) &&
+    isShadowIncludingAncestor(node, popover)
+  )
+    return;
   // 4-5.
   const action = (contentAttr(node, "popovertargetaction") ?? "").toLowerCase();
   const showing = isPopoverShowing(popover);
@@ -251,7 +260,11 @@ export function setDialogCommandSteps(fn: (dialog: NodeImpl, source: NodeImpl, c
 }
 
 function popoverValid(el: NodeImpl, expectedToBeShowing: boolean): boolean {
-  return popoverState(el) !== P_NONE && isPopoverShowing(el) === expectedToBeShowing && (expectedToBeShowing || (el.flags & F_CONNECTED) !== 0);
+  return (
+    popoverState(el) !== P_NONE &&
+    isPopoverShowing(el) === expectedToBeShowing &&
+    (expectedToBeShowing || (el.flags & F_CONNECTED) !== 0)
+  );
 }
 
 /**

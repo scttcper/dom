@@ -11,7 +11,11 @@ type FuncMap = Record<string, (...args: any[]) => any>;
  * @param initialValue for reducer
  * @returns object of functions bound to container
  */
-export function getQueriesForElement(element: any, queries: FuncMap = defaultQueries as unknown as FuncMap, initialValue: FuncMap = {}): any {
+export function getQueriesForElement(
+  element: any,
+  queries: FuncMap = defaultQueries as unknown as FuncMap,
+  initialValue: FuncMap = {},
+): any {
   return Object.keys(queries).reduce((helpers, key) => {
     const fn = queries[key];
     helpers[key] = fn.bind(null, element);

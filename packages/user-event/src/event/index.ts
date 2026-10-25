@@ -5,7 +5,11 @@ import {type EventType, type PointerCoords} from './types.ts'
 
 export type {EventType, PointerCoords}
 
-export {dispatchEvent, dispatchUIEvent, dispatchDOMEvent} from './dispatchEvent.ts'
+export {
+  dispatchEvent,
+  dispatchUIEvent,
+  dispatchDOMEvent,
+} from './dispatchEvent.ts'
 export {blurElement, focusElement} from './focus.ts'
 export {input} from './input.ts'
 export type {SelectionRange} from './selection/index.ts'

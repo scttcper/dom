@@ -75,7 +75,6 @@ export function clearSelectorCaches(): void {
   cache.clear();
 }
 
-
 function compileQuery(selectors: string): Query | null {
   const parser = new SelectorParser(selectors);
   const ast = parser.parseSelectorList();
@@ -94,7 +93,10 @@ function interfaceName(root: NodeImpl): string {
 
 /** SyntaxError with the browser's message shape. https://dom.spec.whatwg.org/#scope-match-a-selectors-string step 2 */
 function syntaxError(selectors: string, method: string, root: NodeImpl): DOMException {
-  return new DOMException(`Failed to execute '${method}' on '${interfaceName(root)}': '${selectors}' is not a valid selector.`, "SyntaxError");
+  return new DOMException(
+    `Failed to execute '${method}' on '${interfaceName(root)}': '${selectors}' is not a valid selector.`,
+    "SyntaxError",
+  );
 }
 
 function getQuery(selectors: string, method: string, root: NodeImpl): Query {
@@ -313,7 +315,9 @@ function cacheable(q: Query): boolean {
 
 function cachedEntry(root: NodeImpl, q: Query, create: boolean): ResultEntry | null {
   const doc = root.doc;
-  const results = create ? derivedCache(doc, RESULTS, newResults) : peekDerivedCache<WeakMap<NodeImpl, Map<Query, ResultEntry>>>(doc, RESULTS);
+  const results = create
+    ? derivedCache(doc, RESULTS, newResults)
+    : peekDerivedCache<WeakMap<NodeImpl, Map<Query, ResultEntry>>>(doc, RESULTS);
   if (results === undefined) return null;
   let m = results.get(root);
   if (m === undefined) {

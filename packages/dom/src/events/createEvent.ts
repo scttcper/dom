@@ -3,7 +3,16 @@
 // `Document.prototype.createEvent` calls `createEvent(interfaceName)`.
 
 import { EF_INITIALIZED, Event, withInternalConstruct } from "./Event.ts";
-import { CompositionEvent, DragEvent, FocusEvent, KeyboardEvent, MouseEvent, TextEvent, TouchEvent, UIEvent } from "./UIEvents.ts";
+import {
+  CompositionEvent,
+  DragEvent,
+  FocusEvent,
+  KeyboardEvent,
+  MouseEvent,
+  TextEvent,
+  TouchEvent,
+  UIEvent,
+} from "./UIEvents.ts";
 import { BeforeUnloadEvent, CustomEvent, HashChangeEvent, MessageEvent, StorageEvent } from "./events.ts";
 
 type AnyEventCtor = new (type: string) => Event;
@@ -39,7 +48,10 @@ export function createEvent(interfaceName: string): Event {
   // Steps 1-3.
   const ctor = TABLE[String(interfaceName).replace(/[A-Z]/g, (c) => c.toLowerCase())];
   if (ctor === undefined || ctor === null) {
-    throw new DOMException(`Failed to execute 'createEvent' on 'Document': The provided event type ('${interfaceName}') is invalid.`, "NotSupportedError");
+    throw new DOMException(
+      `Failed to execute 'createEvent' on 'Document': The provided event type ('${interfaceName}') is invalid.`,
+      "NotSupportedError",
+    );
   }
   // Step 4: create an event (no constructor steps beyond defaults). Steps 5-7: type "",
   // timeStamp now, isTrusted false, initialized flag unset.

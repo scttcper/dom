@@ -111,7 +111,8 @@ export class HTMLCollection {
     }
     const filter = s.filter;
     if (filter === null) {
-      for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) out.push(n.node as Element);
+      for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root))
+        out.push(n.node as Element);
     } else {
       for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
         if (filter(n)) out.push(n.node as Element);

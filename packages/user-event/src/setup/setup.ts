@@ -15,7 +15,11 @@ import {
   getWindow,
   setLevelRef,
 } from '../utils/index.ts'
-import {defaultAdvanceTimers, markTimers, yieldBetweenActions} from '../utils/misc/wait.ts'
+import {
+  defaultAdvanceTimers,
+  markTimers,
+  yieldBetweenActions,
+} from '../utils/misc/wait.ts'
 import {System} from '../system/index.ts'
 import {userEventApi} from './api.ts'
 import {wrapAsync} from './wrapAsync.ts'
@@ -102,7 +106,8 @@ export function setupMain(options: Options = {}) {
   patchFocus(getWindow(config.document).HTMLElement)
 
   const view =
-    config.document.defaultView ?? /* istanbul ignore next */ (globalThis as {window?: any}).window
+    config.document.defaultView ??
+    /* istanbul ignore next */ (globalThis as {window?: any}).window
   attachClipboardStubToView(view)
 
   return createInstance(config).api
@@ -160,7 +165,11 @@ function wrapAndBindImpl<
     const go = () => (pending === undefined ? run() : pending.then(run))
     // Ours: a span per action when something subscribes to @ctrl/dom's tracing channel.
     if (!tracing()) return go()
-    return tracePromise(`user-event.${name}`, describeCall(`user.${name}`, args), go)
+    return tracePromise(
+      `user-event.${name}`,
+      describeCall(`user.${name}`, args),
+      go,
+    )
   }
   Object.defineProperty(method, 'name', {get: () => impl.name})
 
@@ -191,7 +200,11 @@ export function createInstance(
         Object.entries(userEventApi).map(([name, api]) => [
           name,
           // Ours: the API's name for its span (bundlers may rename the function: `type$1`).
-          wrapAndBindImpl(instance, api as (this: Instance, ...args: unknown[]) => Promise<unknown>, name),
+          wrapAndBindImpl(
+            instance,
+            api as (this: Instance, ...args: unknown[]) => Promise<unknown>,
+            name,
+          ),
         ]),
       ) as unknown as UserEventApi),
       setup: setupSub.bind(instance),

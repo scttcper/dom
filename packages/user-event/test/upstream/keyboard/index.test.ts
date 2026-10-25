@@ -5,7 +5,13 @@
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
 import userEvent from '#src/index.ts'
-import {addListeners, render, resetWrappers, setup, isCtrlDomEnv} from '#testHelpers'
+import {
+  addListeners,
+  render,
+  resetWrappers,
+  setup,
+  isCtrlDomEnv,
+} from '#testHelpers'
 
 test('type without focus', async () => {
   const {element, user} = setup('<input/>', {focus: false})
@@ -198,25 +204,26 @@ customElements.define(
 )
 
 // divergence: @ctrl/dom has no nested browsing contexts (`iframe.contentWindow` is null).
-test.skipIf(isCtrlDomEnv())('typing on focused element with iframe', async () => {
-  let iframe: HTMLIFrameElement
-  let iframeButton: HTMLElement
-  const {user} = setup(
-    '<div id="iframe-container"></div>',
-  )
-  iframe = document.createElement('iframe')
-  window.document.body.appendChild(iframe)
-  iframeButton = iframe.contentWindow!.document.createElement('button')
-  iframe.contentWindow!.document.body.appendChild(iframeButton)
-  let keydown = vi.fn()
-  let keyup = vi.fn()
-  iframeButton.addEventListener('keydown', keydown)
-  iframeButton.addEventListener('keyup', keyup)
+test.skipIf(isCtrlDomEnv())(
+  'typing on focused element with iframe',
+  async () => {
+    let iframe: HTMLIFrameElement
+    let iframeButton: HTMLElement
+    const {user} = setup('<div id="iframe-container"></div>')
+    iframe = document.createElement('iframe')
+    window.document.body.appendChild(iframe)
+    iframeButton = iframe.contentWindow!.document.createElement('button')
+    iframe.contentWindow!.document.body.appendChild(iframeButton)
+    let keydown = vi.fn()
+    let keyup = vi.fn()
+    iframeButton.addEventListener('keydown', keydown)
+    iframeButton.addEventListener('keyup', keyup)
 
-  iframeButton.focus()
-  await user.keyboard('[Space]')
-  expect(keydown).toHaveBeenCalled()
-  expect(keyup).toHaveBeenCalled()
+    iframeButton.focus()
+    await user.keyboard('[Space]')
+    expect(keydown).toHaveBeenCalled()
+    expect(keyup).toHaveBeenCalled()
 
-  iframe.remove()
-})
+    iframe.remove()
+  },
+)

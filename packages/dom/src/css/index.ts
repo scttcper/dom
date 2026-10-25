@@ -9,7 +9,14 @@ import { ShadowRoot } from "../nodes/ShadowRoot.ts";
 import type { Element } from "../nodes/Element.ts";
 import { styleSheetHooks } from "../html/resources.ts";
 import { windowHooks } from "../window/hooks.ts";
-import { createLinkSheet, createOwnerSheet, removeOwnerSheet, styleSheetsOf, adoptedStyleSheetsOf, setAdoptedStyleSheets } from "./stylesheets.ts";
+import {
+  createLinkSheet,
+  createOwnerSheet,
+  removeOwnerSheet,
+  styleSheetsOf,
+  adoptedStyleSheetsOf,
+  setAdoptedStyleSheets,
+} from "./stylesheets.ts";
 import { getComputedStyle } from "./computed.ts";
 import { matchMediaText } from "./media.ts";
 import { installElementView, installHTMLElementView } from "./view.ts";

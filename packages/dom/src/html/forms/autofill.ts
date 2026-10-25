@@ -15,7 +15,12 @@ const CONTACT = 3;
 const CREDENTIAL = 4;
 
 /** Autofill field names → category (https://html.spec.whatwg.org/#autofill-field). */
-const CATEGORY = new Map<string, number>([["off", OFF], ["on", AUTOMATIC], ["webauthn", CREDENTIAL]]);
+const CATEGORY = new Map<string, number>([
+  ["off", OFF],
+  ["on", AUTOMATIC],
+  ["webauthn", CREDENTIAL],
+]);
+// oxfmt-ignore
 for (const f of [
   "name", "honorific-prefix", "given-name", "additional-name", "family-name", "honorific-suffix", "nickname",
   "organization-title", "username", "new-password", "current-password", "one-time-code", "organization",
@@ -25,6 +30,7 @@ for (const f of [
   "transaction-currency", "transaction-amount", "language", "bday", "bday-day", "bday-month", "bday-year", "sex",
   "url", "photo",
 ]) CATEGORY.set(f, NORMAL);
+// oxfmt-ignore
 for (const f of ["tel", "tel-country-code", "tel-national", "tel-area-code", "tel-local", "tel-local-prefix", "tel-local-suffix", "tel-extension", "email", "impp"]) {
   CATEGORY.set(f, CONTACT);
 }
@@ -69,7 +75,10 @@ export function idlExposedAutofillValue(el: NodeImpl): string {
   index--;
   // Step 17: contact hint.
   let token = asciiLowercase(tokens[index]);
-  if (category === CONTACT && (token === "home" || token === "work" || token === "mobile" || token === "fax" || token === "pager")) {
+  if (
+    category === CONTACT &&
+    (token === "home" || token === "work" || token === "mobile" || token === "fax" || token === "pager")
+  ) {
     idl = token + " " + idl;
     if (index === 0) return idl;
     index--;

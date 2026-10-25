@@ -14,7 +14,11 @@ export function Signup() {
       },
     },
     h("label", { htmlFor: "name" }, "Name"),
-    h("input", { id: "name", value: name, onChange: (event: { target: { value: string } }) => setName(event.target.value) }),
+    h("input", {
+      id: "name",
+      value: name,
+      onChange: (event: { target: { value: string } }) => setName(event.target.value),
+    }),
     h("button", { type: "submit", disabled: name === "" }, "Sign up"),
     submitted !== null && h("p", { role: "status" }, `Welcome, ${submitted}!`),
   );

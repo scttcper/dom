@@ -3,7 +3,11 @@
 
 import {describe, test} from 'vitest'
 
-type Case = Record<string, any> & {name?: string; only?: boolean; skip?: boolean}
+type Case = Record<string, any> & {
+  name?: string
+  only?: boolean
+  skip?: boolean
+}
 
 export default function cases<C extends Case>(
   title: string,

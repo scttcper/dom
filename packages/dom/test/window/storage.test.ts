@@ -178,7 +178,10 @@ describe("storage events — https://html.spec.whatwg.org/#concept-storage-broad
 
 describe("Frames share storage — https://html.spec.whatwg.org/#concept-storage-broadcast", () => {
   function frameOf(w: Window): Window {
-    const doc = w.document as unknown as { createElement(n: string): { contentWindow: Window }; body: { appendChild<T>(n: T): T } };
+    const doc = w.document as unknown as {
+      createElement(n: string): { contentWindow: Window };
+      body: { appendChild<T>(n: T): T };
+    };
     return doc.body.appendChild(doc.createElement("iframe")).contentWindow;
   }
 
@@ -211,7 +214,9 @@ describe("Storage legacy platform object — https://webidl.spec.whatwg.org/#es-
   test("methods require their arguments (WebIDL overload resolution)", () => {
     const s = window.localStorage as unknown as Record<string, (...a: unknown[]) => unknown>;
     expect(() => s.getItem()).toThrow(TypeError);
-    expect(() => s.setItem("a")).toThrow("Failed to execute 'setItem' on 'Storage': 2 arguments required, but only 1 present.");
+    expect(() => s.setItem("a")).toThrow(
+      "Failed to execute 'setItem' on 'Storage': 2 arguments required, but only 1 present.",
+    );
   });
 
   test("[[Set]] of a String always calls the named setter; prototype members stay visible", () => {
@@ -230,7 +235,9 @@ describe("Storage legacy platform object — https://webidl.spec.whatwg.org/#es-
       error = e;
     }
     expect(error).toBeInstanceOf(DOMException);
-    expect((error as { constructor: unknown }).constructor).toBe((window as unknown as { QuotaExceededError: unknown }).QuotaExceededError);
+    expect((error as { constructor: unknown }).constructor).toBe(
+      (window as unknown as { QuotaExceededError: unknown }).QuotaExceededError,
+    );
     expect((error as { quota: unknown }).quota).toBeNull();
   });
 });

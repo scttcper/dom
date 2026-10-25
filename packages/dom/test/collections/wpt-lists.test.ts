@@ -13,8 +13,10 @@ import { defineWPTDirectory } from "../wpt/harness.ts";
 defineWPTDirectory(
   "dom/lists",
   {
-    "DOMTokenList-coverage-for-attributes.html": "relList on SVG / MathML <a> is not implemented (html/svg elements area)",
-    "DOMTokenList-iteration.html": "compares with the test realm's Array.prototype (harness runs tests in a separate vm realm)",
+    "DOMTokenList-coverage-for-attributes.html":
+      "relList on SVG / MathML <a> is not implemented (html/svg elements area)",
+    "DOMTokenList-iteration.html":
+      "compares with the test realm's Array.prototype (harness runs tests in a separate vm realm)",
   },
   {},
 );

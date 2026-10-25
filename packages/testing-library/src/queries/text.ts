@@ -38,7 +38,14 @@ function isScriptOrStyle(n: NodeImpl): boolean {
 function queryAllByText(
   container: any,
   text: Matcher,
-  { selector = "*", exact = true, collapseWhitespace, trim, ignore = getConfig().defaultIgnore, normalizer }: SelectorMatcherOptions = {},
+  {
+    selector = "*",
+    exact = true,
+    collapseWhitespace,
+    trim,
+    ignore = getConfig().defaultIgnore,
+    normalizer,
+  }: SelectorMatcherOptions = {},
 ): any[] {
   checkContainerType(container);
   const matcher = exact ? matches : fuzzyMatches;
@@ -83,6 +90,17 @@ const getMissingError: GetErrorFunction<[Matcher, SelectorMatcherOptions]> = (c,
 
 const queryAllByTextWithSuggestions = wrapAllByQueryWithSuggestion(queryAllByText, queryAllByText.name, "queryAll");
 
-const [queryByText, getAllByText, getByText, findAllByText, findByText] = buildQueries(queryAllByText, getMultipleError, getMissingError as GetErrorFunction<any[]>);
+const [queryByText, getAllByText, getByText, findAllByText, findByText] = buildQueries(
+  queryAllByText,
+  getMultipleError,
+  getMissingError as GetErrorFunction<any[]>,
+);
 
-export { queryByText, queryAllByTextWithSuggestions as queryAllByText, getByText, getAllByText, findAllByText, findByText };
+export {
+  queryByText,
+  queryAllByTextWithSuggestions as queryAllByText,
+  getByText,
+  getAllByText,
+  findAllByText,
+  findByText,
+};

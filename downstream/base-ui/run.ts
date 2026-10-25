@@ -14,7 +14,16 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,7 +98,11 @@ if (values.help) {
 
 const checkout = resolve(values.checkout!);
 const preset = values.files === undefined ? values.preset! : "custom";
-if (values.files !== undefined) PRESETS.custom = values.files.split(",").map((f) => f.trim()).filter(Boolean);
+if (values.files !== undefined)
+  PRESETS.custom = values.files
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean);
 const filters = PRESETS[preset];
 if (filters === undefined) throw new Error(`Unknown preset ${preset}; use smoke, interactions, all or --files.`);
 const modes = values.modes!.split(",").map((m) => m.trim()) as Mode[];
@@ -105,7 +118,13 @@ interface CommandResult {
   signal: NodeJS.Signals | null;
 }
 
-function run(executable: string, argv: string[], cwd: string, log?: string, env: Record<string, string> = {}): Promise<CommandResult> {
+function run(
+  executable: string,
+  argv: string[],
+  cwd: string,
+  log?: string,
+  env: Record<string, string> = {},
+): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
     const out = log ? createWriteStream(log) : null;
     const child = spawn(executable, argv, {
@@ -174,13 +193,15 @@ if (!existsSync(join(checkout, ".git"))) {
 }
 const commit = git(["rev-parse", "HEAD"]);
 const commitInfo = git(["show", "-s", "--format=%cI%n%s", "HEAD"]).split("\n");
-if (!values.latest && commit !== manifest.commit) throw new Error(`Checkout is ${commit}; expected pinned ${manifest.commit}.`);
+if (!values.latest && commit !== manifest.commit)
+  throw new Error(`Checkout is ${commit}; expected pinned ${manifest.commit}.`);
 if (git(["status", "--porcelain", "--untracked-files=no"])) {
   throw new Error(`Refusing to run: ${checkout} has local modifications of upstream tracked files.`);
 }
 for (const file of PRESETS.custom ?? []) {
   const path = resolve(checkout, file);
-  if (!existsSync(path) || !statSync(path).isFile()) throw new Error(`Test file not found in upstream checkout: ${file}`);
+  if (!existsSync(path) || !statSync(path).isFile())
+    throw new Error(`Test file not found in upstream checkout: ${file}`);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -266,7 +287,8 @@ const SHIM_ALIASES: Array<[RegExp, string]> = [
 // --shims selects which Testing Library packages ctrl-dom-full substitutes (bisecting a failure to one
 // of our packages); the default is all four.
 const shimSet = new Set(values.shims!.split(",").map((s) => s.trim()));
-for (const s of shimSet) if (!["react", "dom", "user-event", "jest-dom"].includes(s)) throw new Error(`Unknown shim ${s}`);
+for (const s of shimSet)
+  if (!["react", "dom", "user-event", "jest-dom"].includes(s)) throw new Error(`Unknown shim ${s}`);
 const ACTIVE_SHIMS = SHIM_ALIASES.filter(([re]) => shimSet.has(/@testing-library\\\/([a-z-]+)/.exec(re.source)![1]));
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 
@@ -357,9 +379,13 @@ const project = mergeConfig(upstreamProject, {
       // One @ctrl/dom module instance: the environment (loaded by Vitest's environment loader) and
       // the test realm must share it, so it is loaded natively by Node (which runs our .ts) in both.
       external: [/${escape(join(repo, "packages") + "/")}(dom|vitest-environment)\\/src\\//],
-      ${full ? `// Its imports of @testing-library/* must go through the aliases above (with a --shims
+      ${
+        full
+          ? `// Its imports of @testing-library/* must go through the aliases above (with a --shims
       // subset, the stock packages left in place are inlined too so they bind to the chosen
-      // @testing-library/dom).\n      inline: [/@mui\\/internal-test-utils/${shimSet.size < 4 ? ", /@testing-library\\/(react|user-event|jest-dom)/" : ""}],` : ""}
+      // @testing-library/dom).\n      inline: [/@mui\\/internal-test-utils/${shimSet.size < 4 ? ", /@testing-library\\/(react|user-event|jest-dom)/" : ""}],`
+          : ""
+      }
     } },`
         : ""
     }
@@ -443,7 +469,14 @@ function collect(report: any): Map<string, Assertion> {
       seen.set(t.fullName, n);
       const key = `${rel} :: ${t.fullName}${n > 1 ? ` [${n}]` : ""}`;
       const status = t.status === "pending" || t.status === "todo" ? "skipped" : t.status;
-      out.set(key, { key, file: rel, component: componentOf(rel), name: t.fullName, status, messages: t.failureMessages ?? [] });
+      out.set(key, {
+        key,
+        file: rel,
+        component: componentOf(rel),
+        name: t.fullName,
+        status,
+        messages: t.failureMessages ?? [],
+      });
     }
   }
   return out;
@@ -475,7 +508,9 @@ try {
       // Vitest 5 caches transformed modules on disk. Transforms embed resolved import ids, and
       // the modes resolve @testing-library/* differently, so every mode gets its own cache
       // (--cold disables it: slower, but every resolveId receipt is recorded).
-      ...(values.cold ? ["--no-fsModuleCache"] : ["--fsModuleCachePath", join(checkout, "node_modules/.vitest-cache-ctrl-dom", mode)]),
+      ...(values.cold
+        ? ["--no-fsModuleCache"]
+        : ["--fsModuleCachePath", join(checkout, "node_modules/.vitest-cache-ctrl-dom", mode)]),
       "--reporter",
       "default",
       ...(SENTRY_REPORTER ? ["--reporter", join(repo, "packages/sentry-tests/src/vitest.ts")] : []),
@@ -519,22 +554,40 @@ try {
       r.files = report.testResults.length;
       r.suiteErrors = report.testResults
         .filter((f: any) => f.status === "failed" && (f.assertionResults?.length ?? 0) === 0)
-        .map((f: any) => ({ file: relative(checkout, f.name), message: String(f.message ?? "").split("\n").slice(0, 6).join("\n") }));
+        .map((f: any) => ({
+          file: relative(checkout, f.name),
+          message: String(f.message ?? "")
+            .split("\n")
+            .slice(0, 6)
+            .join("\n"),
+        }));
     }
     const receiptsPath = join(modeOut, "environments.jsonl");
     if (existsSync(receiptsPath)) {
-      const receipts = readFileSync(receiptsPath, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
+      const receipts = readFileSync(receiptsPath, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l));
       r.receipts = receipts.length;
       r.installer = [...new Set(receipts.map((x) => x.installer).filter(Boolean))];
       r.triage = [...new Set(receipts.flatMap((x) => x.triage ?? []))] as string[];
     } else r.receipts = 0;
     const resPath = join(modeOut, "resolutions.jsonl");
     if (existsSync(resPath)) {
-      const res = readFileSync(resPath, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
+      const res = readFileSync(resPath, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l));
       r.reactIds = [...new Set(res.filter((x) => x.source === "react" && x.id).map((x) => x.id as string))];
       const hits: Record<string, number> = {};
       for (const x of res) {
-        if (x.id && x.id.startsWith(join(repo, "packages") + "/") && (x.importer ?? "").includes("internal-test-utils")) {
+        if (
+          x.id &&
+          x.id.startsWith(join(repo, "packages") + "/") &&
+          (x.importer ?? "").includes("internal-test-utils")
+        ) {
           const k = relative(repo, x.id);
           hits[k] = (hits[k] ?? 0) + 1;
         }
@@ -600,7 +653,9 @@ if (!values["no-report"]) {
     "",
   );
   md.push("## Per-mode results", "");
-  md.push("| mode | passed | failed | skipped | total | files | suite errors | exit | wall | peak RSS | env receipts | notes |");
+  md.push(
+    "| mode | passed | failed | skipped | total | files | suite errors | exit | wall | peak RSS | env receipts | notes |",
+  );
   md.push("| --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |");
   for (const r of runs) {
     const notes: string[] = [];
@@ -608,7 +663,8 @@ if (!values["no-report"]) {
     if (r.installer?.length) notes.push(`installer: ${r.installer.join(",")}`);
     if (r.triage?.length) notes.push(`triage shims patched: ${r.triage.join(", ")}`);
     if (r.reactIds?.length) notes.push(r.reactIds.length === 1 ? "1 React" : `**${r.reactIds.length} React ids**`);
-    if (r.mode === "ctrl-dom-full" && values.cold) notes.push(`shim files imported by internal-test-utils: ${Object.keys(r.shimHits ?? {}).length}`);
+    if (r.mode === "ctrl-dom-full" && values.cold)
+      notes.push(`shim files imported by internal-test-utils: ${Object.keys(r.shimHits ?? {}).length}`);
     if (r.sourceStable === false) notes.push("our sources changed during the run");
     md.push(
       `| ${r.mode} | ${r.passed ?? "?"} | ${r.failed ?? "?"} | ${r.skipped ?? "?"} | ${r.total ?? "?"} | ${r.files ?? "?"} | ${r.suiteErrors?.length ?? "?"} | ${r.code ?? r.signal} | ${(r.wallMs / 1000).toFixed(1)}s | ${mib(r.peakRssBytes)} | ${r.receipts ?? 0} | ${notes.join("; ")} |`,
@@ -626,11 +682,17 @@ if (!values["no-report"]) {
       md.push("");
     }
     if (baseline && r.mode !== "jsdom") {
-      const regress = [...r.assertions.values()].filter((a) => a.status === "failed" && baseline.get(a.key)?.status === "passed");
+      const regress = [...r.assertions.values()].filter(
+        (a) => a.status === "failed" && baseline.get(a.key)?.status === "passed",
+      );
       const missing = [...baseline.keys()].filter((k) => !r.assertions!.has(k));
       const added = [...r.assertions.keys()].filter((k) => !baseline.has(k));
-      const newSkips = [...r.assertions.values()].filter((a) => a.status === "skipped" && baseline.get(a.key)?.status === "passed");
-      const fixed = [...r.assertions.values()].filter((a) => a.status === "passed" && baseline.get(a.key)?.status === "failed");
+      const newSkips = [...r.assertions.values()].filter(
+        (a) => a.status === "skipped" && baseline.get(a.key)?.status === "passed",
+      );
+      const fixed = [...r.assertions.values()].filter(
+        (a) => a.status === "passed" && baseline.get(a.key)?.status === "failed",
+      );
       md.push(
         `Compared with jsdom: **${regress.length} pass on jsdom but fail here**, ${missing.length} missing, ${added.length} added, ${newSkips.length} newly skipped, ${fixed.length} fail on jsdom but pass here.`,
         "",
@@ -660,7 +722,13 @@ if (!values["no-report"]) {
       }
       md.push("### Failures by component", "", "| component | failed |", "| --- | --: |");
       for (const [c, n] of [...byComponent].sort((a, b) => b[1] - a[1])) md.push(`| ${c} | ${n} |`);
-      md.push("", "### Failures by error signature", "", "| count | signature | components | example |", "| --: | --- | --- | --- |");
+      md.push(
+        "",
+        "### Failures by error signature",
+        "",
+        "| count | signature | components | example |",
+        "| --: | --- | --- | --- |",
+      );
       for (const [sig, e] of [...bySignature].sort((a, b) => b[1].count - a[1].count)) {
         md.push(
           `| ${e.count} | ${sig.replace(/\|/g, "\\|").replace(/`/g, "'")} | ${[...e.components].join(", ")} | \`${e.example.replace(/\|/g, "\\|")}\` |`,
@@ -680,7 +748,7 @@ const baselineRun = runs.find((r) => r.mode === "jsdom");
 process.exitCode = runs.some(
   (r) =>
     !r.reportFound ||
-    (r.files ?? 0) > 0 && r.receipts === 0 ||
+    ((r.files ?? 0) > 0 && r.receipts === 0) ||
     (r.mode === "jsdom" && r.code !== 0) ||
     (baselineRun?.assertions && r.assertions && r.assertions.size !== baselineRun.assertions.size),
 )

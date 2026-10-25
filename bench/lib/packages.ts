@@ -67,8 +67,10 @@ export function workspacePackages(): WorkspacePackage[] {
       if (target === undefined || !target.endsWith(".ts") || target.endsWith(".d.ts")) continue;
       const source = join(dir, target);
       const rel = relative(join(dir, "src"), source).replace(/\.ts$/, "");
-      const specifier = pkg.name !== undefined ? (key === "." ? pkg.name : `${pkg.name}/${key.slice(2)}`) : members.get(source);
-      if (specifier === undefined) throw new Error(`packages/${entry.name} exports ${key}, which the root package.json (@ctrl/dom) does not`);
+      const specifier =
+        pkg.name !== undefined ? (key === "." ? pkg.name : `${pkg.name}/${key.slice(2)}`) : members.get(source);
+      if (specifier === undefined)
+        throw new Error(`packages/${entry.name} exports ${key}, which the root package.json (@ctrl/dom) does not`);
       exports.push({
         specifier,
         source,
@@ -76,7 +78,11 @@ export function workspacePackages(): WorkspacePackage[] {
         dist: join(dir, "dist", `${rel}.js`),
       });
     }
-    out.push({ name: pkg.name ?? exports.find((e) => e.entryName === "index")?.specifier ?? exports[0]?.specifier ?? entry.name, dir, exports });
+    out.push({
+      name: pkg.name ?? exports.find((e) => e.entryName === "index")?.specifier ?? exports[0]?.specifier ?? entry.name,
+      dir,
+      exports,
+    });
   }
   return out;
 }

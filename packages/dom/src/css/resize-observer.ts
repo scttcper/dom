@@ -42,7 +42,14 @@ export class ResizeObserverEntry {
   readonly borderBoxSize: readonly ResizeObserverSize[];
   readonly contentBoxSize: readonly ResizeObserverSize[];
   readonly devicePixelContentBoxSize: readonly ResizeObserverSize[];
-  constructor(target: Element, border: ResizeObserverSize, content: ResizeObserverSize, device: ResizeObserverSize, paddingLeft: number, paddingTop: number) {
+  constructor(
+    target: Element,
+    border: ResizeObserverSize,
+    content: ResizeObserverSize,
+    device: ResizeObserverSize,
+    paddingLeft: number,
+    paddingTop: number,
+  ) {
     this.target = target;
     // https://drafts.csswg.org/resize-observer/#create-and-populate-resizeobserverentry steps 6-8
     this.contentRect = new DOMRectReadOnly(paddingLeft, paddingTop, content.inlineSize, content.blockSize);

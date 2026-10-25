@@ -6,7 +6,11 @@
  */
 
 import { describe, expect, test } from "vitest";
-import { formatWithFastPrinter, formatWithPrettyFormat, filterCommentsAndDefaultIgnoreTagsTags } from "../../src/pretty-dom.ts";
+import {
+  formatWithFastPrinter,
+  formatWithPrettyFormat,
+  filterCommentsAndDefaultIgnoreTagsTags,
+} from "../../src/pretty-dom.ts";
 
 const FIXTURES: Record<string, string> = {
   empty: "",
@@ -16,7 +20,7 @@ const FIXTURES: Record<string, string> = {
   whitespace: "<div>\n  <p>\n    text\n  </p>\n</div>",
   comments: "<div><!-- c1 --><p>x</p><!--c2--></div>",
   scriptStyle: `<div><script>if (a < b) {}</script><style>a > b {}</style><p>y</p></div>`,
-  escaping: "<p>1 &lt; 2 &gt; 0 &amp; \"q\"</p>",
+  escaping: '<p>1 &lt; 2 &gt; 0 &amp; "q"</p>',
   svg: `<svg viewBox="0 0 10 10"><linearGradient id="g"></linearGradient><foreignObject><div>x</div></foreignObject></svg>`,
   custom: `<my-element is-big="true"><span>x</span></my-element><div is="x-div"></div>`,
   emptyText: "<p></p>",
@@ -65,7 +69,9 @@ describe("fast DOM printer ≡ pretty-format + DOMElementFilter", () => {
     fragment.appendChild(document.createElement("b")).textContent = "x";
     fragment.appendChild(document.createTextNode("y"));
     const options = { printFunctionName: false, highlight: false };
-    expect(formatWithFastPrinter(fragment, undefined, options)).toBe(formatWithPrettyFormat(fragment, filterCommentsAndDefaultIgnoreTagsTags, options));
+    expect(formatWithFastPrinter(fragment, undefined, options)).toBe(
+      formatWithPrettyFormat(fragment, filterCommentsAndDefaultIgnoreTagsTags, options),
+    );
   });
 
   test("custom theme / plugins delegate", () => {

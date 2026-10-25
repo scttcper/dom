@@ -19,7 +19,12 @@ const rows = Array.from({ length: 1000 }, (_, i) => `Row ${i}`);
 /** The TanStack Virtual README's fixed-size list. */
 function TanStackList({ estimate = 35 }: { estimate?: number }) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => estimate, overscan: 2 });
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => estimate,
+    overscan: 2,
+  });
   return (
     <div ref={parentRef} data-testid="scroller" style={{ height: 400, overflow: "auto" }}>
       <div style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}>
@@ -27,7 +32,14 @@ function TanStackList({ estimate = 35 }: { estimate?: number }) {
           <div
             key={item.key}
             role="row"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: item.size, transform: `translateY(${item.start}px)` }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: item.size,
+              transform: `translateY(${item.start}px)`,
+            }}
           >
             {rows[item.index]}
           </div>
@@ -106,12 +118,21 @@ describe("TanStack Virtual (useVirtualizer) — https://tanstack.com/virtual", (
     let api: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>> | undefined;
     function WithApi() {
       const parentRef = useRef<HTMLDivElement>(null);
-      api = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => 35, overscan: 0 });
+      api = useVirtualizer({
+        count: rows.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 35,
+        overscan: 0,
+      });
       return (
         <div ref={parentRef} data-testid="scroller" style={{ height: 400, overflow: "auto" }}>
           <div style={{ height: api.getTotalSize(), position: "relative" }}>
             {api.getVirtualItems().map((item) => (
-              <div key={item.key} role="row" style={{ position: "absolute", top: item.start, height: 35, width: "100%" }}>
+              <div
+                key={item.key}
+                role="row"
+                style={{ position: "absolute", top: item.start, height: 35, width: "100%" }}
+              >
                 {rows[item.index]}
               </div>
             ))}

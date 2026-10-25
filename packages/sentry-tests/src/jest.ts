@@ -91,7 +91,13 @@ export default class SentryTestsReporter {
           ...(project ? { project } : {}),
           tests,
           collected: data?.collected ?? null,
-          ...(execError ? { outsideTests: [{ name: FILE_FAILURE, error: { message: execError.message, stack: execError.stack ?? undefined } }] } : {}),
+          ...(execError
+            ? {
+                outsideTests: [
+                  { name: FILE_FAILURE, error: { message: execError.message, stack: execError.stack ?? undefined } },
+                ],
+              }
+            : {}),
         },
         this.options,
       ),
@@ -101,7 +107,10 @@ export default class SentryTestsReporter {
   async onRunComplete(): Promise<void> {
     if (this.#delivery === null) return;
     const summary = await this.#delivery.flush();
-    if (summary !== null) process.stderr.write(`${summary}${this.#collected ? "" : ' (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")'}\n`);
+    if (summary !== null)
+      process.stderr.write(
+        `${summary}${this.#collected ? "" : ' (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")'}\n`,
+      );
   }
 
   getLastError(): Error | undefined {

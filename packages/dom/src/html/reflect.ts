@@ -70,7 +70,12 @@ function names(list: string): [idl: string, content: string][] {
   return out;
 }
 
-export function defineAccessor(C: Ctor, name: string, get: (this: Wrapper) => unknown, set?: (this: Wrapper, v: any) => void): void {
+export function defineAccessor(
+  C: Ctor,
+  name: string,
+  get: (this: Wrapper) => unknown,
+  set?: (this: Wrapper, v: any) => void,
+): void {
   Object.defineProperty(C.prototype, name, { get, set, configurable: true, enumerable: true });
 }
 
@@ -373,7 +378,12 @@ export function enumerated(C: Ctor, list: string, spec: EnumSpec): void {
 }
 
 /** Shared enumerated specs. */
-export const CROSS_ORIGIN: EnumSpec = { keywords: ["anonymous", "use-credentials"], missing: null, invalid: "anonymous", empty: "anonymous" };
+export const CROSS_ORIGIN: EnumSpec = {
+  keywords: ["anonymous", "use-credentials"],
+  missing: null,
+  invalid: "anonymous",
+  empty: "anonymous",
+};
 export const REFERRER_POLICY: EnumSpec = {
   keywords: [
     "no-referrer",

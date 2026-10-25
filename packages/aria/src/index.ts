@@ -84,11 +84,11 @@ export function isDisabled(element: Element): boolean {
 export const daa06 = {
   computeAccessibleName(root: Element, options?: ComputeTextAlternativeOptions): string {
     const impl = implOf(root);
-  return computeAccessibleNameImpl(impl, withStyleOverride(impl, options), 6);
+    return computeAccessibleNameImpl(impl, withStyleOverride(impl, options), 6);
   },
   computeAccessibleDescription(root: Element, options?: ComputeTextAlternativeOptions): string {
     const impl = implOf(root);
-  return computeAccessibleDescriptionImpl(impl, withStyleOverride(impl, options), 6);
+    return computeAccessibleDescriptionImpl(impl, withStyleOverride(impl, options), 6);
   },
   getRole(element: Element): string | null {
     return daaGetRole(implOf(element), 6);

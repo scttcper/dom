@@ -39,7 +39,17 @@
 // Flags: --no-build, --keep (leave the temp directory), --dir <path> (reuse a project dir).
 
 import { spawnSync, type SpawnSyncOptions } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync, existsSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -95,7 +105,9 @@ for (const dir of PUBLISHED) {
 console.log("\ntarballs:");
 for (const [name, tgz] of packed) {
   const files = (run("tar", ["-tzf", tgz], { quiet: true }).stdout as string).trim().split("\n").length;
-  console.log(`  ${name.padEnd(28)} ${(statSync(tgz).size / 1024).toFixed(1).padStart(7)} KB packed  ${String(files).padStart(4)} files`);
+  console.log(
+    `  ${name.padEnd(28)} ${(statSync(tgz).size / 1024).toFixed(1).padStart(7)} KB packed  ${String(files).padStart(4)} files`,
+  );
 }
 
 // ── 2. fresh project ──────────────────────────────────────────────────────────────────────────
@@ -197,7 +209,12 @@ const checks: Check[] = [
     id: "a",
     title: "Vitest, ctrlDom({ testingLibrary: false }) + stock @testing-library/*",
     cmd: ["vitest", "run", "--config", "vitest.stock.config.ts"],
-    mustLoad: ["@ctrl/dom/vitest.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/dom/index.js", "@testing-library/react/"],
+    mustLoad: [
+      "@ctrl/dom/vitest.js",
+      "@ctrl/dom/dist/vitest-environment/index.js",
+      "@ctrl/dom/dist/dom/index.js",
+      "@testing-library/react/",
+    ],
   },
   {
     id: "b",
@@ -224,7 +241,13 @@ const checks: Check[] = [
     id: "c",
     title: "Vitest, ctrlDom() plugin + the stock test file",
     cmd: ["vitest", "run", "--config", "vitest.plugin.config.ts"],
-    mustLoad: ["@ctrl/dom/vitest.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/react/index.js", "@ctrl/dom/dist/user-event/index.js", "@ctrl/dom/dist/jest-dom/vitest.js"],
+    mustLoad: [
+      "@ctrl/dom/vitest.js",
+      "@ctrl/dom/dist/vitest-environment/index.js",
+      "@ctrl/dom/dist/react/index.js",
+      "@ctrl/dom/dist/user-event/index.js",
+      "@ctrl/dom/dist/jest-dom/vitest.js",
+    ],
     mustNotLoad: /\/node_modules\/@testing-library\//,
   },
   {
@@ -295,17 +318,33 @@ const checks: Check[] = [
     id: "f1",
     title: "`ctrl-dom debug` (bin) on a failing Vitest test, ctrlDom() plugin",
     cmd: ["ctrl-dom", "debug", "debug.vitest.fixture.tsx", "--config", "vitest.debug.config.ts"],
-    mustLoad: ["@ctrl/dom/cli/ctrl-dom.js", "@ctrl/dom/cli/vitest-reporter.js", "@ctrl/dom/dist/vitest-environment/failure-snapshot.js"],
+    mustLoad: [
+      "@ctrl/dom/cli/ctrl-dom.js",
+      "@ctrl/dom/cli/vitest-reporter.js",
+      "@ctrl/dom/dist/vitest-environment/failure-snapshot.js",
+    ],
     status: 1,
-    stdout: ["ctrl-dom debug: vitest debug.vitest.fixture.tsx (CTRL_DOM_DEBUG=aria)", ...DEBUG_REPORT, "1 failed · vitest · debug.vitest.fixture.tsx"],
+    stdout: [
+      "ctrl-dom debug: vitest debug.vitest.fixture.tsx (CTRL_DOM_DEBUG=aria)",
+      ...DEBUG_REPORT,
+      "1 failed · vitest · debug.vitest.fixture.tsx",
+    ],
   },
   {
     id: "f2",
     title: "`ctrl-dom debug` (bin) on a failing Jest test, preset",
     cmd: ["ctrl-dom", "debug", "debug.jest.fixture.cjs", "--config", "jest.debug.config.cjs"],
-    mustLoad: ["@ctrl/dom/cli/ctrl-dom.js", "@ctrl/dom/cli/jest-reporter.js", "@ctrl/dom/dist/testing-library/agent.js"],
+    mustLoad: [
+      "@ctrl/dom/cli/ctrl-dom.js",
+      "@ctrl/dom/cli/jest-reporter.js",
+      "@ctrl/dom/dist/testing-library/agent.js",
+    ],
     status: 1,
-    stdout: ["ctrl-dom debug: jest debug.jest.fixture.cjs (CTRL_DOM_DEBUG=aria)", ...DEBUG_REPORT, "1 failed · jest · debug.jest.fixture.cjs"],
+    stdout: [
+      "ctrl-dom debug: jest debug.jest.fixture.cjs (CTRL_DOM_DEBUG=aria)",
+      ...DEBUG_REPORT,
+      "1 failed · jest · debug.jest.fixture.cjs",
+    ],
   },
   {
     id: "e",
@@ -387,13 +426,18 @@ for (const check of checks) {
     env: {
       ...process.env,
       CTRL_DOM_LOAD_LOG: log,
-      NODE_OPTIONS: check.recordLoads === false ? (process.env.NODE_OPTIONS ?? "") : `${process.env.NODE_OPTIONS ?? ""} --import ${join(project, "record-loads.mjs")}`.trim(),
+      NODE_OPTIONS:
+        check.recordLoads === false
+          ? (process.env.NODE_OPTIONS ?? "")
+          : `${process.env.NODE_OPTIONS ?? ""} --import ${join(project, "record-loads.mjs")}`.trim(),
       CI: "1",
     },
   });
   const ms = performance.now() - t0;
   const problems = proc.status === (check.status ?? 0) ? [] : [`exit ${proc.status}\n${proc.stdout}${proc.stderr}`];
-  for (const text of check.stdout ?? []) if (!proc.stdout.includes(text)) problems.push(`stdout lacks ${JSON.stringify(text)}\n${proc.stdout}${proc.stderr}`);
+  for (const text of check.stdout ?? [])
+    if (!proc.stdout.includes(text))
+      problems.push(`stdout lacks ${JSON.stringify(text)}\n${proc.stdout}${proc.stderr}`);
   problems.push(...verifyLoads(check, log));
   results.push({ check, ok: problems.length === 0, problems, ms });
   console.log(`${problems.length === 0 ? "PASS" : "FAIL"} (${check.id}) ${check.title}  ${(ms / 1000).toFixed(1)} s`);

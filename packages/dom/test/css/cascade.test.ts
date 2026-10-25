@@ -35,11 +35,17 @@ function html(markup: string): void {
   document.body!.innerHTML = markup;
 }
 const $ = (sel: string): Element => document.querySelector(sel)!;
-const cs = (sel: string, pseudo?: string) => window.getComputedStyle($(sel), pseudo) as unknown as Record<string, string> & { getPropertyValue(p: string): string; length: number };
+const cs = (sel: string, pseudo?: string) =>
+  window.getComputedStyle($(sel), pseudo) as unknown as Record<string, string> & {
+    getPropertyValue(p: string): string;
+    length: number;
+  };
 
 describe("UA defaults — https://html.spec.whatwg.org/#rendering", () => {
   test("display per element and the hidden-elements rules", () => {
-    html(`<div id=d></div><span id=s></span><li id=l></li><table id=t></table><button id=b hidden></button><dialog id=g></dialog><input id=h type=hidden><x-y id=c></x-y>`);
+    html(
+      `<div id=d></div><span id=s></span><li id=l></li><table id=t></table><button id=b hidden></button><dialog id=g></dialog><input id=h type=hidden><x-y id=c></x-y>`,
+    );
     expect(cs("#d").display).toBe("block");
     expect(cs("#s").display).toBe("inline");
     expect(cs("#l").display).toBe("list-item");
@@ -52,7 +58,9 @@ describe("UA defaults — https://html.spec.whatwg.org/#rendering", () => {
   });
 
   test("author rules override [hidden] (normal UA importance) but not input[type=hidden] (!important)", () => {
-    html(`<style>[hidden]{display:block} input{display:block !important}</style><p hidden id=p></p><input type=hidden id=i>`);
+    html(
+      `<style>[hidden]{display:block} input{display:block !important}</style><p hidden id=p></p><input type=hidden id=i>`,
+    );
     expect(cs("#p").display).toBe("block");
     expect(cs("#i").display).toBe("none");
   });
@@ -119,7 +127,9 @@ describe("cascade sort — https://drafts.csswg.org/css-cascade-5/#cascade-sort"
   });
 
   test("computed colors keep the author's serialization by default (jest-dom toHaveStyle compat); currentcolor resolves", () => {
-    html(`<style>.a{color: blue; background-color: #ff0000; border-color: currentcolor; border-style: solid}</style><div class=a id=a></div>`);
+    html(
+      `<style>.a{color: blue; background-color: #ff0000; border-color: currentcolor; border-style: solid}</style><div class=a id=a></div>`,
+    );
     expect(cs("#a").color).toBe("blue");
     expect(cs("#a").backgroundColor).toBe("rgb(255, 0, 0)");
     expect(cs("#a").borderTopColor).toBe("blue");
@@ -129,7 +139,9 @@ describe("cascade sort — https://drafts.csswg.org/css-cascade-5/#cascade-sort"
   });
 
   test("::before / ::after styles and content", () => {
-    html(`<style>.q::before{content:"« "} .q::after{content: attr(data-x) "!"; color: red}</style><span class=q id=q data-x="hey">t</span>`);
+    html(
+      `<style>.q::before{content:"« "} .q::after{content: attr(data-x) "!"; color: red}</style><span class=q id=q data-x="hey">t</span>`,
+    );
     expect(cs("#q", "::before").content).toBe('"« "');
     expect(cs("#q", "::after").color).toBe("red");
     expect(cs("#q").content).toBe("normal");
@@ -155,7 +167,8 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
 
   test("rule.style edits and selectorText changes apply", () => {
     html(`<style>.a{color:red}</style><div class=b id=e></div>`);
-    const rule = (document as unknown as { styleSheets: { [i: number]: CSSStyleSheet } }).styleSheets[0].cssRules[0] as unknown as { selectorText: string; style: { color: string } };
+    const rule = (document as unknown as { styleSheets: { [i: number]: CSSStyleSheet } }).styleSheets[0]
+      .cssRules[0] as unknown as { selectorText: string; style: { color: string } };
     rule.selectorText = ".b";
     expect(cs("#e").color).toBe("red");
     rule.style.color = "green";
@@ -180,7 +193,9 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
     const render = () => {
       const host = document.createElement("div");
       document.body!.appendChild(host);
-      const root = (host as unknown as { attachShadow(init: object): { innerHTML: string } }).attachShadow({ mode: "open" });
+      const root = (host as unknown as { attachShadow(init: object): { innerHTML: string } }).attachShadow({
+        mode: "open",
+      });
       root.innerHTML = "<style>p { color: red }</style><p>x</p>";
       return host;
     };
@@ -195,7 +210,9 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
 
   test("a shadow root's adoptedStyleSheets array, once read, is watched for push (https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets)", () => {
     html(`<div id=host></div>`);
-    const root = (document.getElementById("host") as unknown as { attachShadow(init: object): ShadowRoot }).attachShadow({ mode: "open" }) as unknown as {
+    const root = (
+      document.getElementById("host") as unknown as { attachShadow(init: object): ShadowRoot }
+    ).attachShadow({ mode: "open" }) as unknown as {
       innerHTML: string;
       adoptedStyleSheets: CSSStyleSheet[];
       querySelector(s: string): Element;
@@ -220,7 +237,8 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
     const a = document.createElement("style");
     a.textContent = ".a{}";
     head.appendChild(a);
-    const list = (document as unknown as { styleSheets: { length: number; [i: number]: { ownerNode: unknown } } }).styleSheets;
+    const list = (document as unknown as { styleSheets: { length: number; [i: number]: { ownerNode: unknown } } })
+      .styleSheets;
     expect(list.length).toBe(2);
     expect(list[0].ownerNode).toBe(a);
   });
@@ -237,7 +255,9 @@ describe("fast internal API (src/css/internal.ts)", () => {
   const impl = (sel: string) => ($(sel) as unknown as { [$impl]: Parameters<typeof isDisplayNone>[0] })[$impl];
 
   test("without author styles: UA + inline checks, no style records allocated for plain elements", () => {
-    html(`<div id=a><span id=b></span></div><p id=c style="visibility:hidden"><i id=d></i></p><template id=t></template>`);
+    html(
+      `<div id=a><span id=b></span></div><p id=c style="visibility:hidden"><i id=d></i></p><template id=t></template>`,
+    );
     expect(hasAuthorStyles(document)).toBe(true); // the inline style counts
     expect(isDisplayNone(impl("#a"))).toBe(false);
     expect(isDisplayNone(impl("#t"))).toBe(true);
@@ -254,7 +274,9 @@ describe("fast internal API (src/css/internal.ts)", () => {
   });
 
   test("with sheets: cached per element and invalidated by mutations", () => {
-    html(`<style>.h{display:none} .v{visibility:hidden} .n{pointer-events:none}</style><div id=a class="v n"><span id=b></span></div>`);
+    html(
+      `<style>.h{display:none} .v{visibility:hidden} .n{pointer-events:none}</style><div id=a class="v n"><span id=b></span></div>`,
+    );
     expect(isDisplayNone(impl("#a"))).toBe(false);
     expect(computedVisibility(impl("#b"))).toBe("hidden");
     expect(pointerEvents(impl("#b"))).toBe("none");
@@ -279,7 +301,8 @@ describe("CSS namespace — https://drafts.csswg.org/cssom/#the-css-namespace", 
   });
 
   test("matchMedia evaluates through the css media query engine", () => {
-    const mm = (q: string) => (window as unknown as { matchMedia(q: string): { matches: boolean } }).matchMedia(q).matches;
+    const mm = (q: string) =>
+      (window as unknown as { matchMedia(q: string): { matches: boolean } }).matchMedia(q).matches;
     expect(mm("(min-width: 1000px) and (orientation: landscape)")).toBe(true);
     expect(mm("(width >= 1100px)")).toBe(false);
     expect(mm("screen and (prefers-reduced-motion: no-preference)")).toBe(true);

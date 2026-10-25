@@ -1,13 +1,6 @@
 // https://dom.spec.whatwg.org/#interface-element
 
-import {
-  ELEMENT_NODE,
-  F_CONNECTED,
-  F_CUSTOM,
-  F_HAS_SHADOW,
-  F_HTML,
-  HTML_NS,
-} from "./constants.ts";
+import { ELEMENT_NODE, F_CONNECTED, F_CUSTOM, F_HAS_SHADOW, F_HTML, HTML_NS } from "./constants.ts";
 import type { Document } from "./Document.ts";
 import { htmlUppercasedQualifiedName, Node } from "./Node.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
@@ -48,11 +41,27 @@ import { attrNode, removeAttributeNode, setAttributeNode } from "./attr-nodes.ts
 import { validateAndExtract } from "./names.ts";
 import { DOMRect, DOMRectList } from "../window/geometry.ts";
 import { T } from "./tags.ts";
-import { _shadowRootAttached, assignedSlot as slotOf, assignedSlotForEventPath, slotAssignmentActive } from "./slots.ts";
+import {
+  _shadowRootAttached,
+  assignedSlot as slotOf,
+  assignedSlotForEventPath,
+  slotAssignmentActive,
+} from "./slots.ts";
 import { setAssignedSlotLookup } from "../events/dispatch.ts";
 import type { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
 import type { ShadowRootInit } from "../webidl.ts";
-import { $attributes, $children, $classList, $dataset, $declarative, $impl, $isHTML, $mode, $shadowRoot, $style } from "../keys.ts";
+import {
+  $attributes,
+  $children,
+  $classList,
+  $dataset,
+  $declarative,
+  $impl,
+  $isHTML,
+  $mode,
+  $shadowRoot,
+  $style,
+} from "../keys.ts";
 
 /** Valid custom element name test (fast path: must contain "-" and start with a-z). */
 function isPotentialCustomElementName(name: string): boolean {
@@ -183,7 +192,11 @@ export class Element extends Node {
   }
 
   getAttributeNS(namespace: string | null, localName: string): string | null {
-    const a = findAttributeByNamespace(this[$impl], namespace === "" || namespace === undefined ? null : namespace, String(localName));
+    const a = findAttributeByNamespace(
+      this[$impl],
+      namespace === "" || namespace === undefined ? null : namespace,
+      String(localName),
+    );
     return a === null ? null : a.value;
   }
 
@@ -193,7 +206,11 @@ export class Element extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-element-setattributens */
   setAttributeNS(namespace: string | null, qualifiedName: string, value: string): void {
-    const { namespace: ns, prefix, localName } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "attribute");
+    const {
+      namespace: ns,
+      prefix,
+      localName,
+    } = validateAndExtract(namespace === undefined ? null : namespace, String(qualifiedName), "attribute");
     const impl = this[$impl];
     const v = String(value);
     const existing = findAttributeByNamespace(impl, ns, localName);
@@ -212,7 +229,11 @@ export class Element extends Node {
   /** https://dom.spec.whatwg.org/#dom-element-getattributenodens */
   getAttributeNodeNS(namespace: string | null, localName: string): Attr | null {
     const impl = this[$impl];
-    const a = findAttributeByNamespace(impl, namespace === "" || namespace === undefined ? null : namespace, String(localName));
+    const a = findAttributeByNamespace(
+      impl,
+      namespace === "" || namespace === undefined ? null : namespace,
+      String(localName),
+    );
     return a === null ? null : attrNode(impl, a);
   }
 
@@ -235,7 +256,11 @@ export class Element extends Node {
   }
 
   removeAttributeNS(namespace: string | null, localName: string): void {
-    const a = findAttributeByNamespace(this[$impl], namespace === "" || namespace === undefined ? null : namespace, String(localName));
+    const a = findAttributeByNamespace(
+      this[$impl],
+      namespace === "" || namespace === undefined ? null : namespace,
+      String(localName),
+    );
     if (a !== null) removeAttributeRecord(this[$impl], a);
   }
 
@@ -267,7 +292,13 @@ export class Element extends Node {
   }
 
   hasAttributeNS(namespace: string | null, localName: string): boolean {
-    return findAttributeByNamespace(this[$impl], namespace === "" || namespace === undefined ? null : namespace, String(localName)) !== null;
+    return (
+      findAttributeByNamespace(
+        this[$impl],
+        namespace === "" || namespace === undefined ? null : namespace,
+        String(localName),
+      ) !== null
+    );
   }
 
   // --- selectors --------------------------------------------------------------------------
@@ -336,7 +367,8 @@ export class Element extends Node {
     const impl = this[$impl];
     const parent = impl.parent;
     if (parent === null) return;
-    if (parent.type === 9) throw new DOMException("Cannot set outerHTML of the document element.", "NoModificationAllowedError");
+    if (parent.type === 9)
+      throw new DOMException("Cannot set outerHTML of the document element.", "NoModificationAllowedError");
     const context = parent.type === 11 ? impl.doc.createElement("body")[$impl] : parent;
     const fragment = parseFragment(value === null ? "" : String(value), context);
     parent.node.replaceChild(fragment.node, this);
@@ -358,7 +390,10 @@ export class Element extends Node {
     } else {
       throw new DOMException(`"${position}" is not a valid position.`, "SyntaxError");
     }
-    if (context.type !== ELEMENT_NODE || (context.ns === HTML_NS && context.name === "html" && (context.flags & F_HTML) !== 0)) {
+    if (
+      context.type !== ELEMENT_NODE ||
+      (context.ns === HTML_NS && context.name === "html" && (context.flags & F_HTML) !== 0)
+    ) {
       context = impl.doc.createElement("body")[$impl];
     }
     const fragment = parseFragment(String(text), context).node;
@@ -367,7 +402,9 @@ export class Element extends Node {
 
   insertAdjacentElement(where: string, element: Element): Element | null {
     if (!(element instanceof Element)) {
-      throw new TypeError("Failed to execute 'insertAdjacentElement' on 'Element': parameter 2 is not of type 'Element'.");
+      throw new TypeError(
+        "Failed to execute 'insertAdjacentElement' on 'Element': parameter 2 is not of type 'Element'.",
+      );
     }
     return insertAdjacent(this, asciiLowercase(String(where)), element) as Element | null;
   }
@@ -390,11 +427,15 @@ export class Element extends Node {
     }
     const mode = init.mode;
     if (mode !== "open" && mode !== "closed") {
-      throw new TypeError(`Failed to execute 'attachShadow' on 'Element': The provided value '${String(mode)}' is not a valid enum value of type ShadowRootMode.`);
+      throw new TypeError(
+        `Failed to execute 'attachShadow' on 'Element': The provided value '${String(mode)}' is not a valid enum value of type ShadowRootMode.`,
+      );
     }
     const slotAssignment = init.slotAssignment ?? "named";
     if (slotAssignment !== "named" && slotAssignment !== "manual") {
-      throw new TypeError(`Failed to execute 'attachShadow' on 'Element': The provided value '${String(slotAssignment)}' is not a valid enum value of type SlotAssignmentMode.`);
+      throw new TypeError(
+        `Failed to execute 'attachShadow' on 'Element': The provided value '${String(slotAssignment)}' is not a valid enum value of type SlotAssignmentMode.`,
+      );
     }
     return attachShadowRoot(this, mode, !!init.clonable, !!init.serializable, !!init.delegatesFocus, slotAssignment);
   }
@@ -463,7 +504,12 @@ export class Element extends Node {
   /** Runs when this element becomes disconnected. Only called when F_CONNECT_HOOK is set. */
   _disconnectedSteps(): void {}
   /** https://dom.spec.whatwg.org/#concept-element-attributes-change-ext — only when F_ATTR_HOOK is set. */
-  _attributeChangedSteps(_localName: string, _oldValue: string | null, _value: string | null, _namespace: string | null): void {}
+  _attributeChangedSteps(
+    _localName: string,
+    _oldValue: string | null,
+    _value: string | null,
+    _namespace: string | null,
+  ): void {}
   /** https://dom.spec.whatwg.org/#concept-node-children-changed-ext — only when F_CHILDREN_HOOK is set. */
   _childrenChangedSteps(): void {}
   /** https://dom.spec.whatwg.org/#concept-node-adopt-ext — only when F_ADOPT_HOOK is set. */
@@ -503,6 +549,7 @@ function insertAdjacent(element: Element, where: string, node: Node): Node | nul
 const partLists = new WeakMap<Element, DOMTokenList>();
 
 /** Shadow host names: https://dom.spec.whatwg.org/#valid-shadow-host-name */
+// oxfmt-ignore
 const SHADOW_HOST_NAMES = new Set(["article", "aside", "blockquote", "body", "div", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "main", "nav", "p", "section", "span"]);
 
 let slotLookupInstalled = false;
@@ -521,18 +568,27 @@ export function attachShadowRoot(
   if (impl.ns !== HTML_NS) throw new DOMException("This element does not support attachShadow", "NotSupportedError");
   const name = impl.name;
   if ((impl.flags & F_CUSTOM) === 0 && !SHADOW_HOST_NAMES.has(name)) {
-    throw new DOMException(`Failed to execute 'attachShadow' on 'Element': This element does not support attachShadow`, "NotSupportedError");
+    throw new DOMException(
+      `Failed to execute 'attachShadow' on 'Element': This element does not support attachShadow`,
+      "NotSupportedError",
+    );
   }
   // Step 3: custom element definitions with disableShadow (html agent hook).
   const disabled = (element as unknown as { _shadowDisabled?: () => boolean })._shadowDisabled;
   if (typeof disabled === "function" && disabled.call(element)) {
-    throw new DOMException("Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host whose custom element definition disables it.", "NotSupportedError");
+    throw new DOMException(
+      "Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host whose custom element definition disables it.",
+      "NotSupportedError",
+    );
   }
   // Step 4.
   const current = element[$shadowRoot];
   if (current != null) {
     if (!current[$declarative] || current[$mode] !== mode) {
-      throw new DOMException("Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host which already hosts a shadow tree.", "NotSupportedError");
+      throw new DOMException(
+        "Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host which already hosts a shadow tree.",
+        "NotSupportedError",
+      );
     }
     current._replaceAll(null);
     current[$declarative] = false;
@@ -556,7 +612,11 @@ export function attachShadowRoot(
 /** Per-root cache of getElementsBy* collections (same object for the same root + key). */
 const collectionCache = new WeakMap<NodeImpl, Map<string, HTMLCollection>>();
 
-export function cachedCollection(root: NodeImpl, key: string, filter: ((el: NodeImpl) => boolean) | null): HTMLCollection {
+export function cachedCollection(
+  root: NodeImpl,
+  key: string,
+  filter: ((el: NodeImpl) => boolean) | null,
+): HTMLCollection {
   let map = collectionCache.get(root);
   if (map === undefined) collectionCache.set(root, (map = new Map()));
   let c = map.get(key);

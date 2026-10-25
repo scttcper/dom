@@ -52,7 +52,10 @@ export interface ResolvedOptions {
 const SPOTLIGHT_DEFAULT = "http://localhost:8969/stream";
 
 /** Where reports go and what they contain, or null when there is nowhere to send them. */
-export function resolveOptions(options: SentryTestsOptions = {}, env: NodeJS.ProcessEnv = process.env): ResolvedOptions | null {
+export function resolveOptions(
+  options: SentryTestsOptions = {},
+  env: NodeJS.ProcessEnv = process.env,
+): ResolvedOptions | null {
   const targets: Target[] = [];
   const dsn = options.dsn ?? env.SENTRY_DSN;
   if (dsn) {
@@ -60,7 +63,8 @@ export function resolveOptions(options: SentryTestsOptions = {}, env: NodeJS.Pro
     targets.push({ label: parsed.host, url: parsed.url, dsn: parsed });
   }
   const spotlight = options.spotlight ?? spotlightFromEnv(env.SENTRY_SPOTLIGHT);
-  if (spotlight) targets.push({ label: "Spotlight", url: spotlight === true ? SPOTLIGHT_DEFAULT : spotlight, dsn: null });
+  if (spotlight)
+    targets.push({ label: "Spotlight", url: spotlight === true ? SPOTLIGHT_DEFAULT : spotlight, dsn: null });
   if (targets.length === 0) return null;
   return {
     targets,
@@ -88,7 +92,10 @@ function spotlightFromEnv(value: string | undefined): boolean | string {
 
 function gitCommit(): string | undefined {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || undefined;
+    return (
+      execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() ||
+      undefined
+    );
   } catch {
     return undefined;
   }

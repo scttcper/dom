@@ -23,4 +23,5 @@ async function pickAdapter(): Promise<RTL> {
 
 const rtl = await pickAdapter()
 
-export const {render, screen, waitFor, act, cleanup, fireEvent, renderHook} = rtl
+export const {render, screen, waitFor, act, cleanup, fireEvent, renderHook} =
+  rtl

@@ -21,13 +21,36 @@ export function fireEvent(target: EventTarget, type: string, bubbles = false, ca
 }
 
 /** https://html.spec.whatwg.org/#fire-a-focus-event (composed, `view` = the window). */
-export function fireFocusEvent(target: EventTarget, type: string, relatedTarget: EventTarget | null, bubbles: boolean, view: unknown): void {
-  fireAnEvent(type, target, FocusEvent as never, { bubbles, cancelable: false, composed: true, relatedTarget, view, detail: 0 } as never);
+export function fireFocusEvent(
+  target: EventTarget,
+  type: string,
+  relatedTarget: EventTarget | null,
+  bubbles: boolean,
+  view: unknown,
+): void {
+  fireAnEvent(
+    type,
+    target,
+    FocusEvent as never,
+    { bubbles, cancelable: false, composed: true, relatedTarget, view, detail: 0 } as never,
+  );
 }
 
 /** https://html.spec.whatwg.org/#the-toggleevent-interface — returns false if canceled. */
-export function fireToggleEvent(target: EventTarget, type: string, oldState: string, newState: string, cancelable: boolean, source: EventTarget | null = null): boolean {
-  return fireAnEvent(type, target, ToggleEvent as never, { bubbles: false, cancelable, oldState, newState, source } as never);
+export function fireToggleEvent(
+  target: EventTarget,
+  type: string,
+  oldState: string,
+  newState: string,
+  cancelable: boolean,
+  source: EventTarget | null = null,
+): boolean {
+  return fireAnEvent(
+    type,
+    target,
+    ToggleEvent as never,
+    { bubbles: false, cancelable, oldState, newState, source } as never,
+  );
 }
 
 /**

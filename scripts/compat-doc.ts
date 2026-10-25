@@ -32,7 +32,9 @@ function members(keys: readonly string[]): string {
     return `${list(groups[0][1], 4)} on ${groups.map(([iface]) => iface).join(", ")}`;
   }
   const shown = groups.slice(0, 6).map(([iface, names]) => `${iface}: ${list(names, 4)}`);
-  return groups.length > 6 ? `${shown.join("; ")}; and members of ${groups.length - 6} more interfaces` : shown.join("; ");
+  return groups.length > 6
+    ? `${shown.join("; ")}; and members of ${groups.length - 6} more interfaces`
+    : shown.join("; ");
 }
 
 export function renderCompatTable(): string {
@@ -41,9 +43,16 @@ export function renderCompatTable(): string {
     `| --- | ${COMPAT_PROFILES.map(() => ":-:").join(" | ")} | --- |`,
   ];
   for (const entry of COMPAT) {
-    const apis = [entry.globals?.length ? `globals ${list(entry.globals, 8)}` : "", entry.members?.length ? members(entry.members) : ""].filter(Boolean).join("; members ");
+    const apis = [
+      entry.globals?.length ? `globals ${list(entry.globals, 8)}` : "",
+      entry.members?.length ? members(entry.members) : "",
+    ]
+      .filter(Boolean)
+      .join("; members ");
     const marks = COMPAT_PROFILES.map((p) => (entry.profiles.includes(p) ? "yes" : "–"));
-    rows.push(`| ${apis.startsWith("globals") ? apis : `members ${apis}`} | ${marks.join(" | ")} | ${entry.reason.replaceAll("|", "\\|")} |`);
+    rows.push(
+      `| ${apis.startsWith("globals") ? apis : `members ${apis}`} | ${marks.join(" | ")} | ${entry.reason.replaceAll("|", "\\|")} |`,
+    );
   }
   return [START, ...rows, END].join("\n");
 }

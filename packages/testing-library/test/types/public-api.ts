@@ -176,7 +176,18 @@ export const all = [
   wrapSingleQueryWithSuggestion,
 ] as const;
 
-export type Types = [Config, BoundFunctions<typeof queries>, ByRoleOptions, Matcher, MatcherOptions, SelectorMatcherOptions, Screen, Suggestion, waitForOptions, PrettyDOMOptions];
+export type Types = [
+  Config,
+  BoundFunctions<typeof queries>,
+  ByRoleOptions,
+  Matcher,
+  MatcherOptions,
+  SelectorMatcherOptions,
+  Screen,
+  Suggestion,
+  waitForOptions,
+  PrettyDOMOptions,
+];
 
 // A few signatures, checked structurally.
 export const checks = {

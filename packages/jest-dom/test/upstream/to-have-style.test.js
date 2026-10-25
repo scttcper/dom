@@ -8,17 +8,27 @@ import {render} from './helpers/test-utils.js'
 // Not upstream: jsdom 30 drops the invalid `cubic-bezier(3, 4, 5, 6)` transition on both
 // sides, so the negative case written against jsdom 16 cannot fail there (stock jest-dom
 // included). It runs on @ctrl/dom once the css gap below is closed.
-const testUnlessJsdom30 = process.env.CTRL_DOM_STACK === 'jsdom' ? test.skip : test
+const testUnlessJsdom30 =
+  process.env.CTRL_DOM_STACK === 'jsdom' ? test.skip : test
 // TODO(css): @ctrl/dom's getComputedStyle does not yet apply <style> sheet declarations
 // (`.label { color: white }`) or inherit custom properties from `:root`; re-enable then.
-const testUnlessCtrlDomCssGap = process.env.CTRL_DOM_STACK === 'ctrl-dom' ? test.skip : test
+const testUnlessCtrlDomCssGap =
+  process.env.CTRL_DOM_STACK === 'ctrl-dom' ? test.skip : test
 // Not upstream: jsdom 30 computes named colors as rgb() while element.style keeps the keyword;
 // stock jest-dom compares strings, so on jsdom 30 these fail for it (ours canonicalizes colors).
 const testUnlessStockOnJsdom30 =
-  process.env.CTRL_DOM_STACK === 'jsdom' && process.env.JEST_DOM_IMPL === 'stock' ? test.skip : test
+  process.env.CTRL_DOM_STACK === 'jsdom' &&
+  process.env.JEST_DOM_IMPL === 'stock'
+    ? test.skip
+    : test
 const testUnlessStockOnJsdom30OrCtrlDomCssGap =
-  process.env.CTRL_DOM_STACK === 'ctrl-dom' ? testUnlessCtrlDomCssGap : testUnlessStockOnJsdom30
-const testUnlessJsdom30OrCtrlDomCssGap = process.env.CTRL_DOM_STACK === 'ctrl-dom' ? testUnlessCtrlDomCssGap : testUnlessJsdom30
+  process.env.CTRL_DOM_STACK === 'ctrl-dom'
+    ? testUnlessCtrlDomCssGap
+    : testUnlessStockOnJsdom30
+const testUnlessJsdom30OrCtrlDomCssGap =
+  process.env.CTRL_DOM_STACK === 'ctrl-dom'
+    ? testUnlessCtrlDomCssGap
+    : testUnlessJsdom30
 
 // eslint-disable-next-line max-lines-per-function
 describe('.toHaveStyle', () => {

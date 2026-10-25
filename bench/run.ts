@@ -65,7 +65,9 @@ if (flags.list) {
   process.exit(0);
 }
 
-const workloads = allWorkloads.filter((w) => matches(w.id, flags.workloads) && !(flags.skip && matches(w.id, flags.skip)));
+const workloads = allWorkloads.filter(
+  (w) => matches(w.id, flags.workloads) && !(flags.skip && matches(w.id, flags.skip)),
+);
 const samples = Number(flags.samples);
 const timeoutMs = Number(flags.timeout) * 1000;
 
@@ -142,7 +144,9 @@ for (let s = 0; s < samples; s++) {
       const r = await runSample(w, config);
       if (!results.has(k)) results.set(k, []);
       results.get(k)!.push(r);
-      const status = r.ok ? `${r.medianMs.toFixed(2)} ms  heap ${r.heapMB.toFixed(1)} MB` : `ERROR ${r.error?.split("\n")[0]}`;
+      const status = r.ok
+        ? `${r.medianMs.toFixed(2)} ms  heap ${r.heapMB.toFixed(1)} MB`
+        : `ERROR ${r.error?.split("\n")[0]}`;
       process.stderr.write(`[${done}/${totalRuns}] s${s + 1} ${w.id} × ${config}: ${status}\n`);
       // A configuration that fails is reported, not retried for every sample.
       if (!r.ok && !flags["keep-going"]) broken.add(k);
@@ -169,7 +173,16 @@ const meta: Record<string, string> = {
   date: new Date().toISOString(),
   machine: `${cpus()[0]?.model ?? "?"} × ${cpus().length}, ${(totalmem() / 2 ** 30).toFixed(0)} GB, ${platform()} ${release()}`,
   node: process.version,
-  versions: ["jsdom", "happy-dom", "react", "react-dom", "@testing-library/dom", "@testing-library/react", "@testing-library/user-event", "@testing-library/jest-dom"]
+  versions: [
+    "jsdom",
+    "happy-dom",
+    "react",
+    "react-dom",
+    "@testing-library/dom",
+    "@testing-library/react",
+    "@testing-library/user-event",
+    "@testing-library/jest-dom",
+  ]
     .map((p) => `${p} ${version(p)}`)
     .join(", "),
   samples: `${samples} fresh processes per cell (configs interleaved)${flags.iterations ? `, ${flags.iterations} iterations` : ""}`,

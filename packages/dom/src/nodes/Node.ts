@@ -433,7 +433,10 @@ export abstract class Node extends EventTarget {
 // https://webidl.spec.whatwg.org/#es-constants — constants live on the interface object AND its prototype.
 for (const key of Object.getOwnPropertyNames(Node)) {
   if (/^[A-Z_]+$/.test(key)) {
-    Object.defineProperty(Node.prototype, key, { value: (Node as unknown as Record<string, number>)[key], enumerable: true });
+    Object.defineProperty(Node.prototype, key, {
+      value: (Node as unknown as Record<string, number>)[key],
+      enumerable: true,
+    });
   }
 }
 
@@ -470,7 +473,7 @@ function namespaceContextElement(n: NodeImpl): NodeImpl | null {
 
 /** https://dom.spec.whatwg.org/#locate-a-namespace-prefix */
 function locatePrefix(el: NodeImpl, namespace: string): string | null {
-  for (let e: NodeImpl | null = el; e !== null; ) {
+  for (let e: NodeImpl | null = el; e !== null;) {
     if (e.ns === namespace && e.prefix !== null) return e.prefix;
     const attrs = e.attrs;
     if (attrs !== null) {
@@ -497,7 +500,10 @@ function locateNamespace(n: NodeImpl, prefix: string | null): string | null {
       for (let i = 0; i < attrs.length; i++) {
         const a = attrs[i];
         if (a.ns !== XMLNS_NS) continue;
-        if ((a.prefix === "xmlns" && a.localName === prefix) || (prefix === null && a.prefix === null && a.localName === "xmlns")) {
+        if (
+          (a.prefix === "xmlns" && a.localName === prefix) ||
+          (prefix === null && a.prefix === null && a.localName === "xmlns")
+        ) {
           return a.value === "" ? null : a.value;
         }
       }

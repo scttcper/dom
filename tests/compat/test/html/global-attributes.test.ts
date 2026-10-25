@@ -30,17 +30,20 @@ function errorName(fn: () => void): string {
 }
 
 describe("DOMStringMap — https://html.spec.whatwg.org/#domstringmap", () => {
-  differential("supported property names: data-* attributes with no ASCII upper alpha, hyphen + lower letter camel-cased", (w) => {
-    const el = w.document.createElement("div");
-    el.setAttribute("data-foo-bar", "1");
-    el.setAttribute("data-x", "2");
-    el.setAttribute("data--lead", "3");
-    el.setAttribute("data-a-1", "4");
-    el.setAttribute("data-", "5");
-    el.setAttribute("data-trailing-", "6");
-    el.setAttribute("not-data", "7");
-    return { keys: Object.keys(el.dataset), json: JSON.stringify(el.dataset) };
-  });
+  differential(
+    "supported property names: data-* attributes with no ASCII upper alpha, hyphen + lower letter camel-cased",
+    (w) => {
+      const el = w.document.createElement("div");
+      el.setAttribute("data-foo-bar", "1");
+      el.setAttribute("data-x", "2");
+      el.setAttribute("data--lead", "3");
+      el.setAttribute("data-a-1", "4");
+      el.setAttribute("data-", "5");
+      el.setAttribute("data-trailing-", "6");
+      el.setAttribute("not-data", "7");
+      return { keys: Object.keys(el.dataset), json: JSON.stringify(el.dataset) };
+    },
+  );
 
   differential("setter: camelCase name becomes data-hyphenated attribute; values are stringified", (w) => {
     const el = w.document.createElement("div");
@@ -53,7 +56,11 @@ describe("DOMStringMap — https://html.spec.whatwg.org/#domstringmap", () => {
 
   differential("setter step 1: a hyphen followed by a lowercase ASCII letter throws SyntaxError", (w) => {
     const el = w.document.createElement("div");
-    return { bad: errorName(() => (el.dataset["foo-bar"] = "x")), ok: errorName(() => (el.dataset["foo-1"] = "y")), attrs: el.getAttributeNames() };
+    return {
+      bad: errorName(() => (el.dataset["foo-bar"] = "x")),
+      ok: errorName(() => (el.dataset["foo-1"] = "y")),
+      attrs: el.getAttributeNames(),
+    };
   });
 
   differential("setter step 3: a name that is not a valid attribute local name throws InvalidCharacterError", (w) => {
@@ -103,13 +110,25 @@ describe("dir, lang, title, accessKey, translate — https://html.spec.whatwg.or
     const s = w.document.getElementById("s");
     const div = s.parentNode;
     div.title = "changed";
-    return { divLang: div.lang, spanLang: s.lang, spanTitle: s.title, divTitleAttr: div.getAttribute("title"), accessKey: div.accessKey };
+    return {
+      divLang: div.lang,
+      spanLang: s.lang,
+      spanTitle: s.title,
+      divTitleAttr: div.getAttribute("title"),
+      accessKey: div.accessKey,
+    };
   });
 
   differential("translate: yes/no keywords, inherited from the parent, default yes", (w) => {
-    w.document.body.innerHTML = '<div translate="no"><span id=a></span><p translate="yes"><b id=b></b></p><i translate="maybe" id=c></i></div>';
+    w.document.body.innerHTML =
+      '<div translate="no"><span id=a></span><p translate="yes"><b id=b></b></p><i translate="maybe" id=c></i></div>';
     const d = w.document;
-    return { a: d.getElementById("a").translate, b: d.getElementById("b").translate, c: d.getElementById("c").translate, body: d.body.translate };
+    return {
+      a: d.getElementById("a").translate,
+      b: d.getElementById("b").translate,
+      c: d.getElementById("c").translate,
+      body: d.body.translate,
+    };
   });
 });
 

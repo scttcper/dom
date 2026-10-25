@@ -23,7 +23,11 @@ type UE = typeof stockUserEvent
 type RTL = Pick<typeof stockRTL, 'render' | 'screen' | 'cleanup'>
 
 const impls: Array<[string, UE, RTL]> = [
-  ['@ctrl/dom/user-event', ctrlDomUserEvent as unknown as UE, ctrlDomRTL as unknown as RTL],
+  [
+    '@ctrl/dom/user-event',
+    ctrlDomUserEvent as unknown as UE,
+    ctrlDomRTL as unknown as RTL,
+  ],
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 
@@ -50,8 +54,11 @@ function PressCheckbox({onPress, log}: {onPress: () => void; log: string[]}) {
       }}
       onClick={e => {
         const n = e.nativeEvent as MouseEvent & {pointerType?: string}
-        log.push(`click button=${e.button} detail=${n.detail} pt=${JSON.stringify(n.pointerType)} trusted=${n.isTrusted} pressed=${state.current.isPressed}`)
-        if (e.button === 0 && !state.current.isPressed && isVirtualClick(n)) onPress()
+        log.push(
+          `click button=${e.button} detail=${n.detail} pt=${JSON.stringify(n.pointerType)} trusted=${n.isTrusted} pressed=${state.current.isPressed}`,
+        )
+        if (e.button === 0 && !state.current.isPressed && isVirtualClick(n))
+          onPress()
       }}
     >
       <input type="checkbox" />
@@ -60,7 +67,11 @@ function PressCheckbox({onPress, log}: {onPress: () => void; log: string[]}) {
   )
 }
 
-async function run([, userEvent, {render, screen, cleanup}]: [string, UE, RTL]) {
+async function run([, userEvent, {render, screen, cleanup}]: [
+  string,
+  UE,
+  RTL,
+]) {
   const onPress = vi.fn()
   const log: string[] = []
   render(<PressCheckbox onPress={onPress} log={log} />)
@@ -79,7 +90,9 @@ describe('Space press on a checkbox inside a usePress-like label (React)', () =>
     const stock = await run(impls[1])
     expect(ours).toEqual(stock)
     // 14.6.8: the keyup-triggered click is a "virtual" click (detail 0, pointerType '')
-    expect(ours.log.at(-1)).toBe('click button=0 detail=0 pt="" trusted=false pressed=false')
+    expect(ours.log.at(-1)).toBe(
+      'click button=0 detail=0 pt="" trusted=false pressed=false',
+    )
     expect(ours.checked).toBe(true)
   })
 })

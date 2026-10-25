@@ -18,10 +18,16 @@ defineWPT("html/semantics/popovers/imperative-invokers.html");
 defineWPT("html/semantics/popovers/input-type-popovertarget.html");
 defineWPT("html/semantics/popovers/popover-active-document.html");
 defineWPT("html/semantics/popovers/popover-beforetoggle-opening-event.html");
-defineWPT("html/semantics/popovers/popover-events.html", "hiding display:none content is not deferred to the next rendering update, so the autofocus target is no longer focusable");
+defineWPT(
+  "html/semantics/popovers/popover-events.html",
+  "hiding display:none content is not deferred to the next rendering update, so the autofocus target is no longer focusable",
+);
 defineWPT("html/semantics/popovers/popover-light-dismiss-on-scroll.html");
 defineWPT("html/semantics/popovers/popover-manual-hide-does-not-close-auto.html");
-defineWPT("html/semantics/popovers/popover-nested-in-button.html", "declarative shadow roots in the markup are not attached by the harness");
+defineWPT(
+  "html/semantics/popovers/popover-nested-in-button.html",
+  "declarative shadow roots in the markup are not attached by the harness",
+);
 defineWPT("html/semantics/popovers/popover-open-overflow-display-2.html");
 defineWPT("html/semantics/popovers/popover-removal-2.html");
 defineWPT("html/semantics/popovers/popover-removal-hides.html");

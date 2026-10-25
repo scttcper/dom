@@ -11,16 +11,71 @@
 
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
-import { parseRule, parseStylesheet, RULE_AT, RULE_DECLS, RULE_QUALIFIED, type RawDecl, type RawRule } from "./parser.ts";
+import {
+  parseRule,
+  parseStylesheet,
+  RULE_AT,
+  RULE_DECLS,
+  RULE_QUALIFIED,
+  type RawDecl,
+  type RawRule,
+} from "./parser.ts";
 import { DeclBlock } from "./declarations.ts";
 import { CSSStyleDeclaration, type DeclarationOwnerRule } from "./CSSStyleDeclaration.ts";
 import { type MediaQuery, parseMediaQueryList, serializeMediaQueryList } from "./media.ts";
 import { compileSelectorList, serializeSelector, type CompiledSelectorList } from "../selectors/internal.ts";
 import { containsNesting, resolveNested } from "./selector-info.ts";
-import { serializeString, serializeUrl, splitComponents, TK_FUNCTION, TK_IDENT, TK_STRING, TK_URL, COMP_SPACE } from "./values.ts";
+import {
+  serializeString,
+  serializeUrl,
+  splitComponents,
+  TK_FUNCTION,
+  TK_IDENT,
+  TK_STRING,
+  TK_URL,
+  COMP_SPACE,
+} from "./values.ts";
 import { evaluateSupportsCondition } from "./supports.ts";
 import { currentWindowOrNull } from "../window/current.ts";
-import { $block, $compiled, $compiledFor, $condition, $constructed, $defaultNamespace, $disabled, $disallowModification, $doc, $href, $impl, $indexed, $keyText, $layerName, $list, $matches, $media, $name, $names, $namespaces, $owner, $ownerNode, $ownerRule, $parent, $prefix, $prelude, $queries, $rules, $selector, $sheet, $sheets, $style, $styleVersion, $supportsText, $title, $uri, $version } from "../keys.ts";
+import {
+  $block,
+  $compiled,
+  $compiledFor,
+  $condition,
+  $constructed,
+  $defaultNamespace,
+  $disabled,
+  $disallowModification,
+  $doc,
+  $href,
+  $impl,
+  $indexed,
+  $keyText,
+  $layerName,
+  $list,
+  $matches,
+  $media,
+  $name,
+  $names,
+  $namespaces,
+  $owner,
+  $ownerNode,
+  $ownerRule,
+  $parent,
+  $prefix,
+  $prelude,
+  $queries,
+  $rules,
+  $selector,
+  $sheet,
+  $sheets,
+  $style,
+  $styleVersion,
+  $supportsText,
+  $title,
+  $uri,
+  $version,
+} from "../keys.ts";
 
 // --- lists -------------------------------------------------------------------------------------
 
@@ -119,12 +174,17 @@ export class MediaList {
 
   /** https://drafts.csswg.org/cssom/#dom-medialist-deletemedium */
   deleteMedium(medium: string): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'deleteMedium' on 'MediaList': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError("Failed to execute 'deleteMedium' on 'MediaList': 1 argument required, but only 0 present.");
     const q = parseMediaQueryList(String(medium));
     if (q.length !== 1) return;
     const before = this[$queries].length;
     this[$queries] = this[$queries].filter((x) => x.text !== q[0].text);
-    if (this[$queries].length === before) throw new DOMException("Failed to execute 'deleteMedium' on 'MediaList': Failed to delete the medium.", "NotFoundError");
+    if (this[$queries].length === before)
+      throw new DOMException(
+        "Failed to execute 'deleteMedium' on 'MediaList': Failed to delete the medium.",
+        "NotFoundError",
+      );
     this._sync();
     this[$owner]?._changed();
   }
@@ -252,7 +312,10 @@ export interface CSSStyleSheetInit {
 }
 
 function syntaxError(method: string, iface: string, rule: string): DOMException {
-  return new DOMException(`Failed to execute '${method}' on '${iface}': Failed to parse the rule '${rule}'.`, "SyntaxError");
+  return new DOMException(
+    `Failed to execute '${method}' on '${iface}': Failed to parse the rule '${rule}'.`,
+    "SyntaxError",
+  );
 }
 
 /** https://drafts.csswg.org/cssom/#the-cssstylesheet-interface */
@@ -326,11 +389,25 @@ export class CSSStyleSheet extends StyleSheet {
       if (name === "import" && this[$constructed]) continue;
       if (name === "import" || name === "namespace") {
         if (seenOther && name === "import") continue;
-        if (seenOther && this[$rules].some((r) => !(r instanceof CSSImportRule) && !(r instanceof CSSNamespaceRule) && !(r instanceof CSSLayerStatementRule))) continue;
+        if (
+          seenOther &&
+          this[$rules].some(
+            (r) =>
+              !(r instanceof CSSImportRule) &&
+              !(r instanceof CSSNamespaceRule) &&
+              !(r instanceof CSSLayerStatementRule),
+          )
+        )
+          continue;
       }
       const rule = createRule(raw, null, this, false, false);
       if (rule === null) continue;
-      if (!(rule instanceof CSSImportRule) && !(rule instanceof CSSLayerStatementRule) && !(rule instanceof CSSNamespaceRule)) seenOther = true;
+      if (
+        !(rule instanceof CSSImportRule) &&
+        !(rule instanceof CSSLayerStatementRule) &&
+        !(rule instanceof CSSNamespaceRule)
+      )
+        seenOther = true;
       rule[$sheet] = this;
       this[$rules].push(rule);
       if (rule instanceof CSSNamespaceRule) this._registerNamespace(rule);
@@ -363,12 +440,22 @@ export class CSSStyleSheet extends StyleSheet {
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule */
   insertRule(rule: string, index: number = 0): number {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'insertRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.");
-    if (this[$disallowModification]) throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.", "NotAllowedError");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'insertRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.",
+      );
+    if (this[$disallowModification])
+      throw new DOMException(
+        "Failed to execute 'insertRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.",
+        "NotAllowedError",
+      );
     const text = String(rule);
     const i = index >>> 0;
     if (i > this[$rules].length) {
-      throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${this[$rules].length}).`, "IndexSizeError");
+      throw new DOMException(
+        `Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${this[$rules].length}).`,
+        "IndexSizeError",
+      );
     }
     const raw = parseRule(text);
     if (raw === null) throw syntaxError("insertRule", "CSSStyleSheet", text);
@@ -381,19 +468,32 @@ export class CSSStyleSheet extends StyleSheet {
       for (let k = 0; k < i; k++) {
         const r = this[$rules][k];
         if (!(r instanceof CSSImportRule) && !(r instanceof CSSLayerStatementRule)) {
-          throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': @import rules must precede all rules except @charset and @layer statements.", "HierarchyRequestError");
+          throw new DOMException(
+            "Failed to execute 'insertRule' on 'CSSStyleSheet': @import rules must precede all rules except @charset and @layer statements.",
+            "HierarchyRequestError",
+          );
         }
       }
     } else if (!(created instanceof CSSNamespaceRule) && !(created instanceof CSSLayerStatementRule)) {
       for (let k = i; k < this[$rules].length; k++) {
         if (this[$rules][k] instanceof CSSImportRule || this[$rules][k] instanceof CSSNamespaceRule) {
-          throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Rules cannot be inserted before @import or @namespace rules.", "HierarchyRequestError");
+          throw new DOMException(
+            "Failed to execute 'insertRule' on 'CSSStyleSheet': Rules cannot be inserted before @import or @namespace rules.",
+            "HierarchyRequestError",
+          );
         }
       }
     } else if (created instanceof CSSNamespaceRule) {
       for (const r of this[$rules]) {
-        if (!(r instanceof CSSImportRule) && !(r instanceof CSSNamespaceRule) && !(r instanceof CSSLayerStatementRule)) {
-          throw new DOMException("Failed to execute 'insertRule' on 'CSSStyleSheet': Failed to insert a @namespace rule after other rules.", "InvalidStateError");
+        if (
+          !(r instanceof CSSImportRule) &&
+          !(r instanceof CSSNamespaceRule) &&
+          !(r instanceof CSSLayerStatementRule)
+        ) {
+          throw new DOMException(
+            "Failed to execute 'insertRule' on 'CSSStyleSheet': Failed to insert a @namespace rule after other rules.",
+            "InvalidStateError",
+          );
         }
       }
       this._registerNamespace(created);
@@ -407,11 +507,21 @@ export class CSSStyleSheet extends StyleSheet {
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule */
   deleteRule(index: number): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'deleteRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.");
-    if (this[$disallowModification]) throw new DOMException("Failed to execute 'deleteRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.", "NotAllowedError");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'deleteRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.",
+      );
+    if (this[$disallowModification])
+      throw new DOMException(
+        "Failed to execute 'deleteRule' on 'CSSStyleSheet': Cannot modify a sheet while it is being replaced.",
+        "NotAllowedError",
+      );
     const i = index >>> 0;
     if (i >= this[$rules].length) {
-      throw new DOMException(`Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${Math.max(0, this[$rules].length - 1)}).`, "IndexSizeError");
+      throw new DOMException(
+        `Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${Math.max(0, this[$rules].length - 1)}).`,
+        "IndexSizeError",
+      );
     }
     const [removed] = this[$rules].splice(i, 1);
     removed[$sheet] = null;
@@ -435,7 +545,12 @@ export class CSSStyleSheet extends StyleSheet {
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace */
   replace(text: string): Promise<CSSStyleSheet> {
     if (!this[$constructed] || this[$disallowModification]) {
-      return Promise.reject(new DOMException("Failed to execute 'replace' on 'CSSStyleSheet': Can't call replace on non-constructed CSSStyleSheets.", "NotAllowedError"));
+      return Promise.reject(
+        new DOMException(
+          "Failed to execute 'replace' on 'CSSStyleSheet': Can't call replace on non-constructed CSSStyleSheets.",
+          "NotAllowedError",
+        ),
+      );
     }
     this[$disallowModification] = true;
     const value = String(text);
@@ -449,7 +564,10 @@ export class CSSStyleSheet extends StyleSheet {
   /** https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync */
   replaceSync(text: string): void {
     if (!this[$constructed] || this[$disallowModification]) {
-      throw new DOMException("Failed to execute 'replaceSync' on 'CSSStyleSheet': Can't call replaceSync on non-constructed CSSStyleSheets.", "NotAllowedError");
+      throw new DOMException(
+        "Failed to execute 'replaceSync' on 'CSSStyleSheet': Can't call replaceSync on non-constructed CSSStyleSheets.",
+        "NotAllowedError",
+      );
     }
     this._setText(String(text));
   }
@@ -458,8 +576,6 @@ export class CSSStyleSheet extends StyleSheet {
     return "CSSStyleSheet";
   }
 }
-
-
 
 // --- rules -------------------------------------------------------------------------------------
 
@@ -524,9 +640,22 @@ export class CSSRule {
 }
 
 for (const [k, v] of Object.entries({
-  STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8,
-  MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, DOCUMENT_RULE: 13, FONT_FEATURE_VALUES_RULE: 14,
-  VIEWPORT_RULE: 15, REGION_STYLE_RULE: 16,
+  STYLE_RULE: 1,
+  CHARSET_RULE: 2,
+  IMPORT_RULE: 3,
+  MEDIA_RULE: 4,
+  FONT_FACE_RULE: 5,
+  PAGE_RULE: 6,
+  KEYFRAMES_RULE: 7,
+  KEYFRAME_RULE: 8,
+  MARGIN_RULE: 9,
+  NAMESPACE_RULE: 10,
+  COUNTER_STYLE_RULE: 11,
+  SUPPORTS_RULE: 12,
+  DOCUMENT_RULE: 13,
+  FONT_FEATURE_VALUES_RULE: 14,
+  VIEWPORT_RULE: 15,
+  REGION_STYLE_RULE: 16,
 })) {
   Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true });
 }
@@ -565,11 +694,17 @@ export class CSSGroupingRule extends CSSRule {
 
   /** https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule */
   insertRule(rule: string, index: number = 0): number {
-    if (arguments.length === 0) throw new TypeError(`Failed to execute 'insertRule' on '${this.constructor.name}': 1 argument required, but only 0 present.`);
+    if (arguments.length === 0)
+      throw new TypeError(
+        `Failed to execute 'insertRule' on '${this.constructor.name}': 1 argument required, but only 0 present.`,
+      );
     const text = String(rule);
     const i = index >>> 0;
     if (i > this[$rules].length) {
-      throw new DOMException(`Failed to execute 'insertRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${this[$rules].length}).`, "IndexSizeError");
+      throw new DOMException(
+        `Failed to execute 'insertRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${this[$rules].length}).`,
+        "IndexSizeError",
+      );
     }
     const raw = parseRule(text);
     if (raw === null) throw syntaxError("insertRule", this.constructor.name, text);
@@ -577,7 +712,10 @@ export class CSSGroupingRule extends CSSRule {
     const created = createRule(raw, this, this.parentStyleSheet, nested, false);
     if (created === null || created instanceof CSSImportRule || created instanceof CSSNamespaceRule) {
       if (created instanceof CSSImportRule || created instanceof CSSNamespaceRule) {
-        throw new DOMException(`Failed to execute 'insertRule' on '${this.constructor.name}': '${text}' is not allowed here.`, "HierarchyRequestError");
+        throw new DOMException(
+          `Failed to execute 'insertRule' on '${this.constructor.name}': '${text}' is not allowed here.`,
+          "HierarchyRequestError",
+        );
       }
       throw syntaxError("insertRule", this.constructor.name, text);
     }
@@ -589,10 +727,16 @@ export class CSSGroupingRule extends CSSRule {
 
   /** https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule */
   deleteRule(index: number): void {
-    if (arguments.length === 0) throw new TypeError(`Failed to execute 'deleteRule' on '${this.constructor.name}': 1 argument required, but only 0 present.`);
+    if (arguments.length === 0)
+      throw new TypeError(
+        `Failed to execute 'deleteRule' on '${this.constructor.name}': 1 argument required, but only 0 present.`,
+      );
     const i = index >>> 0;
     if (i >= this[$rules].length) {
-      throw new DOMException(`Failed to execute 'deleteRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${Math.max(0, this[$rules].length - 1)}).`, "IndexSizeError");
+      throw new DOMException(
+        `Failed to execute 'deleteRule' on '${this.constructor.name}': The index provided (${i}) is larger than the maximum index (${Math.max(0, this[$rules].length - 1)}).`,
+        "IndexSizeError",
+      );
     }
     const [removed] = this[$rules].splice(i, 1);
     removed[$parent] = null;
@@ -652,7 +796,8 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
 
   override get cssText(): string {
     const decls = this[$block].serialize();
-    if (this[$rules].length === 0) return decls === "" ? `${this.selectorText} { }` : `${this.selectorText} { ${decls} }`;
+    if (this[$rules].length === 0)
+      return decls === "" ? `${this.selectorText} { }` : `${this.selectorText} { ${decls} }`;
     let out = `${this.selectorText} {`;
     if (decls !== "") out += "\n  " + decls;
     for (const r of this[$rules]) out += "\n" + indent(r.cssText);
@@ -1086,7 +1231,11 @@ export class CSSKeyframeRule extends DescriptorRule {
 
   set keyText(value: string) {
     const k = normalizeKeyText(String(value));
-    if (k === null) throw new DOMException(`Failed to set the 'keyText' property on 'CSSKeyframeRule': The key '${value}' is invalid and cannot be parsed`, "SyntaxError");
+    if (k === null)
+      throw new DOMException(
+        `Failed to set the 'keyText' property on 'CSSKeyframeRule': The key '${value}' is invalid and cannot be parsed`,
+        "SyntaxError",
+      );
     this[$keyText] = k;
     this._changed();
   }
@@ -1171,7 +1320,9 @@ export class CSSKeyframesRule extends CSSRule {
 // --- rule creation -----------------------------------------------------------------------------
 
 /** The sheet's @namespace declarations as selector compile options (undefined when none). */
-function namespaceOptions(sheet: CSSStyleSheet | null): { namespaces?: Map<string, string | null>; defaultNamespace?: string | null } | undefined {
+function namespaceOptions(
+  sheet: CSSStyleSheet | null,
+): { namespaces?: Map<string, string | null>; defaultNamespace?: string | null } | undefined {
   return sheet !== null && (sheet[$namespaces] !== null || sheet[$defaultNamespace] !== undefined)
     ? { namespaces: sheet[$namespaces] ?? undefined, defaultNamespace: sheet[$defaultNamespace] }
     : undefined;
@@ -1233,7 +1384,8 @@ function nestedDeclarations(parent: CSSGroupingRule, decls: RawDecl[]): CSSNeste
 /** Creates child rules of a grouping rule (and the nested declarations of a nested group). */
 function fillChildren(rule: CSSGroupingRule, raw: RawRule, sheet: CSSStyleSheet | null, nested: boolean): void {
   const inStyle = nested || rule instanceof CSSStyleRule;
-  if (nested && raw.leading !== 0 && !(rule instanceof CSSStyleRule)) rule[$rules].push(nestedDeclarations(rule, leadingDecls(raw)));
+  if (nested && raw.leading !== 0 && !(rule instanceof CSSStyleRule))
+    rule[$rules].push(nestedDeclarations(rule, leadingDecls(raw)));
   for (const child of raw.rules) {
     // Declarations after a nested rule keep their position in the rule list
     // (https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule); outside style rules they are invalid.
@@ -1248,7 +1400,9 @@ function fillChildren(rule: CSSGroupingRule, raw: RawRule, sheet: CSSStyleSheet 
 }
 
 /** Parses an @import prelude: url-or-string [layer|layer(name)] [supports(...)] media-list. */
-function parseImportPrelude(prelude: string): { href: string; layer: string | null; supports: string | null; media: string } | null {
+function parseImportPrelude(
+  prelude: string,
+): { href: string; layer: string | null; supports: string | null; media: string } | null {
   const comps = splitComponents(prelude);
   if (comps === null) return null;
   let i = 0;
@@ -1289,7 +1443,13 @@ function parseImportPrelude(prelude: string): { href: string; layer: string | nu
 }
 
 /** https://drafts.csswg.org/cssom/#parse-a-css-rule + CSSOM rule construction. */
-export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyleSheet | null, nested: boolean, inKeyframes: boolean): CSSRule | null {
+export function createRule(
+  raw: RawRule,
+  parent: CSSRule | null,
+  sheet: CSSStyleSheet | null,
+  nested: boolean,
+  inKeyframes: boolean,
+): CSSRule | null {
   let rule: CSSRule | null = null;
   if (raw.kind === RULE_QUALIFIED) {
     if (inKeyframes) return createKeyframe(raw);
@@ -1333,7 +1493,9 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     }
     case "layer": {
       const names = prelude === "" ? [] : prelude.split(",").map((s) => s.trim());
-      for (const n of names) if (!/^-?[_a-zA-Z\u0080-￿][-_a-zA-Z0-9\u0080-￿]*(\.-?[_a-zA-Z\u0080-￿][-_a-zA-Z0-9\u0080-￿]*)*$/.test(n)) return null;
+      for (const n of names)
+        if (!/^-?[_a-zA-Z\u0080-￿][-_a-zA-Z0-9\u0080-￿]*(\.-?[_a-zA-Z\u0080-￿][-_a-zA-Z0-9\u0080-￿]*)*$/.test(n))
+          return null;
       if (raw.hasBlock) {
         if (names.length > 1) return null;
         const r = new CSSLayerBlockRule(names[0] ?? "");
@@ -1367,7 +1529,8 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
     case "-moz-keyframes": {
       if (!raw.hasBlock || nested) return null;
       const comps = splitComponents(prelude);
-      if (comps === null || comps.length !== 1 || (comps[0].type !== TK_IDENT && comps[0].type !== TK_STRING)) return null;
+      if (comps === null || comps.length !== 1 || (comps[0].type !== TK_IDENT && comps[0].type !== TK_STRING))
+        return null;
       const kname = comps[0].type === TK_STRING ? serializeString(comps[0].value) : comps[0].text;
       const r = new CSSKeyframesRule(kname);
       for (const child of raw.rules) {
@@ -1444,12 +1607,27 @@ export function createRule(raw: RawRule, parent: CSSRule | null, sheet: CSSStyle
 {
   const base = Object.getOwnPropertyDescriptor(CSSRule.prototype, "cssText")!;
   for (const C of [
-    CSSStyleRule, CSSNestedDeclarations, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule,
-    CSSLayerStatementRule, CSSScopeRule, CSSStartingStyleRule, CSSImportRule, CSSNamespaceRule, DescriptorRule,
-    CSSFontFaceRule, CSSPageRule, CSSPropertyRule, CSSKeyframeRule, CSSKeyframesRule,
+    CSSStyleRule,
+    CSSNestedDeclarations,
+    CSSMediaRule,
+    CSSSupportsRule,
+    CSSContainerRule,
+    CSSLayerBlockRule,
+    CSSLayerStatementRule,
+    CSSScopeRule,
+    CSSStartingStyleRule,
+    CSSImportRule,
+    CSSNamespaceRule,
+    DescriptorRule,
+    CSSFontFaceRule,
+    CSSPageRule,
+    CSSPropertyRule,
+    CSSKeyframeRule,
+    CSSKeyframesRule,
   ]) {
     const own = Object.getOwnPropertyDescriptor(C.prototype, "cssText");
-    if (own !== undefined && own.set === undefined) Object.defineProperty(C.prototype, "cssText", { ...own, set: base.set });
+    if (own !== undefined && own.set === undefined)
+      Object.defineProperty(C.prototype, "cssText", { ...own, set: base.set });
   }
 }
 

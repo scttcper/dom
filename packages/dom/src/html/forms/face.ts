@@ -168,30 +168,47 @@ export function internalsLabels(impl: NodeImpl): LabelsNodeList {
 }
 
 /** https://html.spec.whatwg.org/#dom-elementinternals-setvalidity */
-export function internalsSetValidity(impl: NodeImpl, flags: Record<string, unknown> | undefined, message?: string, anchor?: Element): void {
+export function internalsSetValidity(
+  impl: NodeImpl,
+  flags: Record<string, unknown> | undefined,
+  message?: string,
+  anchor?: Element,
+): void {
   assertFACE(impl, "setValidity");
   let bits = 0;
   if (flags !== undefined && flags !== null) {
     for (const [name, bit] of FLAG_NAMES) if (flags[name]) bits |= bit;
   }
   if (bits !== 0 && (message === undefined || String(message) === "")) {
-    throw new TypeError("Failed to execute 'setValidity' on 'ElementInternals': The second argument should not be empty if one or more flags in the first argument are true.");
+    throw new TypeError(
+      "Failed to execute 'setValidity' on 'ElementInternals': The second argument should not be empty if one or more flags in the first argument are true.",
+    );
   }
   if (anchor !== undefined && anchor !== null) {
     // WebIDL: `optional HTMLElement anchor`.
     const a = (anchor as { [$impl]?: NodeImpl })[$impl];
     if (a === undefined || a.type !== 1 || a.ns !== HTML_NS) {
-      throw new TypeError("Failed to execute 'setValidity' on 'ElementInternals': parameter 3 is not of type 'HTMLElement'.");
+      throw new TypeError(
+        "Failed to execute 'setValidity' on 'ElementInternals': parameter 3 is not of type 'HTMLElement'.",
+      );
     }
     // Step 3: the anchor must be a shadow-including inclusive descendant of the element.
     let inside = false;
-    for (let n: NodeImpl | null = a; n !== null; n = n.parent ?? ((n.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host]?.[$impl] ?? null)) {
+    for (
+      let n: NodeImpl | null = a;
+      n !== null;
+      n = n.parent ?? (n.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host]?.[$impl] ?? null
+    ) {
       if (n === impl) {
         inside = true;
         break;
       }
     }
-    if (!inside) throw new DOMException("Failed to execute 'setValidity' on 'ElementInternals': The validation anchor is not a shadow-including descendant of the element.", "NotFoundError");
+    if (!inside)
+      throw new DOMException(
+        "Failed to execute 'setValidity' on 'ElementInternals': The validation anchor is not a shadow-including descendant of the element.",
+        "NotFoundError",
+      );
   }
   const s = faceState(impl);
   s.flags = bits;
@@ -241,7 +258,11 @@ export function faceEntries(impl: NodeImpl, out: [string, string | File][]): voi
   out.push([name, value as string | File]);
 }
 
-function invoke(impl: NodeImpl, name: "formResetCallback" | "formAssociatedCallback" | "formDisabledCallback", args: unknown[]): void {
+function invoke(
+  impl: NodeImpl,
+  name: "formResetCallback" | "formAssociatedCallback" | "formDisabledCallback",
+  args: unknown[],
+): void {
   enqueueFormCallback(impl.node as Element, name, args);
 }
 

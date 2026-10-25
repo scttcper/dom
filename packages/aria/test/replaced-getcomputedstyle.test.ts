@@ -49,7 +49,9 @@ function evaluate(doc: any, aria: { daa05: any; daa06: any; getRoles: (c: any) =
       name06: aria.daa06.computeAccessibleName(el),
       desc05: aria.daa05.computeAccessibleDescription(el),
     })),
-    roles: Object.fromEntries(Object.entries(aria.getRoles(doc.body)).map(([r, els]) => [r, els.map((e) => all.indexOf(e))])),
+    roles: Object.fromEntries(
+      Object.entries(aria.getRoles(doc.body)).map(([r, els]) => [r, els.map((e) => all.indexOf(e))]),
+    ),
   };
 }
 
@@ -99,7 +101,11 @@ describe("user-replaced getComputedStyle — https://drafts.csswg.org/cssom/#dom
   test("an explicit getComputedStyle option still wins over the window's", () => {
     const window = createWindow();
     window.document.body!.innerHTML = HTML;
-    (window as any).getComputedStyle = () => ({ display: "none", visibility: "visible", getPropertyValue: (p: string) => (p === "display" ? "none" : "") });
+    (window as any).getComputedStyle = () => ({
+      display: "none",
+      visibility: "visible",
+      getPropertyValue: (p: string) => (p === "display" ? "none" : ""),
+    });
     const tab = window.document.querySelector(".gone") as never;
     expect(ctrlDom.isInaccessible(tab, { getComputedStyle: replaced as never })).toBe(false);
     expect(ctrlDom.isInaccessible(tab)).toBe(true);

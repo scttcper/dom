@@ -54,18 +54,22 @@ describe("WPT accname — https://w3c.github.io/accname/#computation-steps", () 
   for (const c of cases) {
     // Author <style> sheets that hide content need the css fast API (pending, see src/style.ts).
     const needsAuthorStyles = /<style[\s\S]*?(display|visibility)[\s\S]*?<\/style>/.test(c.html);
-    test.skipIf(needsAuthorStyles && !AUTHOR_STYLES_SUPPORTED)(`${c.file}: ${c.kind} equals dom-accessibility-api@0.5.16 on jsdom`, () => {
-      const expected = upstream(c);
-      const actual = ours(c);
-      specResults.set(c.file, actual === c.expected);
-      expect(actual).toBe(expected);
-    });
+    test.skipIf(needsAuthorStyles && !AUTHOR_STYLES_SUPPORTED)(
+      `${c.file}: ${c.kind} equals dom-accessibility-api@0.5.16 on jsdom`,
+      () => {
+        const expected = upstream(c);
+        const actual = ours(c);
+        specResults.set(c.file, actual === c.expected);
+        expect(actual).toBe(expected);
+      },
+    );
   }
 
   test("spec conformance is reported (informational, mirrors upstream's own WPT failures)", () => {
     const failing = [...specResults].filter(([, ok]) => !ok).map(([f]) => f);
     // Not asserted against a fixed list: upstream's failures are the oracle's, not ours.
     expect(specResults.size).toBeGreaterThan(0);
-    if (process.env.WPT_REPORT) console.info(`WPT accname: ${specResults.size - failing.length}/${specResults.size} match the spec expectation`);
+    if (process.env.WPT_REPORT)
+      console.info(`WPT accname: ${specResults.size - failing.length}/${specResults.size} match the spec expectation`);
   });
 });

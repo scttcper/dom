@@ -74,7 +74,12 @@ describe("input.files — https://html.spec.whatwg.org/#dom-input-files", () => 
     const afterSet = [f.files.length, f.files[0].name, f.value];
     f.files = null;
     $("t").files = dt.files;
-    expect([list === f.files || list.length === 0, afterSet, f.files.length, $("t").files]).toEqual([true, [1, "x.txt", "C:\\fakepath\\x.txt"], 1, null]);
+    expect([list === f.files || list.length === 0, afterSet, f.files.length, $("t").files]).toEqual([
+      true,
+      [1, "x.txt", "C:\\fakepath\\x.txt"],
+      1,
+      null,
+    ]);
   });
 });
 
@@ -82,7 +87,14 @@ describe("textarea wrapping transformation — https://html.spec.whatwg.org/#tex
   test("wrap=hard inserts line breaks so lines fit cols in the entry list; soft does not", () => {
     doc.body.innerHTML = `<form id=f><textarea name=h wrap=hard cols=5>aaa bbb cccccccc</textarea><textarea name=s cols=5>aaa bbb</textarea></form>`;
     const fd = new win.FormData($("f"));
-    expect([fd.get("h").split("\n").every((l: string) => l.length <= 5), fd.get("h").replaceAll("\n", ""), fd.get("s")]).toEqual([true, "aaa bbb cccccccc", "aaa bbb"]);
+    expect([
+      fd
+        .get("h")
+        .split("\n")
+        .every((l: string) => l.length <= 5),
+      fd.get("h").replaceAll("\n", ""),
+      fd.get("s"),
+    ]).toEqual([true, "aaa bbb cccccccc", "aaa bbb"]);
   });
 });
 
@@ -127,7 +139,13 @@ describe("showPicker() — https://html.spec.whatwg.org/#dom-input-showpicker", 
         return (e as Error).name;
       }
     };
-    expect(["d", "r", "ok", "sd", "sok"].map(call)).toEqual(["InvalidStateError", "InvalidStateError", "ok", "InvalidStateError", "ok"]);
+    expect(["d", "r", "ok", "sd", "sok"].map(call)).toEqual([
+      "InvalidStateError",
+      "InvalidStateError",
+      "ok",
+      "InvalidStateError",
+      "ok",
+    ]);
   });
 });
 
@@ -152,7 +170,11 @@ describe("reflection details — https://html.spec.whatwg.org/#rules-for-parsing
     const i = $("i");
     const fromIds = i.ariaLabelledByElements.map((e: any) => e.id);
     i.ariaLabelledByElements = [$("l1")];
-    expect([fromIds, i.getAttribute("aria-labelledby"), i.ariaLabelledByElements.map((e: any) => e.id)]).toEqual([["l2", "l1"], "", ["l1"]]);
+    expect([fromIds, i.getAttribute("aria-labelledby"), i.ariaLabelledByElements.map((e: any) => e.id)]).toEqual([
+      ["l2", "l1"],
+      "",
+      ["l1"],
+    ]);
   });
 
   test("ARIA reflection on ElementInternals sets default semantics without touching the element's attributes (https://html.spec.whatwg.org/#accessibility-semantics)", () => {
@@ -165,7 +187,12 @@ describe("reflection details — https://html.spec.whatwg.org/#rules-for-parsing
     const el = doc.createElement("x-aria");
     el.internals.role = "checkbox";
     el.internals.ariaChecked = "true";
-    expect([el.internals.role, el.internals.ariaChecked, el.getAttribute("role"), el.hasAttribute("aria-checked")]).toEqual(["checkbox", "true", null, false]);
+    expect([
+      el.internals.role,
+      el.internals.ariaChecked,
+      el.getAttribute("role"),
+      el.hasAttribute("aria-checked"),
+    ]).toEqual(["checkbox", "true", null, false]);
   });
 
   test("template shadowRootSlotAssignment reflects named/manual and drives declarative shadow roots (https://html.spec.whatwg.org/#dom-template-shadowrootslotassignment)", () => {
@@ -173,8 +200,15 @@ describe("reflection details — https://html.spec.whatwg.org/#rules-for-parsing
     const before = t.shadowRootSlotAssignment;
     t.shadowRootSlotAssignment = "MANUAL";
     const host = doc.createElement("div");
-    host.setHTMLUnsafe(`<div><template shadowrootmode=open shadowrootslotassignment=manual><slot></slot></template></div>`);
-    expect([before, t.shadowRootSlotAssignment, t.getAttribute("shadowrootslotassignment"), host.firstElementChild.shadowRoot?.slotAssignment]).toEqual(["named", "manual", "MANUAL", "manual"]);
+    host.setHTMLUnsafe(
+      `<div><template shadowrootmode=open shadowrootslotassignment=manual><slot></slot></template></div>`,
+    );
+    expect([
+      before,
+      t.shadowRootSlotAssignment,
+      t.getAttribute("shadowrootslotassignment"),
+      host.firstElementChild.shadowRoot?.slotAssignment,
+    ]).toEqual(["named", "manual", "MANUAL", "manual"]);
   });
 });
 
@@ -191,7 +225,12 @@ describe("event handler IDL attributes — https://html.spec.whatwg.org/#globale
     a.dispatchEvent(ev);
     a.onclick = null;
     a.click();
-    expect([calls, ev.defaultPrevented, (win as any).hit, typeof win.onclick]).toEqual([["handler"], true, undefined, "object"]);
+    expect([calls, ev.defaultPrevented, (win as any).hit, typeof win.onclick]).toEqual([
+      ["handler"],
+      true,
+      undefined,
+      "object",
+    ]);
   });
 });
 
@@ -204,6 +243,11 @@ describe("iframes — https://html.spec.whatwg.org/#the-iframe-element:html-elem
     f.remove();
     const removed = f.contentWindow;
     doc.body.appendChild(f);
-    expect([detached, first !== null, removed, f.contentWindow !== null && f.contentWindow !== first]).toEqual([null, true, null, true]);
+    expect([detached, first !== null, removed, f.contentWindow !== null && f.contentWindow !== first]).toEqual([
+      null,
+      true,
+      null,
+      true,
+    ]);
   });
 });

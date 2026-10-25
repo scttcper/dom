@@ -37,7 +37,9 @@ const hostSetImmediate = globalThis.setImmediate;
 const hostPerformance = globalThis.performance;
 const realNow = hostPerformance.now.bind(hostPerformance);
 const getActiveResourcesInfo =
-  typeof process === "object" && typeof process.getActiveResourcesInfo === "function" ? process.getActiveResourcesInfo.bind(process) : null;
+  typeof process === "object" && typeof process.getActiveResourcesInfo === "function"
+    ? process.getActiveResourcesInfo.bind(process)
+    : null;
 
 /** Resource types that never block skipping: timers (the clock's own host timer, the test runner's) and immediates (checked separately). */
 const NON_IO = new Set(["Timeout", "Immediate"]);
@@ -60,7 +62,15 @@ class TimerRecord {
   /** realNow() at which `real` fires. */
   realDue: number;
 
-  constructor(id: number, due: number, seq: number, delay: number, repeat: boolean, callback: Callback, args: unknown[]) {
+  constructor(
+    id: number,
+    due: number,
+    seq: number,
+    delay: number,
+    repeat: boolean,
+    callback: Callback,
+    args: unknown[],
+  ) {
     this.id = id;
     this.due = due;
     this.seq = seq;
@@ -593,16 +603,30 @@ export function virtualPerformance(clock: VirtualClock, native: Performance): Pe
   const perf = Object.create(Object.getPrototypeOf(native) as object) as Record<string, unknown>;
   for (let o: object | null = native; o !== null && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
     for (const key of Reflect.ownKeys(o)) {
-      if (key === "constructor" || key in perf && Object.hasOwn(perf, key)) continue;
+      if (key === "constructor" || (key in perf && Object.hasOwn(perf, key))) continue;
       const desc = Object.getOwnPropertyDescriptor(o, key)!;
       if (typeof desc.value === "function") {
-        Object.defineProperty(perf, key, { value: (desc.value as Callback).bind(native), writable: true, configurable: true, enumerable: desc.enumerable });
+        Object.defineProperty(perf, key, {
+          value: (desc.value as Callback).bind(native),
+          writable: true,
+          configurable: true,
+          enumerable: desc.enumerable,
+        });
       } else if (desc.get !== undefined) {
-        Object.defineProperty(perf, key, { get: () => Reflect.get(native, key), configurable: true, enumerable: desc.enumerable });
+        Object.defineProperty(perf, key, {
+          get: () => Reflect.get(native, key),
+          configurable: true,
+          enumerable: desc.enumerable,
+        });
       }
     }
   }
-  Object.defineProperty(perf, "now", { value: () => clock.now(), writable: true, configurable: true, enumerable: true });
+  Object.defineProperty(perf, "now", {
+    value: () => clock.now(),
+    writable: true,
+    configurable: true,
+    enumerable: true,
+  });
   return perf as unknown as Performance;
 }
 
@@ -648,16 +672,21 @@ export function installClock(clock: VirtualClock, global: Global): InstalledCloc
   };
   // timers/promises-style `util.promisify(setTimeout)`.
   Object.defineProperty(timers.setTimeout, Symbol.for("nodejs.util.promisify.custom"), {
-    value: (delay?: number, value?: unknown) => new Promise((resolve) => clock.schedule(resolve as Callback, delay, [value], false)),
+    value: (delay?: number, value?: unknown) =>
+      new Promise((resolve) => clock.schedule(resolve as Callback, delay, [value], false)),
   });
-  for (const name of ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] as const) define(name, timers[name]);
+  for (const name of ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] as const)
+    define(name, timers[name]);
   if (clock.skip) {
     // A contextified vm sandbox does not expose its realm's intrinsics as own properties: fall back
     // to this realm's Date (Date must follow the clock wherever its timers run, or Date-based
     // debounces would re-arm forever).
     const NativeDate = (typeof global.Date === "function" ? global.Date : Date) as DateConstructor;
     define("Date", virtualDate(clock, NativeDate));
-    define("performance", virtualPerformance(clock, (global.performance as Performance | undefined) ?? hostPerformance));
+    define(
+      "performance",
+      virtualPerformance(clock, (global.performance as Performance | undefined) ?? hostPerformance),
+    );
     activeClock = clock;
   }
   return {

@@ -11,7 +11,12 @@ import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import { $impl } from "../keys.ts";
 
-export type ElementConstructor = new (doc: Document, localName: string, ns: string | null, prefix: string | null) => Element;
+export type ElementConstructor = new (
+  doc: Document,
+  localName: string,
+  ns: string | null,
+  prefix: string | null,
+) => Element;
 
 let lookup: ((localName: string, ns: string | null) => ElementConstructor) | null = null;
 
@@ -20,7 +25,12 @@ export function setElementClassLookup(fn: (localName: string, ns: string | null)
 }
 
 /** Create an element wrapper of the right interface for (namespace, localName) and return its impl. */
-export function createElementImpl(doc: Document, localName: string, ns: string | null, prefix: string | null): NodeImpl {
+export function createElementImpl(
+  doc: Document,
+  localName: string,
+  ns: string | null,
+  prefix: string | null,
+): NodeImpl {
   const Ctor = lookup!(localName, ns);
   return new Ctor(doc, localName, ns, prefix)[$impl];
 }
@@ -50,7 +60,13 @@ export function flushCEReactions(): void {
   if (ceFlush !== null) ceFlush();
 }
 
-type SyncCreate = (doc: Document, localName: string, ns: string | null, prefix: string | null, is: string | null) => NodeImpl | null;
+type SyncCreate = (
+  doc: Document,
+  localName: string,
+  ns: string | null,
+  prefix: string | null,
+  is: string | null,
+) => NodeImpl | null;
 let syncCreate: SyncCreate | null = null;
 
 export function setCustomElementCreate(fn: SyncCreate): void {
@@ -61,7 +77,13 @@ export function setCustomElementCreate(fn: SyncCreate): void {
  * https://dom.spec.whatwg.org/#concept-create-element with the synchronous custom elements
  * flag set (createElement / createElementNS): a defined custom element is constructed now.
  */
-export function createElementImplSync(doc: Document, localName: string, ns: string | null, prefix: string | null, is: string | null): NodeImpl {
+export function createElementImplSync(
+  doc: Document,
+  localName: string,
+  ns: string | null,
+  prefix: string | null,
+  is: string | null,
+): NodeImpl {
   if (syncCreate !== null) {
     const el = syncCreate(doc, localName, ns, prefix, is);
     if (el !== null) return el;

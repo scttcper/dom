@@ -5,14 +5,14 @@ import type {Element} from '../../dom-types.ts'
 import {isElementType} from './isElementType.ts'
 
 // Hoisted: upstream builds this array for every ancestor of every event target.
-const DISABLEABLE: ('button' | 'input' | 'select' | 'textarea' | 'optgroup' | 'option')[] = [
-  'button',
-  'input',
-  'select',
-  'textarea',
-  'optgroup',
-  'option',
-]
+const DISABLEABLE: (
+  | 'button'
+  | 'input'
+  | 'select'
+  | 'textarea'
+  | 'optgroup'
+  | 'option'
+)[] = ['button', 'input', 'select', 'textarea', 'optgroup', 'option']
 
 // This should probably just rely on the :disabled pseudo-class, but JSDOM doesn't implement it properly.
 export function isDisabled(element: Element | null): boolean {

@@ -126,7 +126,8 @@ class DomSink extends TreeSink {
         if (a === 0) appendAttributeDetached(el, names[i], values[i], null, null);
         else if (a === ANS_XLINK) appendAttributeDetached(el, names[i], values[i], XLINK_NS, "xlink");
         else if (a === ANS_XML) appendAttributeDetached(el, names[i], values[i], XML_NS, "xml");
-        else if (a === ANS_XMLNS) appendAttributeDetached(el, names[i], values[i], XMLNS_NS, names[i] === "xmlns" ? null : "xmlns");
+        else if (a === ANS_XMLNS)
+          appendAttributeDetached(el, names[i], values[i], XMLNS_NS, names[i] === "xmlns" ? null : "xmlns");
       }
     } else {
       for (let i = 0; i < count; i++) appendAttributeDetached(el, names[i], values[i], null, null);
@@ -249,7 +250,8 @@ class DomSink extends TreeSink {
 
   override setDocumentMode(mode: number): void {
     const doc = this.modeTarget;
-    if (doc !== null) doc[$mode] = mode === MODE_QUIRKS ? "quirks" : mode === MODE_LIMITED_QUIRKS ? "limited-quirks" : "no-quirks";
+    if (doc !== null)
+      doc[$mode] = mode === MODE_QUIRKS ? "quirks" : mode === MODE_LIMITED_QUIRKS ? "limited-quirks" : "no-quirks";
   }
 }
 

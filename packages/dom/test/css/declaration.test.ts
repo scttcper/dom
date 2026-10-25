@@ -44,7 +44,10 @@ interface HTMLElementLike {
 const JSDOM_BUGS = new Set(["font|italic small-caps 700 16px/2 serif", "width|fit-content(10px)"]);
 
 describe("§6.7.2 serializing CSS values (differential vs jsdom) — https://drafts.csswg.org/cssom/#serialize-a-css-value", () => {
-  const cases = JSON.parse(readFileSync(new URL("./fixtures/declaration-cases.json", import.meta.url), "utf8")) as [string, string][];
+  const cases = JSON.parse(readFileSync(new URL("./fixtures/declaration-cases.json", import.meta.url), "utf8")) as [
+    string,
+    string,
+  ][];
   const jsdomStyle = new JSDOM("<div></div>").window.document.querySelector("div")!.style;
   for (const [prop, value] of cases) {
     const bug = JSDOM_BUGS.has(`${prop}|${value}`);

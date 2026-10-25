@@ -21,7 +21,17 @@
 //
 // Flags: --minify, --filter <substring>, --no-dts, --no-cjs.
 
-import { rmSync, statSync, readdirSync, readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, mkdtempSync } from "node:fs";
+import {
+  rmSync,
+  statSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  cpSync,
+  existsSync,
+  mkdtempSync,
+} from "node:fs";
 import { join, isAbsolute, relative, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -47,7 +57,13 @@ const { values: flags } = parseArgs({
  * in the workspace @ctrl/dom-jest-environment's preset maps it to an equivalent shim. The environments
  * themselves are loaded by Node in the outer realm, where `require(esm)` works.
  */
-const CJS_PACKAGES = new Set(["@ctrl/dom/aria", "@ctrl/dom/testing-library", "@ctrl/dom/react", "@ctrl/dom/user-event", "@ctrl/dom/jest-dom"]);
+const CJS_PACKAGES = new Set([
+  "@ctrl/dom/aria",
+  "@ctrl/dom/testing-library",
+  "@ctrl/dom/react",
+  "@ctrl/dom/user-event",
+  "@ctrl/dom/jest-dom",
+]);
 
 const external = (id: string) => !id.startsWith(".") && !isAbsolute(id) && !id.startsWith("\0");
 
@@ -65,7 +81,8 @@ const crossRealmInterop = {
   renderChunk(code: string, _chunk: unknown, options: { format: string }): string | null {
     if (options.format !== "cjs" || !code.includes("var __toESM =")) return null;
     const out = code.replace("__create(__getProtoOf(mod))", "{ __proto__: __getProtoOf(mod) }");
-    if (out === code) throw new Error("rolldown's __toESM helper changed: update crossRealmInterop in scripts/build.ts");
+    if (out === code)
+      throw new Error("rolldown's __toESM helper changed: update crossRealmInterop in scripts/build.ts");
     return out;
   },
 };
@@ -125,14 +142,23 @@ function emitDeclarations(pkgs: WorkspacePackage[]): string {
 const LIB_DOM_ALIASES: Record<string, string> = { "@ctrl/dom/user-event": "dom-types.d.ts" };
 
 /** lib.dom's constraints on generic interfaces that the structural copies leave unconstrained. */
-const LIB_DOM_PARAMS: Record<string, string> = { NodeListOf: "<T extends Node>", HTMLCollectionOf: "<T extends Element>" };
+const LIB_DOM_PARAMS: Record<string, string> = {
+  NodeListOf: "<T extends Node>",
+  HTMLCollectionOf: "<T extends Element>",
+};
 
 function libDomAliases(declarations: string): string {
   const lines = ["// Published declarations: these are the lib.dom types (see scripts/build.ts)."];
   for (const m of declarations.matchAll(/^export (?:declare )?(?:interface|type|class) (\w+)(<[^{=]*?>)?[\s{=]/gm)) {
     const name = m[1];
     const params = LIB_DOM_PARAMS[name] ?? m[2] ?? "";
-    const args = params ? `<${params.slice(1, -1).split(",").map((p) => p.trim().split(/\s/)[0]).join(", ")}>` : "";
+    const args = params
+      ? `<${params
+          .slice(1, -1)
+          .split(",")
+          .map((p) => p.trim().split(/\s/)[0])
+          .join(", ")}>`
+      : "";
     lines.push(`export type ${name}${params} = globalThis.${name}${args};`);
   }
   return `${lines.join("\n")}\n`;
@@ -157,7 +183,9 @@ function copyDeclarations(emitRoot: string, pkg: WorkspacePackage): void {
   }
 }
 
-const selected = workspacePackages().filter((p) => p.exports.length > 0 && (!flags.filter || p.name.includes(flags.filter)));
+const selected = workspacePackages().filter(
+  (p) => p.exports.length > 0 && (!flags.filter || p.name.includes(flags.filter)),
+);
 const dtsPackages = flags["no-dts"] ? [] : selected.filter((p) => !shipsOwnTypes(p));
 
 let failed = 0;
@@ -166,7 +194,9 @@ if (dtsPackages.length > 0) {
   const t0 = performance.now();
   try {
     emitRoot = emitDeclarations(dtsPackages);
-    console.log(`declarations (${dtsPackages.map((p) => p.name).join(", ")}) ${(performance.now() - t0).toFixed(0)} ms`);
+    console.log(
+      `declarations (${dtsPackages.map((p) => p.name).join(", ")}) ${(performance.now() - t0).toFixed(0)} ms`,
+    );
   } catch (error) {
     failed++;
     console.error((error as Error).message);
@@ -185,7 +215,12 @@ for (const pkg of selected) {
     { format: "esm", entryFileNames: "[name].js", chunkFileNames: "_chunks/[name]-[hash].js" },
   ];
   if (CJS_PACKAGES.has(pkg.name) && !flags["no-cjs"]) {
-    formats.push({ format: "cjs", exports: "named", entryFileNames: "[name].cjs", chunkFileNames: "_chunks/[name]-[hash].cjs" });
+    formats.push({
+      format: "cjs",
+      exports: "named",
+      entryFileNames: "[name].cjs",
+      chunkFileNames: "_chunks/[name]-[hash].cjs",
+    });
   }
   try {
     for (const format of formats) {
@@ -205,7 +240,10 @@ for (const pkg of selected) {
     const ms = performance.now() - t0;
     const kb = dirSize(outDir) / 1024;
     console.log(
-      `${pkg.name.padEnd(24)} ${relative(repoRoot, outDir).padEnd(32)} ${kb.toFixed(1).padStart(8)} KB  ${formats.map((f) => f.format).join("+").padEnd(7)} ${ms.toFixed(0)} ms`,
+      `${pkg.name.padEnd(24)} ${relative(repoRoot, outDir).padEnd(32)} ${kb.toFixed(1).padStart(8)} KB  ${formats
+        .map((f) => f.format)
+        .join("+")
+        .padEnd(7)} ${ms.toFixed(0)} ms`,
     );
   } catch (error) {
     failed++;

@@ -55,7 +55,8 @@ function dequal(a: unknown, b: unknown): boolean {
   const ka = Object.keys(a);
   if (ka.length !== Object.keys(b).length) return false;
   for (const k of ka) {
-    if (!Object.hasOwn(b, k) || !dequal((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false;
+    if (!Object.hasOwn(b, k) || !dequal((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+      return false;
   }
   return true;
 }
@@ -109,7 +110,8 @@ export const roles = new AriaQueryMap<string, ARIARoleDefinition>(() => data().r
 /** `aria-query`'s `elementRoles`: HTML element concept → roles (looked up by name + deep-equal attributes). */
 export const elementRoles = new AriaQueryMap<ARIARoleRelationConcept, string[]>(
   () => data().elementRoles,
-  (entries, key) => entries.find(([concept]) => key.name === concept.name && dequal(key.attributes, concept.attributes)),
+  (entries, key) =>
+    entries.find(([concept]) => key.name === concept.name && dequal(key.attributes, concept.attributes)),
 );
 
 /** `aria-query`'s `roleElements`: role → HTML element concepts. */

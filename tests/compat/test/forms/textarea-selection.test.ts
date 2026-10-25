@@ -139,7 +139,22 @@ describe("selection APIs — https://html.spec.whatwg.org/#textFieldSelection", 
 
   differentialEach(
     (type) => `type=${type}: selection API applies or returns null / throws InvalidStateError`,
-    ["text", "search", "url", "tel", "password", "email", "number", "date", "checkbox", "hidden", "range", "color", "file", "submit"],
+    [
+      "text",
+      "search",
+      "url",
+      "tel",
+      "password",
+      "email",
+      "number",
+      "date",
+      "checkbox",
+      "hidden",
+      "range",
+      "color",
+      "file",
+      "submit",
+    ],
     (w, type) => {
       const el = w.document.createElement("input");
       el.type = type;
@@ -192,17 +207,21 @@ describe("selection APIs — https://html.spec.whatwg.org/#textFieldSelection", 
     return { asNumber, back: sel(el) };
   });
 
-  differential("selection is clamped when value gets shorter via defaultValue on a clean input", (w) => {
-    const el = w.document.createElement("input");
-    el.defaultValue = "long value";
-    el.setSelectionRange(8, 10);
-    el.defaultValue = "ab";
-    return sel(el);
-  }, {
-    jsdomDeviation: {
-      expected: { start: 2, end: 2, dir: "none" },
-      spec: "https://html.spec.whatwg.org/#textFieldSelection (selection offsets are positions within the relevant value)",
-      reason: "jsdom keeps stale offsets beyond the new value's length; browsers move the cursor to the end",
+  differential(
+    "selection is clamped when value gets shorter via defaultValue on a clean input",
+    (w) => {
+      const el = w.document.createElement("input");
+      el.defaultValue = "long value";
+      el.setSelectionRange(8, 10);
+      el.defaultValue = "ab";
+      return sel(el);
     },
-  });
+    {
+      jsdomDeviation: {
+        expected: { start: 2, end: 2, dir: "none" },
+        spec: "https://html.spec.whatwg.org/#textFieldSelection (selection offsets are positions within the relevant value)",
+        reason: "jsdom keeps stale offsets beyond the new value's length; browsers move the cursor to the end",
+      },
+    },
+  );
 });

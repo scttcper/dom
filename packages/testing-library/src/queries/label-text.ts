@@ -35,13 +35,19 @@ function queryAllLabels(container: any): { textToMatch: string | null; node: any
   return out;
 }
 
-function queryAllLabelsByText(container: any, text: Matcher, { exact = true, trim, collapseWhitespace, normalizer }: SelectorMatcherOptions = {}): any[] {
+function queryAllLabelsByText(
+  container: any,
+  text: Matcher,
+  { exact = true, trim, collapseWhitespace, normalizer }: SelectorMatcherOptions = {},
+): any[] {
   const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
 
   const textToMatchByLabels = queryAllLabels(container);
 
-  return textToMatchByLabels.filter(({ node, textToMatch }) => matcher(textToMatch, node, text, matchNormalizer)).map(({ node }) => node);
+  return textToMatchByLabels
+    .filter(({ node, textToMatch }) => matcher(textToMatch, node, text, matchNormalizer))
+    .map(({ node }) => node);
 }
 
 function queryAllByLabelText(
@@ -121,7 +127,9 @@ function getAllByLabelText(container: any, text: Matcher, ...rest: [SelectorMatc
   if (!els.length) {
     const labels = queryAllLabelsByText(container, text, ...rest);
     if (labels.length) {
-      const tagNames = labels.map((label) => getTagNameOfElementAssociatedWithLabelViaFor(container, label)).filter((tagName) => !!tagName);
+      const tagNames = labels
+        .map((label) => getTagNameOfElementAssociatedWithLabelViaFor(container, label))
+        .filter((tagName) => !!tagName);
       if (tagNames.length) {
         throw getConfig().getElementError(
           tagNames
@@ -139,14 +147,22 @@ function getAllByLabelText(container: any, text: Matcher, ...rest: [SelectorMatc
         );
       }
     } else {
-      throw getConfig().getElementError(withLabelCandidates(`Unable to find a label with the text of: ${text}`, container, text, rest[0]), container);
+      throw getConfig().getElementError(
+        withLabelCandidates(`Unable to find a label with the text of: ${text}`, container, text, rest[0]),
+        container,
+      );
     }
   }
   return els;
 }
 
 /** Ours: under CTRL_DOM_DEBUG, append the form controls and their names. */
-function withLabelCandidates(message: string, container: any, text: Matcher, options: SelectorMatcherOptions = {}): string {
+function withLabelCandidates(
+  message: string,
+  container: any,
+  text: Matcher,
+  options: SelectorMatcherOptions = {},
+): string {
   if (envDebugFormat() === null) return message;
   const { exact = true, trim, collapseWhitespace, normalizer } = options;
   const candidates = labelCandidates(container, text, makeNormalizer({ trim, collapseWhitespace, normalizer }), exact);
@@ -165,16 +181,30 @@ function getTagNameOfElementAssociatedWithLabelViaFor(container: any, label: any
 
 // the reason mentioned above is the same reason we're not using buildQueries
 const getMultipleError: GetErrorFunction<[unknown]> = (c, text) => `Found multiple elements with the text of: ${text}`;
-const queryByLabelText = wrapSingleQueryWithSuggestion(makeSingleQuery(queryAllByLabelText, getMultipleError), queryAllByLabelText.name, "query");
+const queryByLabelText = wrapSingleQueryWithSuggestion(
+  makeSingleQuery(queryAllByLabelText, getMultipleError),
+  queryAllByLabelText.name,
+  "query",
+);
 const getByLabelText = makeSingleQuery(getAllByLabelText, getMultipleError);
 
-const findAllByLabelText = makeFindQuery(wrapAllByQueryWithSuggestion(getAllByLabelText, getAllByLabelText.name, "findAll"));
+const findAllByLabelText = makeFindQuery(
+  wrapAllByQueryWithSuggestion(getAllByLabelText, getAllByLabelText.name, "findAll"),
+);
 const findByLabelText = makeFindQuery(wrapSingleQueryWithSuggestion(getByLabelText, getAllByLabelText.name, "find"));
 
-const getAllByLabelTextWithSuggestions = wrapAllByQueryWithSuggestion(getAllByLabelText, getAllByLabelText.name, "getAll");
+const getAllByLabelTextWithSuggestions = wrapAllByQueryWithSuggestion(
+  getAllByLabelText,
+  getAllByLabelText.name,
+  "getAll",
+);
 const getByLabelTextWithSuggestions = wrapSingleQueryWithSuggestion(getByLabelText, getAllByLabelText.name, "get");
 
-const queryAllByLabelTextWithSuggestions = wrapAllByQueryWithSuggestion(queryAllByLabelText, queryAllByLabelText.name, "queryAll");
+const queryAllByLabelTextWithSuggestions = wrapAllByQueryWithSuggestion(
+  queryAllByLabelText,
+  queryAllByLabelText.name,
+  "queryAll",
+);
 
 export {
   queryAllByLabelTextWithSuggestions as queryAllByLabelText,

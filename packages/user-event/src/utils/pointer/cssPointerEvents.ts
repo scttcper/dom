@@ -1,7 +1,11 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/pointer/cssPointerEvents.ts
 
-import type {Element, HTMLInputElement, HTMLLabelElement} from '../../dom-types.ts'
+import type {
+  Element,
+  HTMLInputElement,
+  HTMLLabelElement,
+} from '../../dom-types.ts'
 import {PointerEventsCheckLevel} from '../../options.ts'
 import {type Instance} from '../../setup/index.ts'
 import {getWindow} from '../misc/getWindow.ts'
@@ -17,9 +21,9 @@ export function hasPointerEvents(
 
 function closestPointerEventsDeclaration(element: Element):
   | {
-    pointerEvents: string
-    tree: Element[]
-  }
+      pointerEvents: string
+      tree: Element[]
+    }
   | undefined {
   const window = getWindow(element)
 
@@ -47,23 +51,27 @@ type PointerEventsCheckable = Element & {
   }
 }
 
-function checkPointerEvents(instance: Instance, element: PointerEventsCheckable) {
+function checkPointerEvents(
+  instance: Instance,
+  element: PointerEventsCheckable,
+) {
   const lastCheck = element[PointerEventsCheck]
 
   const needsCheck =
-    instance.config.pointerEventsCheck !== PointerEventsCheckLevel.Never as number &&
+    instance.config.pointerEventsCheck !==
+      (PointerEventsCheckLevel.Never as number) &&
     (!lastCheck ||
       (hasBitFlag(
         instance.config.pointerEventsCheck,
         PointerEventsCheckLevel.EachApiCall,
       ) &&
-      lastCheck[ApiLevel.Call] !== getLevelRef(instance, ApiLevel.Call)) ||
+        lastCheck[ApiLevel.Call] !== getLevelRef(instance, ApiLevel.Call)) ||
       (hasBitFlag(
         instance.config.pointerEventsCheck,
         PointerEventsCheckLevel.EachTrigger,
       ) &&
-      lastCheck[ApiLevel.Trigger] !==
-      getLevelRef(instance, ApiLevel.Trigger)))
+        lastCheck[ApiLevel.Trigger] !==
+          getLevelRef(instance, ApiLevel.Trigger)))
 
   if (!needsCheck) {
     return lastCheck?.result
@@ -105,14 +113,14 @@ function printTree(tree: Element[]) {
         el.tagName,
         el.id && `#${el.id}`,
         el.hasAttribute('data-testid') &&
-        `(testId=${el.getAttribute('data-testid')})`,
+          `(testId=${el.getAttribute('data-testid')})`,
         getLabelDescr(el),
         tree.length > 1 &&
-        i === 0 &&
-        '  <-- This element declared `pointer-events: none`',
+          i === 0 &&
+          '  <-- This element declared `pointer-events: none`',
         tree.length > 1 &&
-        i === tree.length - 1 &&
-        '  <-- Asserted pointer events here',
+          i === tree.length - 1 &&
+          '  <-- Asserted pointer events here',
       ]
         .filter(Boolean)
         .join(''),

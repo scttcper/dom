@@ -73,7 +73,9 @@ describe("ValidityState — https://html.spec.whatwg.org/#validitystate", () => 
     expect(el.validity.tooLong).toBe(false);
     setUIValue(el, "abc");
     expect(el.validity.tooLong).toBe(true);
-    expect(el.validationMessage).toBe("Please shorten this text to 2 characters or less (you are currently using 3 characters).");
+    expect(el.validationMessage).toBe(
+      "Please shorten this text to 2 characters or less (you are currently using 3 characters).",
+    );
     setUIValue(el, "a");
     expect(el.validity.tooShort).toBe(true);
   });
@@ -114,7 +116,11 @@ describe("ValidityState — https://html.spec.whatwg.org/#validitystate", () => 
   test("the custom message takes precedence over built-in messages when customError is set", () => {
     const el = input("<input type=email value=nope>");
     el.setCustomValidity("custom error");
-    expect([el.validity.typeMismatch, el.validity.customError, el.validationMessage]).toEqual([true, true, "custom error"]);
+    expect([el.validity.typeMismatch, el.validity.customError, el.validationMessage]).toEqual([
+      true,
+      true,
+      "custom error",
+    ]);
   });
 
   test("setCustomValidity sets customError and the message (newlines normalized)", () => {
@@ -133,7 +139,10 @@ describe("ValidityState — https://html.spec.whatwg.org/#validitystate", () => 
     el.addEventListener("invalid", (e: any) => seen.push([e.bubbles, e.cancelable]));
     expect(el.checkValidity()).toBe(false);
     expect(el.reportValidity()).toBe(false);
-    expect(seen).toEqual([[false, true], [false, true]]);
+    expect(seen).toEqual([
+      [false, true],
+      [false, true],
+    ]);
   });
 
   test("validity is a live ValidityState", () => {
@@ -161,7 +170,8 @@ describe("state predicates — https://html.spec.whatwg.org/#pseudo-classes", ()
   });
 
   test(":valid / :invalid exclude barred elements; forms and fieldsets reflect their controls", () => {
-    document.body!.innerHTML = "<form id=f><fieldset id=fs><input id=i required></fieldset><input id=d required disabled></form>";
+    document.body!.innerHTML =
+      "<form id=f><fieldset id=fs><input id=i required></fieldset><input id=d required disabled></form>";
     expect(state.isInvalid($("i")[$impl])).toBe(true);
     expect(state.isInvalid($("d")[$impl])).toBe(false);
     expect(state.isValid($("d")[$impl])).toBe(false);

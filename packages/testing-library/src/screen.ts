@@ -25,7 +25,9 @@ function getPlaygroundUrl(markup: string): string {
 }
 
 const debug = (element?: any, maxLength?: number, options?: any): void =>
-  Array.isArray(element) ? element.forEach((el) => logDOM(el, maxLength, options)) : logDOM(element, maxLength, options);
+  Array.isArray(element)
+    ? element.forEach((el) => logDOM(el, maxLength, options))
+    : logDOM(element, maxLength, options);
 
 const logTestingPlaygroundURL = (element = getDocument().body): string | undefined => {
   if (!element || !("innerHTML" in element)) {

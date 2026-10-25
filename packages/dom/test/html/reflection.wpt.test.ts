@@ -57,10 +57,12 @@ function runSuite(elementsFile: string): Map<string, Subtest[]> {
     list.push({ name, error });
   };
   const assert_equals = (actual: unknown, expected: unknown, desc?: string) => {
-    if (!sameValue(actual, expected)) throw new Error(`expected ${repr(expected)} but got ${repr(actual)}${desc ? ` (${desc})` : ""}`);
+    if (!sameValue(actual, expected))
+      throw new Error(`expected ${repr(expected)} but got ${repr(actual)}${desc ? ` (${desc})` : ""}`);
   };
   const assert_in_array = (actual: unknown, expected: unknown[]) => {
-    if (!expected.some((e) => sameValue(actual, e))) throw new Error(`${repr(actual)} not in [${expected.map(repr).join(", ")}]`);
+    if (!expected.some((e) => sameValue(actual, e)))
+      throw new Error(`${repr(actual)} not in [${expected.map(repr).join(", ")}]`);
   };
   const assert_throws_dom = (type: string, fn: () => void) => {
     try {
@@ -71,8 +73,19 @@ function runSuite(elementsFile: string): Map<string, Subtest[]> {
     }
     throw new Error(`expected ${type} to be thrown`);
   };
-  const body = [read("original-harness.js"), read("new-harness.js"), read(elementsFile), read("reflection.js")].join("\n;\n");
-  const run = new Function("window", "document", "test", "assert_equals", "assert_in_array", "assert_throws_dom", "DOMException", body);
+  const body = [read("original-harness.js"), read("new-harness.js"), read(elementsFile), read("reflection.js")].join(
+    "\n;\n",
+  );
+  const run = new Function(
+    "window",
+    "document",
+    "test",
+    "assert_equals",
+    "assert_in_array",
+    "assert_throws_dom",
+    "DOMException",
+    body,
+  );
   // The harness reads JS builtins off `window` (window.String, ...), as on a browser global.
   const win = new Proxy(window, { get: (t, k) => (k in t ? (t as any)[k] : (globalThis as any)[k]) });
   run(win, document, testShim, assert_equals, assert_in_array, assert_throws_dom, DOMException);

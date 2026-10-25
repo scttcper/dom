@@ -12,7 +12,16 @@
 // State no other area models (:hover/:active pointer state, links, :target, media, :lang/:dir)
 // is implemented here.
 
-import { DOCUMENT_NODE, ELEMENT_NODE, F_HTML, F_SHADOW_ROOT, SVG_NS, TEXT_NODE, XLINK_NS, XML_NS } from "../nodes/constants.ts";
+import {
+  DOCUMENT_NODE,
+  ELEMENT_NODE,
+  F_HTML,
+  F_SHADOW_ROOT,
+  SVG_NS,
+  TEXT_NODE,
+  XLINK_NS,
+  XML_NS,
+} from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
 import { attr, asciiLowercase, findAttributeByNamespace } from "../nodes/attributes.ts";
@@ -86,7 +95,12 @@ function active(el: NodeImpl): boolean {
  */
 function anyLink(el: NodeImpl): boolean {
   if (el.tag === T.a || el.tag === T.area) return attr(el, "href") !== null;
-  return el.ns === SVG_NS && el.name === "a" && el.attrs !== null && (attr(el, "href") !== null || findAttributeByNamespace(el, XLINK_NS, "href") !== null);
+  return (
+    el.ns === SVG_NS &&
+    el.name === "a" &&
+    el.attrs !== null &&
+    (attr(el, "href") !== null || findAttributeByNamespace(el, XLINK_NS, "href") !== null)
+  );
 }
 
 function never(_el: NodeImpl): boolean {
@@ -131,10 +145,28 @@ export function inputTypeName(el: NodeImpl): string {
   if (t === null) return "text";
   const v = asciiLowercase(t);
   switch (v) {
-    case "hidden": case "text": case "search": case "tel": case "url": case "email": case "password":
-    case "date": case "month": case "week": case "time": case "datetime-local": case "number":
-    case "range": case "color": case "checkbox": case "radio": case "file": case "submit":
-    case "image": case "reset": case "button":
+    case "hidden":
+    case "text":
+    case "search":
+    case "tel":
+    case "url":
+    case "email":
+    case "password":
+    case "date":
+    case "month":
+    case "week":
+    case "time":
+    case "datetime-local":
+    case "number":
+    case "range":
+    case "color":
+    case "checkbox":
+    case "radio":
+    case "file":
+    case "submit":
+    case "image":
+    case "reset":
+    case "button":
       return v;
   }
   return "text";
@@ -255,7 +287,14 @@ export function matchesLang(el: NodeImpl, ranges: string[]): boolean {
 function strongDirection(cp: number): number {
   if ((cp >= 0x41 && cp <= 0x5a) || (cp >= 0x61 && cp <= 0x7a)) return 1;
   if (cp < 0xc0) return 0;
-  if ((cp >= 0x0590 && cp <= 0x08ff) || (cp >= 0xfb1d && cp <= 0xfdff) || (cp >= 0xfe70 && cp <= 0xfefe) || (cp >= 0x10800 && cp <= 0x10fff) || (cp >= 0x1e800 && cp <= 0x1efff)) return 2;
+  if (
+    (cp >= 0x0590 && cp <= 0x08ff) ||
+    (cp >= 0xfb1d && cp <= 0xfdff) ||
+    (cp >= 0xfe70 && cp <= 0xfefe) ||
+    (cp >= 0x10800 && cp <= 0x10fff) ||
+    (cp >= 0x1e800 && cp <= 0x1efff)
+  )
+    return 2;
   if (cp === 0xd7 || cp === 0xf7) return 0;
   if (cp >= 0x2000 && cp <= 0x2bff) return 0; // punctuation, symbols, arrows
   if (cp >= 0x3000 && cp <= 0x303f) return 0;
@@ -290,7 +329,7 @@ function autoDirectionality(el: NodeImpl): number {
     return d === 0 ? 1 : d;
   }
   if (el.tag === T.input) return 0;
-  for (let n = el.first; n !== null; ) {
+  for (let n = el.first; n !== null;) {
     if (n.type === ELEMENT_NODE) {
       if (n.tag === T.bdi || n.tag === T.script || n.tag === T.style || n.tag === T.textarea || hasValidDir(n)) {
         n = nextSkippingChildren(n, el);
@@ -307,7 +346,7 @@ function autoDirectionality(el: NodeImpl): number {
 
 /** https://html.spec.whatwg.org/#the-directionality — 1 = ltr, 2 = rtl. */
 export function directionality(el: NodeImpl): number {
-  for (let n: NodeImpl | null = el; n !== null; ) {
+  for (let n: NodeImpl | null = el; n !== null;) {
     if (n.type !== ELEMENT_NODE) break;
     const raw = isHTML(n) ? attr(n, "dir") : null;
     // Invalid dir values are ignored (https://html.spec.whatwg.org/#the-dir-attribute), except on bdi (auto).
@@ -338,8 +377,16 @@ export function directionality(el: NodeImpl): number {
 
 function usesValueForDirectionality(type: string): boolean {
   switch (type) {
-    case "hidden": case "text": case "search": case "tel": case "url": case "email": case "password":
-    case "submit": case "reset": case "button":
+    case "hidden":
+    case "text":
+    case "search":
+    case "tel":
+    case "url":
+    case "email":
+    case "password":
+    case "submit":
+    case "reset":
+    case "button":
       return true;
   }
   return false;

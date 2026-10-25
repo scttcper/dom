@@ -71,7 +71,8 @@ export class HTMLTemplateElement extends HTMLElement {
     if (src === undefined || src[$impl].first === null) return;
     const dest = (copy as HTMLTemplateElement).content;
     const destDoc = dest[$impl].doc;
-    for (let c: NodeImpl | null = src[$impl].first; c !== null; c = c.next) appendDetached(cloneNode(c, destDoc, true), dest[$impl]);
+    for (let c: NodeImpl | null = src[$impl].first; c !== null; c = c.next)
+      appendDetached(cloneNode(c, destDoc, true), dest[$impl]);
   }
 
   /** @internal https://html.spec.whatwg.org/#the-template-element:concept-node-adopt-ext */
@@ -86,5 +87,12 @@ export class HTMLTemplateElement extends HTMLElement {
 }
 enumerated(HTMLTemplateElement, "shadowRootMode=shadowrootmode", { keywords: ["open", "closed"] });
 // https://html.spec.whatwg.org/#dom-template-shadowrootslotassignment
-enumerated(HTMLTemplateElement, "shadowRootSlotAssignment=shadowrootslotassignment", { keywords: ["named", "manual"], missing: "named", invalid: "named" });
-bool(HTMLTemplateElement, "shadowRootDelegatesFocus=shadowrootdelegatesfocus shadowRootClonable=shadowrootclonable shadowRootSerializable=shadowrootserializable");
+enumerated(HTMLTemplateElement, "shadowRootSlotAssignment=shadowrootslotassignment", {
+  keywords: ["named", "manual"],
+  missing: "named",
+  invalid: "named",
+});
+bool(
+  HTMLTemplateElement,
+  "shadowRootDelegatesFocus=shadowrootdelegatesfocus shadowRootClonable=shadowrootclonable shadowRootSerializable=shadowrootserializable",
+);

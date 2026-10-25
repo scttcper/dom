@@ -15,12 +15,19 @@ import type { NodeImpl } from "./NodeImpl.ts";
 import { replaceData, splitText } from "./character-data.ts";
 import { assignedSlot as slotOf, slotAssignmentActive } from "./slots.ts";
 import { currentDocument } from "../window/current.ts";
-import { installChildNode, installNonDocumentTypeChildNode, type ChildNode, type NonDocumentTypeChildNode } from "./mixins.ts";
+import {
+  installChildNode,
+  installNonDocumentTypeChildNode,
+  type ChildNode,
+  type NonDocumentTypeChildNode,
+} from "./mixins.ts";
 import type { Element } from "./Element.ts";
 import { $impl, $shadowRoot } from "../keys.ts";
 
 function arity(method: string, required: number, given: number): never {
-  throw new TypeError(`Failed to execute '${method}' on 'CharacterData': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`);
+  throw new TypeError(
+    `Failed to execute '${method}' on 'CharacterData': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`,
+  );
 }
 
 /**
@@ -30,7 +37,9 @@ function arity(method: string, required: number, given: number): never {
  * and extra arguments must be ignored) falls back to the current document.
  */
 function nodeDocumentFor(doc: unknown): Document {
-  return typeof doc === "object" && doc !== null && (doc as Document)[$impl]?.type === DOCUMENT_NODE ? (doc as Document) : currentDocument();
+  return typeof doc === "object" && doc !== null && (doc as Document)[$impl]?.type === DOCUMENT_NODE
+    ? (doc as Document)
+    : currentDocument();
 }
 
 export abstract class CharacterData extends Node {
@@ -95,9 +104,15 @@ export class Text extends CharacterData {
   /** https://dom.spec.whatwg.org/#dom-text-wholetext */
   get wholeText(): string {
     let start = this[$impl];
-    while (start.prev !== null && (start.prev.type === TEXT_NODE || start.prev.type === CDATA_SECTION_NODE)) start = start.prev;
+    while (start.prev !== null && (start.prev.type === TEXT_NODE || start.prev.type === CDATA_SECTION_NODE))
+      start = start.prev;
     let s = "";
-    for (let n: NodeImpl | null = start; n !== null && (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE); n = n.next) s += n.data;
+    for (
+      let n: NodeImpl | null = start;
+      n !== null && (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE);
+      n = n.next
+    )
+      s += n.data;
     return s;
   }
 

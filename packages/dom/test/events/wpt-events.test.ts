@@ -43,13 +43,15 @@ function defineJSTests(dir: string): void {
 }
 
 const INLINE_HANDLERS = "inline event handler content attributes are not compiled (docs/deviations.md Scripting)";
-const NODE_EVENT_TARGETS = "AbortSignal and Performance are Node's own EventTargets, which reject our Event objects (window area)";
+const NODE_EVENT_TARGETS =
+  "AbortSignal and Performance are Node's own EventTargets, which reject our Event objects (window area)";
 
 defineWPTDirectory(
   "dom/events",
   {
     "Body-FrameSet-Event-Handlers.html": INLINE_HANDLERS,
-    "EventTarget-dispatchEvent.html": "DeviceMotionEvent / DeviceOrientationEvent are not implemented (no device sensors)",
+    "EventTarget-dispatchEvent.html":
+      "DeviceMotionEvent / DeviceOrientationEvent are not implemented (no device sensors)",
     "event-global.html": "window.event is a prototype accessor, not an own property (window area)",
     "event-global-event-targets.html": NODE_EVENT_TARGETS,
     "passive-by-default-non-node.html": NODE_EVENT_TARGETS,
@@ -59,14 +61,26 @@ defineWPTDirectory(
     "Event-dispatch-click.html": "registered below with a short timeout",
   },
 );
-defineWPT("dom/events/Event-dispatch-click.html", "javascript: URLs never run (no script execution, no navigation)", { timeout: 300 });
+defineWPT("dom/events/Event-dispatch-click.html", "javascript: URLs never run (no script execution, no navigation)", {
+  timeout: 300,
+});
 defineJSTests("dom/events");
 defineWPTDirectory("dom/events/non-cancelable-when-passive", {}, {});
 defineJSTests("dom/abort");
 
 // Only the event files of shadow-dom/ (other areas own the rest of that directory).
-defineWPTDirectory("shadow-dom", {}, {}, (file) => /^shadow-dom\/(capturing-and-bubbling-event-listeners-across-shadow-trees|event-[^/]*|slotchange-event)\.html$/.test(file));
-for (const dir of ["", "/event-dispatch", "/event-retargeting", "/retargeting-focus-events", "/retargeting-relatedtarget"]) {
+defineWPTDirectory("shadow-dom", {}, {}, (file) =>
+  /^shadow-dom\/(capturing-and-bubbling-event-listeners-across-shadow-trees|event-[^/]*|slotchange-event)\.html$/.test(
+    file,
+  ),
+);
+for (const dir of [
+  "",
+  "/event-dispatch",
+  "/event-retargeting",
+  "/retargeting-focus-events",
+  "/retargeting-relatedtarget",
+]) {
   defineWPTDirectory(`shadow-dom/untriaged/events${dir}`, {}, {});
 }
 
@@ -79,7 +93,9 @@ describe("HTML §8.1.8.2 Event handlers on elements, Document objects, and Windo
     ["onwebkitanimationstart", "webkitAnimationStart", AnimationEvent],
     ["onwebkittransitionend", "webkitTransitionEnd", TransitionEvent],
   ] as const)("%s's event handler event type is the camel-cased %s", (handler, type, Ctor) => {
-    const div = createWindow().document.createElement("div") as unknown as Record<string, unknown> & { dispatchEvent(e: unknown): boolean };
+    const div = createWindow().document.createElement("div") as unknown as Record<string, unknown> & {
+      dispatchEvent(e: unknown): boolean;
+    };
     let calls = 0;
     div[handler] = () => calls++;
     div.dispatchEvent(new Ctor(type));

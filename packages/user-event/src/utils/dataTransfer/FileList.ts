@@ -4,10 +4,7 @@
 import type {File, FileList, Window} from '../../dom-types.ts'
 // FileList can not be created per constructor.
 
-export function createFileList(
-  window: Window,
-  files: File[],
-): FileList {
+export function createFileList(window: Window, files: File[]): FileList {
   const list: FileList & Iterable<File> = {
     ...files,
     length: files.length,

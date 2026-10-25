@@ -150,7 +150,9 @@ describe("differential: aria-query data surface — https://www.w3.org/TR/wai-ar
   });
 
   test("elementRoles / roleElements equal aria-query@5.3.0", () => {
-    expect(ctrlDom.elementRoles.entries()).toEqual(O.ariaQuery.elementRoles.entries().map(([k, v]: any) => [k, [...v]]));
+    expect(ctrlDom.elementRoles.entries()).toEqual(
+      O.ariaQuery.elementRoles.entries().map(([k, v]: any) => [k, [...v]]),
+    );
     for (const [concept] of O.ariaQuery.elementRoles.entries()) {
       expect(ctrlDom.elementRoles.get(concept)).toEqual([...O.ariaQuery.elementRoles.get(concept)]);
     }

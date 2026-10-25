@@ -76,7 +76,9 @@ function fallbackInstall(window: Record<PropertyKey, unknown>, target: Global): 
 // had to patch; a shim that patches nothing means the blocker is fixed and it can be deleted.
 // Results produced this way are labelled in the report and are NOT compatibility results.
 const TRIAGE_TAGS =
-  "a abbr area audio b base body br button canvas caption col colgroup data datalist dd del details dialog div dl dt em embed fieldset figure font form frame frameset h1 head hr html i iframe img input ins label legend li link map marquee menu meta meter nav object ol optgroup option output p param picture pre progress q script section select slot source span style table tbody td template textarea tfoot th thead time title tr track u ul video unknown-el".split(" ");
+  "a abbr area audio b base body br button canvas caption col colgroup data datalist dd del details dialog div dl dt em embed fieldset figure font form frame frameset h1 head hr html i iframe img input ins label legend li link map marquee menu meta meter nav object ol optgroup option output p param picture pre progress q script section select slot source span style table tbody td template textarea tfoot th thead time title tr track u ul video unknown-el".split(
+    " ",
+  );
 
 const TRIAGE_SHIMS: Record<string, (global: Global, document: any) => { patched: string[]; restore: () => void }> = {
   // repros/html-elements-interface-objects.test.ts
@@ -86,7 +88,12 @@ const TRIAGE_SHIMS: Record<string, (global: Global, document: any) => { patched:
       let ctor: any = document.createElement(tag).constructor;
       while (typeof ctor === "function" && ctor.name && ctor.name !== "Object") {
         if (global[ctor.name] === undefined) {
-          Object.defineProperty(global, ctor.name, { value: ctor, writable: true, configurable: true, enumerable: false });
+          Object.defineProperty(global, ctor.name, {
+            value: ctor,
+            writable: true,
+            configurable: true,
+            enumerable: false,
+          });
           patched.push(ctor.name);
         }
         ctor = Object.getPrototypeOf(ctor);

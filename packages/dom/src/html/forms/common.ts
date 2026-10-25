@@ -103,7 +103,13 @@ export function normalizeNewlines(s: string): string {
 // --- events -------------------------------------------------------------------------------
 
 /** https://dom.spec.whatwg.org/#concept-event-fire — a trusted plain Event. Returns false when canceled. */
-export function fireEvent(target: EventTarget, type: string, bubbles: boolean, cancelable: boolean, composed = false): boolean {
+export function fireEvent(
+  target: EventTarget,
+  type: string,
+  bubbles: boolean,
+  cancelable: boolean,
+  composed = false,
+): boolean {
   const event = new Event(type, { bubbles, cancelable, composed });
   setTrusted(event);
   return dispatch(event, target);

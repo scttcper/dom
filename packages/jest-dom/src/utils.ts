@@ -71,7 +71,12 @@ export class NodeTypeError extends GenericTypeError {
 
 type ErrorClass = new (received: unknown, matcherFn: MatcherFn, context: MatcherContext) => Error;
 
-function checkHasWindow(htmlElement: DOMNode, ErrorClass: ErrorClass, matcherFn: MatcherFn, context: MatcherContext): void {
+function checkHasWindow(
+  htmlElement: DOMNode,
+  ErrorClass: ErrorClass,
+  matcherFn: MatcherFn,
+  context: MatcherContext,
+): void {
   if (!htmlElement || !htmlElement.ownerDocument || !htmlElement.ownerDocument.defaultView) {
     throw new ErrorClass(htmlElement, matcherFn, context);
   }
@@ -102,14 +107,20 @@ class InvalidCSSError extends Error {
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, matcherFn);
     }
-    this.message = [received.message, "", context.utils.RECEIVED_COLOR(`Failing css:`), context.utils.RECEIVED_COLOR(`${received.css}`)].join(
-      "\n",
-    );
+    this.message = [
+      received.message,
+      "",
+      context.utils.RECEIVED_COLOR(`Failing css:`),
+      context.utils.RECEIVED_COLOR(`${received.css}`),
+    ].join("\n");
   }
 }
 
 interface CSSParse {
-  (css: string, options: { silent: boolean }): {
+  (
+    css: string,
+    options: { silent: boolean },
+  ): {
     stylesheet: {
       parsingErrors?: Array<{ reason: string; line: number }>;
       rules: Array<{ declarations: Array<{ type: string; property: string; value: string }> }>;
@@ -233,7 +244,9 @@ export function getSingleElementValue(element: DOMNode): unknown {
 }
 
 export function toSentence(array: string[], { wordConnector = ", ", lastWordConnector = " and " } = {}): string {
-  return [array.slice(0, -1).join(wordConnector), array[array.length - 1]].join(array.length > 1 ? lastWordConnector : "");
+  return [array.slice(0, -1).join(wordConnector), array[array.length - 1]].join(
+    array.length > 1 ? lastWordConnector : "",
+  );
 }
 
 export function compareAsSet(val1: unknown, val2: unknown): boolean {
@@ -310,7 +323,11 @@ const env = process.env;
 const argv = process.argv;
 const isColorSupported =
   !(!!env.NO_COLOR || argv.includes("--no-color")) &&
-  (!!env.FORCE_COLOR || argv.includes("--color") || process.platform === "win32" || (process.stdout?.isTTY && env.TERM !== "dumb") || !!env.CI);
+  (!!env.FORCE_COLOR ||
+    argv.includes("--color") ||
+    process.platform === "win32" ||
+    (process.stdout?.isTTY && env.TERM !== "dumb") ||
+    !!env.CI);
 
 export function picoRed(input: string): string {
   if (!isColorSupported) return String(input);

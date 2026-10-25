@@ -26,7 +26,9 @@ const bundle = (specifier: string): string => {
 const environment = bundle("@ctrl/dom/vitest-environment");
 const preload = [new URL("../../bench/lib/dist-preload.js", import.meta.url).pathname];
 const env = distMapEnv();
-const external = [/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)[\\/]dist[\\/]/];
+const external = [
+  /[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)[\\/]dist[\\/]/,
+];
 
 // Jest: the environment bundle (its own `@ctrl/dom` imports go to dist/ through the preload), and
 // test files' `@ctrl/dom` to the environment's instance (@ctrl/dom-jest-environment's shims, as its
@@ -45,7 +47,11 @@ const ctrlDomCjs: Record<string, string> = Object.fromEntries(
 
 function version(): string {
   const sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
-  const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=no", "--", "packages"], { cwd: repoRoot, encoding: "utf8" }).trim() !== "";
+  const dirty =
+    execFileSync("git", ["status", "--porcelain", "--untracked-files=no", "--", "packages"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    }).trim() !== "";
   return `${sha}${dirty ? "+changes" : ""}`;
 }
 
@@ -53,11 +59,22 @@ function version(): string {
 function check(): void {
   for (const pkg of workspacePackages()) {
     const entry = pkg.exports[0]?.dist;
-    if (entry === undefined || !/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment|jest-environment)[\\/]/.test(entry)) continue;
+    if (
+      entry === undefined ||
+      !/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment|jest-environment)[\\/]/.test(
+        entry,
+      )
+    )
+      continue;
     if (!existsSync(entry)) throw new Error(`${pkg.name}: ${entry} is missing — run \`pnpm build\` first`);
     const src = join(pkg.dir, "src");
-    const newest = Math.max(...readdirSync(src, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => statSync(join(e.parentPath, e.name)).mtimeMs));
-    if (newest > statSync(entry).mtimeMs) throw new Error(`${pkg.name}: dist/ is older than src/ — run \`pnpm build\` first`);
+    const newest = Math.max(
+      ...readdirSync(src, { recursive: true, withFileTypes: true })
+        .filter((e) => e.isFile())
+        .map((e) => statSync(join(e.parentPath, e.name)).mtimeMs),
+    );
+    if (newest > statSync(entry).mtimeMs)
+      throw new Error(`${pkg.name}: dist/ is older than src/ — run \`pnpm build\` first`);
   }
 }
 
@@ -74,7 +91,11 @@ export const ctrlDom: Contender = {
   loadEnvironment,
   imports: { react: "@testing-library/react", userEvent: "@testing-library/user-event" },
   check,
-  jest: { label: () => `@ctrl/dom-jest-environment ${version()}`, testEnvironment: bundle("@ctrl/dom-jest-environment"), moduleNameMapper: domShims },
+  jest: {
+    label: () => `@ctrl/dom-jest-environment ${version()}`,
+    testEnvironment: bundle("@ctrl/dom-jest-environment"),
+    moduleNameMapper: domShims,
+  },
 };
 
 export const ctrlDomStack: Contender = {

@@ -12,7 +12,12 @@ import { reflectActionURL } from "./common.ts";
 import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
 import { buttonType, FORM_ENCTYPE, FORM_METHOD, resetForm, submitForm } from "./form-submission.ts";
-import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./validation.ts";
+import {
+  installConstraintValidation,
+  V_CUSTOM_ERROR,
+  type ConstraintValidation,
+  type ValidityState,
+} from "./validation.ts";
 import { $customValidity, $impl, $labels, $validity } from "../../keys.ts";
 
 export class HTMLButtonElement extends HTMLElement {

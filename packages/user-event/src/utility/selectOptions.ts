@@ -1,9 +1,21 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utility/selectOptions.ts
 
-import type {Element, HTMLElement, HTMLInputElement, HTMLOptionElement, HTMLSelectElement, HTMLTextAreaElement} from '../dom-types.ts'
+import type {
+  Element,
+  HTMLElement,
+  HTMLInputElement,
+  HTMLOptionElement,
+  HTMLSelectElement,
+  HTMLTextAreaElement,
+} from '../dom-types.ts'
 import {getConfig} from '../setup/dtl.ts'
-import {hasPointerEvents, isDisabled, isElementType, yieldBetweenActions} from '../utils/index.ts'
+import {
+  hasPointerEvents,
+  isDisabled,
+  isElementType,
+  yieldBetweenActions,
+} from '../utils/index.ts'
 import {type Instance} from '../setup/index.ts'
 import {focusElement} from '../event/index.ts'
 

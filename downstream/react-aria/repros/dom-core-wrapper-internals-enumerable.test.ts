@@ -33,5 +33,4 @@ describe.each(["jsdom", "ctrl-dom"] as const)("%s", (engine) => {
     document.body.append(button);
     expect(() => JSON.stringify({ error: { actual: button } })).not.toThrow();
   });
-
 });

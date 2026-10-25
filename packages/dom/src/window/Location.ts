@@ -13,7 +13,8 @@ import { $closed, $parentWindow, $url, $window } from "../keys.ts";
 /** https://html.spec.whatwg.org/#location-object-navigate-ish — parse relative to the document URL. */
 function parseURL(window: Window, url: string): URL {
   const parsed = URL.parse(String(url), window[$url].href);
-  if (parsed === null) throw new DOMException(`Failed to execute 'assign' on 'Location': '${url}' is not a valid URL.`, "SyntaxError");
+  if (parsed === null)
+    throw new DOMException(`Failed to execute 'assign' on 'Location': '${url}' is not a valid URL.`, "SyntaxError");
   return parsed;
 }
 
@@ -92,7 +93,10 @@ export class Location {
     if (inactive(this)) return;
     const input = String(value);
     if (!isSchemeInput(input)) {
-      throw new DOMException(`Failed to set the 'protocol' property on 'Location': '${input}' is an invalid protocol.`, "SyntaxError");
+      throw new DOMException(
+        `Failed to set the 'protocol' property on 'Location': '${input}' is an invalid protocol.`,
+        "SyntaxError",
+      );
     }
     const copy = new URL(this[$window][$url].href);
     copy.protocol = input;

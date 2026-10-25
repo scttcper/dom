@@ -11,7 +11,17 @@
  * and shadow-dom/event-composed-path.html / event-inside-shadow-tree.html (basics).
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { CustomEvent, Event, EventTarget, FocusEvent, MouseEvent, type Document, type Element, type ShadowRoot, type Window } from "@ctrl/dom";
+import {
+  CustomEvent,
+  Event,
+  EventTarget,
+  FocusEvent,
+  MouseEvent,
+  type Document,
+  type Element,
+  type ShadowRoot,
+  type Window,
+} from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 
 let window: Window;

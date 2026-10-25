@@ -17,6 +17,7 @@
 import { describe } from "vitest";
 import { differential, differentialEach, type AnyWindow } from "../../src/harness.ts";
 
+// oxfmt-ignore
 const ALL_TYPES = [
   "text", "search", "tel", "url", "email", "password", "number", "range", "date", "month",
   "week", "time", "datetime-local", "color", "checkbox", "radio", "file", "hidden", "submit",
@@ -97,11 +98,28 @@ describe("value sanitization algorithm — https://html.spec.whatwg.org/#value-s
     email: ["  a@b.c  ", "a@b.c\n", " x , y ", "Foo@Bar.COM"],
     number: ["12", "1e3", "-0", " 5", "5 ", "abc", "1.", ".5", "+1", "Infinity", "0x10", "1,5", "-12.50", "1e400"],
     range: ["", "abc", "150", "-5", "33", "1e1"],
-    date: ["2024-02-29", "2023-02-29", "2024-02-30", "2024-1-01", " 2024-01-01", "2024-01-01T00:00", "0000-01-01", "275760-09-13", "275760-09-14"],
+    date: [
+      "2024-02-29",
+      "2023-02-29",
+      "2024-02-30",
+      "2024-1-01",
+      " 2024-01-01",
+      "2024-01-01T00:00",
+      "0000-01-01",
+      "275760-09-13",
+      "275760-09-14",
+    ],
     month: ["2024-01", "2024-13", "2024-1", "1999-12"],
     week: ["2020-W53", "2021-W53", "2024-W01", "2024-w01", "2024-W1"],
     time: ["13:45", "13:60", "1:00", "13:45:30", "13:45:30.5", "13:45:30.123", "23:59:59.9999", "13:45:00"],
-    "datetime-local": ["2024-01-01T10:00", "2024-01-01 10:00", "2024-01-01T10:00:00", "2024-01-01T10:00:30.500", "2024-01-01T25:00", "2024-01-01"],
+    "datetime-local": [
+      "2024-01-01T10:00",
+      "2024-01-01 10:00",
+      "2024-01-01T10:00:00",
+      "2024-01-01T10:00:30.500",
+      "2024-01-01T25:00",
+      "2024-01-01",
+    ],
     color: ["#FFF", "#AbCdEf", "red", "#12345", "  #123456", "#1234567", ""],
   };
   for (const [type, values] of Object.entries(probes)) {

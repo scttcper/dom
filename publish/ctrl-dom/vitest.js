@@ -26,7 +26,8 @@ const TESTING_LIBRARY = [
  * runner, chai and the module runner then load from it too. A `data:` URL, so there is no file to
  * resolve. Node ignores it under NODE_DISABLE_COMPILE_CACHE (Vitest's v8 coverage sets that).
  */
-const COMPILE_CACHE_IMPORT = '--import=data:text/javascript,import{enableCompileCache}from"node:module";enableCompileCache?.()';
+const COMPILE_CACHE_IMPORT =
+  '--import=data:text/javascript,import{enableCompileCache}from"node:module";enableCompileCache?.()';
 
 /**
  * The Node flags the plugin adds to a project's workers (exported for comparison/, which mirrors
@@ -56,7 +57,11 @@ export function ctrlDom(options = {}) {
   // Agent debug output (docs/agent-debugging.md); a CTRL_DOM_DEBUG set in the shell wins (it is
   // how `npx ctrl-dom debug` turns it on).
   const shellDebug = process.env.CTRL_DOM_DEBUG;
-  const agentMode = DEBUG_FORMATS.has(String(shellDebug ?? debug ?? "").trim().toLowerCase());
+  const agentMode = DEBUG_FORMATS.has(
+    String(shellDebug ?? debug ?? "")
+      .trim()
+      .toLowerCase(),
+  );
   return {
     name: "@ctrl/dom",
     // Before Vite's own resolver, which would look for the package in node_modules.
@@ -82,7 +87,11 @@ export function ctrlDom(options = {}) {
     configureVitest({ project }) {
       const config = project.config;
       if (config.browser?.enabled) return;
-      const flags = workerExecArgv({ pool: config.pool, execArgv: config.execArgv, compileCache: environmentOptions.compileCache === true });
+      const flags = workerExecArgv({
+        pool: config.pool,
+        execArgv: config.execArgv,
+        compileCache: environmentOptions.compileCache === true,
+      });
       if (flags.length > 0) config.execArgv = [...(config.execArgv ?? []), ...flags];
     },
   };

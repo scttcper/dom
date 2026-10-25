@@ -12,7 +12,10 @@ function formatError(error) {
 }
 
 function frameOf(error, root, testFile) {
-  const stack = Array.isArray(error?.stacks) && error.stacks.length > 0 ? error.stacks.map((s) => `    at ${s.file}:${s.line}:${s.column}`).join("\n") : error?.stack;
+  const stack =
+    Array.isArray(error?.stacks) && error.stacks.length > 0
+      ? error.stacks.map((s) => `    at ${s.file}:${s.line}:${s.column}`).join("\n")
+      : error?.stack;
   return firstProjectFrame(stack, root, testFile);
 }
 
@@ -38,7 +41,8 @@ export default class CtrlDomDebugReporter {
       const file = relative(this.root, module.moduleId) || module.moduleId;
       files.push(file);
       names.set(module.id, file);
-      for (const error of module.errors?.() ?? []) errors.push({ name: file, message: formatError(error), at: frameOf(error, this.root, module.moduleId) });
+      for (const error of module.errors?.() ?? [])
+        errors.push({ name: file, message: formatError(error), at: frameOf(error, this.root, module.moduleId) });
       for (const test of module.children.allTests()) {
         names.set(test.id, test.fullName);
         const result = test.result();
@@ -48,13 +52,35 @@ export default class CtrlDomDebugReporter {
           const [first, ...rest] = result.errors ?? [];
           let message = first ? formatError(first) : "(failed without an error)";
           for (const error of rest) message += `\n\n${formatError(error)}`;
-          failures.push({ name: test.fullName, message, at: first ? frameOf(first, this.root, module.moduleId) : null });
+          failures.push({
+            name: test.fullName,
+            message,
+            at: first ? frameOf(first, this.root, module.moduleId) : null,
+          });
         } else skipped++;
       }
     }
-    for (const error of unhandledErrors) errors.push({ name: "Unhandled error", message: formatError(error), at: frameOf(error, this.root) });
-    const logs = this.logs.map((log) => ({ name: names.get(log.taskId) ?? "(outside a test)", type: log.type, content: log.content }));
-    process.stdout.write(formatReport({ runner: "vitest", root: this.root, failures, errors, logs, passed, failed, skipped, files, durationMs: performance.now() - this.start }));
+    for (const error of unhandledErrors)
+      errors.push({ name: "Unhandled error", message: formatError(error), at: frameOf(error, this.root) });
+    const logs = this.logs.map((log) => ({
+      name: names.get(log.taskId) ?? "(outside a test)",
+      type: log.type,
+      content: log.content,
+    }));
+    process.stdout.write(
+      formatReport({
+        runner: "vitest",
+        root: this.root,
+        failures,
+        errors,
+        logs,
+        passed,
+        failed,
+        skipped,
+        files,
+        durationMs: performance.now() - this.start,
+      }),
+    );
     process.stdout.write(missingSnapshotHint(failures, "vitest"));
   }
 }

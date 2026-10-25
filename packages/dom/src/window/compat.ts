@@ -45,16 +45,19 @@ const MODERN: readonly CompatProfile[] = ["modern"];
 
 const handlers = (events: readonly string[]) => events.map((e) => `on${e}`);
 const on = (iface: string, names: readonly string[]) => names.map((n) => `${iface}.${n}`);
+// oxfmt-ignore
 const POINTER_HANDLERS = handlers([
   "gotpointercapture", "lostpointercapture", "pointercancel", "pointerdown", "pointerenter", "pointerleave",
   "pointermove", "pointerout", "pointerover", "pointerrawupdate", "pointerup",
 ]);
+// oxfmt-ignore
 const NEWER_HANDLERS = handlers([
   "animationcancel", "animationend", "animationiteration", "animationstart", "command", "selectionchange",
   "selectstart", "transitioncancel", "transitionend", "transitionrun", "transitionstart",
 ]);
 const HANDLER_OWNERS = ["Document", "HTMLElement", "SVGElement", "MathMLElement"];
 
+// oxfmt-ignore
 export const COMPAT: readonly CompatEntry[] = [
   // ── Hidden from jsdom profiles: libraries feature-detect these ────────────────────────────────
   {
@@ -271,7 +274,9 @@ export const COMPAT: readonly CompatEntry[] = [
 export function resolveCompat(value: unknown): CompatProfile {
   if (value === undefined) return DEFAULT_COMPAT;
   if (COMPAT_PROFILES.includes(value as CompatProfile)) return value as CompatProfile;
-  throw new TypeError(`Unknown compat profile ${JSON.stringify(value)}: expected ${COMPAT_PROFILES.map((p) => JSON.stringify(p)).join(", ")}.`);
+  throw new TypeError(
+    `Unknown compat profile ${JSON.stringify(value)}: expected ${COMPAT_PROFILES.map((p) => JSON.stringify(p)).join(", ")}.`,
+  );
 }
 
 const hiddenGlobalsCache = new Map<CompatProfile, ReadonlySet<string>>();
@@ -317,7 +322,13 @@ export function deferredCompatMembers(): ReadonlyMap<string, { owner: object; de
   return deferred;
 }
 
-type GatedMember = { key: string; iface: string; member: string; isStatic: boolean; profiles: readonly CompatProfile[] };
+type GatedMember = {
+  key: string;
+  iface: string;
+  member: string;
+  isStatic: boolean;
+  profiles: readonly CompatProfile[];
+};
 let gated: GatedMember[] | null = null;
 
 /** Members whose exposure differs between profiles (the rest are exposed everywhere and never touched). */

@@ -52,13 +52,65 @@ import { DeclBlock, parseDeclBlock } from "./declarations.ts";
 import { evaluateMediaQueryList, type MediaEnvironment, DEFAULT_MEDIA_ENV } from "./media.ts";
 import { mediaEnvironment } from "../window/media.ts";
 import { isCustomPropertyName, propertyInfo } from "./properties.ts";
-import { cascadeLonghandsOf, expandCascadeShorthand, expandShorthand, isCascadeOnlyShorthand, pendingLonghandsMap, serializeCascadeShorthand, serializeShorthand, MULTI_LAYER } from "./shorthands.ts";
+import {
+  cascadeLonghandsOf,
+  expandCascadeShorthand,
+  expandShorthand,
+  isCascadeOnlyShorthand,
+  pendingLonghandsMap,
+  serializeCascadeShorthand,
+  serializeShorthand,
+  MULTI_LAYER,
+} from "./shorthands.ts";
 import { computeColor } from "./colors.ts";
-import { containsVar, formatNumber, grammarFor, G_COLOR, isCSSWideKeyword, normalizeLonghand, splitComponents, TK_DIMENSION, TK_IDENT, TK_PERCENTAGE, TK_STRING, TK_FUNCTION, TK_DELIM, COMP_SPACE } from "./values.ts";
-import { CSSTokenizer, TK_EOF, TK_FUNCTION as TOK_FUNCTION, TK_LPAREN, TK_RPAREN, TK_COMMA, TK_LBRACKET, TK_RBRACKET } from "./tokenizer.ts";
+import {
+  containsVar,
+  formatNumber,
+  grammarFor,
+  G_COLOR,
+  isCSSWideKeyword,
+  normalizeLonghand,
+  splitComponents,
+  TK_DIMENSION,
+  TK_IDENT,
+  TK_PERCENTAGE,
+  TK_STRING,
+  TK_FUNCTION,
+  TK_DELIM,
+  COMP_SPACE,
+} from "./values.ts";
+import {
+  CSSTokenizer,
+  TK_EOF,
+  TK_FUNCTION as TOK_FUNCTION,
+  TK_LPAREN,
+  TK_RPAREN,
+  TK_COMMA,
+  TK_LBRACKET,
+  TK_RBRACKET,
+} from "./tokenizer.ts";
 import { inlineStyleCount } from "./inline-count.ts";
 import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor, validateAdopted } from "./stylesheets.ts";
-import { $block, $css, $disabled, $doc, $host, $impl, $matches, $media, $mode, $name, $names, $queries, $rules, $shadowRoot, $style, $styleVersion, $version, $window } from "../keys.ts";
+import {
+  $block,
+  $css,
+  $disabled,
+  $doc,
+  $host,
+  $impl,
+  $matches,
+  $media,
+  $mode,
+  $name,
+  $names,
+  $queries,
+  $rules,
+  $shadowRoot,
+  $style,
+  $styleVersion,
+  $version,
+  $window,
+} from "../keys.ts";
 
 // --- rule index --------------------------------------------------------------------------------
 
@@ -283,7 +335,8 @@ export function ruleIndexFor(rs: RootStyles, doc: Document, styleVersion: number
   if (!rs.hasSheets()) return null;
   let idx = rs.index;
   const quirks = doc[$mode] === "quirks";
-  if (idx !== null && idx.styleVersion === styleVersion && idx.main.quirks === quirks) return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
+  if (idx !== null && idx.styleVersion === styleVersion && idx.main.quirks === quirks)
+    return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
   idx = new RuleIndex(styleVersion, quirks);
   const b = new IndexBuilder(idx, windowEnv(doc));
   for (const s of rs.owners) b.sheet(s);
@@ -309,21 +362,78 @@ export function uaDisplay(el: NodeImpl): string {
       if (hidden !== null && asciiLowercase(hidden) !== "until-found") return "none";
     }
     // [popover]:not(:popover-open):not(dialog[open]) { display: none } — https://html.spec.whatwg.org/#flow-content-3
-    if (attr(el, "popover") !== null && !predicates["popover-open"](el) && !(el.tag === T.dialog && attr(el, "open") !== null)) return "none";
+    if (
+      attr(el, "popover") !== null &&
+      !predicates["popover-open"](el) &&
+      !(el.tag === T.dialog && attr(el, "open") !== null)
+    )
+      return "none";
   }
   switch (el.tag) {
-    case T.area: case T.base: case T.basefont: case T.datalist: case T.head: case T.link: case T.meta:
-    case T.noembed: case T.noframes: case T.param: case T.rp: case T.script: case T.style: case T.template: case T.title:
+    case T.area:
+    case T.base:
+    case T.basefont:
+    case T.datalist:
+    case T.head:
+    case T.link:
+    case T.meta:
+    case T.noembed:
+    case T.noframes:
+    case T.param:
+    case T.rp:
+    case T.script:
+    case T.style:
+    case T.template:
+    case T.title:
       return "none";
     case T.dialog:
       // dialog:not([open]) { display: none } / dialog:popover-open { display: block } — https://html.spec.whatwg.org/#flow-content-3
       return attr(el, "open") === null && !predicates["popover-open"](el) ? "none" : "block";
-    case T.html: case T.body: case T.address: case T.blockquote: case T.center: case T.div: case T.figure:
-    case T.figcaption: case T.footer: case T.form: case T.header: case T.hr: case T.legend: case T.listing:
-    case T.main: case T.p: case T.plaintext: case T.pre: case T.search: case T.xmp: case T.details: case T.summary:
-    case T.dir: case T.dd: case T.dl: case T.dt: case T.menu: case T.ol: case T.ul: case T.article: case T.aside:
-    case T.h1: case T.h2: case T.h3: case T.h4: case T.h5: case T.h6: case T.hgroup: case T.nav: case T.section:
-    case T.fieldset: case T.optgroup: case T.option: case T.frameset: case T.frame:
+    case T.html:
+    case T.body:
+    case T.address:
+    case T.blockquote:
+    case T.center:
+    case T.div:
+    case T.figure:
+    case T.figcaption:
+    case T.footer:
+    case T.form:
+    case T.header:
+    case T.hr:
+    case T.legend:
+    case T.listing:
+    case T.main:
+    case T.p:
+    case T.plaintext:
+    case T.pre:
+    case T.search:
+    case T.xmp:
+    case T.details:
+    case T.summary:
+    case T.dir:
+    case T.dd:
+    case T.dl:
+    case T.dt:
+    case T.menu:
+    case T.ol:
+    case T.ul:
+    case T.article:
+    case T.aside:
+    case T.h1:
+    case T.h2:
+    case T.h3:
+    case T.h4:
+    case T.h5:
+    case T.h6:
+    case T.hgroup:
+    case T.nav:
+    case T.section:
+    case T.fieldset:
+    case T.optgroup:
+    case T.option:
+    case T.frameset:
+    case T.frame:
       return "block";
     case T.li:
       return "list-item";
@@ -343,11 +453,17 @@ export function uaDisplay(el: NodeImpl): string {
       return "table-footer-group";
     case T.tr:
       return "table-row";
-    case T.td: case T.th:
+    case T.td:
+    case T.th:
       return "table-cell";
     case T.input:
       return attr(el, "type") !== null && asciiLowercase(attr(el, "type")!) === "hidden" ? "none" : "inline-block";
-    case T.button: case T.select: case T.textarea: case T.meter: case T.progress: case T.marquee:
+    case T.button:
+    case T.select:
+    case T.textarea:
+    case T.meter:
+    case T.progress:
+    case T.marquee:
       return "inline-block";
     case T.ruby:
       return "ruby";
@@ -555,7 +671,15 @@ let filterFor: NodeImpl | null = null;
 let hashedSeen = 0;
 const FILTER_AFTER = 2;
 
-function testRules(list: IndexedRule[] | undefined, el: NodeImpl, pseudo: string, opts: MatchOptions | undefined, filter: boolean, context: number, out: Matched[]): void {
+function testRules(
+  list: IndexedRule[] | undefined,
+  el: NodeImpl,
+  pseudo: string,
+  opts: MatchOptions | undefined,
+  filter: boolean,
+  context: number,
+  out: Matched[],
+): void {
   if (list === undefined) return;
   for (let i = 0; i < list.length; i++) {
     const r = list[i];
@@ -567,22 +691,33 @@ function testRules(list: IndexedRule[] | undefined, el: NodeImpl, pseudo: string
       }
       if (filterFor === el && !mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) continue;
     }
-    if (opts === undefined ? matchesSelectorDirect(r.sel, el, pseudo) : matchesSelector(r.sel, el, pseudo, opts)) out.push(new Matched(r, context));
+    if (opts === undefined ? matchesSelectorDirect(r.sel, el, pseudo) : matchesSelector(r.sel, el, pseudo, opts))
+      out.push(new Matched(r, context));
   }
 }
 
-function collect(buckets: RuleBuckets, el: NodeImpl, pseudo: string, host: NodeImpl | null, context: number, out: Matched[]): void {
+function collect(
+  buckets: RuleBuckets,
+  el: NodeImpl,
+  pseudo: string,
+  host: NodeImpl | null,
+  context: number,
+  out: Matched[],
+): void {
   if (buckets.size === 0) return;
   const opts = host === null ? undefined : { shadowHost: host };
   const quirks = buckets.quirks;
   // Quirks mode matches ids and classes ASCII case-insensitively: the filter's exact hashes do not apply.
   const filter = !quirks;
-  if (el.id !== "" && buckets.ids.size !== 0) testRules(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id), el, pseudo, opts, filter, context, out);
+  if (el.id !== "" && buckets.ids.size !== 0)
+    testRules(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id), el, pseudo, opts, filter, context, out);
   if (buckets.classes.size !== 0 && el.attrs !== null) {
     const cls = classTokens(el);
-    for (let i = 0; i < cls.length; i++) testRules(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]), el, pseudo, opts, filter, context, out);
+    for (let i = 0; i < cls.length; i++)
+      testRules(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]), el, pseudo, opts, filter, context, out);
   }
-  if (buckets.tags.size !== 0) testRules(buckets.tags.get(asciiLowercase(el.name)), el, pseudo, opts, filter, context, out);
+  if (buckets.tags.size !== 0)
+    testRules(buckets.tags.get(asciiLowercase(el.name)), el, pseudo, opts, filter, context, out);
   testRules(buckets.universal, el, pseudo, opts, filter, context, out);
 }
 
@@ -641,16 +776,32 @@ function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null,
 }
 
 function normalOrder(a: Matched, b: Matched): number {
-  return a.context - b.context || a.rule.layer - b.rule.layer || a.rule.specificity - b.rule.specificity || a.rule.order - b.rule.order;
+  return (
+    a.context - b.context ||
+    a.rule.layer - b.rule.layer ||
+    a.rule.specificity - b.rule.specificity ||
+    a.rule.order - b.rule.order
+  );
 }
 
 /** Important declarations: inner context and earlier layers win (reversed). */
 function importantOrder(a: Matched, b: Matched): number {
-  return b.context - a.context || b.rule.layer - a.rule.layer || a.rule.specificity - b.rule.specificity || a.rule.order - b.rule.order;
+  return (
+    b.context - a.context ||
+    b.rule.layer - a.rule.layer ||
+    a.rule.specificity - b.rule.specificity ||
+    a.rule.order - b.rule.order
+  );
 }
 
 /** Author rules matching `el` (or its pseudo-element): its tree's sheets, then its own shadow tree's :host rules. */
-function collectAuthor(el: NodeImpl, pseudo: number, rs: RootStyles | null, styleVersion: number, out: Matched[]): void {
+function collectAuthor(
+  el: NodeImpl,
+  pseudo: number,
+  rs: RootStyles | null,
+  styleVersion: number,
+  out: Matched[],
+): void {
   const doc = el.doc;
   const pseudoName = pseudo === PSEUDO_NONE ? "" : pseudo === PSEUDO_BEFORE ? "before" : "after";
   if (rs !== null) {
@@ -827,7 +978,8 @@ export function styleRecord(el: NodeImpl): StyleRecord {
   const sv = currentStyleVersion(doc);
   const c: NodeCache = nodeCache(el);
   const cached = c.style as StyleRecord | null;
-  if (cached !== null && c.styleVersion === doc[$version] && c.styleSheetVersion === sv && reusable(cached)) return cached;
+  if (cached !== null && c.styleVersion === doc[$version] && c.styleSheetVersion === sv && reusable(cached))
+    return cached;
   const rec = computeRecord(el, PSEUDO_NONE, sv);
   c.style = rec;
   c.styleVersion = doc[$version];
@@ -898,7 +1050,8 @@ function customProps(rec: StyleRecord): Map<string, string> | null {
     }
     let value: string | null = raw;
     if (lower === "initial") value = null;
-    else if (lower === "inherit" || lower === "unset" || lower === "revert" || lower === "revert-layer") value = inherited?.get(name) ?? null;
+    else if (lower === "inherit" || lower === "unset" || lower === "revert" || lower === "revert-layer")
+      value = inherited?.get(name) ?? null;
     else if (containsVar(raw)) value = substitute(raw, (n) => (decls!.has(n) ? resolve(n) : (map.get(n) ?? null)));
     state.set(name, 2);
     if (value === null) map.delete(name);
@@ -959,7 +1112,14 @@ function envValue(name: string): string | null {
 
 /** Font sizes for absolute keywords (https://drafts.csswg.org/css-fonts-4/#absolute-size-mapping). */
 const FONT_KEYWORDS: Record<string, number> = {
-  "xx-small": 9, "x-small": 10, small: 13, medium: 16, large: 18, "x-large": 24, "xx-large": 32, "xxx-large": 48,
+  "xx-small": 9,
+  "x-small": 10,
+  small: 13,
+  medium: 16,
+  large: 18,
+  "x-large": 24,
+  "xx-large": 32,
+  "xxx-large": 48,
 };
 
 function px(n: number): string {
@@ -985,17 +1145,28 @@ function rootFontSize(rec: StyleRecord): number {
 /** Absolute length in px for a single dimension token, given font metrics (null if not absolute). */
 function absLength(num: number, unit: string, em: number, rem: number): number | null {
   switch (unit) {
-    case "px": return num;
-    case "em": return num * em;
-    case "rem": return num * rem;
-    case "ex": return num * em * 0.5;
-    case "ch": return num * em * 0.5;
-    case "in": return num * 96;
-    case "cm": return (num * 96) / 2.54;
-    case "mm": return (num * 96) / 25.4;
-    case "q": return (num * 96) / 101.6;
-    case "pt": return (num * 96) / 72;
-    case "pc": return num * 16;
+    case "px":
+      return num;
+    case "em":
+      return num * em;
+    case "rem":
+      return num * rem;
+    case "ex":
+      return num * em * 0.5;
+    case "ch":
+      return num * em * 0.5;
+    case "in":
+      return num * 96;
+    case "cm":
+      return (num * 96) / 2.54;
+    case "mm":
+      return (num * 96) / 25.4;
+    case "q":
+      return (num * 96) / 101.6;
+    case "pt":
+      return (num * 96) / 72;
+    case "pc":
+      return num * 16;
   }
   return null;
 }
@@ -1021,8 +1192,10 @@ function computeFontSize(rec: StyleRecord, v: string): string {
 
 function computeFontWeight(rec: StyleRecord, v: string): string {
   switch (v) {
-    case "normal": return "400";
-    case "bold": return "700";
+    case "normal":
+      return "400";
+    case "bold":
+      return "700";
     case "bolder": {
       const p = parentPx(rec, "font-weight", 400);
       return p < 350 ? "400" : p < 550 ? "700" : p < 900 ? "900" : formatNumber(p);
@@ -1132,7 +1305,11 @@ export function computedValueOf(rec: StyleRecord, prop: string): string {
     // browsers' long form ("rgb(255, 0, 0) none repeat scroll 0% 0% / auto ...") matches no
     // expectation anyone writes. docs/deviations.md (computed colors keep their author form too).
     result =
-      vals.indexOf("") !== -1 ? "" : isCascadeOnlyShorthand(prop) ? serializeCascadeShorthand(prop, vals) : serializeShorthand(prop, vals, prop !== "background");
+      vals.indexOf("") !== -1
+        ? ""
+        : isCascadeOnlyShorthand(prop)
+          ? serializeCascadeShorthand(prop, vals)
+          : serializeShorthand(prop, vals, prop !== "background");
   } else if (prop === "display") {
     result = computeDisplay(rec);
   } else {
@@ -1234,11 +1411,18 @@ function computeDisplay(rec: StyleRecord): string {
 
 function blockify(d: string): string {
   switch (d) {
-    case "inline": case "inline-block": case "run-in": return "block";
-    case "inline-flex": return "flex";
-    case "inline-grid": return "grid";
-    case "inline-table": return "table";
-    case "inline-list-item": return "list-item";
+    case "inline":
+    case "inline-block":
+    case "run-in":
+      return "block";
+    case "inline-flex":
+      return "flex";
+    case "inline-grid":
+      return "grid";
+    case "inline-table":
+      return "table";
+    case "inline-list-item":
+      return "list-item";
   }
   return d.startsWith("inline ") ? d.slice(7) : d;
 }
@@ -1428,4 +1612,3 @@ export function contentText(el: NodeImpl, v: string): string {
 export function _hasStyleRecord(el: NodeImpl): boolean {
   return el.cache !== null && (el.cache as NodeCache).style !== null;
 }
-

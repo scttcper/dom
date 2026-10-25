@@ -16,7 +16,18 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -69,16 +80,26 @@ if (values.help) {
 const checkout = resolve(values.checkout!);
 const preset = values.files === undefined ? values.preset! : "custom";
 const presets: Record<string, string[]> = { ...manifest.presets };
-if (values.files !== undefined) presets.custom = values.files.split(",").map((f) => f.trim()).filter(Boolean);
+if (values.files !== undefined)
+  presets.custom = values.files
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean);
 const filters = presets[preset];
-if (filters === undefined) throw new Error(`Unknown preset ${preset}; use ${Object.keys(manifest.presets).join(", ")} or --files.`);
+if (filters === undefined)
+  throw new Error(`Unknown preset ${preset}; use ${Object.keys(manifest.presets).join(", ")} or --files.`);
 const modes = values.modes!.split(",").map((m) => m.trim()) as Mode[];
 for (const mode of modes) if (!MODES.includes(mode)) throw new Error(`Unknown mode ${mode}; use ${MODES.join(", ")}`);
 const workers = Number(values.workers);
 const rounds = Number(values.rounds);
 if (!Number.isSafeInteger(workers) || workers < 1) throw new Error("--workers must be a positive integer");
 if (!Number.isSafeInteger(rounds) || rounds < 1) throw new Error("--rounds must be a positive integer");
-const shimSet = new Set(values.shims!.split(",").map((s) => s.trim()).filter(Boolean));
+const shimSet = new Set(
+  values
+    .shims!.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
 for (const s of shimSet) if (!(SHIM_PACKAGES as readonly string[]).includes(s)) throw new Error(`Unknown shim ${s}`);
 
 // ---------------------------------------------------------------------------------------------
@@ -89,7 +110,13 @@ interface CommandResult {
   signal: NodeJS.Signals | null;
 }
 
-function run(executable: string, argv: string[], cwd: string, log?: string, env: Record<string, string | undefined> = {}): Promise<CommandResult> {
+function run(
+  executable: string,
+  argv: string[],
+  cwd: string,
+  log?: string,
+  env: Record<string, string | undefined> = {},
+): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
     const out = log ? createWriteStream(log) : null;
     const child = spawn(executable, argv, {
@@ -116,7 +143,12 @@ function run(executable: string, argv: string[], cwd: string, log?: string, env:
   });
 }
 
-async function checked(executable: string, argv: string[], cwd: string, env: Record<string, string | undefined> = {}): Promise<void> {
+async function checked(
+  executable: string,
+  argv: string[],
+  cwd: string,
+  env: Record<string, string | undefined> = {},
+): Promise<void> {
   const result = await run(executable, argv, cwd, undefined, env);
   if (result.code !== 0) throw new Error(`${executable} ${argv.join(" ")} exited ${result.code ?? result.signal}`);
 }
@@ -149,7 +181,8 @@ if (!existsSync(join(checkout, ".git"))) {
 }
 const commit = git(["rev-parse", "HEAD"]);
 const commitInfo = git(["show", "-s", "--format=%cI%n%s", "HEAD"]).split("\n");
-if (!values.latest && commit !== manifest.commit) throw new Error(`Checkout is ${commit}; expected pinned ${manifest.commit}.`);
+if (!values.latest && commit !== manifest.commit)
+  throw new Error(`Checkout is ${commit}; expected pinned ${manifest.commit}.`);
 if (git(["status", "--porcelain", "--untracked-files=no"])) {
   throw new Error(`Refusing to run: ${checkout} has local modifications of upstream tracked files.`);
 }
@@ -166,7 +199,17 @@ if (values.install) {
   // and packages/react-router with its workspace dependencies.
   await checked(
     "npx",
-    ["--yes", upstreamPackage.packageManager, "install", "--frozen-lockfile", "--ignore-scripts", "--filter", upstreamPackage.name, "--filter", `{./${manifest.package}}...`],
+    [
+      "--yes",
+      upstreamPackage.packageManager,
+      "install",
+      "--frozen-lockfile",
+      "--ignore-scripts",
+      "--filter",
+      upstreamPackage.name,
+      "--filter",
+      `{./${manifest.package}}...`,
+    ],
     checkout,
   );
 }
@@ -229,7 +272,10 @@ function newestMtime(dir: string, filter: RegExp): number {
 const distStale = (): string[] =>
   BUNDLED.filter((pkg) => {
     const dist = join(repo, "packages", pkg, "dist", "index.js");
-    return !existsSync(dist) || statSync(dist).mtimeMs < newestMtime(join(repo, "packages", pkg, "src"), /\.(ts|tsx|js|json)$/);
+    return (
+      !existsSync(dist) ||
+      statSync(dist).mtimeMs < newestMtime(join(repo, "packages", pkg, "src"), /\.(ts|tsx|js|json)$/)
+    );
   });
 if (modes.includes("ctrl-dom-full")) {
   const stale = distStale();
@@ -276,7 +322,10 @@ const BRIDGE = (entry: string): Target => {
   for (const f of [esm, cjs]) if (!existsSync(f)) throw new Error(`Missing ${relative(repo, f)}: run pnpm build`);
   return { import: esm, require: cjs };
 };
-const CTRL_DOM_DOM_TARGETS: Record<string, Target> = { "@ctrl/dom": BRIDGE("index"), "@ctrl/dom/internal": BRIDGE("internal") };
+const CTRL_DOM_DOM_TARGETS: Record<string, Target> = {
+  "@ctrl/dom": BRIDGE("index"),
+  "@ctrl/dom/internal": BRIDGE("internal"),
+};
 const CTRL_DOM_INTERNAL_TARGETS: Record<string, Target> = {
   "@ctrl/dom/aria": DIST("aria", "index.js"),
   "@ctrl/dom/aria/internal": DIST("aria", "internal.js"),
@@ -289,7 +338,11 @@ const CTRL_DOM_INTERNAL_TARGETS: Record<string, Target> = {
 function resolveTargets(mode: Mode): Record<string, Target> {
   if (mode === "jsdom") return {};
   if (mode === "ctrl-dom") return { ...CTRL_DOM_DOM_TARGETS };
-  return { ...Object.assign({}, ...[...shimSet].map((s) => SHIM_MAP[s as keyof typeof SHIM_MAP])), ...CTRL_DOM_DOM_TARGETS, ...CTRL_DOM_INTERNAL_TARGETS };
+  return {
+    ...Object.assign({}, ...[...shimSet].map((s) => SHIM_MAP[s as keyof typeof SHIM_MAP])),
+    ...CTRL_DOM_DOM_TARGETS,
+    ...CTRL_DOM_INTERNAL_TARGETS,
+  };
 }
 // React goes to upstream's copy (one React); pnpm keeps react/react-dom in the package's
 // node_modules, not the root's.
@@ -381,9 +434,11 @@ function sourceFingerprint(): string {
     }
   };
   for (const pkg of ["dom", "aria", "testing-library", "react", "user-event", "jest-dom", "jest-environment"]) {
-    for (const sub of ["src", "dist"]) if (existsSync(join(repo, "packages", pkg, sub))) walk(join(repo, "packages", pkg, sub));
+    for (const sub of ["src", "dist"])
+      if (existsSync(join(repo, "packages", pkg, sub))) walk(join(repo, "packages", pkg, sub));
   }
-  for (const file of ["run.ts", "jest-environment.mjs", "probe.cjs", "json-reporter.cjs", "resolver.cjs"]) hash.update(readFileSync(join(here, file)));
+  for (const file of ["run.ts", "jest-environment.mjs", "probe.cjs", "json-reporter.cjs", "resolver.cjs"])
+    hash.update(readFileSync(join(here, file)));
   return hash.digest("hex").slice(0, 16);
 }
 
@@ -402,15 +457,31 @@ function collect(report: any): Map<string, Assertion> {
       const n = (seen.get(t.fullName) ?? 0) + 1;
       seen.set(t.fullName, n);
       const key = `${rel} :: ${t.fullName}${n > 1 ? ` [${n}]` : ""}`;
-      const status = t.status === "pending" || t.status === "todo" || t.status === "skipped" || t.status === "disabled" ? "skipped" : t.status;
-      out.set(key, { key, file: rel, component: componentOf(rel), name: t.fullName, status, messages: t.failureMessages ?? [] });
+      const status =
+        t.status === "pending" || t.status === "todo" || t.status === "skipped" || t.status === "disabled"
+          ? "skipped"
+          : t.status;
+      out.set(key, {
+        key,
+        file: rel,
+        component: componentOf(rel),
+        name: t.fullName,
+        status,
+        messages: t.failureMessages ?? [],
+      });
     }
   }
   return out;
 }
 
 const readJsonl = (path: string): any[] =>
-  existsSync(path) ? readFileSync(path, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l)) : [];
+  existsSync(path)
+    ? readFileSync(path, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l))
+    : [];
 
 const runs: ModeRun[] = [];
 mkdirSync(output, { recursive: true });
@@ -445,7 +516,9 @@ try {
         ...(values.grep ? ["--testNamePattern", values.grep] : []),
         ...filters,
       ];
-      console.log(`\n=== React Router ${preset}: ${mode}, round ${round}/${rounds} (unmodified upstream tests, ${workers} workers) ===`);
+      console.log(
+        `\n=== React Router ${preset}: ${mode}, round ${round}/${rounds} (unmodified upstream tests, ${workers} workers) ===`,
+      );
       const before = mode === "jsdom" ? null : sourceFingerprint();
       const start = performance.now();
       // /usr/bin/time -l (macOS) reports the peak RSS of jest and the workers it reaps.
@@ -492,7 +565,14 @@ try {
         r.files = report.testResults.length;
         r.suiteErrors = report.testResults
           .filter((f: any) => f.status === "failed" && (f.assertionResults?.length ?? 0) === 0)
-          .map((f: any) => ({ file: relative(checkout, f.name), message: stripVTControlCharacters(String(f.message ?? "")).trim().split("\n").slice(0, 8).join("\n") }));
+          .map((f: any) => ({
+            file: relative(checkout, f.name),
+            message: stripVTControlCharacters(String(f.message ?? ""))
+              .trim()
+              .split("\n")
+              .slice(0, 8)
+              .join("\n"),
+          }));
       }
       const receipts = readJsonl(join(modeOut, "environments.jsonl"));
       r.receipts = receipts.length;
@@ -512,7 +592,11 @@ try {
       else runs.push(r);
       writeFileSync(
         join(modeOut, "summary.json"),
-        JSON.stringify({ ...r, assertions: undefined, round, rounds, commit, preset, filters, versions, node: process.version }, null, 2) + "\n",
+        JSON.stringify(
+          { ...r, assertions: undefined, round, rounds, commit, preset, filters, versions, node: process.version },
+          null,
+          2,
+        ) + "\n",
       );
       console.log(
         `${mode}: ${r.passed ?? "?"} passed, ${r.failed ?? "?"} failed, ${r.skipped ?? "?"} skipped in ${(wallMs / 1000).toFixed(1)}s` +
@@ -534,7 +618,7 @@ function signature(message: string): string {
     .filter(Boolean);
   let line = lines[0] ?? "(no message)";
   // Jest's matcher failures start with `expect(x).toY()`; the next lines carry the substance.
-  if (line.startsWith('expect(') && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
+  if (line.startsWith("expect(") && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
   if (line.length > 180) line = line.slice(0, 180);
   return line
     .replace(/\b\d+(\.\d+)?(px|ms)?\b/g, "N")
@@ -573,7 +657,9 @@ if (values.report) {
     "",
   );
   md.push("## Per-mode results", "");
-  md.push("| mode | passed | failed | skipped | total | files | suite errors | exit | wall | peak RSS | env receipts | notes |");
+  md.push(
+    "| mode | passed | failed | skipped | total | files | suite errors | exit | wall | peak RSS | env receipts | notes |",
+  );
   md.push("| --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |");
   for (const r of runs) {
     const notes: string[] = [];
@@ -598,11 +684,17 @@ if (values.report) {
       md.push("");
     }
     if (baseline && r.mode !== "jsdom") {
-      const regress = [...r.assertions.values()].filter((a) => a.status === "failed" && baseline.get(a.key)?.status === "passed");
+      const regress = [...r.assertions.values()].filter(
+        (a) => a.status === "failed" && baseline.get(a.key)?.status === "passed",
+      );
       const missing = [...baseline.keys()].filter((k) => !r.assertions!.has(k));
       const added = [...r.assertions.keys()].filter((k) => !baseline.has(k));
-      const newSkips = [...r.assertions.values()].filter((a) => a.status === "skipped" && baseline.get(a.key)?.status === "passed");
-      const fixed = [...r.assertions.values()].filter((a) => a.status === "passed" && baseline.get(a.key)?.status === "failed");
+      const newSkips = [...r.assertions.values()].filter(
+        (a) => a.status === "skipped" && baseline.get(a.key)?.status === "passed",
+      );
+      const fixed = [...r.assertions.values()].filter(
+        (a) => a.status === "passed" && baseline.get(a.key)?.status === "failed",
+      );
       md.push(
         `Compared with jsdom: **${regress.length} pass on jsdom but fail here**, ${missing.length} missing, ${added.length} added, ${newSkips.length} newly skipped, ${fixed.length} fail on jsdom but pass here.`,
         "",
@@ -637,7 +729,13 @@ if (values.report) {
       }
       md.push("### Failures by test file", "", "| file | failed |", "| --- | --: |");
       for (const [c, n] of [...byComponent].sort((a, b) => b[1] - a[1])) md.push(`| ${c} | ${n} |`);
-      md.push("", "### Failures by error signature", "", "| count | signature | files | example |", "| --: | --- | --- | --- |");
+      md.push(
+        "",
+        "### Failures by error signature",
+        "",
+        "| count | signature | files | example |",
+        "| --: | --- | --- | --- |",
+      );
       for (const [sig, e] of [...bySignature].sort((a, b) => b[1].count - a[1].count)) {
         md.push(
           `| ${e.count} | ${sig.replace(/\|/g, "\\|").replace(/`/g, "'")} | ${[...e.components].slice(0, 8).join(", ")}${e.components.size > 8 ? ", …" : ""} | \`${e.example.replace(/\|/g, "\\|")}\` |`,

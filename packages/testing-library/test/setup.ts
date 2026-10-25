@@ -44,13 +44,17 @@ chai.use((chaiInstance, utils) => {
   utils.addMethod(chaiInstance.Assertion.prototype, "toThrowErrorMatchingSnapshot", function (this: any) {
     expect(thrownMessage(utils, this)).toMatchSnapshot();
   });
-  utils.addMethod(chaiInstance.Assertion.prototype, "toThrowErrorMatchingInlineSnapshot", function (this: any, inlineSnapshot?: string) {
-    const message = thrownMessage(utils, this);
-    // Inline snapshots are keyed by call site in Vitest, so compare the way jest-snapshot does
-    // (stripAddedIndentation + addExtraLineBreaks) instead of delegating to toMatchInlineSnapshot.
-    const actual = message.includes("\n") ? `\n${message}\n` : message;
-    expect(actual).toBe(stripAddedIndentation(inlineSnapshot ?? ""));
-  });
+  utils.addMethod(
+    chaiInstance.Assertion.prototype,
+    "toThrowErrorMatchingInlineSnapshot",
+    function (this: any, inlineSnapshot?: string) {
+      const message = thrownMessage(utils, this);
+      // Inline snapshots are keyed by call site in Vitest, so compare the way jest-snapshot does
+      // (stripAddedIndentation + addExtraLineBreaks) instead of delegating to toMatchInlineSnapshot.
+      const actual = message.includes("\n") ? `\n${message}\n` : message;
+      expect(actual).toBe(stripAddedIndentation(inlineSnapshot ?? ""));
+    },
+  );
 });
 
 // https://github.com/jestjs/jest/blob/main/packages/jest-snapshot/src/utils.ts (MIT)

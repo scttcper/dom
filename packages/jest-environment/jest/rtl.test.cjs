@@ -15,7 +15,12 @@ const h = React.createElement;
 
 function Counter() {
   const [n, setN] = React.useState(0);
-  return h("div", null, h("h1", null, `Count: ${n}`), h("button", { type: "button", onClick: () => setN(n + 1) }, "Increment"));
+  return h(
+    "div",
+    null,
+    h("h1", null, `Count: ${n}`),
+    h("button", { type: "button", onClick: () => setN(n + 1) }, "Increment"),
+  );
 }
 
 function Frame() {

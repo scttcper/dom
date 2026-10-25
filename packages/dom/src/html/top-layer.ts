@@ -216,7 +216,7 @@ function isFlatInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
 }
 
 function isShadowIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n: NodeImpl | null = b; n !== null; ) {
+  for (let n: NodeImpl | null = b; n !== null;) {
     if (n === a) return true;
     if (n.parent !== null) n = n.parent;
     else if ((n.flags & F_SHADOW_ROOT) !== 0) {
@@ -235,7 +235,12 @@ export function isFullyActive(doc: Document): boolean {
 // --- close watchers -----------------------------------------------------------------------
 
 /** https://html.spec.whatwg.org/#establish-a-close-watcher */
-export function establishCloseWatcher(doc: Document, cancelAction: CloseWatcher["cancelAction"], closeAction: () => void, getEnabledState: () => boolean): CloseWatcher {
+export function establishCloseWatcher(
+  doc: Document,
+  cancelAction: CloseWatcher["cancelAction"],
+  closeAction: () => void,
+  getEnabledState: () => boolean,
+): CloseWatcher {
   const w: CloseWatcher = { cancelAction, closeAction, getEnabledState, isRunningCancelAction: false, doc };
   state(doc).watchers.push(w);
   return w;
@@ -377,10 +382,17 @@ function showingPopoverList(doc: Document, mode: number): NodeImpl[] {
 }
 
 /** https://html.spec.whatwg.org/#check-popover-validity — throws, or returns whether the operation may proceed. */
-export function checkPopoverValidity(el: NodeImpl, expectedToBeShowing: boolean, expectedDocument: Document | null): boolean {
+export function checkPopoverValidity(
+  el: NodeImpl,
+  expectedToBeShowing: boolean,
+  expectedDocument: Document | null,
+): boolean {
   // 1. (The popover attribute change steps hide a popover whose attribute was just removed.)
   if (popoverState(el) === P_NONE && el !== hidingAfterAttributeRemoval) {
-    throw new DOMException("Not supported on elements that do not have a valid value for the 'popover' attribute.", "NotSupportedError");
+    throw new DOMException(
+      "Not supported on elements that do not have a valid value for the 'popover' attribute.",
+      "NotSupportedError",
+    );
   }
   // 2.
   if (expectedToBeShowing !== isPopoverShowing(el)) return false;
@@ -391,13 +403,21 @@ export function checkPopoverValidity(el: NodeImpl, expectedToBeShowing: boolean,
     (expectedDocument !== null && el.doc !== expectedDocument) ||
     (el.tag === T.dialog && matchesModal(el))
   ) {
-    throw new DOMException("Invalid on popover elements which aren't connected, or are modal dialogs.", "InvalidStateError");
+    throw new DOMException(
+      "Invalid on popover elements which aren't connected, or are modal dialogs.",
+      "InvalidStateError",
+    );
   }
   return true;
 }
 
 /** Runs check popover validity, turning a thrown exception into `false` or rethrowing it when `throwExceptions`. */
-function validity(el: NodeImpl, expectedToBeShowing: boolean, expectedDocument: Document | null, throwExceptions: boolean): boolean {
+function validity(
+  el: NodeImpl,
+  expectedToBeShowing: boolean,
+  expectedDocument: Document | null,
+  throwExceptions: boolean,
+): boolean {
   try {
     return checkPopoverValidity(el, expectedToBeShowing, expectedDocument);
   } catch (e) {
@@ -420,13 +440,24 @@ function queuePopoverToggle(el: NodeImpl, oldState: string, newState: string, so
   r.toggleTracker = tracker;
   queueElementTask(el, () => {
     if (tracker.cancelled) return;
-    fireToggleEvent(el.node as Element, "toggle", oldState, newState, false, source === null ? null : (source.node as Element));
+    fireToggleEvent(
+      el.node as Element,
+      "toggle",
+      oldState,
+      newState,
+      false,
+      source === null ? null : (source.node as Element),
+    );
     if (r.toggleTracker === tracker) r.toggleTracker = null;
   });
 }
 
 /** https://html.spec.whatwg.org/#topmost-popover-ancestor */
-export function topmostPopoverAncestor(newPopoverOrTopLayerElement: NodeImpl, source: NodeImpl | null, _isPopover: boolean): NodeImpl | null {
+export function topmostPopoverAncestor(
+  newPopoverOrTopLayerElement: NodeImpl,
+  source: NodeImpl | null,
+  _isPopover: boolean,
+): NodeImpl | null {
   // 1-3.
   const doc = newPopoverOrTopLayerElement.doc;
   const combined = showingPopoverList(doc, P_AUTO).concat(showingPopoverList(doc, P_HINT));
@@ -461,14 +492,21 @@ function topmostAutoOrHintPopover(doc: Document): NodeImpl | null {
 }
 
 /** https://html.spec.whatwg.org/#hide-popover-stack-until */
-function hidePopoverStackUntil(doc: Document, endpoint: NodeImpl | null, stackType: number, focusPreviousElement: boolean, fireEvents: boolean): void {
+function hidePopoverStackUntil(
+  doc: Document,
+  endpoint: NodeImpl | null,
+  stackType: number,
+  focusPreviousElement: boolean,
+  fireEvents: boolean,
+): void {
   // 1-4.
   const popoverList = showingPopoverList(doc, stackType);
   const endpointIndex = endpoint === null ? -1 : popoverList.indexOf(endpoint);
   const lastHideIndex = endpointIndex === -1 ? 0 : endpointIndex + 1;
   const toRemain = popoverList.slice(0, lastHideIndex);
   // 5.
-  for (let i = popoverList.length - 1; i >= lastHideIndex; i--) hidePopover(popoverList[i], focusPreviousElement, fireEvents, false, null);
+  for (let i = popoverList.length - 1; i >= lastHideIndex; i--)
+    hidePopover(popoverList[i], focusPreviousElement, fireEvents, false, null);
   // 6-8. Popovers shown while hiding (e.g. from beforetoggle) are hidden without events.
   const newPopoverList = showingPopoverList(doc, stackType);
   for (let i = newPopoverList.length - 1; i >= 0; i--) {
@@ -479,7 +517,12 @@ function hidePopoverStackUntil(doc: Document, endpoint: NodeImpl | null, stackTy
 }
 
 /** https://html.spec.whatwg.org/#hide-all-popovers-until */
-export function hidePopoversUntil(doc: Document, endpoint: NodeImpl | null, focusPreviousElement: boolean, fireEvents: boolean): void {
+export function hidePopoversUntil(
+  doc: Document,
+  endpoint: NodeImpl | null,
+  focusPreviousElement: boolean,
+  fireEvents: boolean,
+): void {
   // 1.
   const endpointIsHint = endpoint !== null && showingPopoverList(doc, P_HINT).includes(endpoint);
   // 2.
@@ -508,7 +551,16 @@ export function showPopover(el: NodeImpl, throwExceptions: boolean, source: Node
     s.showingPopover = false;
   };
   // 9.
-  if (!fireToggleEvent(el.node as Element, "beforetoggle", "closed", "open", true, source === null ? null : (source.node as Element))) {
+  if (
+    !fireToggleEvent(
+      el.node as Element,
+      "beforetoggle",
+      "closed",
+      "open",
+      true,
+      source === null ? null : (source.node as Element),
+    )
+  ) {
     cleanupShowingSteps();
     return;
   }
@@ -533,14 +585,16 @@ export function showPopover(el: NodeImpl, throwExceptions: boolean, source: Node
   if (originalType === P_AUTO || originalType === P_HINT) {
     // 15.1-15.2.
     ancestor = topmostPopoverAncestor(el, source, true);
-    if (ancestor !== null && popovers.get(ancestor)?.openedMode === P_HINT && effectiveType === P_AUTO) effectiveType = P_HINT;
+    if (ancestor !== null && popovers.get(ancestor)?.openedMode === P_HINT && effectiveType === P_AUTO)
+      effectiveType = P_HINT;
     // 15.3-15.4.
     hidePopoverStackUntil(doc, ancestor, P_HINT, shouldRestoreFocus, true);
     if (effectiveType === P_AUTO) hidePopoverStackUntil(doc, ancestor, P_AUTO, shouldRestoreFocus, true);
     // 15.5.
     if (originalType !== popoverState(el)) {
       cleanupShowingSteps();
-      if (throwExceptions) throw new DOMException("The popover attribute changed while showing the popover.", "InvalidStateError");
+      if (throwExceptions)
+        throw new DOMException("The popover attribute changed while showing the popover.", "InvalidStateError");
       return;
     }
     // 15.6-15.7.
@@ -572,7 +626,8 @@ export function showPopover(el: NodeImpl, throwExceptions: boolean, source: Node
   // 18.
   addToTopLayer(el);
   // 19.
-  if (effectiveType === P_HINT && ancestor !== null && popovers.get(ancestor)?.openedMode === P_AUTO) s.hintStackParent = ancestor;
+  if (effectiveType === P_HINT && ancestor !== null && popovers.get(ancestor)?.openedMode === P_AUTO)
+    s.hintStackParent = ancestor;
   // 20-22.
   r.showing = true;
   r.trigger = source;
@@ -586,7 +641,13 @@ export function showPopover(el: NodeImpl, throwExceptions: boolean, source: Node
 }
 
 /** https://html.spec.whatwg.org/#hide-popover-algorithm */
-export function hidePopover(el: NodeImpl, focusPreviousElement: boolean, fireEvents: boolean, throwExceptions: boolean, source: NodeImpl | null): void {
+export function hidePopover(
+  el: NodeImpl,
+  focusPreviousElement: boolean,
+  fireEvents: boolean,
+  throwExceptions: boolean,
+  source: NodeImpl | null,
+): void {
   // 1-2.
   if (!validity(el, true, null, throwExceptions)) return;
   // 3-7.
@@ -619,7 +680,14 @@ export function hidePopover(el: NodeImpl, focusPreviousElement: boolean, fireEve
     }
     // 12.
     if (fireEvents) {
-      fireToggleEvent(el.node as Element, "beforetoggle", "open", "closed", false, source === null ? null : (source.node as Element));
+      fireToggleEvent(
+        el.node as Element,
+        "beforetoggle",
+        "open",
+        "closed",
+        false,
+        source === null ? null : (source.node as Element),
+      );
       if (!checkPopoverValidity(el, true, doc)) return;
     }
     // 12.4 / 13. Request removal from the top layer (no overlay transitions: immediately).
@@ -636,7 +704,8 @@ export function hidePopover(el: NodeImpl, focusPreviousElement: boolean, fireEve
     if (previouslyFocusedElement !== null) {
       setPreviouslyFocused(el, null);
       const focused = doc[$focused];
-      if (focusPreviousElement && focused !== null && isShadowIncludingInclusiveAncestor(el, focused)) focusHook?.(previouslyFocusedElement);
+      if (focusPreviousElement && focused !== null && isShadowIncludingInclusiveAncestor(el, focused))
+        focusHook?.(previouslyFocusedElement);
     }
     // 21.
     if (r.closeWatcher !== null) {
@@ -671,12 +740,18 @@ let autofocusDelegateHook: ((el: NodeImpl) => NodeImpl | null) | null = null;
 let dialogFocusingHook: ((el: NodeImpl) => void) | null = null;
 let dialogLightDismissHook: ((doc: Document, target: NodeImpl, type: string) => void) | null = null;
 
-export function setTopLayerFocusHooks(focus: (el: NodeImpl) => void, autofocusDelegate: (el: NodeImpl) => NodeImpl | null): void {
+export function setTopLayerFocusHooks(
+  focus: (el: NodeImpl) => void,
+  autofocusDelegate: (el: NodeImpl) => NodeImpl | null,
+): void {
   focusHook = focus;
   autofocusDelegateHook = autofocusDelegate;
 }
 
-export function setTopLayerDialogHooks(focusing: (el: NodeImpl) => void, lightDismiss: (doc: Document, target: NodeImpl, type: string) => void): void {
+export function setTopLayerDialogHooks(
+  focusing: (el: NodeImpl) => void,
+  lightDismiss: (doc: Document, target: NodeImpl, type: string) => void,
+): void {
   dialogFocusingHook = focusing;
   dialogLightDismissHook = lightDismiss;
 }
@@ -702,7 +777,8 @@ function forceHidden(el: NodeImpl): void {
   }
   removeFromTopLayer(el);
   const s = states.get(el.doc);
-  if (s !== undefined && (el === s.hintStackParent || showingPopoverList(el.doc, P_HINT).length === 0)) s.hintStackParent = null;
+  if (s !== undefined && (el === s.hintStackParent || showingPopoverList(el.doc, P_HINT).length === 0))
+    s.hintStackParent = null;
 }
 
 /** The element whose popover attribute was removed while it was showing, during its hiding. */

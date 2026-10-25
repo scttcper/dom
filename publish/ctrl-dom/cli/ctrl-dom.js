@@ -59,8 +59,23 @@ function projectRoot(from) {
 }
 
 const CONFIGS = {
-  vitest: ["vitest.config.ts", "vitest.config.mts", "vitest.config.js", "vitest.config.mjs", "vitest.config.cts", "vitest.config.cjs", "vitest.workspace.ts"],
-  jest: ["jest.config.js", "jest.config.cjs", "jest.config.mjs", "jest.config.ts", "jest.config.mts", "jest.config.json"],
+  vitest: [
+    "vitest.config.ts",
+    "vitest.config.mts",
+    "vitest.config.js",
+    "vitest.config.mjs",
+    "vitest.config.cts",
+    "vitest.config.cjs",
+    "vitest.workspace.ts",
+  ],
+  jest: [
+    "jest.config.js",
+    "jest.config.cjs",
+    "jest.config.mjs",
+    "jest.config.ts",
+    "jest.config.mts",
+    "jest.config.json",
+  ],
 };
 
 /** Vitest or Jest: from --config's name, the test files' imports, config files, then dependencies. */
@@ -68,7 +83,7 @@ export function detectRunner(root, files, config) {
   if (config !== undefined) {
     const name = config.split(/[\\/]/).pop();
     if (/^(vitest|vite)\./.test(name)) return "vitest";
-    if (name.startsWith('jest.')) return "jest";
+    if (name.startsWith("jest.")) return "jest";
   }
   for (const file of files) {
     let source = "";
@@ -79,14 +94,16 @@ export function detectRunner(root, files, config) {
     if (/from\s+["']@jest\/globals["']|require\(["']@jest\/globals["']\)/.test(source)) return "jest";
   }
   const pkg = readJson(join(root, "package.json")) ?? {};
-  const hasConfig = (runner) => CONFIGS[runner].some((name) => existsSync(join(root, name))) || (runner === "jest" && pkg.jest !== undefined);
+  const hasConfig = (runner) =>
+    CONFIGS[runner].some((name) => existsSync(join(root, name))) || (runner === "jest" && pkg.jest !== undefined);
   if (hasConfig("vitest") && !hasConfig("jest")) return "vitest";
   if (hasConfig("jest") && !hasConfig("vitest")) return "jest";
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
   if (deps.vitest && !deps.jest) return "vitest";
   if (deps.jest && !deps.vitest) return "jest";
   if (hasConfig("vitest") || deps.vitest) return "vitest";
-  if (["vite.config.ts", "vite.config.js", "vite.config.mjs"].some((name) => existsSync(join(root, name)))) return "vitest";
+  if (["vite.config.ts", "vite.config.js", "vite.config.mjs"].some((name) => existsSync(join(root, name))))
+    return "vitest";
   return null;
 }
 
@@ -142,7 +159,8 @@ export function main(argv) {
   if (!["aria", "compact"].includes(values.format)) fail(`--format must be aria or compact`);
   const root = projectRoot(process.cwd());
   const runner = values.runner ?? detectRunner(root, files, values.config);
-  if (runner !== "vitest" && runner !== "jest") fail(runner ? `--runner must be vitest or jest` : `cannot tell whether ${root} uses Vitest or Jest: pass --runner`);
+  if (runner !== "vitest" && runner !== "jest")
+    fail(runner ? `--runner must be vitest or jest` : `cannot tell whether ${root} uses Vitest or Jest: pass --runner`);
 
   const args = [runnerBin(root, runner)];
   if (runner === "vitest") {
@@ -161,7 +179,9 @@ export function main(argv) {
 
   const env = { ...process.env, CTRL_DOM_DEBUG: values.format, FORCE_COLOR: "0", NO_COLOR: "1" };
   if (values.lines !== undefined) env.CTRL_DOM_DEBUG_LINES = values.lines;
-  process.stdout.write(`ctrl-dom debug: ${runner} ${files.join(" ")}${values["test-name"] !== undefined ? ` -t ${JSON.stringify(values["test-name"])}` : ""} (CTRL_DOM_DEBUG=${values.format})\n\n`);
+  process.stdout.write(
+    `ctrl-dom debug: ${runner} ${files.join(" ")}${values["test-name"] !== undefined ? ` -t ${JSON.stringify(values["test-name"])}` : ""} (CTRL_DOM_DEBUG=${values.format})\n\n`,
+  );
   const run = spawnSync(process.execPath, args, { cwd: process.cwd(), env, stdio: "inherit" });
   if (run.error) fail(run.error.message);
   return run.status ?? 1;

@@ -48,8 +48,20 @@ function jsdomUaKind(impl: NodeImpl): number {
   switch (tag) {
     case 0:
       return K_INLINE;
-    case T.area: case T.base: case T.basefont: case T.datalist: case T.head: case T.link: case T.meta:
-    case T.noembed: case T.noframes: case T.param: case T.rp: case T.script: case T.style: case T.template:
+    case T.area:
+    case T.base:
+    case T.basefont:
+    case T.datalist:
+    case T.head:
+    case T.link:
+    case T.meta:
+    case T.noembed:
+    case T.noframes:
+    case T.param:
+    case T.rp:
+    case T.script:
+    case T.style:
+    case T.template:
     case T.title:
       return K_NONE;
     case T.dialog:
@@ -58,13 +70,62 @@ function jsdomUaKind(impl: NodeImpl): number {
       const type = attr(impl, "type");
       return type !== null && type.toLowerCase() === "hidden" ? K_NONE : K_OTHER;
     }
-    case T.html: case T.body: case T.address: case T.blockquote: case T.center: case T.div: case T.figure:
-    case T.figcaption: case T.footer: case T.form: case T.header: case T.hr: case T.legend: case T.listing:
-    case T.main: case T.p: case T.plaintext: case T.pre: case T.search: case T.xmp: case T.slot: case T.article:
-    case T.aside: case T.h1: case T.h2: case T.h3: case T.h4: case T.h5: case T.h6: case T.hgroup: case T.nav:
-    case T.section: case T.dir: case T.dd: case T.dl: case T.dt: case T.menu: case T.ol: case T.ul: case T.li:
-    case T.ruby: case T.rt: case T.table: case T.caption: case T.colgroup: case T.col: case T.thead: case T.tbody:
-    case T.tfoot: case T.tr: case T.td: case T.th: case T.button: case T.fieldset: case T.details: case T.summary:
+    case T.html:
+    case T.body:
+    case T.address:
+    case T.blockquote:
+    case T.center:
+    case T.div:
+    case T.figure:
+    case T.figcaption:
+    case T.footer:
+    case T.form:
+    case T.header:
+    case T.hr:
+    case T.legend:
+    case T.listing:
+    case T.main:
+    case T.p:
+    case T.plaintext:
+    case T.pre:
+    case T.search:
+    case T.xmp:
+    case T.slot:
+    case T.article:
+    case T.aside:
+    case T.h1:
+    case T.h2:
+    case T.h3:
+    case T.h4:
+    case T.h5:
+    case T.h6:
+    case T.hgroup:
+    case T.nav:
+    case T.section:
+    case T.dir:
+    case T.dd:
+    case T.dl:
+    case T.dt:
+    case T.menu:
+    case T.ol:
+    case T.ul:
+    case T.li:
+    case T.ruby:
+    case T.rt:
+    case T.table:
+    case T.caption:
+    case T.colgroup:
+    case T.col:
+    case T.thead:
+    case T.tbody:
+    case T.tfoot:
+    case T.tr:
+    case T.td:
+    case T.th:
+    case T.button:
+    case T.fieldset:
+    case T.details:
+    case T.summary:
     case T.marquee:
       return K_OTHER;
     default:

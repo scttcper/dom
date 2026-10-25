@@ -84,7 +84,12 @@ describe("NodeList — https://dom.spec.whatwg.org/#interface-nodelist", () => {
     const list = document.querySelectorAll("p");
     expect(Array.from(list).map((p) => p.textContent)).toEqual(["1", "2", "3"]);
     expect([...list].length).toBe(3);
-    expect(list.values().map((p) => p.textContent).toArray()).toEqual(["1", "2", "3"]);
+    expect(
+      list
+        .values()
+        .map((p) => p.textContent)
+        .toArray(),
+    ).toEqual(["1", "2", "3"]);
     expect([...NodeList.prototype.values.call({ length: 2, 0: "x", 1: "y" } as never)]).toEqual(["x", "y"]);
     expect(() => NodeList.prototype.values.call(null as never)).toThrow(TypeError);
   });
@@ -260,7 +265,11 @@ describe("NamedNodeMap and Attr nodes — https://dom.spec.whatwg.org/#interface
     // Unenumerable: for…in / Object.keys see neither names nor the internal element slot.
     expect(Object.keys(attrs)).toEqual([]);
     expect(Object.getOwnPropertyNames(attrs)).toEqual(["value", "data-x"]);
-    expect(Object.getOwnPropertyDescriptor(attrs, "value")).toMatchObject({ writable: false, enumerable: false, configurable: true });
+    expect(Object.getOwnPropertyDescriptor(attrs, "value")).toMatchObject({
+      writable: false,
+      enumerable: false,
+      configurable: true,
+    });
     // Live: follows attribute changes; methods still work through the named-property layer.
     el.removeAttribute("value");
     expect("value" in attrs).toBe(false);

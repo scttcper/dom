@@ -1,7 +1,13 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/dataTransfer/DataTransfer.ts
 
-import type {DataTransfer, DataTransferItem, DataTransferItemList, File, Window} from '../../dom-types.ts'
+import type {
+  DataTransfer,
+  DataTransferItem,
+  DataTransferItemList,
+  File,
+  Window,
+} from '../../dom-types.ts'
 import {createFileList} from './FileList.ts'
 
 // DataTransfer is not implemented in jsdom.
@@ -51,7 +57,8 @@ function toAsciiLowercase(value: string) {
 
 class DataTransferItemListStub
   extends Array<DataTransferItem>
-  implements DataTransferItemList {
+  implements DataTransferItemList
+{
   add(data: string, type: string): DataTransferItem
   add(file: File): DataTransferItem
   add(...args: never[]) {

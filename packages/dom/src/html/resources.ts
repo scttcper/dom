@@ -17,11 +17,31 @@
 // provides `createLinkSheet` (e.g. for data: URLs). <script> never executes.
 
 import { HTMLElement } from "./HTMLElement.ts";
-import { bool, contentAttr, CROSS_ORIGIN, enumerated, FETCH_PRIORITY, REFERRER_POLICY, str, tokenList, url } from "./reflect.ts";
+import {
+  bool,
+  contentAttr,
+  CROSS_ORIGIN,
+  enumerated,
+  FETCH_PRIORITY,
+  REFERRER_POLICY,
+  str,
+  tokenList,
+  url,
+} from "./reflect.ts";
 import { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Element } from "../nodes/Element.ts";
-import { CDATA_SECTION_NODE, ELEMENT_NODE, F_ATTR_HOOK, F_CHILDREN_HOOK, F_CONNECT_HOOK, F_CONNECTED, HTML_NS, SVG_NS, TEXT_NODE } from "../nodes/constants.ts";
+import {
+  CDATA_SECTION_NODE,
+  ELEMENT_NODE,
+  F_ATTR_HOOK,
+  F_CHILDREN_HOOK,
+  F_CONNECT_HOOK,
+  F_CONNECTED,
+  HTML_NS,
+  SVG_NS,
+  TEXT_NODE,
+} from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { firstElementChild, nextElementInTree } from "../nodes/traverse.ts";
 import { $impl, $styleVersion } from "../keys.ts";
@@ -55,7 +75,8 @@ export function associatedSheet(impl: NodeImpl): object | null {
 /** https://html.spec.whatwg.org/#child-text-content */
 export function childTextContent(impl: NodeImpl): string {
   let s = "";
-  for (let c = impl.first; c !== null; c = c.next) if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE) s += c.data;
+  for (let c = impl.first; c !== null; c = c.next)
+    if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE) s += c.data;
   return s;
 }
 
@@ -104,7 +125,12 @@ export class HTMLStyleElement extends HTMLElement {
     updateStyleBlock(this);
   }
 
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     if (namespace === null && (localName === "type" || localName === "media")) updateStyleBlock(this);
   }
@@ -132,7 +158,10 @@ tokenList(HTMLStyleElement, "blocking", "blocking", ["render"]);
 function isStylesheetLink(impl: NodeImpl): boolean {
   const rel = contentAttr(impl, "rel");
   if (rel === null) return false;
-  return /(?:^|[\t\n\f\r ])stylesheet(?:$|[\t\n\f\r ])/i.test(rel) && !/(?:^|[\t\n\f\r ])alternate(?:$|[\t\n\f\r ])/i.test(rel);
+  return (
+    /(?:^|[\t\n\f\r ])stylesheet(?:$|[\t\n\f\r ])/i.test(rel) &&
+    !/(?:^|[\t\n\f\r ])alternate(?:$|[\t\n\f\r ])/i.test(rel)
+  );
 }
 
 function updateLinkSheet(el: HTMLLinkElement): void {
@@ -163,9 +192,22 @@ export class HTMLLinkElement extends HTMLElement {
     removeAssociatedSheet(this);
   }
 
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
-    if (namespace === null && (localName === "rel" || localName === "href" || localName === "media" || localName === "disabled" || localName === "type")) updateLinkSheet(this);
+    if (
+      namespace === null &&
+      (localName === "rel" ||
+        localName === "href" ||
+        localName === "media" ||
+        localName === "disabled" ||
+        localName === "type")
+    )
+      updateLinkSheet(this);
   }
 
   get sheet(): object | null {
@@ -174,7 +216,11 @@ export class HTMLLinkElement extends HTMLElement {
 }
 url(HTMLLinkElement, "href");
 enumerated(HTMLLinkElement, "crossOrigin=crossorigin", CROSS_ORIGIN);
-str(HTMLLinkElement, "rel media integrity hreflang type imageSrcset=imagesrcset imageSizes=imagesizes charset rev target");
+str(
+  HTMLLinkElement,
+  "rel media integrity hreflang type imageSrcset=imagesrcset imageSizes=imagesizes charset rev target",
+);
+// oxfmt-ignore
 enumerated(HTMLLinkElement, "as", {
   keywords: ["fetch", "audio", "audioworklet", "document", "embed", "font", "frame", "iframe", "image", "json", "manifest", "object", "paintworklet", "report", "script", "serviceworker", "sharedworker", "style", "track", "video", "webidentity", "worker", "xslt"],
 });
@@ -269,7 +315,8 @@ function titleElement(doc: Document): NodeImpl | null {
 }
 
 function svgTitle(docEl: NodeImpl): NodeImpl | null {
-  for (let c = docEl.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.ns === SVG_NS && c.name === "title") return c;
+  for (let c = docEl.first; c !== null; c = c.next)
+    if (c.type === ELEMENT_NODE && c.ns === SVG_NS && c.name === "title") return c;
   return null;
 }
 
@@ -337,7 +384,8 @@ if (!Object.hasOwn(Document.prototype, "dir")) {
     },
     set(this: Document, v: unknown) {
       const html = firstElementChild(this[$impl]);
-      if (html !== null && html.tag === T.html && html.ns === HTML_NS) (html.node as Element).setAttribute("dir", String(v));
+      if (html !== null && html.tag === T.html && html.ns === HTML_NS)
+        (html.node as Element).setAttribute("dir", String(v));
     },
     configurable: true,
     enumerable: true,
@@ -367,4 +415,3 @@ for (const [idl, content] of [
     enumerable: true,
   });
 }
-

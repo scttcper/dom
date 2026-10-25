@@ -23,7 +23,9 @@ function debugEnabled(): boolean {
 }
 
 /** A `handleTestEvent` for the environment, or undefined when CTRL_DOM_DEBUG is off. */
-export function failureSnapshotHandler(getDocument: () => unknown): ((event: Circus.Event) => Promise<void> | void) | undefined {
+export function failureSnapshotHandler(
+  getDocument: () => unknown,
+): ((event: Circus.Event) => Promise<void> | void) | undefined {
   if (!debugEnabled()) return undefined;
   let agent: Agent | null = null;
   return async (event) => {
@@ -36,7 +38,10 @@ export function failureSnapshotHandler(getDocument: () => unknown): ((event: Cir
       return;
     }
     const error: unknown = event.error;
-    const message = error !== null && typeof error === "object" && typeof (error as Error).message === "string" ? (error as Error).message : "";
+    const message =
+      error !== null && typeof error === "object" && typeof (error as Error).message === "string"
+        ? (error as Error).message
+        : "";
     const snapshot = agent.captureFailureSnapshot(document as never);
     if (snapshot !== null) agent.appendToErrorMessage(error, agent.formatFailureSnapshot(snapshot, message));
   };

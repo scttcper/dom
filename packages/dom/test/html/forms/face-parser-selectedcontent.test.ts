@@ -81,7 +81,11 @@ describe("form-associated custom elements — https://html.spec.whatwg.org/#form
     fd.append("y", "3");
     $("b").i.setFormValue(fd);
     $("c").i.setFormValue(null);
-    expect([...new window.FormData($("f"))]).toEqual([["a", "1"], ["x", "2"], ["y", "3"]]);
+    expect([...new window.FormData($("f"))]).toEqual([
+      ["a", "1"],
+      ["x", "2"],
+      ["y", "3"],
+    ]);
   });
 
   test("setValidity drives validity, willValidate, checkValidity and :invalid; the form is invalid", () => {
@@ -144,7 +148,9 @@ describe("form-associated custom elements — https://html.spec.whatwg.org/#form
 
 describe("parser form association — https://html.spec.whatwg.org/#association-of-controls-and-forms", () => {
   test("misnested table markup and an unclosed form associate through the form element pointer", () => {
-    window = createWindow({ html: "<table><form id=f><tr><td><input id=i></td></tr></form></table><div><form id=g></div><input id=j>" });
+    window = createWindow({
+      html: "<table><form id=f><tr><td><input id=i></td></tr></form></table><div><form id=g></div><input id=j>",
+    });
     document = window.document;
     expect($("i").parentNode.localName).toBe("td");
     expect($("i").form).toBe($("f"));
@@ -184,14 +190,17 @@ describe("parser form association — https://html.spec.whatwg.org/#association-
 
 describe("selectedcontent — https://html.spec.whatwg.org/#the-selectedcontent-element", () => {
   test("the parser result mirrors the selected option (html5lib webkit02.dat)", () => {
-    window = createWindow({ html: "<select><button><selectedcontent></button><option>x<i>i</i><option selected>Y</select>" });
+    window = createWindow({
+      html: "<select><button><selectedcontent></button><option>x<i>i</i><option selected>Y</select>",
+    });
     expect(window.document.body.innerHTML).toBe(
       '<select><button><selectedcontent>Y</selectedcontent></button><option>x<i>i</i></option><option selected="">Y</option></select>',
     );
   });
 
   test("selection changes update selectedcontent; multiple selects do not", () => {
-    document.body.innerHTML = "<select id=s><button><selectedcontent id=sc></selectedcontent></button><option>A</option><option>B<b>!</b></option></select>";
+    document.body.innerHTML =
+      "<select id=s><button><selectedcontent id=sc></selectedcontent></button><option>A</option><option>B<b>!</b></option></select>";
     expect($("sc").innerHTML).toBe("A");
     $("s").value = "B!";
     expect($("sc").innerHTML).toBe("B<b>!</b>");

@@ -27,6 +27,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm fmt:check
       - run: pnpm test
       # Builds every package and assembles release/ (scripts/release.ts), then installs the three
       # tarballs into a fresh project and runs every documented setup against them.

@@ -8,7 +8,12 @@
 import { registerHooks } from "node:module";
 import { pathToFileURL } from "node:url";
 
-const map = new Map(Object.entries(JSON.parse(process.env.CTRL_DOM_DIST_MAP ?? "{}")).map(([specifier, path]) => [specifier, pathToFileURL(path).href]));
+const map = new Map(
+  Object.entries(JSON.parse(process.env.CTRL_DOM_DIST_MAP ?? "{}")).map(([specifier, path]) => [
+    specifier,
+    pathToFileURL(path).href,
+  ]),
+);
 
 registerHooks({
   resolve(specifier, context, nextResolve) {

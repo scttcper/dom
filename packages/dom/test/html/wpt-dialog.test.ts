@@ -21,11 +21,17 @@ defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-autofoc
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-close-event-async.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-close-event.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-enabled.html");
-defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focus-previous-outside.html", "declarative shadow roots in the markup are not attached by the harness");
+defineWPT(
+  "html/semantics/interactive-elements/the-dialog-element/dialog-focus-previous-outside.html",
+  "declarative shadow roots in the markup are not attached by the harness",
+);
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focus-shadow-double-nested.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focus-shadow.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-disconnected.html");
-defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-inert.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)");
+defineWPT(
+  "html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-inert.html",
+  "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)",
+);
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-focusing-steps-prevent-autofocus.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-form-submission-unusual.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-no-throw-requested-state.html");
@@ -34,9 +40,15 @@ defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-open.ht
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-requestclose-recurse.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-return-value.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-showModal-remove.html");
-defineWPT("html/semantics/interactive-elements/the-dialog-element/dialog-showModal.html", "elementFromPoint needs layout");
+defineWPT(
+  "html/semantics/interactive-elements/the-dialog-element/dialog-showModal.html",
+  "elementFromPoint needs layout",
+);
 defineWPT("html/semantics/interactive-elements/the-dialog-element/inert-does-not-match-disabled-selector.html");
-defineWPT("html/semantics/interactive-elements/the-dialog-element/modal-dialog-in-visibility-hidden.html", "UA style `dialog:modal { visibility: visible }` is not in the css area UA sheet");
+defineWPT(
+  "html/semantics/interactive-elements/the-dialog-element/modal-dialog-in-visibility-hidden.html",
+  "UA style `dialog:modal { visibility: visible }` is not in the css area UA sheet",
+);
 defineWPT("html/semantics/interactive-elements/the-dialog-element/submit-dialog-close-event.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/synthetic-click-inert.html");
 defineWPT("html/semantics/interactive-elements/the-dialog-element/toggle-events.html");

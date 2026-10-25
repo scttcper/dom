@@ -52,7 +52,12 @@ function reflect(w: AnyWindow, p: Probe) {
     } catch (e) {
       threw = (e as Error).name;
     }
-    const viaProp = { set: String(value), prop: el[p.prop], attr: el.getAttribute(p.attr ?? p.prop.toLowerCase()), threw };
+    const viaProp = {
+      set: String(value),
+      prop: el[p.prop],
+      attr: el.getAttribute(p.attr ?? p.prop.toLowerCase()),
+      threw,
+    };
     const el2 = fresh();
     if (typeof value === "string") el2.setAttribute(p.attr ?? p.prop.toLowerCase(), value);
     results.push({ viaProp, viaAttr: typeof value === "string" ? el2[p.prop] : "n/a" });
@@ -73,7 +78,10 @@ const probes: Probe[] = [
   { tag: "input", prop: "disabled", values: [true, "yes"] },
   { tag: "input", prop: "autocomplete", values: ["off", "email", ""] },
   {
-    tag: "input", prop: "inputMode", attr: "inputmode", values: ["numeric", "bogus"],
+    tag: "input",
+    prop: "inputMode",
+    attr: "inputmode",
+    values: ["numeric", "bogus"],
     spec: {
       expected: [{ default: "" }, row("numeric", "numeric", "numeric", "numeric"), row("bogus", "", "bogus", "")],
       link: "https://html.spec.whatwg.org/#dom-inputmode (limited to only known values)",
@@ -81,7 +89,10 @@ const probes: Probe[] = [
     },
   },
   {
-    tag: "input", prop: "enterKeyHint", attr: "enterkeyhint", values: ["send", "bogus"],
+    tag: "input",
+    prop: "enterKeyHint",
+    attr: "enterkeyhint",
+    values: ["send", "bogus"],
     spec: {
       expected: [{ default: "" }, row("send", "send", "send", "send"), row("bogus", "", "bogus", "")],
       link: "https://html.spec.whatwg.org/#dom-enterkeyhint (limited to only known values)",
@@ -93,25 +104,48 @@ const probes: Probe[] = [
   { tag: "input", prop: "alt", values: ["alt text"] },
   { tag: "input", prop: "src", values: ["img.png", "http://other/x.png", ""] },
   {
-    tag: "input", prop: "formAction", attr: "formaction", values: ["/submit", ""],
+    tag: "input",
+    prop: "formAction",
+    attr: "formaction",
+    values: ["/submit", ""],
     spec: {
-      expected: [{ default: URL_DEFAULT }, row("/submit", URL_DEFAULT + "submit", "/submit", URL_DEFAULT + "submit"), row("", URL_DEFAULT, "", URL_DEFAULT)],
+      expected: [
+        { default: URL_DEFAULT },
+        row("/submit", URL_DEFAULT + "submit", "/submit", URL_DEFAULT + "submit"),
+        row("", URL_DEFAULT, "", URL_DEFAULT),
+      ],
       link: "https://html.spec.whatwg.org/#dom-fs-formaction (missing or empty → document URL)",
       reason: JSDOM_MISSING,
     },
   },
   {
-    tag: "input", prop: "formMethod", attr: "formmethod", values: ["POST", "dialog", "bogus", ""],
+    tag: "input",
+    prop: "formMethod",
+    attr: "formmethod",
+    values: ["POST", "dialog", "bogus", ""],
     spec: {
-      expected: [{ default: "" }, row("POST", "post", "POST", "post"), row("dialog", "dialog", "dialog", "dialog"), row("bogus", "get", "bogus", "get"), row("", "get", "", "get")],
+      expected: [
+        { default: "" },
+        row("POST", "post", "POST", "post"),
+        row("dialog", "dialog", "dialog", "dialog"),
+        row("bogus", "get", "bogus", "get"),
+        row("", "get", "", "get"),
+      ],
       link: "https://html.spec.whatwg.org/#dom-fs-formmethod (limited to only known values; missing default none, invalid default GET)",
       reason: JSDOM_MISSING,
     },
   },
   {
-    tag: "input", prop: "formEnctype", attr: "formenctype", values: ["multipart/form-data", "bogus"],
+    tag: "input",
+    prop: "formEnctype",
+    attr: "formenctype",
+    values: ["multipart/form-data", "bogus"],
     spec: {
-      expected: [{ default: "" }, row("multipart/form-data", "multipart/form-data", "multipart/form-data", "multipart/form-data"), row("bogus", "application/x-www-form-urlencoded", "bogus", "application/x-www-form-urlencoded")],
+      expected: [
+        { default: "" },
+        row("multipart/form-data", "multipart/form-data", "multipart/form-data", "multipart/form-data"),
+        row("bogus", "application/x-www-form-urlencoded", "bogus", "application/x-www-form-urlencoded"),
+      ],
       link: "https://html.spec.whatwg.org/#dom-fs-formenctype (limited to only known values; invalid default urlencoded)",
       reason: JSDOM_MISSING,
     },
@@ -119,7 +153,9 @@ const probes: Probe[] = [
   { tag: "input", prop: "formTarget", attr: "formtarget", values: ["_blank"] },
   { tag: "input", prop: "formNoValidate", attr: "formnovalidate", values: [true] },
   {
-    tag: "input", prop: "height", values: [10, -5, "20"],
+    tag: "input",
+    prop: "height",
+    values: [10, -5, "20"],
     spec: {
       // Getter returns the rendered/natural image height, 0 when no image (always, here); setter reflects as unsigned long.
       expected: [{ default: 0 }, row(10, 0, "10", 0), row(-5, 0, "0", 0), row("20", 0, "20", 0)],
@@ -128,7 +164,9 @@ const probes: Probe[] = [
     },
   },
   {
-    tag: "input", prop: "width", values: [10, "x"],
+    tag: "input",
+    prop: "width",
+    values: [10, "x"],
     spec: {
       expected: [{ default: 0 }, row(10, 0, "10", 0), row("x", 0, "0", 0)],
       link: "https://html.spec.whatwg.org/#dom-input-width",
@@ -145,9 +183,15 @@ const probes: Probe[] = [
   { tag: "form", prop: "method", values: ["POST", "get", "dialog", "bogus"] },
   { tag: "form", prop: "enctype", values: ["multipart/form-data", "text/plain", "bogus"] },
   {
-    tag: "form", prop: "encoding", attr: "enctype", values: ["text/plain"],
+    tag: "form",
+    prop: "encoding",
+    attr: "enctype",
+    values: ["text/plain"],
     spec: {
-      expected: [{ default: "application/x-www-form-urlencoded" }, row("text/plain", "text/plain", "text/plain", "text/plain")],
+      expected: [
+        { default: "application/x-www-form-urlencoded" },
+        row("text/plain", "text/plain", "text/plain", "text/plain"),
+      ],
       link: "https://html.spec.whatwg.org/#dom-form-encoding",
       reason: JSDOM_MISSING,
     },
@@ -156,16 +200,25 @@ const probes: Probe[] = [
   { tag: "form", prop: "noValidate", attr: "novalidate", values: [true] },
   { tag: "form", prop: "acceptCharset", attr: "accept-charset", values: ["utf-8"] },
   {
-    tag: "form", prop: "autocomplete", values: ["off", "bogus", "ON"],
+    tag: "form",
+    prop: "autocomplete",
+    values: ["off", "bogus", "ON"],
     spec: {
-      expected: [{ default: "on" }, row("off", "off", "off", "off"), row("bogus", "on", "bogus", "on"), row("ON", "on", "ON", "on")],
+      expected: [
+        { default: "on" },
+        row("off", "off", "off", "off"),
+        row("bogus", "on", "bogus", "on"),
+        row("ON", "on", "ON", "on"),
+      ],
       link: "https://html.spec.whatwg.org/#dom-form-autocomplete (limited to only known values; default on)",
       reason: JSDOM_MISSING,
     },
   },
   { tag: "form", prop: "name", values: ["f"] },
   {
-    tag: "form", prop: "rel", values: ["noopener"],
+    tag: "form",
+    prop: "rel",
+    values: ["noopener"],
     spec: {
       expected: [{ default: "" }, row("noopener", "noopener", "noopener", "noopener")],
       link: "https://html.spec.whatwg.org/#dom-form-rel",
@@ -174,7 +227,9 @@ const probes: Probe[] = [
   },
   // HTMLButtonElement
   {
-    tag: "button", prop: "type", values: ["button", "RESET", "bogus", "", "submit"],
+    tag: "button",
+    prop: "type",
+    values: ["button", "RESET", "bogus", "", "submit"],
     fix: {
       // Reflection setters store the given string verbatim; jsdom canonicalizes it.
       fix: (obs: Array<{ viaProp?: { set: string; attr: string | null } }>) => {
@@ -187,7 +242,10 @@ const probes: Probe[] = [
   },
   { tag: "button", prop: "value", values: ["v"] },
   {
-    tag: "button", prop: "formMethod", attr: "formmethod", values: ["post", "nope"],
+    tag: "button",
+    prop: "formMethod",
+    attr: "formmethod",
+    values: ["post", "nope"],
     spec: {
       expected: [{ default: "" }, row("post", "post", "post", "post"), row("nope", "get", "nope", "get")],
       link: "https://html.spec.whatwg.org/#dom-fs-formmethod",
@@ -195,7 +253,10 @@ const probes: Probe[] = [
     },
   },
   {
-    tag: "button", prop: "formAction", attr: "formaction", values: ["x"],
+    tag: "button",
+    prop: "formAction",
+    attr: "formaction",
+    values: ["x"],
     spec: {
       expected: [{ default: URL_DEFAULT }, row("x", URL_DEFAULT + "x", "x", URL_DEFAULT + "x")],
       link: "https://html.spec.whatwg.org/#dom-fs-formaction",
@@ -207,7 +268,9 @@ const probes: Probe[] = [
   { tag: "select", prop: "size", values: [3, 0, "-2", "x"] },
   { tag: "select", prop: "multiple", values: [true] },
   {
-    tag: "select", prop: "autocomplete", values: ["off"],
+    tag: "select",
+    prop: "autocomplete",
+    values: ["off"],
     spec: {
       expected: [{ default: "" }, row("off", "off", "off", "off")],
       link: "https://html.spec.whatwg.org/#dom-fe-autocomplete (IDL-exposed autofill value)",
@@ -259,7 +322,12 @@ describe("reflection — https://html.spec.whatwg.org/#reflecting-content-attrib
     o.setAttribute("for", "a b");
     const before = Array.from(o.htmlFor as ArrayLike<string>);
     o.htmlFor.add("c");
-    return { before, attr: o.getAttribute("for"), isTokenList: Object.prototype.toString.call(o.htmlFor), length: o.htmlFor.length };
+    return {
+      before,
+      attr: o.getAttribute("for"),
+      isTokenList: Object.prototype.toString.call(o.htmlFor),
+      length: o.htmlFor.length,
+    };
   });
 
   differential("progress.position and meter value clamping", (w) => {
@@ -271,28 +339,37 @@ describe("reflection — https://html.spec.whatwg.org/#reflecting-content-attrib
     m.setAttribute("min", "10");
     m.setAttribute("max", "5");
     m.setAttribute("value", "20");
-    return { indeterminate, position: p.position, meter: { min: m.min, max: m.max, value: m.value, low: m.low, high: m.high, optimum: m.optimum } };
+    return {
+      indeterminate,
+      position: p.position,
+      meter: { min: m.min, max: m.max, value: m.value, low: m.low, high: m.high, optimum: m.optimum },
+    };
   });
 
   differential("input.list resolves a datalist by id, else null", (w) => {
-    w.document.body.innerHTML = "<input id=a list=dl><input id=b list=notdl><datalist id=dl></datalist><div id=notdl></div>";
+    w.document.body.innerHTML =
+      "<input id=a list=dl><input id=b list=notdl><datalist id=dl></datalist><div id=notdl></div>";
     return [w.document.getElementById("a").list, w.document.getElementById("b").list];
   });
 
-  differential("form.relList and input.form are readonly-ish; assigning form does nothing", (w) => {
-    w.document.body.innerHTML = "<form id=f rel='a b'></form><input id=i>";
-    const i = w.document.getElementById("i");
-    try {
-      i.form = w.document.getElementById("f");
-    } catch {
-      /* strict-mode assignment to getter-only property */
-    }
-    return { relList: Array.from(w.document.getElementById("f").relList as ArrayLike<string>), form: i.form };
-  }, {
-    jsdomDeviation: {
-      expected: { relList: ["a", "b"], form: null },
-      spec: "https://html.spec.whatwg.org/#dom-form-rellist",
-      reason: JSDOM_MISSING,
+  differential(
+    "form.relList and input.form are readonly-ish; assigning form does nothing",
+    (w) => {
+      w.document.body.innerHTML = "<form id=f rel='a b'></form><input id=i>";
+      const i = w.document.getElementById("i");
+      try {
+        i.form = w.document.getElementById("f");
+      } catch {
+        /* strict-mode assignment to getter-only property */
+      }
+      return { relList: Array.from(w.document.getElementById("f").relList as ArrayLike<string>), form: i.form };
     },
-  });
+    {
+      jsdomDeviation: {
+        expected: { relList: ["a", "b"], form: null },
+        spec: "https://html.spec.whatwg.org/#dom-form-rellist",
+        reason: JSDOM_MISSING,
+      },
+    },
+  );
 });

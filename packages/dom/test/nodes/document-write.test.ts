@@ -76,7 +76,9 @@ describe("getAnimations — https://drafts.csswg.org/web-animations-1/#dom-anima
     const el = document.createElement("div") as unknown as Record<string, unknown>;
     expect(typeof el.getAnimations).toBe("undefined");
     expect("getAnimations" in document).toBe(false);
-    const root = (document.createElement("div") as unknown as { attachShadow(init: { mode: string }): object }).attachShadow({ mode: "open" });
+    const root = (
+      document.createElement("div") as unknown as { attachShadow(init: { mode: string }): object }
+    ).attachShadow({ mode: "open" });
     expect("getAnimations" in root).toBe(false);
   });
 });

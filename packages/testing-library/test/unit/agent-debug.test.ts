@@ -75,7 +75,7 @@ describe("defaults without CTRL_DOM_DEBUG are byte-identical to stock @testing-l
     });
   }
 
-  test("prettyDOM with an explicit format: \"pretty\" equals stock prettyDOM", () => {
+  test('prettyDOM with an explicit format: "pretty" equals stock prettyDOM', () => {
     expect(ours.prettyDOM(ctrlDom(), undefined, { format: "pretty" } as any)).toBe(stock.prettyDOM(jsdomBody()));
   });
 
@@ -86,15 +86,30 @@ describe("defaults without CTRL_DOM_DEBUG are byte-identical to stock @testing-l
 });
 
 describe("prettyDOM format option", () => {
-  test("format: \"aria\" prints the accessibility snapshot and takes its options", () => {
+  test('format: "aria" prints the accessibility snapshot and takes its options', () => {
     ctrlDom(`<ul>${"<li>x</li>".repeat(9)}</ul>`);
-    expect(ours.prettyDOM(document.body, undefined, { format: "aria", collapseAfter: 1 } as any)).toBe(ours.ariaSnapshot(document.body, { collapseAfter: 1 }));
+    expect(ours.prettyDOM(document.body, undefined, { format: "aria", collapseAfter: 1 } as any)).toBe(
+      ours.ariaSnapshot(document.body, { collapseAfter: 1 }),
+    );
   });
 
-  test("format: \"compact\" drops class/style attributes and SVG internals, without colors", () => {
-    ctrlDom(`<button class="btn" style="color:red" data-state="on"><svg class="i" aria-hidden="true" viewBox="0 0 2 2"><path d="M0 0"/></svg>Go</button>`);
+  test('format: "compact" drops class/style attributes and SVG internals, without colors', () => {
+    ctrlDom(
+      `<button class="btn" style="color:red" data-state="on"><svg class="i" aria-hidden="true" viewBox="0 0 2 2"><path d="M0 0"/></svg>Go</button>`,
+    );
     expect(ours.prettyDOM(document.body, undefined, { format: "compact" } as any)).toBe(
-      ["<body>", "  <button", '    data-state="on"', "  >", "    <svg", '      aria-hidden="true"', "    />", "    Go", "  </button>", "</body>"].join("\n"),
+      [
+        "<body>",
+        "  <button",
+        '    data-state="on"',
+        "  >",
+        "    <svg",
+        '      aria-hidden="true"',
+        "    />",
+        "    Go",
+        "  </button>",
+        "</body>",
+      ].join("\n"),
     );
   });
 
@@ -136,7 +151,7 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
         "    - text: Submit",
         '    - button "Bold" [pressed=false]',
         "    - paragraph:",
-        "      - text: \"Total:\"",
+        '      - text: "Total:"',
         "      - strong: $42.00",
       ].join("\n"),
     );
@@ -154,13 +169,19 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
     ctrlDom(`<button>Cancel</button><button>save changes</button>`);
     const lines = messageOf(() => ours.getByRole(document.body, "button", { name: "Save" })).split("\n");
-    expect(lines.slice(2, 5)).toEqual(["Closest matches:", '- button "save changes"  # similar name', '- button "Cancel"  # same role, other name']);
+    expect(lines.slice(2, 5)).toEqual([
+      "Closest matches:",
+      '- button "save changes"  # similar name',
+      '- button "Cancel"  # same role, other name',
+    ]);
   });
 
   test("getByText points at text split across elements and at similar text", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
     const message = messageOf(() => ours.getByText(ctrlDom(), "Total: $42.00"));
-    expect(message).toContain('- paragraph: "Total: $42.00"  # text split across child elements of <p>: use a function matcher or getByRole');
+    expect(message).toContain(
+      '- paragraph: "Total: $42.00"  # text split across child elements of <p>: use a function matcher or getByRole',
+    );
     expect(message).toContain('- strong: "$42.00"  # similar text in <strong>');
   });
 
@@ -179,14 +200,18 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
   test("multiple matches print each element as its snapshot line", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
     const message = messageOf(() => ours.getByRole(ctrlDom(), "textbox"));
-    expect(message).toContain(['Here are the matching elements:', "", '- textbox "Email address"', "- textbox", ""].join("\n"));
+    expect(message).toContain(
+      ["Here are the matching elements:", "", '- textbox "Email address"', "- textbox", ""].join("\n"),
+    );
     expect(message).not.toContain("<input");
   });
 
   test("findBy* timeouts carry the candidates and print the snapshot once", async () => {
     process.env.CTRL_DOM_DEBUG = "aria";
     ctrlDom();
-    const message = await asyncMessageOf(() => ours.findByRole(document.body, "button", { name: /submit/i }, { timeout: 50 }));
+    const message = await asyncMessageOf(() =>
+      ours.findByRole(document.body, "button", { name: /submit/i }, { timeout: 50 }),
+    );
     expect(message).toContain("Closest matches:");
     expect(message.split("Accessibility snapshot of").length).toBe(2);
   });
@@ -202,14 +227,24 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
         { timeout: 50 },
       ),
     );
-    expect(message).toBe(["nope", "", "Accessibility snapshot of the document (CTRL_DOM_DEBUG=aria):", '- heading "Hi" [level=1]'].join("\n"));
+    expect(message).toBe(
+      ["nope", "", "Accessibility snapshot of the document (CTRL_DOM_DEBUG=aria):", '- heading "Hi" [level=1]'].join(
+        "\n",
+      ),
+    );
   });
 
   test("CTRL_DOM_DEBUG_LINES bounds the snapshot in errors", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
     process.env.CTRL_DOM_DEBUG_LINES = "2";
     const message = messageOf(() => ours.getByRole(ctrlDom(), "slider"));
-    expect(message.endsWith(["- banner:", '  - navigation "Main":', "# … 12 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)"].join("\n"))).toBe(true);
+    expect(
+      message.endsWith(
+        ["- banner:", '  - navigation "Main":', "# … 12 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)"].join(
+          "\n",
+        ),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -226,10 +261,14 @@ describe("query errors under CTRL_DOM_DEBUG=compact", () => {
 
 describe("diffAriaSnapshots", () => {
   test("shows removed and added lines under their unchanged parents", () => {
-    ctrlDom(`<nav aria-label="Main"><button aria-expanded="false">Menu</button></nav><main><h1>Home</h1><p>a</p><p>b</p></main>`);
+    ctrlDom(
+      `<nav aria-label="Main"><button aria-expanded="false">Menu</button></nav><main><h1>Home</h1><p>a</p><p>b</p></main>`,
+    );
     const before = ours.ariaSnapshot();
     document.querySelector("button")!.setAttribute("aria-expanded", "true");
-    document.querySelector("nav")!.insertAdjacentHTML("beforeend", `<ul role="menu"><li role="menuitem">Settings</li></ul>`);
+    document
+      .querySelector("nav")!
+      .insertAdjacentHTML("beforeend", `<ul role="menu"><li role="menuitem">Settings</li></ul>`);
     expect(ours.diffAriaSnapshots(before, ours.ariaSnapshot())).toBe(
       [
         '  - navigation "Main":',
@@ -242,7 +281,9 @@ describe("diffAriaSnapshots", () => {
   });
 
   test("skipped unchanged lines between changes print as …", () => {
-    expect(ours.diffAriaSnapshots("- a\n- b\n- c\n- d", "- A\n- b\n- c\n- D")).toBe(["- - a", "+ - A", "  …", "- - d", "+ - D"].join("\n"));
+    expect(ours.diffAriaSnapshots("- a\n- b\n- c\n- d", "- A\n- b\n- c\n- D")).toBe(
+      ["- - a", "+ - A", "  …", "- - d", "+ - D"].join("\n"),
+    );
   });
 
   test("equal snapshots print (no changes)", () => {

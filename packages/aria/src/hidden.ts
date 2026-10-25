@@ -64,7 +64,11 @@ export function isInaccessibleImpl(impl: NodeImpl): boolean {
  * ancestor. `memo` plays upstream's per-query `subtreeIsInaccessibleCache` (pass null for a
  * one-off call). Nothing is cached on the nodes: the replacement's answers are not versioned.
  */
-export function isInaccessibleWithStyle(impl: NodeImpl, gcs: GetComputedStyle, memo: Map<NodeImpl, boolean> | null): boolean {
+export function isInaccessibleWithStyle(
+  impl: NodeImpl,
+  gcs: GetComputedStyle,
+  memo: Map<NodeImpl, boolean> | null,
+): boolean {
   // since visibility is inherited we can exit early
   if (gcs(impl.node as unknown as Element).visibility === "hidden") return true;
   for (let cur: NodeImpl | null = impl; cur !== null && cur.type === ELEMENT_NODE; cur = cur.parent) {
@@ -99,7 +103,10 @@ export interface IsInaccessibleOptions {
 
 const NO_WINDOW = "Owner document of the element needs to have an associated window.";
 
-function checkGetComputedStyle(impl: NodeImpl, options: IsSubtreeInaccessibleOptions | undefined): GetComputedStyle | null {
+function checkGetComputedStyle(
+  impl: NodeImpl,
+  options: IsSubtreeInaccessibleOptions | undefined,
+): GetComputedStyle | null {
   if (options !== undefined && "getComputedStyle" in options && options.getComputedStyle !== undefined) {
     const gcs = options.getComputedStyle;
     if (typeof gcs !== "function") throw new TypeError(NO_WINDOW);

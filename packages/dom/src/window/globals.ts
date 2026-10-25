@@ -83,7 +83,11 @@ function windowAttributes(): string[] {
   const interfaces = windowInterfaces();
   const skip = new Set<string>([...SELF_REFERENCES, ...METHODS, "document", "constructor"]);
   const keys: string[] = [];
-  for (let proto: object | null = Window.prototype; proto !== null && proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
+  for (
+    let proto: object | null = Window.prototype;
+    proto !== null && proto !== Object.prototype;
+    proto = Object.getPrototypeOf(proto)
+  ) {
     for (const key of Object.getOwnPropertyNames(proto)) {
       if (skip.has(key) || HOST.has(key) || key in interfaces || key.startsWith("_")) continue;
       const desc = Object.getOwnPropertyDescriptor(proto, key)!;
@@ -118,11 +122,13 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
     const existing = Object.getOwnPropertyDescriptor(target, key);
     if (existing !== undefined && !existing.configurable) return;
     if (!saved.has(key)) saved.set(key, existing);
-    if (existing !== undefined && "value" in existing && target === (globalThis as never)) recordHostOriginal(key, existing.value);
+    if (existing !== undefined && "value" in existing && target === (globalThis as never))
+      recordHostOriginal(key, existing.value);
     Object.defineProperty(target, key, descriptor);
   };
 
-  for (const key of SELF_REFERENCES) define(key, { value: target, writable: true, enumerable: true, configurable: true });
+  for (const key of SELF_REFERENCES)
+    define(key, { value: target, writable: true, enumerable: true, configurable: true });
 
   define("document", { value: window.document, writable: true, enumerable: true, configurable: true });
 

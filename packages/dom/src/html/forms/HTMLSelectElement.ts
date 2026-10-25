@@ -26,7 +26,18 @@ import {
   type ValidityState,
 } from "./validation.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
-import { $customValidity, $dirtiness, $impl, $labels, $options, $selectedOptions, $settled, $updatingSelectedContent, $userValidity, $validity } from "../../keys.ts";
+import {
+  $customValidity,
+  $dirtiness,
+  $impl,
+  $labels,
+  $options,
+  $selectedOptions,
+  $settled,
+  $updatingSelectedContent,
+  $userValidity,
+  $validity,
+} from "../../keys.ts";
 import { noteChangeDispatch } from "./user-validity.ts";
 import type { Event } from "../../events/Event.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
@@ -39,12 +50,17 @@ function opt(o: NodeImpl): HTMLOptionElement {
 class SelectedOptionsCollection extends HTMLCollection {
   override _collect(out: Element[]): void {
     const options = listOfOptions(this._s.root, []);
-    for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) out.push(options[i].node as Element);
+    for (let i = 0; i < options.length; i++)
+      if (opt(options[i])._selectednessNow()) out.push(options[i].node as Element);
   }
 }
 
 // selectedOptions is a plain HTMLCollection as far as script can tell (WPT select-selectedOptions.html).
-Object.defineProperty(SelectedOptionsCollection.prototype, "constructor", { value: HTMLCollection, writable: true, configurable: true });
+Object.defineProperty(SelectedOptionsCollection.prototype, "constructor", {
+  value: HTMLCollection,
+  writable: true,
+  configurable: true,
+});
 
 export class HTMLSelectElement extends HTMLElement {
   [$customValidity]: string;
@@ -222,7 +238,10 @@ export class HTMLSelectElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-select-showpicker — no picker UI. */
   showPicker(): void {
     if (isActuallyDisabled(this[$impl])) {
-      throw new DOMException("Failed to execute 'showPicker' on 'HTMLSelectElement': HTMLSelectElement::showPicker() cannot be used on immutable controls.", "InvalidStateError");
+      throw new DOMException(
+        "Failed to execute 'showPicker' on 'HTMLSelectElement': HTMLSelectElement::showPicker() cannot be used on immutable controls.",
+        "InvalidStateError",
+      );
     }
   }
 
@@ -275,7 +294,7 @@ export class HTMLSelectElement extends HTMLElement {
   _enabledSelectedContent(): NodeImpl | null {
     const impl = this[$impl];
     if (contentAttr(impl, "multiple") !== null) return null;
-    for (let n = impl.first; n !== null; ) {
+    for (let n = impl.first; n !== null;) {
       // Option contents are skipped: keeps the walk O(children) for large option lists.
       if (n.type !== 1 || n.tag === T.option || n.tag !== T.selectedcontent) {
         n = n.tag === T.option ? nextSkippingChildren(n, impl) : nextInTree(n, impl);
@@ -339,7 +358,12 @@ export class HTMLSelectElement extends HTMLElement {
     this._selectednessSettingAlgorithm();
   }
 
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     // Browsers re-run the algorithm when the display mode changes (multiple / size).
     if (namespace === null && (localName === "multiple" || localName === "size")) {

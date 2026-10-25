@@ -40,7 +40,8 @@ export class SVGAnimatedString {
 function xlinkHref(impl: NodeImpl): string | null {
   const attrs = impl.attrs;
   if (attrs === null) return null;
-  for (let i = 0; i < attrs.length; i++) if (attrs[i].localName === "href" && attrs[i].ns === XLINK_NS) return attrs[i].value;
+  for (let i = 0; i < attrs.length; i++)
+    if (attrs[i].localName === "href" && attrs[i].ns === XLINK_NS) return attrs[i].value;
   return null;
 }
 
@@ -189,7 +190,8 @@ export class SVGSVGElement extends SVGGraphicsElement {
   setCurrentTime(): void {}
   getElementById(id: string): Element | null {
     const root = this[$impl];
-    for (let n = root.first; n !== null; n = nextEl(n, root)) if (n.type === ELEMENT_NODE && n.id === String(id)) return n.node as Element;
+    for (let n = root.first; n !== null; n = nextEl(n, root))
+      if (n.type === ELEMENT_NODE && n.id === String(id)) return n.node as Element;
     return null;
   }
 }
@@ -254,7 +256,10 @@ export class SVGViewElement extends SVGElement {}
 export class SVGFilterElement extends SVGElement {}
 
 /** SVG local name → interface. Unknown SVG names are SVGElement. */
-export const svgElements: ReadonlyMap<string, new (...args: any[]) => Element> = new Map<string, new (...args: any[]) => Element>([
+export const svgElements: ReadonlyMap<string, new (...args: any[]) => Element> = new Map<
+  string,
+  new (...args: any[]) => Element
+>([
   ["svg", SVGSVGElement],
   ["g", SVGGElement],
   ["defs", SVGDefsElement],

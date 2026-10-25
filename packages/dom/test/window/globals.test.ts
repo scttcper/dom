@@ -14,7 +14,16 @@
  * tests/compat/test/surface/ checks each profile against the real jsdom.
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, Event as CtrlDomEvent, EventTarget as CtrlDomEventTarget, Node as CtrlDomNode, FormData as CtrlDomFormData, type Window } from "@ctrl/dom";
+import {
+  createWindow,
+  currentWindowOrNull,
+  installGlobals,
+  Event as CtrlDomEvent,
+  EventTarget as CtrlDomEventTarget,
+  Node as CtrlDomNode,
+  FormData as CtrlDomFormData,
+  type Window,
+} from "@ctrl/dom";
 
 type G = Record<string, unknown>;
 
@@ -26,7 +35,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function installOn(target: G = {}, window: Window = createWindow()): { target: G; window: Window; uninstall: () => void } {
+function installOn(
+  target: G = {},
+  window: Window = createWindow(),
+): { target: G; window: Window; uninstall: () => void } {
   const uninstall = installGlobals(window, target);
   cleanup = () => {
     uninstall();
@@ -78,7 +90,9 @@ describe("events at the window expose the WindowProxy — https://dom.spec.whatw
   test("once listeners and on* handlers still work on the window", () => {
     const { target } = installOn();
     const calls: unknown[] = [];
-    (target.addEventListener as (type: string, fn: () => void, o: object) => void)("resize", () => calls.push("once"), { once: true });
+    (target.addEventListener as (type: string, fn: () => void, o: object) => void)("resize", () => calls.push("once"), {
+      once: true,
+    });
     target.onresize = function (this: unknown) {
       calls.push(this === target ? "handler" : "handler (wrong this)");
     };
@@ -103,7 +117,24 @@ describe("interface objects — https://webidl.spec.whatwg.org/#es-interfaces", 
     const { target } = installOn();
     expect(target.Node).toBe(CtrlDomNode);
     expect(target.EventTarget).toBe(CtrlDomEventTarget);
-    for (const name of ["Element", "HTMLElement", "Document", "Text", "Event", "CustomEvent", "Storage", "Location", "History", "DOMRect", "IntersectionObserver", "FileReader", "FileList", "DOMParser", "XMLSerializer", "MessageEvent"]) {
+    for (const name of [
+      "Element",
+      "HTMLElement",
+      "Document",
+      "Text",
+      "Event",
+      "CustomEvent",
+      "Storage",
+      "Location",
+      "History",
+      "DOMRect",
+      "IntersectionObserver",
+      "FileReader",
+      "FileList",
+      "DOMParser",
+      "XMLSerializer",
+      "MessageEvent",
+    ]) {
       expect(typeof target[name], name).toBe("function");
     }
     const d = Object.getOwnPropertyDescriptor(target, "Node")!;
@@ -273,7 +304,8 @@ describe("window creation cost", () => {
 describe("compat profiles — src/window/compat.ts (jsdom parity, docs/deviations.md)", () => {
   test("jsdom-30 (the default) leaves out matchMedia, MediaQueryList, ResizeObserver and the inert IDL attribute", () => {
     const { target } = installOn();
-    for (const name of ["matchMedia", "MediaQueryList", "MediaQueryListEvent", "ResizeObserver", "visualViewport"]) expect(name in target, name).toBe(false);
+    for (const name of ["matchMedia", "MediaQueryList", "MediaQueryListEvent", "ResizeObserver", "visualViewport"])
+      expect(name in target, name).toBe(false);
     expect(typeof target.PointerEvent).toBe("function");
     expect("onpointerdown" in target).toBe(true);
     expect("inert" in (target.HTMLElement as { prototype: object }).prototype).toBe(false);
@@ -283,7 +315,8 @@ describe("compat profiles — src/window/compat.ts (jsdom parity, docs/deviation
     const window = createWindow({ compat: "modern" });
     const target: G = {};
     const uninstall = installGlobals(window, target);
-    for (const name of ["matchMedia", "MediaQueryList", "ResizeObserver", "visualViewport", "PointerEvent"]) expect(name in target, name).toBe(true);
+    for (const name of ["matchMedia", "MediaQueryList", "ResizeObserver", "visualViewport", "PointerEvent"])
+      expect(name in target, name).toBe(true);
     const el = window.document.createElement("div");
     expect((el as unknown as { inert: boolean }).inert).toBe(false);
     (el as unknown as { inert: boolean }).inert = true;
@@ -312,6 +345,8 @@ describe("compat profiles — src/window/compat.ts (jsdom parity, docs/deviation
   });
 
   test("an unknown profile is a TypeError naming the valid ones", () => {
-    expect(() => createWindow({ compat: "jsdom-99" as never })).toThrow(new TypeError('Unknown compat profile "jsdom-99": expected "jsdom-26", "jsdom-30", "modern".'));
+    expect(() => createWindow({ compat: "jsdom-99" as never })).toThrow(
+      new TypeError('Unknown compat profile "jsdom-99": expected "jsdom-26", "jsdom-30", "modern".'),
+    );
   });
 });

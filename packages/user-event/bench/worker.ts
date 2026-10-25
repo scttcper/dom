@@ -14,8 +14,14 @@ const [workload, configArg, itersArg] = process.argv.slice(2)
 const [config, variant] = configArg.split(':')
 const iterations = Number(itersArg ?? 30)
 
-const fields20 = Array.from({length: 20}, (_, i) => `<label>f${i}<input name="f${i}"></label>`).join('')
-const options10 = Array.from({length: 10}, (_, i) => `<option value="v${i}">Option ${i}</option>`).join('')
+const fields20 = Array.from(
+  {length: 20},
+  (_, i) => `<label>f${i}<input name="f${i}"></label>`,
+).join('')
+const options10 = Array.from(
+  {length: 10},
+  (_, i) => `<option value="v${i}">Option ${i}</option>`,
+).join('')
 const html = `<!doctype html><html><head></head><body>
 <input id="text"/>
 <button id="btn">Click</button>
@@ -48,7 +54,10 @@ const userEvent = config.startsWith('stock')
 const setupMs = performance.now() - t0
 
 const doc = win.document
-const user = (userEvent as any).setup({document: doc, ...(variant === 'nodelay' ? {delay: null} : {})})
+const user = (userEvent as any).setup({
+  document: doc,
+  ...(variant === 'nodelay' ? {delay: null} : {}),
+})
 const text = doc.getElementById('text')
 const btn = doc.getElementById('btn')
 const sel = doc.getElementById('sel')
@@ -63,7 +72,8 @@ async function op(i: number) {
     case 'type': {
       text.value = ''
       await user.type(text, 'hello world')
-      if (text.value !== 'hello world') throw new Error(`type: got ${JSON.stringify(text.value)}`)
+      if (text.value !== 'hello world')
+        throw new Error(`type: got ${JSON.stringify(text.value)}`)
       return
     }
     case 'click': {
@@ -75,7 +85,8 @@ async function op(i: number) {
     case 'tab': {
       inputs[0].focus()
       for (let k = 1; k < 20; k++) await user.tab()
-      if (doc.activeElement !== inputs[19]) throw new Error(`tab: focus on ${doc.activeElement?.name}`)
+      if (doc.activeElement !== inputs[19])
+        throw new Error(`tab: focus on ${doc.activeElement?.name}`)
       return
     }
     case 'selectOptions': {

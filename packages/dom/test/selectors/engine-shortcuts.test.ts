@@ -164,10 +164,26 @@ describe("differential: the same selectors on jsdom", () => {
 <form id=f><label id=lb for=t>T</label><input id=t type=text><input id=c type=checkbox><button id=btn>Go</button><textarea id=ta></textarea></form></section>
 <aside id=side><h2 id=h2>Side</h2><div id=dv role=heading>h</div><p id=para class="label">p</p></aside></main><div id=out><span id=sp3 class="label"></span></div>`;
   const selectors = [
-    "#app li", "#list .label", "#nav > a", "#side .label", "#out span", "#missing span", "#app #list li > span",
-    "main .panel span", ".app .bar a.cur", "section > ul li span", "aside p", "form input", "#f > input + input",
-    '*[role~="heading"],h1,h2,h3,h4,h5,h6', '*[role~="textbox"],input,textarea', "button,input,a.cur", "li.odd,span.label,p",
-    ":is(h2,p).label,div", "ul li:not(.odd), a", "#app :is(span,button)",
+    "#app li",
+    "#list .label",
+    "#nav > a",
+    "#side .label",
+    "#out span",
+    "#missing span",
+    "#app #list li > span",
+    "main .panel span",
+    ".app .bar a.cur",
+    "section > ul li span",
+    "aside p",
+    "form input",
+    "#f > input + input",
+    '*[role~="heading"],h1,h2,h3,h4,h5,h6',
+    '*[role~="textbox"],input,textarea',
+    "button,input,a.cur",
+    "li.odd,span.label,p",
+    ":is(h2,p).label,div",
+    "ul li:not(.odd), a",
+    "#app :is(span,button)",
   ];
   test.each(selectors)("%s", (sel) => {
     const jsdom = new JSDOM(`<!doctype html><body>${fixture}</body>`).window.document;

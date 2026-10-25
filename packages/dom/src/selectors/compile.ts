@@ -17,7 +17,14 @@
 // 11 vs 21 µs per 1000 elements) and compiled ~2x faster, so the interpreter (`matchTest`) is
 // only kept for the rare featureless-shadow-host path.
 
-import { DOCUMENT_NODE, ELEMENT_NODE, F_HTML, F_SHADOW_ROOT, TEXT_NODE, CDATA_SECTION_NODE } from "../nodes/constants.ts";
+import {
+  DOCUMENT_NODE,
+  ELEMENT_NODE,
+  F_HTML,
+  F_SHADOW_ROOT,
+  TEXT_NODE,
+  CDATA_SECTION_NODE,
+} from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Document } from "../nodes/Document.ts";
 import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
@@ -27,18 +34,77 @@ import {
   type Compound,
   type Simple,
   type SelectorList,
-  S_TYPE, S_UNIVERSAL, S_ID, S_CLASS, S_ATTR, S_PSEUDO_CLASS, S_PSEUDO_ELEMENT,
-  NS_UNSPECIFIED, NS_ANY, NS_NONE, NS_PREFIX,
-  OP_EXISTS, OP_EQUALS, OP_INCLUDES, OP_DASH, OP_PREFIX, OP_SUFFIX, OP_SUBSTRING,
-  CASE_INSENSITIVE, CASE_SENSITIVE,
-  C_NONE, C_DESCENDANT, C_CHILD, C_NEXT_SIBLING, C_SUBSEQUENT_SIBLING,
-  P_IS, P_WHERE, P_NOT, P_HAS, P_NTH_CHILD, P_NTH_LAST_CHILD, P_NTH_OF_TYPE, P_NTH_LAST_OF_TYPE,
-  P_HOST_FN, P_HOST_CONTEXT, P_LANG, P_DIR, P_STATE, P_FIRST_CHILD, P_LAST_CHILD, P_ONLY_CHILD,
-  P_FIRST_OF_TYPE, P_LAST_OF_TYPE, P_ONLY_OF_TYPE, P_EMPTY, P_ROOT, P_SCOPE, P_HOST, P_CURRENT,
-  P_LINK, P_ANY_LINK, P_VISITED, P_DISABLED, P_ENABLED, P_REQUIRED, P_OPTIONAL, P_READ_ONLY,
-  P_READ_WRITE, P_DEFAULT, P_OPEN, P_HEADING,
+  S_TYPE,
+  S_UNIVERSAL,
+  S_ID,
+  S_CLASS,
+  S_ATTR,
+  S_PSEUDO_CLASS,
+  S_PSEUDO_ELEMENT,
+  NS_UNSPECIFIED,
+  NS_ANY,
+  NS_NONE,
+  NS_PREFIX,
+  OP_EXISTS,
+  OP_EQUALS,
+  OP_INCLUDES,
+  OP_DASH,
+  OP_PREFIX,
+  OP_SUFFIX,
+  OP_SUBSTRING,
+  CASE_INSENSITIVE,
+  CASE_SENSITIVE,
+  C_NONE,
+  C_DESCENDANT,
+  C_CHILD,
+  C_NEXT_SIBLING,
+  C_SUBSEQUENT_SIBLING,
+  P_IS,
+  P_WHERE,
+  P_NOT,
+  P_HAS,
+  P_NTH_CHILD,
+  P_NTH_LAST_CHILD,
+  P_NTH_OF_TYPE,
+  P_NTH_LAST_OF_TYPE,
+  P_HOST_FN,
+  P_HOST_CONTEXT,
+  P_LANG,
+  P_DIR,
+  P_STATE,
+  P_FIRST_CHILD,
+  P_LAST_CHILD,
+  P_ONLY_CHILD,
+  P_FIRST_OF_TYPE,
+  P_LAST_OF_TYPE,
+  P_ONLY_OF_TYPE,
+  P_EMPTY,
+  P_ROOT,
+  P_SCOPE,
+  P_HOST,
+  P_CURRENT,
+  P_LINK,
+  P_ANY_LINK,
+  P_VISITED,
+  P_DISABLED,
+  P_ENABLED,
+  P_REQUIRED,
+  P_OPTIONAL,
+  P_READ_ONLY,
+  P_READ_WRITE,
+  P_DEFAULT,
+  P_OPEN,
+  P_HEADING,
 } from "./parser.ts";
-import { predicates, type Predicate, matchesLang, directionality, customState, parentOrHost, shadowHost } from "./state.ts";
+import {
+  predicates,
+  type Predicate,
+  matchesLang,
+  directionality,
+  customState,
+  parentOrHost,
+  shadowHost,
+} from "./state.ts";
 import { $impl, $mode, $shadowRoot, $version } from "../keys.ts";
 import { classHash, idHash, tagHash } from "./filter.ts";
 
@@ -79,6 +145,7 @@ const VC_HTML = 2;
  * Attributes whose values match ASCII case-insensitively on HTML elements in HTML documents.
  * https://html.spec.whatwg.org/#case-sensitivity-of-selectors
  */
+// oxfmt-ignore
 const HTML_CASE_INSENSITIVE_ATTRS = new Set([
   "accept", "accept-charset", "align", "alink", "axis", "bgcolor", "charset", "checked", "clear",
   "codetype", "color", "compact", "declare", "defer", "dir", "direction", "disabled", "enctype",
@@ -89,7 +156,19 @@ const HTML_CASE_INSENSITIVE_ATTRS = new Set([
 ]);
 
 /** Predicate-based pseudo-classes whose result depends only on attributes/tree (Document._version). */
-const STABLE_PREDICATES = new Set([P_LINK, P_ANY_LINK, P_VISITED, P_DISABLED, P_ENABLED, P_REQUIRED, P_OPTIONAL, P_READ_ONLY, P_READ_WRITE, P_DEFAULT, P_OPEN]);
+const STABLE_PREDICATES = new Set([
+  P_LINK,
+  P_ANY_LINK,
+  P_VISITED,
+  P_DISABLED,
+  P_ENABLED,
+  P_REQUIRED,
+  P_OPTIONAL,
+  P_READ_ONLY,
+  P_READ_WRITE,
+  P_DEFAULT,
+  P_OPEN,
+]);
 
 /** One compiled simple selector. Every field is initialized so all tests share one shape. */
 export class Test {
@@ -423,7 +502,8 @@ function needsImpliedNamespace(c: Compound, end: number): boolean {
   for (let i = 0; i < end; i++) {
     const s = c.simples[i];
     if (s.kind === S_TYPE || s.kind === S_UNIVERSAL) return false;
-    if (!(s.kind === S_PSEUDO_CLASS && (s.pseudo === P_HOST || s.pseudo === P_HOST_FN || s.pseudo === P_HOST_CONTEXT))) onlyHost = false;
+    if (!(s.kind === S_PSEUDO_CLASS && (s.pseudo === P_HOST || s.pseudo === P_HOST_FN || s.pseudo === P_HOST_CONTEXT)))
+      onlyHost = false;
   }
   return !onlyHost;
 }
@@ -653,7 +733,14 @@ function compilePseudoClass(s: Simple, info: CompileInfo): Test | null {
 }
 
 function nthTest(p: number, a: number, b: number, list: SelectorList | null, info: CompileInfo): Test {
-  const op = p === P_NTH_CHILD ? O_NTH_CHILD : p === P_NTH_LAST_CHILD ? O_NTH_LAST_CHILD : p === P_NTH_OF_TYPE ? O_NTH_OF_TYPE : O_NTH_LAST_OF_TYPE;
+  const op =
+    p === P_NTH_CHILD
+      ? O_NTH_CHILD
+      : p === P_NTH_LAST_CHILD
+        ? O_NTH_LAST_CHILD
+        : p === P_NTH_OF_TYPE
+          ? O_NTH_OF_TYPE
+          : O_NTH_LAST_OF_TYPE;
   const t = new Test(op);
   t.a = a;
   t.b = b;
@@ -881,7 +968,8 @@ function testFn(t: Test): Matcher {
       return (el) => el.id === name || (el.id !== "" && isQuirks(el.doc) && asciiLowercase(el.id) === lower);
     }
     case O_ATTR: {
-      if (t.nsCheck || t.valueCase !== VC_SENSITIVE || (t.attrOp !== OP_EXISTS && t.attrOp !== OP_EQUALS)) return (el) => matchAttribute(t, el);
+      if (t.nsCheck || t.valueCase !== VC_SENSITIVE || (t.attrOp !== OP_EXISTS && t.attrOp !== OP_EQUALS))
+        return (el) => matchAttribute(t, el);
       const lower = t.lower;
       const name = t.name;
       if (t.attrOp === OP_EXISTS) {
@@ -1404,7 +1492,7 @@ function matchHas(list: CList, anchor: NodeImpl): boolean {
         }
         break;
       case H_DESCENDANTS:
-        for (let c = anchor.first; c !== null; ) {
+        for (let c = anchor.first; c !== null;) {
           if (c.type === ELEMENT_NODE && cx.fn(c)) {
             r = true;
             break;
@@ -1433,7 +1521,7 @@ function matchHas(list: CList, anchor: NodeImpl): boolean {
             r = true;
             break;
           }
-          for (let c = s.first; c !== null; ) {
+          for (let c = s.first; c !== null;) {
             if (c.type === ELEMENT_NODE && cx.fn(c)) {
               r = true;
               break;

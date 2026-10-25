@@ -23,10 +23,24 @@ export async function startup(contenders: Contender[], samples: number): Promise
   const raw = new Map<string, Sample[]>(contenders.map((c) => [c.id, []]));
   for (let s = 0; s < samples; s++) {
     for (const c of interleave(contenders, s)) {
-      const args = ["--expose-gc", "--no-warnings", ...(c.preload ?? []).flatMap((p) => ["--import", p]), ...(c.execArgv ?? []), `${here}lib/startup-worker.ts`, c.id];
-      const exit = await run(process.execPath, args, { cwd: here, env: { ...process.env, ...c.env }, timeoutMs: 120_000 });
+      const args = [
+        "--expose-gc",
+        "--no-warnings",
+        ...(c.preload ?? []).flatMap((p) => ["--import", p]),
+        ...(c.execArgv ?? []),
+        `${here}lib/startup-worker.ts`,
+        c.id,
+      ];
+      const exit = await run(process.execPath, args, {
+        cwd: here,
+        env: { ...process.env, ...c.env },
+        timeoutMs: 120_000,
+      });
       const line = exit.stdout.split("\n").findLast((l) => l.startsWith("@@RESULT "));
-      if (line === undefined) throw new Error(`startup ${c.id} failed (exit ${exit.code}):\n${exit.stderr.trim().split("\n").slice(-8).join("\n")}`);
+      if (line === undefined)
+        throw new Error(
+          `startup ${c.id} failed (exit ${exit.code}):\n${exit.stderr.trim().split("\n").slice(-8).join("\n")}`,
+        );
       raw.get(c.id)!.push(JSON.parse(line.slice("@@RESULT ".length)));
     }
     process.stderr.write(`startup: sample ${s + 1}/${samples}\n`);
@@ -44,11 +58,16 @@ export async function startup(contenders: Contender[], samples: number): Promise
     ]),
   );
   mkdirSync(`${here}results`, { recursive: true });
-  writeFileSync(`${here}results/startup.json`, `${JSON.stringify({ samples, run: runInfo(contenders), results }, null, 2)}\n`);
+  writeFileSync(
+    `${here}results/startup.json`,
+    `${JSON.stringify({ samples, run: runInfo(contenders), results }, null, 2)}\n`,
+  );
 }
 
 if (import.meta.main) {
-  const { values } = parseArgs({ options: { contenders: { type: "string" }, samples: { type: "string", default: "10" } } });
+  const { values } = parseArgs({
+    options: { contenders: { type: "string" }, samples: { type: "string", default: "10" } },
+  });
   const contenders = selectContenders(values.contenders);
   for (const c of contenders) c.check?.();
   await startup(contenders, Number(values.samples));

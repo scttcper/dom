@@ -18,7 +18,16 @@ import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { appendDetached, connectDetachedChildren } from "./tree.ts";
 import { ceActive, ceReactionsPending, createCloneElementImpl, createElementImpl, flushCEReactions } from "./create.ts";
-import { $clonable, $declarative, $delegatesFocus, $impl, $mode, $serializable, $shadowRoot, $slotAssignment } from "../keys.ts";
+import {
+  $clonable,
+  $declarative,
+  $delegatesFocus,
+  $impl,
+  $mode,
+  $serializable,
+  $shadowRoot,
+  $slotAssignment,
+} from "../keys.ts";
 
 /** Clone `node` into `doc`. Deep clones build the copy detached and never fire hooks. */
 export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
@@ -32,7 +41,8 @@ export function cloneNode(node: NodeImpl, doc: Document, deep: boolean): NodeImp
 function cloneTree(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
   const copy = cloneOne(node, doc, deep);
   if (deep) {
-    for (let c = node.first; c !== null; c = c.next) appendDetached(cloneTree(c, copy.type === DOCUMENT_NODE ? (copy.node as Document) : doc, true), copy);
+    for (let c = node.first; c !== null; c = c.next)
+      appendDetached(cloneTree(c, copy.type === DOCUMENT_NODE ? (copy.node as Document) : doc, true), copy);
     // A Document clone is connected: its copied descendants become connected too (id index,
     // connected steps), as if appended with the insert algorithm.
     if (copy.type === DOCUMENT_NODE && copy.first !== null) connectDetachedChildren(copy);
@@ -50,7 +60,8 @@ function cloneTree(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
         slotAssignment: shadow[$slotAssignment],
       });
       copyShadow[$declarative] = shadow[$declarative];
-      for (let c = shadow[$impl].first; c !== null; c = c.next) appendDetached(cloneTree(c, doc, true), copyShadow[$impl]);
+      for (let c = shadow[$impl].first; c !== null; c = c.next)
+        appendDetached(cloneTree(c, doc, true), copyShadow[$impl]);
     }
   }
   return copy;
@@ -81,7 +92,9 @@ function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
       return doc.createTextNode(node.data)[$impl];
     case CDATA_SECTION_NODE:
       // Not via createCDATASection: cloning into an HTML document must not throw.
-      return new (node.node.constructor as new (data: string, doc: Document) => { [$impl]: NodeImpl })(node.data, doc)[$impl];
+      return new (node.node.constructor as new (data: string, doc: Document) => { [$impl]: NodeImpl })(node.data, doc)[
+        $impl
+      ];
     case COMMENT_NODE:
       return doc.createComment(node.data)[$impl];
     case PROCESSING_INSTRUCTION_NODE:

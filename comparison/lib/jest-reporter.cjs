@@ -9,6 +9,9 @@ module.exports = class EnvironmentTimingReporter {
     const out = process.env.COMPARE_DIAGNOSTICS_FILE;
     if (!out) return;
     const { loadTestEnvironmentStart, loadTestEnvironmentEnd } = result.perfStats;
-    appendFileSync(out, `${JSON.stringify({ file: result.testFilePath, environmentMs: loadTestEnvironmentEnd - loadTestEnvironmentStart })}\n`);
+    appendFileSync(
+      out,
+      `${JSON.stringify({ file: result.testFilePath, environmentMs: loadTestEnvironmentEnd - loadTestEnvironmentStart })}\n`,
+    );
   }
 };

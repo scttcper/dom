@@ -6,7 +6,17 @@
 // (https://html.spec.whatwg.org/#labeled-control) that a whole query shares
 // (`LabelContext`), and aria-labelledby ids resolve through a lazily built id map.
 
-import { asciiLowercase, attr, ELEMENT_NODE, HTML_NS, nextInTree, T, TEXT_NODE, treeRoot, type NodeImpl } from "@ctrl/dom/internal";
+import {
+  asciiLowercase,
+  attr,
+  ELEMENT_NODE,
+  HTML_NS,
+  nextInTree,
+  T,
+  TEXT_NODE,
+  treeRoot,
+  type NodeImpl,
+} from "@ctrl/dom/internal";
 import { matchesSelector } from "./selectors.ts";
 import { implOf } from "./helpers.ts";
 
@@ -155,7 +165,9 @@ export function getLabelsImpl(ctx: LabelContext, element: NodeImpl, selector = "
   if (labelsId.length) {
     return labelsId.map((labelId) => {
       const labellingElement = ctx.byIdInContainer(labelId);
-      return labellingElement ? { content: getLabelContentImpl(labellingElement), formControl: null } : { content: "", formControl: null };
+      return labellingElement
+        ? { content: getLabelContentImpl(labellingElement), formControl: null }
+        : { content: "", formControl: null };
     });
   }
   return ctx.labelsOf(element).map((label) => ({
@@ -175,7 +187,11 @@ export function getLabelContent(element: any): string | null {
   return getLabelContentImpl(implOf(element));
 }
 
-export function getLabels(container: any, element: any, { selector = "*" } = {}): { content: string | null; formControl: any }[] {
+export function getLabels(
+  container: any,
+  element: any,
+  { selector = "*" } = {},
+): { content: string | null; formControl: any }[] {
   const ctx = new LabelContext(implOf(container));
   return getLabelsImpl(ctx, implOf(element), selector).map((l) => ({
     content: l.content,

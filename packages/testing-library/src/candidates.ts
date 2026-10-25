@@ -12,7 +12,15 @@
 
 import { ELEMENT_NODE, attr, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { computeAccessibleNameImpl, isInaccessibleImpl, tlRole, tlRoleMatches } from "@ctrl/dom/aria/internal";
-import { describeElement, hiddenReason, nodeKey, nodeProps, quote, truncate, type SnapshotNode } from "./aria-snapshot.ts";
+import {
+  describeElement,
+  hiddenReason,
+  nodeKey,
+  nodeProps,
+  quote,
+  truncate,
+  type SnapshotNode,
+} from "./aria-snapshot.ts";
 import { getNodeTextImpl } from "./get-node-text.ts";
 import { implOf } from "./helpers.ts";
 import { fuzzyMatches, matches, type Matcher, type NormalizerFn } from "./matches.ts";
@@ -56,7 +64,15 @@ function closeness(text: string, node: any, matcher: Matcher, normalizer: Normal
 }
 
 function line(el: NodeImpl, role: string, name: string, hidden: boolean, comment: string): string {
-  const node: SnapshotNode = { role, name, props: nodeProps(el, role, false, hidden), value: null, url: null, children: [], element: el };
+  const node: SnapshotNode = {
+    role,
+    name,
+    props: nodeProps(el, role, false, hidden),
+    value: null,
+    url: null,
+    children: [],
+    element: el,
+  };
   return `- ${nodeKey(node, MAX_TEXT)}  # ${comment}`;
 }
 
@@ -97,11 +113,21 @@ export function roleCandidates(container: any, q: RoleCandidateQuery): string {
       const nameRank = name === undefined ? 0 : closeness(elName, el.node, name, identity);
       const stateOk = q.matchesState(el);
       if (nameRank === 0 && stateOk) {
-        if (inaccessible && !q.hidden) out.push({ line: line(el, role, elName, true, `hidden: ${hiddenReason(el)} (or pass { hidden: true })`), rank: 0 });
+        if (inaccessible && !q.hidden)
+          out.push({
+            line: line(el, role, elName, true, `hidden: ${hiddenReason(el)} (or pass { hidden: true })`),
+            rank: 0,
+          });
       } else if (nameRank === 0) {
-        out.push({ line: line(el, role, elName, inaccessible && !q.hidden, `role and name match, state is not ${q.stateHint}`), rank: 1 });
+        out.push({
+          line: line(el, role, elName, inaccessible && !q.hidden, `role and name match, state is not ${q.stateHint}`),
+          rank: 1,
+        });
       } else if (!inaccessible || q.hidden) {
-        out.push({ line: line(el, role, elName, false, nameRank > 0 ? "similar name" : "same role, other name"), rank: nameRank > 0 ? 2 + nameRank : 10 });
+        out.push({
+          line: line(el, role, elName, false, nameRank > 0 ? "similar name" : "same role, other name"),
+          rank: nameRank > 0 ? 2 + nameRank : 10,
+        });
       }
       continue;
     }
@@ -110,13 +136,20 @@ export function roleCandidates(container: any, q: RoleCandidateQuery): string {
       const elName = nameOf(el);
       if (elName === "") continue;
       const rank = closeness(elName, el.node, name, identity);
-      if (rank >= 0) out.push({ line: line(el, role, elName, inaccessible && !q.hidden, `same name, role "${role}"`), rank: 2 + rank });
+      if (rank >= 0)
+        out.push({
+          line: line(el, role, elName, inaccessible && !q.hidden, `same name, role "${role}"`),
+          rank: 2 + rank,
+        });
       continue;
     }
     // `<div onClick>Submit</div>`: text that would be the name, on an element with no role.
     const text = normalize(getNodeTextImpl(el));
     if (text !== "" && closeness(text, el.node, name, identity) === 0) {
-      out.push({ line: `- text: ${quote(truncate(text, MAX_TEXT))}  # in ${describeElement(el)}, which has no role: give it role="${q.role}" or use getByText`, rank: 2 });
+      out.push({
+        line: `- text: ${quote(truncate(text, MAX_TEXT))}  # in ${describeElement(el)}, which has no role: give it role="${q.role}" or use getByText`,
+        rank: 2,
+      });
     }
   }
   return format("Closest matches", out);
@@ -149,11 +182,23 @@ export function textCandidates(
     const rank = own.trim() === "" ? -1 : closeness(own, el.node, text, normalizer, exact);
     if (rank === 0) {
       // The text matches but the `selector` option excluded the element.
-      out.push({ line: `- ${roleOrTag(el)}: ${quote(truncate(normalizer(own), MAX_TEXT))}  # matches, but not selector "${selector}"`, rank: 0 });
+      out.push({
+        line: `- ${roleOrTag(el)}: ${quote(truncate(normalizer(own), MAX_TEXT))}  # matches, but not selector "${selector}"`,
+        rank: 0,
+      });
     } else if (rank > 0) {
-      out.push({ line: `- ${roleOrTag(el)}: ${quote(truncate(normalizer(own), MAX_TEXT))}  # similar text in ${describeElement(el)}`, rank: 1 + rank });
+      out.push({
+        line: `- ${roleOrTag(el)}: ${quote(truncate(normalizer(own), MAX_TEXT))}  # similar text in ${describeElement(el)}`,
+        rank: 1 + rank,
+      });
     }
-    if (rank !== 0 && el.first !== null && el.first !== el.last && (exact ? matches : fuzzyMatches)((el.node as any).textContent, el.node, text, normalizer)) split.push(el);
+    if (
+      rank !== 0 &&
+      el.first !== null &&
+      el.first !== el.last &&
+      (exact ? matches : fuzzyMatches)((el.node as any).textContent, el.node, text, normalizer)
+    )
+      split.push(el);
   }
   for (let i = 0; i < split.length; i++) {
     const el = split[i];
@@ -173,7 +218,17 @@ function isAncestor(a: NodeImpl, b: NodeImpl): boolean {
   return false;
 }
 
-const LABELLABLE_ROLES = new Set(["textbox", "searchbox", "combobox", "listbox", "checkbox", "radio", "switch", "slider", "spinbutton"]);
+const LABELLABLE_ROLES = new Set([
+  "textbox",
+  "searchbox",
+  "combobox",
+  "listbox",
+  "checkbox",
+  "radio",
+  "switch",
+  "slider",
+  "spinbutton",
+]);
 
 /** Form controls and their accessible names for a failed `*ByLabelText` query, or "". */
 export function labelCandidates(container: any, text: Matcher, normalizer: NormalizerFn, exact: boolean): string {
@@ -191,7 +246,10 @@ export function labelCandidates(container: any, text: Matcher, normalizer: Norma
       const comment = placeholder
         ? `no label, placeholder ${quote(placeholder)}: use getByPlaceholderText or add a <label>`
         : `no label: add a <label>, aria-label or aria-labelledby`;
-      out.push({ line: line(el, role, "", hidden, comment), rank: placeholder && closeness(placeholder, el.node, text, normalizer) >= 0 ? 1 : 5 });
+      out.push({
+        line: line(el, role, "", hidden, comment),
+        rank: placeholder && closeness(placeholder, el.node, text, normalizer) >= 0 ? 1 : 5,
+      });
       continue;
     }
     const rank = closeness(name, el.node, text, normalizer, exact);

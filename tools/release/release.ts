@@ -28,7 +28,8 @@ const { values: flags } = parseArgs({
 });
 
 const selected = flags.package === "all" ? PACKAGES : PACKAGES.filter((p) => p.name === flags.package);
-if (selected.length === 0) throw new Error(`unknown package ${flags.package} (have: all, ${PACKAGES.map((p) => p.name).join(", ")})`);
+if (selected.length === 0)
+  throw new Error(`unknown package ${flags.package} (have: all, ${PACKAGES.map((p) => p.name).join(", ")})`);
 
 for (const pkg of selected) {
   console.log(`\n── ${pkg.name} ──`);
@@ -41,10 +42,17 @@ for (const pkg of selected) {
       plugins: [
         [plugin, { paths: pkg.paths, pkgRoot: pkg.pkgRoot, peersOnCtrlDom: pkg.peersOnCtrlDom }],
         ["@semantic-release/npm", { pkgRoot: pkg.pkgRoot }],
-        ["@semantic-release/github", { successComment: false, failComment: false, failTitle: false, releasedLabels: false }],
+        [
+          "@semantic-release/github",
+          { successComment: false, failComment: false, failTitle: false, releasedLabels: false },
+        ],
       ],
     },
     { cwd: repoRoot, env: process.env },
   );
-  console.log(result ? `${pkg.name}: ${flags["dry-run"] ? "would release" : "released"} ${result.nextRelease.version}` : `${pkg.name}: nothing to release`);
+  console.log(
+    result
+      ? `${pkg.name}: ${flags["dry-run"] ? "would release" : "released"} ${result.nextRelease.version}`
+      : `${pkg.name}: nothing to release`,
+  );
 }

@@ -29,7 +29,8 @@ const replaced = (el: any) => el.style;
 
 function normalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalize);
-  if (value !== null && typeof value === "object" && typeof (value as any).nodeType === "number") return (value as any).outerHTML;
+  if (value !== null && typeof value === "object" && typeof (value as any).nodeType === "number")
+    return (value as any).outerHTML;
   if (value !== null && typeof value === "object" && "queryMethod" in (value as any)) return (value as any).toString();
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
@@ -111,11 +112,35 @@ function differential(scenarios: Scenario[]): void {
 
 describe("role-helpers isInaccessible reads window.getComputedStyle — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion", () => {
   differential([
-    { name: "ByRole: stylesheet display/visibility hide nothing; inline style, hidden, aria-hidden still do", html: TABS, run: (l, c) => l.queryAllByRole(c, "tab") },
-    { name: "ByRole: descendants of a stylesheet display:none ancestor are accessible", html: TABS, run: (l, c) => l.queryAllByRole(c, "button") },
-    { name: "ByRole hidden: true is unaffected", html: TABS, run: (l, c) => l.queryAllByRole(c, "tab", { hidden: true }) },
-    { name: "getRoles", html: TABS, run: (l, c) => Object.fromEntries(Object.entries(l.getRoles(c)).map(([r, els]) => [r, els.length])) },
-    { name: "isInaccessible (default and custom subtree check)", html: TABS, run: (l, c) => [...c.querySelectorAll("li, button")].map((el: any) => [l.isInaccessible(el), (l.isInaccessible as (e: any, o: object) => boolean)(el, { isSubtreeInaccessible: () => false })]) },
+    {
+      name: "ByRole: stylesheet display/visibility hide nothing; inline style, hidden, aria-hidden still do",
+      html: TABS,
+      run: (l, c) => l.queryAllByRole(c, "tab"),
+    },
+    {
+      name: "ByRole: descendants of a stylesheet display:none ancestor are accessible",
+      html: TABS,
+      run: (l, c) => l.queryAllByRole(c, "button"),
+    },
+    {
+      name: "ByRole hidden: true is unaffected",
+      html: TABS,
+      run: (l, c) => l.queryAllByRole(c, "tab", { hidden: true }),
+    },
+    {
+      name: "getRoles",
+      html: TABS,
+      run: (l, c) => Object.fromEntries(Object.entries(l.getRoles(c)).map(([r, els]) => [r, els.length])),
+    },
+    {
+      name: "isInaccessible (default and custom subtree check)",
+      html: TABS,
+      run: (l, c) =>
+        [...c.querySelectorAll("li, button")].map((el: any) => [
+          l.isInaccessible(el),
+          (l.isInaccessible as (e: any, o: object) => boolean)(el, { isSubtreeInaccessible: () => false }),
+        ]),
+    },
     { name: "logRoles output", html: TABS, run: (l, c) => l.logRoles(c) },
     { name: "missing role error lists roles and names", html: TABS, run: (l, c) => l.getByRole(c, "heading") },
   ]);
@@ -123,9 +148,21 @@ describe("role-helpers isInaccessible reads window.getComputedStyle — https://
 
 describe("accessible names read window.getComputedStyle — https://w3c.github.io/accname/#step2A", () => {
   differential([
-    { name: "name includes text hidden only by a stylesheet", html: TABS, run: (l, c) => l.queryAllByRole(c, "button", { name: "Save draft now" }) },
-    { name: "name filter on a stylesheet-hidden tab", html: TABS, run: (l, c) => l.queryAllByRole(c, "tab", { name: "Attachments" }) },
-    { name: "getSuggestedQuery for an element hidden by a stylesheet", html: TABS, run: (l, c) => l.getSuggestedQuery(c.querySelector(".gone[role=tab]"), "get") },
+    {
+      name: "name includes text hidden only by a stylesheet",
+      html: TABS,
+      run: (l, c) => l.queryAllByRole(c, "button", { name: "Save draft now" }),
+    },
+    {
+      name: "name filter on a stylesheet-hidden tab",
+      html: TABS,
+      run: (l, c) => l.queryAllByRole(c, "tab", { name: "Attachments" }),
+    },
+    {
+      name: "getSuggestedQuery for an element hidden by a stylesheet",
+      html: TABS,
+      run: (l, c) => l.getSuggestedQuery(c.querySelector(".gone[role=tab]"), "get"),
+    },
   ]);
 });
 

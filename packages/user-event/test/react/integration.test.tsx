@@ -25,7 +25,11 @@ type UE = typeof stockUserEvent
 type RTL = Pick<typeof stockRTL, 'render' | 'screen' | 'cleanup' | 'act'>
 
 const impls: Array<[name: string, userEvent: UE, rtl: RTL]> = [
-  ['@ctrl/dom/user-event', ctrlDomUserEvent as unknown as UE, ctrlDomRTL as unknown as RTL],
+  [
+    '@ctrl/dom/user-event',
+    ctrlDomUserEvent as unknown as UE,
+    ctrlDomRTL as unknown as RTL,
+  ],
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 
@@ -56,7 +60,17 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
       expect(screen.getByRole('textbox')).toHaveValue('hello world')
       expect(onChange).toHaveBeenCalledTimes(11)
       expect(onChange.mock.calls.map(c => c[0])).toEqual([
-        'h', 'he', 'hel', 'hell', 'hello', 'hello ', 'hello w', 'hello wo', 'hello wor', 'hello worl', 'hello world',
+        'h',
+        'he',
+        'hel',
+        'hell',
+        'hello',
+        'hello ',
+        'hello w',
+        'hello wo',
+        'hello wor',
+        'hello worl',
+        'hello world',
       ])
     })
 
@@ -82,7 +96,12 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     test('a transforming onChange (uppercase) wins over the typed value', async () => {
       function Input() {
         const [value, setValue] = useState('')
-        return <input value={value} onChange={e => setValue(e.target.value.toUpperCase())} />
+        return (
+          <input
+            value={value}
+            onChange={e => setValue(e.target.value.toUpperCase())}
+          />
+        )
       }
       render(<Input />)
       const user = userEvent.setup()
@@ -156,7 +175,13 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     test('number input with intermediate invalid values', async () => {
       function Input() {
         const [value, setValue] = useState('')
-        return <input type="number" value={value} onChange={e => setValue(e.target.value)} />
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={e => setValue(e.target.value)}
+          />
+        )
       }
       render(<Input />)
       const user = userEvent.setup()
@@ -168,7 +193,9 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
 
     test('uncontrolled input with defaultValue and onChange', async () => {
       const onChange = vi.fn()
-      render(<input defaultValue="foo" onChange={e => onChange(e.target.value)} />)
+      render(
+        <input defaultValue="foo" onChange={e => onChange(e.target.value)} />,
+      )
       const user = userEvent.setup()
 
       await user.type(screen.getByRole('textbox'), '{Backspace}x')
@@ -180,7 +207,9 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
 
   describe('forms', () => {
     test('Enter in a text input submits through the submit button', async () => {
-      const onSubmit = vi.fn((e: {preventDefault(): void}) => e.preventDefault())
+      const onSubmit = vi.fn((e: {preventDefault(): void}) =>
+        e.preventDefault(),
+      )
       const onClick = vi.fn()
       render(
         <form onSubmit={onSubmit}>
@@ -200,7 +229,9 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     })
 
     test('Enter in the only input of a form without submit button submits', async () => {
-      const onSubmit = vi.fn((e: {preventDefault(): void}) => e.preventDefault())
+      const onSubmit = vi.fn((e: {preventDefault(): void}) =>
+        e.preventDefault(),
+      )
       render(
         <form onSubmit={onSubmit}>
           <input name="q" />
@@ -214,7 +245,9 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     })
 
     test('Enter does not submit when there are several inputs and no submit button', async () => {
-      const onSubmit = vi.fn((e: {preventDefault(): void}) => e.preventDefault())
+      const onSubmit = vi.fn((e: {preventDefault(): void}) =>
+        e.preventDefault(),
+      )
       render(
         <form onSubmit={onSubmit}>
           <input name="a" />
@@ -229,7 +262,9 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     })
 
     test('click on a submit button submits; type="button" does not', async () => {
-      const onSubmit = vi.fn((e: {preventDefault(): void}) => e.preventDefault())
+      const onSubmit = vi.fn((e: {preventDefault(): void}) =>
+        e.preventDefault(),
+      )
       render(
         <form onSubmit={onSubmit}>
           <button type="button">Cancel</button>
@@ -436,7 +471,16 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
       const related: Array<string | null> = []
       render(
         <>
-          <input aria-label="a" onBlur={e => related.push((e.relatedTarget as HTMLElement | null)?.getAttribute('aria-label') ?? null)} />
+          <input
+            aria-label="a"
+            onBlur={e =>
+              related.push(
+                (e.relatedTarget as HTMLElement | null)?.getAttribute(
+                  'aria-label',
+                ) ?? null,
+              )
+            }
+          />
           <input aria-label="b" />
         </>,
       )
@@ -483,7 +527,8 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
           tabIndex={0}
           onKeyDown={e => {
             if (e.ctrlKey && e.key === 's') shortcuts.push('save')
-            if (e.metaKey && e.shiftKey && e.key === 'P') shortcuts.push('palette')
+            if (e.metaKey && e.shiftKey && e.key === 'P')
+              shortcuts.push('palette')
             if (e.altKey && e.code === 'KeyK') shortcuts.push('alt-k')
           }}
         >
@@ -540,7 +585,11 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
       function Popup() {
         const [open, setOpen] = useState(true)
         return open ? (
-          <div role="dialog" tabIndex={-1} onKeyDown={e => e.key === 'Escape' && setOpen(false)}>
+          <div
+            role="dialog"
+            tabIndex={-1}
+            onKeyDown={e => e.key === 'Escape' && setOpen(false)}
+          >
             <input aria-label="inside" />
           </div>
         ) : null
@@ -584,8 +633,16 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
         const [b, setB] = useState('')
         return (
           <>
-            <input aria-label="a" value={a} onChange={e => setA(e.target.value)} />
-            <input aria-label="b" value={b} onChange={e => setB(e.target.value)} />
+            <input
+              aria-label="a"
+              value={a}
+              onChange={e => setA(e.target.value)}
+            />
+            <input
+              aria-label="b"
+              value={b}
+              onChange={e => setB(e.target.value)}
+            />
           </>
         )
       }
@@ -606,7 +663,13 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
       const onCut = vi.fn()
       function Input() {
         const [value, setValue] = useState('hello world')
-        return <input value={value} onCut={onCut} onChange={e => setValue(e.target.value)} />
+        return (
+          <input
+            value={value}
+            onCut={onCut}
+            onChange={e => setValue(e.target.value)}
+          />
+        )
       }
       render(<Input />)
       const user = userEvent.setup()
@@ -675,7 +738,11 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     test('setTimeout(0) callbacks scheduled during an API call ran when it resolves', async () => {
       function Button() {
         const [label, setLabel] = useState('idle')
-        return <button onClick={() => setTimeout(() => setLabel('done'), 0)}>{label}</button>
+        return (
+          <button onClick={() => setTimeout(() => setLabel('done'), 0)}>
+            {label}
+          </button>
+        )
       }
       render(<Button />)
       const user = userEvent.setup()
@@ -694,7 +761,11 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
       function Buttons() {
         return (
           <>
-            <button onClick={() => requestAnimationFrame(() => (frameRan = true))}>open</button>
+            <button
+              onClick={() => requestAnimationFrame(() => (frameRan = true))}
+            >
+              open
+            </button>
             <button>next</button>
           </>
         )
@@ -732,7 +803,10 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
           )
         }
         render(<Debounced />)
-        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime, delay: 100})
+        const user = userEvent.setup({
+          advanceTimers: vi.advanceTimersByTime,
+          delay: 100,
+        })
 
         await user.type(screen.getByRole('textbox'), 'abc')
         expect(screen.getByRole('status')).toHaveTextContent('')

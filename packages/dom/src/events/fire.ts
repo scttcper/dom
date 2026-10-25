@@ -40,7 +40,12 @@ export function dispatchTrusted(event: Event, target: EventTarget): boolean {
  * view = the target's window, pointerId -1 (non-pointer device, as in jsdom). The caller
  * is responsible for the click-in-progress flag and the disabled check.
  */
-export function fireSyntheticPointerEvent(type: string, target: EventTarget, notTrusted: boolean, init?: PointerEventInit): boolean {
+export function fireSyntheticPointerEvent(
+  type: string,
+  target: EventTarget,
+  notTrusted: boolean,
+  init?: PointerEventInit,
+): boolean {
   const impl = (target as unknown as { [$impl]?: { doc: { [$window]: unknown } } })[$impl];
   const view = impl === undefined ? null : impl.doc[$window];
   const event = new PointerEvent(type, {

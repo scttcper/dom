@@ -25,7 +25,9 @@ describe("ctrl-dom debug with Vitest", () => {
     const run = ctrlDom("debug", ...FIXTURE);
     expect(run.status).toBe(1);
     const out = run.stdout;
-    expect(out).toMatch(/^ctrl-dom debug: vitest test\/failure-snapshot\/checkout\.fixture\.tsx \(CTRL_DOM_DEBUG=aria\)\n\n/);
+    expect(out).toMatch(
+      /^ctrl-dom debug: vitest test\/failure-snapshot\/checkout\.fixture\.tsx \(CTRL_DOM_DEBUG=aria\)\n\n/,
+    );
     expect(out).toContain(
       [
         "FAIL  a thrown error",
@@ -41,8 +43,10 @@ describe("ctrl-dom debug with Vitest", () => {
         "  at test/failure-snapshot/checkout.fixture.tsx:35:9",
       ].join("\n"),
     );
-    expect(out).toContain("FAIL  a failed query that printed the snapshot already\n  TestingLibraryElementError: Unable to find an accessible element");
-    expect(out).toContain("Closest matches:\n  - button \"Options\" [expanded=false]  # same role, other name");
+    expect(out).toContain(
+      "FAIL  a failed query that printed the snapshot already\n  TestingLibraryElementError: Unable to find an accessible element",
+    );
+    expect(out).toContain('Closest matches:\n  - button "Options" [expanded=false]  # same role, other name');
     expect(out).toContain("Console output:\nstdout | passes\n  rendered the checkout\n");
     expect(out).toMatch(/\n4 failed, 1 passed · vitest · test\/failure-snapshot\/checkout\.fixture\.tsx · [\d.]+ s\n$/);
     // No ANSI colors, no stack traces beyond the one frame.

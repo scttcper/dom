@@ -155,14 +155,23 @@ function main(): void {
   const all: Record<Impl, Record<string, number[]>> = { "ctrl-dom": {}, jsdom: {}, "happy-dom": {} };
   for (let s = 0; s < samples; s++) {
     for (const impl of IMPLS) {
-      const out = execFileSync(process.execPath, ["--expose-gc", file, "--child", impl], { encoding: "utf8", maxBuffer: 1 << 24 });
+      const out = execFileSync(process.execPath, ["--expose-gc", file, "--child", impl], {
+        encoding: "utf8",
+        maxBuffer: 1 << 24,
+      });
       const r = JSON.parse(out) as Record<string, number>;
       for (const [k, v] of Object.entries(r)) (all[impl][k] ??= []).push(v);
     }
   }
   const ops = Object.keys(all["ctrl-dom"]);
-  const fmt = (xs: number[]) => `${median(xs).toFixed(2)} (${Math.min(...xs).toFixed(2)}–${Math.max(...xs).toFixed(2)})`;
-  const rows = ops.map((op) => [op, ...IMPLS.map((impl) => fmt(all[impl][op])), (median(all.jsdom[op]) / median(all["ctrl-dom"][op])).toFixed(1) + "×", (median(all["happy-dom"][op]) / median(all["ctrl-dom"][op])).toFixed(1) + "×"]);
+  const fmt = (xs: number[]) =>
+    `${median(xs).toFixed(2)} (${Math.min(...xs).toFixed(2)}–${Math.max(...xs).toFixed(2)})`;
+  const rows = ops.map((op) => [
+    op,
+    ...IMPLS.map((impl) => fmt(all[impl][op])),
+    (median(all.jsdom[op]) / median(all["ctrl-dom"][op])).toFixed(1) + "×",
+    (median(all["happy-dom"][op]) / median(all["ctrl-dom"][op])).toFixed(1) + "×",
+  ]);
   const header = ["operation (median ms, min–max)", ...IMPLS, "jsdom/ctrl-dom", "happy/ctrl-dom"];
   const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
   const line = (r: string[]) => "| " + r.map((c, i) => c.padEnd(widths[i])).join(" | ") + " |";

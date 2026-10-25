@@ -47,11 +47,18 @@ describe("scope-match a selectors string — https://dom.spec.whatwg.org/#scope-
     expect(() => document.querySelector("div[a")).not.toThrow(); // `[` blocks close at EOF (css-syntax)
     expect(() => document.querySelector("div[")).toThrow(expect.objectContaining({ name: "SyntaxError" }));
     expect(() => document.querySelector("#1")).toThrow(
-      expect.objectContaining({ name: "SyntaxError", message: "Failed to execute 'querySelector' on 'Document': '#1' is not a valid selector." }),
+      expect.objectContaining({
+        name: "SyntaxError",
+        message: "Failed to execute 'querySelector' on 'Document': '#1' is not a valid selector.",
+      }),
     );
-    expect(() => document.body!.matches(":foo")).toThrow(expect.objectContaining({ message: "Failed to execute 'matches' on 'Element': ':foo' is not a valid selector." }));
+    expect(() => document.body!.matches(":foo")).toThrow(
+      expect.objectContaining({ message: "Failed to execute 'matches' on 'Element': ':foo' is not a valid selector." }),
+    );
     expect(() => document.createDocumentFragment().querySelectorAll("a,")).toThrow(
-      expect.objectContaining({ message: "Failed to execute 'querySelectorAll' on 'DocumentFragment': 'a,' is not a valid selector." }),
+      expect.objectContaining({
+        message: "Failed to execute 'querySelectorAll' on 'DocumentFragment': 'a,' is not a valid selector.",
+      }),
     );
   });
 
@@ -380,7 +387,7 @@ describe("element-state pseudo-classes — https://html.spec.whatwg.org/#pseudo-
   test(":lang() uses inherited lang/xml:lang with extended filtering (https://drafts.csswg.org/selectors-4/#the-lang-pseudo)", () => {
     document.body!.innerHTML = `<div lang=de-Latn-DE id=a><p id=b></p></div><div lang=fr id=c></div><div lang=en-US id=d></div>`;
     expect($$(":lang(de-DE)")).toEqual(["a", "b"]);
-    expect($$(":lang(fr, \"*-US\")")).toEqual(["c", "d"]);
+    expect($$(':lang(fr, "*-US")')).toEqual(["c", "d"]);
     expect($$("p:lang(de)")).toEqual(["b"]);
   });
 
@@ -451,7 +458,9 @@ describe("internal compiled-selector API (css cascade) — https://drafts.csswg.
     expect(matchesSelector(before, p)).toBe(false);
     expect(matchesSelector(before, p, "::before")).toBe(true);
     expect(matchesSelector(before, p, ":before")).toBe(true);
-    expect(matchingSpecificity(compileSelectorList("p, #p, .c")!, p)).toBe(compileSelectorList("#p")!.selectors[0].specificity);
+    expect(matchingSpecificity(compileSelectorList("p, #p, .c")!, p)).toBe(
+      compileSelectorList("#p")!.selectors[0].specificity,
+    );
   });
 
   test("serializeSelector follows CSSOM (https://drafts.csswg.org/cssom/#serialize-a-selector)", () => {
@@ -476,14 +485,58 @@ describe("differential vs jsdom (@asamuzakjp/dom-selector) — https://drafts.cs
       <svg id=svg viewBox="0 0 1 1"><g id=g class=shape><rect id=rect></rect></g></svg>
     </main></body></html>`;
   const selectors = [
-    "*", "#main", ".odd", "li", "[data-i]", "[data-i='3']", "[data-i^='1']", "[class~=five]", "label[for=name]", "a[href]",
-    "main > header a", "header + form", "h1 ~ nav", "li:nth-child(3n)", "li:nth-child(odd of .even)", "li:nth-last-child(-n+2)",
-    "li:first-child, li:last-child", "li:only-child", "ul > :nth-of-type(2)", "li:not(.odd)", "li:not(:has(b))", "li:has(> b)",
-    ":is(header, form) :is(a, input)", ":where(#nav) a.active", "ul:has(.five)", "li:has(+ .five)", "li:has(~ #li11)",
-    ":empty", ":root", "input:checked", "input:disabled", "input:enabled", ":required", ":optional", "option:checked",
-    ":any-link", "svg g", "g.shape > rect", "[viewBox]", "*:lang(en)", "p :dir(rtl)", "body main#main.app.root",
-    "li:nth-child(2n+1):not(:last-child)", "form :not(input, label)", "#ul li:nth-last-of-type(odd)", "a:not([href])",
-    "[class|=odd]", "[class$=ive]", "[class*=hap]", "input[type=TEXT]", "input[type=text s]", "li[class=EVEN i]",
+    "*",
+    "#main",
+    ".odd",
+    "li",
+    "[data-i]",
+    "[data-i='3']",
+    "[data-i^='1']",
+    "[class~=five]",
+    "label[for=name]",
+    "a[href]",
+    "main > header a",
+    "header + form",
+    "h1 ~ nav",
+    "li:nth-child(3n)",
+    "li:nth-child(odd of .even)",
+    "li:nth-last-child(-n+2)",
+    "li:first-child, li:last-child",
+    "li:only-child",
+    "ul > :nth-of-type(2)",
+    "li:not(.odd)",
+    "li:not(:has(b))",
+    "li:has(> b)",
+    ":is(header, form) :is(a, input)",
+    ":where(#nav) a.active",
+    "ul:has(.five)",
+    "li:has(+ .five)",
+    "li:has(~ #li11)",
+    ":empty",
+    ":root",
+    "input:checked",
+    "input:disabled",
+    "input:enabled",
+    ":required",
+    ":optional",
+    "option:checked",
+    ":any-link",
+    "svg g",
+    "g.shape > rect",
+    "[viewBox]",
+    "*:lang(en)",
+    "p :dir(rtl)",
+    "body main#main.app.root",
+    "li:nth-child(2n+1):not(:last-child)",
+    "form :not(input, label)",
+    "#ul li:nth-last-of-type(odd)",
+    "a:not([href])",
+    "[class|=odd]",
+    "[class$=ive]",
+    "[class*=hap]",
+    "input[type=TEXT]",
+    "input[type=text s]",
+    "li[class=EVEN i]",
   ];
   const jsdom = new JSDOM(html);
   const ctrlDom = createWindow({ html });

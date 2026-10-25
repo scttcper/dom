@@ -30,8 +30,17 @@ describe("ValidityState — https://html.spec.whatwg.org/#validitystate", () => 
     document.body!.innerHTML = "<input required>";
     const validity = (document.querySelector("input") as unknown as { validity: object }).validity;
     expect(keysOf(validity)).toEqual([
-      "valueMissing", "typeMismatch", "patternMismatch", "tooLong", "tooShort", "rangeUnderflow",
-      "rangeOverflow", "stepMismatch", "badInput", "customError", "valid",
+      "valueMissing",
+      "typeMismatch",
+      "patternMismatch",
+      "tooLong",
+      "tooShort",
+      "rangeUnderflow",
+      "rangeOverflow",
+      "stepMismatch",
+      "badInput",
+      "customError",
+      "valid",
     ]);
     expect(Object.keys(validity)).toEqual([]);
   });
@@ -51,7 +60,9 @@ describe("DOMRect / DOMPoint / DOMMatrix — https://drafts.fxtf.org/geometry/",
   });
 
   test("writable variants still update through their setters", () => {
-    const W = window as unknown as { DOMRect: new (x?: number, y?: number, w?: number, h?: number) => { x: number; right: number } };
+    const W = window as unknown as {
+      DOMRect: new (x?: number, y?: number, w?: number, h?: number) => { x: number; right: number };
+    };
     const r = new W.DOMRect(1, 2, 3, 4);
     r.x = 10;
     expect([r.x, r.right]).toEqual([10, 13]);

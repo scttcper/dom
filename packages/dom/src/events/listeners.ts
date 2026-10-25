@@ -29,7 +29,13 @@ export class Listener {
   /** The abort algorithm registered on `signal`, kept so removal can unregister it. */
   onAbort: (() => void) | null;
 
-  constructor(callback: EventListenerOrEventListenerObject, capture: boolean, once: boolean, passive: boolean, signal: AbortSignal | null) {
+  constructor(
+    callback: EventListenerOrEventListenerObject,
+    capture: boolean,
+    once: boolean,
+    passive: boolean,
+    signal: AbortSignal | null,
+  ) {
     this.callback = callback;
     this.capture = capture;
     this.once = once;
@@ -115,8 +121,15 @@ function flattenMore(options: boolean | AddEventListenerOptions | undefined | nu
   flat.passive = passive === undefined ? null : !!passive;
   flat.signal = null;
   if (signal !== undefined) {
-    if (signal === null || typeof signal !== "object" || typeof (signal as AbortSignal).aborted !== "boolean" || typeof signal.addEventListener !== "function") {
-      throw new TypeError("Failed to execute 'addEventListener' on 'EventTarget': member signal is not of type 'AbortSignal'.");
+    if (
+      signal === null ||
+      typeof signal !== "object" ||
+      typeof (signal as AbortSignal).aborted !== "boolean" ||
+      typeof signal.addEventListener !== "function"
+    ) {
+      throw new TypeError(
+        "Failed to execute 'addEventListener' on 'EventTarget': member signal is not of type 'AbortSignal'.",
+      );
     }
     flat.signal = signal;
   }
@@ -179,7 +192,13 @@ export function addEventListener(
     }
   }
   // Step 4.
-  const listener = new Listener(callback, capture, once, passive === null ? defaultPassiveValue(type, target) : passive, signal);
+  const listener = new Listener(
+    callback,
+    capture,
+    once,
+    passive === null ? defaultPassiveValue(type, target) : passive,
+    signal,
+  );
   appendListener(list, listener);
   // Step 6.
   if (signal !== null) {

@@ -16,7 +16,10 @@ import { windows } from "./engines.ts";
 describe.each(["jsdom", "ctrl-dom"] as const)("%s", (engine) => {
   test("CSS.supports is writable and configurable, so tests can stub it", () => {
     const window = windows[engine]();
-    expect(Object.getOwnPropertyDescriptor(window.CSS, "supports")).toMatchObject({ writable: true, configurable: true });
+    expect(Object.getOwnPropertyDescriptor(window.CSS, "supports")).toMatchObject({
+      writable: true,
+      configurable: true,
+    });
     expect(Object.isFrozen(window.CSS)).toBe(false);
     const stub = () => true;
     window.CSS.supports = stub;

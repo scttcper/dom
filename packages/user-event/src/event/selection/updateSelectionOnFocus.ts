@@ -1,7 +1,7 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/selection/updateSelectionOnFocus.ts
 
-import type { Element } from '../../dom-types.ts'
+import type {Element} from '../../dom-types.ts'
 import {getContentEditable, hasOwnSelection} from '../../utils/index.ts'
 
 // The browser implementation seems to have changed.

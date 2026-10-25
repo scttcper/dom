@@ -22,7 +22,13 @@ const END = "<!-- comparison:end -->";
  */
 type SuiteKind = "vitest" | "vm" | "jest";
 
-const README_ROWS: Array<{ label: string; suite?: "wall" | "setup" | "rss"; kind?: SuiteKind; bench?: string; note?: string }> = [
+const README_ROWS: Array<{
+  label: string;
+  suite?: "wall" | "setup" | "rss";
+  kind?: SuiteKind;
+  bench?: string;
+  note?: string;
+}> = [
   { label: "`vitest run`, 100 React test files", suite: "wall" },
   { label: "… with `--pool vmForks`", suite: "wall", kind: "vm" },
   { label: "`jest`, the same 100 files¹", suite: "wall", kind: "jest" },
@@ -30,7 +36,10 @@ const README_ROWS: Array<{ label: string; suite?: "wall" | "setup" | "rss"; kind
   { label: "Worker memory (RSS)", suite: "rss" },
   { label: "Render a 20-field form + 10 `getByRole`", bench: "Render a 20-field form, 10 getByRole({ name }) queries" },
   { label: "`user.type('hello world')`", bench: "user.type('hello world') into a controlled input" },
-  { label: "Styled form + 5 `getByRole`, 1,200-rule CSS-in-JS sheet", bench: "Render a 40-field form under a 1,200-rule CSS-in-JS sheet, 5 getByRole queries" },
+  {
+    label: "Styled form + 5 `getByRole`, 1,200-rule CSS-in-JS sheet",
+    bench: "Render a 40-field form under a 1,200-rule CSS-in-JS sheet, 5 getByRole queries",
+  },
 ];
 
 interface BenchRow {
@@ -49,10 +58,11 @@ function loadBench(): Map<string, Map<string, BenchRow>> {
   if (!existsSync(dir)) return out;
   for (const id of readdirSync(dir)) {
     const rows = new Map<string, BenchRow>();
-    for (const f of readdirSync(`${dir}/${id}`)) if (f.endsWith(".json") && f !== "_run.json") {
-      const row = readJson(`${dir}/${id}/${f}`) as BenchRow;
-      rows.set(row.name, row);
-    }
+    for (const f of readdirSync(`${dir}/${id}`))
+      if (f.endsWith(".json") && f !== "_run.json") {
+        const row = readJson(`${dir}/${id}/${f}`) as BenchRow;
+        rows.set(row.name, row);
+      }
     out.set(id, rows);
   }
   return out;
@@ -83,19 +93,33 @@ function cells(values: Array<number | undefined>, format: (v: number) => string,
     if (v === undefined || !Number.isFinite(v)) return "–";
     let s = format(v);
     if (present.length > 1 && v === best) s = `**${s}**`;
-    if (ratio && base !== undefined && v !== base && Number.isFinite(base)) s += ` (${base / v >= 10 ? (base / v).toFixed(0) : (base / v).toFixed(1)}×)`;
+    if (ratio && base !== undefined && v !== base && Number.isFinite(base))
+      s += ` (${base / v >= 10 ? (base / v).toFixed(0) : (base / v).toFixed(1)}×)`;
     return s;
   });
 }
 
 /** Like cells(), for spreads: "median [min–max]". */
 function spreadCells(values: Array<Spread | undefined>, format: (v: number) => string, ratio = false): string[] {
-  const medians = cells(values.map((v) => v?.median), format, ratio);
-  return medians.map((cell, i) => (values[i] === undefined ? cell : `${cell} [${format(values[i]!.min)}–${format(values[i]!.max)}]`));
+  const medians = cells(
+    values.map((v) => v?.median),
+    format,
+    ratio,
+  );
+  return medians.map((cell, i) =>
+    values[i] === undefined ? cell : `${cell} [${format(values[i]!.min)}–${format(values[i]!.max)}]`,
+  );
 }
 
 function table(header: string[], rows: string[][]): string {
-  return [`| ${header.join(" | ")} |`, `| --- | ${header.slice(1).map(() => "---:").join(" | ")} |`, ...rows.map((r) => `| ${r.join(" | ")} |`)].join("\n");
+  return [
+    `| ${header.join(" | ")} |`,
+    `| --- | ${header
+      .slice(1)
+      .map(() => "---:")
+      .join(" | ")} |`,
+    ...rows.map((r) => `| ${r.join(" | ")} |`),
+  ].join("\n");
 }
 
 /** One `results/suite*.json`: what suite.ts and jest-suite.ts write. */
@@ -109,26 +133,35 @@ interface SuiteData {
   results: Record<string, Record<"wallMs" | "environmentSetupMs" | "workerRssMB", Spread>>;
 }
 
-const SUITES: Array<{ kind: SuiteKind; file: string; title: (d: SuiteData) => string; about: (d: SuiteData) => string; setupLabel: string }> = [
+const SUITES: Array<{
+  kind: SuiteKind;
+  file: string;
+  title: (d: SuiteData) => string;
+  about: (d: SuiteData) => string;
+  setupLabel: string;
+}> = [
   {
     kind: "vitest",
     file: "suite.json",
     title: (d) => `\`vitest run\`, ${d.files} React test files`,
-    about: (d) => `${d.samples} runs per contender, ${d.workers} workers, Vitest's default pool (a fresh worker per file): median [min–max] over runs, speedup vs jsdom in parentheses.`,
+    about: (d) =>
+      `${d.samples} runs per contender, ${d.workers} workers, Vitest's default pool (a fresh worker per file): median [min–max] over runs, speedup vs jsdom in parentheses.`,
     setupLabel: "Environment setup per file (Vitest's mean)",
   },
   {
     kind: "vm",
     file: "suite-vm.json",
     title: (d) => `\`vitest run --pool vmForks\`, ${d.files} React test files`,
-    about: (d) => `The same files in Vitest's VM pool: ${d.workers} long-lived workers, a fresh vm context and environment per file. ${d.samples} runs per contender, median [min–max], speedup vs jsdom in parentheses.`,
+    about: (d) =>
+      `The same files in Vitest's VM pool: ${d.workers} long-lived workers, a fresh vm context and environment per file. ${d.samples} runs per contender, median [min–max], speedup vs jsdom in parentheses.`,
     setupLabel: "Environment setup per file (Vitest's mean)",
   },
   {
     kind: "jest",
     file: "suite-jest.json",
     title: (d) => `\`jest\`, ${d.files} React test files`,
-    about: (d) => `The same tests as plain CommonJS (no transform), each DOM's Jest environment, ${d.workers} workers, after one untimed run (warm haste map). ${d.samples} runs per contender, median [min–max], speedup vs jest-environment-jsdom in parentheses.`,
+    about: (d) =>
+      `The same tests as plain CommonJS (no transform), each DOM's Jest environment, ${d.workers} workers, after one untimed run (warm haste map). ${d.samples} runs per contender, median [min–max], speedup vs jest-environment-jsdom in parentheses.`,
     setupLabel: "Environment load per file (Jest's perfStats)",
   },
 ];
@@ -136,24 +169,39 @@ const SUITES: Array<{ kind: SuiteKind; file: string; title: (d: SuiteData) => st
 export function report(options: { readme?: boolean } = {}): void {
   const bench = loadBench();
   const startup = readJson(`${here}results/startup.json`);
-  const suites = new Map<SuiteKind, SuiteData>(SUITES.flatMap((s) => (readJson(`${here}results/${s.file}`) ? [[s.kind, readJson(`${here}results/${s.file}`) as SuiteData]] : [])));
+  const suites = new Map<SuiteKind, SuiteData>(
+    SUITES.flatMap((s) =>
+      readJson(`${here}results/${s.file}`) ? [[s.kind, readJson(`${here}results/${s.file}`) as SuiteData]] : [],
+    ),
+  );
   const suite = suites.get("vitest") ?? null;
-  const contenders = CONTENDERS.filter((c) => bench.has(c.id) || startup?.results[c.id] || [...suites.values()].some((d) => d.results[c.id]));
+  const contenders = CONTENDERS.filter(
+    (c) => bench.has(c.id) || startup?.results[c.id] || [...suites.values()].some((d) => d.results[c.id]),
+  );
   if (contenders.length === 0) throw new Error("no results in comparison/results/ — run `pnpm compare` first");
   // Every label (date, machine, versions) comes from the runs that measured the numbers.
-  const suiteRuns = new Map([...suites].map(([kind, data]) => [kind, runOf(data, SUITES.find((s) => s.kind === kind)!.file)] as const));
+  const suiteRuns = new Map(
+    [...suites].map(([kind, data]) => [kind, runOf(data, SUITES.find((s) => s.kind === kind)!.file)] as const),
+  );
   const startupRun = startup ? runOf(startup, "startup.json") : null;
   const benchRuns = new Map([...bench.keys()].map((id) => [id, benchRun(id)] as const));
   const allRuns = [...suiteRuns.values(), ...(startupRun ? [startupRun] : []), ...benchRuns.values()];
-  const header = (cs: readonly Contender[], versionOf: (c: Contender) => string) => ["", ...cs.map((c) => `${c.label} ${versionOf(c) || "?"}`)];
+  const header = (cs: readonly Contender[], versionOf: (c: Contender) => string) => [
+    "",
+    ...cs.map((c) => `${c.label} ${versionOf(c) || "?"}`),
+  ];
   const domOf = (c: Contender) => c.sameDomAs ?? c.id;
-  const benchValue = (c: Contender, name: string) => bench.get(c.id)?.get(name)?.latency.p50 ?? bench.get(domOf(c))?.get(name)?.latency.p50;
+  const benchValue = (c: Contender, name: string) =>
+    bench.get(c.id)?.get(name)?.latency.p50 ?? bench.get(domOf(c))?.get(name)?.latency.p50;
 
   // ── RESULTS.md ──
   const md: string[] = [
     "# Comparison results",
     "",
-    `Measured ${dateRange(allRuns)} on ${distinct(allRuns.map((r) => r.machine), "; ")} by \`pnpm compare\` (comparison/report.ts). How each number is measured: [README.md](README.md).`,
+    `Measured ${dateRange(allRuns)} on ${distinct(
+      allRuns.map((r) => r.machine),
+      "; ",
+    )} by \`pnpm compare\` (comparison/report.ts). How each number is measured: [README.md](README.md).`,
     "",
   ];
   for (const s of SUITES) {
@@ -166,11 +214,31 @@ export function report(options: { readme?: boolean } = {}): void {
       ["Worker RSS after a file (median)", "workerRssMB", mb],
     ];
     const cs = contenders.filter((c) => data.results[c.id]);
-    const head = data.labels ? ["", ...cs.map((c) => data.labels![c.id] ?? c.label)] : header(cs, (c) => suiteRuns.get(s.kind)!.versions[c.id]);
-    md.push(table(head, rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => data.results[c.id][key]), format, format === ms)])), "");
+    const head = data.labels
+      ? ["", ...cs.map((c) => data.labels![c.id] ?? c.label)]
+      : header(cs, (c) => suiteRuns.get(s.kind)!.versions[c.id]);
+    md.push(
+      table(
+        head,
+        rows.map(([label, key, format]) => [
+          label,
+          ...spreadCells(
+            cs.map((c) => data.results[c.id][key]),
+            format,
+            format === ms,
+          ),
+        ]),
+      ),
+      "",
+    );
   }
   if (startup) {
-    md.push("## Cold start", "", `A fresh process per sample (${startup.samples} each, interleaved): the environment's \`setup()\` (importing the DOM included), then the first test (import React and Testing Library, render, \`getByRole\`). Median [min–max].`, "");
+    md.push(
+      "## Cold start",
+      "",
+      `A fresh process per sample (${startup.samples} each, interleaved): the environment's \`setup()\` (importing the DOM included), then the first test (import React and Testing Library, render, \`getByRole\`). Median [min–max].`,
+      "",
+    );
     const cs = contenders.filter((c) => startup.results[c.id]);
     const rows: Array<[string, string, (v: number) => string]> = [
       ["Environment setup", "setupMs", ms],
@@ -179,7 +247,20 @@ export function report(options: { readme?: boolean } = {}): void {
       ["Heap after GC", "heapMB", mb],
       ["RSS", "rssMB", mb],
     ];
-    md.push(table(header(cs, (c) => startupRun!.versions[c.id]), rows.map(([label, key, format]) => [label, ...spreadCells(cs.map((c) => startup.results[c.id][key]), format, format === ms)])), "");
+    md.push(
+      table(
+        header(cs, (c) => startupRun!.versions[c.id]),
+        rows.map(([label, key, format]) => [
+          label,
+          ...spreadCells(
+            cs.map((c) => startup.results[c.id][key]),
+            format,
+            format === ms,
+          ),
+        ]),
+      ),
+      "",
+    );
   }
   if (bench.size > 0) {
     const all = new Map<string, BenchRow>();
@@ -189,13 +270,23 @@ export function report(options: { readme?: boolean } = {}): void {
       const rows = ordered.filter((r) => r.file === file);
       const dom = file.startsWith("dom");
       const cs = contenders.filter((c) => bench.has(c.id) && (!dom || c.sameDomAs === undefined));
-      md.push(`## Benchmarks: ${file}`, "", "Median time per iteration (Vitest bench, warm; ± relative margin of error at 95%), speedup vs jsdom in parentheses.", "");
+      md.push(
+        `## Benchmarks: ${file}`,
+        "",
+        "Median time per iteration (Vitest bench, warm; ± relative margin of error at 95%), speedup vs jsdom in parentheses.",
+        "",
+      );
       md.push(
         table(
           header(cs, (c) => benchRuns.get(c.id)!.versions[c.id]),
           rows.map((r) => {
             const values = cs.map((c) => benchValue(c, r.name));
-            return [r.name, ...cells(values, ms, true).map((cell, i) => (cell === "–" ? cell : `${cell} ±${(bench.get(cs[i].id)?.get(r.name)?.latency.rme ?? 0).toFixed(1)}%`))];
+            return [
+              r.name,
+              ...cells(values, ms, true).map((cell, i) =>
+                cell === "–" ? cell : `${cell} ±${(bench.get(cs[i].id)?.get(r.name)?.latency.rme ?? 0).toFixed(1)}%`,
+              ),
+            ];
           }),
         ),
         "",
@@ -233,17 +324,38 @@ export function report(options: { readme?: boolean } = {}): void {
     return [row.note === "virtual" ? `${row.label}²` : row.label, ...out];
   }).filter((r) => r !== null);
   const jest = suites.get("jest");
-  const jestNote = jest?.labels ? ` ¹ Each DOM's Jest environment: ${contenders.filter((c) => jest.labels![c.id]).map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "").replace(/ \+ its Testing Library$/, "")).filter((l, i, all) => all.indexOf(l) === i).join(", ")}.` : "";
+  const jestNote = jest?.labels
+    ? ` ¹ Each DOM's Jest environment: ${contenders
+        .filter((c) => jest.labels![c.id])
+        .map((c) => jest.labels![c.id].replace(/ [0-9a-f]{7}(\+changes)?$/, "").replace(/ \+ its Testing Library$/, ""))
+        .filter((l, i, all) => all.indexOf(l) === i)
+        .join(", ")}.`
+    : "";
   // The runs behind the README's rows: the suites it shows and every contender's benchmarks.
-  const readmeSuiteRuns = [...new Set(README_ROWS.flatMap((r) => (r.suite ? [r.kind ?? "vitest"] : [])))].flatMap((kind) => suiteRuns.get(kind) ?? []);
+  const readmeSuiteRuns = [...new Set(README_ROWS.flatMap((r) => (r.suite ? [r.kind ?? "vitest"] : [])))].flatMap(
+    (kind) => suiteRuns.get(kind) ?? [],
+  );
   const readmeRuns = [...readmeSuiteRuns, ...contenders.flatMap((c) => benchRuns.get(c.id) ?? [])];
-  const virtualNote = README_ROWS.some((r) => r.note === "virtual") ? " ² ctrl-dom skips idle time on a virtual clock instead of waiting it out." : "";
+  const virtualNote = README_ROWS.some((r) => r.note === "virtual")
+    ? " ² ctrl-dom skips idle time on a virtual clock instead of waiting it out."
+    : "";
   const sameNote = rows.some((r) => r.includes("〃")) ? " 〃 same DOM as the column before." : "";
   const section = [
     START,
-    table(header(contenders, (c) => distinct([...readmeSuiteRuns.map((r) => r.versions[c.id]), (benchRuns.get(c.id) ?? benchRuns.get(domOf(c)))?.versions[c.id]])), rows),
+    table(
+      header(contenders, (c) =>
+        distinct([
+          ...readmeSuiteRuns.map((r) => r.versions[c.id]),
+          (benchRuns.get(c.id) ?? benchRuns.get(domOf(c)))?.versions[c.id],
+        ]),
+      ),
+      rows,
+    ),
     "",
-    `<sub>Medians, ${dateRange(readmeRuns)}, ${distinct(readmeRuns.map((r) => r.machine), "; ")}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration.${jestNote}${virtualNote}${sameNote}</sub>`,
+    `<sub>Medians, ${dateRange(readmeRuns)}, ${distinct(
+      readmeRuns.map((r) => r.machine),
+      "; ",
+    )}. Suites: ${suite.files} files, ${suite.samples} runs each, ${suite.workers} workers; other rows: Vitest bench, time per iteration.${jestNote}${virtualNote}${sameNote}</sub>`,
     END,
   ].join("\n");
   const readme = readFileSync(README, "utf8");

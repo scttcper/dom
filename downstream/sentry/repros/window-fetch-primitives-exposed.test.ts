@@ -24,6 +24,10 @@ differential("fetch primitives on the window", (make) => {
   test("fetch/Request/Response absent, like jsdom (so fetch mocks pick their polyfill)", () => {
     const window = make();
     // jsdom does implement Headers (WHATWG Fetch Headers) but not fetch/Request/Response.
-    expect([typeof window.fetch, typeof window.Request, typeof window.Response]).toEqual(["undefined", "undefined", "undefined"]);
+    expect([typeof window.fetch, typeof window.Request, typeof window.Response]).toEqual([
+      "undefined",
+      "undefined",
+      "undefined",
+    ]);
   });
 });

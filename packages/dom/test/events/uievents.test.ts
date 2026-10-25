@@ -159,7 +159,23 @@ describe("UIEvent — https://w3c.github.io/uievents/#interface-uievent", () => 
 describe("MouseEvent — https://w3c.github.io/uievents/#interface-mouseevent", () => {
   test("defaults", () => {
     const e = new MouseEvent("click");
-    for (const k of ["screenX", "screenY", "clientX", "clientY", "pageX", "pageY", "offsetX", "offsetY", "x", "y", "movementX", "movementY", "button", "buttons", "detail"] as const) {
+    for (const k of [
+      "screenX",
+      "screenY",
+      "clientX",
+      "clientY",
+      "pageX",
+      "pageY",
+      "offsetX",
+      "offsetY",
+      "x",
+      "y",
+      "movementX",
+      "movementY",
+      "button",
+      "buttons",
+      "detail",
+    ] as const) {
       expect(e[k], k).toBe(0);
     }
     for (const k of ["ctrlKey", "shiftKey", "altKey", "metaKey"] as const) expect(e[k]).toBe(false);
@@ -167,7 +183,14 @@ describe("MouseEvent — https://w3c.github.io/uievents/#interface-mouseevent", 
   });
 
   test("coordinates are doubles; page/offset/x/y mirror client coordinates (no layout)", () => {
-    const e = new MouseEvent("click", { screenX: 1.5, screenY: 2, clientX: 10.25, clientY: 20, movementX: -3, movementY: 4 });
+    const e = new MouseEvent("click", {
+      screenX: 1.5,
+      screenY: 2,
+      clientX: 10.25,
+      clientY: 20,
+      movementX: -3,
+      movementY: 4,
+    });
     expect([e.screenX, e.screenY, e.clientX, e.clientY]).toEqual([1.5, 2, 10.25, 20]);
     expect([e.x, e.y, e.pageX, e.pageY, e.offsetX, e.offsetY]).toEqual([10.25, 20, 10.25, 20, 10.25, 20]);
     expect([e.movementX, e.movementY]).toEqual([-3, 4]);
@@ -234,7 +257,8 @@ describe("getModifierState — https://w3c.github.io/uievents/#dom-mouseevent-ge
     test(`${Ctor.name}: each modifier init member maps to its key`, () => {
       for (const [key, member] of Object.entries(modifiers)) {
         const e = new Ctor("x", { [member]: true } as never) as MouseEvent;
-        for (const other of Object.keys(modifiers)) expect(e.getModifierState(other), `${member} → ${other}`).toBe(other === key);
+        for (const other of Object.keys(modifiers))
+          expect(e.getModifierState(other), `${member} → ${other}`).toBe(other === key);
       }
       expect((new Ctor("x", { ctrlKey: true }) as MouseEvent).getModifierState("Accel")).toBe(false);
       expect((new Ctor("x", { ctrlKey: true }) as MouseEvent).getModifierState("control")).toBe(false);
@@ -264,7 +288,15 @@ describe("PointerEvent — https://w3c.github.io/pointerevents/#pointerevent-int
   });
 
   test("init members; pressure is a float", () => {
-    const e = new PointerEvent("pointermove", { pointerId: 3, width: 2.5, height: 4, pressure: 0.3, pointerType: "pen", isPrimary: true, twist: 90 });
+    const e = new PointerEvent("pointermove", {
+      pointerId: 3,
+      width: 2.5,
+      height: 4,
+      pressure: 0.3,
+      pointerType: "pen",
+      isPrimary: true,
+      twist: 90,
+    });
     expect([e.pointerId, e.width, e.height, e.pointerType, e.isPrimary, e.twist]).toEqual([3, 2.5, 4, "pen", true, 90]);
     expect(e.pressure).toBe(Math.fround(0.3));
   });
@@ -301,22 +333,66 @@ describe("WheelEvent — https://w3c.github.io/uievents/#interface-wheelevent", 
 describe("KeyboardEvent — https://w3c.github.io/uievents/#interface-keyboardevent", () => {
   test("defaults", () => {
     const e = new KeyboardEvent("keydown");
-    expect([e.key, e.code, e.location, e.repeat, e.isComposing, e.charCode, e.keyCode, e.which]).toEqual(["", "", 0, false, false, 0, 0, 0]);
+    expect([e.key, e.code, e.location, e.repeat, e.isComposing, e.charCode, e.keyCode, e.which]).toEqual([
+      "",
+      "",
+      0,
+      false,
+      false,
+      0,
+      0,
+      0,
+    ]);
   });
 
   test("init members, legacy keyCode/charCode/which from the dictionary", () => {
-    const e = new KeyboardEvent("keydown", { key: "Enter", code: "Enter", location: 3, repeat: true, isComposing: true, keyCode: 13, charCode: 0, which: 13, shiftKey: true });
-    expect([e.key, e.code, e.location, e.repeat, e.isComposing, e.keyCode, e.which, e.shiftKey]).toEqual(["Enter", "Enter", 3, true, true, 13, 13, true]);
+    const e = new KeyboardEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      location: 3,
+      repeat: true,
+      isComposing: true,
+      keyCode: 13,
+      charCode: 0,
+      which: 13,
+      shiftKey: true,
+    });
+    expect([e.key, e.code, e.location, e.repeat, e.isComposing, e.keyCode, e.which, e.shiftKey]).toEqual([
+      "Enter",
+      "Enter",
+      3,
+      true,
+      true,
+      13,
+      13,
+      true,
+    ]);
   });
 
   test("location constants", () => {
-    expect([KeyboardEvent.DOM_KEY_LOCATION_STANDARD, KeyboardEvent.DOM_KEY_LOCATION_LEFT, KeyboardEvent.DOM_KEY_LOCATION_RIGHT, KeyboardEvent.DOM_KEY_LOCATION_NUMPAD]).toEqual([0, 1, 2, 3]);
+    expect([
+      KeyboardEvent.DOM_KEY_LOCATION_STANDARD,
+      KeyboardEvent.DOM_KEY_LOCATION_LEFT,
+      KeyboardEvent.DOM_KEY_LOCATION_RIGHT,
+      KeyboardEvent.DOM_KEY_LOCATION_NUMPAD,
+    ]).toEqual([0, 1, 2, 3]);
   });
 
   test("initKeyboardEvent (legacy)", () => {
     const e = document.createEvent("KeyboardEvent") as KeyboardEvent;
     e.initKeyboardEvent("keyup", true, false, window, "a", 1, true, true, false, false);
-    expect([e.type, e.bubbles, e.cancelable, e.view, e.key, e.location, e.ctrlKey, e.altKey, e.shiftKey, e.metaKey]).toEqual(["keyup", true, false, window, "a", 1, true, true, false, false]);
+    expect([
+      e.type,
+      e.bubbles,
+      e.cancelable,
+      e.view,
+      e.key,
+      e.location,
+      e.ctrlKey,
+      e.altKey,
+      e.shiftKey,
+      e.metaKey,
+    ]).toEqual(["keyup", true, false, window, "a", 1, true, true, false, false]);
   });
 });
 
@@ -372,7 +448,13 @@ describe("TouchEvent, Touch, TouchList — https://w3c.github.io/touch-events/",
     expect(() => new Touch({} as never)).toThrow(TypeError);
     expect(() => new Touch({ identifier: 1 } as never)).toThrow(TypeError);
     const touch = new Touch({ identifier: 1, target: el, clientX: 5, clientY: 6, force: 0.5 });
-    expect([touch.identifier, touch.target, touch.clientX, touch.clientY, touch.touchType]).toEqual([1, el, 5, 6, "direct"]);
+    expect([touch.identifier, touch.target, touch.clientX, touch.clientY, touch.touchType]).toEqual([
+      1,
+      el,
+      5,
+      6,
+      "direct",
+    ]);
     const e = new TouchEvent("touchstart", { touches: [touch], changedTouches: [touch], altKey: true });
     expect(e.touches.length).toBe(1);
     expect(e.touches[0]).toBe(touch);
@@ -388,7 +470,11 @@ describe("TouchEvent, Touch, TouchList — https://w3c.github.io/touch-events/",
   test("touch-like plain objects in touches/targetTouches/changedTouches are exposed unchanged", () => {
     const el = document.body!.appendChild(document.createElement("div"));
     const plain = { identifier: 0, clientX: 1, clientY: 2, target: el };
-    const e = new TouchEvent("touchstart", { bubbles: true, touches: [plain], changedTouches: [{ clientX: 3 }] } as never);
+    const e = new TouchEvent("touchstart", {
+      bubbles: true,
+      touches: [plain],
+      changedTouches: [{ clientX: 3 }],
+    } as never);
     expect(e.touches[0]).toBe(plain);
     expect(e.touches[0].clientX).toBe(1);
     expect(e.changedTouches.item(0)!.clientX).toBe(3);
@@ -429,7 +515,13 @@ describe("other HTML / CSS / DOM event interfaces", () => {
   });
 
   test("MessageEvent and initMessageEvent", () => {
-    const e = new MessageEvent("message", { data: { a: 1 }, origin: "http://x", lastEventId: "7", source: window, ports: [] });
+    const e = new MessageEvent("message", {
+      data: { a: 1 },
+      origin: "http://x",
+      lastEventId: "7",
+      source: window,
+      ports: [],
+    });
     expect([e.data, e.origin, e.lastEventId, e.source]).toEqual([{ a: 1 }, "http://x", "7", window]);
     expect(Object.isFrozen(e.ports)).toBe(true);
     expect(new MessageEvent("message").data).toBeNull();
@@ -441,7 +533,11 @@ describe("other HTML / CSS / DOM event interfaces", () => {
   test("ProgressEvent, AnimationEvent, TransitionEvent", () => {
     const p = new ProgressEvent("progress", { lengthComputable: true, loaded: 5, total: 10 });
     expect([p.lengthComputable, p.loaded, p.total]).toEqual([true, 5, 10]);
-    const a = new AnimationEvent("animationend", { animationName: "spin", elapsedTime: 1.5, pseudoElement: "::before" });
+    const a = new AnimationEvent("animationend", {
+      animationName: "spin",
+      elapsedTime: 1.5,
+      pseudoElement: "::before",
+    });
     expect([a.animationName, a.elapsedTime, a.pseudoElement]).toEqual(["spin", 1.5, "::before"]);
     const t = new TransitionEvent("transitionend", { propertyName: "opacity", elapsedTime: 0.2 });
     expect([t.propertyName, t.elapsedTime, t.pseudoElement]).toEqual(["opacity", 0.2, ""]);

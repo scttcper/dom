@@ -18,10 +18,14 @@ import { describe, expect, test } from "vitest";
 import { runJestFixture } from "./engines.ts";
 
 describe.each(["jsdom", "ctrl-dom"] as const)("jest-environment-%s", (engine) => {
-  test("a prototype patch made in one test file is not visible in the next file of the same worker", { timeout: 60_000 }, () => {
-    const result = runJestFixture("prototype-leak.*.fixture.cjs", engine, ["--runInBand"]);
-    if (result === null) return;
-    expect(result.message).toBe("");
-    expect(result.failures).toEqual([]);
-  });
+  test(
+    "a prototype patch made in one test file is not visible in the next file of the same worker",
+    { timeout: 60_000 },
+    () => {
+      const result = runJestFixture("prototype-leak.*.fixture.cjs", engine, ["--runInBand"]);
+      if (result === null) return;
+      expect(result.message).toBe("");
+      expect(result.failures).toEqual([]);
+    },
+  );
 });

@@ -46,7 +46,9 @@ let config: InternalConfig = {
     // Ours: CTRL_DOM_DEBUG=aria|compact prints the accessibility snapshot / compact HTML instead.
     const agentFormat = envDebugFormat();
     if (agentFormat !== null) {
-      const error = new Error([message, agentErrorContext(container, agentFormat, prettyDOM)].filter(Boolean).join("\n\n"));
+      const error = new Error(
+        [message, agentErrorContext(container, agentFormat, prettyDOM)].filter(Boolean).join("\n\n"),
+      );
       error.name = "TestingLibraryElementError";
       return error;
     }

@@ -31,30 +31,33 @@ afterEach(() => {
   uninstall = null;
 });
 
-describe.each(Object.keys(implementations) as Array<keyof typeof implementations>)("user-event %s on @ctrl/dom", (impl) => {
-  test("a setTimeout(cb, 0) scheduled during keyboard() has run when the call resolves, even if the handler also cleared a timer", async () => {
-    const window = createWindow({ url: "http://localhost/" });
-    uninstall = installGlobals(window, globalThis as never);
-    const userEvent = await implementations[impl]();
-    const button = document.createElement("button");
-    document.body.append(button);
-    let pending: ReturnType<typeof setTimeout> | undefined;
-    let committed = "";
-    button.addEventListener("keydown", (event: any) => {
-      clearTimeout(pending); // restart a timer: clear one ...
-      setTimeout(() => (committed = event.key), 0); // ... and schedule the "rAF" commit
+describe.each(Object.keys(implementations) as Array<keyof typeof implementations>)(
+  "user-event %s on @ctrl/dom",
+  (impl) => {
+    test("a setTimeout(cb, 0) scheduled during keyboard() has run when the call resolves, even if the handler also cleared a timer", async () => {
+      const window = createWindow({ url: "http://localhost/" });
+      uninstall = installGlobals(window, globalThis as never);
+      const userEvent = await implementations[impl]();
+      const button = document.createElement("button");
+      document.body.append(button);
+      let pending: ReturnType<typeof setTimeout> | undefined;
+      let committed = "";
+      button.addEventListener("keydown", (event: any) => {
+        clearTimeout(pending); // restart a timer: clear one ...
+        setTimeout(() => (committed = event.key), 0); // ... and schedule the "rAF" commit
+      });
+      button.focus();
+      const user = userEvent.setup();
+      // Timing dependent (the 1 ms timer races setImmediate), so sample it.
+      let stale = 0;
+      for (let i = 0; i < 50; i++) {
+        committed = "";
+        pending = setTimeout(() => {}, 10_000); // e.g. a typeahead reset timer
+        await user.keyboard("a");
+        if (committed !== "a") stale++;
+      }
+      clearTimeout(pending);
+      expect(stale).toBe(0);
     });
-    button.focus();
-    const user = userEvent.setup();
-    // Timing dependent (the 1 ms timer races setImmediate), so sample it.
-    let stale = 0;
-    for (let i = 0; i < 50; i++) {
-      committed = "";
-      pending = setTimeout(() => {}, 10_000); // e.g. a typeahead reset timer
-      await user.keyboard("a");
-      if (committed !== "a") stale++;
-    }
-    clearTimeout(pending);
-    expect(stale).toBe(0);
-  });
-});
+  },
+);

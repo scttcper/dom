@@ -9,7 +9,15 @@
 import { getImplicitAriaRolesJestDom } from "@ctrl/dom/aria";
 import { computeAccessibleDescription, computeAccessibleName } from "../aria.ts";
 import { ELEMENT_ROLES } from "../element-roles.generated.ts";
-import { checkHtmlElement, deprecate, getMessage, normalize, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
+import {
+  checkHtmlElement,
+  deprecate,
+  getMessage,
+  normalize,
+  type DOMNode,
+  type MatcherContext,
+  type MatcherResult,
+} from "../utils.ts";
 import { $impl } from "@ctrl/dom/internal";
 
 // --- toHaveRole -------------------------------------------------------------------------
@@ -85,7 +93,11 @@ export function toHaveRole(this: MatcherContext, htmlElement: DOMNode, expectedR
 
 // --- toHaveAccessibleName / toHaveAccessibleDescription ---------------------------------
 
-export function toHaveAccessibleName(this: MatcherContext, htmlElement: DOMNode, expectedAccessibleName?: unknown): MatcherResult {
+export function toHaveAccessibleName(
+  this: MatcherContext,
+  htmlElement: DOMNode,
+  expectedAccessibleName?: unknown,
+): MatcherResult {
   checkHtmlElement(htmlElement, toHaveAccessibleName, this);
   const actualAccessibleName = computeAccessibleName(htmlElement);
   const missingExpectedValue = arguments.length === 1;
@@ -97,7 +109,9 @@ export function toHaveAccessibleName(this: MatcherContext, htmlElement: DOMNode,
     pass = actualAccessibleName !== "";
   } else {
     pass =
-      expectedAccessibleName instanceof RegExp ? expectedAccessibleName.test(actualAccessibleName) : this.equals(actualAccessibleName, expectedAccessibleName);
+      expectedAccessibleName instanceof RegExp
+        ? expectedAccessibleName.test(actualAccessibleName)
+        : this.equals(actualAccessibleName, expectedAccessibleName);
   }
 
   return {
@@ -117,7 +131,11 @@ export function toHaveAccessibleName(this: MatcherContext, htmlElement: DOMNode,
   };
 }
 
-export function toHaveAccessibleDescription(this: MatcherContext, htmlElement: DOMNode, expectedAccessibleDescription?: unknown): MatcherResult {
+export function toHaveAccessibleDescription(
+  this: MatcherContext,
+  htmlElement: DOMNode,
+  expectedAccessibleDescription?: unknown,
+): MatcherResult {
   checkHtmlElement(htmlElement, toHaveAccessibleDescription, this);
   const actualAccessibleDescription = computeAccessibleDescription(htmlElement);
   const missingExpectedValue = arguments.length === 1;
@@ -157,7 +175,11 @@ const ariaInvalidName = "aria-invalid";
 const validStates = ["false"];
 
 // See `aria-errormessage` spec at https://www.w3.org/TR/wai-aria-1.2/#aria-errormessage
-export function toHaveAccessibleErrorMessage(this: MatcherContext, htmlElement: DOMNode, expectedAccessibleErrorMessage?: unknown): MatcherResult {
+export function toHaveAccessibleErrorMessage(
+  this: MatcherContext,
+  htmlElement: DOMNode,
+  expectedAccessibleErrorMessage?: unknown,
+): MatcherResult {
   checkHtmlElement(htmlElement, toHaveAccessibleErrorMessage, this);
   const to = this.isNot ? "not to" : "to";
   const method = this.isNot ? ".not.toHaveAccessibleErrorMessage" : ".toHaveAccessibleErrorMessage";
@@ -198,7 +220,9 @@ export function toHaveAccessibleErrorMessage(this: MatcherContext, htmlElement: 
           `${ariaInvalidName}="${String(true)}"`,
           "Received",
           // (sic) upstream omits the closing quote here
-          htmlElement.hasAttribute("aria-invalid") ? `${ariaInvalidName}="${htmlElement.getAttribute(ariaInvalidName)}` : null,
+          htmlElement.hasAttribute("aria-invalid")
+            ? `${ariaInvalidName}="${htmlElement.getAttribute(ariaInvalidName)}`
+            : null,
         );
       },
     };
@@ -248,7 +272,11 @@ export function toHaveDescription(this: MatcherContext, htmlElement: DOMNode, ch
   const description = textOfIdRefs(htmlElement, "aria-describedby");
 
   return {
-    pass: expectsDescription ? (checkWith instanceof RegExp ? checkWith.test(description) : this.equals(description, checkWith)) : Boolean(description),
+    pass: expectsDescription
+      ? checkWith instanceof RegExp
+        ? checkWith.test(description)
+        : this.equals(description, checkWith)
+      : Boolean(description),
     message: () => {
       const to = this.isNot ? "not to" : "to";
       return getMessage(
@@ -280,7 +308,9 @@ export function toHaveErrorMessage(this: MatcherContext, htmlElement: DOMNode, c
           `Expected the element to have invalid state indicated by`,
           'aria-invalid="true"',
           "Received",
-          htmlElement.hasAttribute("aria-invalid") ? `aria-invalid="${htmlElement.getAttribute("aria-invalid")}"` : this.utils.printReceived(""),
+          htmlElement.hasAttribute("aria-invalid")
+            ? `aria-invalid="${htmlElement.getAttribute("aria-invalid")}"`
+            : this.utils.printReceived(""),
         );
       },
     };
@@ -290,7 +320,11 @@ export function toHaveErrorMessage(this: MatcherContext, htmlElement: DOMNode, c
   const errormessage = textOfIdRefs(htmlElement, "aria-errormessage");
 
   return {
-    pass: expectsErrorMessage ? (checkWith instanceof RegExp ? checkWith.test(errormessage) : this.equals(errormessage, checkWith)) : Boolean(errormessage),
+    pass: expectsErrorMessage
+      ? checkWith instanceof RegExp
+        ? checkWith.test(errormessage)
+        : this.equals(errormessage, checkWith)
+      : Boolean(errormessage),
     message: () => {
       const to = this.isNot ? "not to" : "to";
       return getMessage(

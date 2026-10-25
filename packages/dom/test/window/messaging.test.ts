@@ -34,7 +34,7 @@ function collect(): any[] {
 }
 
 describe("window post message steps — https://html.spec.whatwg.org/#window-post-message-steps", () => {
-  test("step 2: targetOrigin \"/\" means the caller's own origin", () => {
+  test('step 2: targetOrigin "/" means the caller\'s own origin', () => {
     const events = collect();
     window.postMessage("same", "/");
     vi.runAllTimers();
@@ -49,7 +49,7 @@ describe("window post message steps — https://html.spec.whatwg.org/#window-pos
     expect(events.map((e) => e.data)).toEqual(["with path"]);
   });
 
-  test("the options dictionary form accepts targetOrigin (default \"/\") and transfer", () => {
+  test('the options dictionary form accepts targetOrigin (default "/") and transfer', () => {
     const events = collect();
     window.postMessage("default origin", {});
     window.postMessage("star", { targetOrigin: "*" });

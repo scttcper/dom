@@ -29,11 +29,17 @@
 import {skipIdleTime} from '../../ctrl-dom.ts'
 import {type Instance} from '../../setup/index.ts'
 
-type TimerFn = ((...args: never[]) => unknown) & {clock?: unknown; _isMockFunction?: boolean}
+type TimerFn = ((...args: never[]) => unknown) & {
+  clock?: unknown
+  _isMockFunction?: boolean
+}
 
 /** Same detection as @testing-library/dom's `jestFakeTimersAreEnabled`; also matches sinon/vitest (`clock`) and spies. */
 function isFaked(fn: TimerFn | undefined): boolean {
-  return fn !== undefined && (fn._isMockFunction === true || Object.hasOwn(fn, 'clock'))
+  return (
+    fn !== undefined &&
+    (fn._isMockFunction === true || Object.hasOwn(fn, 'clock'))
+  )
 }
 
 export function defaultAdvanceTimers(): Promise<void> {
@@ -56,7 +62,8 @@ function resolveOnImmediate(resolve: () => void) {
 }
 
 const getActiveResourcesInfo =
-  typeof process === 'object' && typeof process.getActiveResourcesInfo === 'function'
+  typeof process === 'object' &&
+  typeof process.getActiveResourcesInfo === 'function'
     ? process.getActiveResourcesInfo.bind(process)
     : null
 
@@ -111,15 +118,29 @@ function copyProps(wrapper: object, original: object) {
 function wrapSchedule(name: 'setTimeout' | 'setInterval') {
   const g = globalThis as unknown as TimerGlobals
   const current = g[name]
-  if (current === wrappers[name] || typeof current !== 'function' || isFaked(current)) return
+  if (
+    current === wrappers[name] ||
+    typeof current !== 'function' ||
+    isFaked(current)
+  )
+    return
   const original = current as unknown as AnyFn
   const isInterval = name === 'setInterval'
-  const wrapper = function (this: unknown, callback: unknown, delay?: unknown, ...args: unknown[]) {
+  const wrapper = function (
+    this: unknown,
+    callback: unknown,
+    delay?: unknown,
+    ...args: unknown[]
+  ) {
     if (typeof callback !== 'function') {
       return original.call(this, callback, delay, ...args)
     }
     const ms = Math.max(1, Number(delay) || 0)
-    const timer: PendingTimer = {due: performance.now() + ms, interval: isInterval ? ms : 0, handle: undefined}
+    const timer: PendingTimer = {
+      due: performance.now() + ms,
+      interval: isInterval ? ms : 0,
+      handle: undefined,
+    }
     pendingTimers.add(timer)
     let handle: unknown
     const run = function (this: unknown, ...runArgs: unknown[]) {
@@ -144,7 +165,12 @@ function wrapSchedule(name: 'setTimeout' | 'setInterval') {
 function wrapClear(name: 'clearTimeout' | 'clearInterval') {
   const g = globalThis as unknown as TimerGlobals
   const current = g[name]
-  if (current === wrappers[name] || typeof current !== 'function' || isFaked(current)) return
+  if (
+    current === wrappers[name] ||
+    typeof current !== 'function' ||
+    isFaked(current)
+  )
+    return
   const original = current as unknown as AnyFn
   const wrapper = function (this: unknown, handle: unknown) {
     const timer = timerByHandle.get(handle)
@@ -207,7 +233,11 @@ function untrackedTimeouts(): number {
   if (live === -1) return -1
   let trackedRefed = 0
   for (const handle of timerByHandle.keys()) {
-    if (typeof handle !== 'object' || handle === null || (handle as {hasRef?: () => boolean}).hasRef?.() !== false) {
+    if (
+      typeof handle !== 'object' ||
+      handle === null ||
+      (handle as {hasRef?: () => boolean}).hasRef?.() !== false
+    ) {
       trackedRefed++
     }
   }
@@ -226,14 +256,24 @@ export function markTimers(config: Instance['config']) {
 }
 
 function canYieldWithImmediate(config: Instance['config']): boolean {
-  if (config.delay !== 0 || config.advanceTimers !== defaultAdvanceTimers) return false
+  if (config.delay !== 0 || config.advanceTimers !== defaultAdvanceTimers)
+    return false
   const setImmediate = globalThis.setImmediate as TimerFn | undefined
-  if (typeof setImmediate !== 'function' || isFaked(setImmediate) || !timerGlobalsObserved()) {
+  if (
+    typeof setImmediate !== 'function' ||
+    isFaked(setImmediate) ||
+    !timerGlobalsObserved()
+  ) {
     return false
   }
   if (trackedTimerDueSoon()) return false
   const untracked = untrackedTimeouts()
-  if (untracked === -1 || untrackedBaseline === -1 || untracked > untrackedBaseline) return false
+  if (
+    untracked === -1 ||
+    untrackedBaseline === -1 ||
+    untracked > untrackedBaseline
+  )
+    return false
   if (!skipIdleTime(1)) return false
   untrackedBaseline = untracked
   return true

@@ -80,12 +80,18 @@ function toNode(n: unknown, doc: Document): Node {
 /** WebIDL `Node` argument conversion. */
 function nodeArg(value: unknown, method: string, position: number, self: NodeImpl): NodeImpl {
   if (typeof value === "object" && value !== null && $impl in value) return (value as Node)[$impl];
-  throw new TypeError(`Failed to execute '${method}' on '${parentNodeInterface(self)}': parameter ${position} is not of type 'Node'.`);
+  throw new TypeError(
+    `Failed to execute '${method}' on '${parentNodeInterface(self)}': parameter ${position} is not of type 'Node'.`,
+  );
 }
 
 /** The interface name used in ParentNode error messages. */
 function parentNodeInterface(impl: NodeImpl): string {
-  return impl.type === ELEMENT_NODE ? "Element" : impl.type === DOCUMENT_FRAGMENT_NODE ? "DocumentFragment" : "Document";
+  return impl.type === ELEMENT_NODE
+    ? "Element"
+    : impl.type === DOCUMENT_FRAGMENT_NODE
+      ? "DocumentFragment"
+      : "Document";
 }
 
 function wrap(n: NodeImpl | null): Element | null {

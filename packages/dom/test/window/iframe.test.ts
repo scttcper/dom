@@ -144,7 +144,9 @@ describe("about base URL — https://html.spec.whatwg.org/#concept-document-abou
     window.document.body!.append(blank as never, srcdoc as never);
     expect(blank.contentDocument!.baseURI).toBe("http://localhost/app/");
     expect(srcdoc.contentDocument!.baseURI).toBe("http://localhost/app/");
-    expect((srcdoc.contentDocument!.querySelector("a") as unknown as { href: string }).href).toBe("http://localhost/app/rel");
+    expect((srcdoc.contentDocument!.querySelector("a") as unknown as { href: string }).href).toBe(
+      "http://localhost/app/rel",
+    );
   });
 
   test("the about base URL is a snapshot taken at creation, not a live view of the container's base URL", () => {

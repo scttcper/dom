@@ -55,7 +55,8 @@ describe("@ctrl/dom/vitest-environment setup/teardown ×N", () => {
       },
       { warmup: 600, samples: 6, every: 80 },
     );
-    if (process.env.LEAK_DEBUG) console.log(points.map(([x, y]) => `${x}:${(y / 1024).toFixed(0)}K`).join(" "), bytesPerCycle);
+    if (process.env.LEAK_DEBUG)
+      console.log(points.map(([x, y]) => `${x}:${(y / 1024).toFixed(0)}K`).join(" "), bytesPerCycle);
     expect(bytesPerCycle).toBeLessThan(512);
   });
 });
@@ -65,7 +66,8 @@ describe("installGlobals / uninstall ×N on the real global", () => {
     const g = globalThis as AnyGlobal;
     // Node defines undici's dispatcher symbols when undici first loads (installGlobals reads the
     // lazy FormData/MessageEvent descriptors): host state, not ours.
-    const ownKeys = () => Reflect.ownKeys(globalThis).filter((k) => typeof k === "string" || !String(k.description).startsWith("undici."));
+    const ownKeys = () =>
+      Reflect.ownKeys(globalThis).filter((k) => typeof k === "string" || !String(k.description).startsWith("undici."));
     const keys = ownKeys();
     const before = new Map(keys.map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]));
     const tracker = new Tracker();
@@ -81,7 +83,10 @@ describe("installGlobals / uninstall ×N on the real global", () => {
     expect(ownKeys()).toEqual(keys);
     for (const [k, d] of before) {
       const now = Object.getOwnPropertyDescriptor(globalThis, k);
-      expect({ key: String(k), same: Object.is(now?.value, d?.value) && now?.get === d?.get && now?.set === d?.set }).toEqual({ key: String(k), same: true });
+      expect({
+        key: String(k),
+        same: Object.is(now?.value, d?.value) && now?.get === d?.get && now?.set === d?.set,
+      }).toEqual({ key: String(k), same: true });
     }
     expect(await tracker.alive()).toEqual({});
   });
@@ -100,7 +105,15 @@ describe("@ctrl/dom-jest-environment constructor/setup/teardown ×N", () => {
     const tracker = new Tracker();
     const cycle = async () => {
       const env = new CtrlDomEnvironment(
-        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        {
+          globalConfig: {},
+          projectConfig: {
+            testEnvironmentOptions: { compat: "modern" },
+            globals: {},
+            fakeTimers: {},
+            testPath: "x.test.js",
+          },
+        },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();
@@ -126,7 +139,15 @@ describe("@ctrl/dom-jest-environment constructor/setup/teardown ×N", () => {
     const tracker = new Tracker();
     const cycle = async () => {
       const env = new CtrlDomEnvironment(
-        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        {
+          globalConfig: {},
+          projectConfig: {
+            testEnvironmentOptions: { compat: "modern" },
+            globals: {},
+            fakeTimers: {},
+            testPath: "x.test.js",
+          },
+        },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();
@@ -164,7 +185,15 @@ describe("@ctrl/dom-jest-environment constructor/setup/teardown ×N", () => {
     let live: unknown = null;
     const cycle = async () => {
       const env = new CtrlDomEnvironment(
-        { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
+        {
+          globalConfig: {},
+          projectConfig: {
+            testEnvironmentOptions: { compat: "modern" },
+            globals: {},
+            fakeTimers: {},
+            testPath: "x.test.js",
+          },
+        },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();

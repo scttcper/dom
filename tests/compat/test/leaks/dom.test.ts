@@ -142,7 +142,8 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
     const tracker = new Tracker();
     (() => {
       const box = d.createElement("section");
-      box.innerHTML = "<label>First <input class=f form=fid></label><label for=e>E</label><input id=e class=f form=fid><p class=f>p</p>";
+      box.innerHTML =
+        "<label>First <input class=f form=fid></label><label for=e>E</label><input id=e class=f form=fid><p class=f>p</p>";
       d.body!.append(box);
       tracker.track("subtree", box);
       tracker.track("input", box.querySelector("input")!);
@@ -220,7 +221,8 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
     const d = w.document;
     const shared = new (w as unknown as Record<string, any>).CSSStyleSheet();
     shared.replaceSync(".x { color: red }");
-    const indexed = () => (d as unknown as Record<symbol, { shadows: { refs: Set<unknown> } | null }>)[$css].shadows?.refs.size ?? 0;
+    const indexed = () =>
+      (d as unknown as Record<symbol, { shadows: { refs: Set<unknown> } | null }>)[$css].shadows?.refs.size ?? 0;
     const churn = () => {
       for (let i = 0; i < 200; i++) {
         const host = d.createElement("div");
@@ -260,9 +262,14 @@ describe("heap slope", () => {
 
   test("createWindow → exercise → close cycles keep heap-after-GC flat", async () => {
     // A tracker that keeps nothing (WeakRefs themselves would grow the heap).
-    const untracked = { track: <T,>(_label: string, target: T) => target } as unknown as Tracker;
-    const { bytesPerCycle, points } = await heapSlope(() => exercise(untracked), { warmup: 400, samples: 6, every: 80 });
-    if (process.env.LEAK_DEBUG) console.log(points.map(([x, y]) => `${x}:${(y / 1024).toFixed(0)}K`).join(" "), bytesPerCycle);
+    const untracked = { track: <T>(_label: string, target: T) => target } as unknown as Tracker;
+    const { bytesPerCycle, points } = await heapSlope(() => exercise(untracked), {
+      warmup: 400,
+      samples: 6,
+      every: 80,
+    });
+    if (process.env.LEAK_DEBUG)
+      console.log(points.map(([x, y]) => `${x}:${(y / 1024).toFixed(0)}K`).join(" "), bytesPerCycle);
     // One exercised window is ~100+ KB; anything retained per cycle shows up immediately. The
     // warmup absorbs JIT/feedback growth (the post-warmup slope is ~50 B/cycle).
     expect(bytesPerCycle).toBeLessThan(1024);

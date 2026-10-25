@@ -52,7 +52,12 @@ async function load(options: Record<string, unknown>): Promise<void> {
 const DOM_MODULES = Symbol.for("ctrl-dom.dom.modules");
 
 function publishModules(global: object): void {
-  Object.defineProperty(global, DOM_MODULES, { value: { dom: dom!, internal: internal! }, configurable: true, enumerable: false, writable: false });
+  Object.defineProperty(global, DOM_MODULES, {
+    value: { dom: dom!, internal: internal! },
+    configurable: true,
+    enumerable: false,
+    writable: false,
+  });
 }
 
 /**
@@ -176,7 +181,8 @@ const environment: Environment = {
   async setup(global, options) {
     await load(options);
     const { createWindow, installGlobals } = dom!;
-    const { setUncaughtExceptionHandler, setNotImplementedHandler, installClock, VirtualClock, subscribeTestFailures } = internal!;
+    const { setUncaughtExceptionHandler, setNotImplementedHandler, installClock, VirtualClock, subscribeTestFailures } =
+      internal!;
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
     publishModules(global);
@@ -206,7 +212,16 @@ const environment: Environment = {
   async setupVM(options) {
     await load(options);
     const { createWindow, installGlobals } = dom!;
-    const { setUncaughtExceptionHandler, setNotImplementedHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock, subscribeTestFailures } = internal!;
+    const {
+      setUncaughtExceptionHandler,
+      setNotImplementedHandler,
+      captureInterfaceBaseline,
+      guardInterfaceDefinitions,
+      restoreInterfaces,
+      installClock,
+      VirtualClock,
+      subscribeTestFailures,
+    } = internal!;
     const window = createWindow(windowOptions(options));
     // https://nodejs.org/api/vm.html#vmconstantsdont_contextify: the new realm's own global object
     // (usable wherever a contextified object is), so global lookups in test and app code are
@@ -215,7 +230,12 @@ const environment: Environment = {
     const host = globalThis as unknown as Record<string, unknown>;
     for (const name of VM_HOST_GLOBALS) {
       if (host[name] !== undefined) {
-        Object.defineProperty(context, name, { value: host[name], writable: true, enumerable: false, configurable: true });
+        Object.defineProperty(context, name, {
+          value: host[name],
+          writable: true,
+          enumerable: false,
+          configurable: true,
+        });
       }
     }
     // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared

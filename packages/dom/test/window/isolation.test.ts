@@ -17,12 +17,20 @@ describe("restoreInterfaces", () => {
       const div = window.document.createElement("div");
       // More children than the initial index-getter bound (32): the table grows after the baseline.
       div.innerHTML = Array.from({ length: 40 }, (_, i) => `<span>${i}</span>`).join("");
-      const seen = [div.children[0]?.textContent, div.children[39]?.textContent, div.getElementsByTagName("span")[39]?.textContent];
+      const seen = [
+        div.children[0]?.textContent,
+        div.children[39]?.textContent,
+        div.getElementsByTagName("span")[39]?.textContent,
+      ];
       window.close();
       restoreInterfaces();
       return seen;
     };
-    expect([file(), file(), file()]).toEqual([["0", "39", "39"], ["0", "39", "39"], ["0", "39", "39"]]);
+    expect([file(), file(), file()]).toEqual([
+      ["0", "39", "39"],
+      ["0", "39", "39"],
+      ["0", "39", "39"],
+    ]);
   });
 
   test("still undoes a test file's own patches", () => {
@@ -38,10 +46,16 @@ describe("restoreInterfaces", () => {
   test("definitions made through a guarded realm stay configurable, so they are undone (downstream/react-aria TRIAGE)", () => {
     captureInterfaceBaseline();
     // A test file's own realm, as the environments create it.
-    const realm = createContext(vmConstants.DONT_CONTEXTIFY) as unknown as { Object: ObjectConstructor; Reflect: typeof Reflect };
+    const realm = createContext(vmConstants.DONT_CONTEXTIFY) as unknown as {
+      Object: ObjectConstructor;
+      Reflect: typeof Reflect;
+    };
     guardInterfaceDefinitions(realm);
     const window = createWindow();
-    const { ShadowRoot, Element } = window as unknown as { ShadowRoot: { prototype: object }; Element: { prototype: object } };
+    const { ShadowRoot, Element } = window as unknown as {
+      ShadowRoot: { prototype: object };
+      Element: { prototype: object };
+    };
     // shadow-dom-testing-library: Object.defineProperties without `configurable`.
     realm.Object.defineProperties(ShadowRoot.prototype, { outerHTML: { get: () => "patched" } });
     realm.Object.defineProperty(Element.prototype, "patchedOne", { value: 1 });

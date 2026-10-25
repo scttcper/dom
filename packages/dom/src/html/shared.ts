@@ -75,7 +75,7 @@ function isDesignModeRoot(impl: NodeImpl, parent: NodeImpl): boolean {
  */
 export function isEditable(impl: NodeImpl): boolean {
   if (impl.type !== ELEMENT_NODE) return false;
-  for (let n = impl; ; ) {
+  for (let n = impl; ;) {
     if (n.ns === HTML_NS) {
       const s = contentEditableState(n);
       if (s === CE_TRUE || s === CE_PLAINTEXT) return true;

@@ -5,7 +5,12 @@ import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { Node } from "./Node.ts";
 import { currentDocument } from "../window/current.ts";
-import { installNonElementParentNode, installParentNode, type NonElementParentNode, type ParentNode } from "./mixins.ts";
+import {
+  installNonElementParentNode,
+  installParentNode,
+  type NonElementParentNode,
+  type ParentNode,
+} from "./mixins.ts";
 import { $host } from "../keys.ts";
 
 export class DocumentFragment extends Node {
@@ -16,7 +21,6 @@ export class DocumentFragment extends Node {
     super(DOCUMENT_FRAGMENT_NODE, doc);
     this[$host] = null;
   }
-
 }
 
 export interface DocumentFragment extends ParentNode, NonElementParentNode {}

@@ -23,7 +23,12 @@ export class CSSComputedStyleDeclaration extends CSSStyleDeclaration {
     this[$el] = el;
     this[$pseudo] = pseudo;
     this[$readonly] = true;
-    if (table === null) table = indexGetterTable(CSSComputedStyleDeclaration.prototype, (self, i) => (self as CSSComputedStyleDeclaration).item(i), 0);
+    if (table === null)
+      table = indexGetterTable(
+        CSSComputedStyleDeclaration.prototype,
+        (self, i) => (self as CSSComputedStyleDeclaration).item(i),
+        0,
+      );
     ensureIndexGetters(table, computedPropertyNames().length);
   }
 
@@ -77,7 +82,8 @@ const cache = new WeakMap<NodeImpl, CSSComputedStyleDeclaration>();
 /** https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle — the declaration object is reused per element (it is live). */
 export function getComputedStyle(element: Element, pseudoElement?: string | null): CSSStyleDeclaration {
   const impl = element[$impl];
-  let pseudo = pseudoElement === undefined || pseudoElement === null || pseudoElement === "" ? null : String(pseudoElement);
+  let pseudo =
+    pseudoElement === undefined || pseudoElement === null || pseudoElement === "" ? null : String(pseudoElement);
   if (pseudo !== null) {
     const lower = pseudo.toLowerCase();
     if (lower.charCodeAt(0) !== 0x3a) pseudo = null;

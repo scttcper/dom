@@ -27,7 +27,9 @@ import { differential } from "./engines.ts";
 function getCheckboxValue(option: any): { value: unknown; isValid: boolean } {
   if (!option || !option.checked || option.disabled) return { value: false, isValid: false };
   if (!option.attributes || !("value" in option.attributes)) return { value: true, isValid: true };
-  return option.value === undefined || option.value === "" ? { value: true, isValid: true } : { value: option.value, isValid: true };
+  return option.value === undefined || option.value === ""
+    ? { value: true, isValid: true }
+    : { value: option.value, isValid: true };
 }
 
 differential("NamedNodeMap named properties (react-hook-form getCheckboxValue)", (make) => {

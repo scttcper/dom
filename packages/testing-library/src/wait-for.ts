@@ -1,7 +1,13 @@
 // Port of @testing-library/dom src/wait-for.js (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/wait-for.js
 
-import { getWindowFromNode, getDocument, jestFakeTimersAreEnabled, advanceFakeTimersByTime, checkContainerType } from "./helpers.ts";
+import {
+  getWindowFromNode,
+  getDocument,
+  jestFakeTimersAreEnabled,
+  advanceFakeTimersByTime,
+  checkContainerType,
+} from "./helpers.ts";
 import { getConfig, runWithExpensiveErrorDiagnosticsDisabled } from "./config.ts";
 import { envDebugFormat } from "./agent-debug.ts";
 import { tracePromise, tracing, type SpanContext } from "@ctrl/dom/internal";
@@ -205,11 +211,17 @@ export function waitFor<T>(callback: () => T | Promise<T>, options?: WaitForOpti
   // Ours: a span with the callback's source and how many times it ran, when something subscribes
   // to @ctrl/dom's tracing channel.
   if (!tracing()) return waitForInSpan(callback, options, null);
-  return tracePromise("testing-library.wait_for", `waitFor(${describeCallback(callback)})`, (span) => waitForInSpan(callback, options, span));
+  return tracePromise("testing-library.wait_for", `waitFor(${describeCallback(callback)})`, (span) =>
+    waitForInSpan(callback, options, span),
+  );
 }
 
 /** waitFor without a span of its own, counting the callback's runs on `span` (findBy* passes its query span). */
-export function waitForInSpan<T>(callback: () => T | Promise<T>, options: WaitForOptions | undefined, span: SpanContext | null): Promise<T> {
+export function waitForInSpan<T>(
+  callback: () => T | Promise<T>,
+  options: WaitForOptions | undefined,
+  span: SpanContext | null,
+): Promise<T> {
   // create the error here so its stack trace is as close to the
   // calling code as possible
   const stackTraceError = new Error("STACK_TRACE_MESSAGE");

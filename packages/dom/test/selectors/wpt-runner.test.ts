@@ -33,13 +33,31 @@ const ROOT = fileURLToPath(new URL("./wpt/tree/", import.meta.url));
 const NO_PARSE_SCRIPTS = "relies on scripts running during parsing (no script execution)";
 const NO_LAYOUT = "needs layout (offsetHeight); there is no layout engine";
 const EXPECTED_FAILURES = new Map<string, string>([
-  ["css/selectors/child-indexed-during-parse.html :: :first-child against an element still being parsed", NO_PARSE_SCRIPTS],
-  ["css/selectors/child-indexed-during-parse.html :: :first-of-type against an element still being parsed", NO_PARSE_SCRIPTS],
-  ["css/selectors/child-indexed-during-parse.html :: :nth-child(1) against an element still being parsed", NO_PARSE_SCRIPTS],
-  ["css/selectors/child-indexed-during-parse.html :: :nth-of-type(1) against an element still being parsed", NO_PARSE_SCRIPTS],
-  ["css/selectors/selectors-case-sensitive-001.html :: CSS selector should match for Unicode uppercase element", NO_LAYOUT],
+  [
+    "css/selectors/child-indexed-during-parse.html :: :first-child against an element still being parsed",
+    NO_PARSE_SCRIPTS,
+  ],
+  [
+    "css/selectors/child-indexed-during-parse.html :: :first-of-type against an element still being parsed",
+    NO_PARSE_SCRIPTS,
+  ],
+  [
+    "css/selectors/child-indexed-during-parse.html :: :nth-child(1) against an element still being parsed",
+    NO_PARSE_SCRIPTS,
+  ],
+  [
+    "css/selectors/child-indexed-during-parse.html :: :nth-of-type(1) against an element still being parsed",
+    NO_PARSE_SCRIPTS,
+  ],
+  [
+    "css/selectors/selectors-case-sensitive-001.html :: CSS selector should match for Unicode uppercase element",
+    NO_LAYOUT,
+  ],
   ["css/selectors/selectors-case-sensitive-001.html :: Elements with namespace should work the same way", NO_LAYOUT],
-  ["css/selectors/focus-within-focus-move.html :: test 1", "needs an inline onblur= event handler attribute to run (no script execution)"],
+  [
+    "css/selectors/focus-within-focus-move.html :: test 1",
+    "needs an inline onblur= event handler attribute to run (no script execution)",
+  ],
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -88,7 +106,11 @@ function makeHarness(results: Result[], singleTest: { on: boolean }) {
     test(fn: () => void, name?: string) {
       const r: Result = { name: name ?? `test ${results.length + 1}`, error: null, run: null };
       const cleanups: (() => void)[] = [];
-      const t = { step_func: (f: (...a: unknown[]) => unknown) => f, add_cleanup: (f: () => void) => cleanups.push(f), name: r.name };
+      const t = {
+        step_func: (f: (...a: unknown[]) => unknown) => f,
+        add_cleanup: (f: () => void) => cleanups.push(f),
+        name: r.name,
+      };
       try {
         (fn as (t: unknown) => void).call(t, t);
       } catch (e) {
@@ -103,7 +125,11 @@ function makeHarness(results: Result[], singleTest: { on: boolean }) {
     },
     promise_test(fn: () => Promise<void>, name?: string) {
       const t = { add_cleanup: () => {}, step_func: (f: (...a: unknown[]) => unknown) => f };
-      results.push({ name: name ?? `promise_test ${results.length + 1}`, error: null, run: () => (fn as (t: unknown) => Promise<void>).call(t, t) });
+      results.push({
+        name: name ?? `promise_test ${results.length + 1}`,
+        error: null,
+        run: () => (fn as (t: unknown) => Promise<void>).call(t, t),
+      });
     },
     async_test(fnOrName?: unknown, maybeName?: string) {
       const name = typeof fnOrName === "string" ? fnOrName : (maybeName ?? `async_test ${results.length + 1}`);
@@ -121,28 +147,40 @@ function makeHarness(results: Result[], singleTest: { on: boolean }) {
             reject(e);
           }
         },
-        step_func: (f: (...a: unknown[]) => unknown) => (...a: unknown[]) => {
-          try {
-            return f.apply(t, a);
-          } catch (e) {
-            reject(e);
-          }
-        },
-        step_func_done: (f?: (...a: unknown[]) => unknown) => (...a: unknown[]) => {
-          try {
-            f?.apply(t, a);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        },
+        step_func:
+          (f: (...a: unknown[]) => unknown) =>
+          (...a: unknown[]) => {
+            try {
+              return f.apply(t, a);
+            } catch (e) {
+              reject(e);
+            }
+          },
+        step_func_done:
+          (f?: (...a: unknown[]) => unknown) =>
+          (...a: unknown[]) => {
+            try {
+              f?.apply(t, a);
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          },
         step_timeout: (f: () => void, ms: number) => setTimeout(() => t.step(f), ms),
         done: () => resolve(),
         add_cleanup: () => {},
         unreached_func: (msg: string) => () => reject(new AssertionError(msg)),
       };
       if (typeof fnOrName === "function") t.step(() => (fnOrName as (this: unknown, t: unknown) => void).call(t, t));
-      results.push({ name, error: null, run: () => Promise.race([p, new Promise<void>((_, rej) => setTimeout(() => rej(new AssertionError("async_test timed out")), 2000))]) });
+      results.push({
+        name,
+        error: null,
+        run: () =>
+          Promise.race([
+            p,
+            new Promise<void>((_, rej) => setTimeout(() => rej(new AssertionError("async_test timed out")), 2000)),
+          ]),
+      });
       return t;
     },
     assert_equals(a: unknown, b: unknown, d?: string) {
@@ -162,7 +200,8 @@ function makeHarness(results: Result[], singleTest: { on: boolean }) {
     },
     assert_array_equals(a: ArrayLike<unknown>, b: ArrayLike<unknown>, d?: string) {
       if (a.length !== b.length) fail(`lengths differ: ${a.length} vs ${b.length}`, d);
-      for (let i = 0; i < a.length; i++) if (!sameValue(a[i], b[i])) fail(`index ${i}: expected ${fmt(b[i])} got ${fmt(a[i])}`, d);
+      for (let i = 0; i < a.length; i++)
+        if (!sameValue(a[i], b[i])) fail(`index ${i}: expected ${fmt(b[i])} got ${fmt(a[i])}`, d);
     },
     assert_greater_than(a: number, b: number, d?: string) {
       if (!(a > b)) fail(`${a} not > ${b}`, d);
@@ -172,12 +211,18 @@ function makeHarness(results: Result[], singleTest: { on: boolean }) {
     },
     assert_throws_dom(code: string | number, ctorOrFn: unknown, maybeFn?: () => void, d?: string) {
       const fn = (typeof maybeFn === "function" ? maybeFn : ctorOrFn) as () => void;
-      const names: Record<number, string> = { 12: "SyntaxError", 8: "NotFoundError", 3: "HierarchyRequestError", 5: "InvalidCharacterError" };
+      const names: Record<number, string> = {
+        12: "SyntaxError",
+        8: "NotFoundError",
+        3: "HierarchyRequestError",
+        5: "InvalidCharacterError",
+      };
       const want = typeof code === "number" ? names[code] : code === "SYNTAX_ERR" ? "SyntaxError" : code;
       try {
         fn();
       } catch (e) {
-        if ((e as { name?: string }).name !== want) fail(`expected ${want} got ${(e as Error).name}: ${(e as Error).message}`, d);
+        if ((e as { name?: string }).name !== want)
+          fail(`expected ${want} got ${(e as Error).name}: ${(e as Error).message}`, d);
         return;
       }
       fail(`expected ${want} to be thrown`, d);
@@ -256,7 +301,11 @@ function runFile(file: string): Result[] {
   if (singleTest.on && results.length === 0) results.push({ name: "single test", error: null, run: null });
   // The page has finished loading: DOMContentLoaded, then load.
   try {
-    const w = window as unknown as { document: EventTarget; dispatchEvent(e: unknown): void; Event: new (t: string) => unknown };
+    const w = window as unknown as {
+      document: EventTarget;
+      dispatchEvent(e: unknown): void;
+      Event: new (t: string) => unknown;
+    };
     w.document.dispatchEvent(new w.Event("DOMContentLoaded") as Event);
     w.dispatchEvent(new w.Event("load"));
   } catch (e) {
@@ -275,7 +324,8 @@ describe("WPT selector files — https://drafts.csswg.org/selectors-4/", () => {
       } catch (e) {
         results = [{ name: "<setup>", error: e, run: null }];
       }
-      if (results.length === 0) results.push({ name: "<no tests>", error: new Error("page declared no tests"), run: null });
+      if (results.length === 0)
+        results.push({ name: "<no tests>", error: new Error("page declared no tests"), run: null });
       const seen = new Map<string, number>();
       for (const r of results) {
         const n = seen.get(r.name) ?? 0;

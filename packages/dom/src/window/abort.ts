@@ -14,9 +14,11 @@ const HostAbortController = globalThis.AbortController;
 // https://webidl.spec.whatwg.org/#abstract-opdef-converttoint ([EnforceRange] unsigned long long)
 function enforceRange(value: unknown): number {
   const x = Number(value);
-  if (!Number.isFinite(x)) throw new TypeError("Failed to execute 'timeout' on 'AbortSignal': parameter 1 is not a finite number.");
+  if (!Number.isFinite(x))
+    throw new TypeError("Failed to execute 'timeout' on 'AbortSignal': parameter 1 is not a finite number.");
   const n = Math.trunc(x);
-  if (n < 0 || n > Number.MAX_SAFE_INTEGER) throw new TypeError("Failed to execute 'timeout' on 'AbortSignal': parameter 1 is outside the accepted range.");
+  if (n < 0 || n > Number.MAX_SAFE_INTEGER)
+    throw new TypeError("Failed to execute 'timeout' on 'AbortSignal': parameter 1 is outside the accepted range.");
   return n;
 }
 
@@ -27,7 +29,12 @@ export const AbortSignal = function AbortSignal(): never {
 
 // Same prototype object, so `controller.signal instanceof AbortSignal` holds; statics other than
 // timeout() (abort, any) are inherited from the host constructor.
-Object.defineProperty(AbortSignal, "prototype", { value: HostAbortSignal.prototype, writable: false, enumerable: false, configurable: false });
+Object.defineProperty(AbortSignal, "prototype", {
+  value: HostAbortSignal.prototype,
+  writable: false,
+  enumerable: false,
+  configurable: false,
+});
 Object.setPrototypeOf(AbortSignal, HostAbortSignal);
 
 Object.defineProperty(AbortSignal, "timeout", {

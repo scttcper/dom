@@ -26,10 +26,7 @@ function restoreProperty<T extends object>(
   }
 }
 
-export function setFiles(
-  el: FakeFilesInput & {type: 'file'},
-  files: FileList,
-) {
+export function setFiles(el: FakeFilesInput & {type: 'file'}, files: FileList) {
   el[fakeFiles]?.restore()
 
   const typeDescr = Object.getOwnPropertyDescriptor(el, 'type')

@@ -35,7 +35,9 @@ type Dict = Record<string, unknown>;
 
 export function requireArgs(given: number, needed: number, iface: string): void {
   if (given < needed) {
-    throw new TypeError(`Failed to construct '${iface}': ${needed} argument${needed > 1 ? "s" : ""} required, but only ${given} present.`);
+    throw new TypeError(
+      `Failed to construct '${iface}': ${needed} argument${needed > 1 ? "s" : ""} required, but only ${given} present.`,
+    );
   }
 }
 
@@ -191,9 +193,12 @@ export class UIEvent extends Event {
 
   /** https://w3c.github.io/uievents/#dom-uievent-inituievent */
   initUIEvent(type: string, bubbles = false, cancelable = false, view: Window | null = null, detail = 0): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'initUIEvent' on 'UIEvent': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError("Failed to execute 'initUIEvent' on 'UIEvent': 1 argument required, but only 0 present.");
     if (view !== null && view !== undefined && !isWindow(view)) {
-      throw new TypeError(`Failed to execute 'initUIEvent' on '${this.constructor.name}': parameter 4 is not of type 'Window'.`);
+      throw new TypeError(
+        `Failed to execute 'initUIEvent' on '${this.constructor.name}': parameter 4 is not of type 'Window'.`,
+      );
     }
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
@@ -367,7 +372,10 @@ export class MouseEvent extends UIEvent {
     button = 0,
     relatedTarget: EventTarget | null = null,
   ): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'initMouseEvent' on 'MouseEvent': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'initMouseEvent' on 'MouseEvent': 1 argument required, but only 0 present.",
+      );
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, detail);
     this.#screenX = toLong(screenX);
@@ -504,8 +512,10 @@ export class PointerEvent extends MouseEvent {
     this.#pointerType = str(d, "pointerType", "");
     this.#isPrimary = bool(d, "isPrimary");
     this.#persistentDeviceId = long(d, "persistentDeviceId");
-    this.#coalesced = d !== null && d.coalescedEvents != null ? Array.from(d.coalescedEvents as Iterable<PointerEvent>) : [];
-    this.#predicted = d !== null && d.predictedEvents != null ? Array.from(d.predictedEvents as Iterable<PointerEvent>) : [];
+    this.#coalesced =
+      d !== null && d.coalescedEvents != null ? Array.from(d.coalescedEvents as Iterable<PointerEvent>) : [];
+    this.#predicted =
+      d !== null && d.predictedEvents != null ? Array.from(d.predictedEvents as Iterable<PointerEvent>) : [];
   }
 
   get pointerId(): number {
@@ -727,7 +737,10 @@ export class KeyboardEvent extends UIEvent {
     shiftKey = false,
     metaKey = false,
   ): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'initKeyboardEvent' on 'KeyboardEvent': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'initKeyboardEvent' on 'KeyboardEvent': 1 argument required, but only 0 present.",
+      );
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
     this.#key = toDOMString(key);
@@ -812,7 +825,10 @@ export class CompositionEvent extends UIEvent {
 
   /** https://w3c.github.io/uievents/#dom-compositionevent-initcompositionevent */
   initCompositionEvent(type: string, bubbles = false, cancelable = false, view: Window | null = null, data = ""): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'initCompositionEvent' on 'CompositionEvent': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'initCompositionEvent' on 'CompositionEvent': 1 argument required, but only 0 present.",
+      );
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
     this.#data = toDOMString(data);
@@ -836,7 +852,13 @@ export class TextEvent extends UIEvent {
     return this.#data;
   }
 
-  initTextEvent(type: string, bubbles = false, cancelable = false, view: Window | null = null, data = "undefined"): void {
+  initTextEvent(
+    type: string,
+    bubbles = false,
+    cancelable = false,
+    view: Window | null = null,
+    data = "undefined",
+  ): void {
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
     this.#data = toDOMString(data);
@@ -889,8 +911,10 @@ export class Touch {
   constructor(touchInitDict: TouchInit) {
     requireArgs(arguments.length, 1, "Touch");
     const d = dict(touchInitDict, "Touch");
-    if (d === null || d.identifier === undefined) throw new TypeError("Failed to construct 'Touch': required member identifier is undefined.");
-    if (d.target === undefined) throw new TypeError("Failed to construct 'Touch': required member target is undefined.");
+    if (d === null || d.identifier === undefined)
+      throw new TypeError("Failed to construct 'Touch': required member identifier is undefined.");
+    if (d.target === undefined)
+      throw new TypeError("Failed to construct 'Touch': required member target is undefined.");
     const n = "Touch";
     this.#identifier = toLong(d.identifier);
     this.#target = d.target as EventTarget;
@@ -972,7 +996,8 @@ export class TouchList {
     const prev = isInternalConstruct();
     const list = prev ? new TouchList() : withConstruct(() => new TouchList());
     list.#items = items;
-    for (let i = 0; i < items.length; i++) Object.defineProperty(list, i, { value: items[i], enumerable: true, configurable: true });
+    for (let i = 0; i < items.length; i++)
+      Object.defineProperty(list, i, { value: items[i], enumerable: true, configurable: true });
     return list;
   }
 
@@ -989,7 +1014,6 @@ export class TouchList {
   }
 }
 setToStringTag(TouchList);
-
 
 export interface TouchEventInit extends EventModifierInit {
   touches?: Touch[];
@@ -1008,7 +1032,9 @@ function touchSequence(v: unknown, member: string): Touch[] {
   const out = Array.from(v as Iterable<unknown>);
   for (const t of out) {
     if (t === null || (typeof t !== "object" && typeof t !== "function")) {
-      throw new TypeError(`Failed to construct 'TouchEvent': Failed to read the '${member}' property from 'TouchEventInit': Failed to convert value to 'Touch'.`);
+      throw new TypeError(
+        `Failed to construct 'TouchEvent': Failed to read the '${member}' property from 'TouchEventInit': Failed to convert value to 'Touch'.`,
+      );
     }
   }
   return out as Touch[];
@@ -1097,4 +1123,19 @@ export class ClipboardEvent extends Event {
 setToStringTag(ClipboardEvent, 1);
 
 // WebIDL: attributes and operations are enumerable prototype members.
-exposeMembers(UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, DragEvent, KeyboardEvent, InputEvent, CompositionEvent, TextEvent, Touch, TouchList, TouchEvent, ClipboardEvent);
+exposeMembers(
+  UIEvent,
+  FocusEvent,
+  MouseEvent,
+  PointerEvent,
+  WheelEvent,
+  DragEvent,
+  KeyboardEvent,
+  InputEvent,
+  CompositionEvent,
+  TextEvent,
+  Touch,
+  TouchList,
+  TouchEvent,
+  ClipboardEvent,
+);

@@ -144,7 +144,8 @@ describe("the option element — https://html.spec.whatwg.org/#the-option-elemen
   });
 
   test("index and form", () => {
-    document.body!.innerHTML = "<form id=f><select><option>a</option><optgroup><option id=o>b</option></optgroup></select></form>";
+    document.body!.innerHTML =
+      "<form id=f><select><option>a</option><optgroup><option id=o>b</option></optgroup></select></form>";
     expect($("o").index).toBe(1);
     expect($("o").form).toBe($("f"));
   });

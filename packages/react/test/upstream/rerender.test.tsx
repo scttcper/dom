@@ -55,7 +55,9 @@ describe("rerender API", () => {
   test("re-renders options.wrapper around node when reactStrictMode is true", () => {
     configure({ reactStrictMode: true });
 
-    const WrapperComponent = ({ children }: { children: React.ReactNode }) => <div data-testid="wrapper">{children}</div>;
+    const WrapperComponent = ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="wrapper">{children}</div>
+    );
     const Greeting = (props: { message: string }) => <div>{props.message}</div>;
     const { container, rerender } = render(<Greeting message="hi" />, {
       wrapper: WrapperComponent,

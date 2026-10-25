@@ -25,7 +25,8 @@ export class Delivery {
     this.#totals.traces += report.traces;
     this.#totals.failures += report.failures;
     this.#totals.flaky += report.flaky;
-    for (const envelope of report.envelopes) for (const target of this.#options.targets) this.#queue.push([envelope, target]);
+    for (const envelope of report.envelopes)
+      for (const target of this.#options.targets) this.#queue.push([envelope, target]);
     this.#pump();
   }
 

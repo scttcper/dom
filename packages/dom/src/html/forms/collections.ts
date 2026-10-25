@@ -183,7 +183,11 @@ export class RadioNodeList extends ComputedNodeList {
     const items = this._snapshot();
     for (let i = 0; i < items.length; i++) {
       const impl = (items[i] as Element)[$impl];
-      if (impl.tag === T.input && inputType(impl) === I_RADIO && (items[i] as unknown as { checked: boolean }).checked) {
+      if (
+        impl.tag === T.input &&
+        inputType(impl) === I_RADIO &&
+        (items[i] as unknown as { checked: boolean }).checked
+      ) {
         return attr(impl, "value") ?? "on";
       }
     }
@@ -237,7 +241,10 @@ export class HTMLFormControlsCollection extends HTMLCollection {
     return new RadioNodeList(this._s.root, n) as unknown as Element;
   }
 }
-Object.defineProperty(HTMLFormControlsCollection.prototype, Symbol.toStringTag, { value: "HTMLFormControlsCollection", configurable: true });
+Object.defineProperty(HTMLFormControlsCollection.prototype, Symbol.toStringTag, {
+  value: "HTMLFormControlsCollection",
+  configurable: true,
+});
 
 /** form.elements: the collection with WebIDL named properties (`form.elements.username`). */
 export function createFormControlsCollection(form: NodeImpl): HTMLFormControlsCollection {
@@ -306,7 +313,9 @@ export class HTMLOptionsCollection extends HTMLCollection {
       return;
     }
     if (typeof value !== "object" || !($impl in value) || value[$impl].tag !== T.option) {
-      throw new TypeError("Failed to set an indexed property on 'HTMLOptionsCollection': parameter 2 is not of type 'HTMLOptionElement'.");
+      throw new TypeError(
+        "Failed to set an indexed property on 'HTMLOptionsCollection': parameter 2 is not of type 'HTMLOptionElement'.",
+      );
     }
     const length = items.length;
     const n = index - length;
@@ -349,15 +358,20 @@ export class HTMLOptionsCollection extends HTMLCollection {
   add(element: Element, before: Element | number | null = null): void {
     const parent = this._s.root.node as Element;
     if (element === null || typeof element !== "object" || !($impl in element)) {
-      throw new TypeError("Failed to execute 'add' on 'HTMLOptionsCollection': parameter 1 is not of type 'HTMLOptionElement or HTMLOptGroupElement'.");
+      throw new TypeError(
+        "Failed to execute 'add' on 'HTMLOptionsCollection': parameter 1 is not of type 'HTMLOptionElement or HTMLOptGroupElement'.",
+      );
     }
     const tag = element[$impl].tag;
     if (tag !== T.option && tag !== T.optgroup) {
-      throw new TypeError("Failed to execute 'add' on 'HTMLOptionsCollection': parameter 1 is not of type 'HTMLOptionElement or HTMLOptGroupElement'.");
+      throw new TypeError(
+        "Failed to execute 'add' on 'HTMLOptionsCollection': parameter 1 is not of type 'HTMLOptionElement or HTMLOptGroupElement'.",
+      );
     }
     // Step 1: element is an ancestor of the select → HierarchyRequestError.
     for (let p: NodeImpl | null = this._s.root; p !== null; p = p.parent) {
-      if (p === element[$impl]) throw new DOMException("The new element is an ancestor of the select element.", "HierarchyRequestError");
+      if (p === element[$impl])
+        throw new DOMException("The new element is an ancestor of the select element.", "HierarchyRequestError");
     }
     let reference: Element | null = null;
     if (typeof before === "number") reference = this._snapshot()[before] ?? null;
@@ -371,7 +385,11 @@ export class HTMLOptionsCollection extends HTMLCollection {
           break;
         }
       }
-      if (!inside) throw new DOMException("The node before which the new node is to be inserted is not in this select.", "NotFoundError");
+      if (!inside)
+        throw new DOMException(
+          "The node before which the new node is to be inserted is not in this select.",
+          "NotFoundError",
+        );
     }
     if (element === reference) return;
     const insertParent = reference === null ? parent : (reference.parentNode as Element);

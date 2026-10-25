@@ -16,7 +16,11 @@ import { afterEach, describe, expect, test } from "vitest";
 import { VirtualClock, installClock, type InstalledClock } from "@ctrl/dom/internal";
 
 type G = {
-  setTimeout: (cb: (...a: unknown[]) => void, ms?: number, ...args: unknown[]) => { hasRef(): boolean; ref(): unknown; unref(): unknown; refresh(): unknown };
+  setTimeout: (
+    cb: (...a: unknown[]) => void,
+    ms?: number,
+    ...args: unknown[]
+  ) => { hasRef(): boolean; ref(): unknown; unref(): unknown; refresh(): unknown };
   setInterval: (cb: (...a: unknown[]) => void, ms?: number) => unknown;
   clearTimeout: (h: unknown) => void;
   clearInterval: (h: unknown) => void;

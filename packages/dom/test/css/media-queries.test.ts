@@ -22,7 +22,14 @@ function mm(query: string, options: Record<string, unknown> = {}): boolean {
 
 describe("media types — https://drafts.csswg.org/mediaqueries-5/#media-types", () => {
   test("screen and all match; print and unknown types do not; type is ASCII case-insensitive", () => {
-    expect([mm("screen"), mm("all"), mm("SCREEN"), mm("print"), mm("tv"), mm("bogus")]).toEqual([true, true, true, false, false, false]);
+    expect([mm("screen"), mm("all"), mm("SCREEN"), mm("print"), mm("tv"), mm("bogus")]).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
   });
 
   test("an empty query list matches; an invalid one does not (https://drafts.csswg.org/cssom-view/#dom-window-matchmedia)", () => {
@@ -30,7 +37,12 @@ describe("media types — https://drafts.csswg.org/mediaqueries-5/#media-types",
   });
 
   test("only is ignored; not negates the whole query", () => {
-    expect([mm("only screen"), mm("not print"), mm("not screen"), mm("not screen and (min-width: 2000px)")]).toEqual([true, true, false, true]);
+    expect([mm("only screen"), mm("not print"), mm("not screen"), mm("not screen and (min-width: 2000px)")]).toEqual([
+      true,
+      true,
+      false,
+      true,
+    ]);
   });
 });
 
@@ -80,29 +92,53 @@ describe("range context — https://drafts.csswg.org/mediaqueries-5/#mq-range-co
   });
 
   test("min-width/max-width are inclusive", () => {
-    expect([mm("(min-width: 1024px)"), mm("(max-width: 1024px)"), mm("(max-width: 1023.5px)")]).toEqual([true, true, false]);
+    expect([mm("(min-width: 1024px)"), mm("(max-width: 1024px)"), mm("(max-width: 1023.5px)")]).toEqual([
+      true,
+      true,
+      false,
+    ]);
   });
 
   test("relative and absolute length units (em = 16px)", () => {
-    expect([mm("(min-width: 64em)"), mm("(min-width: 64.1em)"), mm("(max-width: 10in)"), mm("(min-height: 48rem)")]).toEqual([true, false, false, true]);
+    expect([
+      mm("(min-width: 64em)"),
+      mm("(min-width: 64.1em)"),
+      mm("(max-width: 10in)"),
+      mm("(min-height: 48rem)"),
+    ]).toEqual([true, false, false, true]);
   });
 });
 
 describe("viewport features — https://drafts.csswg.org/mediaqueries-5/#width", () => {
   test("width/height follow the createWindow viewport", () => {
-    expect([mm("(max-width: 500px)", { width: 400, height: 900 }), mm("(min-height: 800px)", { width: 400, height: 900 })]).toEqual([true, true]);
+    expect([
+      mm("(max-width: 500px)", { width: 400, height: 900 }),
+      mm("(min-height: 800px)", { width: 400, height: 900 }),
+    ]).toEqual([true, true]);
   });
 
   test("orientation: portrait when height >= width (https://drafts.csswg.org/mediaqueries-5/#orientation)", () => {
-    expect([mm("(orientation: landscape)"), mm("(orientation: portrait)", { width: 500, height: 500 })]).toEqual([true, true]);
+    expect([mm("(orientation: landscape)"), mm("(orientation: portrait)", { width: 500, height: 500 })]).toEqual([
+      true,
+      true,
+    ]);
   });
 
   test("aspect-ratio compares width/height ratios (https://drafts.csswg.org/mediaqueries-5/#aspect-ratio)", () => {
-    expect([mm("(aspect-ratio: 4/3)"), mm("(min-aspect-ratio: 16/9)"), mm("(max-aspect-ratio: 2)")]).toEqual([true, false, true]);
+    expect([mm("(aspect-ratio: 4/3)"), mm("(min-aspect-ratio: 16/9)"), mm("(max-aspect-ratio: 2)")]).toEqual([
+      true,
+      false,
+      true,
+    ]);
   });
 
   test("resolution in dppx/x/dpi (https://drafts.csswg.org/mediaqueries-5/#resolution)", () => {
-    expect([mm("(resolution: 1dppx)"), mm("(min-resolution: 2x)", { devicePixelRatio: 2 }), mm("(min-resolution: 192dpi)", { devicePixelRatio: 2 }), mm("(min-resolution: 2dppx)")]).toEqual([true, true, true, false]);
+    expect([
+      mm("(resolution: 1dppx)"),
+      mm("(min-resolution: 2x)", { devicePixelRatio: 2 }),
+      mm("(min-resolution: 192dpi)", { devicePixelRatio: 2 }),
+      mm("(min-resolution: 2dppx)"),
+    ]).toEqual([true, true, true, false]);
   });
 
   test("-webkit-device-pixel-ratio and its min-/max- forms (https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio)", () => {
@@ -134,8 +170,14 @@ describe("user preference and interaction features — https://drafts.csswg.org/
   });
 
   test("mediaFeatures overrides individual features", () => {
-    const opts = { mediaFeatures: { "prefers-color-scheme": "dark", "prefers-reduced-motion": "reduce", pointer: "coarse" } };
-    expect([mm("(prefers-color-scheme: dark)", opts), mm("(prefers-reduced-motion)", opts), mm("(pointer: coarse)", opts)]).toEqual([true, true, true]);
+    const opts = {
+      mediaFeatures: { "prefers-color-scheme": "dark", "prefers-reduced-motion": "reduce", pointer: "coarse" },
+    };
+    expect([
+      mm("(prefers-color-scheme: dark)", opts),
+      mm("(prefers-reduced-motion)", opts),
+      mm("(pointer: coarse)", opts),
+    ]).toEqual([true, true, true]);
   });
 });
 
@@ -150,7 +192,7 @@ describe("MediaQueryList — https://drafts.csswg.org/cssom-view/#the-mediaquery
     expect(w.matchMedia("not all and (monochrome)").media).toBe("not all and (monochrome)");
   });
 
-  test.fails("an invalid query serializes as \"not all\" (TODO(window): see above)", () => {
+  test.fails('an invalid query serializes as "not all" (TODO(window): see above)', () => {
     expect((createWindow() as any).matchMedia("(min-width: ").media).toBe("not all");
   });
 

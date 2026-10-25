@@ -31,17 +31,27 @@ defineWPT("html/interaction/focus/focus-management/focus-events.html");
 defineWPT("html/interaction/focus/processing-model/legend.html");
 defineWPT("html/interaction/focus/processing-model/preventScroll-nested-scroll-elements.html");
 defineWPT("html/interaction/focus/processing-model/preventScroll-textarea.html");
-defineWPT("html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-default-value.html");
+defineWPT(
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-default-value.html",
+);
 defineWPT("html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/tabindex-getter-frame.html");
 defineWPT("html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/tabindex-getter.html");
 defineWPT("html/interaction/focus/tabindex-focus-flag.html");
 defineWPT("html/interaction/focus/the-autofocus-attribute/autofocus-in-not-fully-active-document.html");
-defineWPT("html/interaction/focus/the-autofocus-attribute/autofocus-not-processed-when-top-document-has-focused-element.html");
+defineWPT(
+  "html/interaction/focus/the-autofocus-attribute/autofocus-not-processed-when-top-document-has-focused-element.html",
+);
 defineWPT("html/interaction/focus/the-autofocus-attribute/no-sandboxed-automatic-features.html");
 defineWPT("html/interaction/focus/the-autofocus-attribute/not-on-first-task.html");
 defineWPT("html/interaction/focus/the-autofocus-attribute/skip-not-fully-active.html");
-defineWPT("inert/dynamic-inert-on-focused-element.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)");
+defineWPT(
+  "inert/dynamic-inert-on-focused-element.html",
+  "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)",
+);
 defineWPT("inert/inert-canvas-fallback-content.html");
 defineWPT("inert/inert-does-not-match-disabled-selector.html");
 defineWPT("inert/inert-in-shadow-dom.html");
-defineWPT("inert/nested-inert-unfocusable.html", "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)");
+defineWPT(
+  "inert/nested-inert-unfocusable.html",
+  "uses the HTMLElement.inert IDL attribute, which is not exposed (like jsdom; docs/deviations.md)",
+);

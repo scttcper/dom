@@ -62,7 +62,9 @@ describe("isInaccessible — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion"
   });
 
   test("an ancestor's aria-hidden excludes descendants (parent overrides child)", () => {
-    const testNode = testNodeOf('<div aria-hidden="true"><div aria-hidden="false"><span data-test>x</span></div></div>');
+    const testNode = testNodeOf(
+      '<div aria-hidden="true"><div aria-hidden="false"><span data-test>x</span></div></div>',
+    );
     expect(isInaccessible(testNode)).toBe(true);
   });
 

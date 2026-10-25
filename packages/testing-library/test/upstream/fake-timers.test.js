@@ -87,7 +87,18 @@ test('recursive timers do not cause issues', async () => {
 })
 
 test('legacy fake timers do waitFor requestAnimationFrame', async () => {
-  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame', 'Date', 'performance']})
+  vi.useFakeTimers({
+    toFake: [
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'Date',
+      'performance',
+    ],
+  })
 
   let exited = false
   requestAnimationFrame(() => {
@@ -101,7 +112,18 @@ test('legacy fake timers do waitFor requestAnimationFrame', async () => {
 
 test('modern fake timers do waitFor requestAnimationFrame', async () => {
   // DIVERGENCE(ctrl-dom): Jest's modern timers fake requestAnimationFrame by default; Vitest's need it listed.
-  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame', 'Date', 'performance']})
+  vi.useFakeTimers({
+    toFake: [
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'Date',
+      'performance',
+    ],
+  })
 
   let exited = false
   requestAnimationFrame(() => {

@@ -11,8 +11,23 @@
 //   export default withSentry(MyRunner);
 
 import { relative } from "node:path";
-import { TestRunner, type RunnerTask, type RunnerTestCase, type RunnerTestFile, type RunnerTestSuite, type TestTryOptions, type VitestTestRunner } from "vitest";
-import { createCollector, realNow, type CollectedFile, type CollectedSpan, type Collector, type OpenSpan } from "./collector.ts";
+import {
+  TestRunner,
+  type RunnerTask,
+  type RunnerTestCase,
+  type RunnerTestFile,
+  type RunnerTestSuite,
+  type TestTryOptions,
+  type VitestTestRunner,
+} from "vitest";
+import {
+  createCollector,
+  realNow,
+  type CollectedFile,
+  type CollectedSpan,
+  type Collector,
+  type OpenSpan,
+} from "./collector.ts";
 
 declare module "vitest" {
   interface TaskMeta {
@@ -59,7 +74,8 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
     constructor(...args: any[]) {
       super(...args);
       const trace = this.trace as Trace;
-      this.trace = ((name: string, attributes: Record<string, unknown> | (() => unknown), cb?: () => unknown) => this.#trace(trace, name, attributes, cb)) as Trace;
+      this.trace = ((name: string, attributes: Record<string, unknown> | (() => unknown), cb?: () => unknown) =>
+        this.#trace(trace, name, attributes, cb)) as Trace;
     }
 
     onBeforeCollect(paths: string[]): unknown {
@@ -89,7 +105,12 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
     // afterEach hooks, where Testing Library's cleanup empties the page.
     async onTaskFinished(test: RunnerTestCase): Promise<void> {
       if (test.result?.state === "fail") {
-        await this.#collector.captureFailure(this.#collector.test(test.id), fullName(test), test.result.errors?.at(-1), (globalThis as { document?: unknown }).document);
+        await this.#collector.captureFailure(
+          this.#collector.test(test.id),
+          fullName(test),
+          test.result.errors?.at(-1),
+          (globalThis as { document?: unknown }).document,
+        );
       }
       await base.onTaskFinished?.call(this, test);
     }
@@ -104,7 +125,12 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
       return super.onAfterRunSuite(suite);
     }
 
-    #trace(trace: Trace, name: string, attributes: Record<string, unknown> | (() => unknown), cb?: () => unknown): unknown {
+    #trace(
+      trace: Trace,
+      name: string,
+      attributes: Record<string, unknown> | (() => unknown),
+      cb?: () => unknown,
+    ): unknown {
       const call = () => trace(name, attributes as never, cb as never);
       const attrs = typeof attributes === "function" ? {} : attributes;
       const c = this.#collector;
@@ -112,7 +138,12 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
         case "collect_spec": {
           const path = String(attrs["code.file.path"]);
           const span = c.open("test.collect", `collect ${relative(this.config.root, path)}`);
-          return this.#settle(span, call, () => false, () => this.#collected.set(path, span.span));
+          return this.#settle(
+            span,
+            call,
+            () => false,
+            () => this.#collected.set(path, span.span),
+          );
         }
         case "run.spec":
           this.#file = this.#files.get(String(attrs["code.file.path"]));
@@ -131,7 +162,11 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
           return this.#settle(span, call, () => task.result?.state === "fail");
         }
         case "test.callback": {
-          const span = c.open("test.fn", this.#taskOf.get(c.current()!)!.name, this.#retry > 0 ? { "test.retry": this.#retry } : {});
+          const span = c.open(
+            "test.fn",
+            this.#taskOf.get(c.current()!)!.name,
+            this.#retry > 0 ? { "test.retry": this.#retry } : {},
+          );
           return this.#settle(span, call, () => false);
         }
       }
@@ -158,7 +193,12 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
       }
       const test = this.#taskOf.get(current!) as RunnerTestCase;
       let count = 0;
-      for (let suite: RunnerTestSuite | undefined = test.suite ?? test.file; suite !== undefined; suite = "filepath" in suite ? undefined : (suite.suite ?? suite.file)) count += getHooks(suite)[hook].length;
+      for (
+        let suite: RunnerTestSuite | undefined = test.suite ?? test.file;
+        suite !== undefined;
+        suite = "filepath" in suite ? undefined : (suite.suite ?? suite.file)
+      )
+        count += getHooks(suite)[hook].length;
       return count;
     }
 
@@ -206,7 +246,8 @@ function index(suite: RunnerTestSuite, tasks: Map<string, RunnerTask>): void {
 /** Describe blocks and the task, joined with " > " (TestCase.fullName in Vitest's reporter API). */
 function fullName(task: RunnerTask): string {
   const names = [task.name];
-  for (let suite = task.suite; suite !== undefined && suite !== task.file; suite = suite.suite) names.unshift(suite.name);
+  for (let suite = task.suite; suite !== undefined && suite !== task.file; suite = suite.suite)
+    names.unshift(suite.name);
   return names.join(" > ");
 }
 

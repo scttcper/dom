@@ -85,7 +85,9 @@ export function markdown(cells: Cell[], configs: string[], meta: Record<string, 
       const extra = Object.entries(c.extra)
         .map(([k, v]) => `${k}=${fmt(v)}`)
         .join(", ");
-      const failed = c.errors.length ? ` (${c.samples.length - c.samples.filter((s) => s.ok).length} failed samples)` : "";
+      const failed = c.errors.length
+        ? ` (${c.samples.length - c.samples.filter((s) => s.ok).length} failed samples)`
+        : "";
       lines.push(
         `| ${cfg} | ${fmt(c.time.median)} | ${fmt(c.time.min)}–${fmt(c.time.max)} | ${fmt(c.time.q1)}–${fmt(c.time.q3)} | ${fmt(c.heap!.median)} | ${fmt(c.maxRss!.median)} | ${ratio} | ${extra}${failed} |`,
       );
@@ -97,7 +99,14 @@ export function markdown(cells: Cell[], configs: string[], meta: Record<string, 
   if (errored.length) {
     lines.push("## Errors", "");
     for (const c of errored) {
-      lines.push(`- \`${c.workload}\` × \`${c.config}\`:`, "", "  ```", ...c.errors[0].split("\n").map((l) => `  ${l}`), "  ```", "");
+      lines.push(
+        `- \`${c.workload}\` × \`${c.config}\`:`,
+        "",
+        "  ```",
+        ...c.errors[0].split("\n").map((l) => `  ${l}`),
+        "  ```",
+        "",
+      );
     }
   }
   return lines.join("\n");

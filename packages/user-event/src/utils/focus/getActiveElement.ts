@@ -1,7 +1,12 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/focus/getActiveElement.ts
 
-import type {Document, Element, HTMLIFrameElement, ShadowRoot} from '../../dom-types.ts'
+import type {
+  Document,
+  Element,
+  HTMLIFrameElement,
+  ShadowRoot,
+} from '../../dom-types.ts'
 import {isDisabled} from '../misc/isDisabled.ts'
 import {isElementType} from '../misc/isElementType.ts'
 
@@ -24,8 +29,8 @@ export function getActiveElement(
   // Browser does not yield disabled elements as document.activeElement - jsdom does
   if (isDisabled(activeElement)) {
     return document.ownerDocument
-      // TODO: verify behavior in ShadowRoot
-      ? /* istanbul ignore next */ document.ownerDocument.body
+      ? // TODO: verify behavior in ShadowRoot
+        /* istanbul ignore next */ document.ownerDocument.body
       : (document as Document).body
   }
 

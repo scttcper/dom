@@ -1,7 +1,25 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/types.ts
 
-import type {ClipboardEvent, ClipboardEventInit, DocumentEventMap, Event, EventInit, FocusEvent, FocusEventInit, InputEvent, InputEventInit, KeyboardEvent, KeyboardEventInit, MouseEvent, MouseEventInit, PointerEvent, PointerEventInit, UIEvent, UIEventInit} from '../dom-types.ts'
+import type {
+  ClipboardEvent,
+  ClipboardEventInit,
+  DocumentEventMap,
+  Event,
+  EventInit,
+  FocusEvent,
+  FocusEventInit,
+  InputEvent,
+  InputEventInit,
+  KeyboardEvent,
+  KeyboardEventInit,
+  MouseEvent,
+  MouseEventInit,
+  PointerEvent,
+  PointerEventInit,
+  UIEvent,
+  UIEventInit,
+} from '../dom-types.ts'
 import {eventMap} from './eventMap.ts'
 
 export type EventType = keyof typeof eventMap

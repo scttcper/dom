@@ -64,7 +64,8 @@ function stripLevel(name: string): string {
     .replace(/-$/, "");
 }
 
-const isCss = (name: string) => /^(css|selectors|mediaqueries|cssom|resize-observer|geometry|filter-effects|compositing)/.test(name);
+const isCss = (name: string) =>
+  /^(css|selectors|mediaqueries|cssom|resize-observer|geometry|filter-effects|compositing)/.test(name);
 
 /**
  * The spec section a URL points at, or null for anything that is not a spec section (no fragment,
@@ -88,7 +89,14 @@ export function sectionOf(raw: string): Section | null {
   if (host.endsWith(".spec.whatwg.org")) {
     const spec = host.slice(0, -".spec.whatwg.org".length);
     // entities.json and friends are data files, not sections.
-    if (path.length > 0 && !path[0].endsWith(".html") && path[0] !== "multipage" && path[0] !== "C" && path[0] !== "dev") return null;
+    if (
+      path.length > 0 &&
+      !path[0].endsWith(".html") &&
+      path[0] !== "multipage" &&
+      path[0] !== "C" &&
+      path[0] !== "dev"
+    )
+      return null;
     return { spec, anchor };
   }
   if (host === "drafts.csswg.org" || host === "drafts.fxtf.org" || host === "drafts.css-houdini.org") {
@@ -110,16 +118,21 @@ export function sectionOf(raw: string): Section | null {
   }
   if (host === "tc39.es") return path[0] ? { spec: `tc39:${path[0]}`, anchor } : null;
   if (host === "svgwg.org") return { spec: "svg:svg2", anchor };
-  if ((host === "httpwg.org" || host === "www.rfc-editor.org") && path[1]) return { spec: `ietf:${path[1].replace(/\.html$/, "")}`, anchor };
+  if ((host === "httpwg.org" || host === "www.rfc-editor.org") && path[1])
+    return { spec: `ietf:${path[1].replace(/\.html$/, "")}`, anchor };
   return null;
 }
 
 function specInfo(spec: string): SpecInfo {
-  if (!spec.includes(":")) return { title: WHATWG_TITLES[spec] ?? `${spec} (WHATWG)`, base: `https://${spec}.spec.whatwg.org/` };
-  if (spec.startsWith("css:")) return { title: `CSS: ${spec.slice(4)}`, base: `https://drafts.csswg.org/${spec.slice(4)}/` };
-  if (spec.startsWith("w3c:")) return { title: `W3C: ${spec.slice(4)}`, base: `https://w3c.github.io/${spec.slice(4)}/` };
+  if (!spec.includes(":"))
+    return { title: WHATWG_TITLES[spec] ?? `${spec} (WHATWG)`, base: `https://${spec}.spec.whatwg.org/` };
+  if (spec.startsWith("css:"))
+    return { title: `CSS: ${spec.slice(4)}`, base: `https://drafts.csswg.org/${spec.slice(4)}/` };
+  if (spec.startsWith("w3c:"))
+    return { title: `W3C: ${spec.slice(4)}`, base: `https://w3c.github.io/${spec.slice(4)}/` };
   if (spec === "svg:svg2") return { title: "SVG 2", base: "https://svgwg.org/svg2-draft/" };
-  if (spec.startsWith("ietf:")) return { title: spec.slice(5).toUpperCase(), base: `https://httpwg.org/specs/${spec.slice(5)}.html` };
+  if (spec.startsWith("ietf:"))
+    return { title: spec.slice(5).toUpperCase(), base: `https://httpwg.org/specs/${spec.slice(5)}.html` };
   const name = spec.slice(spec.indexOf(":") + 1);
   return { title: name === "ecma262" ? "ECMAScript" : `TC39: ${name}`, base: `https://tc39.es/${name}/` };
 }
@@ -184,7 +197,9 @@ function runner(testFiles: string[]): (fixture: string) => boolean {
   return (fixture) => {
     const dir = dirname(fixture);
     const base = fixture.slice(dir.length + 1);
-    return texts.some(({ text, quoted }) => quoted.has(fixture) || quoted.has(dir) || (quoted.has(base) && text.includes(`${dir}/`)));
+    return texts.some(
+      ({ text, quoted }) => quoted.has(fixture) || quoted.has(dir) || (quoted.has(base) && text.includes(`${dir}/`)),
+    );
   };
 }
 
@@ -201,14 +216,22 @@ interface Scan {
 function scan(): Scan {
   const srcFiles = files(["packages/*/src/**/*.ts", "packages/*/src/**/*.tsx"]);
   // The freshness test cites sample URLs to pin the normalization; it tests no spec section.
-  const testFiles = files(["packages/*/test/**/*.ts", "packages/*/test/**/*.tsx", "tests/compat/test/**/*.ts", "tests/compat/test/**/*.tsx"]).filter(
-    (f) => !f.startsWith(`${FIXTURES}/`) && f !== FRESHNESS_TEST,
-  );
+  const testFiles = files([
+    "packages/*/test/**/*.ts",
+    "packages/*/test/**/*.tsx",
+    "tests/compat/test/**/*.ts",
+    "tests/compat/test/**/*.tsx",
+  ]).filter((f) => !f.startsWith(`${FIXTURES}/`) && f !== FRESHNESS_TEST);
   const runs = runner(testFiles);
   const fixtureFiles = files([`${FIXTURES}/**/*.html`, `${FIXTURES}/**/*.htm`, `${FIXTURES}/**/*.js`])
     .map((f) => f.slice(FIXTURES.length + 1))
     // .js files are tests only as WPT's `.any.js` / `.window.js`; the rest are helpers.
-    .filter((f) => !/(^|\/)(resources|support|common|scripts)\//.test(f) && !/-iframe\.html$|Frame\.htm$/.test(f) && (!f.endsWith(".js") || /\.(any|window)\.js$/.test(f)));
+    .filter(
+      (f) =>
+        !/(^|\/)(resources|support|common|scripts)\//.test(f) &&
+        !/-iframe\.html$|Frame\.htm$/.test(f) &&
+        (!f.endsWith(".js") || /\.(any|window)\.js$/.test(f)),
+    );
   const fixtures = fixtureFiles.map((file) => ({ file, run: runs(file) }));
   const run = fixtures.filter((f) => f.run).map((f) => f.file);
   const wpt = new Map<string, Set<string>>();
@@ -222,7 +245,8 @@ function scan(): Scan {
   const expectations = new Map<string, { count: number; source: string }>();
   for (const source of files([`${WPT}/expectations.json`, `${WPT}/expectations/*.json`])) {
     const data = JSON.parse(readFileSync(`${ROOT}/${source}`, "utf8")) as Record<string, string[]>;
-    for (const [file, subtests] of Object.entries(data)) expectations.set(file, { count: subtests.length, source: relative(WPT, source) });
+    for (const [file, subtests] of Object.entries(data))
+      expectations.set(file, { count: subtests.length, source: relative(WPT, source) });
   }
   return { src: index(srcFiles, sectionsIn), tests: index(testFiles, sectionsIn), wpt, fixtures, expectations };
 }
@@ -231,10 +255,14 @@ function scan(): Scan {
 // Rendering
 
 /** packages/dom/src/nodes/tree.ts → dom/nodes/tree.ts; tests/compat/test/x.test.ts → compat/x.test.ts */
-const short = (file: string) => file.replace(/^packages\/([^/]+)\/(src|test)\//, "$1/").replace(/^tests\/compat\/test\//, "compat/");
+const short = (file: string) =>
+  file.replace(/^packages\/([^/]+)\/(src|test)\//, "$1/").replace(/^tests\/compat\/test\//, "compat/");
 
 function list(items: string[], max: number): string {
-  const shown = items.slice(0, max).map((i) => `\`${i}\``).join(", ");
+  const shown = items
+    .slice(0, max)
+    .map((i) => `\`${i}\``)
+    .join(", ");
   return items.length > max ? `${shown} +${items.length - max}` : shown;
 }
 
@@ -252,7 +280,11 @@ export function summarize(s: Scan = scan()): SpecSummary[] {
   for (const key of s.src.keys()) {
     const spec = key.slice(0, key.indexOf("#"));
     let row = bySpec.get(spec);
-    if (!row) bySpec.set(spec, (row = { spec, title: specInfo(spec).title, implemented: 0, tested: 0, wptOnly: 0, untested: 0 }));
+    if (!row)
+      bySpec.set(
+        spec,
+        (row = { spec, title: specInfo(spec).title, implemented: 0, tested: 0, wptOnly: 0, untested: 0 }),
+      );
     row.implemented++;
     if (s.tests.has(key)) row.tested++;
     else if (s.wpt.has(key)) row.wptOnly++;
@@ -278,7 +310,7 @@ export function renderSpecCoverage(s: Scan = scan()): string {
     "  on every spec algorithm, so this is the list of algorithms we claim to implement).",
     "- **Tests**: test files under `packages/*/test` and `tests/compat/test` whose doc block, `describe` or",
     "  test names cite that section URL.",
-    "- **WPT**: vendored web-platform-tests fixtures whose `<link rel=\"help\">` names the section, counted",
+    '- **WPT**: vendored web-platform-tests fixtures whose `<link rel="help">` names the section, counted',
     "  only for fixtures a test file runs (its path or directory is passed to the WPT harness).",
     "- **untested**: implemented, but cited by no test file and no running WPT fixture. The test may still",
     "  exist without the link; adding the section URL to its `describe` makes it show up here.",
@@ -292,8 +324,12 @@ export function renderSpecCoverage(s: Scan = scan()): string {
     "| Spec | Implemented | Tested | WPT only | Untested |",
     "| --- | --: | --: | --: | --: |",
   );
-  for (const r of summary) out.push(`| [${r.title}](#${slug(r.title)}) | ${r.implemented} | ${r.tested} | ${r.wptOnly} | ${r.untested} |`);
-  out.push(`| **All** | ${total("implemented")} | ${total("tested")} | ${total("wptOnly")} | ${total("untested")} |`, "");
+  for (const r of summary)
+    out.push(`| [${r.title}](#${slug(r.title)}) | ${r.implemented} | ${r.tested} | ${r.wptOnly} | ${r.untested} |`);
+  out.push(
+    `| **All** | ${total("implemented")} | ${total("tested")} | ${total("wptOnly")} | ${total("untested")} |`,
+    "",
+  );
 
   // WPT fixture directories.
   const dirs = new Map<string, { files: number; run: number; failing: number; sources: Set<string> }>();
@@ -321,7 +357,12 @@ export function renderSpecCoverage(s: Scan = scan()): string {
     "| --- | --: | --: | --: | --- |",
   );
   for (const [dir, r] of [...dirs].sort(([a], [b]) => a.localeCompare(b))) {
-    out.push(`| \`${dir}\` | ${r.files} | ${r.run} | ${r.failing} | ${[...r.sources].sort().map((x) => `\`${x}\``).join(", ")} |`);
+    out.push(
+      `| \`${dir}\` | ${r.files} | ${r.run} | ${r.failing} | ${[...r.sources]
+        .sort()
+        .map((x) => `\`${x}\``)
+        .join(", ")} |`,
+    );
   }
   out.push("");
 
@@ -336,13 +377,19 @@ export function renderSpecCoverage(s: Scan = scan()): string {
       "| Section | Implemented in | Tests |",
       "| --- | --- | --- |",
     );
-    const keys = [...s.src.keys()].filter((k) => k.startsWith(`${r.spec}#`)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    const keys = [...s.src.keys()]
+      .filter((k) => k.startsWith(`${r.spec}#`))
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     for (const key of keys) {
       const anchor = key.slice(r.spec.length + 1);
       const tests = [...(s.tests.get(key) ?? [])].map(short);
       const wpt = [...(s.wpt.get(key) ?? [])];
-      const cells = [tests.length ? list(tests, 4) : "", wpt.length ? `WPT: ${list(wpt, 2)}` : ""].filter(Boolean).join("; ");
-      out.push(`| [${anchor.replaceAll("|", "\\|")}](${info.base}#${encodeURI(anchor)}) | ${list([...s.src.get(key)!].map(short), 3)} | ${cells || "**untested**"} |`);
+      const cells = [tests.length ? list(tests, 4) : "", wpt.length ? `WPT: ${list(wpt, 2)}` : ""]
+        .filter(Boolean)
+        .join("; ");
+      out.push(
+        `| [${anchor.replaceAll("|", "\\|")}](${info.base}#${encodeURI(anchor)}) | ${list([...s.src.get(key)!].map(short), 3)} | ${cells || "**untested**"} |`,
+      );
     }
     out.push("");
   }
@@ -363,6 +410,8 @@ if (import.meta.main) {
   console.log("docs/spec-coverage.md updated\n");
   console.log("spec                     implemented  tested  wpt-only  untested");
   for (const r of summarize(s)) {
-    console.log(`${r.spec.padEnd(24)} ${String(r.implemented).padStart(11)} ${String(r.tested).padStart(7)} ${String(r.wptOnly).padStart(9)} ${String(r.untested).padStart(9)}`);
+    console.log(
+      `${r.spec.padEnd(24)} ${String(r.implemented).padStart(11)} ${String(r.tested).padStart(7)} ${String(r.wptOnly).padStart(9)} ${String(r.untested).padStart(9)}`,
+    );
   }
 }

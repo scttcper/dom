@@ -5,22 +5,22 @@
 //     sampled after a full GC, the leak signal), with the file's index within its worker;
 // appended to $CTRL_DOM_SENTRY_OUT/workers/<pid>.jsonl. Nothing here changes behaviour except the
 // optional GC (enabled for every mode alike).
-'use strict';
-const fs = require('node:fs');
-const path = require('node:path');
+"use strict";
+const fs = require("node:fs");
+const path = require("node:path");
 
 const out = process.env.CTRL_DOM_SENTRY_OUT;
 const checkout = process.env.CTRL_DOM_SENTRY_CHECKOUT;
-const gc = process.env.CTRL_DOM_SENTRY_GC === '1' ? globalThis.gc : undefined;
+const gc = process.env.CTRL_DOM_SENTRY_GC === "1" ? globalThis.gc : undefined;
 // CTRL_DOM_SENTRY_SNAPSHOTS=10,38: write a heap snapshot after those file indexes (after the GC) to
 // $CTRL_DOM_SENTRY_OUT/snapshots/<pid>-<index>.heapsnapshot, for retention diffs.
-const snapshotAt = new Set((process.env.CTRL_DOM_SENTRY_SNAPSHOTS ?? '').split(',').filter(Boolean).map(Number));
+const snapshotAt = new Set((process.env.CTRL_DOM_SENTRY_SNAPSHOTS ?? "").split(",").filter(Boolean).map(Number));
 let fileIndex = 0;
 
 function record(entry) {
   if (!out) return;
-  fs.mkdirSync(path.join(out, 'workers'), {recursive: true});
-  fs.appendFileSync(path.join(out, 'workers', `${process.pid}.jsonl`), JSON.stringify(entry) + '\n');
+  fs.mkdirSync(path.join(out, "workers"), { recursive: true });
+  fs.appendFileSync(path.join(out, "workers", `${process.pid}.jsonl`), JSON.stringify(entry) + "\n");
 }
 
 function instrument(Base) {
@@ -28,7 +28,11 @@ function instrument(Base) {
     constructor(config, context) {
       const start = performance.now();
       super(config, context);
-      this.__ctrlDomTiming = {start, constructed: performance.now(), testPath: path.relative(checkout, context.testPath)};
+      this.__ctrlDomTiming = {
+        start,
+        constructed: performance.now(),
+        testPath: path.relative(checkout, context.testPath),
+      };
     }
 
     async setup() {
@@ -47,8 +51,8 @@ function instrument(Base) {
       const tornDown = performance.now();
       if (gc) gc();
       if (out && snapshotAt.has(fileIndex)) {
-        fs.mkdirSync(path.join(out, 'snapshots'), {recursive: true});
-        require('node:v8').writeHeapSnapshot(path.join(out, 'snapshots', `${process.pid}-${fileIndex}.heapsnapshot`));
+        fs.mkdirSync(path.join(out, "snapshots"), { recursive: true });
+        require("node:v8").writeHeapSnapshot(path.join(out, "snapshots", `${process.pid}-${fileIndex}.heapsnapshot`));
       }
       const mem = process.memoryUsage();
       record({
@@ -69,4 +73,4 @@ function instrument(Base) {
   };
 }
 
-module.exports = {instrument};
+module.exports = { instrument };

@@ -277,7 +277,8 @@ export const domWorkloads: Workload[] = [
       container.innerHTML =
         Array.from(
           { length: 250 },
-          (_, i) => `<div class="row"><h3>Row ${i}</h3><label>Name ${i}<input type="text"></label><button type="button">Edit</button>${i % 10 === 0 ? `<div role="button">More</div>` : ""}</div>`,
+          (_, i) =>
+            `<div class="row"><h3>Row ${i}</h3><label>Name ${i}<input type="text"></label><button type="button">Edit</button>${i % 10 === 0 ? `<div role="button">More</div>` : ""}</div>`,
         ).join("") + `<section id="panel"><ul>${"<li><a href='#'>x</a></li>".repeat(20)}</ul></section>`;
       document.body.append(container);
       const target = container.lastElementChild;

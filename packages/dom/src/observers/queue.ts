@@ -144,17 +144,31 @@ function queueMutationRecord(
         observers.push(observer);
         oldValues!.push(null);
       }
-      if ((type === TYPE_ATTRIBUTES && options.attributeOldValue) || (type === TYPE_CHARACTER_DATA && options.characterDataOldValue)) {
+      if (
+        (type === TYPE_ATTRIBUTES && options.attributeOldValue) ||
+        (type === TYPE_CHARACTER_DATA && options.characterDataOldValue)
+      ) {
         oldValues![idx] = oldValue;
       }
     }
   }
   if (observers === null) return;
   // Step 4.
-  const typeName = type === TYPE_ATTRIBUTES ? "attributes" : type === TYPE_CHARACTER_DATA ? "characterData" : "childList";
+  const typeName =
+    type === TYPE_ATTRIBUTES ? "attributes" : type === TYPE_CHARACTER_DATA ? "characterData" : "childList";
   for (let i = 0; i < observers.length; i++) {
     const observer = observers[i];
-    const record = new MutationRecord(typeName, target, name, namespace, oldValues![i], added, removed, previousSibling, nextSibling);
+    const record = new MutationRecord(
+      typeName,
+      target,
+      name,
+      namespace,
+      oldValues![i],
+      added,
+      removed,
+      previousSibling,
+      nextSibling,
+    );
     const queue = observer[$records];
     if (queue.length === 0 && !pending.includes(observer)) pending.push(observer);
     queue.push(record);
@@ -173,7 +187,12 @@ export function queueTreeMutationRecord(
   queueMutationRecord(TYPE_CHILD_LIST, target, null, null, null, added, removed, previousSibling, nextSibling);
 }
 
-export function queueAttributeMutationRecord(target: NodeImpl, localName: string, namespace: string | null, oldValue: string | null): void {
+export function queueAttributeMutationRecord(
+  target: NodeImpl,
+  localName: string,
+  namespace: string | null,
+  oldValue: string | null,
+): void {
   queueMutationRecord(TYPE_ATTRIBUTES, target, localName, namespace, oldValue, null, null, null, null);
 }
 

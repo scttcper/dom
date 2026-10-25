@@ -82,8 +82,13 @@ export function evaluateXPath(xpath: string, context: unknown): N | null {
     const predicates = [...m[2].matchAll(/\[([^\]]+)\]/g)].map(x => x[1])
     const next: N[] = []
     for (const n of current) {
-      const candidates = descendant ? descendantsOrSelf(n, []).slice(1) : children(n)
-      for (const c of applyPredicates(candidates.filter(c => matchesTest(c, test)), predicates)) {
+      const candidates = descendant
+        ? descendantsOrSelf(n, []).slice(1)
+        : children(n)
+      for (const c of applyPredicates(
+        candidates.filter(c => matchesTest(c, test)),
+        predicates,
+      )) {
         if (!next.includes(c)) next.push(c)
       }
     }

@@ -34,7 +34,9 @@ type Channel = diagnosticsChannel.TracingChannel<SpanContext, SpanContext>;
 
 // Bun and older runtimes may lack tracing channels: then nothing is ever traced.
 const channel: Channel | null =
-  typeof diagnosticsChannel.tracingChannel === "function" ? (diagnosticsChannel.tracingChannel(SPAN_CHANNEL) as Channel) : null;
+  typeof diagnosticsChannel.tracingChannel === "function"
+    ? (diagnosticsChannel.tracingChannel(SPAN_CHANNEL) as Channel)
+    : null;
 
 /** The tracing channel, for subscribers. Null where the runtime has none. */
 export function spanChannel(): Channel | null {
@@ -69,7 +71,12 @@ export function tracePromise<T>(op: string, description: string, fn: (span: Span
   const span: SpanContext = { op, description, data: {}, async: true };
   const skipped = clockSkipped();
   // The tracing channel's asyncEnd waits for the promise returned here, so the data is in place.
-  return channel!.tracePromise((s: SpanContext) => fn(s).finally(() => recordSkipped(s, skipped)), span, undefined, span);
+  return channel!.tracePromise(
+    (s: SpanContext) => fn(s).finally(() => recordSkipped(s, skipped)),
+    span,
+    undefined,
+    span,
+  );
 }
 
 /** How much idle time the virtual clock skipped while the span ran (a findBy's timeout, a debounce). */
@@ -97,7 +104,13 @@ function describeValue(value: unknown, depth: number): string {
   if (value instanceof RegExp) return String(value);
   if (value === null || typeof value !== "object") return String(value);
   if ((value as Record<symbol, unknown>)[$impl] !== undefined) return describeNode(value);
-  if (Array.isArray(value)) return depth > 0 ? "[…]" : `[${value.slice(0, 3).map((v) => describeValue(v, depth + 1)).join(", ")}${value.length > 3 ? ", …" : ""}]`;
+  if (Array.isArray(value))
+    return depth > 0
+      ? "[…]"
+      : `[${value
+          .slice(0, 3)
+          .map((v) => describeValue(v, depth + 1))
+          .join(", ")}${value.length > 3 ? ", …" : ""}]`;
   if (depth > 0) return "{…}";
   const entries = Object.entries(value).slice(0, 4);
   if (entries.length === 0) return "{}";
@@ -116,7 +129,12 @@ export function setNodeDescriber(describer: ((node: unknown) => string | null) |
 
 /** An element as a span description shows it: `button "Save"` (see setNodeDescriber), else `<input "Email">`. */
 export function describeNode(node: unknown): string {
-  const n = node as { nodeType?: number; localName?: string; getAttribute?: (name: string) => string | null; textContent?: string | null };
+  const n = node as {
+    nodeType?: number;
+    localName?: string;
+    getAttribute?: (name: string) => string | null;
+    textContent?: string | null;
+  };
   if (n.nodeType === 9) return "document";
   if (n.nodeType !== 1 || typeof n.localName !== "string") return n.nodeType === 3 ? "#text" : "node";
   if (nodeDescriber !== null) {
@@ -130,7 +148,12 @@ export function describeNode(node: unknown): string {
   // The page's roots: their text is the whole page.
   if (n.localName === "body" || n.localName === "html") return `<${n.localName}>`;
   // Not ids: libraries generate them (`react-aria-_r_2_`, `base-ui-_r_0_`).
-  const label = n.getAttribute?.("aria-label") || n.textContent?.trim().replace(/\s+/g, " ") || n.getAttribute?.("placeholder") || n.getAttribute?.("name") || "";
+  const label =
+    n.getAttribute?.("aria-label") ||
+    n.textContent?.trim().replace(/\s+/g, " ") ||
+    n.getAttribute?.("placeholder") ||
+    n.getAttribute?.("name") ||
+    "";
   return label === "" ? `<${n.localName}>` : `<${n.localName} ${quote(label)}>`;
 }
 
@@ -172,10 +195,15 @@ export function subscribeTestFailures(getDocument: () => unknown): () => void {
     const document = getDocument() as { body?: unknown } | null | undefined;
     if (document == null || m.document !== document) return;
     const clock = clockStats();
-    if (clock !== null) m.contexts.clock = { skipped_ms: Math.round(clock.skippedMs), pending_timers: clock.pendingTimers };
+    if (clock !== null)
+      m.contexts.clock = { skipped_ms: Math.round(clock.skippedMs), pending_timers: clock.pendingTimers };
     if (failureSnapshot === null || document.body == null) return;
     try {
-      m.attachments.push({ filename: "accessibility-snapshot.txt", contentType: "text/plain", data: failureSnapshot(document.body) });
+      m.attachments.push({
+        filename: "accessibility-snapshot.txt",
+        contentType: "text/plain",
+        data: failureSnapshot(document.body),
+      });
     } catch {
       // A snapshot must never turn a test failure into a crash.
     }

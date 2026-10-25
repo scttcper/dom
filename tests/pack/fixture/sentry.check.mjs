@@ -21,7 +21,10 @@ const server = createServer((req, res) => {
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const { port } = server.address();
 
-const args = runner === "vitest" ? ["exec", "vitest", "run", "--config", "vitest.sentry.config.ts"] : ["exec", "jest", "--config", "jest.sentry.config.cjs"];
+const args =
+  runner === "vitest"
+    ? ["exec", "vitest", "run", "--config", "vitest.sentry.config.ts"]
+    : ["exec", "jest", "--config", "jest.sentry.config.cjs"];
 const child = spawn("pnpm", args, {
   env: { ...process.env, SENTRY_DSN: `http://public@127.0.0.1:${port}/1`, SENTRY_RELEASE: "pack-check" },
   stdio: ["ignore", "pipe", "pipe"],
@@ -51,16 +54,26 @@ const problems = [];
 const check = (ok, message) => ok || problems.push(message);
 const envelopes = received.map(({ url, body }) => ({ url, items: parseEnvelope(body) }));
 check(code === 1, `${runner} exited ${code}, expected 1 (one test fails on purpose)`);
-check(envelopes.length > 0 && envelopes.every((e) => e.url.startsWith("/api/1/envelope/?sentry_key=public")), `envelope URLs: ${envelopes.map((e) => e.url)}`);
+check(
+  envelopes.length > 0 && envelopes.every((e) => e.url.startsWith("/api/1/envelope/?sentry_key=public")),
+  `envelope URLs: ${envelopes.map((e) => e.url)}`,
+);
 
 const file = runner === "vitest" ? "sentry.test.tsx" : "sentry.jest.test.cjs";
-const transactions = envelopes.flatMap((e) => e.items).filter((i) => i.header.type === "transaction").map((i) => i.payload);
+const transactions = envelopes
+  .flatMap((e) => e.items)
+  .filter((i) => i.header.type === "transaction")
+  .map((i) => i.payload);
 check(transactions.length === 1, `${transactions.length} transactions, expected 1`);
 const tx = transactions[0] ?? { spans: [], contexts: { trace: {} } };
 check(tx.transaction === file && tx.release === "pack-check", `transaction ${tx.transaction} release ${tx.release}`);
 // Jest reports each attempt of the flaky test as a span of its own; Vitest's one span holds both.
 const tests = [...new Set(tx.spans.filter((s) => s.op === "test.case").map((s) => s.description))].sort();
-check(JSON.stringify(tests) === JSON.stringify(["Signup > types a name", "greets before signing up", "passes on the retry", "signs up"]), `test spans: ${tests}`);
+check(
+  JSON.stringify(tests) ===
+    JSON.stringify(["Signup > types a name", "greets before signing up", "passes on the retry", "signs up"]),
+  `test spans: ${tests}`,
+);
 const byId = new Map(tx.spans.map((s) => [s.span_id, s]));
 const ancestors = (span) => {
   const out = [];
@@ -69,42 +82,100 @@ const ancestors = (span) => {
 };
 const suite = tx.spans.find((s) => s.op === "test.suite" && s.description === "Signup");
 const nested = tx.spans.find((s) => s.op === "test.case" && s.description === "Signup > types a name");
-check(suite !== undefined && nested?.parent_span_id === suite.span_id, "the describe block's test is not under its test.suite span");
-check(tx.spans.some((s) => s.op === "user-event.type" && ancestors(s).some((a) => a === nested) && ancestors(s)[0]?.op === "test.fn"), "the describe block's test has no user-event.type span under its test function");
-check(tx.spans.some((s) => s.op === "test.hook" && s.description === "afterEach" && byId.get(s.parent_span_id)?.op === "test.case"), "no afterEach hook span under a test (Testing Library's cleanup)");
+check(
+  suite !== undefined && nested?.parent_span_id === suite.span_id,
+  "the describe block's test is not under its test.suite span",
+);
+check(
+  tx.spans.some(
+    (s) => s.op === "user-event.type" && ancestors(s).some((a) => a === nested) && ancestors(s)[0]?.op === "test.fn",
+  ),
+  "the describe block's test has no user-event.type span under its test function",
+);
+check(
+  tx.spans.some(
+    (s) => s.op === "test.hook" && s.description === "afterEach" && byId.get(s.parent_span_id)?.op === "test.case",
+  ),
+  "no afterEach hook span under a test (Testing Library's cleanup)",
+);
 const ops = new Set(tx.spans.map((s) => s.op));
-for (const op of ["test.collect", "test.fn", "react.render", "user-event.type", "user-event.click", "testing-library.query"]) check(ops.has(op), `no ${op} span (ops: ${[...ops]})`);
-check(tx.spans.some((s) => s.description === 'findByRole("status")' && s.data.matches === 1), "no findByRole(\"status\") span with one match");
+for (const op of [
+  "test.collect",
+  "test.fn",
+  "react.render",
+  "user-event.type",
+  "user-event.click",
+  "testing-library.query",
+])
+  check(ops.has(op), `no ${op} span (ops: ${[...ops]})`);
+check(
+  tx.spans.some((s) => s.description === 'findByRole("status")' && s.data.matches === 1),
+  'no findByRole("status") span with one match',
+);
 
 const events = envelopes.filter((e) => e.items[0].header.type === "event");
 const failures = events.filter((e) => e.items[0].payload.fingerprint[0] === "sentry-tests.test-failure");
 const failure = failures.filter((e) => e.items[0].payload.fingerprint[1] === file);
 check(failure.length === 1, `${failure.length} failure events for ${file}, expected 1`);
 const broken = failures.filter((e) => e.items[0].payload.fingerprint[1] !== file);
-check(broken.length === 1 && broken[0].items[0].payload.fingerprint[2] === "(file failed to load)" && String(broken[0].items[0].payload.exception.values[0].value).includes("this file cannot load"), `file failure events: ${broken.map((e) => e.items[0].payload.fingerprint)}`);
+check(
+  broken.length === 1 &&
+    broken[0].items[0].payload.fingerprint[2] === "(file failed to load)" &&
+    String(broken[0].items[0].payload.exception.values[0].value).includes("this file cannot load"),
+  `file failure events: ${broken.map((e) => e.items[0].payload.fingerprint)}`,
+);
 if (failure[0]) {
   const event = failure[0].items[0].payload;
   check(event.fingerprint[2] === "greets before signing up", `failure fingerprint ${event.fingerprint}`);
-  check(String(event.exception.values[0].value).includes('Unable to find an accessible element with the role "status"'), `failure message ${event.exception.values[0].value.slice(0, 120)}`);
+  check(
+    String(event.exception.values[0].value).includes('Unable to find an accessible element with the role "status"'),
+    `failure message ${event.exception.values[0].value.slice(0, 120)}`,
+  );
   check(event.contexts.trace.trace_id === tx.contexts.trace.trace_id, "failure event not linked to the trace");
   const snapshot = failure[0].items.find((i) => i.header.filename === "accessibility-snapshot.txt");
-  check(snapshot !== undefined && snapshot.payload.includes('button "Sign up"'), `snapshot attachment: ${snapshot?.payload.slice(0, 200)}`);
+  check(
+    snapshot !== undefined && snapshot.payload.includes('button "Sign up"'),
+    `snapshot attachment: ${snapshot?.payload.slice(0, 200)}`,
+  );
   const page = failure[0].items.find((i) => i.header.filename === "page.html");
-  check(page !== undefined && page.payload.includes(">Sign up</button>"), `page.html attachment: ${page?.payload.slice(0, 200)}`);
-  check(typeof event.contexts.clock?.skipped_ms === "number", `no clock context: ${JSON.stringify(event.contexts.clock)}`);
-  if (runner === "vitest") check(event.breadcrumbs.values.some((b) => b.category === "console" && b.message === "about to look for the greeting"), "no console breadcrumb");
+  check(
+    page !== undefined && page.payload.includes(">Sign up</button>"),
+    `page.html attachment: ${page?.payload.slice(0, 200)}`,
+  );
+  check(
+    typeof event.contexts.clock?.skipped_ms === "number",
+    `no clock context: ${JSON.stringify(event.contexts.clock)}`,
+  );
+  if (runner === "vitest")
+    check(
+      event.breadcrumbs.values.some((b) => b.category === "console" && b.message === "about to look for the greeting"),
+      "no console breadcrumb",
+    );
 }
-const flaky = events.filter((e) => e.items[0].payload.fingerprint[0] === "sentry-tests.flaky-test").map((e) => e.items[0].payload);
+const flaky = events
+  .filter((e) => e.items[0].payload.fingerprint[0] === "sentry-tests.flaky-test")
+  .map((e) => e.items[0].payload);
 check(flaky.length === 1, `${flaky.length} flaky events, expected 1`);
 if (flaky[0]) {
-  check(flaky[0].level === "warning" && flaky[0].fingerprint[2] === "passes on the retry", `flaky event ${flaky[0].level} ${flaky[0].fingerprint}`);
+  check(
+    flaky[0].level === "warning" && flaky[0].fingerprint[2] === "passes on the retry",
+    `flaky event ${flaky[0].level} ${flaky[0].fingerprint}`,
+  );
   const [exception] = flaky[0].exception.values;
-  check(exception.type === "FlakyTest" && exception.value.endsWith("Error: first attempt fails"), `flaky event's exception ${exception.type}: ${exception.value}`);
+  check(
+    exception.type === "FlakyTest" && exception.value.endsWith("Error: first attempt fails"),
+    `flaky event's exception ${exception.type}: ${exception.value}`,
+  );
 }
-check(output.includes(`@ctrl/sentry-tests: 1 trace, 2 failed tests, 1 flaky test → 127.0.0.1:${port}`), "no summary line in the output");
+check(
+  output.includes(`@ctrl/sentry-tests: 1 trace, 2 failed tests, 1 flaky test → 127.0.0.1:${port}`),
+  "no summary line in the output",
+);
 
 if (problems.length > 0) {
   console.log(`${problems.join("\n")}\n\n${output}`);
   process.exit(1);
 }
-console.log(`ok: ${envelopes.length} envelopes, ${tx.spans.length} spans, ${failures.length} failures, ${flaky.length} flaky`);
+console.log(
+  `ok: ${envelopes.length} envelopes, ${tx.spans.length} spans, ${failures.length} failures, ${flaky.length} flaky`,
+);

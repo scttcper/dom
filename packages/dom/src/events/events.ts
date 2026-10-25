@@ -67,7 +67,10 @@ export class CustomEvent<T = unknown> extends Event {
 
   /** https://dom.spec.whatwg.org/#dom-customevent-initcustomevent */
   initCustomEvent(type: string, bubbles = false, cancelable = false, detail: T | null = null): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'initCustomEvent' on 'CustomEvent': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'initCustomEvent' on 'CustomEvent': 1 argument required, but only 0 present.",
+      );
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
     this.#detail = detail;
@@ -204,7 +207,16 @@ export class MessageEvent extends Event {
   }
 
   /** https://html.spec.whatwg.org/#dom-messageevent-initmessageevent */
-  initMessageEvent(type: string, bubbles = false, cancelable = false, data: unknown = null, origin = "", lastEventId = "", source: unknown = null, ports: unknown[] = []): void {
+  initMessageEvent(
+    type: string,
+    bubbles = false,
+    cancelable = false,
+    data: unknown = null,
+    origin = "",
+    lastEventId = "",
+    source: unknown = null,
+    ports: unknown[] = [],
+  ): void {
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
     this.#data = data;
@@ -592,4 +604,21 @@ export class CloseEvent extends Event {
 setToStringTag(CloseEvent, 1);
 
 // WebIDL: attributes and operations are enumerable prototype members.
-exposeMembers(CustomEvent, ErrorEvent, PromiseRejectionEvent, MessageEvent, ProgressEvent, AnimationEvent, TransitionEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, StorageEvent, SubmitEvent, FormDataEvent, ToggleEvent, BeforeUnloadEvent, CloseEvent);
+exposeMembers(
+  CustomEvent,
+  ErrorEvent,
+  PromiseRejectionEvent,
+  MessageEvent,
+  ProgressEvent,
+  AnimationEvent,
+  TransitionEvent,
+  PopStateEvent,
+  HashChangeEvent,
+  PageTransitionEvent,
+  StorageEvent,
+  SubmitEvent,
+  FormDataEvent,
+  ToggleEvent,
+  BeforeUnloadEvent,
+  CloseEvent,
+);

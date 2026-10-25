@@ -87,7 +87,9 @@ describe('.toBePartiallyPressed', () => {
 
     expect(() =>
       expect(queryByTestId('button')).toBePartiallyPressed(),
-    ).toThrowErrorMatchingInlineSnapshot(`[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePartiallyPressed()]`)
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePartiallyPressed()]`,
+    )
   })
 
   test('throws when element is not a button', () => {
@@ -97,7 +99,9 @@ describe('.toBePartiallyPressed', () => {
 
     expect(() =>
       expect(queryByTestId('div')).toBePartiallyPressed(),
-    ).toThrowErrorMatchingInlineSnapshot(`[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePartiallyPressed()]`)
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePartiallyPressed()]`,
+    )
   })
 
   test('throws when element do not have aria-pressed attribute', () => {
@@ -105,6 +109,8 @@ describe('.toBePartiallyPressed', () => {
 
     expect(() =>
       expect(queryByTestId('span')).toBePartiallyPressed(),
-    ).toThrowErrorMatchingInlineSnapshot(`[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePartiallyPressed()]`)
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Only button or input with type="button" or element with role="button" and a valid aria-pressed attribute can be used with .toBePartiallyPressed()]`,
+    )
   })
 })

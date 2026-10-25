@@ -19,9 +19,11 @@ if (engine === "ctrl-dom-full") {
   const ours = await import("@ctrl/dom/react");
   if (rtl.render !== ours.render) throw new Error("compat: @testing-library/react is not aliased to @ctrl/dom/react");
   const [dtl, oursDtl] = await Promise.all([import("@testing-library/dom"), import("@ctrl/dom/testing-library")]);
-  if (dtl.getByRole !== oursDtl.getByRole) throw new Error("compat: @testing-library/dom is not aliased to @ctrl/dom/testing-library");
+  if (dtl.getByRole !== oursDtl.getByRole)
+    throw new Error("compat: @testing-library/dom is not aliased to @ctrl/dom/testing-library");
   const [ue, oursUe] = await Promise.all([import("@testing-library/user-event"), import("@ctrl/dom/user-event")]);
-  if (ue.default !== oursUe.default) throw new Error("compat: @testing-library/user-event is not aliased to @ctrl/dom/user-event");
+  if (ue.default !== oursUe.default)
+    throw new Error("compat: @testing-library/user-event is not aliased to @ctrl/dom/user-event");
 }
 
 afterEach(rtl.cleanup);

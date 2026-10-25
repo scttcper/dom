@@ -37,7 +37,8 @@ interface CircusEvent {
 }
 
 /** Jest's own per-test hook (resetModules, clearMocks, resetMocks): registered by jest-circus itself. */
-const isJestsOwn = (hook: CircusHook): boolean => /[\\/]jest-circus[\\/]/.test(hook.asyncError?.stack?.split("\n")[1] ?? "");
+const isJestsOwn = (hook: CircusHook): boolean =>
+  /[\\/]jest-circus[\\/]/.test(hook.asyncError?.stack?.split("\n")[1] ?? "");
 
 export interface JestCollector {
   handleTestEvent(event: CircusEvent): void | Promise<void>;
@@ -63,7 +64,11 @@ export function circusTestName(test: CircusBlock): string {
   return names.join(" > ");
 }
 
-export function createJestCollector(options: { dir: string; testPath: string; getDocument: () => unknown }): JestCollector {
+export function createJestCollector(options: {
+  dir: string;
+  testPath: string;
+  getDocument: () => unknown;
+}): JestCollector {
   const collector = createCollector();
   const stack: OpenSpan[] = [];
   const skipped = new WeakSet<CircusHook>();
@@ -98,7 +103,8 @@ export function createJestCollector(options: { dir: string; testPath: string; ge
           pop();
           break;
         case "run_describe_start":
-          if (event.describeBlock?.parent !== undefined) push(collector.open("test.suite", circusTestName(event.describeBlock)));
+          if (event.describeBlock?.parent !== undefined)
+            push(collector.open("test.suite", circusTestName(event.describeBlock)));
           break;
         case "run_describe_finish":
           if (event.describeBlock?.parent !== undefined) pop();
@@ -106,7 +112,12 @@ export function createJestCollector(options: { dir: string; testPath: string; ge
         case "test_start": {
           const name = circusTestName(event.test!);
           const test = collector.test(name);
-          const span = collector.open("test.case", name, test.spanIds.length > 0 ? { "test.retry": test.spanIds.length } : {}, test);
+          const span = collector.open(
+            "test.case",
+            name,
+            test.spanIds.length > 0 ? { "test.retry": test.spanIds.length } : {},
+            test,
+          );
           test.spanIds.push(span.span.span_id);
           push(span);
           break;

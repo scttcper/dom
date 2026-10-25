@@ -14,7 +14,15 @@ export {
   toAppearBefore,
   toAppearAfter,
 } from "./matchers/document.ts";
-export { toHaveTextContent, toHaveAttribute, toHaveClass, toHaveValue, toHaveDisplayValue, toHaveFormValues, toHaveSelection } from "./matchers/content.ts";
+export {
+  toHaveTextContent,
+  toHaveAttribute,
+  toHaveClass,
+  toHaveValue,
+  toHaveDisplayValue,
+  toHaveFormValues,
+  toHaveSelection,
+} from "./matchers/content.ts";
 export {
   toHaveAccessibleDescription,
   toHaveAccessibleErrorMessage,

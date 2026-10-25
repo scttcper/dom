@@ -86,7 +86,12 @@ async function worker(impl: string, size: number, query: string): Promise<void> 
   (globalThis as any).gc?.();
   const mem = process.memoryUsage();
   process.stdout.write(
-    JSON.stringify({ usPerOp: (elapsed * 1000) / ops, ops, heapUsedMB: mem.heapUsed / 1048576, rssMB: mem.rss / 1048576 }) + "\n",
+    JSON.stringify({
+      usPerOp: (elapsed * 1000) / ops,
+      ops,
+      heapUsedMB: mem.heapUsed / 1048576,
+      rssMB: mem.rss / 1048576,
+    }) + "\n",
   );
 }
 
@@ -110,7 +115,9 @@ function driver(): void {
       for (const impl of IMPLS) {
         const samples: { usPerOp: number; heapUsedMB: number; rssMB: number }[] = [];
         for (let i = 0; i < SAMPLES; i++) {
-          const r = spawnSync(process.execPath, ["--expose-gc", self, "--worker", impl, String(size), query], { encoding: "utf8" });
+          const r = spawnSync(process.execPath, ["--expose-gc", self, "--worker", impl, String(size), query], {
+            encoding: "utf8",
+          });
           if (r.status !== 0) {
             process.stderr.write(`${impl} ${size} ${query} failed:\n${r.stderr}\n`);
             break;

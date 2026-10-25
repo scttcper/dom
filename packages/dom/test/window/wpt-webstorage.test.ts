@@ -53,7 +53,8 @@ describe("Storage interface — https://html.spec.whatwg.org/#the-storage-interf
 
 describe("Broadcasting storage events — https://html.spec.whatwg.org/#concept-storage-broadcast", () => {
   for (const type of ["local", "session"]) {
-    for (const prop of ["key", "newvalue", "oldvalue", "removeitem", "storagearea", "url"]) defineWPT(`${DIR}/event_${type}_${prop}.html`);
+    for (const prop of ["key", "newvalue", "oldvalue", "removeitem", "storagearea", "url"])
+      defineWPT(`${DIR}/event_${type}_${prop}.html`);
   }
   defineWPT(`${DIR}/event_no_duplicates.html`);
 });
@@ -61,5 +62,8 @@ describe("Broadcasting storage events — https://html.spec.whatwg.org/#concept-
 describe("StorageEvent interface — https://html.spec.whatwg.org/#the-storageevent-interface", () => {
   defineWPT(`${DIR}/event_constructor.window.js`);
   // TODO(events): initStorageEvent() must require its `type` argument (WebIDL arity).
-  defineWPT(`${DIR}/event_initstorageevent.window.js`, "initStorageEvent() does not check its argument count (events area)");
+  defineWPT(
+    `${DIR}/event_initstorageevent.window.js`,
+    "initStorageEvent() does not check its argument count (events area)",
+  );
 });

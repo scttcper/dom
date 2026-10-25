@@ -67,7 +67,8 @@ export class HTMLLabelElement extends HTMLElement {
     if (control === null) return;
     // Events targeted at the control (or inside it), or at interactive content inside the
     // label, do nothing.
-    const target = event === null ? null : ((event.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null);
+    const target =
+      event === null ? null : ((event.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null);
     if (target !== null && target !== label) {
       for (let n: NodeImpl | null = target; n !== null && n !== label; n = n.parent) {
         if (n === control) return;

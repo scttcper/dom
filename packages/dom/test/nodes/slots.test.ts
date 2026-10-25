@@ -25,36 +25,64 @@ function host(w: AnyWindow, light: string, shadow: string, mode: "open" | "close
   el.innerHTML = light;
   const root = el.attachShadow({ mode });
   root.innerHTML = shadow;
-  return { d, el, root, slot: (name = "") => [...root.querySelectorAll("slot")].find((s: AnyWindow) => s.name === name) };
+  return {
+    d,
+    el,
+    root,
+    slot: (name = "") => [...root.querySelectorAll("slot")].find((s: AnyWindow) => s.name === name),
+  };
 }
 
 describe("slottable name and find a slot — https://dom.spec.whatwg.org/#find-a-slot", () => {
-  differential("elements and Text nodes are slottables; comments are not; a slottable's name is its slot attribute (https://dom.spec.whatwg.org/#slotable-name)", (w) => {
-    const { slot } = host(w, '<b id="b"></b>text<!--c--><i id="i" slot="x"></i>', '<slot></slot><slot name="x"></slot>');
-    return { default: names(slot().assignedNodes()), x: names(slot("x").assignedNodes()) };
-  });
+  differential(
+    "elements and Text nodes are slottables; comments are not; a slottable's name is its slot attribute (https://dom.spec.whatwg.org/#slotable-name)",
+    (w) => {
+      const { slot } = host(
+        w,
+        '<b id="b"></b>text<!--c--><i id="i" slot="x"></i>',
+        '<slot></slot><slot name="x"></slot>',
+      );
+      return { default: names(slot().assignedNodes()), x: names(slot("x").assignedNodes()) };
+    },
+  );
 
   differential("step 5: the first slot in tree order whose name matches wins; later duplicates get nothing", (w) => {
-    const { root } = host(w, '<b slot="dup"></b>', '<p><slot name="dup" id="first"></slot></p><slot name="dup" id="second"></slot>');
+    const { root } = host(
+      w,
+      '<b slot="dup"></b>',
+      '<p><slot name="dup" id="first"></slot></p><slot name="dup" id="second"></slot>',
+    );
     return [...root.querySelectorAll("slot")].map((s: AnyWindow) => [s.id, names(s.assignedNodes())]);
   });
 
-  differential("steps 1–2: only children of a shadow host are slottable — grandchildren and nodes outside hosts have no assigned slot", (w) => {
-    const { d, el } = host(w, '<p><b id="grand"></b></p>', "<slot></slot>");
-    return [describeNode(el.firstChild.assignedSlot), d.getElementById("grand").assignedSlot, d.body.assignedSlot];
-  });
+  differential(
+    "steps 1–2: only children of a shadow host are slottable — grandchildren and nodes outside hosts have no assigned slot",
+    (w) => {
+      const { d, el } = host(w, '<p><b id="grand"></b></p>', "<slot></slot>");
+      return [describeNode(el.firstChild.assignedSlot), d.getElementById("grand").assignedSlot, d.body.assignedSlot];
+    },
+  );
 
-  differential("step 3: with open false, a closed shadow root's slot is not exposed through assignedSlot (https://dom.spec.whatwg.org/#dom-slotable-assignedslot)", (w) => {
-    const { el } = host(w, "<b></b>", "<slot></slot>", "closed");
-    return el.firstChild.assignedSlot;
-  });
+  differential(
+    "step 3: with open false, a closed shadow root's slot is not exposed through assignedSlot (https://dom.spec.whatwg.org/#dom-slotable-assignedslot)",
+    (w) => {
+      const { el } = host(w, "<b></b>", "<slot></slot>", "closed");
+      return el.firstChild.assignedSlot;
+    },
+  );
 
-  differential("the slot name is the name attribute, the empty string when absent (https://dom.spec.whatwg.org/#slot-name)", (w) => {
-    const { el, slot } = host(w, '<b slot=""></b><i></i><u slot="n"></u>', '<slot name="n"></slot><slot></slot>');
-    const before = names(slot().assignedNodes());
-    slot("n").removeAttribute("name");
-    return { before, afterRemovingName: [...el.shadowRoot.querySelectorAll("slot")].map((s: AnyWindow) => names(s.assignedNodes())) };
-  });
+  differential(
+    "the slot name is the name attribute, the empty string when absent (https://dom.spec.whatwg.org/#slot-name)",
+    (w) => {
+      const { el, slot } = host(w, '<b slot=""></b><i></i><u slot="n"></u>', '<slot name="n"></slot><slot></slot>');
+      const before = names(slot().assignedNodes());
+      slot("n").removeAttribute("name");
+      return {
+        before,
+        afterRemovingName: [...el.shadowRoot.querySelectorAll("slot")].map((s: AnyWindow) => names(s.assignedNodes())),
+      };
+    },
+  );
 
   differential("Element.slot reflects the slot attribute (https://dom.spec.whatwg.org/#dom-element-slot)", (w) => {
     const b = w.document.createElement("b");
@@ -78,7 +106,10 @@ describe("find slottables — https://dom.spec.whatwg.org/#find-slotables", () =
     const { d, slot } = host(w, "<b></b>text<i></i>", "<slot></slot>");
     const loose = d.createElement("slot");
     loose.append(d.createElement("span"));
-    return { elements: names(slot().assignedElements()), loose: [loose.assignedNodes().length, names(loose.assignedNodes({ flatten: true }))] };
+    return {
+      elements: names(slot().assignedElements()),
+      loose: [loose.assignedNodes().length, names(loose.assignedNodes({ flatten: true }))],
+    };
   });
 });
 
@@ -93,42 +124,58 @@ describe("find flattened slottables — https://dom.spec.whatwg.org/#find-flatte
     const passThrough = innerHost.appendChild(d.createElement("slot"));
     const innerRoot = innerHost.attachShadow({ mode: "open" });
     const innerSlot = innerRoot.appendChild(d.createElement("slot"));
-    return { assigned: names(innerSlot.assignedNodes()), flattened: names(innerSlot.assignedNodes({ flatten: true })), passThroughSlot: describeNode(passThrough.assignedSlot) };
+    return {
+      assigned: names(innerSlot.assignedNodes()),
+      flattened: names(innerSlot.assignedNodes({ flatten: true })),
+      passThroughSlot: describeNode(passThrough.assignedSlot),
+    };
   });
 
-  differential("step 4: an empty slot flattens to its slottable children (fallback content), recursing into fallback slots", (w) => {
-    const { slot } = host(w, "", '<slot>fallback <b>bold</b><!--c--><slot name="inner">inner fallback</slot></slot>');
-    return { assigned: slot().assignedNodes().length, flattened: names(slot().assignedNodes({ flatten: true })) };
-  });
+  differential(
+    "step 4: an empty slot flattens to its slottable children (fallback content), recursing into fallback slots",
+    (w) => {
+      const { slot } = host(w, "", '<slot>fallback <b>bold</b><!--c--><slot name="inner">inner fallback</slot></slot>');
+      return { assigned: slot().assignedNodes().length, flattened: names(slot().assignedNodes({ flatten: true })) };
+    },
+  );
 });
 
 describe("assign slottables for a tree — https://dom.spec.whatwg.org/#assign-slotables-for-a-tree", () => {
-  differential("inserting a slot into a shadow tree assigns existing host children to it; removing it reassigns them to the next match", (w) => {
-    const { d, el, root } = host(w, "<b></b><i slot='n'></i>", '<slot id="late-default"></slot>');
-    const late = root.getElementById("late-default");
-    const earlier = d.createElement("slot");
-    root.prepend(earlier);
-    const afterInsert = [names(earlier.assignedNodes()), names(late.assignedNodes())];
-    earlier.remove();
-    return { afterInsert, afterRemove: names(late.assignedNodes()), iSlot: el.lastChild.assignedSlot };
-  });
+  differential(
+    "inserting a slot into a shadow tree assigns existing host children to it; removing it reassigns them to the next match",
+    (w) => {
+      const { d, el, root } = host(w, "<b></b><i slot='n'></i>", '<slot id="late-default"></slot>');
+      const late = root.getElementById("late-default");
+      const earlier = d.createElement("slot");
+      root.prepend(earlier);
+      const afterInsert = [names(earlier.assignedNodes()), names(late.assignedNodes())];
+      earlier.remove();
+      return { afterInsert, afterRemove: names(late.assignedNodes()), iSlot: el.lastChild.assignedSlot };
+    },
+  );
 
-  differential("inserting a fragment of slots assigns each in tree order (assign slottables for a tree runs over the inclusive descendants)", (w) => {
-    const { d, root } = host(w, "<b slot='a'></b><i slot='b'></i>", "");
-    const wrap = d.createElement("div");
-    wrap.innerHTML = '<slot name="b"></slot><p><slot name="a"></slot></p>';
-    root.append(wrap);
-    return [...root.querySelectorAll("slot")].map((s: AnyWindow) => [s.name, names(s.assignedNodes())]);
-  });
+  differential(
+    "inserting a fragment of slots assigns each in tree order (assign slottables for a tree runs over the inclusive descendants)",
+    (w) => {
+      const { d, root } = host(w, "<b slot='a'></b><i slot='b'></i>", "");
+      const wrap = d.createElement("div");
+      wrap.innerHTML = '<slot name="b"></slot><p><slot name="a"></slot></p>';
+      root.append(wrap);
+      return [...root.querySelectorAll("slot")].map((s: AnyWindow) => [s.name, names(s.assignedNodes())]);
+    },
+  );
 
-  differential("assign a slot: changing a slottable's slot attribute moves it, and the old slot loses it (https://dom.spec.whatwg.org/#assign-a-slot)", (w) => {
-    const { el, slot } = host(w, "<b></b>", '<slot></slot><slot name="x"></slot>');
-    const b = el.firstChild;
-    b.slot = "x";
-    const moved = [names(slot().assignedNodes()), names(slot("x").assignedNodes())];
-    b.removeAttribute("slot");
-    return { moved, back: [names(slot().assignedNodes()), names(slot("x").assignedNodes())] };
-  });
+  differential(
+    "assign a slot: changing a slottable's slot attribute moves it, and the old slot loses it (https://dom.spec.whatwg.org/#assign-a-slot)",
+    (w) => {
+      const { el, slot } = host(w, "<b></b>", '<slot></slot><slot name="x"></slot>');
+      const b = el.firstChild;
+      b.slot = "x";
+      const moved = [names(slot().assignedNodes()), names(slot("x").assignedNodes())];
+      b.removeAttribute("slot");
+      return { moved, back: [names(slot().assignedNodes()), names(slot("x").assignedNodes())] };
+    },
+  );
 });
 
 describe("manual slot assignment — https://dom.spec.whatwg.org/#slot-manually-assigned-nodes", () => {
@@ -139,7 +186,15 @@ describe("manual slot assignment — https://dom.spec.whatwg.org/#slot-manually-
     const root = el.attachShadow({ mode: "open", slotAssignment: "manual" });
     root.innerHTML = '<slot name="a"></slot><slot id="other"></slot>';
     const [named, other] = root.querySelectorAll("slot") as unknown as [HTMLSlotLike, HTMLSlotLike];
-    return { document, el, root, named, other, b: el.firstChild as unknown as SlottableLike, i: el.lastChild as unknown as SlottableLike };
+    return {
+      document,
+      el,
+      root,
+      named,
+      other,
+      b: el.firstChild as unknown as SlottableLike,
+      i: el.lastChild as unknown as SlottableLike,
+    };
   }
   interface HTMLSlotLike {
     assign(...nodes: unknown[]): void;

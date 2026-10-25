@@ -4,6 +4,7 @@
 //
 // Append new names at the END only: ids are stable within a process but are not persisted.
 
+// oxfmt-ignore
 const NAMES = [
   "", // 0: unknown / non-HTML
   "a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi",

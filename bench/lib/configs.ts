@@ -14,7 +14,14 @@
 
 import { installDistResolution } from "./dist-hooks.ts";
 
-export const CONFIGS = ["jsdom", "happy-dom", "ctrl-dom", "ctrl-dom-full", "ctrl-dom-dist", "ctrl-dom-full-dist"] as const;
+export const CONFIGS = [
+  "jsdom",
+  "happy-dom",
+  "ctrl-dom",
+  "ctrl-dom-full",
+  "ctrl-dom-dist",
+  "ctrl-dom-full-dist",
+] as const;
 export type ConfigName = (typeof CONFIGS)[number];
 
 /** Configurations run by default for non-startup workloads. */

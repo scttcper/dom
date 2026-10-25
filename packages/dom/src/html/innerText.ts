@@ -150,7 +150,14 @@ function isBeingRendered(el: NodeImpl): boolean {
     if (computedDisplay(n) === "none") return false;
     // Content of a closed <details> other than its summary is not rendered.
     const p = n.parent;
-    if (p !== null && p.tag === T.details && p.ns === HTML_NS && contentAttr(p, "open") === null && !(n.tag === T.summary && isFirstSummary(n))) return false;
+    if (
+      p !== null &&
+      p.tag === T.details &&
+      p.ns === HTML_NS &&
+      contentAttr(p, "open") === null &&
+      !(n.tag === T.summary && isFirstSummary(n))
+    )
+      return false;
   }
   return true;
 }
@@ -239,7 +246,10 @@ class Builder {
       if (this.lastSpace && s.charCodeAt(0) === 0x20) s = s.slice(1);
       if (s === "") return;
     } else if (mode === W_PRE_LINE) {
-      s = s.replace(/\r\n?/g, "\n").replace(/[ \t\f]+/g, " ").replace(/ ?\n ?/g, "\n");
+      s = s
+        .replace(/\r\n?/g, "\n")
+        .replace(/[ \t\f]+/g, " ")
+        .replace(/ ?\n ?/g, "\n");
       if (this.lastSpace && s.charCodeAt(0) === 0x20) s = s.slice(1);
       if (s === "") return;
     } else {
@@ -307,7 +317,14 @@ class Builder {
 /** Table boxes whose direct text children are not rendered when they are only white space. */
 function isTableInternal(p: NodeImpl): boolean {
   const d = computedDisplay(p);
-  return d === "table" || d === "inline-table" || d === "table-row" || d === "table-row-group" || d === "table-header-group" || d === "table-footer-group";
+  return (
+    d === "table" ||
+    d === "inline-table" ||
+    d === "table-row" ||
+    d === "table-row-group" ||
+    d === "table-header-group" ||
+    d === "table-footer-group"
+  );
 }
 
 function isWhitespaceOnly(s: string): boolean {
@@ -398,7 +415,7 @@ function collect(node: NodeImpl, b: Builder): void {
 
 /** A <select>'s rendering: its options (not nested in another option), one per line. */
 function collectOptions(select: NodeImpl, b: Builder): void {
-  for (let n = select.first; n !== null; ) {
+  for (let n = select.first; n !== null;) {
     if (n.type === ELEMENT_NODE && n.ns === HTML_NS && n.tag === T.option) {
       collect(n, b);
       n = nextSkippingChildren(n, select);
@@ -411,14 +428,21 @@ function collectOptions(select: NodeImpl, b: Builder): void {
 }
 
 function isLastOfKind(node: NodeImpl, kind: number, styled: boolean): boolean {
-  for (let n = node.next; n !== null; n = n.next) if (n.type === ELEMENT_NODE && boxKind(n, styled) === kind) return false;
+  for (let n = node.next; n !== null; n = n.next)
+    if (n.type === ELEMENT_NODE && boxKind(n, styled) === kind) return false;
   return true;
 }
 
 function isLastRow(row: NodeImpl, styled: boolean): boolean {
   // Last row of the enclosing table (rows may sit in thead/tbody/tfoot sections).
   let table: NodeImpl | null = row.parent;
-  while (table !== null && table.type === ELEMENT_NODE && computedDisplay(table) !== "table" && computedDisplay(table) !== "inline-table") table = table.parent;
+  while (
+    table !== null &&
+    table.type === ELEMENT_NODE &&
+    computedDisplay(table) !== "table" &&
+    computedDisplay(table) !== "inline-table"
+  )
+    table = table.parent;
   if (table === null || table.type !== ELEMENT_NODE) return isLastOfKind(row, D_ROW, styled);
   let last: NodeImpl | null = null;
   for (let n = table.first; n !== null; n = nextInTree(n, table)) {

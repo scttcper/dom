@@ -47,8 +47,12 @@ function where(w: AnyWindow) {
 
 function recordNavigationEvents(w: AnyWindow): unknown[] {
   const log: unknown[] = [];
-  w.addEventListener("popstate", (e: AnyWindow) => log.push({ type: "popstate", state: e.state, href: w.location.href, ctor: e.constructor.name }));
-  w.addEventListener("hashchange", (e: AnyWindow) => log.push({ type: "hashchange", oldURL: e.oldURL, newURL: e.newURL, ctor: e.constructor.name }));
+  w.addEventListener("popstate", (e: AnyWindow) =>
+    log.push({ type: "popstate", state: e.state, href: w.location.href, ctor: e.constructor.name }),
+  );
+  w.addEventListener("hashchange", (e: AnyWindow) =>
+    log.push({ type: "hashchange", oldURL: e.oldURL, newURL: e.newURL, ctor: e.constructor.name }),
+  );
   return log;
 }
 
@@ -73,7 +77,8 @@ const FRAGMENT_STATE = {
 /** Our Location setters update the URL without loading a document (docs/deviations.md, Window row "Navigation never loads a document"). */
 const NAVIGATION_DEVIATION = {
   spec: "https://html.spec.whatwg.org/#location-object-navigate",
-  reason: "No navigation: the URL component setters only update the URL and session history (docs/deviations.md); jsdom reports \"Not implemented: navigation\" and keeps the old URL.",
+  reason:
+    'No navigation: the URL component setters only update the URL and session history (docs/deviations.md); jsdom reports "Not implemented: navigation" and keeps the old URL.',
 };
 
 describe("pushState / replaceState — https://html.spec.whatwg.org/#shared-history-push/replace-state-steps", () => {
@@ -94,13 +99,21 @@ describe("pushState / replaceState — https://html.spec.whatwg.org/#shared-hist
       const state = { date: new Date(0), map: new Map([["k", 1]]), nested: { a: [1, 2] } };
       w.history.pushState(state, "");
       const s = w.history.state;
-      return { same: s === state, sameOnReread: s === w.history.state, date: s.date instanceof Date, time: s.date.getTime(), map: s.map.get("k"), nested: s.nested };
+      return {
+        same: s === state,
+        sameOnReread: s === w.history.state,
+        date: s.date instanceof Date,
+        time: s.date.getTime(),
+        map: s.map.get("k"),
+        nested: s.nested,
+      };
     },
     {
       jsdomFix: {
         fix: (o) => ({ ...o, same: false }),
         spec: "https://html.spec.whatwg.org/#shared-history-push/replace-state-steps",
-        reason: "Step 4 is StructuredSerializeForStorage(data); jsdom stores the object itself, so history.state is the pushed object.",
+        reason:
+          "Step 4 is StructuredSerializeForStorage(data); jsdom stores the object itself, so history.state is the pushed object.",
       },
     },
   );
@@ -182,13 +195,16 @@ describe("traversal — https://html.spec.whatwg.org/#update-document-for-histor
     return { after, forwardIsNoop: where(w) };
   });
 
-  differentialAsync("traversing between entries that differ only in fragment fires popstate then hashchange", async (w) => {
-    w.history.pushState("x", "", "#x");
-    const log = recordNavigationEvents(w);
-    w.history.back();
-    await next(w, "hashchange");
-    return { log, ...where(w) };
-  });
+  differentialAsync(
+    "traversing between entries that differ only in fragment fires popstate then hashchange",
+    async (w) => {
+      w.history.pushState("x", "", "#x");
+      const log = recordNavigationEvents(w);
+      w.history.back();
+      await next(w, "hashchange");
+      return { log, ...where(w) };
+    },
+  );
 });
 
 describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-fragid", () => {
@@ -205,7 +221,8 @@ describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-frag
       jsdomFix: {
         fix: (o) => ({ ...nullState(o), sync: { ...nullState(o.sync), log: 1 } }),
         spec: "https://html.spec.whatwg.org/#update-document-for-history-step-application",
-        reason: "Navigate to a fragment runs update document for history step application synchronously, so popstate fires before the setter returns (step 6.3); jsdom fires it from a task, with an undefined state.",
+        reason:
+          "Navigate to a fragment runs update document for history step application synchronously, so popstate fires before the setter returns (step 6.3); jsdom fires it from a task, with an undefined state.",
       },
     },
   );
@@ -258,7 +275,18 @@ describe("Location URL components — https://html.spec.whatwg.org/#the-location
   differential("getters follow the document URL after pushState", (w) => {
     w.history.pushState(null, "", "/path/page?q=1&r=2#frag");
     const l = w.location;
-    return { href: l.href, origin: l.origin, protocol: l.protocol, host: l.host, hostname: l.hostname, port: l.port, pathname: l.pathname, search: l.search, hash: l.hash, url: w.document.URL };
+    return {
+      href: l.href,
+      origin: l.origin,
+      protocol: l.protocol,
+      host: l.host,
+      hostname: l.hostname,
+      port: l.port,
+      pathname: l.pathname,
+      search: l.search,
+      hash: l.hash,
+      url: w.document.URL,
+    };
   });
 
   differential(
@@ -272,7 +300,12 @@ describe("Location URL components — https://html.spec.whatwg.org/#the-location
       w.location.search = "";
       return { a, b, c: w.location.href };
     },
-    { jsdomDeviation: { expected: { a: "http://localhost/p?a=1#h", b: "http://localhost/p?b=2#h", c: "http://localhost/p#h" }, ...NAVIGATION_DEVIATION } },
+    {
+      jsdomDeviation: {
+        expected: { a: "http://localhost/p?a=1#h", b: "http://localhost/p?b=2#h", c: "http://localhost/p#h" },
+        ...NAVIGATION_DEVIATION,
+      },
+    },
   );
 
   differential(
@@ -281,6 +314,11 @@ describe("Location URL components — https://html.spec.whatwg.org/#the-location
       w.location.pathname = "/new/path";
       return where(w);
     },
-    { jsdomDeviation: { expected: { href: "http://localhost/new/path", length: 2, state: null }, ...NAVIGATION_DEVIATION } },
+    {
+      jsdomDeviation: {
+        expected: { href: "http://localhost/new/path", length: 2, state: null },
+        ...NAVIGATION_DEVIATION,
+      },
+    },
   );
 });

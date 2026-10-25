@@ -18,7 +18,9 @@ describe('.toHaveErrorMessage', () => {
   })
 
   test('warns that it is deprecated in favor of toHaveAccessibleErrorMessage (not upstream)', () => {
-    const {queryByTestId} = render(`<input data-testid="x" aria-invalid="true">`)
+    const {queryByTestId} = render(
+      `<input data-testid="x" aria-invalid="true">`,
+    )
     expect(queryByTestId('x')).not.toHaveErrorMessage()
     expect(warn).toHaveBeenCalledWith(
       'Warning: toHaveErrorMessage has been deprecated and will be removed in future updates.',

@@ -15,14 +15,20 @@ import { describe, expect, test } from "vitest";
 import { both, testNode } from "./helpers.ts";
 
 function expectInaccessible(html: string, expected: boolean): void {
-  expect(both(html, (api, doc) => api.inaccessible(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
+  expect(both(html, (api, doc) => api.inaccessible(testNode(doc)))).toEqual({
+    "ctrl-dom": expected,
+    upstream: expected,
+  });
 }
 
 describe("display: none — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion", () => {
   test("on the element or any ancestor, inline or from a style sheet", () => {
     expectInaccessible(`<button data-test style="display:none">x</button>`, true);
     expectInaccessible(`<div style="display:none"><p><button data-test>x</button></p></div>`, true);
-    expectInaccessible(`<style>.gone { display: none }</style><div class="gone"><button data-test>x</button></div>`, true);
+    expectInaccessible(
+      `<style>.gone { display: none }</style><div class="gone"><button data-test>x</button></div>`,
+      true,
+    );
     expectInaccessible(`<style>.gone { display: none }</style><button data-test>x</button>`, false);
   });
 
@@ -49,7 +55,10 @@ describe("visibility — https://drafts.csswg.org/css-display/#visibility", () =
   });
 
   test("a descendant with visibility:visible is exposed again", () => {
-    expectInaccessible(`<div style="visibility:hidden"><button data-test style="visibility:visible">x</button></div>`, false);
+    expectInaccessible(
+      `<div style="visibility:hidden"><button data-test style="visibility:visible">x</button></div>`,
+      false,
+    );
   });
 
   test("oracle: visibility:collapse is not treated as hidden", () => {
@@ -100,7 +109,10 @@ describe("inert — https://html.spec.whatwg.org/#the-inert-attribute", () => {
 describe("getRoles honors exclusion — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion", () => {
   test("excluded elements are listed only with hidden: true", () => {
     const html = `<button data-id="v">v</button><button data-id="h" style="visibility:hidden">h</button><div style="display:none"><button data-id="n">n</button></div>`;
-    expect(both(html, (api, doc) => api.roles(doc.body))).toEqual({ "ctrl-dom": { button: ["v"] }, upstream: { button: ["v"] } });
+    expect(both(html, (api, doc) => api.roles(doc.body))).toEqual({
+      "ctrl-dom": { button: ["v"] },
+      upstream: { button: ["v"] },
+    });
     expect(both(html, (api, doc) => api.roles(doc.body, { hidden: true }))).toEqual({
       "ctrl-dom": { button: ["v", "h", "n"] },
       upstream: { button: ["v", "h", "n"] },

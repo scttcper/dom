@@ -38,9 +38,9 @@ function findNodeAtTextOffset(
   offset: number | undefined,
   isRoot = true,
 ): {
-    node: Node
-    offset: number
-  } {
+  node: Node
+  offset: number
+} {
   // When clicking after the content the browser behavior can be complicated:
   // 1. If there is textContent after the last element child,
   // the cursor is moved there.

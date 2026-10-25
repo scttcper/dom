@@ -210,7 +210,8 @@ export function msgOverflow(max: string, isDate: boolean): string {
 }
 
 export function msgStep(low: string | null, high: string | null): string {
-  if (low !== null && high !== null) return `Please enter a valid value. The two nearest valid values are ${low} and ${high}.`;
+  if (low !== null && high !== null)
+    return `Please enter a valid value. The two nearest valid values are ${low} and ${high}.`;
   const v = low ?? high;
   return v === null ? MSG_BAD_INPUT : `Please enter a valid value. The nearest valid value is ${v}.`;
 }

@@ -18,7 +18,11 @@ export interface IndexGetterTable {
   item: (self: object, index: number) => unknown;
 }
 
-export function indexGetterTable(proto: object, item: (self: object, index: number) => unknown, initial = 32): IndexGetterTable {
+export function indexGetterTable(
+  proto: object,
+  item: (self: object, index: number) => unknown,
+  initial = 32,
+): IndexGetterTable {
   const table: IndexGetterTable = { proto, count: 0, item };
   ensureIndexGetters(table, initial);
   return table;

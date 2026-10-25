@@ -201,7 +201,8 @@ describe("checkedness — https://html.spec.whatwg.org/#concept-fe-checked", () 
 
 describe("radio button groups — https://html.spec.whatwg.org/#radio-button-group", () => {
   test("checking one radio unchecks the others with the same name and form owner", () => {
-    document.body!.innerHTML = '<form><input type=radio name=r id=a><input type=radio name=r id=b></form><input type=radio name=r id=c>';
+    document.body!.innerHTML =
+      "<form><input type=radio name=r id=a><input type=radio name=r id=b></form><input type=radio name=r id=c>";
     const [a, b, c] = ["a", "b", "c"].map((id) => document.getElementById(id) as any);
     c.checked = true;
     a.checked = true;
@@ -361,7 +362,9 @@ describe("stepUp/stepDown — https://html.spec.whatwg.org/#dom-input-stepup", (
 
   test("throws InvalidStateError for text inputs and step=any", () => {
     expect(() => input().stepUp()).toThrow(expect.objectContaining({ name: "InvalidStateError" }));
-    expect(() => input({ type: "number", step: "any" }).stepUp()).toThrow(expect.objectContaining({ name: "InvalidStateError" }));
+    expect(() => input({ type: "number", step: "any" }).stepUp()).toThrow(
+      expect.objectContaining({ name: "InvalidStateError" }),
+    );
   });
 });
 

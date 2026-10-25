@@ -26,7 +26,8 @@ const t1 = now();
 const React = await import("react");
 const { render, screen, cleanup } = await import(contender.imports.react);
 render(React.createElement("button", { type: "button" }, "Hello"));
-if (screen.getByRole("button", { name: "Hello" }).textContent !== "Hello") throw new Error("first render did not produce the button");
+if (screen.getByRole("button", { name: "Hello" }).textContent !== "Hello")
+  throw new Error("first render did not produce the button");
 cleanup();
 const t2 = now();
 

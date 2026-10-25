@@ -96,7 +96,19 @@ function queryAllByRole(
   if (valueText !== undefined) assertSupported(role, "aria-valuetext");
   if (expanded !== undefined) assertSupported(role, "aria-expanded");
 
-  const state: StateFilter = { selected, busy, checked, pressed, current, level, expanded, valueNow, valueMin, valueMax, valueText };
+  const state: StateFilter = {
+    selected,
+    busy,
+    checked,
+    pressed,
+    current,
+    level,
+    expanded,
+    valueNow,
+    valueMin,
+    valueMax,
+    valueText,
+  };
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
   const root = implOf(container);
   const out: any[] = [];
@@ -109,9 +121,15 @@ function queryAllByRole(
     if (el.type !== ELEMENT_NODE) continue;
     if (!aria.roleMatches(el, role, queryFallbacks)) continue;
     if (!matchesState(el, state)) continue;
-    if (hidden === false && (gcs === null ? isInaccessibleImpl(el) : aria.isInaccessibleWithStyle(el, gcs, memo))) continue;
-    if (name !== undefined && !matches(aria.computeAccessibleName(el, pseudo, gcs), el.node, name as Matcher, identity)) continue;
-    if (description !== undefined && !matches(aria.computeAccessibleDescription(el, pseudo, gcs), el.node, description as Matcher, identity)) continue;
+    if (hidden === false && (gcs === null ? isInaccessibleImpl(el) : aria.isInaccessibleWithStyle(el, gcs, memo)))
+      continue;
+    if (name !== undefined && !matches(aria.computeAccessibleName(el, pseudo, gcs), el.node, name as Matcher, identity))
+      continue;
+    if (
+      description !== undefined &&
+      !matches(aria.computeAccessibleDescription(el, pseudo, gcs), el.node, description as Matcher, identity)
+    )
+      continue;
     out.push(el.node);
   }
   return out;
@@ -250,14 +268,36 @@ ${roleMessage}`.trim();
 };
 
 function agentMissingError(container: any, role: any, options: ByRoleOptions, hidden: boolean): string {
-  const { name, description, queryFallbacks = false, value: { now: valueNow, min: valueMin, max: valueMax, text: valueText } = {} } = options;
+  const {
+    name,
+    description,
+    queryFallbacks = false,
+    value: { now: valueNow, min: valueMin, max: valueMax, text: valueText } = {},
+  } = options;
   const { selected, busy, checked, pressed, current, level, expanded } = options;
-  const state: StateFilter = { selected, busy, checked, pressed, current, level, expanded, valueNow, valueMin, valueMax, valueText };
+  const state: StateFilter = {
+    selected,
+    busy,
+    checked,
+    pressed,
+    current,
+    level,
+    expanded,
+    valueNow,
+    valueMin,
+    valueMax,
+    valueText,
+  };
   const stateHint = Object.entries({ selected, busy, checked, pressed, current, level, expanded, value: options.value })
     .filter(([, v]) => v !== undefined)
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
     .join(", ");
-  const descriptionHint = description === undefined ? "" : typeof description === "string" ? ` and description "${description}"` : ` and description \`${description}\``;
+  const descriptionHint =
+    description === undefined
+      ? ""
+      : typeof description === "string"
+        ? ` and description "${description}"`
+        : ` and description \`${description}\``;
   const head = `Unable to find an ${hidden === false ? "accessible " : ""}element with the role "${role}"${getNameHint(name)}${descriptionHint}`;
   const candidates = roleCandidates(container, {
     role: String(role),
@@ -277,4 +317,11 @@ const [queryByRole, getAllByRole, getByRole, findAllByRole, findByRole] = buildQ
   getMissingError as GetErrorFunction<any[]>,
 );
 
-export { queryByRole, queryAllByRoleWithSuggestions as queryAllByRole, getAllByRole, getByRole, findAllByRole, findByRole };
+export {
+  queryByRole,
+  queryAllByRoleWithSuggestions as queryAllByRole,
+  getAllByRole,
+  getByRole,
+  findAllByRole,
+  findByRole,
+};

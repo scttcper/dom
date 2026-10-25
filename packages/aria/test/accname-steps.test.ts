@@ -31,7 +31,9 @@ describe("2A Hidden Not Referenced [step2A] — https://w3c.github.io/accname/#c
   });
 
   test("options.hidden skips the step for the root and its descendants", () => {
-    expectName(`<button data-test hidden>Hidden <span aria-hidden="true">too</span></button>`, "Hidden too", { hidden: true });
+    expectName(`<button data-test hidden>Hidden <span aria-hidden="true">too</span></button>`, "Hidden too", {
+      hidden: true,
+    });
   });
 
   test("hidden descendants (hidden, aria-hidden, display:none, visibility:hidden) contribute nothing", () => {
@@ -46,8 +48,14 @@ describe("2A Hidden Not Referenced [step2A] — https://w3c.github.io/accname/#c
   });
 
   test("a directly referenced hidden node is not skipped (aria-labelledby)", () => {
-    expectName(`<span id="l" hidden>Hidden label</span><button data-test aria-labelledby="l">x</button>`, "Hidden label");
-    expectName(`<span id="l" style="display:none">None label</span><button data-test aria-labelledby="l">x</button>`, "None label");
+    expectName(
+      `<span id="l" hidden>Hidden label</span><button data-test aria-labelledby="l">x</button>`,
+      "Hidden label",
+    );
+    expectName(
+      `<span id="l" style="display:none">None label</span><button data-test aria-labelledby="l">x</button>`,
+      "None label",
+    );
   });
 
   test("descendants of a referenced hidden node are traversed unless themselves hidden", () => {
@@ -67,13 +75,19 @@ describe("2A Hidden Not Referenced [step2A] — https://w3c.github.io/accname/#c
   test("oracle: a visibility:visible descendant of a visibility:hidden element stays excluded (the whole subtree is skipped)", () => {
     // The spec only excludes nodes that are themselves hidden; dom-accessibility-api stops at
     // the first hidden ancestor, and `*ByRole({ name })` users rely on that.
-    expectName(`<button data-test>a <span style="visibility:hidden">b <span style="visibility:visible">c</span></span></button>`, "a");
+    expectName(
+      `<button data-test>a <span style="visibility:hidden">b <span style="visibility:visible">c</span></span></button>`,
+      "a",
+    );
   });
 });
 
 describe("2B LabelledBy [step2B] — https://w3c.github.io/accname/#comp_labelledby", () => {
   test("step 2: each IDREF is traversed in order and the results are joined with a space", () => {
-    expectName(`<span id="a">Alpha</span><span id="b">Beta</span><button data-test aria-labelledby="b a">x</button>`, "Beta Alpha");
+    expectName(
+      `<span id="a">Alpha</span><span id="b">Beta</span><button data-test aria-labelledby="b a">x</button>`,
+      "Beta Alpha",
+    );
   });
 
   test("aria-labelledby takes precedence over aria-label, native labels and content", () => {
@@ -93,7 +107,10 @@ describe("2B LabelledBy [step2B] — https://w3c.github.io/accname/#comp_labelle
   });
 
   test("a self-reference uses the element's own aria-label (the referenced root skips 2B but not 2D)", () => {
-    expectName(`<input data-test id="me" aria-label="Own" aria-labelledby="me other"><span id="other">Other</span>`, "Own Other");
+    expectName(
+      `<input data-test id="me" aria-label="Own" aria-labelledby="me other"><span id="other">Other</span>`,
+      "Own Other",
+    );
   });
 
   test("step 2 traversal: aria-labelledby is not followed from a referenced node (no recursion)", () => {
@@ -104,11 +121,17 @@ describe("2B LabelledBy [step2B] — https://w3c.github.io/accname/#comp_labelle
   });
 
   test("a referenced node's aria-label is used instead of its content", () => {
-    expectName(`<span id="a" aria-label="Labelled">content</span><button data-test aria-labelledby="a">x</button>`, "Labelled");
+    expectName(
+      `<span id="a" aria-label="Labelled">content</span><button data-test aria-labelledby="a">x</button>`,
+      "Labelled",
+    );
   });
 
   test("a referenced node's content is used even when its role does not allow name from content", () => {
-    expectName(`<div id="a"><p>Para</p><ul><li>item</li></ul></div><button data-test aria-labelledby="a">x</button>`, "Para item");
+    expectName(
+      `<div id="a"><p>Para</p><ul><li>item</li></ul></div><button data-test aria-labelledby="a">x</button>`,
+      "Para item",
+    );
   });
 
   test("oracle: a node referenced twice contributes once (visited nodes are not revisited)", () => {
@@ -119,12 +142,21 @@ describe("2B LabelledBy [step2B] — https://w3c.github.io/accname/#comp_labelle
 describe("2C Embedded Control [step2E in dom-accessibility-api] — https://w3c.github.io/accname/#comp_embedded_control", () => {
   test("step 1 textbox: an embedded text input contributes its value", () => {
     expectName(`<label>Name <input data-test value="Ada"> please</label>`, "Name please");
-    expectName(`<input type="checkbox" data-test id="c"><label for="c">Send to <input value="ada@example.com"> now</label>`, "Send to ada@example.com now");
+    expectName(
+      `<input type="checkbox" data-test id="c"><label for="c">Send to <input value="ada@example.com"> now</label>`,
+      "Send to ada@example.com now",
+    );
   });
 
   test("step 1 textbox: a <textarea> and a role=textbox element contribute their value / text", () => {
-    expectName(`<input type="checkbox" data-test id="c"><label for="c">Note <textarea>hello</textarea></label>`, "Note hello");
-    expectName(`<input type="checkbox" data-test id="c"><label for="c">Note <span role="textbox">typed</span></label>`, "Note typed");
+    expectName(
+      `<input type="checkbox" data-test id="c"><label for="c">Note <textarea>hello</textarea></label>`,
+      "Note hello",
+    );
+    expectName(
+      `<input type="checkbox" data-test id="c"><label for="c">Note <span role="textbox">typed</span></label>`,
+      "Note typed",
+    );
   });
 
   test("step 2 combobox/listbox: the selected options' text is used", () => {
@@ -153,11 +185,17 @@ describe("2C Embedded Control [step2E in dom-accessibility-api] — https://w3c.
   });
 
   test("step 3.2 range: else aria-valuenow", () => {
-    expectName(`<input type="checkbox" data-test id="c"><label for="c">Volume <div role="spinbutton" aria-valuenow="9"></div></label>`, "Volume 9");
+    expectName(
+      `<input type="checkbox" data-test id="c"><label for="c">Volume <div role="spinbutton" aria-valuenow="9"></div></label>`,
+      "Volume 9",
+    );
   });
 
   test("step 3.3 range: else the host language value (input type=range)", () => {
-    expectName(`<input type="checkbox" data-test id="c"><label for="c">Volume <input type="range" value="7"></label>`, "Volume 7");
+    expectName(
+      `<input type="checkbox" data-test id="c"><label for="c">Volume <input type="range" value="7"></label>`,
+      "Volume 7",
+    );
   });
 
   test("embedded controls are also reached through aria-labelledby", () => {
@@ -165,7 +203,10 @@ describe("2C Embedded Control [step2E in dom-accessibility-api] — https://w3c.
   });
 
   test("the control's own aria-label is ignored while it is embedded (2D step 1)", () => {
-    expectName(`<input type="checkbox" data-test id="c"><label for="c">Qty <input aria-label="ignored" value="3"></label>`, "Qty 3");
+    expectName(
+      `<input type="checkbox" data-test id="c"><label for="c">Qty <input aria-label="ignored" value="3"></label>`,
+      "Qty 3",
+    );
   });
 
   test("the control being named does not embed itself (its label contributes its text only)", () => {
@@ -202,7 +243,10 @@ describe("2E Host Language Label [step2D] — https://w3c.github.io/accname/#com
   });
 
   test("a label's content is computed with name from content (nested elements, hidden parts)", () => {
-    expectName(`<label for="i">Your <b>full</b> <span hidden>secret</span>name</label><input data-test id="i">`, "Your full name");
+    expectName(
+      `<label for="i">Your <b>full</b> <span hidden>secret</span>name</label><input data-test id="i">`,
+      "Your full name",
+    );
   });
 
   test("img alt; area alt", () => {
@@ -218,7 +262,10 @@ describe("2E Host Language Label [step2D] — https://w3c.github.io/accname/#com
   });
 
   test("<table> is named by its <caption>", () => {
-    expectName(`<table data-test><caption>Prices <b>2024</b></caption><tbody><tr><td>1</td></tr></tbody></table>`, "Prices 2024");
+    expectName(
+      `<table data-test><caption>Prices <b>2024</b></caption><tbody><tr><td>1</td></tr></tbody></table>`,
+      "Prices 2024",
+    );
   });
 
   test("<optgroup> is named by its label attribute", () => {
@@ -275,9 +322,12 @@ describe("2F Name From Content [step2F] — https://w3c.github.io/accname/#comp_
   });
 
   test("whitespace is flattened: runs collapse to one space and the result is trimmed", () => {
-    expectName(`<button data-test>
+    expectName(
+      `<button data-test>
       lots    of
-      space </button>`, "lots of space");
+      space </button>`,
+      "lots of space",
+    );
   });
 
   test("a <caption> is named from its content, and names its table", () => {
@@ -291,7 +341,10 @@ describe("2F Name From Content [step2F] — https://w3c.github.io/accname/#comp_
   });
 
   test("step 2 generated content: ::before/::after content is not included by default (Testing Library does not enable it)", () => {
-    expectName(`<style>.p::before { content: "Pre " } .p::after { content: " post" }</style><button data-test class="p">Mid</button>`, "Mid");
+    expectName(
+      `<style>.p::before { content: "Pre " } .p::after { content: " post" }</style><button data-test class="p">Mid</button>`,
+      "Mid",
+    );
   });
 });
 
@@ -330,13 +383,29 @@ describe("2I Tooltip [step2I] — https://w3c.github.io/accname/#comp_tooltip", 
 
 describe("prohibited naming — https://w3c.github.io/aria/#namefromprohibited", () => {
   test("explicit roles that prohibit naming (generic, paragraph, code, strong, ...) have an empty name even with aria-label", () => {
-    for (const role of ["generic", "paragraph", "code", "strong", "emphasis", "deletion", "insertion", "subscript", "superscript", "caption"]) {
+    for (const role of [
+      "generic",
+      "paragraph",
+      "code",
+      "strong",
+      "emphasis",
+      "deletion",
+      "insertion",
+      "subscript",
+      "superscript",
+      "caption",
+    ]) {
       expectName(`<span data-test role="${role}" aria-label="x">c</span>`, "");
     }
   });
 
   test("presentational role conflict resolution: a global aria-label makes role=presentation ignored, so the label names it (https://w3c.github.io/aria/#conflict_resolution_presentation_none)", () => {
-    expect(both(`<span data-test role="presentation" aria-label="x">c</span>`, (api, doc) => [api.role(testNode(doc)), api.name(testNode(doc))])).toEqual({
+    expect(
+      both(`<span data-test role="presentation" aria-label="x">c</span>`, (api, doc) => [
+        api.role(testNode(doc)),
+        api.name(testNode(doc)),
+      ]),
+    ).toEqual({
       "ctrl-dom": [null, "x"],
       upstream: [null, "x"],
     });

@@ -36,7 +36,11 @@ export class CSSStyleDeclaration {
   /** Number of own indexed properties currently defined. */
   [$indexed]: number;
 
-  constructor(owner: Element | null = null, block: DeclBlock | null = null, parentRule: DeclarationOwnerRule | null = null) {
+  constructor(
+    owner: Element | null = null,
+    block: DeclBlock | null = null,
+    parentRule: DeclarationOwnerRule | null = null,
+  ) {
     if (!accessorsInstalled) installAccessors();
     this[$owner] = owner;
     this[$parentRule] = parentRule;
@@ -85,7 +89,10 @@ export class CSSStyleDeclaration {
 
   _checkWritable(): void {
     if (this[$readonly]) {
-      throw new DOMException("Failed to execute on 'CSSStyleDeclaration': These styles are computed, and therefore read-only.", "NoModificationAllowedError");
+      throw new DOMException(
+        "Failed to execute on 'CSSStyleDeclaration': These styles are computed, and therefore read-only.",
+        "NoModificationAllowedError",
+      );
     }
   }
 

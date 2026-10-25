@@ -4,12 +4,12 @@
 // specifier -> { import, require }), it resolves the way a published package's exports map
 // would: the ESM bundle when Jest resolves with the "import" condition, the `.cjs` bundle
 // otherwise. Everything else goes to Jest's default resolver.
-'use strict';
+"use strict";
 
-const targets = JSON.parse(process.env.CTRL_DOM_RR_RESOLVE || '{}');
+const targets = JSON.parse(process.env.CTRL_DOM_RR_RESOLVE || "{}");
 
 module.exports = (request, options) => {
   const target = targets[request];
-  if (target !== undefined) return options.conditions?.includes('import') ? target.import : target.require;
+  if (target !== undefined) return options.conditions?.includes("import") ? target.import : target.require;
   return options.defaultResolver(request, options);
 };

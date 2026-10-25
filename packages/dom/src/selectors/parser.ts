@@ -724,69 +724,135 @@ const AFTER_PSEUDO_ELEMENT = 8; // :is()/:where() after a pseudo-element: only p
 function allowedAfterPseudoElement(pe: number, p: number): boolean {
   if (pe === PE_PART) return !isStructural(p);
   if (pe === PE_SLOTTED) return false;
-  return p === P_HOVER || p === P_ACTIVE || p === P_FOCUS || p === P_FOCUS_VISIBLE || p === P_FOCUS_WITHIN || p === P_IS || p === P_WHERE || p === P_NOT;
+  return (
+    p === P_HOVER ||
+    p === P_ACTIVE ||
+    p === P_FOCUS ||
+    p === P_FOCUS_VISIBLE ||
+    p === P_FOCUS_WITHIN ||
+    p === P_IS ||
+    p === P_WHERE ||
+    p === P_NOT
+  );
 }
 
 /** Non-functional pseudo-class name (lowercased) → id, or P_UNKNOWN. */
 export function pseudoClassId(name: string): number {
   switch (name) {
-    case "first-child": return P_FIRST_CHILD;
-    case "last-child": return P_LAST_CHILD;
-    case "only-child": return P_ONLY_CHILD;
-    case "first-of-type": return P_FIRST_OF_TYPE;
-    case "last-of-type": return P_LAST_OF_TYPE;
-    case "only-of-type": return P_ONLY_OF_TYPE;
-    case "empty": return P_EMPTY;
-    case "root": return P_ROOT;
-    case "scope": return P_SCOPE;
-    case "host": return P_HOST;
-    case "link": return P_LINK;
-    case "any-link": return P_ANY_LINK;
-    case "visited": return P_VISITED;
-    case "target": return P_TARGET;
-    case "target-within": return P_TARGET_WITHIN;
-    case "defined": return P_DEFINED;
-    case "hover": return P_HOVER;
-    case "active": return P_ACTIVE;
-    case "focus": return P_FOCUS;
-    case "focus-within": return P_FOCUS_WITHIN;
-    case "focus-visible": return P_FOCUS_VISIBLE;
-    case "checked": return P_CHECKED;
-    case "indeterminate": return P_INDETERMINATE;
-    case "default": return P_DEFAULT;
-    case "disabled": return P_DISABLED;
-    case "enabled": return P_ENABLED;
-    case "required": return P_REQUIRED;
-    case "optional": return P_OPTIONAL;
-    case "read-only": return P_READ_ONLY;
-    case "read-write": return P_READ_WRITE;
-    case "placeholder-shown": return P_PLACEHOLDER_SHOWN;
-    case "valid": return P_VALID;
-    case "invalid": return P_INVALID;
-    case "in-range": return P_IN_RANGE;
-    case "out-of-range": return P_OUT_OF_RANGE;
-    case "user-valid": return P_USER_VALID;
-    case "user-invalid": return P_USER_INVALID;
-    case "autofill": return P_AUTOFILL;
-    case "-webkit-autofill": return P_AUTOFILL;
-    case "open": return P_OPEN;
-    case "popover-open": return P_POPOVER_OPEN;
-    case "modal": return P_MODAL;
-    case "fullscreen": return P_FULLSCREEN;
-    case "picture-in-picture": return P_PICTURE_IN_PICTURE;
-    case "playing": return P_PLAYING;
-    case "paused": return P_PAUSED;
-    case "muted": return P_MUTED;
-    case "seeking": return P_SEEKING;
-    case "buffering": return P_BUFFERING;
-    case "stalled": return P_STALLED;
-    case "volume-locked": return P_VOLUME_LOCKED;
-    case "current": return P_CURRENT;
-    case "past": return P_PAST;
-    case "future": return P_FUTURE;
-    case "has-slotted": return P_HAS_SLOTTED;
-    case "target-current": return P_TARGET_CURRENT;
-    case "heading": return P_HEADING;
+    case "first-child":
+      return P_FIRST_CHILD;
+    case "last-child":
+      return P_LAST_CHILD;
+    case "only-child":
+      return P_ONLY_CHILD;
+    case "first-of-type":
+      return P_FIRST_OF_TYPE;
+    case "last-of-type":
+      return P_LAST_OF_TYPE;
+    case "only-of-type":
+      return P_ONLY_OF_TYPE;
+    case "empty":
+      return P_EMPTY;
+    case "root":
+      return P_ROOT;
+    case "scope":
+      return P_SCOPE;
+    case "host":
+      return P_HOST;
+    case "link":
+      return P_LINK;
+    case "any-link":
+      return P_ANY_LINK;
+    case "visited":
+      return P_VISITED;
+    case "target":
+      return P_TARGET;
+    case "target-within":
+      return P_TARGET_WITHIN;
+    case "defined":
+      return P_DEFINED;
+    case "hover":
+      return P_HOVER;
+    case "active":
+      return P_ACTIVE;
+    case "focus":
+      return P_FOCUS;
+    case "focus-within":
+      return P_FOCUS_WITHIN;
+    case "focus-visible":
+      return P_FOCUS_VISIBLE;
+    case "checked":
+      return P_CHECKED;
+    case "indeterminate":
+      return P_INDETERMINATE;
+    case "default":
+      return P_DEFAULT;
+    case "disabled":
+      return P_DISABLED;
+    case "enabled":
+      return P_ENABLED;
+    case "required":
+      return P_REQUIRED;
+    case "optional":
+      return P_OPTIONAL;
+    case "read-only":
+      return P_READ_ONLY;
+    case "read-write":
+      return P_READ_WRITE;
+    case "placeholder-shown":
+      return P_PLACEHOLDER_SHOWN;
+    case "valid":
+      return P_VALID;
+    case "invalid":
+      return P_INVALID;
+    case "in-range":
+      return P_IN_RANGE;
+    case "out-of-range":
+      return P_OUT_OF_RANGE;
+    case "user-valid":
+      return P_USER_VALID;
+    case "user-invalid":
+      return P_USER_INVALID;
+    case "autofill":
+      return P_AUTOFILL;
+    case "-webkit-autofill":
+      return P_AUTOFILL;
+    case "open":
+      return P_OPEN;
+    case "popover-open":
+      return P_POPOVER_OPEN;
+    case "modal":
+      return P_MODAL;
+    case "fullscreen":
+      return P_FULLSCREEN;
+    case "picture-in-picture":
+      return P_PICTURE_IN_PICTURE;
+    case "playing":
+      return P_PLAYING;
+    case "paused":
+      return P_PAUSED;
+    case "muted":
+      return P_MUTED;
+    case "seeking":
+      return P_SEEKING;
+    case "buffering":
+      return P_BUFFERING;
+    case "stalled":
+      return P_STALLED;
+    case "volume-locked":
+      return P_VOLUME_LOCKED;
+    case "current":
+      return P_CURRENT;
+    case "past":
+      return P_PAST;
+    case "future":
+      return P_FUTURE;
+    case "has-slotted":
+      return P_HAS_SLOTTED;
+    case "target-current":
+      return P_TARGET_CURRENT;
+    case "heading":
+      return P_HEADING;
   }
   return P_UNKNOWN;
 }
@@ -794,30 +860,53 @@ export function pseudoClassId(name: string): number {
 /** Functional pseudo-class name (lowercased) → id, or P_UNKNOWN. */
 export function functionalPseudoClassId(name: string): number {
   switch (name) {
-    case "is": return P_IS;
-    case "matches": return P_IS;
-    case "-webkit-any": return P_IS;
-    case "where": return P_WHERE;
-    case "not": return P_NOT;
-    case "has": return P_HAS;
-    case "nth-child": return P_NTH_CHILD;
-    case "nth-last-child": return P_NTH_LAST_CHILD;
-    case "nth-of-type": return P_NTH_OF_TYPE;
-    case "nth-last-of-type": return P_NTH_LAST_OF_TYPE;
-    case "host": return P_HOST_FN;
-    case "host-context": return P_HOST_CONTEXT;
-    case "lang": return P_LANG;
-    case "dir": return P_DIR;
-    case "state": return P_STATE;
-    case "current": return P_CURRENT;
-    case "heading": return P_HEADING;
+    case "is":
+      return P_IS;
+    case "matches":
+      return P_IS;
+    case "-webkit-any":
+      return P_IS;
+    case "where":
+      return P_WHERE;
+    case "not":
+      return P_NOT;
+    case "has":
+      return P_HAS;
+    case "nth-child":
+      return P_NTH_CHILD;
+    case "nth-last-child":
+      return P_NTH_LAST_CHILD;
+    case "nth-of-type":
+      return P_NTH_OF_TYPE;
+    case "nth-last-of-type":
+      return P_NTH_LAST_OF_TYPE;
+    case "host":
+      return P_HOST_FN;
+    case "host-context":
+      return P_HOST_CONTEXT;
+    case "lang":
+      return P_LANG;
+    case "dir":
+      return P_DIR;
+    case "state":
+      return P_STATE;
+    case "current":
+      return P_CURRENT;
+    case "heading":
+      return P_HEADING;
   }
   return P_UNKNOWN;
 }
 
 /** Tree-structural pseudo-classes (not allowed after ::part()). */
 function isStructural(p: number): boolean {
-  return (p >= P_FIRST_CHILD && p <= P_ONLY_OF_TYPE) || p === P_EMPTY || p === P_ROOT || p === P_HAS || (p >= P_NTH_CHILD && p <= P_NTH_LAST_OF_TYPE);
+  return (
+    (p >= P_FIRST_CHILD && p <= P_ONLY_OF_TYPE) ||
+    p === P_EMPTY ||
+    p === P_ROOT ||
+    p === P_HAS ||
+    (p >= P_NTH_CHILD && p <= P_NTH_LAST_OF_TYPE)
+  );
 }
 
 /** Argument-less pseudo-element name (lowercased) → known? */
@@ -852,8 +941,10 @@ function isKnownPseudoElement(name: string): boolean {
 
 function isKnownFunctionalPseudoElement(name: string): number {
   switch (name) {
-    case "slotted": return PE_SLOTTED;
-    case "part": return PE_PART;
+    case "slotted":
+      return PE_SLOTTED;
+    case "part":
+      return PE_PART;
     case "highlight":
     case "picker":
     case "scroll-button":
@@ -1241,7 +1332,8 @@ export class SelectorParser {
       }
     }
     if (last === null) return true;
-    if (last.pseudo === PE_PART || last.pseudo === PE_SLOTTED) return pe.pseudo === PE_OTHER || pe.pseudo === PE_FUNCTION;
+    if (last.pseudo === PE_PART || last.pseudo === PE_SLOTTED)
+      return pe.pseudo === PE_OTHER || pe.pseudo === PE_FUNCTION;
     return false;
   }
 
@@ -1254,7 +1346,12 @@ export class SelectorParser {
     if (t.type === TK_DELIM && t.value === "|" && this.toks[this.i + 1].type === TK_IDENT) {
       s.nsKind = NS_NONE;
       this.i++;
-    } else if (t.type === TK_DELIM && t.value === "*" && this.isDelimAt(this.i + 1, "|") && this.toks[this.i + 2].type === TK_IDENT) {
+    } else if (
+      t.type === TK_DELIM &&
+      t.value === "*" &&
+      this.isDelimAt(this.i + 1, "|") &&
+      this.toks[this.i + 2].type === TK_IDENT
+    ) {
       s.nsKind = NS_ANY;
       this.i += 2;
     } else if (t.type === TK_IDENT && this.isDelimAt(this.i + 1, "|") && this.toks[this.i + 2].type === TK_IDENT) {
@@ -1285,11 +1382,21 @@ export class SelectorParser {
       this.i++;
     } else if (this.isDelimAt(this.i + 1, "=")) {
       switch (m.value) {
-        case "~": op = OP_INCLUDES; break;
-        case "|": op = OP_DASH; break;
-        case "^": op = OP_PREFIX; break;
-        case "$": op = OP_SUFFIX; break;
-        case "*": op = OP_SUBSTRING; break;
+        case "~":
+          op = OP_INCLUDES;
+          break;
+        case "|":
+          op = OP_DASH;
+          break;
+        case "^":
+          op = OP_PREFIX;
+          break;
+        case "$":
+          op = OP_SUFFIX;
+          break;
+        case "*":
+          op = OP_SUBSTRING;
+          break;
       }
       if (op !== -1) this.i += 2;
     }

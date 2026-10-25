@@ -50,7 +50,11 @@ describe("Event constructor — https://dom.spec.whatwg.org/#dom-event-event", (
     const testError = { name: "test" };
     let caught: unknown;
     try {
-      new Event({ toString: () => { throw testError; } } as unknown as string);
+      new Event({
+        toString: () => {
+          throw testError;
+        },
+      } as unknown as string);
     } catch (e) {
       caught = e;
     }

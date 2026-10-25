@@ -23,93 +23,114 @@ beforeEach(() => {
   document = createWindow().document;
 });
 
-const summary = (records: AnyWindow[]) => records.map((r) => [r.type, describeNode(r.target), r.attributeName, r.oldValue]);
+const summary = (records: AnyWindow[]) =>
+  records.map((r) => [r.type, describeNode(r.target), r.attributeName, r.oldValue]);
 
 describe("registered observer list — https://dom.spec.whatwg.org/#registered-observer-list", () => {
-  differential("observe step 7: observing the same node again replaces the registration's options instead of adding one", (w) => {
-    const el = w.document.createElement("div");
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(el, { attributes: true });
-    mo.observe(el, { childList: true });
-    el.setAttribute("a", "1");
-    el.append("x");
-    return summary(mo.takeRecords());
-  });
-
-  differential("one record per observer even when several registrations (node and ancestor) are interested; oldValue if any asks (https://dom.spec.whatwg.org/#queueing-a-mutation-record)", (w) => {
-    const d = w.document;
-    const parent = d.createElement("div");
-    const child = parent.appendChild(d.createElement("span"));
-    child.setAttribute("a", "old");
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(parent, { attributes: true, subtree: true, attributeOldValue: true });
-    mo.observe(child, { attributes: true });
-    child.setAttribute("a", "new");
-    return summary(mo.takeRecords());
-  });
-
-  differential("queue step 3.1–3.2: subtree: false ignores descendants; attributeFilter matches local names of null-namespace attributes only", (w) => {
-    const d = w.document;
-    const parent = d.createElement("div");
-    const child = parent.appendChild(d.createElement("span"));
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(parent, { attributeFilter: ["keep"], childList: true });
-    child.setAttribute("keep", "1");
-    child.append("x");
-    parent.setAttribute("keep", "2");
-    parent.setAttribute("drop", "3");
-    parent.setAttributeNS("urn:x", "x:keep", "4");
-    return summary(mo.takeRecords());
-  }, {
-    jsdomFix: {
-      fix: (records) => records.slice(0, 1),
-      spec: "https://dom.spec.whatwg.org/#queueing-a-mutation-record",
-      reason: "step 4.2 skips an attributeFilter observer when the attribute's namespace is non-null; jsdom matches the namespaced x:keep by local name",
+  differential(
+    "observe step 7: observing the same node again replaces the registration's options instead of adding one",
+    (w) => {
+      const el = w.document.createElement("div");
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(el, { attributes: true });
+      mo.observe(el, { childList: true });
+      el.setAttribute("a", "1");
+      el.append("x");
+      return summary(mo.takeRecords());
     },
-  });
+  );
 
-  differential("several observers on one node each get their own record object, in observer creation order of registration", (w) => {
-    const el = w.document.createElement("div");
-    const a = new w.MutationObserver(() => {});
-    const b = new w.MutationObserver(() => {});
-    b.observe(el, { attributes: true, attributeOldValue: true });
-    a.observe(el, { attributes: true });
-    el.setAttribute("x", "1");
-    el.setAttribute("x", "2");
-    const ra = a.takeRecords();
-    const rb = b.takeRecords();
-    return { a: summary(ra), b: summary(rb), distinct: ra[0] !== rb[0] };
-  });
+  differential(
+    "one record per observer even when several registrations (node and ancestor) are interested; oldValue if any asks (https://dom.spec.whatwg.org/#queueing-a-mutation-record)",
+    (w) => {
+      const d = w.document;
+      const parent = d.createElement("div");
+      const child = parent.appendChild(d.createElement("span"));
+      child.setAttribute("a", "old");
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(parent, { attributes: true, subtree: true, attributeOldValue: true });
+      mo.observe(child, { attributes: true });
+      child.setAttribute("a", "new");
+      return summary(mo.takeRecords());
+    },
+  );
+
+  differential(
+    "queue step 3.1–3.2: subtree: false ignores descendants; attributeFilter matches local names of null-namespace attributes only",
+    (w) => {
+      const d = w.document;
+      const parent = d.createElement("div");
+      const child = parent.appendChild(d.createElement("span"));
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(parent, { attributeFilter: ["keep"], childList: true });
+      child.setAttribute("keep", "1");
+      child.append("x");
+      parent.setAttribute("keep", "2");
+      parent.setAttribute("drop", "3");
+      parent.setAttributeNS("urn:x", "x:keep", "4");
+      return summary(mo.takeRecords());
+    },
+    {
+      jsdomFix: {
+        fix: (records) => records.slice(0, 1),
+        spec: "https://dom.spec.whatwg.org/#queueing-a-mutation-record",
+        reason:
+          "step 4.2 skips an attributeFilter observer when the attribute's namespace is non-null; jsdom matches the namespaced x:keep by local name",
+      },
+    },
+  );
+
+  differential(
+    "several observers on one node each get their own record object, in observer creation order of registration",
+    (w) => {
+      const el = w.document.createElement("div");
+      const a = new w.MutationObserver(() => {});
+      const b = new w.MutationObserver(() => {});
+      b.observe(el, { attributes: true, attributeOldValue: true });
+      a.observe(el, { attributes: true });
+      el.setAttribute("x", "1");
+      el.setAttribute("x", "2");
+      const ra = a.takeRecords();
+      const rb = b.takeRecords();
+      return { a: summary(ra), b: summary(rb), distinct: ra[0] !== rb[0] };
+    },
+  );
 });
 
 describe("MutationObserver methods — https://dom.spec.whatwg.org/#interface-mutationobserver", () => {
-  differential("takeRecords returns the record queue and empties it (https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords)", (w) => {
-    const el = w.document.createElement("div");
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(el, { childList: true });
-    el.append("a", "b");
-    el.append("c");
-    const first = mo.takeRecords().length;
-    return [first, mo.takeRecords().length];
-  });
+  differential(
+    "takeRecords returns the record queue and empties it (https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords)",
+    (w) => {
+      const el = w.document.createElement("div");
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(el, { childList: true });
+      el.append("a", "b");
+      el.append("c");
+      const first = mo.takeRecords().length;
+      return [first, mo.takeRecords().length];
+    },
+  );
 
-  differential("disconnect removes the observer from every node in its node list and empties its queue (https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect)", (w) => {
-    const d = w.document;
-    const one = d.createElement("div");
-    const two = d.createElement("div");
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(one, { childList: true });
-    mo.observe(two, { attributes: true });
-    one.append("x");
-    mo.disconnect();
-    const afterDisconnect = mo.takeRecords().length;
-    one.append("y");
-    two.setAttribute("a", "1");
-    const stillNone = mo.takeRecords().length;
-    mo.observe(two, { attributes: true });
-    two.setAttribute("a", "2");
-    return [afterDisconnect, stillNone, mo.takeRecords().length];
-  });
+  differential(
+    "disconnect removes the observer from every node in its node list and empties its queue (https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect)",
+    (w) => {
+      const d = w.document;
+      const one = d.createElement("div");
+      const two = d.createElement("div");
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(one, { childList: true });
+      mo.observe(two, { attributes: true });
+      one.append("x");
+      mo.disconnect();
+      const afterDisconnect = mo.takeRecords().length;
+      one.append("y");
+      two.setAttribute("a", "1");
+      const stillNone = mo.takeRecords().length;
+      mo.observe(two, { attributes: true });
+      two.setAttribute("a", "2");
+      return [afterDisconnect, stillNone, mo.takeRecords().length];
+    },
+  );
 
   test("the callback is invoked with (records, observer) and the observer as this (https://dom.spec.whatwg.org/#concept-mo-callback)", async () => {
     const calls: unknown[][] = [];
@@ -142,35 +163,58 @@ describe("MutationObserver methods — https://dom.spec.whatwg.org/#interface-mu
 });
 
 describe("MutationRecord — https://dom.spec.whatwg.org/#interface-mutationrecord", () => {
-  differential("childList records carry static NodeLists and the siblings around the change; other fields are null", (w) => {
-    const d = w.document;
-    const p = d.createElement("p");
-    const [a, , c] = ["a", "b", "c"].map((t) => p.appendChild(d.createElement(t)));
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(p, { childList: true });
-    p.replaceChild(d.createElement("x"), p.childNodes[1]);
-    const [r] = mo.takeRecords();
-    const added = r.addedNodes;
-    p.append("later");
-    return {
-      type: r.type,
-      lists: [added instanceof w.NodeList, added.length, describeNode(added[0]), r.removedNodes.length, describeNode(r.removedNodes.item(0))],
-      siblings: [r.previousSibling === a, r.nextSibling === c],
-      nulls: [r.attributeName, r.attributeNamespace, r.oldValue],
-      staticList: added.length,
-    };
-  });
+  differential(
+    "childList records carry static NodeLists and the siblings around the change; other fields are null",
+    (w) => {
+      const d = w.document;
+      const p = d.createElement("p");
+      const [a, , c] = ["a", "b", "c"].map((t) => p.appendChild(d.createElement(t)));
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(p, { childList: true });
+      p.replaceChild(d.createElement("x"), p.childNodes[1]);
+      const [r] = mo.takeRecords();
+      const added = r.addedNodes;
+      p.append("later");
+      return {
+        type: r.type,
+        lists: [
+          added instanceof w.NodeList,
+          added.length,
+          describeNode(added[0]),
+          r.removedNodes.length,
+          describeNode(r.removedNodes.item(0)),
+        ],
+        siblings: [r.previousSibling === a, r.nextSibling === c],
+        nulls: [r.attributeName, r.attributeNamespace, r.oldValue],
+        staticList: added.length,
+      };
+    },
+  );
 
-  differential("attributes records carry the name and namespace; characterData records an empty node list pair", (w) => {
-    const d = w.document;
-    const el = d.createElement("div");
-    const text = el.appendChild(d.createTextNode("t"));
-    const mo = new w.MutationObserver(() => {});
-    mo.observe(el, { attributes: true, characterData: true, subtree: true, characterDataOldValue: true });
-    el.setAttributeNS("urn:x", "x:a", "1");
-    text.data = "u";
-    return mo.takeRecords().map((r: AnyWindow) => [r.type, r.attributeName, r.attributeNamespace, r.oldValue, r.addedNodes.length, r.removedNodes.length, r.previousSibling, r.nextSibling]);
-  });
+  differential(
+    "attributes records carry the name and namespace; characterData records an empty node list pair",
+    (w) => {
+      const d = w.document;
+      const el = d.createElement("div");
+      const text = el.appendChild(d.createTextNode("t"));
+      const mo = new w.MutationObserver(() => {});
+      mo.observe(el, { attributes: true, characterData: true, subtree: true, characterDataOldValue: true });
+      el.setAttributeNS("urn:x", "x:a", "1");
+      text.data = "u";
+      return mo
+        .takeRecords()
+        .map((r: AnyWindow) => [
+          r.type,
+          r.attributeName,
+          r.attributeNamespace,
+          r.oldValue,
+          r.addedNodes.length,
+          r.removedNodes.length,
+          r.previousSibling,
+          r.nextSibling,
+        ]);
+    },
+  );
 });
 
 describe("delivery — https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask", () => {

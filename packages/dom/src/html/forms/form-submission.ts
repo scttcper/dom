@@ -16,7 +16,13 @@ import { Event } from "../../events/Event.ts";
 import { SubmitEvent } from "../../events/events.ts";
 import type { EnumSpec } from "../reflect.ts";
 import { dispatchTrusted, fireEvent } from "./common.ts";
-import { formControls, hasDatalistAncestor, isActuallyDisabled, isResettable, isSubmittable } from "./form-associated.ts";
+import {
+  formControls,
+  hasDatalistAncestor,
+  isActuallyDisabled,
+  isResettable,
+  isSubmittable,
+} from "./form-associated.ts";
 import {
   I_CHECKBOX,
   I_DATE,
@@ -164,7 +170,11 @@ export function submitForm(form: NodeImpl, submitter: NodeImpl, fromSubmit: bool
         if (staticallyValidate(form) !== null) return;
       }
       // 5.5–5.8: fire submit (SubmitEvent) with submitter (null when the form submits itself).
-      const event = new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitter === form ? null : submitter.node });
+      const event = new SubmitEvent("submit", {
+        bubbles: true,
+        cancelable: true,
+        submitter: submitter === form ? null : submitter.node,
+      });
       if (!dispatchTrusted(f, event)) return;
     } finally {
       f[$firingSubmissionEvents] = false;
@@ -334,7 +344,8 @@ export function constructEntryList(
       if (hasDatalistAncestor(field) || isActuallyDisabled(field)) continue;
       const tag = field.tag;
       const type = tag === T.input ? inputType(field) : -1;
-      const isButton = tag === T.button || type === I_SUBMIT || type === I_RESET || type === I_BUTTON || type === I_IMAGE;
+      const isButton =
+        tag === T.button || type === I_SUBMIT || type === I_RESET || type === I_BUTTON || type === I_IMAGE;
       if (isButton && field !== submitter) continue;
       const w = field.node as unknown as InputLike;
       if ((type === I_CHECKBOX || type === I_RADIO) && !w.checked) continue;
@@ -343,7 +354,10 @@ export function constructEntryList(
         const n = attr(field, "name") ?? "";
         const prefix = n === "" ? "" : n + ".";
         const c = selectedCoordinates.get(field);
-        entries.push([prefix + "x", c === undefined ? "0" : String(c.x)], [prefix + "y", c === undefined ? "0" : String(c.y)]);
+        entries.push(
+          [prefix + "x", c === undefined ? "0" : String(c.x)],
+          [prefix + "y", c === undefined ? "0" : String(c.y)],
+        );
         continue;
       }
       // Step 5.4: form-associated custom elements run entry construction.
@@ -378,7 +392,19 @@ export function constructEntryList(
         entries.push([name, w.value]);
       }
       // Step 5.12: dirname.
-      if (tag === T.textarea || (tag === T.input && (type === I_TEXT || type === I_SEARCH || type === I_HIDDEN || type === I_SUBMIT || type === I_RESET || type === I_TEL || type === I_URL || type === I_EMAIL || type === I_PASSWORD))) {
+      if (
+        tag === T.textarea ||
+        (tag === T.input &&
+          (type === I_TEXT ||
+            type === I_SEARCH ||
+            type === I_HIDDEN ||
+            type === I_SUBMIT ||
+            type === I_RESET ||
+            type === I_TEL ||
+            type === I_URL ||
+            type === I_EMAIL ||
+            type === I_PASSWORD))
+      ) {
         const dirname = attr(field, "dirname");
         if (dirname !== null && dirname !== "") entries.push([dirname, "ltr"]);
       }

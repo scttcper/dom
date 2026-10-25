@@ -108,6 +108,8 @@ describe("[LegacyUnforgeable] isTrusted — https://dom.spec.whatwg.org/#dom-eve
     dt.setData("text/plain", "x");
     expect(Object.keys(dt)).toEqual([]);
     expect(Object.keys(dt.items)).toEqual(["0"]);
-    expect(forInKeys(dt)).toEqual(expect.arrayContaining(["dropEffect", "effectAllowed", "items", "types", "getData", "setData", "files"]));
+    expect(forInKeys(dt)).toEqual(
+      expect.arrayContaining(["dropEffect", "effectAllowed", "items", "types", "getData", "setData", "files"]),
+    );
   });
 });

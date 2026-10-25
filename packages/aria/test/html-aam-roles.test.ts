@@ -17,7 +17,10 @@ import { describe, expect, test } from "vitest";
 import { both, testNode, type AriaApi } from "./helpers.ts";
 
 function expectRoles(html: string, expected: string[]): void {
-  expect(both(html, (api, doc) => api.implicitRoles(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
+  expect(both(html, (api, doc) => api.implicitRoles(testNode(doc)))).toEqual({
+    "ctrl-dom": expected,
+    upstream: expected,
+  });
 }
 
 function expectState<K extends keyof AriaApi>(html: string, state: K, expected: unknown): void {
@@ -70,7 +73,7 @@ describe(`section, form, aside — ${AAM}#el-section, ${AAM}#el-form, ${AAM}#el-
 });
 
 describe(`img — ${AAM}#el-img, ${AAM}#el-img-empty-alt`, () => {
-  test("img with alt text or without alt is img; alt=\"\" is presentation", () => {
+  test('img with alt text or without alt is img; alt="" is presentation', () => {
     expectRoles(`<img data-test alt="Logo">`, ["img"]);
     expectRoles(`<img data-test>`, ["img"]);
     expectRoles(`<img data-test alt="">`, ["presentation"]);
@@ -93,7 +96,8 @@ describe(`a and area — ${AAM}#el-a, ${AAM}#el-a-no-href, ${AAM}#el-area, ${AAM
 
 describe(`tables and grids — ${AAM}#el-td, ${AAM}#el-td-gridcell, ${AAM}#el-th, ${AAM}#el-th-columnheader, ${AAM}#el-th-rowheader`, () => {
   test("table parts: table, rowgroup, row, cell, caption", () => {
-    const table = (cell: string) => `<table><caption>c</caption><thead><tr><th>h</th></tr></thead><tbody><tr>${cell}</tr></tbody></table>`;
+    const table = (cell: string) =>
+      `<table><caption>c</caption><thead><tr><th>h</th></tr></thead><tbody><tr>${cell}</tr></tbody></table>`;
     expectRoles(table(`<td data-test>x</td>`), ["cell"]);
     expectRoles(`<table data-test></table>`, ["table"]);
     expectRoles(`<table><tbody data-test><tr><td>x</td></tr></tbody></table>`, ["rowgroup"]);
@@ -150,7 +154,8 @@ describe(`input types — ${AAM}#el-input-text and following`, () => {
   });
 
   test("buttons, checkbox, radio, range, number", () => {
-    for (const type of ["button", "submit", "reset", "image"]) expectRoles(`<input data-test type="${type}">`, ["button"]);
+    for (const type of ["button", "submit", "reset", "image"])
+      expectRoles(`<input data-test type="${type}">`, ["button"]);
     expectRoles(`<input data-test type="checkbox">`, ["checkbox"]);
     expectRoles(`<input data-test type="radio">`, ["radio"]);
     expectRoles(`<input data-test type="range">`, ["slider"]);

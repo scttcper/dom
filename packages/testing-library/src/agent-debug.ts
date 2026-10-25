@@ -43,7 +43,11 @@ function containerLabel(container: any): string {
  * The text that replaces upstream's `Ignored nodes: comments, script, style\n<prettyDOM>` in a
  * query error under agent mode.
  */
-export function agentErrorContext(container: any, format: "aria" | "compact", prettyDOM: (dom: any, maxLength?: number, options?: any) => string | false): string {
+export function agentErrorContext(
+  container: any,
+  format: "aria" | "compact",
+  prettyDOM: (dom: any, maxLength?: number, options?: any) => string | false,
+): string {
   if (format === "aria") {
     return `Accessibility snapshot of ${containerLabel(container)} (CTRL_DOM_DEBUG=aria):\n${ariaSnapshot(container, { maxLines: envMaxLines() ?? ERROR_MAX_LINES })}`;
   }

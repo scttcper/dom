@@ -23,11 +23,28 @@
 
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { CDATA_SECTION_NODE, ELEMENT_NODE, F_CONNECTED, F_HAS_SHADOW, F_HAS_STYLE_ATTR, F_SHADOW_ROOT, HTML_NS, SVG_NS, TEXT_NODE } from "../nodes/constants.ts";
+import {
+  CDATA_SECTION_NODE,
+  ELEMENT_NODE,
+  F_CONNECTED,
+  F_HAS_SHADOW,
+  F_HAS_STYLE_ATTR,
+  F_SHADOW_ROOT,
+  HTML_NS,
+  SVG_NS,
+  TEXT_NODE,
+} from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { attr, asciiLowercase } from "../nodes/attributes.ts";
 import { findFlattenedSlottables } from "../nodes/slots.ts";
-import { type StyleRecord, computedDisplay, computedValueOf, currentStyleVersion, hasAuthorStyles, styleRecord } from "./cascade.ts";
+import {
+  type StyleRecord,
+  computedDisplay,
+  computedValueOf,
+  currentStyleVersion,
+  hasAuthorStyles,
+  styleRecord,
+} from "./cascade.ts";
 import { layoutEnabled } from "./layout-mode.ts";
 import { $impl, $innerHeight, $innerWidth, $options, $shadowRoot, $version, $window } from "../keys.ts";
 import type { Window } from "../window/Window.ts";
@@ -386,7 +403,15 @@ function fillStyle(el: NodeImpl, s: Style): void {
 function hasUAFontSize(el: NodeImpl): boolean {
   if (el.ns !== HTML_NS) return false;
   switch (el.tag) {
-    case T.h1: case T.h2: case T.h3: case T.h5: case T.h6: case T.small: case T.big: case T.sub: case T.sup:
+    case T.h1:
+    case T.h2:
+    case T.h3:
+    case T.h5:
+    case T.h6:
+    case T.small:
+    case T.big:
+    case T.sub:
+    case T.sup:
       return true;
   }
   return false;
@@ -520,22 +545,45 @@ const FUNCTIONS = ["calc(", "min(", "max(", "clamp("];
 
 function unitPx(num: number, unit: string): number {
   switch (unit) {
-    case "px": return num;
-    case "%": return (num * P_PCT) / 100;
-    case "em": return num * P_FS;
-    case "rem": return num * rootFs;
-    case "ex": case "ch": return num * P_FS * 0.5;
-    case "lh": return num * P_FS * 1.2;
-    case "vw": case "svw": case "lvw": case "dvw": return (num * viewW) / 100;
-    case "vh": case "svh": case "lvh": case "dvh": return (num * viewH) / 100;
-    case "vmin": return (num * Math.min(viewW, viewH)) / 100;
-    case "vmax": return (num * Math.max(viewW, viewH)) / 100;
-    case "in": return num * 96;
-    case "cm": return (num * 96) / 2.54;
-    case "mm": return (num * 96) / 25.4;
-    case "q": return (num * 96) / 101.6;
-    case "pt": return (num * 96) / 72;
-    case "pc": return num * 16;
+    case "px":
+      return num;
+    case "%":
+      return (num * P_PCT) / 100;
+    case "em":
+      return num * P_FS;
+    case "rem":
+      return num * rootFs;
+    case "ex":
+    case "ch":
+      return num * P_FS * 0.5;
+    case "lh":
+      return num * P_FS * 1.2;
+    case "vw":
+    case "svw":
+    case "lvw":
+    case "dvw":
+      return (num * viewW) / 100;
+    case "vh":
+    case "svh":
+    case "lvh":
+    case "dvh":
+      return (num * viewH) / 100;
+    case "vmin":
+      return (num * Math.min(viewW, viewH)) / 100;
+    case "vmax":
+      return (num * Math.max(viewW, viewH)) / 100;
+    case "in":
+      return num * 96;
+    case "cm":
+      return (num * 96) / 2.54;
+    case "mm":
+      return (num * 96) / 25.4;
+    case "q":
+      return (num * 96) / 101.6;
+    case "pt":
+      return (num * 96) / 72;
+    case "pc":
+      return num * 16;
   }
   return NaN;
 }
@@ -579,7 +627,15 @@ function toContent(spec: number, el: NodeImpl, pb: number): number {
   return Math.max(0, borderBox(el) ? spec - pb : spec);
 }
 
-function clampSize(el: NodeImpl, content: number, minV: string, maxV: string, base: number, fs: number, pb: number): number {
+function clampSize(
+  el: NodeImpl,
+  content: number,
+  minV: string,
+  maxV: string,
+  base: number,
+  fs: number,
+  pb: number,
+): number {
   if (minV === "auto" && maxV === "none") return content;
   const max = length(maxV, base, fs);
   if (!Number.isNaN(max)) content = Math.min(content, toContent(max, el, pb));
@@ -594,8 +650,16 @@ function isReplaced(el: NodeImpl): boolean {
   if (el.ns === SVG_NS) return el.name === "svg";
   if (el.ns !== HTML_NS) return false;
   switch (el.tag) {
-    case T.img: case T.canvas: case T.video: case T.iframe: case T.embed: case T.object: case T.audio:
-    case T.input: case T.textarea: case T.select:
+    case T.img:
+    case T.canvas:
+    case T.video:
+    case T.iframe:
+    case T.embed:
+    case T.object:
+    case T.audio:
+    case T.input:
+    case T.textarea:
+    case T.select:
       return true;
   }
   return false;
@@ -701,7 +765,13 @@ function kindOf(el: NodeImpl, d: string): number {
     case "inline":
       if (isReplaced(el)) return K_ATOMIC;
       return hasBlockChild(el) ? K_BLOCK : K_INLINE;
-    case "inline-block": case "inline-flex": case "inline-grid": case "inline-table": case "inline flow-root": case "inline flex": case "inline grid":
+    case "inline-block":
+    case "inline-flex":
+    case "inline-grid":
+    case "inline-table":
+    case "inline flow-root":
+    case "inline flex":
+    case "inline grid":
       return K_ATOMIC;
   }
   if (isReplaced(el) && d !== "block") return K_ATOMIC;
@@ -834,7 +904,19 @@ let TY = 0;
  * boxes); `shrink` sizes an auto width to fit the content (inline-blocks, flex row items).
  * Returns the margin-box height; the margin-box width is left in `outW`.
  */
-function layoutBox(el: NodeImpl, x: number, y: number, availW: number, cbH: number, pfs: number, plh: string, forcedW: number, forcedH: number, shrink: boolean, flags: number): number {
+function layoutBox(
+  el: NodeImpl,
+  x: number,
+  y: number,
+  availW: number,
+  cbH: number,
+  pfs: number,
+  plh: string,
+  forcedW: number,
+  forcedH: number,
+  shrink: boolean,
+  flags: number,
+): number {
   const b = newBox(el, flags);
   const d = computedDisplay(el);
   const fs = fontSize(el, pfs);
@@ -877,7 +959,8 @@ function layoutBox(el: NodeImpl, x: number, y: number, availW: number, cbH: numb
   const specH = plain(el) ? NaN : length(sty(el).height, cbH, fs);
   let defH = NaN;
   if (!Number.isNaN(forcedH)) defH = Math.max(0, forcedH - vpb);
-  else if (!Number.isNaN(specH)) defH = clampSize(el, toContent(specH, el, vpb), sty(el).minH, sty(el).maxH, cbH, fs, vpb);
+  else if (!Number.isNaN(specH))
+    defH = clampSize(el, toContent(specH, el, vpb), sty(el).minH, sty(el).maxH, cbH, fs, vpb);
   else if (replaced) defH = replacedHeight(el, fs, lh, cw);
 
   const isCB = position !== "static" || transform !== "none" || (flags & BOX_ROOT) !== 0;
@@ -897,7 +980,8 @@ function layoutBox(el: NodeImpl, x: number, y: number, availW: number, cbH: numb
   if (sty(el).scroller) b.flags |= BOX_SCROLLER;
   if ((flags & BOX_ROOT) !== 0) b.flags |= BOX_SCROLLER;
 
-  if (isCB && (flags & BOX_ROOT) === 0) flushPending(mark, b.x + b.bl, b.y + b.bt, b.w - b.bl - b.br, b.h - b.bt - b.bb, false);
+  if (isCB && (flags & BOX_ROOT) === 0)
+    flushPending(mark, b.x + b.bl, b.y + b.bt, b.w - b.bl - b.br, b.h - b.bt - b.bb, false);
   b.end = S.list.length;
 
   // https://drafts.csswg.org/css2/#relative-positioning (sticky boxes stay in place)
@@ -922,7 +1006,8 @@ function replacedWidth(el: NodeImpl, fs: number, lh: number, cbH: number): numbe
   // A definite height scales the intrinsic width by the intrinsic ratio (img/svg/canvas/video).
   if (w > 0 && ih > 0 && !plain(el)) {
     const specH = length(sty(el).height, cbH, fs);
-    if (!Number.isNaN(specH) && (el.tag === T.img || el.tag === T.canvas || el.tag === T.video || el.ns === SVG_NS)) return (specH * w) / ih;
+    if (!Number.isNaN(specH) && (el.tag === T.img || el.tag === T.canvas || el.tag === T.video || el.ns === SVG_NS))
+      return (specH * w) / ih;
   }
   return w;
 }
@@ -930,7 +1015,13 @@ function replacedWidth(el: NodeImpl, fs: number, lh: number, cbH: number): numbe
 function replacedHeight(el: NodeImpl, fs: number, lh: number, cw: number): number {
   const w = intrinsicW(el, fs, lh);
   const ih = intrinsicH;
-  if (w > 0 && ih > 0 && cw !== w && (el.tag === T.img || el.tag === T.canvas || el.tag === T.video || el.ns === SVG_NS)) return (cw * ih) / w;
+  if (
+    w > 0 &&
+    ih > 0 &&
+    cw !== w &&
+    (el.tag === T.img || el.tag === T.canvas || el.tag === T.video || el.ns === SVG_NS)
+  )
+    return (cw * ih) / w;
   return ih;
 }
 
@@ -972,7 +1063,8 @@ function layoutAbs(item: PendingAbs, cbx: number, cby: number, cbw: number, cbh:
     else forcedW = Math.max(hpb, Math.min(maxContent(el, item.fs), cbw - (Number.isNaN(left) ? 0 : left) - mh));
   }
   let forcedH = NaN;
-  if (Number.isNaN(specH) && !Number.isNaN(top) && !Number.isNaN(bottom)) forcedH = Math.max(vpb, cbh - top - bottom - mv);
+  if (Number.isNaN(specH) && !Number.isNaN(top) && !Number.isNaN(bottom))
+    forcedH = Math.max(vpb, cbh - top - bottom - mv);
   // Provisional position; right/bottom anchoring is applied once the size is known.
   const x = !Number.isNaN(left) ? cbx + left : item.sx;
   const y = !Number.isNaN(top) ? cby + top : item.sy;
@@ -993,7 +1085,16 @@ const TMP = new Box();
  * Block formatting of an element's children inside its content box at (cx, cy), width cw.
  * Runs of inline-level children form one line box each. Returns the content height.
  */
-function flow(el: NodeImpl, cx: number, cy: number, cw: number, defH: number, fs: number, lhStr: string, lh: number): number {
+function flow(
+  el: NodeImpl,
+  cx: number,
+  cy: number,
+  cw: number,
+  defH: number,
+  fs: number,
+  lhStr: string,
+  lh: number,
+): number {
   const kids = children(el);
   // Heights accumulate from 0 (not from cy) so content heights carry no float noise.
   let h = 0;
@@ -1088,7 +1189,10 @@ function layoutInline(el: NodeImpl, x: number, y: number, cw: number, pfs: numbe
       deferAbs(c, position, cursor, y, fs, lhStr);
       continue;
     }
-    const h = kind === K_INLINE ? layoutInline(c, cursor, y, cw, fs, lhStr) : layoutBox(c, cursor, y, cw, NaN, fs, lhStr, NaN, NaN, true, 0);
+    const h =
+      kind === K_INLINE
+        ? layoutInline(c, cursor, y, cw, fs, lhStr)
+        : layoutBox(c, cursor, y, cw, NaN, fs, lhStr, NaN, NaN, true, 0);
     cursor += outW;
     if (h > lineH) lineH = h;
   }
@@ -1142,11 +1246,21 @@ class FlexItem {
  * size, then stretch or align on the cross axis. Items that change size are laid out a second
  * time with the final size. `equal` lays out a table row: cells share the width equally.
  */
-function layoutFlex(el: NodeImpl, cx: number, cy: number, cw: number, defH: number, fs: number, lhStr: string, lh: number, equal: boolean): number {
+function layoutFlex(
+  el: NodeImpl,
+  cx: number,
+  cy: number,
+  cw: number,
+  defH: number,
+  fs: number,
+  lhStr: string,
+  lh: number,
+  equal: boolean,
+): number {
   const dir = equal || plain(el) ? "row" : sty(el).flexDir;
   const column = dir === "column" || dir === "column-reverse";
   const reverse = dir === "row-reverse" || dir === "column-reverse";
-  const gapV = equal || plain(el) ? "normal" : (column ? sty(el).rowGap : sty(el).colGap);
+  const gapV = equal || plain(el) ? "normal" : column ? sty(el).rowGap : sty(el).colGap;
   const gap = Math.max(0, lenOr0(gapV, column ? defH : cw, fs));
   const alignItems = equal || plain(el) ? "normal" : sty(el).alignItems;
   const justify = equal || plain(el) ? "normal" : sty(el).justify;
@@ -1193,14 +1307,14 @@ function layoutFlex(el: NodeImpl, cx: number, cy: number, cw: number, defH: numb
       let size = basis === "auto" || basis === "content" ? NaN : length(basis, mainBase, cfs);
       if (!Number.isNaN(size)) size = toContent(size, c, pb) + pb;
       else {
-        const spec = p ? NaN : length((column ? sty(c).height : sty(c).width), mainBase, cfs);
+        const spec = p ? NaN : length(column ? sty(c).height : sty(c).width, mainBase, cfs);
         if (!Number.isNaN(spec)) size = toContent(spec, c, pb) + pb;
       }
       it.main = size; // NaN: content-sized, measured below
     }
     const align = p ? "auto" : sty(c).alignSelf;
     it.align = align === "auto" || align === "normal" ? (alignItems === "normal" ? "stretch" : alignItems) : align;
-    const crossSpec = p ? "auto" : (column ? sty(c).width : sty(c).height);
+    const crossSpec = p ? "auto" : column ? sty(c).width : sty(c).height;
     it.autoCross = crossSpec === "auto" && !isReplaced(c);
     items.push(it);
   }
@@ -1226,7 +1340,8 @@ function layoutFlex(el: NodeImpl, cx: number, cy: number, cw: number, defH: numb
       it.cross = outW;
       pos += h + gap;
     } else {
-      const forcedH = it.autoCross && it.align === "stretch" && !Number.isNaN(defH) ? defH - crossMargins(it.el, cw, fs, false) : NaN;
+      const forcedH =
+        it.autoCross && it.align === "stretch" && !Number.isNaN(defH) ? defH - crossMargins(it.el, cw, fs, false) : NaN;
       layoutBox(it.el, pos, cy, cw, defH, fs, lhStr, it.main, forcedH, Number.isNaN(it.main), 0);
       const b = S.boxes.get(it.el)!;
       if (Number.isNaN(it.main)) it.main = b.w;
@@ -1286,11 +1401,24 @@ function layoutFlex(el: NodeImpl, cx: number, cy: number, cw: number, defH: numb
   let between = gap;
   if (free > 0 && items.length > 0) {
     switch (justify) {
-      case "center": lead = free / 2; break;
-      case "flex-end": case "end": lead = free; break;
-      case "space-between": between += items.length > 1 ? free / (items.length - 1) : 0; break;
-      case "space-around": lead = free / items.length / 2; between += free / items.length; break;
-      case "space-evenly": lead = free / (items.length + 1); between += free / (items.length + 1); break;
+      case "center":
+        lead = free / 2;
+        break;
+      case "flex-end":
+      case "end":
+        lead = free;
+        break;
+      case "space-between":
+        between += items.length > 1 ? free / (items.length - 1) : 0;
+        break;
+      case "space-around":
+        lead = free / items.length / 2;
+        between += free / items.length;
+        break;
+      case "space-evenly":
+        lead = free / (items.length + 1);
+        between += free / (items.length + 1);
+        break;
     }
     if (reverse && (justify === "normal" || justify === "flex-start" || justify === "start")) lead = free;
   }
@@ -1340,8 +1468,12 @@ function crossMargins(c: NodeImpl, cw: number, fs: number, column: boolean): num
 function crossOffset(align: string, line: number, outer: number): number {
   if (Number.isNaN(line)) return 0;
   switch (align) {
-    case "center": return (line - outer) / 2;
-    case "flex-end": case "end": case "self-end": return line - outer;
+    case "center":
+      return (line - outer) / 2;
+    case "flex-end":
+    case "end":
+    case "self-end":
+      return line - outer;
   }
   return 0;
 }
@@ -1442,7 +1574,6 @@ export function clientHeightOf(b: Box, el: NodeImpl): number {
   if ((b.flags & BOX_ROOT) !== 0) return viewport(el)[$innerHeight];
   return b.h - b.bt - b.bb;
 }
-
 
 /** The box of an element of a document boxOf() just validated (no revalidation: for ancestor walks). */
 export function knownBox(el: NodeImpl): Box | null {

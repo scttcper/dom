@@ -4,7 +4,18 @@
 // `queryAllByAttribute` scans NodeImpl attribute records instead of running
 // `querySelectorAll('[attr]')` + `getAttribute` per element.
 
-import { asciiLowercase, attr, describeCall, ELEMENT_NODE, F_HTML, nextInTree, tracePromise, traceSync, tracing, type SpanContext } from "@ctrl/dom/internal";
+import {
+  asciiLowercase,
+  attr,
+  describeCall,
+  ELEMENT_NODE,
+  F_HTML,
+  nextInTree,
+  tracePromise,
+  traceSync,
+  tracing,
+  type SpanContext,
+} from "@ctrl/dom/internal";
 import { getSuggestedQuery, type Variant } from "./suggestions.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "./matches.ts";
 import { waitForInSpan } from "./wait-for.ts";
@@ -162,7 +173,9 @@ export const wrapAllByQueryWithSuggestion =
     if (els.length && suggest) {
       // get a unique list of all suggestion messages.  We are only going to make a suggestion if
       // all the suggestions are the same
-      const uniqueSuggestionMessages = [...new Set(els.map((element: any) => getSuggestedQuery(element, variant)?.toString()))];
+      const uniqueSuggestionMessages = [
+        ...new Set(els.map((element: any) => getSuggestedQuery(element, variant)?.toString())),
+      ];
 
       if (
         // only want to suggest if all the els have the same suggestion.
@@ -176,18 +189,36 @@ export const wrapAllByQueryWithSuggestion =
     return els;
   };
 
-export function buildQueries(queryAllBy: AnyQuery, getMultipleError: GetErrorFunction<any[]>, getMissingError: GetErrorFunction<any[]>): AnyQuery[] {
-  const queryBy = wrapSingleQueryWithSuggestion(makeSingleQuery(queryAllBy, getMultipleError), queryAllBy.name, "query");
+export function buildQueries(
+  queryAllBy: AnyQuery,
+  getMultipleError: GetErrorFunction<any[]>,
+  getMissingError: GetErrorFunction<any[]>,
+): AnyQuery[] {
+  const queryBy = wrapSingleQueryWithSuggestion(
+    makeSingleQuery(queryAllBy, getMultipleError),
+    queryAllBy.name,
+    "query",
+  );
   const getAllBy = makeGetAllQuery(queryAllBy, getMissingError);
 
   const getBy = makeSingleQuery(getAllBy, getMultipleError);
   const getByWithSuggestions = wrapSingleQueryWithSuggestion(getBy, queryAllBy.name, "get");
-  const getAllWithSuggestions = wrapAllByQueryWithSuggestion(getAllBy, queryAllBy.name.replace("query", "get"), "getAll");
+  const getAllWithSuggestions = wrapAllByQueryWithSuggestion(
+    getAllBy,
+    queryAllBy.name.replace("query", "get"),
+    "getAll",
+  );
 
   // Ours: span names ("getByRole") from the queryAllBy* function's name.
   const by = queryAllBy.name.startsWith("queryAll") ? queryAllBy.name.slice("queryAll".length) : "";
   const findAllBy = makeFindQuery(wrapAllByQueryWithSuggestion(getAllBy, queryAllBy.name, "findAll"), `findAll${by}`);
   const findBy = makeFindQuery(wrapSingleQueryWithSuggestion(getBy, queryAllBy.name, "find"), `find${by}`);
 
-  return [traceQuery(`query${by}`, queryBy), traceQuery(`getAll${by}`, getAllWithSuggestions), traceQuery(`get${by}`, getByWithSuggestions), findAllBy, findBy];
+  return [
+    traceQuery(`query${by}`, queryBy),
+    traceQuery(`getAll${by}`, getAllWithSuggestions),
+    traceQuery(`get${by}`, getByWithSuggestions),
+    findAllBy,
+    findBy,
+  ];
 }

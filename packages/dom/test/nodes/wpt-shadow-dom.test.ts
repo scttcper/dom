@@ -45,7 +45,10 @@ describe("Shadow DOM — shadow-dom (https://github.com/web-platform-tests/wpt/t
   defineWPT("shadow-dom/getElementById-dynamic-001.html");
   defineWPT("shadow-dom/getElementById-dynamic-002.html");
   defineWPT("shadow-dom/historical.html");
-  defineWPT("shadow-dom/imperative-slot-api-cross-shadow-root.html", "browsers fire slotchange on a slot that gains a node that is not its host's child; the DOM spec does not");
+  defineWPT(
+    "shadow-dom/imperative-slot-api-cross-shadow-root.html",
+    "browsers fire slotchange on a slot that gains a node that is not its host's child; the DOM spec does not",
+  );
   defineWPT("shadow-dom/imperative-slot-api-disconnected.html");
   defineWPT("shadow-dom/imperative-slot-api-slotchange.html");
   defineWPT("shadow-dom/imperative-slot-api.html");
@@ -53,7 +56,10 @@ describe("Shadow DOM — shadow-dom (https://github.com/web-platform-tests/wpt/t
   defineWPT("shadow-dom/input-element-list.html");
   defineWPT("shadow-dom/input-type-radio.html");
   defineWPT("shadow-dom/inserting-fragment-under-shadow-host.html");
-  defineWPT("shadow-dom/shadow-root-clonable.html", "declarative shadow roots inside templates in the main document (harness builds the page with parse5)");
+  defineWPT(
+    "shadow-dom/shadow-root-clonable.html",
+    "declarative shadow roots inside templates in the main document (harness builds the page with parse5)",
+  );
   defineWPT("shadow-dom/slot-reconciliation-at-node-removal.html");
   defineWPT("shadow-dom/slotchange-event.html");
   defineWPT("shadow-dom/slots-fallback-in-document.html");
@@ -65,19 +71,28 @@ describe("Shadow DOM — shadow-dom (https://github.com/web-platform-tests/wpt/t
 describe("Shadow DOM — shadow-dom/declarative (https://github.com/web-platform-tests/wpt/tree/master/shadow-dom/declarative)", () => {
   defineWPT("shadow-dom/declarative/declarative-parser-interaction.html");
   defineWPT("shadow-dom/declarative/declarative-shadow-dom-attachment.html");
-  defineWPT("shadow-dom/declarative/declarative-shadow-dom-basic.html", "main-document declarative shadow roots: the harness builds the page with parse5; iframes/XHR/document.write");
+  defineWPT(
+    "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+    "main-document declarative shadow roots: the harness builds the page with parse5; iframes/XHR/document.write",
+  );
   defineWPT("shadow-dom/declarative/declarative-shadow-dom-serialization.html");
   defineWPT("shadow-dom/declarative/declarative-shadow-dom-slot-assignment-serialization.html");
   defineWPT("shadow-dom/declarative/declarative-shadow-dom-slot-assignment.html");
   defineWPT("shadow-dom/declarative/declarative-with-disabled-shadow.html");
   defineWPT("shadow-dom/declarative/gethtml.html");
-  defineWPT("shadow-dom/declarative/script-access.html", "streaming parser observation needs script execution during parsing");
+  defineWPT(
+    "shadow-dom/declarative/script-access.html",
+    "streaming parser observation needs script execution during parsing",
+  );
 });
 
 describe("Shadow DOM — shadow-dom/focus (https://github.com/web-platform-tests/wpt/tree/master/shadow-dom/focus)", () => {
   defineWPT("shadow-dom/focus/DocumentOrShadowRoot-activeElement.html");
   defineWPT("shadow-dom/focus/ShadowRoot-delegatesFocus.html");
-  defineWPT("shadow-dom/focus/blur-on-shadow-host-delegatesFocus.html", "blur() on a delegatesFocus host with a slotted focused element (html focus)");
+  defineWPT(
+    "shadow-dom/focus/blur-on-shadow-host-delegatesFocus.html",
+    "blur() on a delegatesFocus host with a slotted focused element (html focus)",
+  );
   defineWPT("shadow-dom/focus/delegatesFocus-tabindex-change.html");
   defineWPT("shadow-dom/focus/focus-autofocus.html");
   defineWPT("shadow-dom/focus/focus-method-delegatesFocus-nested-browsing-context.html");
@@ -101,7 +116,9 @@ describe("Shadow DOM — shadow-dom/untriaged/elements-and-dom-objects/extension
 });
 
 describe("Shadow DOM — shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes (https://github.com/web-platform-tests/wpt/tree/master/shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes)", () => {
-  defineWPT("shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/activeElement-confirm-return-null.html");
+  defineWPT(
+    "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/activeElement-confirm-return-null.html",
+  );
   defineWPT("shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-007.html");
   defineWPT("shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-009.html");
   defineWPT("shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-010.html");
@@ -153,7 +170,10 @@ describe("Shadow DOM — shadow-dom/untriaged/html-elements-in-shadow-trees/iner
 });
 
 describe("Shadow DOM — shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation (https://github.com/web-platform-tests/wpt/tree/master/shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation)", () => {
-  defineWPT("shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/dom-tree-accessors-001.html", "document.all is not implemented");
+  defineWPT(
+    "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/dom-tree-accessors-001.html",
+    "document.all is not implemented",
+  );
   defineWPT("shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/dom-tree-accessors-002.html");
   defineWPT("shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/ownerdocument-001.html");
   defineWPT("shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/ownerdocument-002.html");

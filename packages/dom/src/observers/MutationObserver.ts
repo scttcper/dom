@@ -62,7 +62,8 @@ export class MutationObserver {
     let attributes = options.attributes;
     let characterData = options.characterData;
     // Steps 1-2.
-    if ((options.attributeOldValue !== undefined || options.attributeFilter !== undefined) && attributes === undefined) attributes = true;
+    if ((options.attributeOldValue !== undefined || options.attributeFilter !== undefined) && attributes === undefined)
+      attributes = true;
     if (options.characterDataOldValue !== undefined && characterData === undefined) characterData = true;
     // Steps 3-6.
     if (!options.childList && !attributes && !characterData) {
@@ -125,4 +126,7 @@ export class MutationObserver {
   }
 }
 
-Object.defineProperty(MutationObserver.prototype, Symbol.toStringTag, { value: "MutationObserver", configurable: true });
+Object.defineProperty(MutationObserver.prototype, Symbol.toStringTag, {
+  value: "MutationObserver",
+  configurable: true,
+});

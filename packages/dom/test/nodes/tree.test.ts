@@ -95,7 +95,9 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
 
   test("removeChild of a non-child throws NotFoundError (https://dom.spec.whatwg.org/#concept-node-pre-remove)", () => {
     const parent = document.createElement("div");
-    expect(() => parent.removeChild(document.createElement("p"))).toThrow(expect.objectContaining({ name: "NotFoundError" }));
+    expect(() => parent.removeChild(document.createElement("p"))).toThrow(
+      expect.objectContaining({ name: "NotFoundError" }),
+    );
   });
 });
 

@@ -38,12 +38,19 @@ const $ = (id: string) => doc.getElementById(id);
 function same(html: string, sel: string, expected: string[]): void {
   doc.body.innerHTML = html;
   const jsdom = new JSDOM(`<!doctype html><body>${html}</body>`, { url: "https://example.com/page" }).window.document;
-  expect({ "ctrl-dom": $$(sel), jsdom: ids(jsdom.querySelectorAll(sel)) }).toEqual({ "ctrl-dom": expected, jsdom: expected });
+  expect({ "ctrl-dom": $$(sel), jsdom: ids(jsdom.querySelectorAll(sel)) }).toEqual({
+    "ctrl-dom": expected,
+    jsdom: expected,
+  });
 }
 
 describe(":link — https://html.spec.whatwg.org/#selector-link", () => {
   test("a and area elements with an href, never :visited", () => {
-    same(`<a id=a href=x>a</a><a id=b>b</a><area id=c href=y><link id=d href=z><a id=e href="">e</a>`, ":link", ["a", "c", "e"]);
+    same(`<a id=a href=x>a</a><a id=b>b</a><area id=c href=y><link id=d href=z><a id=e href="">e</a>`, ":link", [
+      "a",
+      "c",
+      "e",
+    ]);
     expect($$(":visited")).toEqual([]);
   });
 });
@@ -60,7 +67,11 @@ describe(":disabled — https://html.spec.whatwg.org/#selector-disabled", () => 
 
 describe(":invalid — https://html.spec.whatwg.org/#selector-invalid", () => {
   test("controls suffering from a violation and their form/fieldset ancestors; barred controls never match", () => {
-    same(`<form id=f><input id=a type=email value=nope><input id=b required readonly><output id=o></output></form>`, ":invalid", ["f", "a"]);
+    same(
+      `<form id=f><input id=a type=email value=nope><input id=b required readonly><output id=o></output></form>`,
+      ":invalid",
+      ["f", "a"],
+    );
   });
 });
 
@@ -71,7 +82,11 @@ describe("media playback state — https://html.spec.whatwg.org/#selector-playin
     await $("v").play();
     const playing = [$$(":paused"), $$(":playing")];
     $("v").pause();
-    expect([before, playing, $$(":paused")]).toEqual([[["v", "a"], []], [["a"], ["v"]], ["v", "a"]]);
+    expect([before, playing, $$(":paused")]).toEqual([
+      [["v", "a"], []],
+      [["a"], ["v"]],
+      ["v", "a"],
+    ]);
   });
 
   test(":muted follows the muted IDL attribute (https://html.spec.whatwg.org/#selector-muted)", () => {
@@ -86,7 +101,12 @@ describe("media playback state — https://html.spec.whatwg.org/#selector-playin
 describe(":dir() with dir=auto — https://html.spec.whatwg.org/#auto-directionality", () => {
   test("the first strong character of the contained text decides; neutral text inherits from the parent (https://html.spec.whatwg.org/#contained-text-auto-directionality)", () => {
     doc.body.innerHTML = `<div dir=rtl><p id=n dir=auto>123 ...</p></div><p id=h dir=auto>1 שלום abc</p><p id=l dir=auto><bdi>שלום</bdi>abc</p><p id=s dir=auto><script>שלום</script>abc</p>`;
-    expect(["n", "h", "l", "s"].map((id) => ($(id).matches(":dir(rtl)") ? "rtl" : "ltr"))).toEqual(["rtl", "rtl", "ltr", "ltr"]);
+    expect(["n", "h", "l", "s"].map((id) => ($(id).matches(":dir(rtl)") ? "rtl" : "ltr"))).toEqual([
+      "rtl",
+      "rtl",
+      "ltr",
+      "ltr",
+    ]);
   });
 
   test("text controls with dir=auto use their value (https://html.spec.whatwg.org/#auto-directionality-form-associated-elements)", () => {
@@ -94,12 +114,21 @@ describe(":dir() with dir=auto — https://html.spec.whatwg.org/#auto-directiona
     const before = ["i", "t", "e"].map((id) => $(id).matches(":dir(rtl)"));
     $("i").value = "abc";
     $("t").value = "שלום";
-    expect([before, $("i").matches(":dir(rtl)"), $("t").matches(":dir(rtl)")]).toEqual([[true, false, false], false, true]);
+    expect([before, $("i").matches(":dir(rtl)"), $("t").matches(":dir(rtl)")]).toEqual([
+      [true, false, false],
+      false,
+      true,
+    ]);
   });
 
   test("the UA direction rules apply to elements with a dir attribute (https://html.spec.whatwg.org/#bidi-rendering)", () => {
     doc.body.innerHTML = `<p id=a dir=rtl>x</p><p id=b dir=auto>שלום</p><p id=c>x</p><bdi id=d>שלום</bdi>`;
-    expect(["a", "b", "c", "d"].map((id) => win.getComputedStyle($(id)).direction)).toEqual(["rtl", "rtl", "ltr", "rtl"]);
+    expect(["a", "b", "c", "d"].map((id) => win.getComputedStyle($(id)).direction)).toEqual([
+      "rtl",
+      "rtl",
+      "ltr",
+      "rtl",
+    ]);
   });
 });
 
@@ -123,6 +152,11 @@ describe(":target — https://html.spec.whatwg.org/#the-indicated-part-of-the-do
 describe(":heading() — https://html.spec.whatwg.org/#heading-levels-and-offsets", () => {
   test("headingoffset on ancestors adds up (parsed as non-negative integers), headingreset stops it, and levels cap at 9 (https://html.spec.whatwg.org/#heading-offset, https://html.spec.whatwg.org/#rules-for-parsing-non-negative-integers)", () => {
     doc.body.innerHTML = `<section headingoffset=" +2"><h1 id=a>a</h1><div headingoffset=9><h3 id=b>b</h3></div><div headingreset headingoffset=1><h1 id=c>c</h1></div><div headingoffset=-1><h2 id=d>d</h2></div></section>`;
-    expect([$$(":heading(3)"), $$(":heading(9)"), $$(":heading(2)"), $$(":heading(4)")]).toEqual([["a"], ["b"], ["c"], ["d"]]);
+    expect([$$(":heading(3)"), $$(":heading(9)"), $$(":heading(2)"), $$(":heading(4)")]).toEqual([
+      ["a"],
+      ["b"],
+      ["c"],
+      ["d"],
+    ]);
   });
 });

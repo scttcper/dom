@@ -109,48 +109,53 @@ describe.skipIf(!ours)("partial matching — https://playwright.dev/docs/aria-sn
   });
 });
 
-describe.skipIf(!ours)("names and text — https://playwright.dev/docs/aria-snapshots#matching-with-regular-expressions", () => {
-  test("a string name matches the whole accessible name, whitespace-normalized", () => {
-    render(`<button>  Save   draft </button>`);
-    expect(document.body).toMatchAriaSnapshot(`- button "Save draft"`);
-    expect(document.body).not.toMatchAriaSnapshot(`- button "Save"`);
-  });
+describe.skipIf(!ours)(
+  "names and text — https://playwright.dev/docs/aria-snapshots#matching-with-regular-expressions",
+  () => {
+    test("a string name matches the whole accessible name, whitespace-normalized", () => {
+      render(`<button>  Save   draft </button>`);
+      expect(document.body).toMatchAriaSnapshot(`- button "Save draft"`);
+      expect(document.body).not.toMatchAriaSnapshot(`- button "Save"`);
+    });
 
-  test("a /regex/ name matches by RegExp#test", () => {
-    render(CHECKOUT);
-    expect(document.body).toMatchAriaSnapshot(`- button /Pay \\d+ €/`);
-    expect(document.body).not.toMatchAriaSnapshot(`- button /^Pay$/`);
-  });
+    test("a /regex/ name matches by RegExp#test", () => {
+      render(CHECKOUT);
+      expect(document.body).toMatchAriaSnapshot(`- button /Pay \\d+ €/`);
+      expect(document.body).not.toMatchAriaSnapshot(`- button /^Pay$/`);
+    });
 
-  test("`role: text` matches a node whose content is that text; `- text:` matches a text run", () => {
-    render(`<p>Hello <b>world</b></p><div>Loose <span>inline</span> text<div>block</div></div>`);
-    expect(document.body).toMatchAriaSnapshot(`
+    test("`role: text` matches a node whose content is that text; `- text:` matches a text run", () => {
+      render(`<p>Hello <b>world</b></p><div>Loose <span>inline</span> text<div>block</div></div>`);
+      expect(document.body).toMatchAriaSnapshot(`
       - paragraph: Hello world
       - text: Loose inline text
     `);
-    expect(document.body).not.toMatchAriaSnapshot(`- paragraph: Hello`);
-  });
+      expect(document.body).not.toMatchAriaSnapshot(`- paragraph: Hello`);
+    });
 
-  test("text values may be /regex/", () => {
-    render(CHECKOUT);
-    expect(document.body).toMatchAriaSnapshot(`- paragraph: /Total: \\d+ items/`);
-  });
+    test("text values may be /regex/", () => {
+      render(CHECKOUT);
+      expect(document.body).toMatchAriaSnapshot(`- paragraph: /Total: \\d+ items/`);
+    });
 
-  test("a textbox's value is its text content, as Playwright models it", () => {
-    render(CHECKOUT);
-    expect(document.body).toMatchAriaSnapshot(`- textbox "Email": ada@example.com`);
-    expect(document.body).not.toMatchAriaSnapshot(`- textbox "Email": grace@example.com`);
-  });
+    test("a textbox's value is its text content, as Playwright models it", () => {
+      render(CHECKOUT);
+      expect(document.body).toMatchAriaSnapshot(`- textbox "Email": ada@example.com`);
+      expect(document.body).not.toMatchAriaSnapshot(`- textbox "Email": grace@example.com`);
+    });
 
-  test("keys may be YAML-quoted, names may contain escaped quotes, values may be quoted", () => {
-    render(`<a href="/x">a: b</a><button aria-label='Say "hi"'>x</button><input aria-label="Count" type="number" value="3">`);
-    expect(document.body).toMatchAriaSnapshot(`
+    test("keys may be YAML-quoted, names may contain escaped quotes, values may be quoted", () => {
+      render(
+        `<a href="/x">a: b</a><button aria-label='Say "hi"'>x</button><input aria-label="Count" type="number" value="3">`,
+      );
+      expect(document.body).toMatchAriaSnapshot(`
       - 'link "a: b"'
       - "button \\"Say \\\\\\"hi\\\\\\"\\"": x
       - spinbutton "Count": "3"
     `);
-  });
-});
+    });
+  },
+);
 
 describe.skipIf(!ours)("states — https://playwright.dev/docs/aria-snapshots#aria-snapshot-yaml", () => {
   test("listed states must match; unlisted ones are ignored", () => {
@@ -173,7 +178,9 @@ describe.skipIf(!ours)("states — https://playwright.dev/docs/aria-snapshots#ar
   });
 
   test("[level=N], [pressed], [selected], [current] and [active]", () => {
-    render(`<h3>Sub</h3><button aria-pressed="true">Bold</button><div role="tablist"><div role="tab" aria-selected="true">A</div></div><a href="/" aria-current="page">Home</a><input aria-label="Name">`);
+    render(
+      `<h3>Sub</h3><button aria-pressed="true">Bold</button><div role="tablist"><div role="tab" aria-selected="true">A</div></div><a href="/" aria-current="page">Home</a><input aria-label="Name">`,
+    );
     (document.querySelector("input") as any).focus();
     expect(document.body).toMatchAriaSnapshot(`
       - heading "Sub" [level=3]
@@ -188,65 +195,72 @@ describe.skipIf(!ours)("states — https://playwright.dev/docs/aria-snapshots#ar
   });
 });
 
-describe.skipIf(!ours)("strict matching and properties — https://playwright.dev/docs/aria-snapshots#strict-matching", () => {
-  test("`/children: equal` requires exactly the listed children; `contain` is the default", () => {
-    render(`<ul><li>One</li><li>Two</li></ul>`);
-    expect(document.body).toMatchAriaSnapshot(`
+describe.skipIf(!ours)(
+  "strict matching and properties — https://playwright.dev/docs/aria-snapshots#strict-matching",
+  () => {
+    test("`/children: equal` requires exactly the listed children; `contain` is the default", () => {
+      render(`<ul><li>One</li><li>Two</li></ul>`);
+      expect(document.body).toMatchAriaSnapshot(`
       - list:
         - /children: equal
         - listitem: One
         - listitem: Two
     `);
-    expect(document.body).not.toMatchAriaSnapshot(`
+      expect(document.body).not.toMatchAriaSnapshot(`
       - list:
         - /children: equal
         - listitem: One
     `);
-  });
+    });
 
-  test("`/children: deep-equal` applies to every level below", () => {
-    render(`<ul><li>One <b role="img" aria-label="star"></b></li></ul>`);
-    expect(document.body).toMatchAriaSnapshot(`
+    test("`/children: deep-equal` applies to every level below", () => {
+      render(`<ul><li>One <b role="img" aria-label="star"></b></li></ul>`);
+      expect(document.body).toMatchAriaSnapshot(`
       - list:
         - /children: equal
         - listitem:
           - text: One
     `);
-    expect(document.body).not.toMatchAriaSnapshot(`
+      expect(document.body).not.toMatchAriaSnapshot(`
       - list:
         - /children: deep-equal
         - listitem:
           - text: One
     `);
-  });
+    });
 
-  test("`- /url:` matches a link's href", () => {
-    render(`<a href="/docs/intro">Docs</a>`);
-    expect(document.body).toMatchAriaSnapshot(`
+    test("`- /url:` matches a link's href", () => {
+      render(`<a href="/docs/intro">Docs</a>`);
+      expect(document.body).toMatchAriaSnapshot(`
       - link "Docs":
         - /url: /docs/intro
     `);
-    expect(document.body).toMatchAriaSnapshot(`
+      expect(document.body).toMatchAriaSnapshot(`
       - link "Docs":
         - /url: /\\/docs\\//
     `);
-    expect(document.body).not.toMatchAriaSnapshot(`
+      expect(document.body).not.toMatchAriaSnapshot(`
       - link "Docs":
         - /url: /blog
     `);
-  });
+    });
 
-  test("a snapshot printed with collapsing off is a template that matches its own tree", () => {
-    render(CHECKOUT);
-    const snapshot = ariaSnapshot(document.body, { collapseAfter: Infinity, urls: true });
-    expect(document.body).toMatchAriaSnapshot(snapshot);
-    expect(document.querySelector("main")!).toMatchAriaSnapshot(ariaSnapshot(document.querySelector("main")!, { collapseAfter: Infinity }));
-  });
-});
+    test("a snapshot printed with collapsing off is a template that matches its own tree", () => {
+      render(CHECKOUT);
+      const snapshot = ariaSnapshot(document.body, { collapseAfter: Infinity, urls: true });
+      expect(document.body).toMatchAriaSnapshot(snapshot);
+      expect(document.querySelector("main")!).toMatchAriaSnapshot(
+        ariaSnapshot(document.querySelector("main")!, { collapseAfter: Infinity }),
+      );
+    });
+  },
+);
 
 describe.skipIf(!ours)("failure messages", () => {
   test("a mismatch diffs the template against the closest part of the tree, then prints the tree", () => {
-    render(`<main><h1>Checkout</h1><form aria-label="Payment"><input aria-label="Email"><button>Pay now</button></form></main>`);
+    render(
+      `<main><h1>Checkout</h1><form aria-label="Payment"><input aria-label="Email"><button>Pay now</button></form></main>`,
+    );
     expect(
       failure(() =>
         expect(document.body).toMatchAriaSnapshot(`
@@ -309,7 +323,9 @@ describe.skipIf(!ours)("failure messages", () => {
 
   test("nothing alike prints the whole template as missing", () => {
     render(`<p>Hi</p>`);
-    expect(failure(() => expect(document.body).toMatchAriaSnapshot(`- button "Go"`))).toContain('- Expected  - 1  (template)\n+ Received  + 0  (closest part of the accessibility tree)\n\n- - button "Go"\n');
+    expect(failure(() => expect(document.body).toMatchAriaSnapshot(`- button "Go"`))).toContain(
+      '- Expected  - 1  (template)\n+ Received  + 0  (closest part of the accessibility tree)\n\n- - button "Go"\n',
+    );
   });
 
   test(".not prints the template and the tree", () => {
@@ -333,8 +349,12 @@ describe.skipIf(!ours)("failure messages", () => {
       - button [bogus]
                 ^]
     `);
-    expect(() => expect(document.body).toMatchAriaSnapshot(`button "Go"`)).toThrow(/Aria snapshot must be a YAML sequence, elements starting with "-" \(template line 1\)/);
-    expect(() => expect(document.body).toMatchAriaSnapshot(`- button [checked=yes]`)).toThrow(/Value of "checked" attribute must be a boolean or "mixed"/);
+    expect(() => expect(document.body).toMatchAriaSnapshot(`button "Go"`)).toThrow(
+      /Aria snapshot must be a YAML sequence, elements starting with "-" \(template line 1\)/,
+    );
+    expect(() => expect(document.body).toMatchAriaSnapshot(`- button [checked=yes]`)).toThrow(
+      /Value of "checked" attribute must be a boolean or "mixed"/,
+    );
     expect(() => expect(document.body).toMatchAriaSnapshot(`- button "Go`)).toThrow(/Unterminated string/);
     expect(() => expect(document.body).toMatchAriaSnapshot(`\n  \n`)).toThrow(/template is empty/);
     expect(() => expect(document.body).toMatchAriaSnapshot(`- text: a\n  - button`)).toThrow(/cannot have children/);
@@ -342,6 +362,8 @@ describe.skipIf(!ours)("failure messages", () => {
 
   test("a value that is not a node, or a template that is not a string, throws", () => {
     expect(() => expect({}).toMatchAriaSnapshot(`- button`)).toThrow(/received value must be a Node/);
-    expect(() => expect(document.body).toMatchAriaSnapshot(undefined as any)).toThrow(/expects an aria snapshot template string, got undefined/);
+    expect(() => expect(document.body).toMatchAriaSnapshot(undefined as any)).toThrow(
+      /expects an aria snapshot template string, got undefined/,
+    );
   });
 });

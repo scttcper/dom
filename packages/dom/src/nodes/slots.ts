@@ -154,7 +154,11 @@ function hasSlotDescendant(node: NodeImpl): boolean {
 }
 
 function isEmptyShadowSlot(parent: NodeImpl): boolean {
-  return isSlot(parent) && (treeRoot(parent).flags & F_SHADOW_ROOT) !== 0 && (assignedNodesOf.get(parent) ?? EMPTY).length === 0;
+  return (
+    isSlot(parent) &&
+    (treeRoot(parent).flags & F_SHADOW_ROOT) !== 0 &&
+    (assignedNodesOf.get(parent) ?? EMPTY).length === 0
+  );
 }
 
 /** https://dom.spec.whatwg.org/#concept-node-insert steps 7.4-7.6, for `node` or each of `nodes`. */
@@ -196,7 +200,12 @@ export function slotsAfterRemove(node: NodeImpl, parent: NodeImpl): void {
  * https://dom.spec.whatwg.org/#slot-name (attribute change steps)
  * https://dom.spec.whatwg.org/#slotable-name (attribute change steps)
  */
-export function slotsAttributeChanged(el: NodeImpl, localName: string, oldValue: string | null, value: string | null): void {
+export function slotsAttributeChanged(
+  el: NodeImpl,
+  localName: string,
+  oldValue: string | null,
+  value: string | null,
+): void {
   if (localName === "name" && isSlot(el)) {
     if ((oldValue ?? "") === (value ?? "")) return;
     const root = treeRoot(el);

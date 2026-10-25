@@ -30,10 +30,20 @@ function getContainingBlock(window: any, node: any): any {
   const { document } = window;
   const isContainingBlock = (n: any): boolean => {
     const style = window.getComputedStyle(n);
-    return style.transform !== "none" || /transform|perspective/.test(style.willChange) || style.filter !== "none" || style.contain === "paint";
+    return (
+      style.transform !== "none" ||
+      /transform|perspective/.test(style.willChange) ||
+      style.filter !== "none" ||
+      style.contain === "paint"
+    );
   };
   let offsetParent = node.offsetParent;
-  if (offsetParent && offsetParent === document.body && window.getComputedStyle(offsetParent).position === "static" && !isContainingBlock(offsetParent)) {
+  if (
+    offsetParent &&
+    offsetParent === document.body &&
+    window.getComputedStyle(offsetParent).position === "static" &&
+    !isContainingBlock(offsetParent)
+  ) {
     offsetParent = document.documentElement;
   }
   if (offsetParent == null) {
@@ -52,16 +62,19 @@ const engines = {
 };
 
 describe.each(Object.keys(engines) as Array<keyof typeof engines>)("%s", (engine) => {
-  test.skipIf(engine !== "ctrl-dom" && !hasCheckout)("an overlay inside a position:relative container resolves that container as its containing block", () => {
-    const window = engines[engine]();
-    const { document } = window;
-    const container = document.createElement("div");
-    container.style.position = "relative";
-    const overlay = document.createElement("div");
-    container.append(overlay);
-    document.body.append(container);
-    expect(getContainingBlock(window, overlay) === container).toBe(true);
-  });
+  test.skipIf(engine !== "ctrl-dom" && !hasCheckout)(
+    "an overlay inside a position:relative container resolves that container as its containing block",
+    () => {
+      const window = engines[engine]();
+      const { document } = window;
+      const container = document.createElement("div");
+      container.style.position = "relative";
+      const overlay = document.createElement("div");
+      container.append(overlay);
+      document.body.append(container);
+      expect(getContainingBlock(window, overlay) === container).toBe(true);
+    },
+  );
 
   test.skipIf(engine === "ctrl-dom")("(jsdom 26 gets there by accident: offsetParent is null)", () => {
     const { document } = engines[engine]();

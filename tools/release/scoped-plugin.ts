@@ -44,9 +44,15 @@ const git = (cwd: string, args: string[]) => execFileSync("git", args, { cwd, en
 
 function scoped(options: Options, context: any) {
   const range = context.lastRelease?.gitHead ? `${context.lastRelease.gitHead}..HEAD` : "HEAD";
-  const touching = new Set(git(context.cwd, ["log", "--format=%H", range, "--", ...options.paths]).split("\n").filter(Boolean));
+  const touching = new Set(
+    git(context.cwd, ["log", "--format=%H", range, "--", ...options.paths])
+      .split("\n")
+      .filter(Boolean),
+  );
   const commits = context.commits.filter((c: { hash: string }) => touching.has(c.hash));
-  context.logger.log(`${commits.length} of ${context.commits.length} commits since the last release touch this package`);
+  context.logger.log(
+    `${commits.length} of ${context.commits.length} commits since the last release touch this package`,
+  );
   return { ...context, commits, cwd: toolsDir };
 }
 
@@ -68,7 +74,11 @@ function latestCtrlDom(cwd: string): string {
 /** "https://github.com/owner/repo" of the repository being released. */
 function githubRepository(context: any): string {
   if (context.env.GITHUB_REPOSITORY) return `https://github.com/${context.env.GITHUB_REPOSITORY}`;
-  const url = new URL(String(context.options.repositoryUrl).replace(/^git\+/, "").replace(/^git@github\.com:/, "https://github.com/"));
+  const url = new URL(
+    String(context.options.repositoryUrl)
+      .replace(/^git\+/, "")
+      .replace(/^git@github\.com:/, "https://github.com/"),
+  );
   return `https://github.com${url.pathname.replace(/\.git$/, "")}`;
 }
 

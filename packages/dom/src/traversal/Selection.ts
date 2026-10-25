@@ -35,12 +35,15 @@ function toImpl(node: unknown, method: string): NodeImpl {
 /** WebIDL: too few arguments for a non-optional parameter. */
 function arity(given: number, required: number, method: string): void {
   if (given < required) {
-    throw new TypeError(`Failed to execute '${method}' on 'Selection': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`);
+    throw new TypeError(
+      `Failed to execute '${method}' on 'Selection': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`,
+    );
   }
 }
 
 function checkBoundary(n: NodeImpl, offset: number): void {
-  if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+  if (n.type === DOCUMENT_TYPE_NODE)
+    throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
   if (offset > nodeLength(n)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
 }
 
@@ -156,14 +159,19 @@ export class Selection {
   /** https://w3c.github.io/selection-api/#dom-selection-getrangeat */
   getRangeAt(index: number): Range {
     const r = this.#range;
-    if (Number(index) !== 0 || r === null) throw new DOMException(`The index provided (${index}) is greater than or equal to the maximum bound (${this.rangeCount}).`, "IndexSizeError");
+    if (Number(index) !== 0 || r === null)
+      throw new DOMException(
+        `The index provided (${index}) is greater than or equal to the maximum bound (${this.rangeCount}).`,
+        "IndexSizeError",
+      );
     return r;
   }
 
   /** https://w3c.github.io/selection-api/#dom-selection-addrange */
   addRange(range: Range): void {
     arity(arguments.length, 1, "addRange");
-    if (!(range instanceof Range)) throw new TypeError("Failed to execute 'addRange' on 'Selection': parameter 1 is not of type 'Range'.");
+    if (!(range instanceof Range))
+      throw new TypeError("Failed to execute 'addRange' on 'Selection': parameter 1 is not of type 'Range'.");
     if (range._treeRoot() !== this.#doc[$impl]) return;
     if (this.#range !== null) return;
     this.#set(range, DIR_FORWARDS);
@@ -172,7 +180,8 @@ export class Selection {
   /** https://w3c.github.io/selection-api/#dom-selection-removerange */
   removeRange(range: Range): void {
     arity(arguments.length, 1, "removeRange");
-    if (!(range instanceof Range)) throw new TypeError("Failed to execute 'removeRange' on 'Selection': parameter 1 is not of type 'Range'.");
+    if (!(range instanceof Range))
+      throw new TypeError("Failed to execute 'removeRange' on 'Selection': parameter 1 is not of type 'Range'.");
     if (range !== this.#range) throw new DOMException("The given range isn't in document.", "NotFoundError");
     this.#set(null, DIR_NONE);
   }
@@ -277,7 +286,8 @@ export class Selection {
   selectAllChildren(node: Node): void {
     const n = toImpl(node, "selectAllChildren");
     // 1. If node is a DocumentType, throw an InvalidNodeTypeError.
-    if (n.type === DOCUMENT_TYPE_NODE) throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    if (n.type === DOCUMENT_TYPE_NODE)
+      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     // 2. If node's root is not the document associated with this, return.
     if (!this.#inDocument(n)) return;
     // 3-5. A new range from (node, 0) to (node, node's number of children) — the child count,
@@ -310,7 +320,14 @@ export class Selection {
   getComposedRanges(..._args: unknown[]): StaticRange[] {
     const r = this.#range;
     if (r === null) return [];
-    return [new StaticRange({ startContainer: r[$sc].node, startOffset: r[$so], endContainer: r[$ec].node, endOffset: r[$eo] })];
+    return [
+      new StaticRange({
+        startContainer: r[$sc].node,
+        startOffset: r[$so],
+        endContainer: r[$ec].node,
+        endOffset: r[$eo],
+      }),
+    ];
   }
 
   /** No layout: https://w3c.github.io/selection-api/#dom-selection-modify is a no-op. */

@@ -83,6 +83,8 @@ repo. Upstream projects are MIT/Apache-2.0: keep attribution comments on ported 
 pnpm test                               # all packages
 pnpm vitest run --project @ctrl/dom      # one package
 pnpm typecheck                          # tsc -b over everything
+pnpm lint                               # oxlint
+pnpm fmt                                # oxfmt; CI fails on unformatted files (pnpm fmt:check)
 pnpm bench                              # benchmarks (bench/)
 pnpm bench:compare --base ../base --head .  # regression check between two clean checkouts
 pnpm docs:compat                        # regenerate the compat profile table in docs/deviations.md

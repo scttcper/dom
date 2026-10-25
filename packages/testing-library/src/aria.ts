@@ -52,10 +52,18 @@ export const aria = {
     return typeof role === "string" && roleSupportsProp(role, prop);
   },
   /** `gcs`: `styleOverride(el)` (or null), checked once by the caller. */
-  computeAccessibleName(el: NodeImpl, computedStyleSupportsPseudoElements: boolean, gcs: GetComputedStyle | null): string {
+  computeAccessibleName(
+    el: NodeImpl,
+    computedStyleSupportsPseudoElements: boolean,
+    gcs: GetComputedStyle | null,
+  ): string {
     return computeAccessibleNameImpl(el, nameOptions(computedStyleSupportsPseudoElements, gcs), 5);
   },
-  computeAccessibleDescription(el: NodeImpl, computedStyleSupportsPseudoElements: boolean, gcs: GetComputedStyle | null): string {
+  computeAccessibleDescription(
+    el: NodeImpl,
+    computedStyleSupportsPseudoElements: boolean,
+    gcs: GetComputedStyle | null,
+  ): string {
     return computeAccessibleDescriptionImpl(el, nameOptions(computedStyleSupportsPseudoElements, gcs), 5);
   },
   /** Testing Library's `isInaccessible(element)` (default subtree check, memoized per node). */

@@ -1,7 +1,13 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/input.ts
 
-import type {Element, HTMLInputElement, InputEventInit, Range, Text} from '../dom-types.ts'
+import type {
+  Element,
+  HTMLInputElement,
+  InputEventInit,
+  Range,
+  Text,
+} from '../dom-types.ts'
 import {
   clearInitialValue,
   commitValueAfterInput,

@@ -40,7 +40,10 @@ export function walkRadio(
  * `CSS.escape` when the window provides it (upstream relies on it unconditionally; its test
  * environment polyfills it for jsdom), otherwise https://drafts.csswg.org/cssom/#serialize-an-identifier.
  */
-function cssEscape(window: {CSS?: {escape(ident: string): string}}, ident: string): string {
+function cssEscape(
+  window: {CSS?: {escape(ident: string): string}},
+  ident: string,
+): string {
   if (typeof window.CSS?.escape === 'function') {
     return window.CSS.escape(ident)
   }

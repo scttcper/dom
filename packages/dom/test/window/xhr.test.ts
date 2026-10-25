@@ -80,7 +80,8 @@ describe("transport — https://xhr.spec.whatwg.org/#the-send()-method", () => {
     const window = createWindow({ url: `${origin}/page` }) as AnyRecord;
     const xhr = new window.XMLHttpRequest();
     const events: string[] = [];
-    for (const type of ["readystatechange", "abort", "error", "load", "loadend"]) xhr.addEventListener(type, () => events.push(type));
+    for (const type of ["readystatechange", "abort", "error", "load", "loadend"])
+      xhr.addEventListener(type, () => events.push(type));
     xhr.open("GET", "/hang");
     xhr.send();
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -106,7 +107,12 @@ describe("request headers — https://fetch.spec.whatwg.org/#http-network-or-cac
   test("User-Agent comes from navigator.userAgent; Accept and Accept-Language default like jsdom", async () => {
     const window = createWindow({ url: `${origin}/page`, userAgent: "TestAgent/1.0" }) as AnyRecord;
     await request(window, "/data");
-    expect([lastHeaders["user-agent"], lastHeaders.accept, lastHeaders["accept-language"], lastHeaders["accept-encoding"]]).toEqual(["TestAgent/1.0", "*/*", "en", "gzip, deflate"]);
+    expect([
+      lastHeaders["user-agent"],
+      lastHeaders.accept,
+      lastHeaders["accept-language"],
+      lastHeaders["accept-encoding"],
+    ]).toEqual(["TestAgent/1.0", "*/*", "en", "gzip, deflate"]);
     window.close();
   });
 
@@ -141,7 +147,12 @@ describe("blob: URLs — https://fetch.spec.whatwg.org/#scheme-fetch", () => {
     const window = createWindow({ url: `${origin}/page` }) as AnyRecord;
     const href = URL.createObjectURL(new Blob(["blob body"], { type: "text/plain" }));
     const xhr = await request(window, href);
-    expect([xhr.status, xhr.responseText, xhr.getResponseHeader("content-type"), xhr.getResponseHeader("content-length")]).toEqual([200, "blob body", "text/plain", "9"]);
+    expect([
+      xhr.status,
+      xhr.responseText,
+      xhr.getResponseHeader("content-type"),
+      xhr.getResponseHeader("content-length"),
+    ]).toEqual([200, "blob body", "text/plain", "9"]);
     URL.revokeObjectURL(href);
     window.close();
   });
@@ -154,7 +165,11 @@ describe("HTMLDocument — https://html.spec.whatwg.org/#the-document-object", (
     const uninstall = installGlobals(window, target);
     expect(target.HTMLDocument).toBe(Document);
     expect(window.document).toBeInstanceOf(target.HTMLDocument);
-    expect(Object.getOwnPropertyDescriptor(target, "HTMLDocument")).toMatchObject({ writable: true, enumerable: false, configurable: true });
+    expect(Object.getOwnPropertyDescriptor(target, "HTMLDocument")).toMatchObject({
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    });
     uninstall();
     window.close();
   });

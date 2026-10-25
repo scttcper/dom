@@ -32,35 +32,47 @@ const EXPECTED_FAILURES: Record<string, Record<string, string>> = {
     "Stylesheet constructed on iframe cannot be used in the main Document": NO_IFRAMES,
   },
   "cssstyledeclaration-csstext.html": {
-    "Shorthands aren't serialized if there are other properties with different logical groups in between": "logical shorthands (margin-inline/block) are stored unexpanded",
-    "Shorthands _are_ serialized if there are no other properties with different logical groups in between": "logical shorthands (margin-inline/block) are stored unexpanded",
+    "Shorthands aren't serialized if there are other properties with different logical groups in between":
+      "logical shorthands (margin-inline/block) are stored unexpanded",
+    "Shorthands _are_ serialized if there are no other properties with different logical groups in between":
+      "logical shorthands (margin-inline/block) are stored unexpanded",
   },
   "cssstyledeclaration-mutability.html": {
-    "getComputedStyle's CSSStyleDeclaration is not mutable": "jsdom-compatible: named setters on computed declarations are ignored instead of throwing (setProperty does throw)",
+    "getComputedStyle's CSSStyleDeclaration is not mutable":
+      "jsdom-compatible: named setters on computed declarations are ignored instead of throwing (setProperty does throw)",
   },
   "flex-serialization.html": {
-    "Single value flex with non-CSS-wide value should serialize correctly.": "jsdom-compatible: `flex: 0` serializes as `0 1 0%`",
+    "Single value flex with non-CSS-wide value should serialize correctly.":
+      "jsdom-compatible: `flex: 0` serializes as `0 1 0%`",
   },
   "getComputedStyle-detached-subtree.html": {
     "getComputedStyle returns no style for detached element": DETACHED,
     "getComputedStyle returns no style for element in non-rendered iframe (display: none)": DETACHED,
-    "getComputedStyle returns no style for element in non-rendered iframe (display: none) from iframe's window": DETACHED,
+    "getComputedStyle returns no style for element in non-rendered iframe (display: none) from iframe's window":
+      DETACHED,
     "(harness: script error)": NO_IFRAMES,
   },
   "getComputedStyle-display-none-001.html": {
-    "getComputedStyle gets invalidated in display: none subtrees due to inherited changes to an ancestor": "no named access on window (docs/deviations.md): `undisplayed` element id global",
-    "getComputedStyle gets invalidated in display: none subtrees due to inherited changes to an ancestor shadow host": "no named access on window (docs/deviations.md): `host` element id global",
+    "getComputedStyle gets invalidated in display: none subtrees due to inherited changes to an ancestor":
+      "no named access on window (docs/deviations.md): `undisplayed` element id global",
+    "getComputedStyle gets invalidated in display: none subtrees due to inherited changes to an ancestor shadow host":
+      "no named access on window (docs/deviations.md): `host` element id global",
   },
   "getComputedStyle-pseudo.html": {
-    "Resolution of width is correct for ::before and ::after pseudo-elements": "no layout: percentages are not resolved to used px values",
-    "Resolution of width is correct for ::before and ::after pseudo-elements of display: contents elements": "no layout: percentages are not resolved to used px values",
+    "Resolution of width is correct for ::before and ::after pseudo-elements":
+      "no layout: percentages are not resolved to used px values",
+    "Resolution of width is correct for ::before and ::after pseudo-elements of display: contents elements":
+      "no layout: percentages are not resolved to used px values",
   },
   "getComputedStyle-resolved-colors.html": {
-    "The resolved value for 'box-shadow' is the used value": "box-shadow colors are not resolved (value kept as specified)",
+    "The resolved value for 'box-shadow' is the used value":
+      "box-shadow colors are not resolved (value kept as specified)",
   },
 };
 
-const files = readdirSync(dir).filter((f) => f.endsWith(".html")).sort();
+const files = readdirSync(dir)
+  .filter((f) => f.endsWith(".html"))
+  .sort();
 
 const results = new Map<string, SubtestResult[]>();
 for (const f of files) results.set(f, await runWPT(readFileSync(new URL(f, dir), "utf8")));

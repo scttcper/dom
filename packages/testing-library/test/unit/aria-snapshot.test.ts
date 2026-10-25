@@ -26,14 +26,16 @@ beforeEach(() => {
 });
 
 describe("snapshot format — https://playwright.dev/docs/aria-snapshots", () => {
-  test("each node is `- role \"name\"`, children are indented two spaces under `key:`", () => {
+  test('each node is `- role "name"`, children are indented two spaces under `key:`', () => {
     render(`<nav aria-label="Main"><ul><li><a href="/">Home</a></li></ul></nav>`);
-    expect(ariaSnapshot()).toBe(['- navigation "Main":', "  - list:", "    - listitem:", '      - link "Home"'].join("\n"));
+    expect(ariaSnapshot()).toBe(
+      ['- navigation "Main":', "  - list:", "    - listitem:", '      - link "Home"'].join("\n"),
+    );
   });
 
   test("a node whose only content is text prints it after the colon; text equal to the name is dropped", () => {
     render(`<p>Hello <b>world</b></p><button>Save</button>`);
-    expect(ariaSnapshot()).toBe(['- paragraph: Hello world', '- button "Save"'].join("\n"));
+    expect(ariaSnapshot()).toBe(["- paragraph: Hello world", '- button "Save"'].join("\n"));
   });
 
   test("text next to element children prints as `- text:` runs; block wrappers end a run", () => {
@@ -43,7 +45,9 @@ describe("snapshot format — https://playwright.dev/docs/aria-snapshots", () =>
 
   test("names are JSON-quoted; values are quoted when plain YAML would misread them; text that differs from the name is kept", () => {
     render(`<button aria-label='Say "hi"'>x</button><input aria-label="Count" type="number" value="3"><p>a: b</p>`);
-    expect(ariaSnapshot()).toBe(['- button "Say \\"hi\\"": x', '- spinbutton "Count": "3"', '- paragraph: "a: b"'].join("\n"));
+    expect(ariaSnapshot()).toBe(
+      ['- button "Say \\"hi\\"": x', '- spinbutton "Count": "3"', '- paragraph: "a: b"'].join("\n"),
+    );
   });
 
   test("link targets print as `- /url:` children only with { urls: true }", () => {
@@ -70,7 +74,9 @@ describe("snapshot format — https://playwright.dev/docs/aria-snapshots", () =>
 
 describe("roles — https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings", () => {
   test("elements without a role (generic, none, presentation, SVG internals) are skipped and their children hoisted", () => {
-    render(`<div class="card"><span role="presentation"><button><svg viewBox="0 0 2 2"><path d="M0 0"/></svg>Add</button></span></div>`);
+    render(
+      `<div class="card"><span role="presentation"><button><svg viewBox="0 0 2 2"><path d="M0 0"/></svg>Add</button></span></div>`,
+    );
     expect(ariaSnapshot()).toBe('- button "Add"');
   });
 
@@ -87,13 +93,17 @@ describe("roles — https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappin
 
 describe("accessible names — https://w3c.github.io/accname/#mapping_additional_nd_name", () => {
   test("form controls are named by their label; the label's own text is not repeated", () => {
-    render(`<label>Email <input type="email" value="ada@example.com"></label><label for="n">Notes</label><textarea id="n">hi</textarea>`);
+    render(
+      `<label>Email <input type="email" value="ada@example.com"></label><label for="n">Notes</label><textarea id="n">hi</textarea>`,
+    );
     expect(ariaSnapshot()).toBe(['- textbox "Email": ada@example.com', '- textbox "Notes": hi'].join("\n"));
   });
 
   test("aria-labelledby and aria-label name widgets; names are whitespace-collapsed", () => {
     render(`<h2 id="t">Billing   address</h2><section aria-labelledby="t"><input aria-label="Street"></section>`);
-    expect(ariaSnapshot()).toBe(['- heading "Billing address" [level=2]', '- region "Billing address":', '  - textbox "Street"'].join("\n"));
+    expect(ariaSnapshot()).toBe(
+      ['- heading "Billing address" [level=2]', '- region "Billing address":', '  - textbox "Street"'].join("\n"),
+    );
   });
 });
 
@@ -141,7 +151,9 @@ describe("states and properties — https://www.w3.org/TR/html-aam-1.0/#html-att
   });
 
   test("slider and progressbar values come from aria-valuetext, aria-valuenow or the input value", () => {
-    render(`<input type="range" aria-label="Volume" value="30"><div role="progressbar" aria-label="Upload" aria-valuenow="40" aria-valuetext="40 percent"></div>`);
+    render(
+      `<input type="range" aria-label="Volume" value="30"><div role="progressbar" aria-label="Upload" aria-valuenow="40" aria-valuetext="40 percent"></div>`,
+    );
     expect(ariaSnapshot()).toBe(['- slider "Volume": "30"', '- progressbar "Upload": 40 percent'].join("\n"));
   });
 
@@ -162,7 +174,14 @@ describe("accessibility tree exclusion — https://www.w3.org/TR/wai-aria-1.2/#t
   test("{ hidden: true } includes them, marked [hidden]", () => {
     render(HIDDEN);
     expect(ariaSnapshot(document.body, { hidden: true })).toBe(
-      ['- button "Visible"', '- button "Aria" [hidden]', '- button "Attr" [hidden]', '- button "None" [hidden]', "- text: gone", '- button "Back"'].join("\n"),
+      [
+        '- button "Visible"',
+        '- button "Aria" [hidden]',
+        '- button "Attr" [hidden]',
+        '- button "None" [hidden]',
+        "- text: gone",
+        '- button "Back"',
+      ].join("\n"),
     );
   });
 
@@ -182,7 +201,9 @@ describe("accessibility tree exclusion — https://www.w3.org/TR/wai-aria-1.2/#t
 describe("budgets", () => {
   test("runs of more than `collapseAfter` same-role siblings print the first ones and a (+N more) line", () => {
     render(`<ul>${Array.from({ length: 48 }, (_, i) => `<li>Item ${i}</li>`).join("")}</ul>`);
-    expect(ariaSnapshot(document.body, { collapseAfter: 2 })).toBe(["- list:", "  - listitem: Item 0", "  - listitem: Item 1", "  - listitem … (+46 more)"].join("\n"));
+    expect(ariaSnapshot(document.body, { collapseAfter: 2 })).toBe(
+      ["- list:", "  - listitem: Item 0", "  - listitem: Item 1", "  - listitem … (+46 more)"].join("\n"),
+    );
     expect(ariaSnapshot(document.body, { collapseAfter: Infinity }).split("\n")).toHaveLength(49);
   });
 
@@ -199,7 +220,12 @@ describe("budgets", () => {
   test("past maxLines the rest is one `# … N more lines` comment", () => {
     render(Array.from({ length: 10 }, (_, i) => `<h2>H${i}</h2>`).join(""));
     const out = ariaSnapshot(document.body, { maxLines: 3, collapseAfter: Infinity }).split("\n");
-    expect(out).toEqual(['- heading "H0" [level=2]', '- heading "H1" [level=2]', '- heading "H2" [level=2]', "# … 7 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)"]);
+    expect(out).toEqual([
+      '- heading "H0" [level=2]',
+      '- heading "H1" [level=2]',
+      '- heading "H2" [level=2]',
+      "# … 7 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)",
+    ]);
   });
 });
 
@@ -215,7 +241,19 @@ describe("agreement with *ByRole", () => {
     expect(named.length).toBeGreaterThan(8);
     for (const [, role, name] of named) expect(getByRole(document.body, role, { name })).toBeTruthy();
     // And the other direction: every accessible element with a non-generic role is in the snapshot.
-    for (const role of ["navigation", "link", "heading", "form", "textbox", "checkbox", "button", "table", "row", "columnheader", "cell"]) {
+    for (const role of [
+      "navigation",
+      "link",
+      "heading",
+      "form",
+      "textbox",
+      "checkbox",
+      "button",
+      "table",
+      "row",
+      "columnheader",
+      "cell",
+    ]) {
       for (const el of getAllByRole(document.body, role)) {
         expect(snapshot).toContain(`- ${role}`);
         expect(el).toBeTruthy();

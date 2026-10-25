@@ -53,11 +53,12 @@ describe("focusable area — https://html.spec.whatwg.org/#focusable-area", () =
     ["<video controls></video>", true],
     ["<video></video>", false],
     ["<button disabled>b</button>", false],
-    ['<fieldset disabled><input></fieldset>', false],
+    ["<fieldset disabled><input></fieldset>", false],
     ["<div inert><button>b</button></div>", false],
   ])("%s → %s", (html, expected) => {
     const e = el(html);
-    const target = e.localName === "fieldset" || e.localName === "div" && e.hasAttribute("inert") ? e.firstElementChild : e;
+    const target =
+      e.localName === "fieldset" || (e.localName === "div" && e.hasAttribute("inert")) ? e.firstElementChild : e;
     expect(isFocusable(target[$impl])).toBe(expected);
   });
 
@@ -136,7 +137,9 @@ describe("focusing steps and focus update steps — https://html.spec.whatwg.org
     for (const target of [a, b]) {
       for (const type of ["focus", "blur", "focusin", "focusout"]) {
         target.addEventListener(type, (e: any) => {
-          log.push(`${e.type}@${e.target.id} related=${e.relatedTarget?.id ?? null} bubbles=${e.bubbles} composed=${e.composed} trusted=${e.isTrusted} active=${doc.activeElement.id || doc.activeElement.localName}`);
+          log.push(
+            `${e.type}@${e.target.id} related=${e.relatedTarget?.id ?? null} bubbles=${e.bubbles} composed=${e.composed} trusted=${e.isTrusted} active=${doc.activeElement.id || doc.activeElement.localName}`,
+          );
         });
       }
     }
@@ -267,7 +270,8 @@ describe("modal dialogs make the rest of the document inert — https://html.spe
 
 describe("being rendered — https://html.spec.whatwg.org/#being-rendered", () => {
   test("elements that are display:none (hidden attribute, inline style, ancestors) are not focusable", () => {
-    doc.body.innerHTML = '<button id=a hidden>a</button><div style="display:none"><button id=b>b</button></div><button id=c style="display: none">c</button><button id=d>d</button>';
+    doc.body.innerHTML =
+      '<button id=a hidden>a</button><div style="display:none"><button id=b>b</button></div><button id=c style="display: none">c</button><button id=d>d</button>';
     for (const id of ["a", "b", "c"]) {
       doc.getElementById(id).focus();
       expect(doc.activeElement, id).toBe(doc.body);

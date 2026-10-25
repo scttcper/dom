@@ -13,7 +13,12 @@ import { contentAttr, parseFloatingPoint, str, tokenList } from "../reflect.ts";
 import { formOwner } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
 import { serializeFloat } from "./microsyntaxes.ts";
-import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./validation.ts";
+import {
+  installConstraintValidation,
+  V_CUSTOM_ERROR,
+  type ConstraintValidation,
+  type ValidityState,
+} from "./validation.ts";
 import { $customValidity, $defaultValueOverride, $impl, $labels, $options, $validity } from "../../keys.ts";
 
 export class HTMLOutputElement extends HTMLElement {
@@ -101,7 +106,8 @@ function attrFloat(el: HTMLElement, name: string): number {
 
 function setFloat(el: HTMLElement, name: string, value: unknown): void {
   const n = Number(value);
-  if (!Number.isFinite(n)) throw new TypeError(`Failed to set the '${name}' property: The provided double value is non-finite.`);
+  if (!Number.isFinite(n))
+    throw new TypeError(`Failed to set the '${name}' property: The provided double value is non-finite.`);
   el.setAttribute(name, serializeFloat(n));
 }
 
@@ -122,7 +128,10 @@ export class HTMLProgressElement extends HTMLElement {
 
   set max(value: number) {
     const n = Number(value);
-    if (!Number.isFinite(n)) throw new TypeError("Failed to set the 'max' property on 'HTMLProgressElement': The provided double value is non-finite.");
+    if (!Number.isFinite(n))
+      throw new TypeError(
+        "Failed to set the 'max' property on 'HTMLProgressElement': The provided double value is non-finite.",
+      );
     if (n > 0) this.setAttribute("max", serializeFloat(n));
   }
 

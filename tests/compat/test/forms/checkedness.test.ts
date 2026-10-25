@@ -17,11 +17,13 @@ import { describe } from "vitest";
 import { differential, type AnyWindow } from "../../src/harness.ts";
 
 const radios = (w: AnyWindow) =>
-  Array.from(w.document.querySelectorAll("input[type=radio]") as ArrayLike<AnyWindow>).map((r) => `${r.id}:${r.checked}`);
+  Array.from(w.document.querySelectorAll("input[type=radio]") as ArrayLike<AnyWindow>).map(
+    (r) => `${r.id}:${r.checked}`,
+  );
 
 describe("checked content attribute and dirty checkedness — https://html.spec.whatwg.org/#concept-input-checked-dirty-flag", () => {
   differential("checked attribute sets initial checkedness; defaultChecked reflects it", (w) => {
-    w.document.body.innerHTML = '<input type=checkbox id=a checked><input type=checkbox id=b>';
+    w.document.body.innerHTML = "<input type=checkbox id=a checked><input type=checkbox id=b>";
     const a = w.document.getElementById("a");
     const b = w.document.getElementById("b");
     return { a: [a.checked, a.defaultChecked], b: [b.checked, b.defaultChecked] };
@@ -112,56 +114,57 @@ describe("indeterminate — https://html.spec.whatwg.org/#dom-input-indeterminat
 describe("radio button groups — https://html.spec.whatwg.org/#radio-button-group", () => {
   differential("checking one radio unchecks the others in the same form and name", (w) => {
     w.document.body.innerHTML =
-      '<form><input type=radio name=g id=a checked><input type=radio name=g id=b><input type=radio name=h id=c checked></form>';
+      "<form><input type=radio name=g id=a checked><input type=radio name=g id=b><input type=radio name=h id=c checked></form>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("radios with the same name in different forms are independent", (w) => {
     w.document.body.innerHTML =
-      '<form><input type=radio name=g id=a checked></form><form><input type=radio name=g id=b></form>';
+      "<form><input type=radio name=g id=a checked></form><form><input type=radio name=g id=b></form>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("a radio in a form and one outside any form with the same name are different groups", (w) => {
-    w.document.body.innerHTML = '<form><input type=radio name=g id=a checked></form><input type=radio name=g id=b>';
+    w.document.body.innerHTML = "<form><input type=radio name=g id=a checked></form><input type=radio name=g id=b>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("form-less radios in the same tree with the same name form a group", (w) => {
-    w.document.body.innerHTML = '<div><input type=radio name=g id=a checked></div><p><input type=radio name=g id=b></p>';
+    w.document.body.innerHTML =
+      "<div><input type=radio name=g id=a checked></div><p><input type=radio name=g id=b></p>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("names are compared case-sensitively", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked><input type=radio name=G id=b>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked><input type=radio name=G id=b>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("radios without a name are never grouped", (w) => {
-    w.document.body.innerHTML = '<input type=radio id=a checked><input type=radio id=b>';
+    w.document.body.innerHTML = "<input type=radio id=a checked><input type=radio id=b>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("form attribute association determines the group", (w) => {
     w.document.body.innerHTML =
-      '<form id=f><input type=radio name=g id=a checked></form><input type=radio name=g id=b form=f>';
+      "<form id=f><input type=radio name=g id=a checked></form><input type=radio name=g id=b form=f>";
     w.document.getElementById("b").checked = true;
     return radios(w);
   });
 
   differential("parsing two checked radios of one group leaves only the last checked", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked><input type=radio name=g id=b checked>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked><input type=radio name=g id=b checked>";
     return radios(w);
   });
 
   differential("inserting a checked radio into a group unchecks the existing checked one (becomes connected)", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked>";
     const b = w.document.createElement("input");
     b.type = "radio";
     b.name = "g";
@@ -172,26 +175,26 @@ describe("radio button groups — https://html.spec.whatwg.org/#radio-button-gro
   });
 
   differential("setting name to join a group unchecks the others if the joining radio is checked", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked><input type=radio name=other id=b checked>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked><input type=radio name=other id=b checked>";
     w.document.getElementById("b").name = "g";
     return radios(w);
   });
 
   differential("changing type to radio while checked unchecks the group", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked><input type=checkbox name=g id=b checked>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked><input type=checkbox name=g id=b checked>";
     w.document.getElementById("b").type = "radio";
     return radios(w);
   });
 
   differential("detached radios in the same detached subtree are grouped", (w) => {
     const div = w.document.createElement("div");
-    div.innerHTML = '<input type=radio name=g id=a checked><input type=radio name=g id=b>';
+    div.innerHTML = "<input type=radio name=g id=a checked><input type=radio name=g id=b>";
     div.lastChild.checked = true;
     return Array.from(div.children as ArrayLike<AnyWindow>).map((r) => `${r.id}:${r.checked}`);
   });
 
   differential("a detached radio is not grouped with connected radios", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked>";
     const b = w.document.createElement("input");
     b.type = "radio";
     b.name = "g";
@@ -200,14 +203,14 @@ describe("radio button groups — https://html.spec.whatwg.org/#radio-button-gro
   });
 
   differential("setting checked=false never checks another radio", (w) => {
-    w.document.body.innerHTML = '<input type=radio name=g id=a checked><input type=radio name=g id=b>';
+    w.document.body.innerHTML = "<input type=radio name=g id=a checked><input type=radio name=g id=b>";
     w.document.getElementById("a").checked = false;
     return radios(w);
   });
 
   differential("moving a checked radio into another form unchecks that form's group", (w) => {
     w.document.body.innerHTML =
-      '<form id=f1><input type=radio name=g id=a checked></form><form id=f2><input type=radio name=g id=b checked></form>';
+      "<form id=f1><input type=radio name=g id=a checked></form><form id=f2><input type=radio name=g id=b checked></form>";
     w.document.getElementById("f2").appendChild(w.document.getElementById("a"));
     return radios(w);
   });

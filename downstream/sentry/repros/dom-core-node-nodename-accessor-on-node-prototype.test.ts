@@ -25,15 +25,32 @@ import { differential } from "./engines.ts";
 function lookupGetter(object: object | null, prop: string): (node: unknown) => unknown {
   while (object !== null) {
     const desc = Object.getOwnPropertyDescriptor(object, prop);
-    if (desc) return desc.get ? (n) => desc.get!.call(n) : typeof desc.value === "function" ? (n) => desc.value.call(n) : () => null;
+    if (desc)
+      return desc.get
+        ? (n) => desc.get!.call(n)
+        : typeof desc.value === "function"
+          ? (n) => desc.value.call(n)
+          : () => null;
     object = Object.getPrototypeOf(object);
   }
   return () => null;
 }
 
 const NODE_ATTRIBUTES = [
-  "nodeType", "nodeName", "baseURI", "isConnected", "ownerDocument", "parentNode", "parentElement",
-  "childNodes", "firstChild", "lastChild", "previousSibling", "nextSibling", "nodeValue", "textContent",
+  "nodeType",
+  "nodeName",
+  "baseURI",
+  "isConnected",
+  "ownerDocument",
+  "parentNode",
+  "parentElement",
+  "childNodes",
+  "firstChild",
+  "lastChild",
+  "previousSibling",
+  "nextSibling",
+  "nodeValue",
+  "textContent",
 ];
 
 differential("Node.prototype attribute accessors (DOMPurify lookupGetter)", (make) => {
@@ -47,7 +64,9 @@ differential("Node.prototype attribute accessors (DOMPurify lookupGetter)", (mak
 
   test("every Node attribute is an accessor on Node.prototype", () => {
     const window = make();
-    const missing = NODE_ATTRIBUTES.filter((name) => typeof Object.getOwnPropertyDescriptor(window.Node.prototype, name)?.get !== "function");
+    const missing = NODE_ATTRIBUTES.filter(
+      (name) => typeof Object.getOwnPropertyDescriptor(window.Node.prototype, name)?.get !== "function",
+    );
     expect(missing).toEqual([]);
   });
 });

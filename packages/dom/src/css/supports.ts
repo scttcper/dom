@@ -76,7 +76,7 @@ function condition(c: Cursor): number {
     c.next();
     const w = inParens(c);
     if (w === -1) return -1;
-    v = op === "and" ? (v & w) : (v | w);
+    v = op === "and" ? v & w : v | w;
   }
   if (c.type === TK_IDENT) return -1;
   return v;
@@ -96,7 +96,10 @@ function inParens(c: Cursor): number {
   if (inner === null) return -1;
   // ( <supports-condition> ) or ( <declaration> )
   const sub = new Cursor(inner);
-  const isNested = sub.type === TK_LPAREN || sub.type === TK_FUNCTION || (sub.type === TK_IDENT && sub.t.value.toLowerCase() === "not");
+  const isNested =
+    sub.type === TK_LPAREN ||
+    sub.type === TK_FUNCTION ||
+    (sub.type === TK_IDENT && sub.t.value.toLowerCase() === "not");
   if (isNested) {
     const v = condition(sub);
     if (v !== -1 && sub.type === TK_EOF) return v;

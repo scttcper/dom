@@ -1249,9 +1249,9 @@ test('return a proper error message when no label is found and there is an aria-
 // https://github.com/testing-library/dom-testing-library/issues/723
 it('gets form controls by label text on IE and other legacy browsers', () => {
   // Simulate lack of support for HTMLInputElement.prototype.labels
-  vi
-    .spyOn(HTMLInputElement.prototype, 'labels', 'get')
-    .mockReturnValue(undefined)
+  vi.spyOn(HTMLInputElement.prototype, 'labels', 'get').mockReturnValue(
+    undefined,
+  )
 
   const {getByLabelText} = renderIntoDocument(`
     <label>

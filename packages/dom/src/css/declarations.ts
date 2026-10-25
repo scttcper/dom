@@ -4,8 +4,22 @@
 
 import { parseDeclarationList, type RawDecl } from "./parser.ts";
 import { isCustomPropertyName, isSupportedProperty } from "./properties.ts";
-import { containsVar, isCSSWideKeyword, normalizeCustom, normalizeLonghand, splitComponents, TK_IDENT } from "./values.ts";
-import { expandShorthand, isExpandedShorthand, longhandsOf, MULTI_LAYER, serializeShorthand, shorthandsContaining } from "./shorthands.ts";
+import {
+  containsVar,
+  isCSSWideKeyword,
+  normalizeCustom,
+  normalizeLonghand,
+  splitComponents,
+  TK_IDENT,
+} from "./values.ts";
+import {
+  expandShorthand,
+  isExpandedShorthand,
+  longhandsOf,
+  MULTI_LAYER,
+  serializeShorthand,
+  shorthandsContaining,
+} from "./shorthands.ts";
 
 export class DeclBlock {
   /** Property names (lowercase, or custom property names as written). */

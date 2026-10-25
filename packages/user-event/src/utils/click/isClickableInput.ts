@@ -1,7 +1,11 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/click/isClickableInput.ts
 
-import type {Element, HTMLButtonElement, HTMLInputElement} from '../../dom-types.ts'
+import type {
+  Element,
+  HTMLButtonElement,
+  HTMLInputElement,
+} from '../../dom-types.ts'
 import {isElementType} from '../misc/isElementType.ts'
 
 const clickableInputTypes = {

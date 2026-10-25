@@ -73,7 +73,9 @@ export class IntersectionObserver {
 
   constructor(callback: IntersectionObserverCallback, options: IntersectionObserverInit = {}) {
     if (typeof callback !== "function") {
-      throw new TypeError("Failed to construct 'IntersectionObserver': parameter 1 is not of type 'IntersectionObserverCallback'.");
+      throw new TypeError(
+        "Failed to construct 'IntersectionObserver': parameter 1 is not of type 'IntersectionObserverCallback'.",
+      );
     }
     this[$callback] = callback;
     this[$targets] = new Set();
@@ -84,7 +86,9 @@ export class IntersectionObserver {
     const thresholds = (Array.isArray(t) ? t : [t]).map(Number);
     for (const n of thresholds) {
       if (!(n >= 0 && n <= 1)) {
-        throw new RangeError("Failed to construct 'IntersectionObserver': Threshold values must be numbers between 0 and 1");
+        throw new RangeError(
+          "Failed to construct 'IntersectionObserver': Threshold values must be numbers between 0 and 1",
+        );
       }
     }
     this.thresholds = Object.freeze(thresholds.sort((a, b) => a - b));
@@ -117,7 +121,10 @@ function normalizeMargin(margin: string): string {
   if (parts.length === 0) parts.push("0px");
   for (const p of parts) {
     if (!/^-?(\d+|\d*\.\d+)(px|%)$/.test(p) && p !== "0") {
-      throw new DOMException("Failed to construct 'IntersectionObserver': rootMargin must be specified in pixels or percent.", "SyntaxError");
+      throw new DOMException(
+        "Failed to construct 'IntersectionObserver': rootMargin must be specified in pixels or percent.",
+        "SyntaxError",
+      );
     }
   }
   const px = parts.map((p) => (p === "0" ? "0px" : p));

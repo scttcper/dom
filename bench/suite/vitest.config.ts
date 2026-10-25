@@ -44,7 +44,11 @@ export default defineConfig({
     setupFiles: ["./setup.ts"],
     // Load @ctrl/dom and the environment through Node (type stripping) instead of Vite's module
     // runner, as a user installing the packages would get them.
-    server: { deps: { external: [/@ctrl\/dom/, /packages\/(dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)\//] } },
+    server: {
+      deps: {
+        external: [/@ctrl\/dom/, /packages\/(dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)\//],
+      },
+    },
     ...(dist ? { execArgv: ["--import", distPreload], env: distMapEnv() } : {}),
     reporters: ["default", "./reporter.ts"],
     ...(workers ? { maxWorkers: workers } : {}),

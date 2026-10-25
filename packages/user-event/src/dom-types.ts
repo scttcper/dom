@@ -93,8 +93,16 @@ export interface AddEventListenerOptions {
 }
 
 export interface EventTarget {
-  addEventListener(type: string, listener: any, options?: boolean | AddEventListenerOptions): void
-  removeEventListener(type: string, listener: any, options?: boolean | {capture?: boolean}): void
+  addEventListener(
+    type: string,
+    listener: any,
+    options?: boolean | AddEventListenerOptions,
+  ): void
+  removeEventListener(
+    type: string,
+    listener: any,
+    options?: boolean | {capture?: boolean},
+  ): void
   dispatchEvent(event: Event): boolean
 }
 
@@ -261,7 +269,9 @@ export type ChildNode = Node
 export interface ParentNode {
   readonly children: HTMLCollectionOf<Element>
   querySelector<E extends Element = HTMLElement>(selectors: string): E | null
-  querySelectorAll<E extends Element = HTMLElement>(selectors: string): NodeListOf<E>
+  querySelectorAll<E extends Element = HTMLElement>(
+    selectors: string,
+  ): NodeListOf<E>
   append(...nodes: Array<Node | string>): void
 }
 
@@ -318,8 +328,17 @@ export interface HTMLInputElement extends HTMLElement {
   selectionStart: number | null
   selectionEnd: number | null
   selectionDirection: string | null
-  setSelectionRange(start: number | null, end: number | null, direction?: 'forward' | 'backward' | 'none'): void
-  setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void
+  setSelectionRange(
+    start: number | null,
+    end: number | null,
+    direction?: 'forward' | 'backward' | 'none',
+  ): void
+  setRangeText(
+    replacement: string,
+    start?: number,
+    end?: number,
+    selectionMode?: string,
+  ): void
   select(): void
 }
 
@@ -335,8 +354,17 @@ export interface HTMLTextAreaElement extends HTMLElement {
   selectionStart: number | null
   selectionEnd: number | null
   selectionDirection: string | null
-  setSelectionRange(start: number | null, end: number | null, direction?: 'forward' | 'backward' | 'none'): void
-  setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void
+  setSelectionRange(
+    start: number | null,
+    end: number | null,
+    direction?: 'forward' | 'backward' | 'none',
+  ): void
+  setRangeText(
+    replacement: string,
+    start?: number,
+    end?: number,
+    selectionMode?: string,
+  ): void
   select(): void
 }
 
@@ -443,7 +471,12 @@ export interface Selection {
   collapseToStart(): void
   collapseToEnd(): void
   extend(node: Node, offset?: number): void
-  setBaseAndExtent(anchorNode: Node, anchorOffset: number, focusNode: Node, focusOffset: number): void
+  setBaseAndExtent(
+    anchorNode: Node,
+    anchorOffset: number,
+    focusNode: Node,
+    focusOffset: number,
+  ): void
   toString(): string
 }
 
@@ -537,7 +570,10 @@ type Ctor<T> = {new (...args: any[]): T; prototype: T}
 export interface Window extends EventTarget {
   readonly document: Document
   readonly navigator: Navigator
-  getComputedStyle(element: Element, pseudo?: string | null): CSSStyleDeclaration
+  getComputedStyle(
+    element: Element,
+    pseudo?: string | null,
+  ): CSSStyleDeclaration
   CSS?: {escape(ident: string): string}
   REACT_VERSION?: number
   Event: Ctor<Event>

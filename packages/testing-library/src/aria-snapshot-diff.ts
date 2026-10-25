@@ -82,7 +82,10 @@ export function diffLines(a: string[], b: string[]): Op[] {
     const lcs = new Uint32Array((n + 1) * width);
     for (let i = n - 1; i >= 0; i--) {
       for (let j = m - 1; j >= 0; j--) {
-        lcs[i * width + j] = a[start + i] === b[start + j] ? lcs[(i + 1) * width + j + 1] + 1 : Math.max(lcs[(i + 1) * width + j], lcs[i * width + j + 1]);
+        lcs[i * width + j] =
+          a[start + i] === b[start + j]
+            ? lcs[(i + 1) * width + j + 1] + 1
+            : Math.max(lcs[(i + 1) * width + j], lcs[i * width + j + 1]);
       }
     }
     let i = 0;

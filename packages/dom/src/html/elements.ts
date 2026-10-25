@@ -8,7 +8,22 @@
 
 import { installEventHandlers } from "../events/handlers.ts";
 import { HTMLElement } from "./HTMLElement.ts";
-import { bool, clampedUlong, CROSS_ORIGIN, enumerated, strNullEmpty, FETCH_PRIORITY, LOADING, long, REFERRER_POLICY, str, tokenList, ulong, url, contentAttr } from "./reflect.ts";
+import {
+  bool,
+  clampedUlong,
+  CROSS_ORIGIN,
+  enumerated,
+  strNullEmpty,
+  FETCH_PRIORITY,
+  LOADING,
+  long,
+  REFERRER_POLICY,
+  str,
+  tokenList,
+  ulong,
+  url,
+  contentAttr,
+} from "./reflect.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ELEMENT_NODE, F_CONNECT_HOOK, HTML_NS } from "../nodes/constants.ts";
@@ -19,7 +34,12 @@ import { T } from "../nodes/tags.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { setAttribute } from "../nodes/attributes.ts";
 import { fnCollection } from "./collection.ts";
-import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation, type ValidityState } from "./forms/validation.ts";
+import {
+  installConstraintValidation,
+  V_CUSTOM_ERROR,
+  type ConstraintValidation,
+  type ValidityState,
+} from "./forms/validation.ts";
 import { formOwner } from "./forms/form-associated.ts";
 import { currentDocument } from "../window/current.ts";
 import type { HTMLCollection } from "../collections/HTMLCollection.ts";
@@ -330,7 +350,11 @@ export class HTMLTrackElement extends HTMLElement {
     return null;
   }
 }
-enumerated(HTMLTrackElement, "kind", { keywords: ["subtitles", "captions", "descriptions", "chapters", "metadata"], missing: "subtitles", invalid: "metadata" });
+enumerated(HTMLTrackElement, "kind", {
+  keywords: ["subtitles", "captions", "descriptions", "chapters", "metadata"],
+  missing: "subtitles",
+  invalid: "metadata",
+});
 url(HTMLTrackElement, "src");
 str(HTMLTrackElement, "srclang label");
 bool(HTMLTrackElement, "default");
@@ -374,7 +398,8 @@ ulong(HTMLCanvasElement, "height", 150);
 // --- tables -----------------------------------------------------------------------------------
 
 function childOfType(parent: NodeImpl, tag: number): NodeImpl | null {
-  for (let c = parent.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === tag && c.ns === HTML_NS) return c;
+  for (let c = parent.first; c !== null; c = c.next)
+    if (c.type === ELEMENT_NODE && c.tag === tag && c.ns === HTML_NS) return c;
   return null;
 }
 
@@ -406,7 +431,8 @@ function fillTableRows(table: NodeImpl, out: Element[]): void {
 }
 
 function pushRows(section: NodeImpl, out: Element[]): void {
-  for (let r = section.first; r !== null; r = r.next) if (r.type === ELEMENT_NODE && r.tag === T.tr && r.ns === HTML_NS) out.push(r.node as Element);
+  for (let r = section.first; r !== null; r = r.next)
+    if (r.type === ELEMENT_NODE && r.tag === T.tr && r.ns === HTML_NS) out.push(r.node as Element);
 }
 
 export class HTMLTableElement extends HTMLElement {
@@ -473,14 +499,16 @@ export class HTMLTableElement extends HTMLElement {
   get tBodies(): HTMLCollection {
     return sameObject(this, TBODIES, () =>
       fnCollection(this[$impl], (root, out) => {
-        for (let c = root.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) out.push(c.node as Element);
+        for (let c = root.first; c !== null; c = c.next)
+          if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) out.push(c.node as Element);
       }),
     );
   }
   createTBody(): Element {
     const el = this[$impl].doc.createElement("tbody");
     let lastBody: NodeImpl | null = null;
-    for (let c = this[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c;
+    for (let c = this[$impl].first; c !== null; c = c.next)
+      if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c;
     this.insertBefore(el, lastBody === null ? null : lastBody.next === null ? null : lastBody.next.node);
     return el;
   }
@@ -499,7 +527,8 @@ export class HTMLTableElement extends HTMLElement {
       this.appendChild(doc.createElement("tbody")).appendChild(tr);
     } else if (n === 0) {
       let lastBody: Element | null = null;
-      for (let c = this[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c.node as Element;
+      for (let c = this[$impl].first; c !== null; c = c.next)
+        if (c.type === ELEMENT_NODE && c.tag === T.tbody && c.ns === HTML_NS) lastBody = c.node as Element;
       lastBody!.appendChild(tr);
     } else if (index === -1 || index === n) {
       rows.item(n - 1)!.parentNode!.appendChild(tr);
@@ -522,7 +551,8 @@ export class HTMLTableElement extends HTMLElement {
   }
   _afterCaptionAndColgroups(): Element | null {
     for (let c = this[$impl].first; c !== null; c = c.next) {
-      if (c.type === ELEMENT_NODE && !((c.tag === T.caption || c.tag === T.colgroup) && c.ns === HTML_NS)) return c.node as Element;
+      if (c.type === ELEMENT_NODE && !((c.tag === T.caption || c.tag === T.colgroup) && c.ns === HTML_NS))
+        return c.node as Element;
     }
     return null;
   }
@@ -572,7 +602,13 @@ export class HTMLTableRowElement extends HTMLElement {
     if (p === null) return -1;
     let table: NodeImpl | null = null;
     if (p.tag === T.table && p.ns === HTML_NS) table = p;
-    else if ((p.tag === T.thead || p.tag === T.tbody || p.tag === T.tfoot) && p.ns === HTML_NS && p.parent !== null && p.parent.tag === T.table) table = p.parent;
+    else if (
+      (p.tag === T.thead || p.tag === T.tbody || p.tag === T.tfoot) &&
+      p.ns === HTML_NS &&
+      p.parent !== null &&
+      p.parent.tag === T.table
+    )
+      table = p.parent;
     if (table === null) return -1;
     const rows: Element[] = [];
     fillTableRows(table, rows);
@@ -589,7 +625,9 @@ export class HTMLTableRowElement extends HTMLElement {
   get cells(): HTMLCollection {
     return sameObject(this, CELLS, () =>
       fnCollection(this[$impl], (root, out) => {
-        for (let c = root.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && (c.tag === T.td || c.tag === T.th) && c.ns === HTML_NS) out.push(c.node as Element);
+        for (let c = root.first; c !== null; c = c.next)
+          if (c.type === ELEMENT_NODE && (c.tag === T.td || c.tag === T.th) && c.ns === HTML_NS)
+            out.push(c.node as Element);
       }),
     );
   }
@@ -676,4 +714,3 @@ bool(HTMLMarqueeElement, "trueSpeed=truespeed");
 
 /** https://html.spec.whatwg.org/#htmlunknownelement */
 export class HTMLUnknownElement extends HTMLElement {}
-

@@ -30,7 +30,9 @@ describe("attach a shadow root — https://dom.spec.whatwg.org/#concept-attach-a
   test("step 1-2: only HTML elements with a valid shadow host name (or custom element name) can host", () => {
     expect(() => document.createElement("div").attachShadow({ mode: "open" })).not.toThrow();
     expect(() => document.createElement("my-element").attachShadow({ mode: "open" })).not.toThrow();
-    expect(() => document.createElement("input").attachShadow({ mode: "open" })).toThrow(expect.objectContaining({ name: "NotSupportedError" }));
+    expect(() => document.createElement("input").attachShadow({ mode: "open" })).toThrow(
+      expect.objectContaining({ name: "NotSupportedError" }),
+    );
     expect(() => document.createElementNS("http://www.w3.org/2000/svg", "g").attachShadow({ mode: "open" })).toThrow(
       expect.objectContaining({ name: "NotSupportedError" }),
     );
@@ -48,7 +50,13 @@ describe("attach a shadow root — https://dom.spec.whatwg.org/#concept-attach-a
 
   test("init members are reflected; shadowRoot is null for closed roots", () => {
     const host = document.createElement("div");
-    const root = host.attachShadow({ mode: "closed", delegatesFocus: true, slotAssignment: "manual", clonable: true, serializable: true });
+    const root = host.attachShadow({
+      mode: "closed",
+      delegatesFocus: true,
+      slotAssignment: "manual",
+      clonable: true,
+      serializable: true,
+    });
     expect(root.mode).toBe("closed");
     expect(root.host).toBe(host);
     expect(root.delegatesFocus).toBe(true);

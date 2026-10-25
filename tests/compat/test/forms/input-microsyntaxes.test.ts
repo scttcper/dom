@@ -47,14 +47,33 @@ function sanitized(w: AnyWindow, type: string, value: string): { value: string; 
 describe("valid floating-point number — https://html.spec.whatwg.org/#valid-floating-point-number", () => {
   differentialEach(
     (v) => `type=number keeps only valid floating-point numbers: ${JSON.stringify(v)}`,
-    ["1", "-1", "1.5", ".5", "1.", "+1", "1e3", "1E-2", "-0", " 1", "1 ", "0x10", "1e", "Infinity", "1_000", "00012", "1e400"],
+    [
+      "1",
+      "-1",
+      "1.5",
+      ".5",
+      "1.",
+      "+1",
+      "1e3",
+      "1E-2",
+      "-0",
+      " 1",
+      "1 ",
+      "0x10",
+      "1e",
+      "Infinity",
+      "1_000",
+      "00012",
+      "1e400",
+    ],
     (w, v) => sanitized(w, "number", v),
   );
 });
 
 describe("string → number / number → string — https://html.spec.whatwg.org/#concept-input-value-string-number", () => {
   differentialEach(
-    (c) => `type=${c.type}: valueAsNumber = ${c.n} serializes back (https://html.spec.whatwg.org/#concept-input-value-number-string)`,
+    (c) =>
+      `type=${c.type}: valueAsNumber = ${c.n} serializes back (https://html.spec.whatwg.org/#concept-input-value-number-string)`,
     [
       { type: "number", n: 0.1 + 0.2 },
       { type: "number", n: 1e21 },
@@ -94,7 +113,20 @@ differential(
 describe("dates — https://html.spec.whatwg.org/#valid-date-string, https://html.spec.whatwg.org/#parse-a-date-string", () => {
   differentialEach(
     (v) => `type=date: ${JSON.stringify(v)} (https://html.spec.whatwg.org/#number-of-days-in-month-month-of-year-year)`,
-    ["2024-02-29", "2023-02-29", "1900-02-29", "2000-02-29", "2024-04-31", "0000-01-01", "0001-01-01", "275760-09-13", "2024-13-01", "2024-1-01", "2024-01-01T00:00", " 2024-01-01"],
+    [
+      "2024-02-29",
+      "2023-02-29",
+      "1900-02-29",
+      "2000-02-29",
+      "2024-04-31",
+      "0000-01-01",
+      "0001-01-01",
+      "275760-09-13",
+      "2024-13-01",
+      "2024-1-01",
+      "2024-01-01T00:00",
+      " 2024-01-01",
+    ],
     (w, v) => sanitized(w, "date", v),
   );
 });
@@ -126,7 +158,21 @@ describe("weeks — https://html.spec.whatwg.org/#valid-week-string, https://htm
 describe("times — https://html.spec.whatwg.org/#valid-time-string, https://html.spec.whatwg.org/#parse-a-time-string", () => {
   differentialEach(
     (v) => `type=time: ${JSON.stringify(v)}`,
-    ["00:00", "23:59", "23:59:59", "23:59:59.999", "12:30:00.1", "24:00", "12:60", "12:30:60", "1:30", "12:3", "12:30:5", "12:30:00.", "12:30:00.1234"],
+    [
+      "00:00",
+      "23:59",
+      "23:59:59",
+      "23:59:59.999",
+      "12:30:00.1",
+      "24:00",
+      "12:60",
+      "12:30:60",
+      "1:30",
+      "12:3",
+      "12:30:5",
+      "12:30:00.",
+      "12:30:00.1234",
+    ],
     (w, v) => sanitized(w, "time", v),
   );
 });
@@ -134,7 +180,16 @@ describe("times — https://html.spec.whatwg.org/#valid-time-string, https://htm
 describe("local date and time — https://html.spec.whatwg.org/#parse-a-local-date-and-time-string, https://html.spec.whatwg.org/#valid-normalised-local-date-and-time-string", () => {
   differentialEach(
     (v) => `type=datetime-local normalizes ${JSON.stringify(v)}`,
-    ["2024-01-01T10:00", "2024-01-01 10:00", "2024-01-01T10:00:00", "2024-01-01T10:00:00.500", "2024-01-01T10:00:30.000", "2024-02-30T10:00", "2024-01-01t10:00", "2024-01-01T24:00"],
+    [
+      "2024-01-01T10:00",
+      "2024-01-01 10:00",
+      "2024-01-01T10:00:00",
+      "2024-01-01T10:00:00.500",
+      "2024-01-01T10:00:30.000",
+      "2024-02-30T10:00",
+      "2024-01-01t10:00",
+      "2024-01-01T24:00",
+    ],
     (w, v) => sanitized(w, "datetime-local", v),
   );
 });
@@ -288,12 +343,15 @@ differential(
 );
 
 describe("value / dirty value flag — https://html.spec.whatwg.org/#concept-fe-value, https://html.spec.whatwg.org/#concept-input-value-dirty-flag", () => {
-  differential("value mode 'value': setting the IDL value sets the dirty value flag and leaves the attribute alone (https://html.spec.whatwg.org/#dom-input-value-value)", (w) => {
-    const el = input(w, "text", { value: "a" });
-    el.value = "b";
-    el.setAttribute("value", "c");
-    return [el.value, el.getAttribute("value"), el.defaultValue];
-  });
+  differential(
+    "value mode 'value': setting the IDL value sets the dirty value flag and leaves the attribute alone (https://html.spec.whatwg.org/#dom-input-value-value)",
+    (w) => {
+      const el = input(w, "text", { value: "a" });
+      el.value = "b";
+      el.setAttribute("value", "c");
+      return [el.value, el.getAttribute("value"), el.defaultValue];
+    },
+  );
 
   differential("value mode 'default': hidden inputs write the value content attribute", (w) => {
     const el = input(w, "hidden");
@@ -320,23 +378,32 @@ describe("value / dirty value flag — https://html.spec.whatwg.org/#concept-fe-
     return [el.value, threw];
   });
 
-  differential("checked IDL attribute sets dirty checkedness (https://html.spec.whatwg.org/#dom-input-checked)", (w) => {
-    const el = input(w, "checkbox");
-    el.checked = true;
-    el.removeAttribute("checked");
-    el.setAttribute("checked", "");
-    el.checked = false;
-    return [el.checked, el.defaultChecked];
-  });
+  differential(
+    "checked IDL attribute sets dirty checkedness (https://html.spec.whatwg.org/#dom-input-checked)",
+    (w) => {
+      const el = input(w, "checkbox");
+      el.checked = true;
+      el.removeAttribute("checked");
+      el.setAttribute("checked", "");
+      el.checked = false;
+      return [el.checked, el.defaultChecked];
+    },
+  );
 });
 
 describe("mutability and readonly — https://html.spec.whatwg.org/#concept-fe-mutable, https://html.spec.whatwg.org/#the-readonly-attribute", () => {
   differentialEach(
-    (type) => `type=${type} readonly: barred from constraint validation where readonly applies (https://html.spec.whatwg.org/#the-readonly-attribute:barred-from-constraint-validation)`,
+    (type) =>
+      `type=${type} readonly: barred from constraint validation where readonly applies (https://html.spec.whatwg.org/#the-readonly-attribute:barred-from-constraint-validation)`,
     ["text", "number", "date", "email", "password"],
     (w, type) => {
       const el = input(w, type, { readonly: "", required: "" });
-      return { willValidate: el.willValidate, ...validityFlags(el), readOnly: el.readOnly, matchesReadOnly: el.matches(":read-only") };
+      return {
+        willValidate: el.willValidate,
+        ...validityFlags(el),
+        readOnly: el.readOnly,
+        matchesReadOnly: el.matches(":read-only"),
+      };
     },
   );
 

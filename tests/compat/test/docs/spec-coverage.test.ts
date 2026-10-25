@@ -18,14 +18,24 @@ describe("spec section URL normalization", () => {
   });
 
   test("spec levels and TR snapshots collapse onto the editor's draft", () => {
-    expect(sectionOf("https://www.w3.org/TR/cssom-1/#dom-cssstylesheet-insertrule")).toEqual({ spec: "css:cssom", anchor: "dom-cssstylesheet-insertrule" });
-    expect(sectionOf("https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule")).toEqual({ spec: "css:cssom", anchor: "dom-cssstylesheet-insertrule" });
-    expect(sectionOf("https://www.w3.org/TR/wai-aria-1.2/#button")).toEqual(sectionOf("https://w3c.github.io/aria/#button"));
+    expect(sectionOf("https://www.w3.org/TR/cssom-1/#dom-cssstylesheet-insertrule")).toEqual({
+      spec: "css:cssom",
+      anchor: "dom-cssstylesheet-insertrule",
+    });
+    expect(sectionOf("https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule")).toEqual({
+      spec: "css:cssom",
+      anchor: "dom-cssstylesheet-insertrule",
+    });
+    expect(sectionOf("https://www.w3.org/TR/wai-aria-1.2/#button")).toEqual(
+      sectionOf("https://w3c.github.io/aria/#button"),
+    );
   });
 
   test("links without a fragment, repositories and namespace URIs are not sections", () => {
     expect(sectionOf("https://dom.spec.whatwg.org/")).toBeNull();
-    expect(sectionOf("https://github.com/web-platform-tests/wpt/blob/master/dom/nodes/Node-contains.html#L3")).toBeNull();
+    expect(
+      sectionOf("https://github.com/web-platform-tests/wpt/blob/master/dom/nodes/Node-contains.html#L3"),
+    ).toBeNull();
     expect(sectionOf("http://www.w3.org/1999/xhtml")).toBeNull();
     expect(sectionOf("https://html.spec.whatwg.org/entities.json")).toBeNull();
   });

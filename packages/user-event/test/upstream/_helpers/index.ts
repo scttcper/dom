@@ -53,8 +53,9 @@ export function resetWrappers() {
     eventWrapper: (cb: () => void) => cb(),
   })
 
-  return () => configure({
-    asyncWrapper,
-    eventWrapper,
-  })
+  return () =>
+    configure({
+      asyncWrapper,
+      eventWrapper,
+    })
 }

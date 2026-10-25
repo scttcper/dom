@@ -28,8 +28,10 @@ beforeEach(() => {
 });
 
 const $ = (id: string) => doc.getElementById(id);
-const pointer = (target: any, type: string) => target.dispatchEvent(new win.PointerEvent(type, { bubbles: true, composed: true }));
-const escape = (target: any) => target.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+const pointer = (target: any, type: string) =>
+  target.dispatchEvent(new win.PointerEvent(type, { bubbles: true, composed: true }));
+const escape = (target: any) =>
+  target.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
 const nextTask = () => new Promise((r) => setTimeout(r, 1));
 
 function dialogLog(d: any): string[] {

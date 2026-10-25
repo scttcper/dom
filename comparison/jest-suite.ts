@@ -54,17 +54,37 @@ function writeConfig(c: Contender, tmp: string): string {
   return path;
 }
 
-async function runJest(c: Contender, config: string, out: string, memory: string, diagnostics: string, workers: number) {
+async function runJest(
+  c: Contender,
+  config: string,
+  out: string,
+  memory: string,
+  diagnostics: string,
+  workers: number,
+) {
   const imports = (c.preload ?? []).map((p) => `--import ${p}`);
-  const exit = await run(process.execPath, [jestBin, "--config", config, "--ci", "--json", "--outputFile", out, "--maxWorkers", String(workers)], {
-    cwd: here,
-    env: { ...process.env, ...c.env, NODE_OPTIONS: [process.env.NODE_OPTIONS, ...imports].filter(Boolean).join(" "), COMPARE_MEMORY_FILE: memory, COMPARE_DIAGNOSTICS_FILE: diagnostics },
-    timeoutMs: 600_000,
-  });
+  const exit = await run(
+    process.execPath,
+    [jestBin, "--config", config, "--ci", "--json", "--outputFile", out, "--maxWorkers", String(workers)],
+    {
+      cwd: here,
+      env: {
+        ...process.env,
+        ...c.env,
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, ...imports].filter(Boolean).join(" "),
+        COMPARE_MEMORY_FILE: memory,
+        COMPARE_DIAGNOSTICS_FILE: diagnostics,
+      },
+      timeoutMs: 600_000,
+    },
+  );
   return exit;
 }
 
-export async function jestSuite(contenders: Contender[], options: { samples: number; files: number; workers: number }): Promise<void> {
+export async function jestSuite(
+  contenders: Contender[],
+  options: { samples: number; files: number; workers: number },
+): Promise<void> {
   const cs = contenders.filter((c) => c.jest !== undefined);
   if (cs.length === 0) return;
   generateJest(options.files);
@@ -73,7 +93,15 @@ export async function jestSuite(contenders: Contender[], options: { samples: num
   mkdirSync(tmp, { recursive: true });
   const configs = new Map(cs.map((c) => [c.id, writeConfig(c, tmp)]));
   const raw = new Map(cs.map((c) => [c.id, { wall: [] as number[], setup: [] as number[], rss: [] as number[] }]));
-  for (const c of cs) await runJest(c, configs.get(c.id)!, `${tmp}${c.id}-warmup.json`, `${tmp}${c.id}-warmup-memory.jsonl`, `${tmp}${c.id}-warmup-diagnostics.jsonl`, options.workers);
+  for (const c of cs)
+    await runJest(
+      c,
+      configs.get(c.id)!,
+      `${tmp}${c.id}-warmup.json`,
+      `${tmp}${c.id}-warmup-memory.jsonl`,
+      `${tmp}${c.id}-warmup-diagnostics.jsonl`,
+      options.workers,
+    );
   for (let s = 0; s < options.samples; s++) {
     for (const c of interleave(cs, s)) {
       const out = `${tmp}${c.id}-${s}.json`;
@@ -88,9 +116,17 @@ export async function jestSuite(contenders: Contender[], options: { samples: num
       } catch {
         // no report: reported below
       }
-      if (exit.code !== 0 || report === null || !report.success || report.numTotalTestSuites !== options.files || report.numFailedTests > 0) {
+      if (
+        exit.code !== 0 ||
+        report === null ||
+        !report.success ||
+        report.numTotalTestSuites !== options.files ||
+        report.numFailedTests > 0
+      ) {
         const failed = report?.testResults.find((r) => r.status !== "passed");
-        throw new Error(`jest ${c.id}: exit ${exit.code}, ${report?.numTotalTestSuites ?? 0}/${options.files} files\n${failed?.message ?? (exit.stdout + exit.stderr).trim().split("\n").slice(-20).join("\n")}`);
+        throw new Error(
+          `jest ${c.id}: exit ${exit.code}, ${report?.numTotalTestSuites ?? 0}/${options.files} files\n${failed?.message ?? (exit.stdout + exit.stderr).trim().split("\n").slice(-20).join("\n")}`,
+        );
       }
       const r = raw.get(c.id)!;
       r.wall.push(exit.wallMs);
@@ -102,10 +138,16 @@ export async function jestSuite(contenders: Contender[], options: { samples: num
   }
   rmSync(tmp, { recursive: true, force: true });
   const results: Record<string, SuiteResult> = Object.fromEntries(
-    [...raw].map(([id, r]) => [id, { wallMs: spread(r.wall), environmentSetupMs: spread(r.setup), workerRssMB: spread(r.rss) }]),
+    [...raw].map(([id, r]) => [
+      id,
+      { wallMs: spread(r.wall), environmentSetupMs: spread(r.setup), workerRssMB: spread(r.rss) },
+    ]),
   );
   const labels = Object.fromEntries(cs.map((c) => [c.id, c.jest!.label()]));
-  writeFileSync(`${here}results/suite-jest.json`, `${JSON.stringify({ ...options, run: runInfo(cs), labels, results }, null, 2)}\n`);
+  writeFileSync(
+    `${here}results/suite-jest.json`,
+    `${JSON.stringify({ ...options, run: runInfo(cs), labels, results }, null, 2)}\n`,
+  );
 }
 
 if (import.meta.main) {
@@ -119,5 +161,9 @@ if (import.meta.main) {
   });
   const contenders = selectContenders(values.contenders);
   for (const c of contenders) c.check?.();
-  await jestSuite(contenders, { samples: Number(values.samples), files: Number(values.files), workers: Number(values.workers) });
+  await jestSuite(contenders, {
+    samples: Number(values.samples),
+    files: Number(values.files),
+    workers: Number(values.workers),
+  });
 }

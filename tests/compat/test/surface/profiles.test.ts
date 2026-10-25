@@ -51,7 +51,11 @@ interface Surface {
 }
 
 function isInterface(value: unknown): value is AnyRecord {
-  return typeof value === "function" && typeof (value as AnyRecord).prototype === "object" && (value as AnyRecord).prototype !== null;
+  return (
+    typeof value === "function" &&
+    typeof (value as AnyRecord).prototype === "object" &&
+    (value as AnyRecord).prototype !== null
+  );
 }
 
 /** The interface object named `name` itself: not a legacy factory (`Image`) or an alias (`HTMLDocument`). */
@@ -65,7 +69,8 @@ function ownMembers(name: string, iface: AnyRecord, into: Map<string, object>): 
     if (m !== "constructor" && !m.startsWith("_") && !/^\d+$/.test(m)) into.set(`${name}.${m}`, iface.prototype);
   }
   for (const m of Object.getOwnPropertyNames(iface)) {
-    if (!["length", "name", "prototype", "arguments", "caller"].includes(m) && !m.startsWith("_")) into.set(`${name}.static.${m}`, iface);
+    if (!["length", "name", "prototype", "arguments", "caller"].includes(m) && !m.startsWith("_"))
+      into.set(`${name}.static.${m}`, iface);
   }
 }
 
@@ -95,7 +100,8 @@ function ours(profile: CompatProfile): Surface {
       }
     }
     // Snapshot "has member" now: members gated by the profile change back at uninstall.
-    for (const [key, owner] of surface.members) surface.members.set(key, Object.hasOwn(owner, key.split(".").at(-1)!) ? owner : (undefined as never));
+    for (const [key, owner] of surface.members)
+      surface.members.set(key, Object.hasOwn(owner, key.split(".").at(-1)!) ? owner : (undefined as never));
     return surface;
   } finally {
     uninstall();
@@ -104,8 +110,13 @@ function ours(profile: CompatProfile): Surface {
 }
 
 function oracle(profile: Exclude<CompatProfile, "modern">) {
-  const { JSDOM } = require(ORACLES[profile]) as { JSDOM: new (html: string, options: object) => { window: AnyRecord } };
-  const window = new JSDOM("<!doctype html><html><body></body></html>", { pretendToBeVisual: true, runScripts: "dangerously" }).window;
+  const { JSDOM } = require(ORACLES[profile]) as {
+    JSDOM: new (html: string, options: object) => { window: AnyRecord };
+  };
+  const window = new JSDOM("<!doctype html><html><body></body></html>", {
+    pretendToBeVisual: true,
+    runScripts: "dangerously",
+  }).window;
   const globals = new Set<string>();
   for (let p: object | null = window; p !== null && p !== Object.prototype; p = Object.getPrototypeOf(p)) {
     for (const name of Object.getOwnPropertyNames(p)) globals.add(name);
@@ -114,49 +125,60 @@ function oracle(profile: Exclude<CompatProfile, "modern">) {
 }
 
 const registered = new Map<string, readonly CompatProfile[]>();
-for (const entry of COMPAT) for (const name of [...(entry.globals ?? []), ...(entry.members ?? [])]) registered.set(name, entry.profiles);
+for (const entry of COMPAT)
+  for (const name of [...(entry.globals ?? []), ...(entry.members ?? [])]) registered.set(name, entry.profiles);
 
 const where = "packages/dom/src/window/compat.ts (COMPAT)";
 
-describe.each(Object.keys(ORACLES) as Array<Exclude<CompatProfile, "modern">>)("the %s profile against the real jsdom — https://webidl.spec.whatwg.org/#es-interfaces", (profile) => {
-  const surface = ours(profile);
-  const jsdom = oracle(profile);
+describe.each(Object.keys(ORACLES) as Array<Exclude<CompatProfile, "modern">>)(
+  "the %s profile against the real jsdom — https://webidl.spec.whatwg.org/#es-interfaces",
+  (profile) => {
+    const surface = ours(profile);
+    const jsdom = oracle(profile);
 
-  test("every window global it exposes beyond jsdom is registered for it", () => {
-    const extra = [...surface.globals].filter((name) => !jsdom.globals.has(name));
-    const unregistered = extra.filter((name) => !registered.get(name)?.includes(profile)).sort();
-    expect(unregistered, `globals ${jsdom.window.navigator.userAgent.match(/jsdom\/[\d.]+/)?.[0]} lacks: list them in ${where} with the profiles that should get them`).toEqual([]);
-  });
+    test("every window global it exposes beyond jsdom is registered for it", () => {
+      const extra = [...surface.globals].filter((name) => !jsdom.globals.has(name));
+      const unregistered = extra.filter((name) => !registered.get(name)?.includes(profile)).sort();
+      expect(
+        unregistered,
+        `globals ${jsdom.window.navigator.userAgent.match(/jsdom\/[\d.]+/)?.[0]} lacks: list them in ${where} with the profiles that should get them`,
+      ).toEqual([]);
+    });
 
-  test("every interface member it exposes beyond jsdom is registered for it", () => {
-    const unregistered: string[] = [];
-    for (const [name, iface] of surface.interfaces) {
-      const theirs = jsdom.window[name];
-      if (!isInterface(theirs) || UNFORGEABLE_HOSTS.has(name) || (profile === "jsdom-26" && isJsdom26Cssom(name))) continue;
-      const known = reachable(theirs);
-      if (name === "Document") for (const m of Object.getOwnPropertyNames(jsdom.window.document)) known.add(m);
-      const own = new Map<string, object>();
-      ownMembers(name, iface, own);
-      for (const key of own.keys()) {
-        if (surface.members.get(key) === undefined) continue; // hidden by the profile while installed
-        const member = key.slice(name.length + 1);
-        if (known.has(member)) continue;
-        if (!registered.get(key)?.includes(profile)) unregistered.push(key);
+    test("every interface member it exposes beyond jsdom is registered for it", () => {
+      const unregistered: string[] = [];
+      for (const [name, iface] of surface.interfaces) {
+        const theirs = jsdom.window[name];
+        if (!isInterface(theirs) || UNFORGEABLE_HOSTS.has(name) || (profile === "jsdom-26" && isJsdom26Cssom(name)))
+          continue;
+        const known = reachable(theirs);
+        if (name === "Document") for (const m of Object.getOwnPropertyNames(jsdom.window.document)) known.add(m);
+        const own = new Map<string, object>();
+        ownMembers(name, iface, own);
+        for (const key of own.keys()) {
+          if (surface.members.get(key) === undefined) continue; // hidden by the profile while installed
+          const member = key.slice(name.length + 1);
+          if (known.has(member)) continue;
+          if (!registered.get(key)?.includes(profile)) unregistered.push(key);
+        }
       }
-    }
-    expect(unregistered.sort(), `members jsdom lacks: list them in ${where} with the profiles that should get them`).toEqual([]);
-  });
+      expect(
+        unregistered.sort(),
+        `members jsdom lacks: list them in ${where} with the profiles that should get them`,
+      ).toEqual([]);
+    });
 
-  test("entries registered without it are absent from its installation", () => {
-    const leaked: string[] = [];
-    for (const entry of COMPAT) {
-      if (entry.profiles.includes(profile)) continue;
-      for (const name of entry.globals ?? []) if (surface.globals.has(name)) leaked.push(name);
-      for (const key of entry.members ?? []) if (surface.members.get(key) !== undefined) leaked.push(key);
-    }
-    expect(leaked).toEqual([]);
-  });
-});
+    test("entries registered without it are absent from its installation", () => {
+      const leaked: string[] = [];
+      for (const entry of COMPAT) {
+        if (entry.profiles.includes(profile)) continue;
+        for (const name of entry.globals ?? []) if (surface.globals.has(name)) leaked.push(name);
+        for (const key of entry.members ?? []) if (surface.members.get(key) !== undefined) leaked.push(key);
+      }
+      expect(leaked).toEqual([]);
+    });
+  },
+);
 
 describe("the modern profile and the registry itself", () => {
   const modern = ours("modern");
@@ -164,7 +186,9 @@ describe("the modern profile and the registry itself", () => {
   const j30 = oracle("jsdom-30");
 
   test("modern installs every registered API", () => {
-    const missing = [...registered.keys()].filter((name) => (name.includes(".") ? modern.members.get(name) === undefined : !modern.globals.has(name)));
+    const missing = [...registered.keys()].filter((name) =>
+      name.includes(".") ? modern.members.get(name) === undefined : !modern.globals.has(name),
+    );
     expect(missing, `registered in ${where} but not implemented (or not at that interface)`).toEqual([]);
   });
 

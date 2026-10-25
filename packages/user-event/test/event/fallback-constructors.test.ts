@@ -15,10 +15,21 @@ import {createEvent} from '../../src/event/createEvent.ts'
 describe('PointerEvent missing from the window — https://w3c.github.io/pointerevents/#pointerevent-interface', () => {
   test('pointer events are fallback-class instances with the PointerEventInit members set, like upstream', () => {
     const window = createWindow()
-    Object.defineProperty(window, 'PointerEvent', {value: undefined, configurable: true})
-    const element = window.document.body!.appendChild(window.document.createElement('button'))
-    const event = createEvent('pointerdown', element as never, {pointerType: 'mouse', buttons: 1, isPrimary: true}) as unknown as Record<string, unknown>
-    expect(event).toBeInstanceOf((window as unknown as {MouseEvent: new () => unknown}).MouseEvent)
+    Object.defineProperty(window, 'PointerEvent', {
+      value: undefined,
+      configurable: true,
+    })
+    const element = window.document.body!.appendChild(
+      window.document.createElement('button'),
+    )
+    const event = createEvent('pointerdown', element as never, {
+      pointerType: 'mouse',
+      buttons: 1,
+      isPrimary: true,
+    }) as unknown as Record<string, unknown>
+    expect(event).toBeInstanceOf(
+      (window as unknown as {MouseEvent: new () => unknown}).MouseEvent,
+    )
     expect(event.constructor.name).toBe('PointerEvent')
     expect(event.pointerType).toBe('mouse')
     expect(event.width).toBe(1)

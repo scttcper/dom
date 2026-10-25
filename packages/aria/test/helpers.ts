@@ -91,7 +91,10 @@ export function jestDomImplicitRoles(ariaQuery: any): (node: any) => string[] {
   }
   let result: any[] = [];
   for (const [element, roles] of ariaQuery.elementRoles.entries()) {
-    result = [...result, { match: match(element), roles: Array.from(roles), specificity: (element.attributes ?? []).length }];
+    result = [
+      ...result,
+      { match: match(element), roles: Array.from(roles), specificity: (element.attributes ?? []).length },
+    ];
   }
   result.sort((a, b) => b.specificity - a.specificity);
   return (node) => {

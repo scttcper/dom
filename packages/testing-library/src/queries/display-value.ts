@@ -8,7 +8,11 @@ import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOption
 import { getNodeTextImpl } from "../get-node-text.ts";
 import { $impl } from "@ctrl/dom/internal";
 
-function queryAllByDisplayValue(container: any, value: Matcher, { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {}): any[] {
+function queryAllByDisplayValue(
+  container: any,
+  value: Matcher,
+  { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {},
+): any[] {
   checkContainerType(container);
   const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
@@ -39,16 +43,19 @@ function queryAllByDisplayValue(container: any, value: Matcher, { exact = true, 
   return out;
 }
 
-const getMultipleError: GetErrorFunction<[unknown]> = (c, value) => `Found multiple elements with the display value: ${value}.`;
-const getMissingError: GetErrorFunction<[unknown]> = (c, value) => `Unable to find an element with the display value: ${value}.`;
+const getMultipleError: GetErrorFunction<[unknown]> = (c, value) =>
+  `Found multiple elements with the display value: ${value}.`;
+const getMissingError: GetErrorFunction<[unknown]> = (c, value) =>
+  `Unable to find an element with the display value: ${value}.`;
 
-const queryAllByDisplayValueWithSuggestions = wrapAllByQueryWithSuggestion(queryAllByDisplayValue, queryAllByDisplayValue.name, "queryAll");
-
-const [queryByDisplayValue, getAllByDisplayValue, getByDisplayValue, findAllByDisplayValue, findByDisplayValue] = buildQueries(
+const queryAllByDisplayValueWithSuggestions = wrapAllByQueryWithSuggestion(
   queryAllByDisplayValue,
-  getMultipleError,
-  getMissingError,
+  queryAllByDisplayValue.name,
+  "queryAll",
 );
+
+const [queryByDisplayValue, getAllByDisplayValue, getByDisplayValue, findAllByDisplayValue, findByDisplayValue] =
+  buildQueries(queryAllByDisplayValue, getMultipleError, getMissingError);
 
 export {
   queryByDisplayValue,

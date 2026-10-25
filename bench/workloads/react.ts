@@ -10,6 +10,7 @@ import { expectMatcher } from "../lib/configs.ts";
 import type { Workload } from "./types.ts";
 import { check, eq } from "./types.ts";
 
+// oxfmt-ignore
 const fieldNames = [
   "Name", "Slug", "Organization", "Team", "Email", "Website", "Environment", "Platform",
   "Release", "Repository", "Region", "Description", "Owner", "Timezone", "Language", "Endpoint",
@@ -364,7 +365,11 @@ const asyncFlows: Workload = {
         "div",
         null,
         h("h2", null, `Loaded ${items.length} items`),
-        h("ul", null, items.map((i) => h("li", { key: i }, `Item ${i}`))),
+        h(
+          "ul",
+          null,
+          items.map((i) => h("li", { key: i }, `Item ${i}`)),
+        ),
         h(
           "button",
           {
@@ -514,7 +519,12 @@ function styledFormWorkload(): Workload {
               "div",
               { key: i, className: `css-${i} field` },
               h("label", { htmlFor: `s-${i}`, className: `css-${100 + (i % 50)}` }, `Field ${i}`),
-              h("input", { id: `s-${i}`, className: `css-${150 + (i % 50)}`, readOnly: true, value: `v${revision}-${i}` }),
+              h("input", {
+                id: `s-${i}`,
+                className: `css-${150 + (i % 50)}`,
+                readOnly: true,
+                value: `v${revision}-${i}`,
+              }),
               i % 5 === 0 ? h("span", { className: "hint" }, `Hint for field ${i}`) : null,
             ),
           );
@@ -522,8 +532,16 @@ function styledFormWorkload(): Workload {
         return h(
           "div",
           { className: "app css-199" },
-          h("div", { className: "toolbar css-198" }, h("button", { type: "button", className: "primary css-197" }, "New")),
-          h("div", { className: "panel css-196", hidden: revision % 2 === 1 }, h("button", { type: "button" }, "Hidden action")),
+          h(
+            "div",
+            { className: "toolbar css-198" },
+            h("button", { type: "button", className: "primary css-197" }, "New"),
+          ),
+          h(
+            "div",
+            { className: "panel css-196", hidden: revision % 2 === 1 },
+            h("button", { type: "button" }, "Hidden action"),
+          ),
           h(
             "form",
             { "aria-label": "Styled form", className: "css-195" },

@@ -12,7 +12,11 @@ import {
 import {type Instance} from '../../setup/index.ts'
 import {getTreeDiff, isDisabled} from '../../utils/index.ts'
 import {Buttons, getMouseEventButton, MouseButton} from './buttons.ts'
-import {isDifferentPointerPosition, type pointerKey, type PointerPosition} from './shared.ts'
+import {
+  isDifferentPointerPosition,
+  type pointerKey,
+  type PointerPosition,
+} from './shared.ts'
 
 /**
  * This object is the single "virtual" mouse that might be controlled by multiple different pointer devices.

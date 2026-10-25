@@ -60,10 +60,16 @@ export class TimeRanges {
     return 0;
   }
   start(index: number): number {
-    throw new DOMException(`The index provided (${index}) is greater than or equal to the maximum bound (0).`, "IndexSizeError");
+    throw new DOMException(
+      `The index provided (${index}) is greater than or equal to the maximum bound (0).`,
+      "IndexSizeError",
+    );
   }
   end(index: number): number {
-    throw new DOMException(`The index provided (${index}) is greater than or equal to the maximum bound (0).`, "IndexSizeError");
+    throw new DOMException(
+      `The index provided (${index}) is greater than or equal to the maximum bound (0).`,
+      "IndexSizeError",
+    );
   }
 }
 
@@ -164,7 +170,8 @@ export class HTMLMediaElement extends HTMLElement {
   set volume(v: number) {
     const n = Number(v);
     if (!Number.isFinite(n)) throw new TypeError("The provided double value is non-finite.");
-    if (n < 0 || n > 1) throw new DOMException(`The volume provided (${n}) is outside the range [0, 1].`, "IndexSizeError");
+    if (n < 0 || n > 1)
+      throw new DOMException(`The volume provided (${n}) is outside the range [0, 1].`, "IndexSizeError");
     const s = state(this);
     if (s.volume === n) return;
     s.volume = n;
@@ -256,7 +263,12 @@ export class HTMLMediaElement extends HTMLElement {
 }
 url(HTMLMediaElement, "src");
 enumerated(HTMLMediaElement, "crossOrigin=crossorigin", CROSS_ORIGIN);
-enumerated(HTMLMediaElement, "preload", { keywords: ["none", "metadata", "auto"], missing: "metadata", invalid: "metadata", empty: "auto" });
+enumerated(HTMLMediaElement, "preload", {
+  keywords: ["none", "metadata", "auto"],
+  missing: "metadata",
+  invalid: "metadata",
+  empty: "auto",
+});
 enumerated(HTMLMediaElement, "loading", LOADING);
 bool(HTMLMediaElement, "autoplay loop controls defaultMuted=muted disableRemotePlayback=disableremoteplayback");
 

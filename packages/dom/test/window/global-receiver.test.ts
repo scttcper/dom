@@ -71,7 +71,9 @@ describe("operations on the host global — https://webidl.spec.whatwg.org/#dfn-
     const window = createWindow();
     cleanup.push(() => window.close());
     const proto = Object.getPrototypeOf(window) as Record<string, AnyFn>;
-    expect(() => proto.requestAnimationFrame.call({}, () => {})).toThrow(new TypeError("Failed to execute 'requestAnimationFrame' on 'Window': Illegal invocation"));
+    expect(() => proto.requestAnimationFrame.call({}, () => {})).toThrow(
+      new TypeError("Failed to execute 'requestAnimationFrame' on 'Window': Illegal invocation"),
+    );
   });
 
   test("after uninstall the old global is no longer a receiver", () => {

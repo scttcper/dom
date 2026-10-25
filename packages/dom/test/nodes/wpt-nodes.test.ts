@@ -31,25 +31,31 @@ defineWPTDirectory(
     "Node-removeChild.html": IFRAMES,
     "remove-and-adopt-thcrash.html": IFRAMES,
     "node-realm-adoption-after-frame-removal.html": IFRAMES,
-    "Node-childNodes.html": "compares with the test realm's Array.prototype (harness runs tests in a separate vm realm)",
+    "Node-childNodes.html":
+      "compares with the test realm's Array.prototype (harness runs tests in a separate vm realm)",
     "remove-unscopable.html": "inline event handler attributes are not compiled (no script execution)",
     "Document-getElementsByTagName.html": PROXY_FREE,
     "Element-getElementsByTagName.html": PROXY_FREE,
     "attributes.html": PROXY_FREE,
     "Element-children.html": PROXY_FREE,
     "Document-createElement.html": "XML/XHTML documents loaded through iframes (harness only loads HTML test iframes)",
-    "Document-createElementNS.html": "XML/XHTML documents loaded through iframes (harness only loads HTML test iframes)",
+    "Document-createElementNS.html":
+      "XML/XHTML documents loaded through iframes (harness only loads HTML test iframes)",
     "ParentNode-querySelector-All.html":
       "selectors area: :target needs a URL fragment; the iframe document's window lacks ECMAScript globals (global.TypeError)",
-    "processing-instruction-attributes.html": "ProcessingInstruction attributes proposal (whatwg/dom#1371) not implemented",
+    "processing-instruction-attributes.html":
+      "ProcessingInstruction attributes proposal (whatwg/dom#1371) not implemented",
   },
   {
     "Comment-constructor.html": "registered below with a short timeout",
     "Text-constructor.html": "registered below with a short timeout",
-    "Document-characterSet-normalization-1.html": "loads documents in many encodings through iframes (out of scope: no network/encodings)",
-    "Document-characterSet-normalization-2.html": "loads documents in many encodings through iframes (out of scope: no network/encodings)",
+    "Document-characterSet-normalization-1.html":
+      "loads documents in many encodings through iframes (out of scope: no network/encodings)",
+    "Document-characterSet-normalization-2.html":
+      "loads documents in many encodings through iframes (out of scope: no network/encodings)",
     "Document-createElement-namespace.html": "loads XML/XHTML/SVG documents through iframes (times out)",
-    "Document-createEvent.https.html": "createEvent() interface table (events area: DeviceMotionEvent & co. not implemented)",
+    "Document-createEvent.https.html":
+      "createEvent() interface table (events area: DeviceMotionEvent & co. not implemented)",
     "Document-URL.html": "iframe navigation to a redirecting URL (out of scope: navigation)",
     "Node-parentNode.html": "a removed iframe's document (times out; harness iframes)",
     "Element-matches.html": "loads XHTML documents through iframes (times out)",
@@ -62,14 +68,19 @@ defineWPTDirectory(
   (f) => !/\/MutationObserver-|NodeList-static-length-getter-tampered|crash/.test(f),
 );
 
-for (const f of ["Comment-constructor.html", "Text-constructor.html"]) defineWPT(`dom/nodes/${f}`, SHARED_INTERFACES, { timeout: 300 });
+for (const f of ["Comment-constructor.html", "Text-constructor.html"])
+  defineWPT(`dom/nodes/${f}`, SHARED_INTERFACES, { timeout: 300 });
 
 // .window.js tests (wptFiles() only lists .html).
 defineWPT("dom/nodes/adoption.window.js");
 defineWPT("dom/nodes/attributes-namednodemap-cross-document.window.js");
 defineWPT("dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js");
 defineWPT("dom/nodes/Document-cloneNode-base-url-xml.window.js");
-defineWPT("dom/nodes/Document-cloneNode-base-url.window.js", "blob: URL documents need a fetch (out of scope: network)", { timeout: 300 });
+defineWPT(
+  "dom/nodes/Document-cloneNode-base-url.window.js",
+  "blob: URL documents need a fetch (out of scope: network)",
+  { timeout: 300 },
+);
 defineWPT("dom/nodes/live-collections-batched-mutations.window.js", PROXY_FREE);
 defineWPT("dom/nodes/NodeList-live-mutations.window.js");
 defineWPT("dom/nodes/ParentNode-querySelector-xml-capitalization.window.js");

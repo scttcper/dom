@@ -25,6 +25,7 @@ const chain = (proto: AnyWindow) => {
 };
 
 /** Members the DOM Standard's IDL lists on each interface (operations and attributes, not inherited ones). */
+// oxfmt-ignore
 const IDL: Record<string, string[]> = {
   Document: ["implementation", "URL", "documentURI", "compatMode", "characterSet", "charset", "inputEncoding", "contentType", "doctype", "documentElement", "getElementsByTagName", "getElementsByTagNameNS", "getElementsByClassName", "createElement", "createElementNS", "createDocumentFragment", "createTextNode", "createCDATASection", "createComment", "createProcessingInstruction", "importNode", "adoptNode", "createAttribute", "createAttributeNS", "createEvent", "createRange", "createNodeIterator", "createTreeWalker", "getElementById", "children", "firstElementChild", "lastElementChild", "childElementCount", "prepend", "append", "replaceChildren", "querySelector", "querySelectorAll"],
   Element: ["namespaceURI", "prefix", "localName", "tagName", "id", "className", "classList", "slot", "hasAttributes", "attributes", "getAttributeNames", "getAttribute", "getAttributeNS", "setAttribute", "setAttributeNS", "removeAttribute", "removeAttributeNS", "toggleAttribute", "hasAttribute", "hasAttributeNS", "getAttributeNode", "getAttributeNodeNS", "setAttributeNode", "setAttributeNodeNS", "removeAttributeNode", "attachShadow", "shadowRoot", "closest", "matches", "webkitMatchesSelector", "getElementsByTagName", "getElementsByTagNameNS", "getElementsByClassName", "insertAdjacentElement", "insertAdjacentText", "assignedSlot", "before", "after", "replaceWith", "remove", "previousElementSibling", "nextElementSibling"],
@@ -57,31 +58,55 @@ describe("node interfaces — https://dom.spec.whatwg.org/#interface-element", (
     expect(missing).toEqual([]);
   });
 
-  differential("the interface objects are not constructible except Document, DocumentFragment, Text and Comment", (w) => {
-    const make = (name: string) => {
-      try {
-        const o = new w[name]();
-        return Object.getPrototypeOf(o) === w[name].prototype ? "ok" : "wrong prototype";
-      } catch (e) {
-        return (e as Error).name;
-      }
-    };
-    return Object.fromEntries(["Document", "DocumentFragment", "Text", "Comment", "Node", "Element", "CharacterData", "DOMImplementation", "Attr", "DocumentType"].map((n) => [n, make(n)]));
-  });
+  differential(
+    "the interface objects are not constructible except Document, DocumentFragment, Text and Comment",
+    (w) => {
+      const make = (name: string) => {
+        try {
+          const o = new w[name]();
+          return Object.getPrototypeOf(o) === w[name].prototype ? "ok" : "wrong prototype";
+        } catch (e) {
+          return (e as Error).name;
+        }
+      };
+      return Object.fromEntries(
+        [
+          "Document",
+          "DocumentFragment",
+          "Text",
+          "Comment",
+          "Node",
+          "Element",
+          "CharacterData",
+          "DOMImplementation",
+          "Attr",
+          "DocumentType",
+        ].map((n) => [n, make(n)]),
+      );
+    },
+  );
 });
 
 describe("XMLDocument — https://dom.spec.whatwg.org/#xmldocument", () => {
-  differential("createDocument returns an XMLDocument whose content type follows the namespace; createHTMLDocument returns a plain Document", (w) => {
-    const impl = w.document.implementation;
-    const docs = {
-      none: impl.createDocument(null, null, null),
-      xhtml: impl.createDocument("http://www.w3.org/1999/xhtml", "html", null),
-      svg: impl.createDocument("http://www.w3.org/2000/svg", "svg", null),
-      html: impl.createHTMLDocument("t"),
-      ctor: new w.Document(),
-    };
-    return Object.fromEntries(Object.entries(docs).map(([k, d]: [string, AnyWindow]) => [k, [d instanceof w.XMLDocument, d.contentType, d.documentElement?.localName ?? null, d.compatMode]]));
-  });
+  differential(
+    "createDocument returns an XMLDocument whose content type follows the namespace; createHTMLDocument returns a plain Document",
+    (w) => {
+      const impl = w.document.implementation;
+      const docs = {
+        none: impl.createDocument(null, null, null),
+        xhtml: impl.createDocument("http://www.w3.org/1999/xhtml", "html", null),
+        svg: impl.createDocument("http://www.w3.org/2000/svg", "svg", null),
+        html: impl.createHTMLDocument("t"),
+        ctor: new w.Document(),
+      };
+      return Object.fromEntries(
+        Object.entries(docs).map(([k, d]: [string, AnyWindow]) => [
+          k,
+          [d instanceof w.XMLDocument, d.contentType, d.documentElement?.localName ?? null, d.compatMode],
+        ]),
+      );
+    },
+  );
 
   differential("XML documents keep case: createElement does not lowercase and tagName is the qualified name", (w) => {
     const doc = w.document.implementation.createDocument(null, null, null);
@@ -92,51 +117,71 @@ describe("XMLDocument — https://dom.spec.whatwg.org/#xmldocument", () => {
 });
 
 describe("extension hooks of the mutation algorithms — https://dom.spec.whatwg.org/#concept-element-attributes-change-ext", () => {
-  differential("attribute change steps: HTML elements react to content attribute changes (input value while not dirty, img alt, id index)", (w) => {
-    const d = w.document;
-    const input = d.body.appendChild(d.createElement("input"));
-    input.setAttribute("value", "a");
-    const clean = input.value;
-    input.value = "typed";
-    input.setAttribute("value", "b");
-    const el = d.body.appendChild(d.createElement("p"));
-    el.setAttribute("id", "found");
-    const byId = d.getElementById("found") === el;
-    el.removeAttribute("id");
-    return { clean, dirty: input.value, defaultValue: input.defaultValue, byId, afterRemove: d.getElementById("found") };
-  });
+  differential(
+    "attribute change steps: HTML elements react to content attribute changes (input value while not dirty, img alt, id index)",
+    (w) => {
+      const d = w.document;
+      const input = d.body.appendChild(d.createElement("input"));
+      input.setAttribute("value", "a");
+      const clean = input.value;
+      input.value = "typed";
+      input.setAttribute("value", "b");
+      const el = d.body.appendChild(d.createElement("p"));
+      el.setAttribute("id", "found");
+      const byId = d.getElementById("found") === el;
+      el.removeAttribute("id");
+      return {
+        clean,
+        dirty: input.value,
+        defaultValue: input.defaultValue,
+        byId,
+        afterRemove: d.getElementById("found"),
+      };
+    },
+  );
 
-  differential("children changed steps: textarea default value, title text and option label follow their children (https://dom.spec.whatwg.org/#concept-node-children-changed-ext)", (w) => {
-    const d = w.document;
-    const ta = d.body.appendChild(d.createElement("textarea"));
-    ta.append("one");
-    const first = ta.value;
-    ta.firstChild.data = "two";
-    const title = d.head.appendChild(d.createElement("title"));
-    title.append("Page ", "title");
-    const select = d.body.appendChild(d.createElement("select"));
-    const option = select.appendChild(d.createElement("option"));
-    option.append("Label");
-    return { first, second: ta.value, title: d.title, option: [option.text, option.label, select.value] };
-  });
+  differential(
+    "children changed steps: textarea default value, title text and option label follow their children (https://dom.spec.whatwg.org/#concept-node-children-changed-ext)",
+    (w) => {
+      const d = w.document;
+      const ta = d.body.appendChild(d.createElement("textarea"));
+      ta.append("one");
+      const first = ta.value;
+      ta.firstChild.data = "two";
+      const title = d.head.appendChild(d.createElement("title"));
+      title.append("Page ", "title");
+      const select = d.body.appendChild(d.createElement("select"));
+      const option = select.appendChild(d.createElement("option"));
+      option.append("Label");
+      return { first, second: ta.value, title: d.title, option: [option.text, option.label, select.value] };
+    },
+  );
 
-  differential("adopting steps: adoptNode moves the subtree to the new document and runs custom elements' adoptedCallback (https://dom.spec.whatwg.org/#concept-node-adopt-ext)", (w) => {
-    const d = w.document;
-    const log: string[] = [];
-    w.customElements.define(
-      "x-adopt",
-      class extends w.HTMLElement {
-        adoptedCallback(oldDoc: AnyWindow, newDoc: AnyWindow) {
-          log.push(`adopted ${oldDoc === d} ${newDoc !== d}`);
-        }
-      },
-    );
-    const el = d.body.appendChild(d.createElement("x-adopt"));
-    const child = el.appendChild(d.createElement("span"));
-    const other = d.implementation.createHTMLDocument("t");
-    other.adoptNode(el);
-    return { log, owner: el.ownerDocument === other, childOwner: child.ownerDocument === other, parent: el.parentNode };
-  });
+  differential(
+    "adopting steps: adoptNode moves the subtree to the new document and runs custom elements' adoptedCallback (https://dom.spec.whatwg.org/#concept-node-adopt-ext)",
+    (w) => {
+      const d = w.document;
+      const log: string[] = [];
+      w.customElements.define(
+        "x-adopt",
+        class extends w.HTMLElement {
+          adoptedCallback(oldDoc: AnyWindow, newDoc: AnyWindow) {
+            log.push(`adopted ${oldDoc === d} ${newDoc !== d}`);
+          }
+        },
+      );
+      const el = d.body.appendChild(d.createElement("x-adopt"));
+      const child = el.appendChild(d.createElement("span"));
+      const other = d.implementation.createHTMLDocument("t");
+      other.adoptNode(el);
+      return {
+        log,
+        owner: el.ownerDocument === other,
+        childOwner: child.ownerDocument === other,
+        parent: el.parentNode,
+      };
+    },
+  );
 
   test("moving steps: moveBefore keeps a connected subtree connected and runs connectedMoveCallback instead of disconnected/connected (https://dom.spec.whatwg.org/#concept-node-move-ext)", () => {
     const window = createWindow() as unknown as Record<string, any>;
@@ -170,26 +215,35 @@ describe("extension hooks of the mutation algorithms — https://dom.spec.whatwg
 });
 
 describe("shadow roots — https://dom.spec.whatwg.org/#valid-shadow-host-name", () => {
-  differential("attachShadow is allowed on exactly the valid shadow host names (and valid custom element names)", (w) => {
-    const d = w.document;
-    const tags = ["article", "aside", "blockquote", "body", "div", "footer", "h1", "h6", "header", "main", "nav", "p", "section", "span", "x-custom", "input", "button", "a", "img", "template", "ul", "form", "video"];
-    return Object.fromEntries(
-      tags.map((t) => {
-        try {
-          d.createElement(t).attachShadow({ mode: "open" });
-          return [t, "ok"];
-        } catch (e) {
-          return [t, (e as Error).name];
-        }
-      }),
-    );
-  });
+  differential(
+    "attachShadow is allowed on exactly the valid shadow host names (and valid custom element names)",
+    (w) => {
+      const d = w.document;
+      // oxfmt-ignore
+      const tags = ["article", "aside", "blockquote", "body", "div", "footer", "h1", "h6", "header", "main", "nav", "p", "section", "span", "x-custom", "input", "button", "a", "img", "template", "ul", "form", "video"];
+      return Object.fromEntries(
+        tags.map((t) => {
+          try {
+            d.createElement(t).attachShadow({ mode: "open" });
+            return [t, "ok"];
+          } catch (e) {
+            return [t, (e as Error).name];
+          }
+        }),
+      );
+    },
+  );
 
   test("a declarative shadow root is reused by attachShadow, emptied and no longer declarative (https://dom.spec.whatwg.org/#shadowroot-declarative)", () => {
     const { document } = createWindow();
     const container = document.createElement("div");
-    (container as unknown as { setHTMLUnsafe(html: string): void }).setHTMLUnsafe('<div id="h"><template shadowrootmode="open"><b>inside</b></template></div>');
-    const h = container.firstChild as unknown as { shadowRoot: { innerHTML: string } | null; attachShadow(init: object): unknown };
+    (container as unknown as { setHTMLUnsafe(html: string): void }).setHTMLUnsafe(
+      '<div id="h"><template shadowrootmode="open"><b>inside</b></template></div>',
+    );
+    const h = container.firstChild as unknown as {
+      shadowRoot: { innerHTML: string } | null;
+      attachShadow(init: object): unknown;
+    };
     const declarative = h.shadowRoot!;
     expect(declarative.innerHTML).toBe("<b>inside</b>");
     // attach a shadow root step 4.2–4.4: same mode, declarative → remove its children and return it.
@@ -201,7 +255,11 @@ describe("shadow roots — https://dom.spec.whatwg.org/#valid-shadow-host-name",
 
   test("setHTMLUnsafe never attaches a top-level declarative shadow root to the element itself: the host is the current node (the fragment's root), deliberately not the adjusted current node (https://html.spec.whatwg.org/#parsing-main-inhead)", () => {
     const { document } = createWindow();
-    const el = document.createElement("div") as unknown as { setHTMLUnsafe(html: string): void; shadowRoot: unknown; innerHTML: string };
+    const el = document.createElement("div") as unknown as {
+      setHTMLUnsafe(html: string): void;
+      shadowRoot: unknown;
+      innerHTML: string;
+    };
     el.setHTMLUnsafe('<template shadowrootmode="open"><p>inside</p></template><span>light</span>');
     // hostIsRoot: inserted as a plain template element (WPT declarative-shadow-dom-attachment.html relies on this).
     expect(el.shadowRoot).toBeNull();

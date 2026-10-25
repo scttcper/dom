@@ -17,7 +17,16 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs, stripVTControlCharacters } from "node:util";
@@ -147,9 +156,14 @@ if (values.help) {
 
 const checkout = resolve(values.checkout!);
 let preset = values.files === undefined ? values.preset! : "custom";
-if (values.files !== undefined) PRESETS.custom = values.files.split(",").map((f) => f.trim()).filter(Boolean);
+if (values.files !== undefined)
+  PRESETS.custom = values.files
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean);
 const filters = values.scratch ? [] : PRESETS[preset];
-if (filters === undefined) throw new Error(`Unknown preset ${preset}; use ${Object.keys(PRESETS).join(", ")} or --files.`);
+if (filters === undefined)
+  throw new Error(`Unknown preset ${preset}; use ${Object.keys(PRESETS).join(", ")} or --files.`);
 const modes = values.modes!.split(",").map((m) => m.trim()) as Mode[];
 for (const mode of modes) if (!MODES.includes(mode)) throw new Error(`Unknown mode ${mode}; use ${MODES.join(", ")}`);
 const workers = Number(values.workers);
@@ -157,7 +171,9 @@ if (!Number.isSafeInteger(workers) || workers < 1) throw new Error("--workers mu
 const repeat = Number(values.repeat);
 if (!Number.isSafeInteger(repeat) || repeat < 1) throw new Error("--repeat must be a positive integer");
 if (values.shard && !/^\d+\/\d+$/.test(values.shard)) throw new Error("--shard must look like 1/4");
-const label = values.label ?? `${preset}${values.shard ? `-shard${values.shard.replace("/", "of")}` : ""}${values.gc ? "-gc" : ""}${values.triage ? "-triage" : ""}`;
+const label =
+  values.label ??
+  `${preset}${values.shard ? `-shard${values.shard.replace("/", "of")}` : ""}${values.gc ? "-gc" : ""}${values.triage ? "-triage" : ""}`;
 
 // ---------------------------------------------------------------------------------------------
 // Process helpers
@@ -167,10 +183,21 @@ interface CommandResult {
   signal: NodeJS.Signals | null;
 }
 
-function run(executable: string, argv: string[], cwd: string, log?: string, env: Record<string, string> = {}, onSpawn?: (pid: number) => void): Promise<CommandResult> {
+function run(
+  executable: string,
+  argv: string[],
+  cwd: string,
+  log?: string,
+  env: Record<string, string> = {},
+  onSpawn?: (pid: number) => void,
+): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
     const out = log ? createWriteStream(log) : null;
-    const child = spawn(executable, argv, { cwd, env: { ...process.env, ...env }, stdio: out ? ["ignore", "pipe", "pipe"] : "inherit" });
+    const child = spawn(executable, argv, {
+      cwd,
+      env: { ...process.env, ...env },
+      stdio: out ? ["ignore", "pipe", "pipe"] : "inherit",
+    });
     if (child.pid) onSpawn?.(child.pid);
     if (out) {
       for (const stream of [child.stdout!, child.stderr!]) {
@@ -244,8 +271,16 @@ function treeRssSampler(rootPid: number): { stop: () => { peakTreeRssBytes: numb
 
 if (!existsSync(join(checkout, ".git"))) {
   mkdirSync(dirname(checkout), { recursive: true });
-  await checked("git", ["clone", "--no-checkout", "--depth", "1", "--branch", manifest.branch, manifest.repository, checkout], dirname(checkout));
-  await checked("git", ["fetch", "--depth", "1", manifest.repository, values.latest ? `refs/heads/${manifest.branch}` : manifest.commit], checkout);
+  await checked(
+    "git",
+    ["clone", "--no-checkout", "--depth", "1", "--branch", manifest.branch, manifest.repository, checkout],
+    dirname(checkout),
+  );
+  await checked(
+    "git",
+    ["fetch", "--depth", "1", manifest.repository, values.latest ? `refs/heads/${manifest.branch}` : manifest.commit],
+    checkout,
+  );
   await checked("git", ["checkout", "--detach", "FETCH_HEAD"], checkout);
 } else {
   if (git(["status", "--porcelain", "--untracked-files=no"])) {
@@ -253,13 +288,18 @@ if (!existsSync(join(checkout, ".git"))) {
   }
   const head = git(["rev-parse", "HEAD"]);
   if (values.latest || head !== manifest.commit) {
-    await checked("git", ["fetch", "--depth", "1", manifest.repository, values.latest ? `refs/heads/${manifest.branch}` : manifest.commit], checkout);
+    await checked(
+      "git",
+      ["fetch", "--depth", "1", manifest.repository, values.latest ? `refs/heads/${manifest.branch}` : manifest.commit],
+      checkout,
+    );
     await checked("git", ["checkout", "--detach", "FETCH_HEAD"], checkout);
   }
 }
 const commit = git(["rev-parse", "HEAD"]);
 const commitInfo = git(["show", "-s", "--format=%cI%n%s", "HEAD"]).split("\n");
-if (!values.latest && commit !== manifest.commit) throw new Error(`Checkout is ${commit}; expected pinned ${manifest.commit}.`);
+if (!values.latest && commit !== manifest.commit)
+  throw new Error(`Checkout is ${commit}; expected pinned ${manifest.commit}.`);
 for (const file of PRESETS.custom ?? []) {
   if (!existsSync(resolve(checkout, file))) throw new Error(`Test path not found in upstream checkout: ${file}`);
 }
@@ -268,10 +308,15 @@ for (const file of PRESETS.custom ?? []) {
 // 2. Install upstream's frozen dependencies with upstream's exact pnpm (no lifecycle scripts)
 
 if (values.install) {
-  await checked("npx", ["--yes", manifest.packageManager, "install", "--frozen-lockfile", "--ignore-scripts"], checkout);
+  await checked(
+    "npx",
+    ["--yes", manifest.packageManager, "install", "--frozen-lockfile", "--ignore-scripts"],
+    checkout,
+  );
 }
 const testBin = join(checkout, "tests/js/bin/test.mjs");
-if (!existsSync(join(checkout, "node_modules/jest"))) throw new Error("Upstream dependencies are missing. Rerun with --install.");
+if (!existsSync(join(checkout, "node_modules/jest")))
+  throw new Error("Upstream dependencies are missing. Rerun with --install.");
 
 function installedVersion(name: string, from = join(checkout, "tests/js")): string | null {
   for (let dir = from; ; dir = dirname(dir)) {
@@ -281,18 +326,38 @@ function installedVersion(name: string, from = join(checkout, "tests/js")): stri
   }
 }
 const versions = Object.fromEntries(
-  ["jest", "jsdom", "react", "react-dom", "@swc/jest", "@testing-library/react", "@testing-library/dom", "@testing-library/user-event", "@testing-library/jest-dom", "@sentry/jest-environment", "@floating-ui/react-dom"].map((n) => [n, installedVersion(n)]),
+  [
+    "jest",
+    "jsdom",
+    "react",
+    "react-dom",
+    "@swc/jest",
+    "@testing-library/react",
+    "@testing-library/dom",
+    "@testing-library/user-event",
+    "@testing-library/jest-dom",
+    "@sentry/jest-environment",
+    "@floating-ui/react-dom",
+  ].map((n) => [n, installedVersion(n)]),
 );
 
 // Our side: ctrl-dom-full uses the built bundles (pnpm build); record how fresh they are.
-const DIST = ["react/dist/index.cjs", "testing-library/dist/index.cjs", "user-event/dist/index.cjs", "jest-dom/dist/index.cjs", "aria/dist/index.cjs"];
+const DIST = [
+  "react/dist/index.cjs",
+  "testing-library/dist/index.cjs",
+  "user-event/dist/index.cjs",
+  "jest-dom/dist/index.cjs",
+  "aria/dist/index.cjs",
+];
 if (modes.some((m) => m === "ctrl-dom-full" || m === "ctrl-dom-nohacks")) {
-  for (const f of DIST) if (!existsSync(join(repo, "packages", f))) throw new Error(`packages/${f} is missing: run pnpm build`);
+  for (const f of DIST)
+    if (!existsSync(join(repo, "packages", f))) throw new Error(`packages/${f} is missing: run pnpm build`);
 }
 function newestMtime(dir: string): number {
   let newest = 0;
   for (const e of readdirSync(dir, { withFileTypes: true, recursive: true })) {
-    if (e.isFile() && /\.(ts|tsx|js|cjs|mjs)$/.test(e.name)) newest = Math.max(newest, statSync(join(e.parentPath, e.name)).mtimeMs);
+    if (e.isFile() && /\.(ts|tsx|js|cjs|mjs)$/.test(e.name))
+      newest = Math.max(newest, statSync(join(e.parentPath, e.name)).mtimeMs);
   }
   return newest;
 }
@@ -307,8 +372,11 @@ function sourceFingerprint(): string {
     for (const sub of ["src", "dist"]) {
       const dir = join(repo, "packages", pkg, sub);
       if (!existsSync(dir)) continue;
-      for (const e of readdirSync(dir, { withFileTypes: true, recursive: true }).sort((a, b) => join(a.parentPath, a.name).localeCompare(join(b.parentPath, b.name)))) {
-        if (e.isFile() && /\.(ts|js|cjs|mjs)$/.test(e.name)) hash.update(join(e.parentPath, e.name)).update(readFileSync(join(e.parentPath, e.name)));
+      for (const e of readdirSync(dir, { withFileTypes: true, recursive: true }).sort((a, b) =>
+        join(a.parentPath, a.name).localeCompare(join(b.parentPath, b.name)),
+      )) {
+        if (e.isFile() && /\.(ts|js|cjs|mjs)$/.test(e.name))
+          hash.update(join(e.parentPath, e.name)).update(readFileSync(join(e.parentPath, e.name)));
       }
     }
   }
@@ -414,7 +482,9 @@ for (let iteration = 1; iteration <= repeat; iteration++) {
       ...(values.grep ? ["--testNamePattern", values.grep] : []),
       ...filters,
     ];
-    console.log(`\n=== Sentry ${label}: ${mode}${repeat > 1 ? ` (run ${iteration}/${repeat})` : ""} — ${workers} workers ===`);
+    console.log(
+      `\n=== Sentry ${label}: ${mode}${repeat > 1 ? ` (run ${iteration}/${repeat})` : ""} — ${workers} workers ===`,
+    );
     const before = sourceFingerprint();
     const start = performance.now();
     let sampler: ReturnType<typeof treeRssSampler> | null = null;
@@ -438,7 +508,10 @@ for (let iteration = 1; iteration <= repeat; iteration++) {
       (pid) => (sampler = treeRssSampler(pid)),
     );
     const wallMs = Math.round(performance.now() - start);
-    const tree = (sampler as ReturnType<typeof treeRssSampler> | null)?.stop() ?? { peakTreeRssBytes: 0, peakWorkers: 0 };
+    const tree = (sampler as ReturnType<typeof treeRssSampler> | null)?.stop() ?? {
+      peakTreeRssBytes: 0,
+      peakWorkers: 0,
+    };
     const log = readFileSync(logPath, "utf8");
     const rss = /(\d+)\s+maximum resident set size/.exec(log);
     const user = /([\d.]+)\s+real\s+([\d.]+)\s+user\s+([\d.]+)\s+sys/.exec(log);
@@ -465,28 +538,50 @@ for (let iteration = 1; iteration <= repeat; iteration++) {
       r.files = report.testResults.length;
       r.suiteErrors = report.testResults
         .filter((f: any) => f.status === "failed" && (f.assertionResults?.length ?? 0) === 0)
-        .map((f: any) => ({ file: relative(checkout, f.name), message: stripVTControlCharacters(String(f.message ?? "")).split("\n").slice(0, 12).join("\n") }));
+        .map((f: any) => ({
+          file: relative(checkout, f.name),
+          message: stripVTControlCharacters(String(f.message ?? ""))
+            .split("\n")
+            .slice(0, 12)
+            .join("\n"),
+        }));
     }
     const receiptsPath = join(modeOut, "environments.jsonl");
     if (existsSync(receiptsPath)) {
-      const receipts = readFileSync(receiptsPath, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
+      const receipts = readFileSync(receiptsPath, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l));
       r.receipts = receipts.length;
       r.receiptFiles = new Set(receipts.map((x) => x.testPath)).size;
     } else r.receipts = 0;
     const resPath = join(modeOut, "resolutions.jsonl");
     if (existsSync(resPath)) {
-      const res = readFileSync(resPath, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
+      const res = readFileSync(resPath, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l));
       r.reactIds = [...new Set(res.filter((x) => x.request === "react").map((x) => x.id as string))];
       r.rtlIds = [...new Set(res.filter((x) => x.request === "@testing-library/react").map((x) => x.id as string))];
     }
     const workersDir = join(modeOut, "workers");
     if (existsSync(workersDir)) {
       r.samples = readdirSync(workersDir).flatMap((f) =>
-        readFileSync(join(workersDir, f), "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l) as WorkerSample),
+        readFileSync(join(workersDir, f), "utf8")
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((l) => JSON.parse(l) as WorkerSample),
       );
     }
     runs.push(r);
-    writeFileSync(join(modeOut, "summary.json"), JSON.stringify({ ...r, assertions: undefined, samples: undefined, commit, preset, filters, versions }, null, 2) + "\n");
+    writeFileSync(
+      join(modeOut, "summary.json"),
+      JSON.stringify({ ...r, assertions: undefined, samples: undefined, commit, preset, filters, versions }, null, 2) +
+        "\n",
+    );
     console.log(
       `${mode}: ${r.passed ?? "?"} passed, ${r.failed ?? "?"} failed, ${r.skipped ?? "?"} skipped, ${r.suiteErrors?.length ?? "?"} suite errors in ${(wallMs / 1000).toFixed(1)}s` +
         `, CPU ${((r.cpuMs ?? 0) / 1000).toFixed(1)}s, peak tree RSS ${(r.peakTreeRssBytes / 2 ** 20).toFixed(0)} MiB`,
@@ -505,8 +600,8 @@ function signature(message: string): string {
     .filter(Boolean);
   let line = lines[0] ?? "(no message)";
   // jest-fail-on-console: the interesting part is the logged message.
-  if (line.startsWith('Error: Expected test not to call console') && lines[2]) line = `console.* : ${lines[2]}`;
-  if (line.startsWith('expect(') && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
+  if (line.startsWith("Error: Expected test not to call console") && lines[2]) line = `console.* : ${lines[2]}`;
+  if (line.startsWith("expect(") && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
   return line
     .slice(0, 180)
     .replace(/\b\d+(\.\d+)?(px|ms)?\b/g, "N")
@@ -528,7 +623,16 @@ const mib = (b: number | null | undefined): string => (b ? `${(b / 2 ** 20).toFi
 const sec = (ms: number | null | undefined): string => (ms == null ? "n/a" : `${(ms / 1000).toFixed(1)}s`);
 
 /** Per-worker memory growth: least-squares slope of heap/RSS over the file index, and first→last. */
-function memoryGrowth(samples: WorkerSample[]): { workers: number; filesPerWorker: number; heapSlope: number; rssSlope: number; heapFirst: number; heapLast: number; rssLast: number; maxRss: number } {
+function memoryGrowth(samples: WorkerSample[]): {
+  workers: number;
+  filesPerWorker: number;
+  heapSlope: number;
+  rssSlope: number;
+  heapFirst: number;
+  heapLast: number;
+  rssLast: number;
+  maxRss: number;
+} {
   const byPid = new Map<number, WorkerSample[]>();
   for (const s of samples) (byPid.get(s.pid) ?? byPid.set(s.pid, []).get(s.pid)!).push(s);
   const slopes: number[] = [];
@@ -582,34 +686,51 @@ if (!values["no-report"]) {
   rmSync(reportPath, { force: true });
   // A run where every file failed to load (our sources mid-edit by another agent) is not a
   // measurement: keep it in "individual runs" but use the valid runs for counts and timings.
-  const valid = (r: ModeRun): boolean => r.reportFound && (r.files ?? 0) > 0 && (r.suiteErrors?.length ?? 0) < (r.files ?? 0);
+  const valid = (r: ModeRun): boolean =>
+    r.reportFound && (r.files ?? 0) > 0 && (r.suiteErrors?.length ?? 0) < (r.files ?? 0);
   const last = new Map<Mode, ModeRun>();
   for (const r of runs) if (valid(r) || !last.has(r.mode)) last.set(r.mode, r);
   const baseline = last.get("jsdom")?.assertions;
   const md: string[] = [];
   md.push(`# Sentry downstream: \`${label}\` (${date})`, "");
-  if (values.triage) md.push("> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform \"\", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.", "");
+  if (values.triage)
+    md.push(
+      '> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.',
+      "",
+    );
   md.push(
     `- upstream: ${manifest.repository.replace(/\.git$/, "")} @ \`${commit}\` (${commitInfo[0]}) — ${commitInfo[1]}`,
     `- pinned: \`${manifest.commit}\`${commit === manifest.commit ? "" : " (**--latest: differs from pin**)"}`,
     `- selection: ${filters.length ? filters.map((f) => `\`${f}\``).join(", ") : "(every spec of upstream's root Jest config)"}${values.shard ? `, shard ${values.shard}` : ""}${values.grep ? `, -t \`${values.grep}\`` : ""}`,
     `- node ${process.version}, Jest workers ${workers} (same for every mode), runs per mode ${repeat}${repeat > 1 ? " (interleaved; timings are medians, counts from the last run)" : ""}, CI=true (upstream's CI code paths), ${values.gc ? "**heap sampled after a forced GC per file (--gc; timings include the GCs)**" : "no forced GC"}`,
-    `- upstream versions: ${Object.entries(versions).map(([k, v]) => `${k}@${v}`).join(", ")}`,
-    `- ctrl-dom-full substitutes: ${values.shims!.split(",").map((x) => `@testing-library/${x}`).join(", ")} (packages/*/dist/*.cjs)${staleDist.length ? `; **dist older than src for: ${staleDist.join(", ")}**` : ""}`,
+    `- upstream versions: ${Object.entries(versions)
+      .map(([k, v]) => `${k}@${v}`)
+      .join(", ")}`,
+    `- ctrl-dom-full substitutes: ${values
+      .shims!.split(",")
+      .map((x) => `@testing-library/${x}`)
+      .join(
+        ", ",
+      )} (packages/*/dist/*.cjs)${staleDist.length ? `; **dist older than src for: ${staleDist.join(", ")}**` : ""}`,
     `- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.`,
     "",
   );
   md.push("## Per-mode results", "");
-  md.push("| mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |");
+  md.push(
+    "| mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |",
+  );
   md.push("| --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |");
   for (const mode of modes) {
-    const all = runs.filter((r) => r.mode === mode && valid(r)).length ? runs.filter((r) => r.mode === mode && valid(r)) : runs.filter((r) => r.mode === mode);
+    const all = runs.filter((r) => r.mode === mode && valid(r)).length
+      ? runs.filter((r) => r.mode === mode && valid(r))
+      : runs.filter((r) => r.mode === mode);
     const r = last.get(mode)!;
     const env = (r.samples ?? []).map((s) => s.envSetupMs);
     const notes: string[] = [];
     if (!r.reportFound) notes.push("**no JSON report**");
     if (mode !== "jsdom") notes.push(r.reactIds?.length === 1 ? "1 React" : `**${r.reactIds?.length ?? 0} React ids**`);
-    if (r.rtlIds?.length) notes.push(`RTL: ${r.rtlIds.map((x) => (x.startsWith("<ctrl-dom>") ? "ours" : "stock")).join(",")}`);
+    if (r.rtlIds?.length)
+      notes.push(`RTL: ${r.rtlIds.map((x) => (x.startsWith("<ctrl-dom>") ? "ours" : "stock")).join(",")}`);
     if (r.sourceStable === false) notes.push("our packages changed during the run");
     md.push(
       `| ${mode} | ${r.passed ?? "?"} | ${r.failed ?? "?"} | ${r.skipped ?? "?"} | ${r.total ?? "?"} | ${r.files ?? "?"} | ${r.suiteErrors?.length ?? "?"} | ${r.code ?? r.signal} | ${sec(median(all.map((x) => x.wallMs)))} | ${sec(median(all.map((x) => x.cpuMs ?? 0)))} | ${mib(median(all.map((x) => x.peakTreeRssBytes)))} | ${mib(median(all.map((x) => x.peakRssBytes ?? 0)))} | ${median(env).toFixed(0)} ms, ${pct(env, 0.95).toFixed(0)} ms | ${r.receiptFiles ?? 0}/${r.files ?? "?"} | ${notes.join("; ")} |`,
@@ -617,8 +738,16 @@ if (!values["no-report"]) {
   }
   md.push("");
   if (repeat > 1) {
-    md.push("<details><summary>individual runs</summary>", "", "| mode | run | wall | CPU | peak tree RSS |", "| --- | --: | --: | --: | --: |");
-    for (const r of runs) md.push(`| ${r.mode} | ${r.iteration}${valid(r) ? "" : " (invalid: every file failed to load)"} | ${sec(r.wallMs)} | ${sec(r.cpuMs)} | ${mib(r.peakTreeRssBytes)} |`);
+    md.push(
+      "<details><summary>individual runs</summary>",
+      "",
+      "| mode | run | wall | CPU | peak tree RSS |",
+      "| --- | --: | --: | --: | --: |",
+    );
+    for (const r of runs)
+      md.push(
+        `| ${r.mode} | ${r.iteration}${valid(r) ? "" : " (invalid: every file failed to load)"} | ${sec(r.wallMs)} | ${sec(r.cpuMs)} | ${mib(r.peakTreeRssBytes)} |`,
+      );
     md.push("", "</details>", "");
   }
 
@@ -627,7 +756,9 @@ if (!values["no-report"]) {
     `Sampled after each test file's environment teardown in every worker (${values.gc ? "after a forced full GC" : "no forced GC, so heap numbers include garbage"}). Slope = least-squares growth per file over each worker's files (first file excluded), median across workers. Upstream sets no \`workerIdleMemoryLimit\`.`,
     "",
   );
-  md.push("| mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |");
+  md.push(
+    "| mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |",
+  );
   md.push("| --- | --: | --: | --: | --: | --: | --: | --: | --: |");
   for (const mode of modes) {
     const r = last.get(mode)!;
@@ -653,7 +784,9 @@ if (!values["no-report"]) {
       const regress = failures.filter((a) => baseline.get(a.key)?.status === "passed");
       const missing = [...baseline.keys()].filter((k) => !r.assertions!.has(k));
       const added = [...r.assertions.keys()].filter((k) => !baseline.has(k));
-      const fixed = [...r.assertions.values()].filter((a) => a.status === "passed" && baseline.get(a.key)?.status === "failed");
+      const fixed = [...r.assertions.values()].filter(
+        (a) => a.status === "passed" && baseline.get(a.key)?.status === "failed",
+      );
       md.push(
         `Compared with jsdom: **${regress.length} pass on jsdom but fail here**, ${missing.length} missing (e.g. suite errors), ${added.length} added, ${fixed.length} fail on jsdom but pass here.`,
         "",
@@ -682,14 +815,25 @@ if (!values["no-report"]) {
       }
       md.push("### Failures by area", "", "| area | failed |", "| --- | --: |");
       for (const [a, n] of [...byArea].sort((x, y) => y[1] - x[1]).slice(0, 60)) md.push(`| ${a} | ${n} |`);
-      md.push("", "### Failures by error signature", "", "| count | signature | areas | example |", "| --: | --- | --- | --- |");
+      md.push(
+        "",
+        "### Failures by error signature",
+        "",
+        "| count | signature | areas | example |",
+        "| --: | --- | --- | --- |",
+      );
       for (const [sig, e] of [...bySig].sort((x, y) => y[1].count - x[1].count).slice(0, 150)) {
-        md.push(`| ${e.count} | ${sig.replace(/\|/g, "\\|").replace(/`/g, "'")} | ${[...e.areas].slice(0, 6).join(", ")}${e.areas.size > 6 ? ", …" : ""} | \`${e.example.replace(/\|/g, "\\|")}\` |`);
+        md.push(
+          `| ${e.count} | ${sig.replace(/\|/g, "\\|").replace(/`/g, "'")} | ${[...e.areas].slice(0, 6).join(", ")}${e.areas.size > 6 ? ", …" : ""} | \`${e.example.replace(/\|/g, "\\|")}\` |`,
+        );
       }
       md.push("");
     } else md.push("No failing tests.", "");
   }
-  md.push(`Raw Jest JSON, logs, worker samples and receipts: \`downstream/sentry/output/${label}/<mode>/\` (gitignored).`, "");
+  md.push(
+    `Raw Jest JSON, logs, worker samples and receipts: \`downstream/sentry/output/${label}/<mode>/\` (gitignored).`,
+    "",
+  );
   writeFileSync(reportPath, md.join("\n"));
   console.log(`\nReport: ${relative(repo, reportPath)}`);
 }

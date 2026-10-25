@@ -22,6 +22,6 @@ function describe(val: unknown) {
     ? `function ${val.name}`
     : val === null
       ? 'null'
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
-      : String(val)
+      : // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        String(val)
 }

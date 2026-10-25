@@ -14,10 +14,20 @@
 // from the wrapper's IDL attributes when the element class implements them, falling back
 // to the content attributes (the initial state) otherwise.
 
-import { ELEMENT_NODE, DOCUMENT_NODE, HTML_NS, T, attr, treeRoot, type NodeImpl, derivedCache } from "@ctrl/dom/internal";
+import {
+  ELEMENT_NODE,
+  DOCUMENT_NODE,
+  HTML_NS,
+  T,
+  attr,
+  treeRoot,
+  type NodeImpl,
+  derivedCache,
+} from "@ctrl/dom/internal";
 import { $impl, $version } from "@ctrl/dom/internal";
 
 /** Canonical `type` IDL value of an HTML input: https://html.spec.whatwg.org/multipage/input.html#attr-input-type */
+// oxfmt-ignore
 const INPUT_TYPES = new Set([
   "hidden", "text", "search", "tel", "url", "email", "password", "date", "month", "week", "time",
   "datetime-local", "number", "range", "color", "checkbox", "radio", "file", "submit", "image",
@@ -118,7 +128,8 @@ function owningSelect(option: NodeImpl): NodeImpl | null {
   const p = option.parent;
   if (p === null) return null;
   if (p.tag === T.select && p.ns === HTML_NS) return p;
-  if (p.tag === T.optgroup && p.parent !== null && p.parent.tag === T.select && p.parent.ns === HTML_NS) return p.parent;
+  if (p.tag === T.optgroup && p.parent !== null && p.parent.tag === T.select && p.parent.ns === HTML_NS)
+    return p.parent;
   return null;
 }
 
@@ -187,7 +198,7 @@ function buildLabelIndex(root: NodeImpl, version: number): LabelIndex {
   const useDocIds = root.type === DOCUMENT_NODE;
   let anyFor = false;
   // One preorder walk over the root's inclusive descendants.
-  for (let n: NodeImpl | null = root; n !== null; ) {
+  for (let n: NodeImpl | null = root; n !== null;) {
     if (n.type === ELEMENT_NODE) {
       if (n.tag === T.label && n.ns === HTML_NS) {
         labels.push(n);
@@ -211,7 +222,7 @@ function buildLabelIndex(root: NodeImpl, version: number): LabelIndex {
   if (labels.length === 0) return index;
   if (anyFor && !useDocIds) {
     ids = new Map();
-    for (let n: NodeImpl | null = root; n !== null; ) {
+    for (let n: NodeImpl | null = root; n !== null;) {
       if (n.type === ELEMENT_NODE && n.id !== "" && !ids.has(n.id)) ids.set(n.id, n);
       if (n.first !== null) n = n.first;
       else {
@@ -251,7 +262,7 @@ function labeledControl(label: NodeImpl, docRoot: NodeImpl | null, ids: Map<stri
     }
     return target !== null && isLabelable(target) ? target : null;
   }
-  for (let n = label.first; n !== null; ) {
+  for (let n = label.first; n !== null;) {
     if (n.type === ELEMENT_NODE && isLabelable(n)) return n;
     if (n.first !== null) n = n.first;
     else {

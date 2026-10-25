@@ -27,11 +27,20 @@ function styleSheet(n: number): string {
   let css = "";
   for (let i = 0; i < n; i++) {
     switch (i % 5) {
-      case 0: css += `.c${i} { color: red; margin: ${i % 7}px }\n`; break;
-      case 1: css += `#id${i} > span { padding: 1px }\n`; break;
-      case 2: css += `div.k${i} a[href] { text-decoration: none }\n`; break;
-      case 3: css += `fieldset:nth-child(${(i % 9) + 1}) legend { font-weight: bold }\n`; break;
-      default: css += `[data-r${i}] button, label .x${i} { display: inline-block }\n`;
+      case 0:
+        css += `.c${i} { color: red; margin: ${i % 7}px }\n`;
+        break;
+      case 1:
+        css += `#id${i} > span { padding: 1px }\n`;
+        break;
+      case 2:
+        css += `div.k${i} a[href] { text-decoration: none }\n`;
+        break;
+      case 3:
+        css += `fieldset:nth-child(${(i % 9) + 1}) legend { font-weight: bold }\n`;
+        break;
+      default:
+        css += `[data-r${i}] button, label .x${i} { display: inline-block }\n`;
     }
   }
   return `<style>${css}</style>`;
@@ -51,7 +60,14 @@ function formHtml(): string {
   return s + "</form>";
 }
 
-type Env = { invalidate?: () => void; body: any; elements: any[]; role(el: any): string; name(el: any): string; hidden(el: any): boolean };
+type Env = {
+  invalidate?: () => void;
+  body: any;
+  elements: any[];
+  role(el: any): string;
+  name(el: any): string;
+  hidden(el: any): boolean;
+};
 
 async function setup(engine: string): Promise<Env> {
   const html = formHtml();
@@ -90,7 +106,8 @@ async function setup(engine: string): Promise<Env> {
   return {
     body: doc.body,
     elements,
-    role: (el) => (el.hasAttribute("role") ? el.getAttribute("role").split(" ")[0] : (RH.getImplicitAriaRoles(el)[0] ?? "")),
+    role: (el) =>
+      el.hasAttribute("role") ? el.getAttribute("role").split(" ")[0] : (RH.getImplicitAriaRoles(el)[0] ?? ""),
     name: (el) => daa.computeAccessibleName(el, { computedStyleSupportsPseudoElements: false }),
     hidden: (el) => RH.isInaccessible(el),
   };
@@ -121,7 +138,9 @@ async function sample(engine: string): Promise<void> {
   warm.sort((a, b) => a - b);
   (globalThis as any).gc?.();
   const mem = process.memoryUsage();
-  console.log(JSON.stringify({ engine, elements: env.elements.length, cold, warm: warm[10], heap: mem.heapUsed, rss: mem.rss }));
+  console.log(
+    JSON.stringify({ engine, elements: env.elements.length, cold, warm: warm[10], heap: mem.heapUsed, rss: mem.rss }),
+  );
 }
 
 function median(xs: number[]): number {
@@ -137,7 +156,10 @@ function driver(): void {
   // Interleave engines within each round so machine-load drift hits all of them alike.
   for (let i = 0; i < samples; i++) {
     for (const engine of engines) {
-      const r = spawnSync(process.execPath, ["--expose-gc", self, "sample", engine], { encoding: "utf8", env: process.env });
+      const r = spawnSync(process.execPath, ["--expose-gc", self, "sample", engine], {
+        encoding: "utf8",
+        env: process.env,
+      });
       if (r.status !== 0) {
         console.error(engine, r.stderr);
         continue;

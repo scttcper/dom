@@ -14,7 +14,15 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { Counter, DelayedGreeting, KeyedList, NameInput, OrdersTable, SignupForm, StyledForm } from "../fixtures/components.tsx";
+import {
+  Counter,
+  DelayedGreeting,
+  KeyedList,
+  NameInput,
+  OrdersTable,
+  SignupForm,
+  StyledForm,
+} from "../fixtures/components.tsx";
 import { cssInJsSheet } from "../fixtures/css-in-js.ts";
 import { measure } from "../lib/bench.ts";
 

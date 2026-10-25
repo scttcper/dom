@@ -58,7 +58,8 @@ describe("The History interface — https://html.spec.whatwg.org/#the-history-in
     defineWPT(`${H}/${name}.html`);
   }
   for (const method of ["pushstate", "replacestate"]) {
-    for (const variant of ["", "-base", "-whitespace"]) defineWPT(`${H}/pushstate-replacestate-empty-string/${method}${variant}.html`);
+    for (const variant of ["", "-base", "-whitespace"])
+      defineWPT(`${H}/pushstate-replacestate-empty-string/${method}${variant}.html`);
   }
   defineWPT("html/browsers/history/joint-session-history/joint-session-history-iframe-state.html");
 });
@@ -88,11 +89,22 @@ describe("The Location interface — https://html.spec.whatwg.org/#the-location-
     defineWPT(`${L}/${name}.html`);
   }
   defineWPT(`${L}/no-browsing-context.window.js`);
-  defineWPT(`${L}/location-protocol-setter.html`, "the data: URL / srcdoc iframe subtest needs postMessage from a loaded document", { timeout: 300 });
-  const EXOTIC = "Location is not an exotic object: [[SetPrototypeOf]] / [[PreventExtensions]] are ordinary (deviation)";
+  defineWPT(
+    `${L}/location-protocol-setter.html`,
+    "the data: URL / srcdoc iframe subtest needs postMessage from a loaded document",
+    { timeout: 300 },
+  );
+  const EXOTIC =
+    "Location is not an exotic object: [[SetPrototypeOf]] / [[PreventExtensions]] are ordinary (deviation)";
   defineWPT(`${L}/location-prototype-setting-same-origin.html`, EXOTIC);
-  defineWPT(`${L}/location-stringifier.html`, "href and the other members are configurable prototype accessors, not [LegacyUnforgeable] own properties (deviation)");
-  defineWPT(`${L}/location-valueof.html`, "harness: the test's Object.prototype.valueOf comes from the vm context's realm, ours from the main realm");
+  defineWPT(
+    `${L}/location-stringifier.html`,
+    "href and the other members are configurable prototype accessors, not [LegacyUnforgeable] own properties (deviation)",
+  );
+  defineWPT(
+    `${L}/location-valueof.html`,
+    "harness: the test's Object.prototype.valueOf comes from the vm context's realm, ours from the main realm",
+  );
   defineWPT(`${L}/location_hash.html`, "fragment navigation does not scroll (no layout)");
   defineWPT(`${L}/location_search.html`, "navigating an about:blank iframe never fires load (no navigation)");
 });

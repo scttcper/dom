@@ -314,7 +314,11 @@ export const scenarios: Record<string, Scenario> = {
     const rows = screen.getAllByRole("row");
     t.log(
       "rows",
-      rows.map((r: any) => within(r).queryAllByRole("cell").map((c: any) => c.textContent)),
+      rows.map((r: any) =>
+        within(r)
+          .queryAllByRole("cell")
+          .map((c: any) => c.textContent),
+      ),
     );
     t.log(
       "columnheaders",
@@ -337,7 +341,9 @@ export const scenarios: Record<string, Scenario> = {
     t.dom("fragment first child", asFragment().firstChild);
     unmount();
     t.match("toBeEmptyDOMElement", container);
-    const { result, rerender: rerenderHook } = renderHook(({ start }: { start: number }) => useCounter(start), { initialProps: { start: 5 } });
+    const { result, rerender: rerenderHook } = renderHook(({ start }: { start: number }) => useCounter(start), {
+      initialProps: { start: 5 },
+    });
     act(() => result.current.inc());
     t.log("hook after inc", result.current.n);
     rerenderHook({ start: 100 });

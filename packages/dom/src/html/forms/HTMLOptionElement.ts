@@ -97,7 +97,7 @@ export class HTMLOptionElement extends HTMLElement {
   get text(): string {
     const root = this[$impl];
     let s = "";
-    for (let n = root.first; n !== null; ) {
+    for (let n = root.first; n !== null;) {
       if (n.tag === T.script || (n.ns === SVG_NS && n.name === "script")) {
         n = nextSkippingChildren(n, root);
         continue;
@@ -146,7 +146,12 @@ export class HTMLOptionElement extends HTMLElement {
   }
 
   /** https://html.spec.whatwg.org/#the-option-element:concept-element-attributes-change-ext */
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     if (namespace !== null) return;
     if (localName === "disabled") {
@@ -182,8 +187,17 @@ bool(HTMLOptionElement, "defaultSelected=selected disabled");
  * https://html.spec.whatwg.org/#dom-option
  * Exposed as the `Option` global by the window.
  */
-export const Option = function Option(this: unknown, text?: string, value?: string, defaultSelected?: boolean, selected?: boolean): HTMLOptionElement {
-  if (new.target === undefined) throw new TypeError("Failed to construct 'Option': Please use the 'new' operator, this DOM object constructor cannot be called as a function.");
+export const Option = function Option(
+  this: unknown,
+  text?: string,
+  value?: string,
+  defaultSelected?: boolean,
+  selected?: boolean,
+): HTMLOptionElement {
+  if (new.target === undefined)
+    throw new TypeError(
+      "Failed to construct 'Option': Please use the 'new' operator, this DOM object constructor cannot be called as a function.",
+    );
   const doc = currentDocument();
   const option = doc.createElement("option") as unknown as HTMLOptionElement;
   if (text !== undefined && text !== "") option.appendChild(doc.createTextNode(String(text)));
@@ -197,7 +211,8 @@ export const Option = function Option(this: unknown, text?: string, value?: stri
 /** Re-run the selectedness setting algorithm of the select `el` (an option or optgroup) belongs to. */
 function resetOwnerSelect(el: NodeImpl): void {
   const select = optionSelect(el);
-  if (select !== null && (select.node as HTMLSelectElement)[$settled]) (select.node as HTMLSelectElement)._selectednessSettingAlgorithm();
+  if (select !== null && (select.node as HTMLSelectElement)[$settled])
+    (select.node as HTMLSelectElement)._selectednessSettingAlgorithm();
 }
 
 /** https://html.spec.whatwg.org/#the-optgroup-element */
@@ -209,9 +224,15 @@ export class HTMLOptGroupElement extends HTMLElement {
   }
 
   /** An optgroup's disabled state is its options' disabled state: re-run the select's algorithm. */
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
-    if (namespace === null && localName === "disabled" && (oldValue === null) !== (value === null)) resetOwnerSelect(this[$impl]);
+    if (namespace === null && localName === "disabled" && (oldValue === null) !== (value === null))
+      resetOwnerSelect(this[$impl]);
   }
 
   declare disabled: boolean;

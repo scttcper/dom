@@ -6,7 +6,11 @@
   "license": "MIT",
   "homepage": "https://github.com/scttcper/dom#readme",
   "bugs": { "url": "https://github.com/scttcper/dom/issues" },
-  "repository": { "type": "git", "url": "git+https://github.com/scttcper/dom.git", "directory": "publish/dom-jest-environment" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scttcper/dom.git",
+    "directory": "publish/dom-jest-environment"
+  },
   "author": "Scott Cooper <scttcper@gmail.com>",
   "type": "module",
   "engines": { "node": ">=26" },

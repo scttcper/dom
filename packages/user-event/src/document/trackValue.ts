@@ -1,7 +1,11 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/document/trackValue.ts
 
-import type {Element, HTMLInputElement, HTMLTextAreaElement} from '../dom-types.ts'
+import type {
+  Element,
+  HTMLInputElement,
+  HTMLTextAreaElement,
+} from '../dom-types.ts'
 import {getWindow} from '../utils/index.ts'
 import {hasUISelection, setUISelection, setUIValueClean} from './UI.ts'
 
@@ -30,9 +34,7 @@ function isReact17Element(element: Element) {
   )
 }
 
-export function startTrackValue(
-  element: TrackedElement,
-) {
+export function startTrackValue(element: TrackedElement) {
   if (!isReact17Element(element)) {
     return
   }
@@ -43,10 +45,7 @@ export function startTrackValue(
   }
 }
 
-export function trackOrSetValue(
-  element: TrackedElement,
-  v: string,
-) {
+export function trackOrSetValue(element: TrackedElement, v: string) {
   element[TrackChanges]?.tracked?.push(v)
 
   if (!element[TrackChanges]) {

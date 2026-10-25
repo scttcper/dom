@@ -21,13 +21,16 @@ export function toMatchAriaSnapshot(this: MatcherContext, container: DOMNode, te
     throw new NodeTypeError(container, toMatchAriaSnapshot, this);
   }
   if (typeof template !== "string") {
-    throw new TypeError(`toMatchAriaSnapshot expects an aria snapshot template string, got ${template === null ? "null" : typeof template}`);
+    throw new TypeError(
+      `toMatchAriaSnapshot expects an aria snapshot template string, got ${template === null ? "null" : typeof template}`,
+    );
   }
   let match: ReturnType<typeof matchAriaSnapshot>;
   try {
     match = matchAriaSnapshot(container, template);
   } catch (error) {
-    if (error instanceof AriaTemplateError && Error.captureStackTrace) Error.captureStackTrace(error, toMatchAriaSnapshot);
+    if (error instanceof AriaTemplateError && Error.captureStackTrace)
+      Error.captureStackTrace(error, toMatchAriaSnapshot);
     throw error;
   }
   const hint = this.utils.matcherHint(`${this.isNot ? ".not" : ""}.toMatchAriaSnapshot`, "element", "template");

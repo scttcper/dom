@@ -114,6 +114,7 @@ const S_PI_QUESTIONABLE = 73;
 // allocating a substring. The hash is computed while scanning the name.
 
 /** Attribute names interned by the tokenizer (no tree-builder meaning). */
+// oxfmt-ignore
 const ATTR_NAMES: string[] = [
   "",
   "id", "class", "style", "type", "name", "value", "href", "src", "alt", "title", "role", "for",

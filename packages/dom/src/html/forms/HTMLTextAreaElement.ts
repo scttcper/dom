@@ -26,7 +26,20 @@ import {
   type ConstraintValidation,
   type ValidityState,
 } from "./validation.ts";
-import { $customValidity, $dirtyValue, $impl, $labels, $rawValue, $selDir, $selEnd, $selStart, $userEdited, $userValidity, $validity, $version } from "../../keys.ts";
+import {
+  $customValidity,
+  $dirtyValue,
+  $impl,
+  $labels,
+  $rawValue,
+  $selDir,
+  $selEnd,
+  $selStart,
+  $userEdited,
+  $userValidity,
+  $validity,
+  $version,
+} from "../../keys.ts";
 import { noteChangeDispatch } from "./user-validity.ts";
 import type { Event } from "../../events/Event.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
@@ -175,7 +188,12 @@ export class HTMLTextAreaElement extends HTMLElement {
   }
 
   setSelectionRange(start: number, end: number, direction?: string): void {
-    setSelection(this, toUnsignedLong(start), toUnsignedLong(end), direction === undefined ? "none" : String(direction));
+    setSelection(
+      this,
+      toUnsignedLong(start),
+      toUnsignedLong(end),
+      direction === undefined ? "none" : String(direction),
+    );
   }
 
   select(): void {
@@ -183,8 +201,20 @@ export class HTMLTextAreaElement extends HTMLElement {
   }
 
   setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'setRangeText' on 'HTMLTextAreaElement': 1 argument required, but only 0 present.");
-    const result = rangeText(this._apiValue(), this[$selStart], this[$selEnd], String(replacement), start, end, selectionMode, arguments.length);
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'setRangeText' on 'HTMLTextAreaElement': 1 argument required, but only 0 present.",
+      );
+    const result = rangeText(
+      this._apiValue(),
+      this[$selStart],
+      this[$selEnd],
+      String(replacement),
+      start,
+      end,
+      selectionMode,
+      arguments.length,
+    );
     this[$impl].doc[$version]++;
     this[$rawValue] = result.value;
     this[$dirtyValue] = true;

@@ -16,7 +16,12 @@ export class FileList {
     for (let i = 0; i < list.length; i++) {
       Object.defineProperty(this, i, { value: list[i], enumerable: true, configurable: false, writable: false });
     }
-    Object.defineProperty(this, "length", { value: list.length, enumerable: false, configurable: false, writable: false });
+    Object.defineProperty(this, "length", {
+      value: list.length,
+      enumerable: false,
+      configurable: false,
+      writable: false,
+    });
   }
 
   item(index: number): File | null {

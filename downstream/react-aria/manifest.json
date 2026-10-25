@@ -36,9 +36,6 @@
       "packages/react-aria/test/focus/",
       "packages/react-aria/test/selection/"
     ],
-    "all": [
-      "packages/react-aria/test/",
-      "packages/react-aria-components/test/"
-    ]
+    "all": ["packages/react-aria/test/", "packages/react-aria-components/test/"]
   }
 }

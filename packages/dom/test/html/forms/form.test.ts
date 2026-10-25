@@ -45,7 +45,8 @@ describe("form owner — https://html.spec.whatwg.org/#reset-the-form-owner", ()
   });
 
   test("label.form is its control's form owner; legend.form is its fieldset's", () => {
-    document.body!.innerHTML = "<form id=f><fieldset><legend id=l>x</legend><label id=lb>a <input id=i></label></fieldset></form>";
+    document.body!.innerHTML =
+      "<form id=f><fieldset><legend id=l>x</legend><label id=lb>a <input id=i></label></fieldset></form>";
     expect($("lb").form).toBe($("f"));
     expect($("lb").control).toBe($("i"));
     expect($("l").form).toBe($("f"));
@@ -63,7 +64,8 @@ describe("form.elements — https://html.spec.whatwg.org/#dom-form-elements", ()
   });
 
   test("named access returns an element, or a RadioNodeList for several matches", () => {
-    document.body!.innerHTML = "<form id=f><input name=user id=u><input type=radio name=r value=1><input type=radio name=r value=2 checked></form>";
+    document.body!.innerHTML =
+      "<form id=f><input name=user id=u><input type=radio name=r value=1><input type=radio name=r value=2 checked></form>";
     const els = $("f").elements;
     expect(els.user).toBe($("u"));
     expect(els.namedItem("user")).toBe($("u"));
@@ -78,7 +80,8 @@ describe("form.elements — https://html.spec.whatwg.org/#dom-form-elements", ()
 
 describe("form named properties — https://html.spec.whatwg.org/#the-form-element:supported-property-names", () => {
   test("form.name and form[i] return controls; the past names map survives a rename", () => {
-    document.body!.innerHTML = "<form id=f><input name=email id=e><img name=logo id=i><input type=radio name=r><input type=radio name=r></form>";
+    document.body!.innerHTML =
+      "<form id=f><input name=email id=e><img name=logo id=i><input type=radio name=r><input type=radio name=r></form>";
     const f = $("f");
     expect(f.email).toBe($("e"));
     expect(f.logo).toBe($("i"));
@@ -118,13 +121,16 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#concept-form-
   test("requestSubmit() fires a bubbling, cancelable SubmitEvent with submitter null", () => {
     document.body!.innerHTML = "<form id=f></form>";
     const seen: any[] = [];
-    document.addEventListener("submit", (e: any) => seen.push([e.constructor.name, e.bubbles, e.cancelable, e.submitter]));
+    document.addEventListener("submit", (e: any) =>
+      seen.push([e.constructor.name, e.bubbles, e.cancelable, e.submitter]),
+    );
     $("f").requestSubmit();
     expect(seen).toEqual([["SubmitEvent", true, true, null]]);
   });
 
   test("requestSubmit(button) passes the submitter; non-submit buttons throw TypeError, foreign ones NotFoundError", () => {
-    document.body!.innerHTML = "<form id=f><button id=b>go</button><button id=n type=button></button></form><form id=g><button id=o></button></form>";
+    document.body!.innerHTML =
+      "<form id=f><button id=b>go</button><button id=n type=button></button></form><form id=g><button id=o></button></form>";
     let submitter: unknown;
     $("f").addEventListener("submit", (e: any) => (submitter = e.submitter));
     $("f").requestSubmit($("b"));
@@ -175,10 +181,12 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#concept-form-
   });
 
   test("implicit submission clicks the default button, or submits when only one field blocks", () => {
-    document.body!.innerHTML = "<form id=f><input id=t><button id=b>go</button></form><form id=g><input></form><form id=h><input><input></form>";
+    document.body!.innerHTML =
+      "<form id=f><input id=t><button id=b>go</button></form><form id=g><input></form><form id=h><input><input></form>";
     const log: string[] = [];
     $("b").addEventListener("click", () => log.push("click"));
-    for (const id of ["f", "g", "h"]) $(id).addEventListener("submit", (e: any) => (e.preventDefault(), log.push("submit:" + id)));
+    for (const id of ["f", "g", "h"])
+      $(id).addEventListener("submit", (e: any) => (e.preventDefault(), log.push("submit:" + id)));
     implicitSubmission($("f")[$impl]);
     implicitSubmission($("g")[$impl]);
     implicitSubmission($("h")[$impl]);
@@ -198,7 +206,14 @@ describe("reset — https://html.spec.whatwg.org/#concept-form-reset", () => {
     let fired = 0;
     $("f").addEventListener("reset", () => fired++);
     $("f").reset();
-    expect([fired, $("t").value, $("c").checked, $("ta").value, $("s").selectedIndex, $("o").value]).toEqual([1, "a", true, "x", 1, "d"]);
+    expect([fired, $("t").value, $("c").checked, $("ta").value, $("s").selectedIndex, $("o").value]).toEqual([
+      1,
+      "a",
+      true,
+      "x",
+      1,
+      "d",
+    ]);
   });
 
   test("a canceled reset keeps the current values", () => {
@@ -233,9 +248,13 @@ describe("FormData — https://html.spec.whatwg.org/#constructing-the-form-data-
   });
 
   test("the submitter is included; an image submitter adds name.x/name.y", () => {
-    document.body!.innerHTML = "<form id=f><button id=b name=go value=1></button><input type=image id=i name=pos></form>";
+    document.body!.innerHTML =
+      "<form id=f><button id=b name=go value=1></button><input type=image id=i name=pos></form>";
     expect([...new window.FormData($("f"), $("b"))]).toEqual([["go", "1"]]);
-    expect([...new window.FormData($("f"), $("i"))]).toEqual([["pos.x", "0"], ["pos.y", "0"]]);
+    expect([...new window.FormData($("f"), $("i"))]).toEqual([
+      ["pos.x", "0"],
+      ["pos.y", "0"],
+    ]);
   });
 
   // https://html.spec.whatwg.org/#image-button-state-(type=image): activation selects the click's
@@ -244,7 +263,8 @@ describe("FormData — https://html.spec.whatwg.org/#constructing-the-form-data-
   // data-browser-router "submitter value(s) in tree order" test
   // (downstream/react-router/repros/image-button-selected-coordinate.test.ts).
   test("an image submitter's name.x/name.y are the coordinate the activating click selected", () => {
-    document.body!.innerHTML = "<form id=f><input name=a value=1><input type=image id=i name=pos><input type=image id=n></form>";
+    document.body!.innerHTML =
+      "<form id=f><input name=a value=1><input type=image id=i name=pos><input type=image id=n></form>";
     const submitted: string[][][] = [];
     $("f").addEventListener("submit", (e: any) => {
       e.preventDefault();
@@ -255,9 +275,21 @@ describe("FormData — https://html.spec.whatwg.org/#constructing-the-form-data-
     // click()'s synthetic click is at (0,0): the earlier coordinate does not stick.
     $("i").click();
     expect(submitted).toEqual([
-      [["a", "1"], ["pos.x", "1"], ["pos.y", "2"]],
-      [["a", "1"], ["x", "3"], ["y", "4"]],
-      [["a", "1"], ["pos.x", "0"], ["pos.y", "0"]],
+      [
+        ["a", "1"],
+        ["pos.x", "1"],
+        ["pos.y", "2"],
+      ],
+      [
+        ["a", "1"],
+        ["x", "3"],
+        ["y", "4"],
+      ],
+      [
+        ["a", "1"],
+        ["pos.x", "0"],
+        ["pos.y", "0"],
+      ],
     ]);
   });
 
@@ -277,7 +309,10 @@ describe("FormData — https://html.spec.whatwg.org/#constructing-the-form-data-
   test("fires formdata at the form; listeners can append", () => {
     document.body!.innerHTML = "<form id=f><input name=a value=1></form>";
     $("f").addEventListener("formdata", (e: any) => e.formData.append("extra", "2"));
-    expect([...new window.FormData($("f"))]).toEqual([["a", "1"], ["extra", "2"]]);
+    expect([...new window.FormData($("f"))]).toEqual([
+      ["a", "1"],
+      ["extra", "2"],
+    ]);
   });
 
   test("is still Node's FormData (fetch accepts it)", () => {

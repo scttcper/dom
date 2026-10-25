@@ -30,13 +30,16 @@ import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import { indexOf, nextInTree, treeRoot } from "./traverse.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
-import {
-  activeObservers,
-  addTransientObservers,
-  queueTreeMutationRecord,
-} from "../observers/queue.ts";
+import { activeObservers, addTransientObservers, queueTreeMutationRecord } from "../observers/queue.ts";
 import { NodeList } from "../collections/NodeList.ts";
-import { liveRangeCount, nodeIteratorCount, rangesAdopt, rangesAfterInsert, rangesBeforeRemove, iteratorsBeforeRemove } from "../traversal/live.ts";
+import {
+  liveRangeCount,
+  nodeIteratorCount,
+  rangesAdopt,
+  rangesAfterInsert,
+  rangesBeforeRemove,
+  iteratorsBeforeRemove,
+} from "../traversal/live.ts";
 import { slotsAfterInsert, slotsAfterRemove, slotAssignmentActive } from "./slots.ts";
 import { $childNodes, $derived, $focused, $host, $impl, $isHTML, $shadowRoot, $version } from "../keys.ts";
 
@@ -46,10 +49,7 @@ function hierarchyError(message: string): DOMException {
 
 function isCharacterData(type: number): boolean {
   return (
-    type === TEXT_NODE ||
-    type === CDATA_SECTION_NODE ||
-    type === COMMENT_NODE ||
-    type === PROCESSING_INSTRUCTION_NODE
+    type === TEXT_NODE || type === CDATA_SECTION_NODE || type === COMMENT_NODE || type === PROCESSING_INSTRUCTION_NODE
   );
 }
 
@@ -61,7 +61,9 @@ function isHostIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
     const parent: NodeImpl | null = cur.parent;
     if (parent === null && cur.type === DOCUMENT_FRAGMENT_NODE) {
       // Shadow roots and template contents link to their host via the wrapper.
-      const host: { [$impl]: NodeImpl } | null | undefined = (cur.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null })[$host];
+      const host: { [$impl]: NodeImpl } | null | undefined = (
+        cur.node as unknown as { [$host]?: { [$impl]: NodeImpl } | null }
+      )[$host];
       cur = host ? host[$impl] : null;
     } else {
       cur = parent;
@@ -106,7 +108,10 @@ export function ensurePreInsertionValidity(node: NodeImpl, parent: NodeImpl, chi
   if (nt !== DOCUMENT_FRAGMENT_NODE && nt !== DOCUMENT_TYPE_NODE && nt !== ELEMENT_NODE && !isCharacterData(nt)) {
     throw hierarchyError("Nodes of this type cannot be inserted.");
   }
-  if (((nt === TEXT_NODE || nt === CDATA_SECTION_NODE) && pt === DOCUMENT_NODE) || (nt === DOCUMENT_TYPE_NODE && pt !== DOCUMENT_NODE)) {
+  if (
+    ((nt === TEXT_NODE || nt === CDATA_SECTION_NODE) && pt === DOCUMENT_NODE) ||
+    (nt === DOCUMENT_TYPE_NODE && pt !== DOCUMENT_NODE)
+  ) {
     throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
   }
   if (pt === DOCUMENT_NODE) checkDocumentChildConstraints(node, parent, child, null);
@@ -116,7 +121,12 @@ export function ensurePreInsertionValidity(node: NodeImpl, parent: NodeImpl, chi
  * Step 6 of ensure-pre-insertion-validity / step 6 of replace. `replaced` is the child being
  * replaced (null for insertion); it is ignored when looking for existing element/doctype children.
  */
-function checkDocumentChildConstraints(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null, replaced: NodeImpl | null): void {
+function checkDocumentChildConstraints(
+  node: NodeImpl,
+  parent: NodeImpl,
+  child: NodeImpl | null,
+  replaced: NodeImpl | null,
+): void {
   const otherElement = () => {
     for (let c = parent.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c !== replaced) return true;
     return false;
@@ -130,12 +140,16 @@ function checkDocumentChildConstraints(node: NodeImpl, parent: NodeImpl, child: 
       let elements = 0;
       for (let c = node.first; c !== null; c = c.next) {
         if (c.type === ELEMENT_NODE) elements++;
-        else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE) throw hierarchyError("A document cannot contain text children.");
+        else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE)
+          throw hierarchyError("A document cannot contain text children.");
       }
       if (elements > 1) throw hierarchyError("A document can have only one document element.");
       if (elements === 1) {
         if (replaced === null) {
-          if (hasElementChild(parent) || (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child)))) {
+          if (
+            hasElementChild(parent) ||
+            (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child)))
+          ) {
             throw hierarchyError("A document can have only one document element.");
           }
         } else if (otherElement() || doctypeFollows(replaced)) {
@@ -146,7 +160,10 @@ function checkDocumentChildConstraints(node: NodeImpl, parent: NodeImpl, child: 
     }
     case ELEMENT_NODE:
       if (replaced === null) {
-        if (hasElementChild(parent) || (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child)))) {
+        if (
+          hasElementChild(parent) ||
+          (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child)))
+        ) {
           throw hierarchyError("A document can have only one document element.");
         }
       } else if (otherElement() || doctypeFollows(replaced)) {
@@ -155,7 +172,11 @@ function checkDocumentChildConstraints(node: NodeImpl, parent: NodeImpl, child: 
       break;
     case DOCUMENT_TYPE_NODE:
       if (replaced === null) {
-        if (hasDoctypeChild(parent) || (child !== null && elementPrecedes(child)) || (child === null && hasElementChild(parent))) {
+        if (
+          hasDoctypeChild(parent) ||
+          (child !== null && elementPrecedes(child)) ||
+          (child === null && hasElementChild(parent))
+        ) {
           throw hierarchyError("A document can have only one doctype, before the document element.");
         }
       } else if (otherDoctype() || elementPrecedes(replaced)) {
@@ -175,17 +196,20 @@ export function ensureReplaceAllValidity(node: NodeImpl, parent: NodeImpl): void
     ensurePreInsertionValidity(node, parent, null);
     return;
   }
-  if (isHostIncludingInclusiveAncestor(node, parent)) throw hierarchyError("The new child is an ancestor of the parent.");
+  if (isHostIncludingInclusiveAncestor(node, parent))
+    throw hierarchyError("The new child is an ancestor of the parent.");
   const nt = node.type;
   if (nt !== DOCUMENT_FRAGMENT_NODE && nt !== DOCUMENT_TYPE_NODE && nt !== ELEMENT_NODE && !isCharacterData(nt)) {
     throw hierarchyError("Nodes of this type cannot be inserted.");
   }
-  if (nt === TEXT_NODE || nt === CDATA_SECTION_NODE) throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
+  if (nt === TEXT_NODE || nt === CDATA_SECTION_NODE)
+    throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
   if (nt === DOCUMENT_FRAGMENT_NODE) {
     let elements = 0;
     for (let c = node.first; c !== null; c = c.next) {
       if (c.type === ELEMENT_NODE) elements++;
-      else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE) throw hierarchyError("A document cannot contain text children.");
+      else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE)
+        throw hierarchyError("A document cannot contain text children.");
     }
     if (elements > 1) throw hierarchyError("A document can have only one document element.");
   }
@@ -430,15 +454,20 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
     throw hierarchyError("The new parent is not in the same shadow-including tree as the node to move.");
   }
   // Steps 2-6.
-  if (isHostIncludingInclusiveAncestor(node, newParent)) throw hierarchyError("The node to move is an ancestor of the new parent.");
+  if (isHostIncludingInclusiveAncestor(node, newParent))
+    throw hierarchyError("The node to move is an ancestor of the new parent.");
   if (child !== null && child.parent !== newParent) {
     throw new DOMException("The reference child is not a child of this node.", "NotFoundError");
   }
   const nt = node.type;
-  if (nt !== ELEMENT_NODE && !isCharacterData(nt)) throw hierarchyError("Only elements and character data nodes can be moved.");
+  if (nt !== ELEMENT_NODE && !isCharacterData(nt))
+    throw hierarchyError("Only elements and character data nodes can be moved.");
   if (newParent.type === DOCUMENT_NODE) {
     if (nt === TEXT_NODE) throw hierarchyError("Nodes of this type cannot be moved into a document.");
-    if (nt === ELEMENT_NODE && (hasElementChild(newParent) || (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child))))) {
+    if (
+      nt === ELEMENT_NODE &&
+      (hasElementChild(newParent) || (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child))))
+    ) {
       throw hierarchyError("A document can have only one document element.");
     }
   }
@@ -465,7 +494,8 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   if (slotAssignmentActive !== 0) slotsAfterInsert(newParent, node, null);
   // Step 24: moving steps (custom element connectedMoveCallback is the html agent's hook).
   for (let n: NodeImpl | null = node; n !== null; n = nextInTree(n, node)) {
-    if (n.type === ELEMENT_NODE && (n.flags & F_CONNECT_HOOK) !== 0) (n.node as Element)._movingSteps(n === node, oldParent);
+    if (n.type === ELEMENT_NODE && (n.flags & F_CONNECT_HOOK) !== 0)
+      (n.node as Element)._movingSteps(n === node, oldParent);
   }
   // Steps 25-26.
   if (activeObservers !== 0) {
@@ -485,7 +515,8 @@ export function replace(child: NodeImpl, node: NodeImpl, parent: NodeImpl): Node
   if (pt !== DOCUMENT_NODE && pt !== DOCUMENT_FRAGMENT_NODE && pt !== ELEMENT_NODE) {
     throw hierarchyError("The parent is not a Document, DocumentFragment or Element.");
   }
-  if (isHostIncludingInclusiveAncestor(node, parent)) throw hierarchyError("The new child is an ancestor of the parent.");
+  if (isHostIncludingInclusiveAncestor(node, parent))
+    throw hierarchyError("The new child is an ancestor of the parent.");
   if (child.parent !== parent) {
     throw new DOMException("The node to be replaced is not a child of this node.", "NotFoundError");
   }
@@ -493,7 +524,10 @@ export function replace(child: NodeImpl, node: NodeImpl, parent: NodeImpl): Node
   if (nt !== DOCUMENT_FRAGMENT_NODE && nt !== DOCUMENT_TYPE_NODE && nt !== ELEMENT_NODE && !isCharacterData(nt)) {
     throw hierarchyError("Nodes of this type cannot be inserted.");
   }
-  if (((nt === TEXT_NODE || nt === CDATA_SECTION_NODE) && pt === DOCUMENT_NODE) || (nt === DOCUMENT_TYPE_NODE && pt !== DOCUMENT_NODE)) {
+  if (
+    ((nt === TEXT_NODE || nt === CDATA_SECTION_NODE) && pt === DOCUMENT_NODE) ||
+    (nt === DOCUMENT_TYPE_NODE && pt !== DOCUMENT_NODE)
+  ) {
     throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
   }
   if (pt === DOCUMENT_NODE) checkDocumentChildConstraints(node, parent, null, child);

@@ -56,11 +56,11 @@ test('range on contenteditable', async () => {
             endOffset: 0,
           })
         : expect.objectContaining({
-          startContainer: element.firstChild,
-          startOffset: 0,
-          endContainer: element.firstChild,
-          endOffset: 0,
-        }),
+            startContainer: element.firstChild,
+            startOffset: 0,
+            endContainer: element.firstChild,
+            endOffset: 0,
+          }),
   )
 
   setSelection({

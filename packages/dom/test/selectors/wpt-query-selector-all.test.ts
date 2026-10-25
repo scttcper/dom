@@ -18,7 +18,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { createWindow } from "@ctrl/dom";
-import { TEST_QSA, TEST_MATCH, invalidSelectors, validSelectors, scopedSelectors, type ValidSelector } from "./wpt/selectors.data.js";
+import {
+  TEST_QSA,
+  TEST_MATCH,
+  invalidSelectors,
+  validSelectors,
+  scopedSelectors,
+  type ValidSelector,
+} from "./wpt/selectors.data.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyNode = any;
@@ -33,13 +40,23 @@ function setupSpecialElements(doc: AnyNode, parent: AnyNode): void {
   const noNS = doc.createElement("div");
   anyNS.id = "any-namespace";
   noNS.id = "no-namespace";
-  let div = [doc.createElement("div"), doc.createElementNS("http://www.w3.org/1999/xhtml", "div"), doc.createElementNS("", "div"), doc.createElementNS("http://www.example.org/ns", "div")];
+  let div = [
+    doc.createElement("div"),
+    doc.createElementNS("http://www.w3.org/1999/xhtml", "div"),
+    doc.createElementNS("", "div"),
+    doc.createElementNS("http://www.example.org/ns", "div"),
+  ];
   div[0].id = "any-namespace-div1";
   div[1].id = "any-namespace-div2";
   div[2].setAttribute("id", "any-namespace-div3");
   div[3].setAttribute("id", "any-namespace-div4");
   for (const d of div) anyNS.appendChild(d);
-  div = [doc.createElement("div"), doc.createElementNS("http://www.w3.org/1999/xhtml", "div"), doc.createElementNS("", "div"), doc.createElementNS("http://www.example.org/ns", "div")];
+  div = [
+    doc.createElement("div"),
+    doc.createElementNS("http://www.w3.org/1999/xhtml", "div"),
+    doc.createElementNS("", "div"),
+    doc.createElementNS("http://www.example.org/ns", "div"),
+  ];
   div[0].id = "no-namespace-div1";
   div[1].id = "no-namespace-div2";
   div[2].setAttribute("id", "no-namespace-div3");
@@ -57,7 +74,10 @@ function traverse(elem: AnyNode, fn: (e: AnyNode) => void): void {
 }
 
 function setup() {
-  const window = createWindow({ url: "http://localhost/ParentNode-querySelector-All-content.html#target", html: content });
+  const window = createWindow({
+    url: "http://localhost/ParentNode-querySelector-All-content.html#target",
+    html: content,
+  });
   const doc: AnyNode = window.document;
   const element = doc.getElementById("root");
   setupSpecialElements(doc, element);
@@ -130,7 +150,13 @@ function runInvalidSelectorTest(type: string, root: AnyNode): void {
   }
 }
 
-function runValidSelectorTest(type: string, root: AnyNode, selectors: ValidSelector[], testType: number, docType: string): void {
+function runValidSelectorTest(
+  type: string,
+  root: AnyNode,
+  selectors: ValidSelector[],
+  testType: number,
+  docType: string,
+): void {
   const nt = nodeType(root);
   for (const s of selectors) {
     if (s.exclude && (s.exclude.includes(nt) || s.exclude.includes(docType))) continue;

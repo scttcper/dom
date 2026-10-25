@@ -1,7 +1,12 @@
 // Port of @testing-library/dom src/queries/alt-text.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/queries/alt-text.ts
 
-import { queryAllByAttribute, wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
+import {
+  queryAllByAttribute,
+  wrapAllByQueryWithSuggestion,
+  buildQueries,
+  type GetErrorFunction,
+} from "../query-helpers.ts";
 import { checkContainerType } from "../helpers.ts";
 import type { Matcher, MatcherOptions } from "../matches.ts";
 
@@ -16,7 +21,22 @@ function queryAllByAltText(container: any, alt: Matcher, options: MatcherOptions
 const getMultipleError: GetErrorFunction<[unknown]> = (c, alt) => `Found multiple elements with the alt text: ${alt}`;
 const getMissingError: GetErrorFunction<[unknown]> = (c, alt) => `Unable to find an element with the alt text: ${alt}`;
 
-const queryAllByAltTextWithSuggestions = wrapAllByQueryWithSuggestion(queryAllByAltText, queryAllByAltText.name, "queryAll");
-const [queryByAltText, getAllByAltText, getByAltText, findAllByAltText, findByAltText] = buildQueries(queryAllByAltText, getMultipleError, getMissingError);
+const queryAllByAltTextWithSuggestions = wrapAllByQueryWithSuggestion(
+  queryAllByAltText,
+  queryAllByAltText.name,
+  "queryAll",
+);
+const [queryByAltText, getAllByAltText, getByAltText, findAllByAltText, findByAltText] = buildQueries(
+  queryAllByAltText,
+  getMultipleError,
+  getMissingError,
+);
 
-export { queryByAltText, queryAllByAltTextWithSuggestions as queryAllByAltText, getByAltText, getAllByAltText, findAllByAltText, findByAltText };
+export {
+  queryByAltText,
+  queryAllByAltTextWithSuggestions as queryAllByAltText,
+  getByAltText,
+  getAllByAltText,
+  findAllByAltText,
+  findByAltText,
+};

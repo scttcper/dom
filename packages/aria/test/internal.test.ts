@@ -9,7 +9,14 @@
  *   https://html.spec.whatwg.org/multipage/forms.html#dom-lfe-labels (label association)
  */
 import { describe, expect, test } from "vitest";
-import { computeAccessibleName, getImplicitRole, isInaccessible, roleSupportsProp, superClassRoles, getRoles } from "@ctrl/dom/aria";
+import {
+  computeAccessibleName,
+  getImplicitRole,
+  isInaccessible,
+  roleSupportsProp,
+  superClassRoles,
+  getRoles,
+} from "@ctrl/dom/aria";
 import { tlRoleMatches, tlRole } from "@ctrl/dom/aria/internal";
 import type { Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
@@ -67,13 +74,15 @@ describe("hidden cache — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion", 
   });
 
   test("inherited visibility: hidden and a visible override", () => {
-    renderIntoDocument('<div style="visibility:hidden"><span id="s">a</span><span id="v" style="visibility:visible">b</span></div>');
+    renderIntoDocument(
+      '<div style="visibility:hidden"><span id="s">a</span><span id="v" style="visibility:visible">b</span></div>',
+    );
     expect(isInaccessible($("#s"))).toBe(true);
     expect(isInaccessible($("#v"))).toBe(false);
   });
 
   test("getRoles skips inaccessible elements unless hidden: true", () => {
-    renderIntoDocument('<button>a</button><div hidden><button>b</button></div>');
+    renderIntoDocument("<button>a</button><div hidden><button>b</button></div>");
     expect(getRoles(document.body!).button).toHaveLength(1);
     expect(getRoles(document.body!, { hidden: true }).button).toHaveLength(2);
   });

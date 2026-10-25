@@ -13,7 +13,10 @@ type AnyGlobal = Record<string, any>;
 
 async function offsetHeightUnder(testEnvironmentOptions: Record<string, unknown>): Promise<number> {
   const env = new CtrlDomEnvironment(
-    { globalConfig: {}, projectConfig: { testEnvironmentOptions, globals: {}, fakeTimers: {}, testPath: "x.test.js" } } as never,
+    {
+      globalConfig: {},
+      projectConfig: { testEnvironmentOptions, globals: {}, fakeTimers: {}, testPath: "x.test.js" },
+    } as never,
     { console, docblockPragmas: {}, testPath: "x.test.js" } as never,
   );
   await env.setup();

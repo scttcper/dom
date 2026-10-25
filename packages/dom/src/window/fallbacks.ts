@@ -22,7 +22,9 @@ export class DOMParser {
       return doc;
     }
     if (!XML_TYPES.includes(type)) {
-      throw new TypeError(`Failed to execute 'parseFromString' on 'DOMParser': The provided value '${type}' is not a valid enum value of type DOMParserSupportedType.`);
+      throw new TypeError(
+        `Failed to execute 'parseFromString' on 'DOMParser': The provided value '${type}' is not a valid enum value of type DOMParserSupportedType.`,
+      );
     }
     // Step 2.2: an XML document whose content type is `type`.
     const doc = new Document();
@@ -60,7 +62,15 @@ function escape(value: string): string {
     else if (i === 0 && c >= 0x30 && c <= 0x39) out += `\\${c.toString(16)} `;
     else if (i === 1 && c >= 0x30 && c <= 0x39 && first === 0x2d) out += `\\${c.toString(16)} `;
     else if (i === 0 && c === 0x2d && len === 1) out += "\\-";
-    else if (c >= 0x80 || c === 0x2d || c === 0x5f || (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)) out += s[i];
+    else if (
+      c >= 0x80 ||
+      c === 0x2d ||
+      c === 0x5f ||
+      (c >= 0x30 && c <= 0x39) ||
+      (c >= 0x41 && c <= 0x5a) ||
+      (c >= 0x61 && c <= 0x7a)
+    )
+      out += s[i];
     else out += `\\${s[i]}`;
   }
   return out;

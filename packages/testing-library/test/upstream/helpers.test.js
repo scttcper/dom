@@ -2,7 +2,11 @@
 // Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {screen} from '../../src/index.ts'
-import {getDocument, getWindowFromNode, checkContainerType} from '../../src/helpers.ts'
+import {
+  getDocument,
+  getWindowFromNode,
+  checkContainerType,
+} from '../../src/helpers.ts'
 
 test('returns global document if exists', () => {
   expect(getDocument()).toBe(document)

@@ -32,7 +32,15 @@
 // diff shows only what differs rather than every node the template leaves out.
 
 import { roleSupportsProp } from "@ctrl/dom/aria";
-import { ariaSnapshot, ariaSnapshotTree, envMaxLines, quote, truncate, yamlValue, type SnapshotNode } from "./aria-snapshot.ts";
+import {
+  ariaSnapshot,
+  ariaSnapshotTree,
+  envMaxLines,
+  quote,
+  truncate,
+  yamlValue,
+  type SnapshotNode,
+} from "./aria-snapshot.ts";
 import { diffLines, type Op } from "./aria-snapshot-diff.ts";
 
 // --- templates -----------------------------------------------------------------------------
@@ -73,7 +81,10 @@ export class AriaTemplateError extends Error {
 
 // https://github.com/microsoft/playwright/blob/v1.56.0/packages/playwright-core/src/utils/isomorphic/ariaSnapshot.ts#L222
 function normalizeWhitespace(text: string): string {
-  return text.replace(/[​­]/g, "").replace(/[\r\n\s\t]+/g, " ").trim();
+  return text
+    .replace(/[​­]/g, "")
+    .replace(/[\r\n\s\t]+/g, " ")
+    .trim();
 }
 
 function textValue(raw: string): TextValue {
@@ -104,35 +115,68 @@ export function parseAriaTemplate(text: string): Template {
     const trimmed = line.trim();
     if (trimmed === "" || trimmed.startsWith("#")) continue;
     const indent = line.length - line.trimStart().length;
-    if (line.slice(0, indent).includes("\t")) throw new AriaTemplateError("Tabs cannot be used for indentation", i, line);
+    if (line.slice(0, indent).includes("\t"))
+      throw new AriaTemplateError("Tabs cannot be used for indentation", i, line);
     if (indent < minIndent) minIndent = indent;
   }
-  const fragment: RoleTemplate = { kind: "role", role: "fragment", name: null, attrs: [], url: null, mode: null, children: [] };
+  const fragment: RoleTemplate = {
+    kind: "role",
+    role: "fragment",
+    name: null,
+    attrs: [],
+    url: null,
+    mode: null,
+    children: [],
+  };
   if (minIndent === Infinity) throw new AriaTemplateError("The aria snapshot template is empty", 0, text);
   // Open containers by dash column; `node` is null for a `- text:` item, which takes no children.
-  const stack: Array<{ indent: number; node: RoleTemplate | null; line: number }> = [{ indent: -1, node: fragment, line: -1 }];
+  const stack: Array<{ indent: number; node: RoleTemplate | null; line: number }> = [
+    { indent: -1, node: fragment, line: -1 },
+  ];
   for (let i = 0; i < source.length; i++) {
     const line = source[i];
     const trimmed = line.trim();
     if (trimmed === "" || trimmed.startsWith("#")) continue;
     const indent = line.length - line.trimStart().length - minIndent;
     if (trimmed !== "-" && !trimmed.startsWith("- ")) {
-      throw new AriaTemplateError('Aria snapshot must be a YAML sequence, elements starting with "-"', i, line, indent + minIndent);
+      throw new AriaTemplateError(
+        'Aria snapshot must be a YAML sequence, elements starting with "-"',
+        i,
+        line,
+        indent + minIndent,
+      );
     }
     while (stack[stack.length - 1].indent >= indent) stack.pop();
     const parent = stack[stack.length - 1];
-    if (parent.node === null) throw new AriaTemplateError(`"- text:" on line ${parent.line + 1} cannot have children`, i, line, indent + minIndent);
+    if (parent.node === null)
+      throw new AriaTemplateError(
+        `"- text:" on line ${parent.line + 1} cannot have children`,
+        i,
+        line,
+        indent + minIndent,
+      );
     const item = trimmed.slice(2).trimStart();
     const column = line.length - item.length;
     const child = parseItem(item, parent.node, i, line, column);
     if (child !== undefined) stack.push({ indent, node: child, line: i });
   }
-  if (fragment.children.length === 1 && (fragment.mode === null || fragment.mode === "contain") && fragment.url === null) return fragment.children[0];
+  if (
+    fragment.children.length === 1 &&
+    (fragment.mode === null || fragment.mode === "contain") &&
+    fragment.url === null
+  )
+    return fragment.children[0];
   return fragment;
 }
 
 /** One sequence item; returns the node that following deeper items nest under (null: a text item). */
-function parseItem(item: string, parent: RoleTemplate, lineNo: number, line: string, column: number): RoleTemplate | null | undefined {
+function parseItem(
+  item: string,
+  parent: RoleTemplate,
+  lineNo: number,
+  line: string,
+  column: number,
+): RoleTemplate | null | undefined {
   const fail = (message: string, offset: number): never => {
     throw new AriaTemplateError(message, lineNo, line, column + offset);
   };
@@ -144,7 +188,8 @@ function parseItem(item: string, parent: RoleTemplate, lineNo: number, line: str
     const prop = item.slice(1, colon).trim();
     const value = parseScalar(item.slice(colon + 1), fail, colon + 1);
     if (prop === "children") {
-      if (value !== "contain" && value !== "equal" && value !== "deep-equal") fail('Value of "/children" should be "contain", "equal" or "deep-equal"', colon + 1);
+      if (value !== "contain" && value !== "equal" && value !== "deep-equal")
+        fail('Value of "/children" should be "contain", "equal" or "deep-equal"', colon + 1);
       parent.mode = value as ContainerMode;
     } else if (prop === "url") {
       parent.url = textValue(value);
@@ -181,7 +226,12 @@ function parseItem(item: string, parent: RoleTemplate, lineNo: number, line: str
   return node;
 }
 
-function textItem(parent: RoleTemplate, rest: string, fail: (message: string, offset: number) => never, offset: number): null {
+function textItem(
+  parent: RoleTemplate,
+  rest: string,
+  fail: (message: string, offset: number) => never,
+  offset: number,
+): null {
   parent.children.push({ kind: "text", text: textValue(parseScalar(rest, fail, offset)) });
   return null;
 }
@@ -196,7 +246,8 @@ function parseScalar(text: string, fail: (message: string, offset: number) => ne
     if (after !== "" && !after.startsWith("#")) fail("Unexpected input after the quoted value", offset + lead + end);
     return unquoted;
   }
-  if (value === "|" || value === ">" || value.startsWith("|") || value.startsWith(">")) fail("Block scalars are not supported in aria snapshot templates", offset + lead);
+  if (value === "|" || value === ">" || value.startsWith("|") || value.startsWith(">"))
+    fail("Block scalars are not supported in aria snapshot templates", offset + lead);
   const comment = value.search(/\s#/);
   return comment >= 0 ? value.slice(0, comment).trim() : value;
 }
@@ -344,7 +395,15 @@ class KeyParser {
       this.pos++;
       name = this.readRegex();
     }
-    const node: RoleTemplate = { kind: "role", role, name: name === "" ? null : name, attrs: [], url: null, mode: null, children: [] };
+    const node: RoleTemplate = {
+      kind: "role",
+      role,
+      name: name === "" ? null : name,
+      attrs: [],
+      url: null,
+      mode: null,
+      children: [],
+    };
     for (;;) {
       this.skipWhitespace();
       if (this.peek() !== "[") break;
@@ -366,7 +425,11 @@ class KeyParser {
     }
     this.skipWhitespace();
     if (stopAtColon && this.atColon()) return node;
-    if (!this.eof()) throw new KeyError(stopAtColon ? 'Unexpected input (a key ends with ":" and a space)' : "Unexpected input", this.pos);
+    if (!this.eof())
+      throw new KeyError(
+        stopAtColon ? 'Unexpected input (a key ends with ":" and a space)' : "Unexpected input",
+        this.pos,
+      );
     return node;
   }
 }
@@ -374,11 +437,13 @@ class KeyParser {
 /** Playwright's `_applyAttribute` checks, plus our snapshot's `current`, `busy` and `hidden`. */
 function checkAttribute(attr: string, value: string, pos: number): string {
   if (attr === "checked" || attr === "pressed") {
-    if (value !== "true" && value !== "false" && value !== "mixed") throw new KeyError(`Value of "${attr}" attribute must be a boolean or "mixed"`, pos);
+    if (value !== "true" && value !== "false" && value !== "mixed")
+      throw new KeyError(`Value of "${attr}" attribute must be a boolean or "mixed"`, pos);
     return value;
   }
   if (BOOLEAN_ATTRS.has(attr)) {
-    if (value !== "true" && value !== "false") throw new KeyError(`Value of "${attr}" attribute must be a boolean`, pos);
+    if (value !== "true" && value !== "false")
+      throw new KeyError(`Value of "${attr}" attribute must be a boolean`, pos);
     return value;
   }
   if (attr === "level") {
@@ -467,7 +532,12 @@ function matchesText(text: string | null, template: TextValue | null): boolean {
 }
 
 function headerMatches(node: MatchNode, t: RoleTemplate): boolean {
-  return (t.role === "fragment" || t.role === node.role) && attrsMatch(node, t) && matchesName(node.name, t.name) && matchesText(node.url, t.url);
+  return (
+    (t.role === "fragment" || t.role === node.role) &&
+    attrsMatch(node, t) &&
+    matchesName(node.name, t.name) &&
+    matchesText(node.url, t.url)
+  );
 }
 
 // (matchesNode)
@@ -519,7 +589,8 @@ function templateKey(t: RoleTemplate): string {
   let key = t.role;
   if (typeof t.name === "string") key += " " + quote(t.name);
   else if (t.name !== null) key += ` /${t.name.source}/`;
-  for (let i = 0; i < t.attrs.length; i++) key += t.attrs[i][1] === "true" ? ` [${t.attrs[i][0]}]` : ` [${t.attrs[i][0]}=${t.attrs[i][1]}]`;
+  for (let i = 0; i < t.attrs.length; i++)
+    key += t.attrs[i][1] === "true" ? ` [${t.attrs[i][0]}]` : ` [${t.attrs[i][0]}=${t.attrs[i][1]}]`;
   return key;
 }
 
@@ -610,7 +681,9 @@ class Scorer {
   project(t: Template, node: MatchNode | string, indent: string, lines: string[]): void {
     if (t.kind === "text") {
       const text = node as string;
-      lines.push(`${indent}- text: ${matchesText(text, t.text) ? textRepr(t.text) : yamlValue(truncate(text, MAX_TEXT))}`);
+      lines.push(
+        `${indent}- text: ${matchesText(text, t.text) ? textRepr(t.text) : yamlValue(truncate(text, MAX_TEXT))}`,
+      );
       return;
     }
     const n = node as MatchNode;
@@ -619,7 +692,11 @@ class Scorer {
     if (isInline(t)) {
       const text = aligned[0] as string | null;
       const tt = (t.children[0] as TextTemplate).text;
-      lines.push(text === null ? `${indent}- ${key}` : `${indent}- ${key}: ${matchesText(text, tt) ? textRepr(tt) : yamlValue(truncate(text, MAX_TEXT))}`);
+      lines.push(
+        text === null
+          ? `${indent}- ${key}`
+          : `${indent}- ${key}: ${matchesText(text, tt) ? textRepr(tt) : yamlValue(truncate(text, MAX_TEXT))}`,
+      );
       return;
     }
     if (t.children.length === 0 && t.url === null && t.mode === null) {
@@ -628,9 +705,11 @@ class Scorer {
     }
     lines.push(`${indent}- ${key}:`);
     const inner = indent + "  ";
-    if (t.url !== null) lines.push(`${inner}- /url: ${matchesText(n.url, t.url) ? textRepr(t.url) : yamlValue(n.url ?? "")}`);
+    if (t.url !== null)
+      lines.push(`${inner}- /url: ${matchesText(n.url, t.url) ? textRepr(t.url) : yamlValue(n.url ?? "")}`);
     if (t.mode !== null) lines.push(`${inner}- /children: ${t.mode}`);
-    for (let i = 0; i < t.children.length; i++) if (aligned[i] !== null) this.project(t.children[i], aligned[i]!, inner, lines);
+    for (let i = 0; i < t.children.length; i++)
+      if (aligned[i] !== null) this.project(t.children[i], aligned[i]!, inner, lines);
   }
 }
 
@@ -660,7 +739,8 @@ function closestLines(root: MatchNode, t: Template): string[] {
     });
     if (best !== null) {
       const aligned = scorer.align(t.children, (best as MatchNode).children);
-      for (let i = 0; i < t.children.length; i++) if (aligned[i] !== null) scorer.project(t.children[i], aligned[i]!, "", lines);
+      for (let i = 0; i < t.children.length; i++)
+        if (aligned[i] !== null) scorer.project(t.children[i], aligned[i]!, "", lines);
     }
     return lines;
   }
@@ -683,7 +763,7 @@ function closestLines(root: MatchNode, t: Template): string[] {
  */
 function pairChanges(ops: Op[]): Op[] {
   const out: Op[] = [];
-  for (let i = 0; i < ops.length; ) {
+  for (let i = 0; i < ops.length;) {
     if (ops[i].kind === "=") {
       out.push(ops[i++]);
       continue;

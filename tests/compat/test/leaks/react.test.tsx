@@ -20,7 +20,10 @@ import { getByRole, prettyDOM } from "@ctrl/dom/testing-library";
 import { createWindow, currentWindowOrNull, setCurrentWindow } from "@ctrl/dom";
 
 // @ctrl/dom/user-event declares its own structural DOM types; @ctrl/dom/react returns @ctrl/dom's.
-type User = Record<"type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover", (...args: any[]) => Promise<void>>;
+type User = Record<
+  "type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover",
+  (...args: any[]) => Promise<void>
+>;
 const setupUser = (): User => userEvent.setup() as unknown as User;
 
 const Theme = createContext("light");
@@ -30,7 +33,12 @@ function Field({ label, name }: { label: string; name: string }) {
   return (
     <label>
       {label}
-      <input name={name} value={value} onChange={(e) => setValue(e.target.value)} style={{ color: value ? "red" : "blue" }} />
+      <input
+        name={name}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        style={{ color: value ? "red" : "blue" }}
+      />
     </label>
   );
 }
@@ -116,7 +124,8 @@ describe("render → interact → cleanup — https://testing-library.com/docs/r
         // React keeps its root on the container (_reactRootContainer / __reactContainer$*).
         for (const key of Object.keys(view.container)) {
           const value = (view.container as unknown as Record<string, unknown>)[key];
-          if (key.startsWith("__reactContainer") && typeof value === "object" && value !== null) tracker.track("fiber", value);
+          if (key.startsWith("__reactContainer") && typeof value === "object" && value !== null)
+            tracker.track("fiber", value);
         }
         // Suspense: lazy component and use(promise).
         const Lazy = makeLazy();
@@ -203,7 +212,8 @@ describe("heap slope — render/unmount churn", () => {
       { warmup: 500, samples: 6, every: 150 },
     );
     // A leaked tree of this App is several KB; noise is well below 1 KB/cycle.
-    if (process.env.LEAK_DEBUG) console.log(points.map(([x, y]) => `${x}:${(y / 1024).toFixed(0)}K`).join(" "), bytesPerCycle);
+    if (process.env.LEAK_DEBUG)
+      console.log(points.map(([x, y]) => `${x}:${(y / 1024).toFixed(0)}K`).join(" "), bytesPerCycle);
     // A leaked App tree is several KB per cycle; post-warmup noise is well under 512 B.
     expect(bytesPerCycle).toBeLessThan(512);
   });

@@ -253,7 +253,9 @@ describe('label', () => {
     // JSDOM does not set `HTMLLabelElement.control` to the form-associated custom element
     // divergence: @ctrl/dom does not resolve `label.control` to form-associated custom elements yet.
     // TODO(html-forms): labelable FACE per https://html.spec.whatwg.org/#category-label
-    expect(getEvents('click')).toHaveLength(isJsdomEnv() || isCtrlDomEnv() ? 1 : 2)
+    expect(getEvents('click')).toHaveLength(
+      isJsdomEnv() || isCtrlDomEnv() ? 1 : 2,
+    )
   })
 
   test('click nested FACE', async () => {

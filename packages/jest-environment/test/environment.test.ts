@@ -26,12 +26,18 @@ type AnyGlobal = Record<string, any>;
 
 function environment(testEnvironmentOptions: Record<string, unknown> = {}): CtrlDomEnvironment {
   return new CtrlDomEnvironment(
-    { globalConfig: {}, projectConfig: { testEnvironmentOptions, globals: {}, fakeTimers: {}, testPath: "x.test.js" } } as never,
+    {
+      globalConfig: {},
+      projectConfig: { testEnvironmentOptions, globals: {}, fakeTimers: {}, testPath: "x.test.js" },
+    } as never,
     { console, docblockPragmas: {}, testPath: "x.test.js" } as never,
   );
 }
 
-async function withEnvironment(options: Record<string, unknown>, body: (env: CtrlDomEnvironment, global: AnyGlobal) => void | Promise<void>): Promise<void> {
+async function withEnvironment(
+  options: Record<string, unknown>,
+  body: (env: CtrlDomEnvironment, global: AnyGlobal) => void | Promise<void>,
+): Promise<void> {
   const env = environment(options);
   await env.setup();
   try {
@@ -44,7 +50,11 @@ async function withEnvironment(options: Record<string, unknown>, body: (env: Ctr
 describe("fetch primitives — https://fetch.spec.whatwg.org/#fetch-method", () => {
   test("fetch, Request and Response are absent like under jest-environment-jsdom; Headers stays (jsdom has it)", async () => {
     await withEnvironment({}, (_env, global) => {
-      expect([typeof global.fetch, typeof global.Request, typeof global.Response]).toEqual(["undefined", "undefined", "undefined"]);
+      expect([typeof global.fetch, typeof global.Request, typeof global.Response]).toEqual([
+        "undefined",
+        "undefined",
+        "undefined",
+      ]);
       expect(typeof global.Headers).toBe("function");
       expect(typeof global.FormData).toBe("function");
       expect(typeof global.window.fetch).toBe("undefined");
@@ -75,7 +85,9 @@ describe("environment.dom.reconfigure — https://github.com/jsdom/jsdom#reconfi
 
   test("an unparsable URL throws jsdom's TypeError; unsupported settings throw", async () => {
     await withEnvironment({}, (env) => {
-      expect(() => env.dom!.reconfigure({ url: "not a url" })).toThrow(new TypeError('Could not parse "not a url" as a URL'));
+      expect(() => env.dom!.reconfigure({ url: "not a url" })).toThrow(
+        new TypeError('Could not parse "not a url" as a URL'),
+      );
       expect(() => env.dom!.reconfigure({ windowTop: {} })).toThrow(TypeError);
     });
   });
@@ -210,7 +222,7 @@ describe("interface isolation — definitions on shared interface objects stay u
   });
 });
 
-describe("@ctrl/sentry-tests' failure reports (its \"sentry-tests:failure\" channel)", () => {
+describe('@ctrl/sentry-tests\' failure reports (its "sentry-tests:failure" channel)', () => {
   test("a failure in this environment's document gets the accessibility snapshot and the clock; another document's, and any after teardown, get nothing", async () => {
     const env = environment();
     await env.setup();
@@ -219,7 +231,14 @@ describe("@ctrl/sentry-tests' failure reports (its \"sentry-tests:failure\" chan
     await import("@ctrl/dom/testing-library");
     global.document.body.innerHTML = "<button>Save</button>";
     const publish = (document: unknown) => {
-      const message = { test: "saves", error: new Error("no"), document, attachments: [] as Array<{ filename: string; data: string }>, contexts: {} as Record<string, unknown>, waitUntil() {} };
+      const message = {
+        test: "saves",
+        error: new Error("no"),
+        document,
+        attachments: [] as Array<{ filename: string; data: string }>,
+        contexts: {} as Record<string, unknown>,
+        waitUntil() {},
+      };
       channel("sentry-tests:failure").publish(message);
       return message;
     };

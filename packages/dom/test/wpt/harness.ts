@@ -258,7 +258,10 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
           const start = Date.now();
           const poll = () => {
             if (cond()) resolve();
-            else if (Date.now() - start > timeout) reject(new AssertionError(`step_wait: Timed out waiting on condition${description ? ": " + description : ""}`));
+            else if (Date.now() - start > timeout)
+              reject(
+                new AssertionError(`step_wait: Timed out waiting on condition${description ? ": " + description : ""}`),
+              );
             else setTimeout(poll, interval);
           };
           poll();
@@ -341,7 +344,12 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
     if (typeof type === "number") name = CODE_NAMES[type];
     else name = LEGACY_CONSTANTS[type] ?? type;
     const err = e as { name: string; code: number; constructor: unknown };
-    assert(err.name === name, "assert_throws_dom", desc, `expected ${name} but got ${err.name} (${(e as Error).message})`);
+    assert(
+      err.name === name,
+      "assert_throws_dom",
+      desc,
+      `expected ${name} but got ${err.name} (${(e as Error).message})`,
+    );
     assert(err.code === (DOM_CODES[name] ?? 0), "assert_throws_dom", desc, `code ${err.code} !== ${DOM_CODES[name]}`);
     assert(e instanceof DOMException, "assert_throws_dom", desc, "not a DOMException");
   }
@@ -354,19 +362,44 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       assert(actual === false, "assert_false", desc, `expected false got ${formatValue(actual)}`);
     },
     assert_equals(actual: unknown, expected: unknown, desc?: string) {
-      assert(sameValue(actual, expected), "assert_equals", desc, `expected ${formatValue(expected)} but got ${formatValue(actual)}`);
+      assert(
+        sameValue(actual, expected),
+        "assert_equals",
+        desc,
+        `expected ${formatValue(expected)} but got ${formatValue(actual)}`,
+      );
     },
     assert_not_equals(actual: unknown, expected: unknown, desc?: string) {
       assert(!sameValue(actual, expected), "assert_not_equals", desc, `got disallowed value ${formatValue(actual)}`);
     },
     assert_in_array(actual: unknown, expected: unknown[], desc?: string) {
-      assert(expected.includes(actual), "assert_in_array", desc, `value ${formatValue(actual)} not in array ${formatValue(expected)}`);
+      assert(
+        expected.includes(actual),
+        "assert_in_array",
+        desc,
+        `value ${formatValue(actual)} not in array ${formatValue(expected)}`,
+      );
     },
     assert_array_equals(actual: ArrayLike<unknown>, expected: ArrayLike<unknown>, desc?: string) {
-      assert(typeof actual === "object" && actual !== null && "length" in actual, "assert_array_equals", desc, `value is ${formatValue(actual)}, expected array`);
-      assert(actual.length === expected.length, "assert_array_equals", desc, `lengths differ, expected ${expected.length} got ${actual.length}`);
+      assert(
+        typeof actual === "object" && actual !== null && "length" in actual,
+        "assert_array_equals",
+        desc,
+        `value is ${formatValue(actual)}, expected array`,
+      );
+      assert(
+        actual.length === expected.length,
+        "assert_array_equals",
+        desc,
+        `lengths differ, expected ${expected.length} got ${actual.length}`,
+      );
       for (let i = 0; i < actual.length; i++) {
-        assert(sameValue(actual[i], expected[i]), "assert_array_equals", desc, `expected ${formatValue(expected[i])} but got ${formatValue(actual[i])} at index ${i}`);
+        assert(
+          sameValue(actual[i], expected[i]),
+          "assert_array_equals",
+          desc,
+          `expected ${formatValue(expected[i])} but got ${formatValue(actual[i])} at index ${i}`,
+        );
       }
     },
     assert_object_equals(actual: Record<string, unknown>, expected: Record<string, unknown>, desc?: string) {
@@ -379,25 +412,46 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
           assert(Object.hasOwn(e, p), "assert_object_equals", desc, `unexpected property ${path}.${p}`);
           const av = a[p];
           if (typeof av === "object" && av !== null && !stack.includes(av)) {
-            assert(typeof e[p] === "object" && e[p] !== null, "assert_object_equals", desc, `${path}.${p} expected ${formatValue(e[p])} got ${formatValue(av)}`);
+            assert(
+              typeof e[p] === "object" && e[p] !== null,
+              "assert_object_equals",
+              desc,
+              `${path}.${p} expected ${formatValue(e[p])} got ${formatValue(av)}`,
+            );
             check(av as Record<string, unknown>, e[p] as Record<string, unknown>, `${path}.${p}`);
           } else {
-            assert(sameValue(av, e[p]), "assert_object_equals", desc, `property ${path}.${p} expected ${formatValue(e[p])} got ${formatValue(av)}`);
+            assert(
+              sameValue(av, e[p]),
+              "assert_object_equals",
+              desc,
+              `property ${path}.${p} expected ${formatValue(e[p])} got ${formatValue(av)}`,
+            );
           }
         }
-        for (const p in e) assert(Object.hasOwn(a, p), "assert_object_equals", desc, `expected property ${path}.${p} missing`);
+        for (const p in e)
+          assert(Object.hasOwn(a, p), "assert_object_equals", desc, `expected property ${path}.${p} missing`);
         stack.pop();
       };
       check(actual, expected, "");
     },
     assert_approx_equals(actual: number, expected: number, epsilon: number, desc?: string) {
-      assert(Math.abs(actual - expected) <= epsilon, "assert_approx_equals", desc, `expected ${expected} +/- ${epsilon} but got ${actual}`);
+      assert(
+        Math.abs(actual - expected) <= epsilon,
+        "assert_approx_equals",
+        desc,
+        `expected ${expected} +/- ${epsilon} but got ${actual}`,
+      );
     },
     assert_less_than(actual: number, expected: number, desc?: string) {
       assert(actual < expected, "assert_less_than", desc, `expected a number less than ${expected} but got ${actual}`);
     },
     assert_greater_than(actual: number, expected: number, desc?: string) {
-      assert(actual > expected, "assert_greater_than", desc, `expected a number greater than ${expected} but got ${actual}`);
+      assert(
+        actual > expected,
+        "assert_greater_than",
+        desc,
+        `expected a number greater than ${expected} but got ${actual}`,
+      );
     },
     assert_less_than_equal(actual: number, expected: number, desc?: string) {
       assert(actual <= expected, "assert_less_than_equal", desc, `expected <= ${expected} but got ${actual}`);
@@ -410,19 +464,44 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
     },
     assert_class_string(object: unknown, className: string, desc?: string) {
       const actual = Object.prototype.toString.call(object);
-      assert(actual === `[object ${className}]`, "assert_class_string", desc, `expected [object ${className}] but got ${actual}`);
+      assert(
+        actual === `[object ${className}]`,
+        "assert_class_string",
+        desc,
+        `expected [object ${className}] but got ${actual}`,
+      );
     },
     assert_own_property(object: object, name: PropertyKey, desc?: string) {
-      assert(Object.prototype.hasOwnProperty.call(object, name), "assert_own_property", desc, `expected property ${String(name)} missing`);
+      assert(
+        Object.prototype.hasOwnProperty.call(object, name),
+        "assert_own_property",
+        desc,
+        `expected property ${String(name)} missing`,
+      );
     },
     assert_not_own_property(object: object, name: PropertyKey, desc?: string) {
-      assert(!Object.prototype.hasOwnProperty.call(object, name), "assert_not_own_property", desc, `unexpected property ${String(name)} is found on object`);
+      assert(
+        !Object.prototype.hasOwnProperty.call(object, name),
+        "assert_not_own_property",
+        desc,
+        `unexpected property ${String(name)} is found on object`,
+      );
     },
     assert_inherits(object: object, name: PropertyKey, desc?: string) {
-      assert(!Object.prototype.hasOwnProperty.call(object, name) && name in object, "assert_inherits", desc, `property ${String(name)} not inherited`);
+      assert(
+        !Object.prototype.hasOwnProperty.call(object, name) && name in object,
+        "assert_inherits",
+        desc,
+        `property ${String(name)} not inherited`,
+      );
     },
     assert_idl_attribute(object: object, name: PropertyKey, desc?: string) {
-      assert(!Object.prototype.hasOwnProperty.call(object, name) && name in object, "assert_idl_attribute", desc, `property ${String(name)} not found on prototype chain`);
+      assert(
+        !Object.prototype.hasOwnProperty.call(object, name) && name in object,
+        "assert_idl_attribute",
+        desc,
+        `property ${String(name)} not found on prototype chain`,
+      );
     },
     assert_readonly(object: Record<PropertyKey, unknown>, name: PropertyKey, desc?: string) {
       const initial = object[name];
@@ -444,7 +523,9 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       throw new AssertionError("assert_unreached: " + (desc ?? "reached unreachable code"));
     },
     assert_throws_dom(type: string | number, funcOrCtor: unknown, funcOrDesc?: unknown, maybeDesc?: string) {
-      const func = (typeof funcOrCtor === "function" && typeof funcOrDesc === "function" ? funcOrDesc : funcOrCtor) as () => void;
+      const func = (
+        typeof funcOrCtor === "function" && typeof funcOrDesc === "function" ? funcOrDesc : funcOrCtor
+      ) as () => void;
       const desc = (typeof funcOrDesc === "string" ? funcOrDesc : maybeDesc) as string | undefined;
       try {
         func.call(null);
@@ -459,27 +540,67 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
         func.call(null);
       } catch (e) {
         assert(typeof e === "object" && e !== null, "assert_throws_js", desc, `${formatValue(e)} is not an object`);
-        assert((e as Error).name === ctor.name, "assert_throws_js", desc, `expected ${ctor.name} but got ${(e as Error).name}: ${(e as Error).message}`);
+        assert(
+          (e as Error).name === ctor.name,
+          "assert_throws_js",
+          desc,
+          `expected ${ctor.name} but got ${(e as Error).name}: ${(e as Error).message}`,
+        );
         return;
       }
       assert(false, "assert_throws_js", desc, `${func} did not throw`);
     },
     // https://github.com/web-platform-tests/wpt/blob/master/resources/testharness.js (no-constructor form)
-    assert_throws_quotaexceedederror(func: () => void, requested: number | null | ((v: unknown) => boolean), quota: number | null | ((v: unknown) => boolean), desc?: string) {
+    assert_throws_quotaexceedederror(
+      func: () => void,
+      requested: number | null | ((v: unknown) => boolean),
+      quota: number | null | ((v: unknown) => boolean),
+      desc?: string,
+    ) {
       try {
         func.call(null);
       } catch (e) {
         if (e instanceof AssertionError) throw e;
         const err = e as { name?: string; code?: number; requested?: unknown; quota?: unknown; constructor?: unknown };
-        assert(typeof e === "object" && e !== null, "assert_throws_quotaexceedederror", desc, `${formatValue(e)} is not an object`);
-        assert(err.name === "QuotaExceededError" && err.code === 22, "assert_throws_quotaexceedederror", desc, `expected QuotaExceededError but got ${err.name}`);
-        for (const [prop, expected] of [["requested", requested], ["quota", quota]] as const) {
+        assert(
+          typeof e === "object" && e !== null,
+          "assert_throws_quotaexceedederror",
+          desc,
+          `${formatValue(e)} is not an object`,
+        );
+        assert(
+          err.name === "QuotaExceededError" && err.code === 22,
+          "assert_throws_quotaexceedederror",
+          desc,
+          `expected QuotaExceededError but got ${err.name}`,
+        );
+        for (const [prop, expected] of [
+          ["requested", requested],
+          ["quota", quota],
+        ] as const) {
           const actual = err[prop];
-          if (typeof expected === "function") assert(expected(actual), "assert_throws_quotaexceedederror", desc, `${prop} ${formatValue(actual)} did not pass the predicate`);
-          else assert(prop in err && actual == expected, "assert_throws_quotaexceedederror", desc, `${prop} is ${formatValue(actual)}, expected ${formatValue(expected)}`);
+          if (typeof expected === "function")
+            assert(
+              expected(actual),
+              "assert_throws_quotaexceedederror",
+              desc,
+              `${prop} ${formatValue(actual)} did not pass the predicate`,
+            );
+          else
+            assert(
+              prop in err && actual == expected,
+              "assert_throws_quotaexceedederror",
+              desc,
+              `${prop} is ${formatValue(actual)}, expected ${formatValue(expected)}`,
+            );
         }
         const QuotaExceededError = (globalThis as Record<string, unknown>).QuotaExceededError;
-        assert(QuotaExceededError === undefined || err.constructor === QuotaExceededError, "assert_throws_quotaexceedederror", desc, "threw an exception from the wrong global");
+        assert(
+          QuotaExceededError === undefined || err.constructor === QuotaExceededError,
+          "assert_throws_quotaexceedederror",
+          desc,
+          "threw an exception from the wrong global",
+        );
         return;
       }
       assert(false, "assert_throws_quotaexceedederror", desc, `${func} did not throw`);
@@ -488,7 +609,12 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       try {
         func.call(null);
       } catch (e) {
-        assert(sameValue(e, value), "assert_throws_exactly", desc, `expected ${formatValue(value)} but got ${formatValue(e)}`);
+        assert(
+          sameValue(e, value),
+          "assert_throws_exactly",
+          desc,
+          `expected ${formatValue(value)} but got ${formatValue(e)}`,
+        );
         return;
       }
       assert(false, "assert_throws_exactly", desc, `${func} did not throw`);
@@ -515,7 +641,12 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       try {
         await promise;
       } catch (e) {
-        assert(sameValue(e, exception), "promise_rejects_exactly", desc, `${formatValue(e)} is not ${formatValue(exception)}`);
+        assert(
+          sameValue(e, exception),
+          "promise_rejects_exactly",
+          desc,
+          `${formatValue(e)} is not ${formatValue(exception)}`,
+        );
         return;
       }
       assert(false, "promise_rejects_exactly", desc, "promise did not reject");
@@ -527,14 +658,27 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
    * from testharness.js: resolves `wait_for(types)` with the event (or every event with
    * `{record: "all"}`) and fails the test on any event out of the expected order.
    */
-  type StepTest = { step_func: (fn: (...a: never[]) => unknown) => (...a: unknown[]) => unknown; add_cleanup: (fn: () => void) => void };
-  function EventWatcher(this: Record<string, unknown>, t: StepTest, node: dom.EventTarget, eventTypes: string | string[], timeoutPromise?: () => Promise<unknown>) {
+  type StepTest = {
+    step_func: (fn: (...a: never[]) => unknown) => (...a: unknown[]) => unknown;
+    add_cleanup: (fn: () => void) => void;
+  };
+  function EventWatcher(
+    this: Record<string, unknown>,
+    t: StepTest,
+    node: dom.EventTarget,
+    eventTypes: string | string[],
+    timeoutPromise?: () => Promise<unknown>,
+  ) {
     const types = typeof eventTypes === "string" ? [eventTypes] : eventTypes;
     let waitingFor: { types: string[]; resolve: (v: unknown) => void; reject: (e: unknown) => void } | null = null;
     let recorded: dom.Event[] | null = null;
     const handler = t.step_func((evt: dom.Event) => {
       asserts.assert_true(waitingFor !== null, `Not expecting event, but got ${evt.type} event`);
-      asserts.assert_equals(evt.type, waitingFor!.types[0], `Expected ${waitingFor!.types[0]} event, but got ${evt.type} event instead`);
+      asserts.assert_equals(
+        evt.type,
+        waitingFor!.types[0],
+        `Expected ${waitingFor!.types[0]} event, but got ${evt.type} event instead`,
+      );
       recorded?.push(evt);
       if (waitingFor!.types.length > 1) {
         waitingFor!.types.shift();
@@ -578,7 +722,9 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
     promise_test,
     promise_setup,
     setup(fnOrOptions?: unknown, maybeOptions?: { explicit_done?: boolean }) {
-      const options = (typeof fnOrOptions === "object" ? fnOrOptions : maybeOptions) as { explicit_done?: boolean; single_test?: boolean } | undefined;
+      const options = (typeof fnOrOptions === "object" ? fnOrOptions : maybeOptions) as
+        | { explicit_done?: boolean; single_test?: boolean }
+        | undefined;
       if (options?.explicit_done) explicitDone = true;
       // https://web-platform-tests.org/writing-tests/testharness-api.html#single-page-tests —
       // one implicit test (named after the document title by runWPT), passed by done().
@@ -632,7 +778,8 @@ function build(doc: dom.Document, parent: dom.Node, nodes: P5Node[], skipScripts
   for (const n of nodes) {
     if (n.nodeName === "#text") parent.appendChild(doc.createTextNode(n.value ?? ""));
     else if (n.nodeName === "#comment") parent.appendChild(doc.createComment(n.data ?? ""));
-    else if (n.nodeName === "#documentType") parent.appendChild(doc.implementation.createDocumentType(n.name ?? "html", n.publicId ?? "", n.systemId ?? ""));
+    else if (n.nodeName === "#documentType")
+      parent.appendChild(doc.implementation.createDocumentType(n.name ?? "html", n.publicId ?? "", n.systemId ?? ""));
     else if (n.tagName !== undefined) {
       if (skipScripts && n.tagName === "script") continue;
       const el = doc.createElementNS(n.namespaceURI ?? "http://www.w3.org/1999/xhtml", n.tagName);
@@ -693,7 +840,13 @@ interface LoadedDocument {
  * Load a fixture into a fresh window + vm context and run its scripts. `harness` (null for
  * iframe documents) supplies the testharness functions.
  */
-function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | null, prelude?: string, testdriver?: RunOptions["testdriver"], parent?: FrameOwner): LoadedDocument {
+function loadDocument(
+  fileWithQuery: string,
+  harness: Record<string, unknown> | null,
+  prelude?: string,
+  testdriver?: RunOptions["testdriver"],
+  parent?: FrameOwner,
+): LoadedDocument {
   const file = fileWithQuery.replace(/[?#].*$/, "");
   const path = join(FIXTURES, file);
   const html = JS_TEST.test(file) ? jsTestPage(path) : readFileSync(path, "utf8");
@@ -706,7 +859,10 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
   const window =
     parent === undefined
       ? dom.createWindow({ url, cssComputedColors: "rgb" })
-      : (new (dom.Window as unknown as new (o: object, n: object) => dom.Window)({ url }, { parent: parent.window, frameElement: parent.frame, srcdoc: null }));
+      : new (dom.Window as unknown as new (o: object, n: object) => dom.Window)(
+          { url },
+          { parent: parent.window, frameElement: parent.frame, srcdoc: null },
+        );
   const doc = window.document as dom.Document;
   // Replace the default document content with the test's markup.
   for (let c = doc.firstChild; c !== null; c = doc.firstChild) doc.removeChild(c);
@@ -720,7 +876,11 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     const src = s.attrs?.find((a) => a.name === "src")?.value;
     if (src === undefined) {
       sources.push(textOf(s));
-    } else if (!src.startsWith("/resources/testharness") && !src.startsWith("/resources/testdriver") && !/\.py(\?|$)/.test(src)) {
+    } else if (
+      !src.startsWith("/resources/testharness") &&
+      !src.startsWith("/resources/testdriver") &&
+      !/\.py(\?|$)/.test(src)
+    ) {
       const resolved = src.startsWith("/") ? join(FIXTURES, src) : resolve(dirname(path), src);
       sources.push(readFileSync(resolved, "utf8"));
     }
@@ -742,7 +902,11 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
       if (k === "parent" && parent !== undefined) return parent.proxy;
       // Indexed access to child browsing contexts (https://html.spec.whatwg.org/#windowproxy-getownproperty),
       // which @ctrl/dom's Window (not a Proxy) lacks: `frames[0]`, `self[0]`.
-      if (typeof k === "string" && /^\d+$/.test(k)) return (doc.querySelectorAll("iframe")[Number(k)] as unknown as { contentWindow?: unknown } | undefined)?.contentWindow ?? undefined;
+      if (typeof k === "string" && /^\d+$/.test(k))
+        return (
+          (doc.querySelectorAll("iframe")[Number(k)] as unknown as { contentWindow?: unknown } | undefined)
+            ?.contentWindow ?? undefined
+        );
       if (k in t) {
         const v = Reflect.get(t, k, t);
         return typeof v === "function" && typeof k === "string" && !/^[A-Z]/.test(k) ? (v as () => unknown).bind(t) : v;
@@ -771,7 +935,10 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     }
   }
   if (harness !== null) Object.assign(sandbox, harness);
-  const windowTimers = window as unknown as Record<"setTimeout" | "clearTimeout" | "setInterval" | "clearInterval", (...args: unknown[]) => unknown>;
+  const windowTimers = window as unknown as Record<
+    "setTimeout" | "clearTimeout" | "setInterval" | "clearInterval",
+    (...args: unknown[]) => unknown
+  >;
   sandbox.test_driver = testdriver?.(window, doc) ?? unsupportedTestDriver();
   Object.assign(sandbox, {
     window: windowProxy,
@@ -792,7 +959,10 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
   windowOfProxy.set(windowProxy, window);
   // `event` (https://dom.spec.whatwg.org/#ref-for-dom-window-event) is live, not a snapshot.
   delete sandbox.event;
-  Object.defineProperty(sandbox, "event", { get: () => (window as unknown as { event: unknown }).event, configurable: true });
+  Object.defineProperty(sandbox, "event", {
+    get: () => (window as unknown as { event: unknown }).event,
+    configurable: true,
+  });
   defineNamedProperties(sandbox, windowProxy, doc);
   if (parent !== undefined) sandbox.parent = parent.proxy;
   sandbox.frames = windowProxy;
@@ -814,7 +984,9 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
       new Script(sources[i], { filename: `${file}#script${i}` }).runInContext(context);
     } catch (e) {
       const err = e as Error;
-      errors.push(err && typeof err === "object" && "message" in err ? `${err.name}: ${err.message}\n${err.stack}` : String(e));
+      errors.push(
+        err && typeof err === "object" && "message" in err ? `${err.name}: ${err.message}\n${err.stack}` : String(e),
+      );
     }
   }
   // The load event: <body onload> (inline handlers are not compiled by @ctrl/dom), a global
@@ -856,8 +1028,14 @@ function defineNamedProperties(sandbox: Record<string, unknown>, windowProxy: ob
       enumerable: false,
       get() {
         const byId = doc.getElementById(name);
-        if (byId !== null) return byId.localName === "iframe" ? ((byId as unknown as { contentWindow: unknown }).contentWindow ?? byId) : byId;
-        return doc.querySelector(`:is(embed, form, img, object, iframe)[name="${name.replace(/["\\]/g, "\\$&")}"]`) ?? undefined;
+        if (byId !== null)
+          return byId.localName === "iframe"
+            ? ((byId as unknown as { contentWindow: unknown }).contentWindow ?? byId)
+            : byId;
+        return (
+          doc.querySelector(`:is(embed, form, img, object, iframe)[name="${name.replace(/["\\]/g, "\\$&")}"]`) ??
+          undefined
+        );
       },
       set(v) {
         Object.defineProperty(sandbox, name, { value: v, writable: true, configurable: true, enumerable: true });
@@ -879,16 +1057,22 @@ export function jsTestRunsInWindow(source: string): boolean {
 function jsTestPage(path: string): string {
   const source = readFileSync(path, "utf8");
   const title = /^\/\/ META: title=(.*)$/m.exec(source)?.[1] ?? "";
-  const scripts = [...source.matchAll(/^\/\/ META: script=(.*)$/gm)].map((m) => `<script src="${m[1].trim()}"></script>`);
+  const scripts = [...source.matchAll(/^\/\/ META: script=(.*)$/gm)].map(
+    (m) => `<script src="${m[1].trim()}"></script>`,
+  );
   const self = path.slice(path.lastIndexOf("/") + 1);
   return `<!doctype html><meta charset=utf-8><title>${title}</title><script src="/resources/testharness.js"></script><script src="/resources/testharnessreport.js"></script>${scripts.join("")}<div id=log></div><script src="${self}"></script>`;
 }
 
 /** `test_driver` when the caller supplied none: every action rejects, so those subtests fail instead of hanging. */
 function unsupportedTestDriver(): Record<string, unknown> {
-  return new Proxy({}, {
-    get: (_t, k) => (k === "then" ? undefined : () => Promise.reject(new Error(`test_driver.${String(k)} is not supported here`))),
-  });
+  return new Proxy(
+    {},
+    {
+      get: (_t, k) =>
+        k === "then" ? undefined : () => Promise.reject(new Error(`test_driver.${String(k)} is not supported here`)),
+    },
+  );
 }
 
 /** The window (and its script-visible proxy) whose document contains an iframe. */
@@ -951,8 +1135,24 @@ function instrumentIframes(doc: dom.Document, file: string, owner?: FrameOwner):
         },
         configurable: true,
       },
-      contentWindow: { get: () => (loaded !== null ? loaded.windowProxy : native && src === "" ? Reflect.get(Object.getPrototypeOf(el), "contentWindow", el) : null), configurable: true },
-      contentDocument: { get: () => (loaded !== null ? loaded.doc : native && src === "" ? Reflect.get(Object.getPrototypeOf(el), "contentDocument", el) : null), configurable: true },
+      contentWindow: {
+        get: () =>
+          loaded !== null
+            ? loaded.windowProxy
+            : native && src === ""
+              ? Reflect.get(Object.getPrototypeOf(el), "contentWindow", el)
+              : null,
+        configurable: true,
+      },
+      contentDocument: {
+        get: () =>
+          loaded !== null
+            ? loaded.doc
+            : native && src === ""
+              ? Reflect.get(Object.getPrototypeOf(el), "contentDocument", el)
+              : null,
+        configurable: true,
+      },
       // `setAttribute("src", url)` loads the fixture like the `src` setter does.
       setAttribute: {
         value(this: dom.Element, name: string, value: string) {
@@ -975,7 +1175,15 @@ export async function runWPT(file: string, options: RunOptions = {}): Promise<Su
   nativeFrames = options.nativeFrames ?? process.env.WPT_NATIVE_FRAMES !== "0";
   const loaded = loadDocument(file, harness as unknown as Record<string, unknown>, options.prelude, options.testdriver);
   const fail = (message: string) =>
-    results.push({ name: "(harness error)", status: "FAIL", message, done: true, cleanups: [], resolve() {}, promise: Promise.resolve() });
+    results.push({
+      name: "(harness error)",
+      status: "FAIL",
+      message,
+      done: true,
+      cleanups: [],
+      resolve() {},
+      promise: Promise.resolve(),
+    });
   for (const e of loaded.errors) fail(e);
   const errorCount = loaded.errors.length;
   const single = harness._singleTest();
@@ -1042,17 +1250,22 @@ export function defineWPT(file: string, reason = "", options: RunOptions = {}): 
     // Generated mega-tests (Range-set has ~11k subtests) would cost more to register as
     // individual vitest tests than to run: aggregate them into one test per file.
     if (named.length > AGGREGATE_ABOVE) {
-      vitestTest(`all ${named.length} subtests match expectations (${known.size} known failures${known.size ? ": " + reason : ""})`, () => {
-        const unexpected = named.filter(({ name, r }) => (r.status === "PASS") === known.has(name));
-        if (unexpected.length !== 0) {
-          throw new Error(
-            unexpected
-              .slice(0, 20)
-              .map(({ name, r }) => (r.status === "PASS" ? `unexpected PASS: ${name}` : `${r.status}: ${name}: ${r.message}`))
-              .join("\n"),
-          );
-        }
-      });
+      vitestTest(
+        `all ${named.length} subtests match expectations (${known.size} known failures${known.size ? ": " + reason : ""})`,
+        () => {
+          const unexpected = named.filter(({ name, r }) => (r.status === "PASS") === known.has(name));
+          if (unexpected.length !== 0) {
+            throw new Error(
+              unexpected
+                .slice(0, 20)
+                .map(({ name, r }) =>
+                  r.status === "PASS" ? `unexpected PASS: ${name}` : `${r.status}: ${name}: ${r.message}`,
+                )
+                .join("\n"),
+            );
+          }
+        },
+      );
       return;
     }
     for (const { name, r } of named) {
@@ -1081,7 +1294,12 @@ export function wptFiles(dir: string): string[] {
  * Register every file of `dir` except `skip` (file → reason it cannot run here at all), with
  * per-file reasons for known subtest failures.
  */
-export function defineWPTDirectory(dir: string, reasons: Record<string, string>, skip: Record<string, string>, filter: (file: string) => boolean = () => true): void {
+export function defineWPTDirectory(
+  dir: string,
+  reasons: Record<string, string>,
+  skip: Record<string, string>,
+  filter: (file: string) => boolean = () => true,
+): void {
   for (const file of wptFiles(dir)) {
     const base = file.slice(dir.length + 1);
     if (base in skip || !filter(file)) continue;

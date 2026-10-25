@@ -81,7 +81,11 @@ describe("live ranges — https://dom.spec.whatwg.org/#concept-live-range", () =
   test("boundary points follow insertions, removals and data changes", () => {
     document.body!.innerHTML = "<p>abcdef</p>";
     const p = document.body!.firstChild!;
-    const text = p.firstChild as unknown as { data: string; insertData(o: number, d: string): void; splitText(o: number): unknown };
+    const text = p.firstChild as unknown as {
+      data: string;
+      insertData(o: number, d: string): void;
+      splitText(o: number): unknown;
+    };
     const range = document.createRange();
     range.setStart(text as never, 2);
     range.setEnd(text as never, 4);
@@ -109,9 +113,9 @@ describe("live ranges — https://dom.spec.whatwg.org/#concept-live-range", () =
     const s = new StaticRange({ startContainer: text, startOffset: 1, endContainer: text, endOffset: 2 });
     text.data = "";
     expect(s.startOffset).toBe(1);
-    expect(() => new StaticRange({ startContainer: document.doctype!, startOffset: 0, endContainer: text, endOffset: 0 })).toThrow(
-      expect.objectContaining({ name: "InvalidNodeTypeError" }),
-    );
+    expect(
+      () => new StaticRange({ startContainer: document.doctype!, startOffset: 0, endContainer: text, endOffset: 0 }),
+    ).toThrow(expect.objectContaining({ name: "InvalidNodeTypeError" }));
   });
 
   test("toString, createContextualFragment, zero geometry", () => {

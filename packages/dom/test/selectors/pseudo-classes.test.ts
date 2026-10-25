@@ -101,7 +101,11 @@ describe(":read-write / :read-only — https://html.spec.whatwg.org/#selector-re
 
 describe(":required / :optional — https://html.spec.whatwg.org/#selector-required", () => {
   test("input, select and textarea with/without required; other elements match neither", () => {
-    same(`<input id=a required><input id=b><select id=c required></select><textarea id=d></textarea><button id=e></button>`, ":required", ["a", "c"]);
+    same(
+      `<input id=a required><input id=b><select id=c required></select><textarea id=d></textarea><button id=e></button>`,
+      ":required",
+      ["a", "c"],
+    );
     expect($$(":optional")).toEqual(["b", "d"]);
   });
 });

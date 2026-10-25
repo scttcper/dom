@@ -22,7 +22,7 @@
 import * as ctrlDomInternal from '@ctrl/dom/internal'
 import type {NodeImpl} from '@ctrl/dom/internal'
 import type {Element, Node} from './dom-types.ts'
-import { $impl } from "@ctrl/dom/internal";
+import {$impl} from '@ctrl/dom/internal'
 
 /**
  * @ctrl/dom html-forms UI state (`src/html/forms/ui.ts`, re-exported from `@ctrl/dom/internal`).
@@ -40,9 +40,18 @@ export interface CtrlDomFormsUI {
   /** Forget the UI value (the next getUIValue returns `.value`). */
   clearUIValue(el: Element): void
   /** UI selection; available for every value-mode input type, not only those supporting the selection API. */
-  getUISelection(el: Element): {start: number; end: number; direction: 'forward' | 'backward' | 'none'}
+  getUISelection(el: Element): {
+    start: number
+    end: number
+    direction: 'forward' | 'backward' | 'none'
+  }
   /** Set the UI selection (clamped to the UI value). Fires no events. */
-  setUISelection(el: Element, start: number, end?: number, direction?: 'forward' | 'backward' | 'none'): void
+  setUISelection(
+    el: Element,
+    start: number,
+    end?: number,
+    direction?: 'forward' | 'backward' | 'none',
+  ): void
 }
 
 /**
@@ -59,7 +68,8 @@ export interface CtrlDomCss {
 
 type InternalModule = Record<string, unknown>
 
-const internal: InternalModule | null = ctrlDomInternal as unknown as InternalModule
+const internal: InternalModule | null =
+  ctrlDomInternal as unknown as InternalModule
 
 function pick<T>(names: Array<keyof T & string>): T | null {
   if (internal === null) return null
@@ -98,7 +108,9 @@ export function skipIdleTime(ms: number): boolean {
   return skipIdle === undefined || skipIdle(ms)
 }
 
-const NodeImplClass = (internal?.NodeImpl ?? null) as (abstract new (...args: never[]) => NodeImpl) | null
+const NodeImplClass = (internal?.NodeImpl ?? null) as
+  | (abstract new (...args: never[]) => NodeImpl)
+  | null
 
 /** The NodeImpl behind an @ctrl/dom wrapper, or null for nodes of other DOM implementations. */
 export function implOf(node: Node | null | undefined): NodeImpl | null {

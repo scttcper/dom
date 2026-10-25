@@ -24,7 +24,10 @@ interface SessionHistoryEntry {
  */
 function checkFullyActive(history: History, member: string): void {
   if (history[$window][$closed]) {
-    throw new DOMException(`Failed to ${member} 'History': May not use a History object associated with a Document that is not fully active`, "SecurityError");
+    throw new DOMException(
+      `Failed to ${member} 'History': May not use a History object associated with a Document that is not fully active`,
+      "SecurityError",
+    );
   }
 }
 
@@ -119,7 +122,10 @@ export class History {
       // Step 6.1-6.2: parse relative to the document's URL.
       const parsed = URL.parse(String(url), window[$url].href);
       if (parsed === null) {
-        throw new DOMException(`Failed to execute '${method}' on 'History': A history state object with URL '${String(url)}' cannot be created.`, "SecurityError");
+        throw new DOMException(
+          `Failed to execute '${method}' on 'History': A history state object with URL '${String(url)}' cannot be created.`,
+          "SecurityError",
+        );
       }
       // Step 6.3: https://html.spec.whatwg.org/#can-have-its-url-rewritten
       if (!canHaveURLRewritten(window[$url], parsed)) {
@@ -152,7 +158,8 @@ export class History {
     const newURL = url.href;
     // jsdom (living/window/navigation.js, navigate): a URL that differs beyond its fragment,
     // other than javascript:, is a navigation to another document, which it reports.
-    if (url.protocol !== "javascript:" && withoutFragment(oldURL) !== withoutFragment(newURL)) reportNotImplemented(window, NAVIGATION);
+    if (url.protocol !== "javascript:" && withoutFragment(oldURL) !== withoutFragment(newURL))
+      reportNotImplemented(window, NAVIGATION);
     // https://html.spec.whatwg.org/#navigate step 12: navigating to the current URL replaces.
     if (newURL === oldURL) replace = true;
     const entry: SessionHistoryEntry = { url: newURL, state: null };
@@ -185,7 +192,8 @@ export class History {
     if (entry.url !== oldURL) window._setURL(new URL(entry.url));
     const PopStateEvent = eventInterface("PopStateEvent");
     window.dispatchEvent(new PopStateEvent("popstate", { state: entry.state }) as never);
-    if (oldURL !== entry.url && withoutFragment(oldURL) === withoutFragment(entry.url)) this._queueHashChange(oldURL, entry.url);
+    if (oldURL !== entry.url && withoutFragment(oldURL) === withoutFragment(entry.url))
+      this._queueHashChange(oldURL, entry.url);
   }
 
   _queueHashChange(oldURL: string, newURL: string): void {

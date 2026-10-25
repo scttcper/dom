@@ -102,7 +102,9 @@ describe("render API", () => {
   });
 
   test("renders options.wrapper around node", () => {
-    const WrapperComponent = ({ children }: { children: React.ReactNode }) => <div data-testid="wrapper">{children}</div>;
+    const WrapperComponent = ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="wrapper">{children}</div>
+    );
 
     const { container } = render(<div data-testid="inner" />, {
       wrapper: WrapperComponent,
@@ -123,7 +125,9 @@ describe("render API", () => {
   test("renders options.wrapper around node when reactStrictMode is true", () => {
     configure({ reactStrictMode: true });
 
-    const WrapperComponent = ({ children }: { children: React.ReactNode }) => <div data-testid="wrapper">{children}</div>;
+    const WrapperComponent = ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="wrapper">{children}</div>
+    );
     const { container } = render(<div data-testid="inner" />, {
       wrapper: WrapperComponent,
     });

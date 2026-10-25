@@ -1,7 +1,27 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/createEvent.ts
 
-import type {ClipboardEvent, ClipboardEventInit, Element, Event, EventInit, EventModifierInit, FocusEvent, FocusEventInit, InputEvent, InputEventInit, KeyboardEvent, KeyboardEventInit, MouseEvent, MouseEventInit, PointerEvent, PointerEventInit, UIEvent, UIEventInit, Window} from '../dom-types.ts'
+import type {
+  ClipboardEvent,
+  ClipboardEventInit,
+  Element,
+  Event,
+  EventInit,
+  EventModifierInit,
+  FocusEvent,
+  FocusEventInit,
+  InputEvent,
+  InputEventInit,
+  KeyboardEvent,
+  KeyboardEventInit,
+  MouseEvent,
+  MouseEventInit,
+  PointerEvent,
+  PointerEventInit,
+  UIEvent,
+  UIEventInit,
+  Window,
+} from '../dom-types.ts'
 import {getWindow} from '../utils/index.ts'
 import {implOf} from '../ctrl-dom.ts'
 import {eventMap} from './eventMap.ts'
@@ -12,14 +32,14 @@ import {
 } from './types.ts'
 
 interface InterfaceMap {
-  ClipboardEvent: {type: ClipboardEvent, init: ClipboardEventInit}
-  InputEvent: {type: InputEvent, init: InputEventInit}
-  MouseEvent: {type: MouseEvent, init: MouseEventInit}
-  PointerEvent: {type: PointerEvent, init: PointerEventInit}
-  KeyboardEvent: {type: KeyboardEvent, init: KeyboardEventInit}
-  FocusEvent: {type: FocusEvent, init: FocusEventInit}
+  ClipboardEvent: {type: ClipboardEvent; init: ClipboardEventInit}
+  InputEvent: {type: InputEvent; init: InputEventInit}
+  MouseEvent: {type: MouseEvent; init: MouseEventInit}
+  PointerEvent: {type: PointerEvent; init: PointerEventInit}
+  KeyboardEvent: {type: KeyboardEvent; init: KeyboardEventInit}
+  FocusEvent: {type: FocusEvent; init: FocusEventInit}
 }
-type InterfaceNames = typeof eventMap[keyof typeof eventMap]['EventType']
+type InterfaceNames = (typeof eventMap)[keyof typeof eventMap]['EventType']
 type Interface<k extends InterfaceNames> = k extends keyof InterfaceMap
   ? InterfaceMap[k]
   : never
@@ -58,7 +78,10 @@ export function createEvent<K extends EventType>(
   const {EventType, defaultInit} = eventMap[type]
   const constructors = getEventConstructors(window)
 
-  if (modifiers !== undefined && (implOf(target) === null || constructors.fallbacks.has(EventType))) {
+  if (
+    modifiers !== undefined &&
+    (implOf(target) === null || constructors.fallbacks.has(EventType))
+  ) {
     // Upstream's path reads the members from `init`: merge like upstream's dispatchUIEvent.
     const merged = {...init} as Record<string, unknown>
     modifiers.assignUIEventModifiers(merged)
@@ -70,7 +93,14 @@ export function createEvent<K extends EventType>(
   // @ctrl/dom-jest-environment's jsdom 26 parity) takes upstream's path: its native superclass
   // constructor would drop the members only the initializers set (pointerType, width, ...).
   if (implOf(target) !== null && !constructors.fallbacks.has(EventType)) {
-    return createNativeEvent(constructors[EventType], EventType, type, defaultInit, init, modifiers) as FixedDocumentEventMap[K]
+    return createNativeEvent(
+      constructors[EventType],
+      EventType,
+      type,
+      defaultInit,
+      init,
+      modifiers,
+    ) as FixedDocumentEventMap[K]
   }
 
   const event = new constructors[EventType](type, defaultInit)
@@ -108,14 +138,17 @@ function createNativeEvent(
   init: object | undefined,
   modifiers: ModifierSource | undefined,
 ): Event {
-  const i = (init ?? {}) as PointerEventInit & KeyboardEventInit & InputEventInit & ClipboardEventInit & {
-    x?: number
-    y?: number
-    offsetX?: number
-    offsetY?: number
-    pageX?: number
-    pageY?: number
-  }
+  const i = (init ?? {}) as PointerEventInit &
+    KeyboardEventInit &
+    InputEventInit &
+    ClipboardEventInit & {
+      x?: number
+      y?: number
+      offsetX?: number
+      offsetY?: number
+      pageX?: number
+      pageY?: number
+    }
   const dict: Record<string, unknown> = {...i}
   modifiers?.assignUIEventModifiers(dict)
   dict.bubbles = defaultInit.bubbles
@@ -126,20 +159,28 @@ function createNativeEvent(
   if (i.pressure === undefined) dict.pressure = i.buttons ? 0.5 : 0
   // Upstream stringifies these with `String(x)`, so a missing value reads as "undefined"
   // (e.g. `inputType` of the `input` events fired by selectOptions/upload).
-  if (eventInterface === 'InputEvent' && i.inputType === undefined) dict.inputType = 'undefined'
+  if (eventInterface === 'InputEvent' && i.inputType === undefined)
+    dict.inputType = 'undefined'
   if (eventInterface === 'KeyboardEvent') {
     if (i.key === undefined) dict.key = 'undefined'
     if (i.code === undefined) dict.code = 'undefined'
   }
   const event = new Ctor(type, dict)
-  if (i.offsetX !== undefined) Object.defineProperty(event, 'offsetX', {value: Number(i.offsetX)})
-  if (i.offsetY !== undefined) Object.defineProperty(event, 'offsetY', {value: Number(i.offsetY)})
-  if (i.pageX !== undefined) Object.defineProperty(event, 'pageX', {value: Number(i.pageX)})
-  if (i.pageY !== undefined) Object.defineProperty(event, 'pageY', {value: Number(i.pageY)})
+  if (i.offsetX !== undefined)
+    Object.defineProperty(event, 'offsetX', {value: Number(i.offsetX)})
+  if (i.offsetY !== undefined)
+    Object.defineProperty(event, 'offsetY', {value: Number(i.offsetY)})
+  if (i.pageX !== undefined)
+    Object.defineProperty(event, 'pageX', {value: Number(i.pageX)})
+  if (i.pageY !== undefined)
+    Object.defineProperty(event, 'pageY', {value: Number(i.pageY)})
   return event
 }
 
-const constructorCache = new WeakMap<object, ReturnType<typeof buildEventConstructors>>()
+const constructorCache = new WeakMap<
+  object,
+  ReturnType<typeof buildEventConstructors>
+>()
 
 function getEventConstructors(window: Window) {
   let constructors = constructorCache.get(window)
@@ -154,7 +195,23 @@ function getEventConstructors(window: Window) {
 function buildEventConstructors(window: Window) {
   // Interfaces the window lacks (replaced by the classes below).
   const fallbacks = new Set<string>()
-  for (const name of ['Event', 'AnimationEvent', 'ClipboardEvent', 'PopStateEvent', 'ProgressEvent', 'TransitionEvent', 'UIEvent', 'CompositionEvent', 'FocusEvent', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'DragEvent', 'PointerEvent', 'TouchEvent'] as const) {
+  for (const name of [
+    'Event',
+    'AnimationEvent',
+    'ClipboardEvent',
+    'PopStateEvent',
+    'ProgressEvent',
+    'TransitionEvent',
+    'UIEvent',
+    'CompositionEvent',
+    'FocusEvent',
+    'InputEvent',
+    'KeyboardEvent',
+    'MouseEvent',
+    'DragEvent',
+    'PointerEvent',
+    'TouchEvent',
+  ] as const) {
     if (window[name] === undefined) fallbacks.add(name)
   }
   const Event = window.Event ?? class Event {}

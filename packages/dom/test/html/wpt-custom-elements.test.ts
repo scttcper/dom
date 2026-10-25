@@ -18,9 +18,15 @@ import { describe } from "vitest";
 import { defineWPT } from "../wpt/harness.ts";
 
 describe("Custom elements — custom-elements (https://github.com/web-platform-tests/wpt/tree/master/custom-elements)", () => {
-  defineWPT("custom-elements/CustomElementRegistry-constructor-and-callbacks-are-held-strongly.html", "adoptedCallback case adopts into an iframe-less document via frames[] (window named frames not exposed by the harness)");
+  defineWPT(
+    "custom-elements/CustomElementRegistry-constructor-and-callbacks-are-held-strongly.html",
+    "adoptedCallback case adopts into an iframe-less document via frames[] (window named frames not exposed by the harness)",
+  );
   defineWPT("custom-elements/CustomElementRegistry-getName.html");
-  defineWPT("custom-elements/CustomElementRegistry.html", "whenDefined() promise comes from the host realm, the test checks instanceof the vm realm's Promise (harness)");
+  defineWPT(
+    "custom-elements/CustomElementRegistry.html",
+    "whenDefined() promise comes from the host realm, the test checks instanceof the vm realm's Promise (harness)",
+  );
   defineWPT("custom-elements/Document-createElement-customized-builtins.html");
   defineWPT("custom-elements/Document-createElement.html", "XMLHttpRequest documents (no network)");
   defineWPT("custom-elements/Document-createElementNS-customized-builtins.html");
@@ -34,19 +40,28 @@ describe("Custom elements — custom-elements (https://github.com/web-platform-t
   defineWPT("custom-elements/adopted-callback.html", "XMLHttpRequest documents (no network)");
   defineWPT("custom-elements/append-children-to-new-parent-cycle.html");
   defineWPT("custom-elements/attribute-changed-callback.html");
-  defineWPT("custom-elements/builtin-coverage.html", "<html>/<body> customized built-ins need the document parser to run scripts first; <summary> interface is an internal HTMLElement subclass");
+  defineWPT(
+    "custom-elements/builtin-coverage.html",
+    "<html>/<body> customized built-ins need the document parser to run scripts first; <summary> interface is an internal HTMLElement subclass",
+  );
   defineWPT("custom-elements/connected-callbacks-html-fragment-parsing.html", "XMLHttpRequest documents (no network)");
   defineWPT("custom-elements/connected-callbacks-template.html");
   defineWPT("custom-elements/connected-callbacks.html", "XMLHttpRequest documents (no network)");
   defineWPT("custom-elements/createElement-reentrant-construction.window.js");
   defineWPT("custom-elements/custom-element-reaction-queue.html");
   defineWPT("custom-elements/disconnected-callbacks.html", "XMLHttpRequest documents (no network)");
-  defineWPT("custom-elements/element-internals-aria-element-reflection.html", "test_driver.get_computed_label (no testdriver for @ctrl/dom-only suites)");
+  defineWPT(
+    "custom-elements/element-internals-aria-element-reflection.html",
+    "test_driver.get_computed_label (no testdriver for @ctrl/dom-only suites)",
+  );
   defineWPT("custom-elements/element-internals-shadowroot.html");
   defineWPT("custom-elements/enqueue-custom-element-callback-reactions-inside-another-callback.html");
   defineWPT("custom-elements/historical.html");
   defineWPT("custom-elements/microtasks-and-constructors.html", "needs scripts interleaved with document parsing");
-  defineWPT("custom-elements/overwritten-customElements-global.html", "harness window proxy does not support redefining window.customElements");
+  defineWPT(
+    "custom-elements/overwritten-customElements-global.html",
+    "harness window proxy does not support redefining window.customElements",
+  );
   defineWPT("custom-elements/range-and-constructors.html");
   defineWPT("custom-elements/reaction-timing.html");
   defineWPT("custom-elements/shadow-descendant-lifecycle-order.html");
@@ -66,18 +81,33 @@ describe("Custom elements — custom-elements/form-associated (https://github.co
   defineWPT("custom-elements/form-associated/fieldset-elements-during-construction.html");
   defineWPT("custom-elements/form-associated/fieldset-elements.html");
   defineWPT("custom-elements/form-associated/focusability.html");
-  defineWPT("custom-elements/form-associated/form-associated-callback.html", "parser-created elements need scripts interleaved with parsing (harness builds markup first)");
-  defineWPT("custom-elements/form-associated/form-disabled-legend.html", "legend/fieldset disabledness updates are not re-reported to FACEs (html/forms)");
+  defineWPT(
+    "custom-elements/form-associated/form-associated-callback.html",
+    "parser-created elements need scripts interleaved with parsing (harness builds markup first)",
+  );
+  defineWPT(
+    "custom-elements/form-associated/form-disabled-legend.html",
+    "legend/fieldset disabledness updates are not re-reported to FACEs (html/forms)",
+  );
   defineWPT("custom-elements/form-associated/form-elements-namedItem.html");
-  defineWPT("custom-elements/form-associated/form-reset-callback.html", "reset button activation runs formResetCallback before the built-in reset finishes");
+  defineWPT(
+    "custom-elements/form-associated/form-reset-callback.html",
+    "reset button activation runs formResetCallback before the built-in reset finishes",
+  );
 });
 
 describe("Custom elements — custom-elements/parser (https://github.com/web-platform-tests/wpt/tree/master/custom-elements/parser)", () => {
-  defineWPT("custom-elements/parser/parser-constructs-custom-element-in-document-write.html", "document.write runs no scripts");
+  defineWPT(
+    "custom-elements/parser/parser-constructs-custom-element-in-document-write.html",
+    "document.write runs no scripts",
+  );
   defineWPT("custom-elements/parser/parser-constructs-custom-elements-with-is.html");
   defineWPT("custom-elements/parser/parser-constructs-custom-elements.html");
   defineWPT("custom-elements/parser/parser-custom-element-in-foreign-content.html");
-  defineWPT("custom-elements/parser/parser-uses-registry-of-owner-document.html", "needs scripts interleaved with document parsing");
+  defineWPT(
+    "custom-elements/parser/parser-uses-registry-of-owner-document.html",
+    "needs scripts interleaved with document parsing",
+  );
 });
 
 describe("Custom elements — custom-elements/reactions (https://github.com/web-platform-tests/wpt/tree/master/custom-elements/reactions)", () => {
@@ -103,7 +133,10 @@ describe("Custom elements — custom-elements/reactions (https://github.com/web-
   defineWPT("custom-elements/reactions/NamedNodeMap.html");
   defineWPT("custom-elements/reactions/Node.html");
   defineWPT("custom-elements/reactions/ParentNode.html");
-  defineWPT("custom-elements/reactions/Range.html", "createContextualFragment upgrades run in a microtask (parser upgrades wait for the fragment to be inserted)");
+  defineWPT(
+    "custom-elements/reactions/Range.html",
+    "createContextualFragment upgrades run in a microtask (parser upgrades wait for the fragment to be inserted)",
+  );
   defineWPT("custom-elements/reactions/Selection.html");
   defineWPT("custom-elements/reactions/ShadowRoot.html");
   defineWPT("custom-elements/reactions/with-exceptions.html");
@@ -141,7 +174,10 @@ describe("Custom elements — custom-elements/reactions/customized-builtins (htt
 });
 
 describe("Custom elements — custom-elements/state (https://github.com/web-platform-tests/wpt/tree/master/custom-elements/state)", () => {
-  defineWPT("custom-elements/state/ElementInternals-states.html", "CustomStateSet initial-state check (see expectations)");
+  defineWPT(
+    "custom-elements/state/ElementInternals-states.html",
+    "CustomStateSet initial-state check (see expectations)",
+  );
   defineWPT("custom-elements/state/state-css-selector-nth-of.html");
   defineWPT("custom-elements/state/state-css-selector-shadow-dom.html");
   defineWPT("custom-elements/state/state-css-selector.html");

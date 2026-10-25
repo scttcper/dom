@@ -18,8 +18,11 @@ export function getRolesImpl(container: NodeImpl, hidden: boolean): Map<string, 
   const gcs = hidden ? null : (getComputedStyleOverride(container) as unknown as GetComputedStyle | null);
   const memo = gcs !== null ? new Map<NodeImpl, boolean>() : null;
   // flattenDOM: the container followed by its element descendants, preorder.
-  for (let n: NodeImpl | null = container; n !== null; ) {
-    if (n.type === ELEMENT_NODE && (hidden || !(gcs === null ? isInaccessibleImpl(n) : isInaccessibleWithStyle(n, gcs, memo)))) {
+  for (let n: NodeImpl | null = container; n !== null;) {
+    if (
+      n.type === ELEMENT_NODE &&
+      (hidden || !(gcs === null ? isInaccessibleImpl(n) : isInaccessibleWithStyle(n, gcs, memo)))
+    ) {
       const roleAttr = attr(n, "role");
       let role: string;
       if (roleAttr !== null) {
@@ -83,7 +86,10 @@ export function prettyRoles(dom: Element, options: PrettyRolesOptions, prettyDOM
   const map = getRolesImpl(root, options.hidden ?? false);
   const gcs = getComputedStyleOverride(root) as unknown as GetComputedStyle | null;
   const pseudo = options.computedStyleSupportsPseudoElements ?? false;
-  const nameOptions = gcs === null ? { computedStyleSupportsPseudoElements: pseudo } : { computedStyleSupportsPseudoElements: pseudo, getComputedStyle: gcs };
+  const nameOptions =
+    gcs === null
+      ? { computedStyleSupportsPseudoElements: pseudo }
+      : { computedStyleSupportsPseudoElements: pseudo, getComputedStyle: gcs };
   const delimiterBar = "-".repeat(50);
   const parts: string[] = [];
   for (const [role, elements] of map) {

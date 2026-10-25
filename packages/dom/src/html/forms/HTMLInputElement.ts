@@ -21,7 +21,14 @@ import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, ELEMENT_NODE } from "../../no
 import { T } from "../../nodes/tags.ts";
 import { attr, setAttribute } from "../../nodes/attributes.ts";
 import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
-import { fireEvent, readNonNegativeLong, reflectActionURL, stripNewlines, toUnsignedLong, trimASCII } from "./common.ts";
+import {
+  fireEvent,
+  readNonNegativeLong,
+  reflectActionURL,
+  stripNewlines,
+  toUnsignedLong,
+  trimASCII,
+} from "./common.ts";
 import { bool, enumerated, nonNegativeLong, str, ulong, url } from "../reflect.ts";
 import {
   I_BUTTON,
@@ -90,7 +97,31 @@ import { FileList, createFileList } from "../../window/FileList.ts";
 import { queueElementTask } from "../events.ts";
 import { popoverTargetAttributeActivation } from "../invokers.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
-import { $badInput, $checked, $checkedSet, $customValidity, $dirtyChecked, $dirtyValue, $files, $impl, $indeterminate, $labels, $preApplied, $preChecked, $preCheckedRadio, $preIndeterminate, $selDir, $selEnd, $selStart, $uiValue, $userEdited, $userValidity, $validity, $value, $version } from "../../keys.ts";
+import {
+  $badInput,
+  $checked,
+  $checkedSet,
+  $customValidity,
+  $dirtyChecked,
+  $dirtyValue,
+  $files,
+  $impl,
+  $indeterminate,
+  $labels,
+  $preApplied,
+  $preChecked,
+  $preCheckedRadio,
+  $preIndeterminate,
+  $selDir,
+  $selEnd,
+  $selStart,
+  $uiValue,
+  $userEdited,
+  $userValidity,
+  $validity,
+  $value,
+  $version,
+} from "../../keys.ts";
 import { noteChangeDispatch } from "./user-validity.ts";
 
 /** Accept a FileList or any array-like of File (user-event and tests build lists by hand). */
@@ -102,7 +133,9 @@ function toFileList(value: unknown): FileList {
     for (let i = 0; i < like.length; i++) files.push(like[i]);
     return createFileList(files);
   }
-  throw new TypeError("Failed to set the 'files' property on 'HTMLInputElement': The provided value is not of type 'FileList'.");
+  throw new TypeError(
+    "Failed to set the 'files' property on 'HTMLInputElement': The provided value is not of type 'FileList'.",
+  );
 }
 import {
   installConstraintValidation,
@@ -580,7 +613,9 @@ export class HTMLInputElement extends HTMLElement {
   set valueAsNumber(v: number) {
     const n = Number(v);
     if (!Number.isFinite(n) && !Number.isNaN(n)) {
-      throw new TypeError("Failed to set the 'valueAsNumber' property on 'HTMLInputElement': The value provided is infinite.");
+      throw new TypeError(
+        "Failed to set the 'valueAsNumber' property on 'HTMLInputElement': The value provided is infinite.",
+      );
     }
     const type = inputType(this[$impl]);
     if (!isNumericType(type)) {
@@ -620,7 +655,9 @@ export class HTMLInputElement extends HTMLElement {
     try {
       ms = Date.prototype.getTime.call(v);
     } catch {
-      throw new TypeError("Failed to set the 'valueAsDate' property on 'HTMLInputElement': The provided value is not a Date.");
+      throw new TypeError(
+        "Failed to set the 'valueAsDate' property on 'HTMLInputElement': The provided value is not a Date.",
+      );
     }
     if (Number.isNaN(ms)) {
       this._setValueFromAPI(type, "");
@@ -650,12 +687,18 @@ export class HTMLInputElement extends HTMLElement {
     const method = up ? "stepUp" : "stepDown";
     // Step 1: stepUp/stepDown do not apply.
     if (!isNumericType(type)) {
-      throw new DOMException(`Failed to execute '${method}' on 'HTMLInputElement': This form element is not steppable.`, "InvalidStateError");
+      throw new DOMException(
+        `Failed to execute '${method}' on 'HTMLInputElement': This form element is not steppable.`,
+        "InvalidStateError",
+      );
     }
     // Step 2: no allowed value step.
     const step = allowedStep(type, impl);
     if (Number.isNaN(step)) {
-      throw new DOMException(`Failed to execute '${method}' on 'HTMLInputElement': This form element does not have an allowed value step.`, "InvalidStateError");
+      throw new DOMException(
+        `Failed to execute '${method}' on 'HTMLInputElement': This form element does not have an allowed value step.`,
+        "InvalidStateError",
+      );
     }
     const min = minimum(type, impl);
     const max = maximum(type, impl);
@@ -681,8 +724,10 @@ export class HTMLInputElement extends HTMLElement {
     }
     value = roundForStep(value, step, base);
     // Step 8: clamp onto the range, staying on a step.
-    if (!Number.isNaN(min) && value < min) value = roundForStep(base + Math.ceil((min - base) / step - 1e-9) * step, step, base);
-    else if (!Number.isNaN(max) && value > max) value = roundForStep(base + Math.floor((max - base) / step + 1e-9) * step, step, base);
+    if (!Number.isNaN(min) && value < min)
+      value = roundForStep(base + Math.ceil((min - base) / step - 1e-9) * step, step, base);
+    else if (!Number.isNaN(max) && value > max)
+      value = roundForStep(base + Math.floor((max - base) / step + 1e-9) * step, step, base);
     // Step 9 — only guards a value that was there: stepDown() on an empty input with min=7
     // yields "7" in browsers (WPT input-stepdown-02.html).
     if (hadValue && ((up && value < before) || (!up && value > before))) return;
@@ -741,7 +786,12 @@ export class HTMLInputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange */
   setSelectionRange(start: number, end: number, direction?: string): void {
     this._assertSelectable("setSelectionRange()");
-    setSelection(this, toUnsignedLong(start), toUnsignedLong(end), direction === undefined ? "none" : String(direction));
+    setSelection(
+      this,
+      toUnsignedLong(start),
+      toUnsignedLong(end),
+      direction === undefined ? "none" : String(direction),
+    );
   }
 
   /** https://html.spec.whatwg.org/#dom-textarea/input-select */
@@ -754,9 +804,21 @@ export class HTMLInputElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-textarea/input-setrangetext */
   setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
-    if (arguments.length === 0) throw new TypeError("Failed to execute 'setRangeText' on 'HTMLInputElement': 1 argument required, but only 0 present.");
+    if (arguments.length === 0)
+      throw new TypeError(
+        "Failed to execute 'setRangeText' on 'HTMLInputElement': 1 argument required, but only 0 present.",
+      );
     this._assertSelectable("setRangeText()");
-    const result = rangeText(this.value, this[$selStart], this[$selEnd], String(replacement), start, end, selectionMode, arguments.length);
+    const result = rangeText(
+      this.value,
+      this[$selStart],
+      this[$selEnd],
+      String(replacement),
+      start,
+      end,
+      selectionMode,
+      arguments.length,
+    );
     const type = inputType(this[$impl]);
     this[$impl].doc[$version]++;
     this[$value] = sanitizeValue(type, result.value, this[$impl]);
@@ -847,7 +909,10 @@ export class HTMLInputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-input-showpicker — no picker UI here. */
   showPicker(): void {
     if (!this._isMutable()) {
-      throw new DOMException("Failed to execute 'showPicker' on 'HTMLInputElement': HTMLInputElement::showPicker() cannot be used on immutable controls.", "InvalidStateError");
+      throw new DOMException(
+        "Failed to execute 'showPicker' on 'HTMLInputElement': HTMLInputElement::showPicker() cannot be used on immutable controls.",
+        "InvalidStateError",
+      );
     }
   }
 
@@ -1001,7 +1066,12 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   /** Hook: attribute change steps (type change, value/checked content attribute, radio group). */
-  override _attributeChangedSteps(localName: string, oldValue: string | null, value: string | null, namespace: string | null): void {
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     if (namespace !== null) return;
     switch (localName) {
@@ -1022,7 +1092,8 @@ export class HTMLInputElement extends HTMLElement {
       case "multiple":
         // https://html.spec.whatwg.org/#email-state-(type=email): "When the multiple attribute
         // is set or removed, the user agent must run the value sanitization algorithm."
-        if (this[$dirtyValue] && inputType(this[$impl]) === I_EMAIL) this[$value] = sanitizeValue(I_EMAIL, this[$value], this[$impl]);
+        if (this[$dirtyValue] && inputType(this[$impl]) === I_EMAIL)
+          this[$value] = sanitizeValue(I_EMAIL, this[$value], this[$impl]);
         break;
       case "value": {
         // With the dirty value flag unset the value follows the attribute (derived on read);
@@ -1172,7 +1243,8 @@ export class HTMLInputElement extends HTMLElement {
         // coordinate it was made at (no layout: the event's offsetX/offsetY, which mirror clientX/Y,
         // as jsdom reads them); an activation without one assumes (0,0).
         const e = _event as { offsetX?: unknown; offsetY?: unknown } | null;
-        if (e !== null && typeof e.offsetX === "number" && typeof e.offsetY === "number") selectedCoordinates.set(impl, { x: e.offsetX, y: e.offsetY });
+        if (e !== null && typeof e.offsetX === "number" && typeof e.offsetY === "number")
+          selectedCoordinates.set(impl, { x: e.offsetX, y: e.offsetY });
         else selectedCoordinates.delete(impl);
       }
       const form = formOwner(impl);
@@ -1182,15 +1254,24 @@ export class HTMLInputElement extends HTMLElement {
       if (form !== null && (impl.flags & F_CONNECTED) !== 0) resetForm(form);
     }
     // Step 3: https://html.spec.whatwg.org/#popover-target-attribute-activation-behavior (html/invokers.ts).
-    popoverTargetAttributeActivation(impl, (_event?.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null);
+    popoverTargetAttributeActivation(
+      impl,
+      (_event?.target as unknown as { [$impl]?: NodeImpl } | null)?.[$impl] ?? null,
+    );
   }
 }
 
 export interface HTMLInputElement extends ConstraintValidation {}
 installConstraintValidation(HTMLInputElement);
 
-str(HTMLInputElement, "accept alt dirName=dirname formTarget=formtarget max min name pattern placeholder step useMap=usemap align defaultValue=value");
-bool(HTMLInputElement, "disabled formNoValidate=formnovalidate multiple readOnly=readonly required defaultChecked=checked");
+str(
+  HTMLInputElement,
+  "accept alt dirName=dirname formTarget=formtarget max min name pattern placeholder step useMap=usemap align defaultValue=value",
+);
+bool(
+  HTMLInputElement,
+  "disabled formNoValidate=formnovalidate multiple readOnly=readonly required defaultChecked=checked",
+);
 url(HTMLInputElement, "src");
 ulong(HTMLInputElement, "size", 20, true);
 nonNegativeLong(HTMLInputElement, "maxLength=maxlength minLength=minlength", -1);
@@ -1279,13 +1360,18 @@ export function rangeText(
     end = toUnsignedLong(endArg);
   }
   if (start > end) {
-    throw new DOMException(`Failed to execute 'setRangeText': The provided start value (${start}) is larger than the provided end value (${end}).`, "IndexSizeError");
+    throw new DOMException(
+      `Failed to execute 'setRangeText': The provided start value (${start}) is larger than the provided end value (${end}).`,
+      "IndexSizeError",
+    );
   }
   if (start > len) start = len;
   if (end > len) end = len;
   const mode = modeArg === undefined ? "preserve" : String(modeArg);
   if (mode !== "select" && mode !== "start" && mode !== "end" && mode !== "preserve") {
-    throw new TypeError(`Failed to execute 'setRangeText': The provided value '${mode}' is not a valid enum value of type SelectionMode.`);
+    throw new TypeError(
+      `Failed to execute 'setRangeText': The provided value '${mode}' is not a valid enum value of type SelectionMode.`,
+    );
   }
   const newValue = value.slice(0, start) + replacement + value.slice(end);
   const newEnd = start + replacement.length;
@@ -1330,7 +1416,11 @@ function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): vo
   const owner = formOwner(el);
   // Elements whose form owner is a form can only be in that form's tree; scan its root.
   const root = treeRoot(owner ?? el);
-  for (let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
+  for (
+    let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
+    n !== null;
+    n = nextElementInTree(n, root)
+  ) {
     if (n === el || n.tag !== T.input) continue;
     if (attr(n, "name") !== name || inputType(n) !== I_RADIO) continue;
     if (formOwner(n) !== owner) continue;

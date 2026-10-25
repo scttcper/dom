@@ -102,9 +102,20 @@ describe("draggable / spellcheck — https://html.spec.whatwg.org/#dom-draggable
 describe("autocapitalize — https://html.spec.whatwg.org/#dom-autocapitalize", () => {
   test("keywords map to states (on → sentences, off → none), invalid and missing are ''", () => {
     const el = doc.createElement("div");
-    const out = ["on", "off", "NONE", "sentences", "words", "characters", "bogus"].map((v) => ((el.setAttribute("autocapitalize", v), el.autocapitalize)));
+    const out = ["on", "off", "NONE", "sentences", "words", "characters", "bogus"].map(
+      (v) => (el.setAttribute("autocapitalize", v), el.autocapitalize),
+    );
     el.removeAttribute("autocapitalize");
-    expect([...out, el.autocapitalize]).toEqual(["sentences", "none", "none", "sentences", "words", "characters", "sentences", ""]);
+    expect([...out, el.autocapitalize]).toEqual([
+      "sentences",
+      "none",
+      "none",
+      "sentences",
+      "words",
+      "characters",
+      "sentences",
+      "",
+    ]);
   });
 
   test("inheriting form controls use their form owner's hint (https://html.spec.whatwg.org/#own-autocapitalization-hint, https://html.spec.whatwg.org/#autocapitalize-and-autocorrect-inheriting-elements)", () => {
@@ -142,7 +153,12 @@ describe("nonce — https://html.spec.whatwg.org/#dom-noncedelement-nonce", () =
 describe("access keys — https://html.spec.whatwg.org/#assigned-access-key", () => {
   test("accessKey reflects; a single-code-point key is assigned and labeled the way Firefox does ('Alt+Shift+S'), lists are not", () => {
     doc.body.innerHTML = `<button id=b accesskey=s>b</button><button id=c accesskey="s 0">c</button><button id=d>d</button>`;
-    expect([$("b").accessKey, $("b").accessKeyLabel, $("c").accessKeyLabel, $("d").accessKeyLabel]).toEqual(["s", "Alt+Shift+S", "", ""]);
+    expect([$("b").accessKey, $("b").accessKeyLabel, $("c").accessKeyLabel, $("d").accessKeyLabel]).toEqual([
+      "s",
+      "Alt+Shift+S",
+      "",
+      "",
+    ]);
   });
 });
 
@@ -152,7 +168,12 @@ describe("design mode — https://html.spec.whatwg.org/#design-mode-enabled", ()
     const before = [doc.designMode, $("p").isContentEditable, $("p").matches(":read-write")];
     doc.designMode = "bogus";
     doc.designMode = "ON";
-    expect([before, doc.designMode, $("p").isContentEditable, $("p").matches(":read-write")]).toEqual([["off", false, false], "on", true, true]);
+    expect([before, doc.designMode, $("p").isContentEditable, $("p").matches(":read-write")]).toEqual([
+      ["off", false, false],
+      "on",
+      true,
+      true,
+    ]);
   });
 });
 
@@ -199,7 +220,11 @@ describe("tabindex — https://html.spec.whatwg.org/#attr-tabindex", () => {
 
   test("the first summary of a details is focusable with tabIndex 0; other summaries are not (https://html.spec.whatwg.org/#summary-for-its-parent-details)", () => {
     doc.body.innerHTML = `<details><summary id=s1>a</summary><summary id=s2>b</summary></details><summary id=s3>c</summary>`;
-    expect(["s1", "s2", "s3"].map((id) => [$(id).tabIndex, (($(id).focus(), doc.activeElement === $(id)))])).toEqual([[0, true], [-1, false], [-1, false]]);
+    expect(["s1", "s2", "s3"].map((id) => [$(id).tabIndex, ($(id).focus(), doc.activeElement === $(id))])).toEqual([
+      [0, true],
+      [-1, false],
+      [-1, false],
+    ]);
   });
 });
 

@@ -16,19 +16,23 @@ import type { Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
 
 const { document, renderIntoDocument, cleanup } = makeDocument();
-const window = document.defaultView! as unknown as { getComputedStyle?: unknown; customElements?: unknown; HTMLElement: new () => Element };
+const window = document.defaultView! as unknown as {
+	getComputedStyle?: unknown;
+	customElements?: unknown;
+	HTMLElement: new () => Element;
+};
 const HTMLElement = window.HTMLElement;
 
 function nameOfTestNode(markup: string): string {
-  const container = renderIntoDocument(markup);
-  const testNode = container.querySelector("[data-test]");
-  if (testNode === null) throw new Error("no [data-test] element");
-  return computeAccessibleName(testNode as Element);
+	const container = renderIntoDocument(markup);
+	const testNode = container.querySelector("[data-test]");
+	if (testNode === null) throw new Error("no [data-test] element");
+	return computeAccessibleName(testNode as Element);
 }
 
 /** `expect(markup).toRenderIntoDocumentAccessibleName(name)` */
 function expectName(markup: string, expected: string): void {
-  expect(nameOfTestNode(markup)).toBe(expected);
+	expect(nameOfTestNode(markup)).toBe(expected);
 }
 
 afterEach(cleanup);
@@ -209,89 +213,105 @@ describe("to upstream — https://w3c.github.io/accname/#step2F (name from conte
 
 // Slots need attachShadow + customElements (dom-core / html-elements). Skipped until available.
 const supportsShadow = (() => {
-  try {
-    const host = document.createElement("div");
-    host.attachShadow({ mode: "open" }).innerHTML = "<slot></slot>";
-    const ce = window.customElements as { define?: unknown } | undefined;
-    return typeof ce?.define === "function" && typeof (host.shadowRoot!.firstChild as unknown as { assignedNodes?: unknown }).assignedNodes === "function";
-  } catch {
-    return false;
-  }
+	try {
+		const host = document.createElement("div");
+		host.attachShadow({ mode: "open" }).innerHTML = "<slot></slot>";
+		const ce = window.customElements as { define?: unknown } | undefined;
+		return (
+			typeof ce?.define === "function" &&
+			typeof (
+				host.shadowRoot!.firstChild as unknown as { assignedNodes?: unknown }
+			).assignedNodes === "function"
+		);
+	} catch {
+		return false;
+	}
 })();
-describe.skipIf(!supportsShadow)("slots — https://html.spec.whatwg.org/multipage/scripting.html#the-slot-element", () => {
-	beforeAll(() => {
-		(window.customElements as { define(name: string, ctor: unknown): void }).define(
-			"custom-button",
-			class extends HTMLElement {
-				constructor() {
-					super();
-					const shadowRoot = this.attachShadow({ mode: "open" });
-					shadowRoot.innerHTML = `<button data-test><slot></slot></button>`;
-				}
-			},
-		);
+describe.skipIf(!supportsShadow)(
+	"slots — https://html.spec.whatwg.org/multipage/scripting.html#the-slot-element",
+	() => {
+		beforeAll(() => {
+			(
+				window.customElements as { define(name: string, ctor: unknown): void }
+			).define(
+				"custom-button",
+				class extends HTMLElement {
+					constructor() {
+						super();
+						const shadowRoot = this.attachShadow({ mode: "open" });
+						shadowRoot.innerHTML = `<button data-test><slot></slot></button>`;
+					}
+				},
+			);
 
-		(window.customElements as { define(name: string, ctor: unknown): void }).define(
-			"custom-button-with-default",
-			class extends HTMLElement {
-				constructor() {
-					super();
-					const shadowRoot = this.attachShadow({ mode: "open" });
-					shadowRoot.innerHTML = `<button data-test><slot>Default name</slot></button>`;
-				}
-			},
-		);
-	});
+			(
+				window.customElements as { define(name: string, ctor: unknown): void }
+			).define(
+				"custom-button-with-default",
+				class extends HTMLElement {
+					constructor() {
+						super();
+						const shadowRoot = this.attachShadow({ mode: "open" });
+						shadowRoot.innerHTML = `<button data-test><slot>Default name</slot></button>`;
+					}
+				},
+			);
+		});
 
-	test.each([
-		[
-			"no default content",
-			`<custom-button data-root>Custom name</custom-button>`,
-			"Custom name",
-		],
-		[
-			"default content",
-			`<custom-button-with-default data-root></custom-button>`,
-			"Default name",
-		],
-		[
-			"overridden default content",
-			`<custom-button-with-default data-root>Custom name</custom-button>`,
-			"Custom name",
-		],
-	])("slot with %s has name", (_, markup, expectedAccessibleName) => {
-		const container = renderIntoDocument(markup);
-		const testNode = container.querySelector("[data-root]")!.shadowRoot!.querySelector("[data-test]");
-		expect(computeAccessibleName(testNode as Element)).toBe(expectedAccessibleName);
-	});
-});
+		test.each([
+			[
+				"no default content",
+				`<custom-button data-root>Custom name</custom-button>`,
+				"Custom name",
+			],
+			[
+				"default content",
+				`<custom-button-with-default data-root></custom-button>`,
+				"Default name",
+			],
+			[
+				"overridden default content",
+				`<custom-button-with-default data-root>Custom name</custom-button>`,
+				"Custom name",
+			],
+		])("slot with %s has name", (_, markup, expectedAccessibleName) => {
+			const container = renderIntoDocument(markup);
+			const testNode = container
+				.querySelector("[data-root]")!
+				.shadowRoot!.querySelector("[data-test]");
+			expect(computeAccessibleName(testNode as Element)).toBe(
+				expectedAccessibleName,
+			);
+		});
+	},
+);
 
 describe("misc — https://w3c.github.io/accname/#computation-steps", () => {
-test.each([
-	[
-		`
+	test.each([
+		[
+			`
 <div data-test aria-labelledby="label">I reference my name</div>
 <div id="label" role="presentation">I'm prohibited a name</div>
 `,
-		"I'm prohibited a name",
-	],
-	[
-		`
+			"I'm prohibited a name",
+		],
+		[
+			`
 <div data-test aria-labelledby="label">I reference my name</div>
 <div id="label" role="none">I'm prohibited a name</div>
 `,
-		"I'm prohibited a name",
-	],
-	[
-		`
+			"I'm prohibited a name",
+		],
+		[
+			`
 <element1 data-test id="el1" aria-labelledby="el3" />
 <element2 id="el2" aria-labelledby="el1" />
 <element3 id="el3"> hello </element3>
 `,
-		"hello",
-	],
-	[
-		`
+			"hello",
+		],
+		[
+			`
 <input type="checkbox" id="test" data-test />
 <label for="test">Flash the screen
 	<div role="combobox">
@@ -305,10 +325,10 @@ test.each([
 	times.
 </label>
 `,
-		"Flash the screen 1 times.",
-	],
-	[
-		`
+			"Flash the screen 1 times.",
+		],
+		[
+			`
 <input type="text" id="test" data-test />
 <label for="test">
 	foo
@@ -316,94 +336,97 @@ test.each([
 	baz
 </label>
 `,
-		"foo 5 baz",
-	],
-	[
-		// :after getcomputed not implemented
-		`
+			"foo 5 baz",
+		],
+		[
+			// :after getcomputed not implemented
+			`
 <style>
 	label:after { content:" fruit"; }
 </style>
 <label for="test">fancy</label>
 <input type="image" src="foo.jpg" id="test" data-test />	
 `,
-		"fancy",
-	],
-	[
-		`
+			"fancy",
+		],
+		[
+			`
 <input data-test id="test" type="text" aria-label="bar" aria-labelledby="ID1 test">
 <div id="ID1">foo</label>
 	`,
-		"foo bar",
-	],
-	[
-		`
+			"foo bar",
+		],
+		[
+			`
 <label>This <input type="checkbox" id="test" data-test /> is</label>
 <label for="test">a test</label>
 		`,
-		"This is a test",
-	], // byAltText('an image') = byRole('image', {name: 'an image'})
-	[`<img data-test alt="an image" />`, "an image"],
-	// this would require a custom matcher
-	[
-		`<div id="label"><em>the</em> logo</div><img data-test aria-labelledby="label" />`,
-		"the logo",
-	],
-	// byDisplayValue isn't solvable by accessibleName
-	[`<label>Age <input data-test type="text" value="10" /></label>`, "Age"],
-	// byLabelText('Age') =>  byRole('textbox', {name: 'Age'})
-	// byText('Arizona') => byRole('option', {name: 'Arizona'})
-	[`<option data-test >Arizona</option>`, "Arizona"],
-	// this would require a custom matcher
-	[`<button data-test>Click <em>me</em></option>`, "Click me"],
-	// byTitle('Hello, Dave!') => byRole('textbox', {name: 'Hello, Dave!'})
-	[`<input data-test title="Hello, Dave!" />`, "Hello, Dave!"],
-	[
-		`<label for="select">A Select</label><select data-test id="select" />`,
-		"A Select",
-	],
-	[
-		`<label for="textarea">A TextArea</label><textarea data-test id="textarea" />`,
-		"A TextArea",
-	],
-	// https://w3c.github.io/html-aam/#fieldset-and-legend-elements
-	[
-		`<fieldset data-test><legend><em>greek</em> rho</legend></fieldset>`,
-		"greek rho",
-	],
-	[
-		`<fieldset data-test aria-owns="legend"></fieldset><legend id="legend"><em>greek</em> rho</legend>`,
-		"",
-	],
-	// https://w3c.github.io/html-aam/#table-element
-	[
-		`<table data-test><caption><em>greek</em> rho</caption></caption>`,
-		"greek rho",
-	],
-	[
-		`<table data-test aria-owns="caption"></table><caption id="caption"><em>greek</em> rho</caption>`,
-		"",
-	],
-	// https://www.w3.org/TR/svg-aam-1.0/
-	[`<svg data-test><title><em>greek</em> rho</title></svg>`, "greek rho"],
-	[`<button title="" data-test>click me</button>`, "click me"],
-	[
-		`<button title="You should really click this" data-test>click me</button>`,
-		"click me",
-	],
-	// https://w3c.github.io/html-aam/#input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation
-	[`<input data-test value="Submit form" type="submit" />`, "Submit form"],
-	// https://w3c.github.io/html-aam/#input-type-image
-	[`<input data-test alt="Select an image" type="image" />`, "Select an image"],
-	[`<input data-test alt="" type="image" />`, "Submit Query"],
-	[
-		`<img data-test alt="" aria-label="a logo" role="presentation" /> />`,
-		"a logo",
-	],
-	[`<img data-test alt="" aria-label="a logo" role="none" />`, "a logo"],
-	[` <input type="radio" data-test title="crazy"/>`, "crazy"],
-	[
-		`
+			"This is a test",
+		], // byAltText('an image') = byRole('image', {name: 'an image'})
+		[`<img data-test alt="an image" />`, "an image"],
+		// this would require a custom matcher
+		[
+			`<div id="label"><em>the</em> logo</div><img data-test aria-labelledby="label" />`,
+			"the logo",
+		],
+		// byDisplayValue isn't solvable by accessibleName
+		[`<label>Age <input data-test type="text" value="10" /></label>`, "Age"],
+		// byLabelText('Age') =>  byRole('textbox', {name: 'Age'})
+		// byText('Arizona') => byRole('option', {name: 'Arizona'})
+		[`<option data-test >Arizona</option>`, "Arizona"],
+		// this would require a custom matcher
+		[`<button data-test>Click <em>me</em></option>`, "Click me"],
+		// byTitle('Hello, Dave!') => byRole('textbox', {name: 'Hello, Dave!'})
+		[`<input data-test title="Hello, Dave!" />`, "Hello, Dave!"],
+		[
+			`<label for="select">A Select</label><select data-test id="select" />`,
+			"A Select",
+		],
+		[
+			`<label for="textarea">A TextArea</label><textarea data-test id="textarea" />`,
+			"A TextArea",
+		],
+		// https://w3c.github.io/html-aam/#fieldset-and-legend-elements
+		[
+			`<fieldset data-test><legend><em>greek</em> rho</legend></fieldset>`,
+			"greek rho",
+		],
+		[
+			`<fieldset data-test aria-owns="legend"></fieldset><legend id="legend"><em>greek</em> rho</legend>`,
+			"",
+		],
+		// https://w3c.github.io/html-aam/#table-element
+		[
+			`<table data-test><caption><em>greek</em> rho</caption></caption>`,
+			"greek rho",
+		],
+		[
+			`<table data-test aria-owns="caption"></table><caption id="caption"><em>greek</em> rho</caption>`,
+			"",
+		],
+		// https://www.w3.org/TR/svg-aam-1.0/
+		[`<svg data-test><title><em>greek</em> rho</title></svg>`, "greek rho"],
+		[`<button title="" data-test>click me</button>`, "click me"],
+		[
+			`<button title="You should really click this" data-test>click me</button>`,
+			"click me",
+		],
+		// https://w3c.github.io/html-aam/#input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation
+		[`<input data-test value="Submit form" type="submit" />`, "Submit form"],
+		// https://w3c.github.io/html-aam/#input-type-image
+		[
+			`<input data-test alt="Select an image" type="image" />`,
+			"Select an image",
+		],
+		[`<input data-test alt="" type="image" />`, "Submit Query"],
+		[
+			`<img data-test alt="" aria-label="a logo" role="presentation" /> />`,
+			"a logo",
+		],
+		[`<img data-test alt="" aria-label="a logo" role="none" />`, "a logo"],
+		[` <input type="radio" data-test title="crazy"/>`, "crazy"],
+		[
+			`
 		<h2 id="lorem-heading">
 			Lorem ipsum
 			<a data-test aria-labelledby="lorem-heading" href="#lorem-heading" tabindex="-1">
@@ -411,10 +434,10 @@ test.each([
 			</a>
 		</h2>
 	`,
-		"Lorem ipsum",
-	],
-	[
-		`
+			"Lorem ipsum",
+		],
+		[
+			`
 		<label for="toggle-button" id="label" value="full">
 			<button
 				data-test
@@ -433,11 +456,11 @@ test.each([
 			</div>
 		</label>
 		`,
-		"Full Refund Refund Type",
-	],
-])(`misc #%#`, (markup, expectedAccessibleName) => {
-	expectName(markup, expectedAccessibleName);
-});
+			"Full Refund Refund Type",
+		],
+	])(`misc #%#`, (markup, expectedAccessibleName) => {
+		expectName(markup, expectedAccessibleName);
+	});
 });
 
 test("2F.iii: text nodes are not concatenated by space (https://w3c.github.io/accname/#step2F.iii)", () => {
@@ -569,18 +592,30 @@ describe("options.getComputedStyle — https://w3c.github.io/accname/#step2A", (
 
 	test("can be mocked with a fake", () => {
 		const container = renderIntoDocument("<button>test</button>");
-		const declaration: Record<string, string> = { content: "'foo'", display: "block", visibility: "visible" };
-		const fake = vi.fn(() => ({ ...declaration, getPropertyValue: (p: string) => declaration[p] ?? "" }));
+		const declaration: Record<string, string> = {
+			content: "'foo'",
+			display: "block",
+			visibility: "visible",
+		};
+		const fake = vi.fn(() => ({
+			...declaration,
+			getPropertyValue: (p: string) => declaration[p] ?? "",
+		}));
 
-		const name = computeAccessibleName(container.querySelector("button") as Element, {
-			getComputedStyle: fake,
-		});
+		const name = computeAccessibleName(
+			container.querySelector("button") as Element,
+			{
+				getComputedStyle: fake,
+			},
+		);
 
 		expect(name).toEqual("foo test foo");
 	});
 
 	test("an injected implementation is the only style source", () => {
-		const container = renderIntoDocument("<button><span><span>nested</span>button</span></button>");
+		const container = renderIntoDocument(
+			"<button><span><span>nested</span>button</span></button>",
+		);
 		const fake = vi.fn(() => ({ getPropertyValue: () => "" }));
 		computeAccessibleName(container.querySelector("button") as Element, {
 			getComputedStyle: fake,
@@ -602,12 +637,19 @@ describe("options.computedStyleSupportsPseudoElements — https://w3c.github.io/
 		const error = vi.spyOn(console, "error").mockImplementation(() => {});
 		const container = renderIntoDocument("<button>test</button>");
 		const button = container.querySelector("button") as Element;
-		expect(computeAccessibleName(button, { computedStyleSupportsPseudoElements: false })).toBe("test");
-		expect(computeAccessibleName(button, { computedStyleSupportsPseudoElements: true })).toBe("test");
+		expect(
+			computeAccessibleName(button, {
+				computedStyleSupportsPseudoElements: false,
+			}),
+		).toBe("test");
+		expect(
+			computeAccessibleName(button, {
+				computedStyleSupportsPseudoElements: true,
+			}),
+		).toBe("test");
 		expect(error).not.toHaveBeenCalled();
 	});
 });
-
 
 describe("options.hidden — https://w3c.github.io/accname/#step2A", () => {
 	test.each([
@@ -617,22 +659,25 @@ describe("options.hidden — https://w3c.github.io/accname/#step2A", () => {
 		const container = renderIntoDocument(markup);
 
 		const testNode = container.querySelector("[data-test]");
-		expect(computeAccessibleName(testNode as Element, { hidden: true })).toEqual(
-			accessibleName,
-		);
+		expect(
+			computeAccessibleName(testNode as Element, { hidden: true }),
+		).toEqual(accessibleName);
 	});
 });
 
-describe.skipIf(!supportsShadow)("content in shadow DOM — https://w3c.github.io/accname/#step2B", () => {
-	it("works for aria-labelledby on elements in same shadow root", () => {
-		const container = renderIntoDocument("<div></div>");
-		const div = container.querySelector("div")!;
-		div.attachShadow({ mode: "open" }).innerHTML = `
+describe.skipIf(!supportsShadow)(
+	"content in shadow DOM — https://w3c.github.io/accname/#step2B",
+	() => {
+		it("works for aria-labelledby on elements in same shadow root", () => {
+			const container = renderIntoDocument("<div></div>");
+			const div = container.querySelector("div")!;
+			div.attachShadow({ mode: "open" }).innerHTML = `
 			<label id="theLabel">Type here</label>
 			<input type="text" aria-labelledby="theLabel">
 		`;
 
-		const input = div.shadowRoot!.querySelector("input");
-		expect(computeAccessibleName(input as Element)).toEqual("Type here");
-	});
-});
+			const input = div.shadowRoot!.querySelector("input");
+			expect(computeAccessibleName(input as Element)).toEqual("Type here");
+		});
+	},
+);

@@ -88,7 +88,12 @@ export function describeNode(node: AnyWindow): string {
 }
 
 function isNodeLike(v: unknown): boolean {
-  return typeof v === "object" && v !== null && typeof (v as { nodeType?: unknown }).nodeType === "number" && "nodeName" in (v as object);
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as { nodeType?: unknown }).nodeType === "number" &&
+    "nodeName" in (v as object)
+  );
 }
 
 /** Normalize an observation to JSON-comparable data. */
@@ -112,7 +117,8 @@ export function normalize(value: unknown, depth = 0): unknown {
   }
   if (Array.isArray(value)) return value.map((v) => normalize(v, depth + 1));
   const out: Record<string, unknown> = {};
-  for (const key of Object.keys(value as object)) out[key] = normalize((value as Record<string, unknown>)[key], depth + 1);
+  for (const key of Object.keys(value as object))
+    out[key] = normalize((value as Record<string, unknown>)[key], depth + 1);
   return out;
 }
 
@@ -174,7 +180,11 @@ export async function observeAsync(scenario: AsyncScenario, window: AnyWindow): 
  * @ctrl/dom, one after the other. `url` (or a function returning it, for servers started in
  * beforeAll) is both windows' document URL.
  */
-export function differentialAsync(name: string, scenario: AsyncScenario, options: Omit<DifferentialOptions, "jsdomDeviation"> & { url?: string | (() => string) } = {}): void {
+export function differentialAsync(
+  name: string,
+  scenario: AsyncScenario,
+  options: Omit<DifferentialOptions, "jsdomDeviation"> & { url?: string | (() => string) } = {},
+): void {
   const url = () => (typeof options.url === "function" ? options.url() : (options.url ?? "http://localhost/"));
   const expected = async () => {
     const observed = await observeAsync(scenario, makeJsdomWindow(options.body, url()));

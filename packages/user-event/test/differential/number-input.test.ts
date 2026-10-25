@@ -17,22 +17,31 @@ import {describe, expect, test} from 'vitest'
 import ctrlDomUserEvent from '../../src/index.ts'
 import {getUIValue} from '../../src/document/index.ts'
 
-type CtrlDomDom = {createWindow(options?: {html?: string}): {document: Document}}
-const ctrlDom = (await import('@ctrl/dom' as string).catch(() => null)) as CtrlDomDom | null
+type CtrlDomDom = {
+  createWindow(options?: {html?: string}): {document: Document}
+}
+const ctrlDom = (await import('@ctrl/dom' as string).catch(
+  () => null,
+)) as CtrlDomDom | null
 
-describe.skipIf(ctrlDom === null)('number input on @ctrl/dom: https://html.spec.whatwg.org/#number-state-(type=number)', () => {
-  test('value sanitization keeps valid strings as typed and empties invalid intermediate ones', async () => {
-    const {document} = ctrlDom!.createWindow({html: '<!doctype html><html><body><input id="n" type="number"></body></html>'})
-    const input = document.getElementById('n') as HTMLInputElement
-    const values: string[] = []
-    input.addEventListener('input', () => values.push(input.value))
+describe.skipIf(ctrlDom === null)(
+  'number input on @ctrl/dom: https://html.spec.whatwg.org/#number-state-(type=number)',
+  () => {
+    test('value sanitization keeps valid strings as typed and empties invalid intermediate ones', async () => {
+      const {document} = ctrlDom!.createWindow({
+        html: '<!doctype html><html><body><input id="n" type="number"></body></html>',
+      })
+      const input = document.getElementById('n') as HTMLInputElement
+      const values: string[] = []
+      input.addEventListener('input', () => values.push(input.value))
 
-    const user = ctrlDomUserEvent.setup({document: document as never})
-    await user.type(input as never, '-1.5e3')
+      const user = ctrlDomUserEvent.setup({document: document as never})
+      await user.type(input as never, '-1.5e3')
 
-    // '-' '-1' '-1.' '-1.5' '-1.5e' '-1.5e3' as typed; the invalid ones sanitize to ''
-    expect(values).toEqual(['', '-1', '', '-1.5', '', '-1.5e3'])
-    expect(getUIValue(input as never)).toBe('-1.5e3')
-    expect(input.valueAsNumber).toBe(-1500)
-  })
-})
+      // '-' '-1' '-1.' '-1.5' '-1.5e' '-1.5e3' as typed; the invalid ones sanitize to ''
+      expect(values).toEqual(['', '-1', '', '-1.5', '', '-1.5e3'])
+      expect(getUIValue(input as never)).toBe('-1.5e3')
+      expect(input.valueAsNumber).toBe(-1500)
+    })
+  },
+)

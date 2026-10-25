@@ -15,7 +15,18 @@ declare const document: any;
 
 describeCtrlDom("canonicalColor — https://drafts.csswg.org/css-color-4/#color-syntax", () => {
   test("named, hex, rgb() and hsl() forms of one color share a key", () => {
-    const forms = ["red", "RED", "#f00", "#ff0000", "#ff0000ff", "rgb(255, 0, 0)", "rgba(255,0,0,1)", "rgb(255 0 0 / 100%)", "hsl(0, 100%, 50%)", "hsl(0deg 100% 50%)"];
+    const forms = [
+      "red",
+      "RED",
+      "#f00",
+      "#ff0000",
+      "#ff0000ff",
+      "rgb(255, 0, 0)",
+      "rgba(255,0,0,1)",
+      "rgb(255 0 0 / 100%)",
+      "hsl(0, 100%, 50%)",
+      "hsl(0deg 100% 50%)",
+    ];
     for (const form of forms) expect(canonicalColor(form), form).toBe(canonicalColor("red"));
   });
 
@@ -34,7 +45,11 @@ describeCtrlDom("canonicalColor — https://drafts.csswg.org/css-color-4/#color-
 });
 
 describeCtrlDom("toHaveStyle color serialization independence", () => {
-  const ctx = { isNot: false, equals: Object.is, utils: { matcherHint: (n: string) => `expect(element)${n}()`, diff: (a: string, b: string) => `- ${a}\n+ ${b}` } };
+  const ctx = {
+    isNot: false,
+    equals: Object.is,
+    utils: { matcherHint: (n: string) => `expect(element)${n}()`, diff: (a: string, b: string) => `- ${a}\n+ ${b}` },
+  };
 
   test("named expectation vs rgb() computed value and vice versa", () => {
     const el = document.body.appendChild(document.createElement("div"));

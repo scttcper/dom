@@ -22,7 +22,9 @@ import type {} from "./vitest-runner.ts";
 export type { SentryTestsOptions } from "./options.ts";
 
 // Next to this module: src/*.ts in the workspace, dist/*.js published.
-const RUNNER = fileURLToPath(new URL(import.meta.url.endsWith(".ts") ? "./vitest-runner.ts" : "./vitest-runner.js", import.meta.url));
+const RUNNER = fileURLToPath(
+  new URL(import.meta.url.endsWith(".ts") ? "./vitest-runner.ts" : "./vitest-runner.js", import.meta.url),
+);
 /** Vitest instances the reporter was added to (configureVitest runs once per project). */
 const registered = new WeakSet<Vitest>();
 
@@ -34,7 +36,10 @@ export function sentryTests(options: SentryTestsOptions = {}): Plugin {
     config(config) {
       if (resolved === null) return;
       const own = (config as { test?: { runner?: string } }).test?.runner;
-      if (own !== undefined) throw new Error(`@ctrl/sentry-tests: the project has its own test runner (${own}). Build it with withSentry() from "@ctrl/sentry-tests/vitest-runner" and drop sentryTests() from the plugins, adding the reporter instead: reporters: ["default", "@ctrl/sentry-tests/vitest"].`);
+      if (own !== undefined)
+        throw new Error(
+          `@ctrl/sentry-tests: the project has its own test runner (${own}). Build it with withSentry() from "@ctrl/sentry-tests/vitest-runner" and drop sentryTests() from the plugins, adding the reporter instead: reporters: ["default", "@ctrl/sentry-tests/vitest"].`,
+        );
       return { test: { runner: RUNNER } };
     },
     // Vitest builds its reporters after this hook, so this one can still join them.
@@ -45,7 +50,6 @@ export function sentryTests(options: SentryTestsOptions = {}): Plugin {
     },
   };
 }
-
 
 /**
  * The reporter, which the plugin adds. With a runner built on withSentry(), add it yourself:
@@ -101,7 +105,9 @@ export class SentryReporter implements Reporter {
           // A describe block's beforeAll/afterAll failure is on its suite, not the file.
           outsideTests: [
             ...module.errors().map((e) => ({ name: FILE_FAILURE, error: toErrorInfo(e) })),
-            ...[...module.children.allSuites()].flatMap((suite) => suite.errors().map((e) => ({ name: suite.fullName, error: toErrorInfo(e) }))),
+            ...[...module.children.allSuites()].flatMap((suite) =>
+              suite.errors().map((e) => ({ name: suite.fullName, error: toErrorInfo(e) })),
+            ),
           ],
         },
         this.options,
@@ -131,12 +137,19 @@ function toTestCaseReport(test: TestCase): TestCaseReport {
 }
 
 /** Vitest's serialized errors carry source-mapped frames (`stacks`). */
-function toErrorInfo(e: { name?: string; message: string; stack?: string; stacks?: ReadonlyArray<{ method: string; file: string; line: number; column: number }> }): ErrorInfo {
+function toErrorInfo(e: {
+  name?: string;
+  message: string;
+  stack?: string;
+  stacks?: ReadonlyArray<{ method: string; file: string; line: number; column: number }>;
+}): ErrorInfo {
   return {
     name: e.name,
     message: e.message,
     stack: e.stack,
-    ...(e.stacks ? { frames: e.stacks.map((s) => ({ method: s.method, file: s.file, line: s.line, column: s.column })) } : {}),
+    ...(e.stacks
+      ? { frames: e.stacks.map((s) => ({ method: s.method, file: s.file, line: s.line, column: s.column })) }
+      : {}),
   };
 }
 

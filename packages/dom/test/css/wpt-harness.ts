@@ -47,11 +47,15 @@ function makeAsserts() {
       if (actual !== false) fail(`expected false got ${fmt(actual)}`, description);
     },
     assert_in_array(actual: unknown, expected: unknown[], description?: string) {
-      if (!expected.some((e) => same(e, actual))) fail(`value ${fmt(actual)} not in array ${expected.map(fmt).join(",")}`, description);
+      if (!expected.some((e) => same(e, actual)))
+        fail(`value ${fmt(actual)} not in array ${expected.map(fmt).join(",")}`, description);
     },
     assert_array_equals(actual: ArrayLike<unknown>, expected: ArrayLike<unknown>, description?: string) {
-      if (actual === null || actual === undefined || actual.length !== expected.length) fail(`lengths differ: ${fmt(actual?.length)} vs ${expected.length}`, description);
-      for (let i = 0; i < expected.length; i++) if (!same(actual[i], expected[i])) fail(`index ${i}: expected ${fmt(expected[i])} got ${fmt(actual[i])}`, description);
+      if (actual === null || actual === undefined || actual.length !== expected.length)
+        fail(`lengths differ: ${fmt(actual?.length)} vs ${expected.length}`, description);
+      for (let i = 0; i < expected.length; i++)
+        if (!same(actual[i], expected[i]))
+          fail(`index ${i}: expected ${fmt(expected[i])} got ${fmt(actual[i])}`, description);
     },
     assert_approx_equals(actual: number, expected: number, epsilon: number, description?: string) {
       if (Math.abs(actual - expected) > epsilon) fail(`expected ${expected} +/- ${epsilon} got ${actual}`, description);
@@ -95,7 +99,16 @@ function makeAsserts() {
       } catch (e) {
         threw = true;
         const name = (e as { name?: string }).name;
-        const codeNames: Record<number, string> = { 1: "IndexSizeError", 3: "HierarchyRequestError", 7: "NoModificationAllowedError", 8: "NotFoundError", 11: "InvalidStateError", 12: "SyntaxError", 13: "InvalidModificationError", 14: "NamespaceError" };
+        const codeNames: Record<number, string> = {
+          1: "IndexSizeError",
+          3: "HierarchyRequestError",
+          7: "NoModificationAllowedError",
+          8: "NotFoundError",
+          11: "InvalidStateError",
+          12: "SyntaxError",
+          13: "InvalidModificationError",
+          14: "NamespaceError",
+        };
         const want = typeof type === "number" ? codeNames[type] : type;
         if (name !== want) fail(`expected DOMException ${want} got ${name}: ${(e as Error).message}`, d);
       }
@@ -107,7 +120,8 @@ function makeAsserts() {
         fn();
       } catch (e) {
         threw = true;
-        if ((e as Error).name !== ctor.name) fail(`expected ${ctor.name} got ${(e as Error).name}: ${(e as Error).message}`, d);
+        if ((e as Error).name !== ctor.name)
+          fail(`expected ${ctor.name} got ${(e as Error).name}: ${(e as Error).message}`, d);
       }
       if (!threw) fail(`expected ${ctor.name} to be thrown`, d);
     },
@@ -148,12 +162,20 @@ export async function runWPT(html: string): Promise<SubtestResult[]> {
 }
 
 async function runWPTInner(html: string): Promise<SubtestResult[]> {
-  const window = createWindow({ html, url: "http://web-platform.test/css/cssom/test.html", cssComputedColors: "rgb" } as Parameters<typeof createWindow>[0]);
+  const window = createWindow({
+    html,
+    url: "http://web-platform.test/css/cssom/test.html",
+    cssComputedColors: "rgb",
+  } as Parameters<typeof createWindow>[0]);
   const results: SubtestResult[] = [];
   const pending: Promise<void>[] = [];
   const asserts = makeAsserts();
   const record = (name: string, e: unknown): void => {
-    results.push({ name, status: e === undefined ? "pass" : "fail", message: e === undefined ? "" : String((e as Error)?.message ?? e) });
+    results.push({
+      name,
+      status: e === undefined ? "pass" : "fail",
+      message: e === undefined ? "" : String((e as Error)?.message ?? e),
+    });
   };
   const makeT = (name: string) => {
     const cleanups: (() => void)[] = [];

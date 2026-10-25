@@ -17,7 +17,16 @@
 // one (relatedTarget = old). As in browsers and jsdom, `document.activeElement` is the body
 // while blur/focusout run.
 
-import { ELEMENT_NODE, F_CONNECTED, F_SHADOW_ROOT, HTML_NS, SVG_NS, MATHML_NS, DOCUMENT_FRAGMENT_NODE, XLINK_NS } from "../nodes/constants.ts";
+import {
+  ELEMENT_NODE,
+  F_CONNECTED,
+  F_SHADOW_ROOT,
+  HTML_NS,
+  SVG_NS,
+  MATHML_NS,
+  DOCUMENT_FRAGMENT_NODE,
+  XLINK_NS,
+} from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
@@ -161,7 +170,10 @@ export function isSequentiallyFocusable(impl: NodeImpl): boolean {
 // --- focus delegates (shadow hosts with delegatesFocus) ------------------------------------
 
 function shadowRootOf(impl: NodeImpl): { [$impl]: NodeImpl; delegatesFocus?: boolean } | null {
-  return (impl.node as unknown as { [$shadowRoot]: { [$impl]: NodeImpl; delegatesFocus?: boolean } | null })[$shadowRoot] ?? null;
+  return (
+    (impl.node as unknown as { [$shadowRoot]: { [$impl]: NodeImpl; delegatesFocus?: boolean } | null })[$shadowRoot] ??
+    null
+  );
 }
 
 /**
@@ -384,7 +396,7 @@ export function matchesFocus(impl: NodeImpl): boolean {
   if (f === null) return false;
   if (f === impl) return true;
   if (shadowRootOf(impl) === null) return false;
-  for (let n: NodeImpl | null = f; n !== null; ) {
+  for (let n: NodeImpl | null = f; n !== null;) {
     const r = treeRoot(n);
     if ((r.flags & F_SHADOW_ROOT) === 0) return false;
     n = parentOrHost(r);
@@ -472,7 +484,14 @@ export function autofocusDelegate(root: NodeImpl): NodeImpl | null {
 function focusFixup(doc: Document): void {
   const focused = doc[$focused];
   if (focused === null || isFocusable(focused)) return;
-  if (focused.tag === T.dialog && focused.ns === HTML_NS && (focused.flags & F_CONNECTED) !== 0 && !isInert(focused) && !isRenderingHidden(focused)) return;
+  if (
+    focused.tag === T.dialog &&
+    focused.ns === HTML_NS &&
+    (focused.flags & F_CONNECTED) !== 0 &&
+    !isInert(focused) &&
+    !isRenderingHidden(focused)
+  )
+    return;
   runFocusUpdate(doc, focused, null);
 }
 
@@ -481,4 +500,3 @@ setRenderingUpdateHook(focusFixup as (doc: unknown) => void);
 setTopLayerFocusHooks((el) => {
   focusElement(el);
 }, autofocusDelegate);
-

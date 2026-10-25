@@ -29,7 +29,18 @@
 // `{ hidden: true }`, a `- role … (+N more)` line for collapsed sibling runs and `# …`
 // comments for truncation.
 
-import { $impl, DOCUMENT_FRAGMENT_NODE, DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, attr, setFailureSnapshot, type NodeImpl } from "@ctrl/dom/internal";
+import {
+  $impl,
+  DOCUMENT_FRAGMENT_NODE,
+  DOCUMENT_NODE,
+  ELEMENT_NODE,
+  HTML_NS,
+  TEXT_NODE,
+  T,
+  attr,
+  setFailureSnapshot,
+  type NodeImpl,
+} from "@ctrl/dom/internal";
 import { roleSupportsProp } from "@ctrl/dom/aria";
 import {
   ariaCheckedState,
@@ -139,11 +150,19 @@ export function ariaSnapshotTree(container: any, options: AriaSnapshotOptions = 
  * The rendered snapshot before the line budget: the `# hidden …` header (or ""), the lines, and
  * the `# no accessible content` text when there are none.
  */
-export function ariaSnapshotLines(container: any, options: AriaSnapshotOptions = {}): { header: string; lines: string[]; empty: string | null } {
+export function ariaSnapshotLines(
+  container: any,
+  options: AriaSnapshotOptions = {},
+): { header: string; lines: string[]; empty: string | null } {
   const { root, ctx, children, header } = buildTree(container, options);
   const lines: string[] = [];
   ctx.renderList(children, "", lines);
-  const empty = lines.length > 0 ? null : ctx.sawHidden ? "# no accessible content (hidden elements exist: pass { hidden: true })" : "# no accessible content";
+  const empty =
+    lines.length > 0
+      ? null
+      : ctx.sawHidden
+        ? "# no accessible content (hidden elements exist: pass { hidden: true })"
+        : "# no accessible content";
   // Agent mode remembers the last whole-page snapshot, so a failing test can show what changed
   // since then (./agent.ts). It is kept on the document: Jest's environment reads it from another
   // realm than the test's.
@@ -163,7 +182,13 @@ export function budgetLines(lines: string[], maxLines: number): string[] {
 const LAST_BODY_SNAPSHOT = Symbol.for("ctrl-dom.agent.lastBodySnapshot");
 
 function recordBodySnapshot(doc: any, text: string): void {
-  if (doc != null) Object.defineProperty(doc, LAST_BODY_SNAPSHOT, { value: text, configurable: true, writable: true, enumerable: false });
+  if (doc != null)
+    Object.defineProperty(doc, LAST_BODY_SNAPSHOT, {
+      value: text,
+      configurable: true,
+      writable: true,
+      enumerable: false,
+    });
 }
 
 /** The last whole-page snapshot taken in agent mode since `resetBodySnapshot`, or undefined. */
@@ -179,7 +204,8 @@ export function resetBodySnapshot(doc: any): void {
 function rootImpl(container: any): NodeImpl {
   const node = container ?? getDocument().body;
   const impl: NodeImpl | undefined = node?.[$impl];
-  if (impl === undefined) throw new TypeError(`Expected an element, document or fragment but got ${node === null ? "null" : typeof node}`);
+  if (impl === undefined)
+    throw new TypeError(`Expected an element, document or fragment but got ${node === null ? "null" : typeof node}`);
   // A document (or its <html>, which prettyDOM passes) prints its body.
   if (impl.type === DOCUMENT_NODE || (impl.tag === T.html && impl.ns === HTML_NS)) {
     const body = (impl.doc as any)?.body;
@@ -210,7 +236,8 @@ export function quote(s: string): string {
 }
 
 // Plain YAML scalars that would parse as something else or break the mapping.
-const NEEDS_QUOTES = /^$|^[\s\-?:,[\]{}#&*!|>'"%@`]|[\s]$|:$|: | #|^(true|false|null|yes|no|on|off|~)$|^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
+const NEEDS_QUOTES =
+  /^$|^[\s\-?:,[\]{}#&*!|>'"%@`]|[\s]$|:$|: | #|^(true|false|null|yes|no|on|off|~)$|^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
 
 /** A YAML value: plain when unambiguous, double-quoted otherwise. */
 export function yamlValue(s: string): string {
@@ -301,7 +328,17 @@ function levelAttr(impl: NodeImpl): number | undefined {
   return n > 0 ? n : undefined;
 }
 
-const VALUE_ROLES = new Set(["textbox", "searchbox", "combobox", "spinbutton", "slider", "progressbar", "meter", "scrollbar", "separator"]);
+const VALUE_ROLES = new Set([
+  "textbox",
+  "searchbox",
+  "combobox",
+  "spinbutton",
+  "slider",
+  "progressbar",
+  "meter",
+  "scrollbar",
+  "separator",
+]);
 
 /** What Playwright prints after the colon for value-bearing widgets. */
 function nodeValue(impl: NodeImpl, role: string): string | null {
@@ -402,7 +439,12 @@ class SnapshotContext {
       }
       // Collapse a run of same-role siblings past `collapseAfter`.
       let run = 1;
-      while (i + run < list.length && typeof list[i + run] !== "string" && (list[i + run] as SnapshotNode).role === item.role) run++;
+      while (
+        i + run < list.length &&
+        typeof list[i + run] !== "string" &&
+        (list[i + run] as SnapshotNode).role === item.role
+      )
+        run++;
       if (run > this.collapseAfter + 1) {
         for (let k = 0; k < this.collapseAfter; k++) this.renderNode(list[i + k] as SnapshotNode, indent, lines);
         lines.push(`${indent}- ${item.role} … (+${run - this.collapseAfter} more)`);
@@ -416,12 +458,21 @@ class SnapshotContext {
   renderNode(node: SnapshotNode, indent: string, lines: string[]): void {
     const key = nodeKey(node, this.maxText);
     const children = node.children;
-    if (node.url === null && (children.length === 0 || (children.length === 1 && typeof children[0] === "string" && node.value === null))) {
+    if (
+      node.url === null &&
+      (children.length === 0 || (children.length === 1 && typeof children[0] === "string" && node.value === null))
+    ) {
       const inline = node.value ?? (children.length === 1 ? (children[0] as string) : null);
-      lines.push(inline === null ? `${indent}- ${key}` : `${indent}- ${key}: ${yamlValue(truncate(inline, this.maxText))}`);
+      lines.push(
+        inline === null ? `${indent}- ${key}` : `${indent}- ${key}: ${yamlValue(truncate(inline, this.maxText))}`,
+      );
       return;
     }
-    lines.push(node.value === null ? `${indent}- ${key}:` : `${indent}- ${key}: ${yamlValue(truncate(node.value, this.maxText))}`);
+    lines.push(
+      node.value === null
+        ? `${indent}- ${key}:`
+        : `${indent}- ${key}: ${yamlValue(truncate(node.value, this.maxText))}`,
+    );
     const childIndent = indent + "  ";
     if (node.url !== null) lines.push(`${childIndent}- /url: ${yamlValue(node.url)}`);
     // A value line cannot also be a mapping: children of a valued node are rare (combobox
@@ -472,8 +523,22 @@ function finishChildren(children: Array<SnapshotNode | string>, name: string | n
   children.length = w;
 }
 
-const LABELLED_ROLES = new Set(["textbox", "searchbox", "combobox", "listbox", "checkbox", "radio", "switch", "slider", "spinbutton", "meter", "progressbar"]);
+const LABELLED_ROLES = new Set([
+  "textbox",
+  "searchbox",
+  "combobox",
+  "listbox",
+  "checkbox",
+  "radio",
+  "switch",
+  "slider",
+  "spinbutton",
+  "meter",
+  "progressbar",
+]);
 
 function labels(sibling: SnapshotNode | string | undefined, text: string): boolean {
-  return sibling !== undefined && typeof sibling !== "string" && sibling.name === text && LABELLED_ROLES.has(sibling.role);
+  return (
+    sibling !== undefined && typeof sibling !== "string" && sibling.name === text && LABELLED_ROLES.has(sibling.role)
+  );
 }

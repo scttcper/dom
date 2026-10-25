@@ -1,7 +1,11 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/behavior/keydown.ts
 
-import {getUIValue, setUISelection, getValueOrTextContent} from '../../document/index.ts'
+import {
+  getUIValue,
+  setUISelection,
+  getValueOrTextContent,
+} from '../../document/index.ts'
 import {
   getActiveElementOrBody,
   getTabDestination,
@@ -12,7 +16,11 @@ import {
 } from '../../utils/index.ts'
 import {focusElement} from '../focus.ts'
 import {input} from '../input.ts'
-import {moveSelection, selectAll, setSelectionRange} from '../selection/index.ts'
+import {
+  moveSelection,
+  selectAll,
+  setSelectionRange,
+} from '../selection/index.ts'
 import {walkRadio} from '../radio.ts'
 import {type BehaviorPlugin} from './index.ts'
 import {behavior} from './registry.ts'

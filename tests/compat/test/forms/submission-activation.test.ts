@@ -22,7 +22,9 @@ const EVENTS = ["click", "input", "change", "submit", "reset", "invalid"];
 
 function setup(w: AnyWindow, html: string) {
   w.document.body.innerHTML = html;
-  const log = recordEvents(w.document, EVENTS, (e) => (e.type === "submit" ? `submitter=${e.submitter?.id ?? "null"}` : ""));
+  const log = recordEvents(w.document, EVENTS, (e) =>
+    e.type === "submit" ? `submitter=${e.submitter?.id ?? "null"}` : "",
+  );
   return { log, $: (id: string) => w.document.getElementById(id) };
 }
 
@@ -31,7 +33,13 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#dom-form-requ
     const { log, $ } = setup(w, "<form id=f><input name=a></form>");
     let info: unknown = null;
     $("f").addEventListener("submit", (e: AnyWindow) => {
-      info = { bubbles: e.bubbles, cancelable: e.cancelable, isSubmitEvent: e instanceof w.SubmitEvent, trusted: e.isTrusted, composed: e.composed };
+      info = {
+        bubbles: e.bubbles,
+        cancelable: e.cancelable,
+        isSubmitEvent: e instanceof w.SubmitEvent,
+        trusted: e.isTrusted,
+        composed: e.composed,
+      };
       e.preventDefault();
     });
     $("f").requestSubmit();
@@ -39,7 +47,10 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#dom-form-requ
   });
 
   differential("requestSubmit(button) passes the submitter; invalid submitters throw", (w) => {
-    const { log, $ } = setup(w, "<form id=f><button id=b>go</button><input id=i><button id=bb type=button>x</button></form><form id=g><button id=other>o</button></form>");
+    const { log, $ } = setup(
+      w,
+      "<form id=f><button id=b>go</button><input id=i><button id=bb type=button>x</button></form><form id=g><button id=other>o</button></form>",
+    );
     $("f").addEventListener("submit", (e: AnyWindow) => e.preventDefault());
     $("f").requestSubmit($("b"));
     const errors: unknown[] = [];
@@ -60,19 +71,26 @@ describe("requestSubmit / submit — https://html.spec.whatwg.org/#dom-form-requ
     return log;
   });
 
-  differential("novalidate and formnovalidate skip validation", (w) => {
-    const { log, $ } = setup(w, "<form id=f novalidate><input required></form><form id=g><input required><button id=b formnovalidate>x</button></form>");
-    for (const id of ["f", "g"]) $(id).addEventListener("submit", (e: AnyWindow) => e.preventDefault());
-    $("f").requestSubmit();
-    $("g").requestSubmit($("b"));
-    return log;
-  }, {
-    jsdomDeviation: {
-      expected: ["submit@form#f submitter=null", "submit@form#g submitter=b"],
-      spec: "https://html.spec.whatwg.org/#concept-form-submit (skip validation when the submitter's no-validate state is true: https://html.spec.whatwg.org/#concept-fs-novalidate)",
-      reason: "jsdom ignores formnovalidate on the submitter",
+  differential(
+    "novalidate and formnovalidate skip validation",
+    (w) => {
+      const { log, $ } = setup(
+        w,
+        "<form id=f novalidate><input required></form><form id=g><input required><button id=b formnovalidate>x</button></form>",
+      );
+      for (const id of ["f", "g"]) $(id).addEventListener("submit", (e: AnyWindow) => e.preventDefault());
+      $("f").requestSubmit();
+      $("g").requestSubmit($("b"));
+      return log;
     },
-  });
+    {
+      jsdomDeviation: {
+        expected: ["submit@form#f submitter=null", "submit@form#g submitter=b"],
+        spec: "https://html.spec.whatwg.org/#concept-form-submit (skip validation when the submitter's no-validate state is true: https://html.spec.whatwg.org/#concept-fs-novalidate)",
+        reason: "jsdom ignores formnovalidate on the submitter",
+      },
+    },
+  );
 
   differential("submit() fires no submit event and does not validate", (w) => {
     const { log, $ } = setup(w, "<form id=f><input required></form>");
@@ -155,21 +173,34 @@ describe("activation behavior — https://dom.spec.whatwg.org/#concept-event-dis
     return { log, checked: $("c").checked };
   });
 
-  differential("input and change event flags for checkbox activation", (w) => {
-    const { $ } = setup(w, "<input type=checkbox id=c>");
-    const flags: unknown[] = [];
-    for (const type of ["input", "change"]) {
-      $("c").addEventListener(type, (e: AnyWindow) => flags.push({ type, bubbles: e.bubbles, cancelable: e.cancelable, composed: e.composed, isInputEvent: e instanceof w.InputEvent }));
-    }
-    $("c").click();
-    return flags;
-  }, {
-    jsdomFix: {
-      spec: "https://html.spec.whatwg.org/#checkbox-state-(type=checkbox):activation-behaviour",
-      reason: "jsdom fires the activation input event without composed=true",
-      fix: (flags: Array<{ type: string; composed: boolean }>) => flags.map((f) => (f.type === "input" ? { ...f, composed: true } : f)),
+  differential(
+    "input and change event flags for checkbox activation",
+    (w) => {
+      const { $ } = setup(w, "<input type=checkbox id=c>");
+      const flags: unknown[] = [];
+      for (const type of ["input", "change"]) {
+        $("c").addEventListener(type, (e: AnyWindow) =>
+          flags.push({
+            type,
+            bubbles: e.bubbles,
+            cancelable: e.cancelable,
+            composed: e.composed,
+            isInputEvent: e instanceof w.InputEvent,
+          }),
+        );
+      }
+      $("c").click();
+      return flags;
     },
-  });
+    {
+      jsdomFix: {
+        spec: "https://html.spec.whatwg.org/#checkbox-state-(type=checkbox):activation-behaviour",
+        reason: "jsdom fires the activation input event without composed=true",
+        fix: (flags: Array<{ type: string; composed: boolean }>) =>
+          flags.map((f) => (f.type === "input" ? { ...f, composed: true } : f)),
+      },
+    },
+  );
 
   differential("radio click: unchecked fires input/change, already checked fires nothing", (w) => {
     const { log, $ } = setup(w, "<input type=radio name=g id=a><input type=radio name=g id=b checked>");
@@ -194,21 +225,30 @@ describe("activation behavior — https://dom.spec.whatwg.org/#concept-event-dis
   });
 
   differential("click() on disabled controls does nothing (no events)", (w) => {
-    const { log, $ } = setup(w, "<input type=checkbox id=c disabled><form id=f><button id=b disabled>x</button></form><fieldset disabled><input type=checkbox id=fc></fieldset>");
+    const { log, $ } = setup(
+      w,
+      "<input type=checkbox id=c disabled><form id=f><button id=b disabled>x</button></form><fieldset disabled><input type=checkbox id=fc></fieldset>",
+    );
     $("c").click();
     $("b").click();
     $("fc").click();
     return { log, c: $("c").checked, fc: $("fc").checked };
   });
 
-  differential("dispatchEvent(click) on a disabled checkbox still fires listeners? (spec: click events on disabled form controls)", (w) => {
-    const { log, $ } = setup(w, "<input type=checkbox id=c disabled>");
-    $("c").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-    return { log, checked: $("c").checked };
-  });
+  differential(
+    "dispatchEvent(click) on a disabled checkbox still fires listeners? (spec: click events on disabled form controls)",
+    (w) => {
+      const { log, $ } = setup(w, "<input type=checkbox id=c disabled>");
+      $("c").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      return { log, checked: $("c").checked };
+    },
+  );
 
   differential("submit button click: click then submit with submitter", (w) => {
-    const { log, $ } = setup(w, "<form id=f><input name=a><button id=b>Go</button><input type=submit id=s><input type=image id=img><button type=button id=plain>x</button><button type=reset id=r>r</button></form>");
+    const { log, $ } = setup(
+      w,
+      "<form id=f><input name=a><button id=b>Go</button><input type=submit id=s><input type=image id=img><button type=button id=plain>x</button><button type=reset id=r>r</button></form>",
+    );
     $("f").addEventListener("submit", (e: AnyWindow) => e.preventDefault());
     for (const id of ["b", "s", "img", "plain", "r"]) $(id).click();
     return log;
@@ -256,7 +296,10 @@ describe("label activation — https://html.spec.whatwg.org/#the-label-element:a
   });
 
   differential("clicking interactive content inside a label does not activate the control", (w) => {
-    const { log, $ } = setup(w, "<label id=l><input type=checkbox id=c><button id=b type=button>b</button><a id=a href=#x>a</a></label>");
+    const { log, $ } = setup(
+      w,
+      "<label id=l><input type=checkbox id=c><button id=b type=button>b</button><a id=a href=#x>a</a></label>",
+    );
     $("b").click();
     $("a").click();
     return { log, checked: $("c").checked };

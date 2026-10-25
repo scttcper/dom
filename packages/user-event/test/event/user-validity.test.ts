@@ -15,50 +15,73 @@
 import {describe, expect, test} from 'vitest'
 import ctrlDomUserEvent from '../../src/index.ts'
 
-type CtrlDomDom = {createWindow(options?: {html?: string}): {document: Document}}
-const ctrlDom = (await import('@ctrl/dom' as string).catch(() => null)) as CtrlDomDom | null
+type CtrlDomDom = {
+  createWindow(options?: {html?: string}): {document: Document}
+}
+const ctrlDom = (await import('@ctrl/dom' as string).catch(
+  () => null,
+)) as CtrlDomDom | null
 
 function setup(body: string) {
-  const {document} = ctrlDom!.createWindow({html: `<!doctype html><html><body>${body}</body></html>`})
+  const {document} = ctrlDom!.createWindow({
+    html: `<!doctype html><html><body>${body}</body></html>`,
+  })
   const user = ctrlDomUserEvent.setup({document: document as never})
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const $ = (id: string) => document.getElementById(id) as any
   return {document, user, $}
 }
 
-describe.skipIf(ctrlDom === null)('user validity on @ctrl/dom — https://html.spec.whatwg.org/#user-validity', () => {
-  test('typing an invalid email matches :user-invalid only after the edit is committed by blur (change)', async () => {
-    const {user, $} = setup('<input id="e" type="email" required><input id="next">')
-    await user.type($('e'), 'not-an-email')
-    expect($('e').matches(':user-invalid')).toBe(false)
-    await user.tab()
-    expect($('e').matches(':user-invalid')).toBe(true)
-    await user.click($('e'))
-    await user.clear($('e'))
-    await user.type($('e'), 'a@b.co')
-    await user.tab()
-    expect([$('e').matches(':user-invalid'), $('e').matches(':user-valid')]).toEqual([false, true])
-  })
+describe.skipIf(ctrlDom === null)(
+  'user validity on @ctrl/dom — https://html.spec.whatwg.org/#user-validity',
+  () => {
+    test('typing an invalid email matches :user-invalid only after the edit is committed by blur (change)', async () => {
+      const {user, $} = setup(
+        '<input id="e" type="email" required><input id="next">',
+      )
+      await user.type($('e'), 'not-an-email')
+      expect($('e').matches(':user-invalid')).toBe(false)
+      await user.tab()
+      expect($('e').matches(':user-invalid')).toBe(true)
+      await user.click($('e'))
+      await user.clear($('e'))
+      await user.type($('e'), 'a@b.co')
+      await user.tab()
+      expect([
+        $('e').matches(':user-invalid'),
+        $('e').matches(':user-valid'),
+      ]).toEqual([false, true])
+    })
 
-  test('focusing and leaving a required field without editing does not set it (no change event)', async () => {
-    const {user, $} = setup('<input id="r" required><input id="next">')
-    await user.click($('r'))
-    await user.tab()
-    expect($('r').matches(':user-invalid')).toBe(false)
-  })
+    test('focusing and leaving a required field without editing does not set it (no change event)', async () => {
+      const {user, $} = setup('<input id="r" required><input id="next">')
+      await user.click($('r'))
+      await user.tab()
+      expect($('r').matches(':user-invalid')).toBe(false)
+    })
 
-  test('selectOptions sets it on the select (https://html.spec.whatwg.org/#send-select-update-notifications)', async () => {
-    const {user, $} = setup('<select id="s" required><option value="">pick</option><option value="a">A</option></select>')
-    await user.selectOptions($('s'), '')
-    expect($('s').matches(':user-invalid')).toBe(true)
-    await user.selectOptions($('s'), 'a')
-    expect($('s').matches(':user-valid')).toBe(true)
-  })
+    test('selectOptions sets it on the select (https://html.spec.whatwg.org/#send-select-update-notifications)', async () => {
+      const {user, $} = setup(
+        '<select id="s" required><option value="">pick</option><option value="a">A</option></select>',
+      )
+      await user.selectOptions($('s'), '')
+      expect($('s').matches(':user-invalid')).toBe(true)
+      await user.selectOptions($('s'), 'a')
+      expect($('s').matches(':user-valid')).toBe(true)
+    })
 
-  test('pressing Enter clicks the submit button and the submission sets every control (form submission step 5.3)', async () => {
-    const {user, $, document} = setup('<form id="f"><input id="a"><textarea id="b" required></textarea><button>go</button></form>')
-    document.getElementById('f')!.addEventListener('submit', e => e.preventDefault())
-    await user.type($('a'), 'x{Enter}')
-    expect([$('a').matches(':user-valid'), $('b').matches(':user-invalid')]).toEqual([true, true])
-  })
-})
+    test('pressing Enter clicks the submit button and the submission sets every control (form submission step 5.3)', async () => {
+      const {user, $, document} = setup(
+        '<form id="f"><input id="a"><textarea id="b" required></textarea><button>go</button></form>',
+      )
+      document
+        .getElementById('f')!
+        .addEventListener('submit', e => e.preventDefault())
+      await user.type($('a'), 'x{Enter}')
+      expect([
+        $('a').matches(':user-valid'),
+        $('b').matches(':user-invalid'),
+      ]).toEqual([true, true])
+    })
+  },
+)

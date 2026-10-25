@@ -88,7 +88,12 @@ describe("timers — https://html.spec.whatwg.org/#timers", () => {
   test("clearing an unknown, already-fired or non-numeric handle is a no-op", async () => {
     const id = win.setTimeout(() => {}, 0);
     await delay(5);
-    expect(() => [win.clearTimeout(id), win.clearTimeout(999_999), win.clearInterval("x"), win.clearTimeout()]).not.toThrow();
+    expect(() => [
+      win.clearTimeout(id),
+      win.clearTimeout(999_999),
+      win.clearInterval("x"),
+      win.clearTimeout(),
+    ]).not.toThrow();
   });
 });
 
@@ -120,7 +125,15 @@ describe("structuredClone — https://html.spec.whatwg.org/#dom-structuredclone"
     const o: any = { m: new Map([[1, "a"]]), s: new Set([1]), d: new Date(5), r: /x/gi, u: new Uint8Array([1, 2]) };
     o.self = o;
     const c = win.structuredClone(o);
-    expect([c.m.get(1), c.s.has(1), c.d.getTime(), c.r.flags, Array.from(c.u), c.self === c, c === o]).toEqual(["a", true, 5, "gi", [1, 2], true, false]);
+    expect([c.m.get(1), c.s.has(1), c.d.getTime(), c.r.flags, Array.from(c.u), c.self === c, c === o]).toEqual([
+      "a",
+      true,
+      5,
+      "gi",
+      [1, 2],
+      true,
+      false,
+    ]);
     expect(() => win.structuredClone(() => {})).toThrow(expect.objectContaining({ name: "DataCloneError" }));
   });
 
@@ -129,13 +142,21 @@ describe("structuredClone — https://html.spec.whatwg.org/#dom-structuredclone"
   // that is not [Serializable]. Detecting that needs a full walk of every cloned value before
   // handing it to Node, on every postMessage/history state too (docs/deviations.md, Window).
   test.fails("a DOM node is not serializable and throws DataCloneError (step 26: platform objects that are not [Serializable])", () => {
-    expect(() => win.structuredClone(win.document.createElement("div"))).toThrow(expect.objectContaining({ name: "DataCloneError" }));
+    expect(() => win.structuredClone(win.document.createElement("div"))).toThrow(
+      expect.objectContaining({ name: "DataCloneError" }),
+    );
   });
 
   test("Blob and File clone with their bytes and metadata", async () => {
     const f = new win.File(["hey"], "a.txt", { type: "text/plain", lastModified: 7 });
     const c = win.structuredClone(f);
-    expect([c instanceof win.File || c instanceof File, c.name, c.type, c.lastModified, await c.text()]).toEqual([true, "a.txt", "text/plain", 7, "hey"]);
+    expect([c instanceof win.File || c instanceof File, c.name, c.type, c.lastModified, await c.text()]).toEqual([
+      true,
+      "a.txt",
+      "text/plain",
+      7,
+      "hey",
+    ]);
   });
 });
 
@@ -176,7 +197,11 @@ describe("requestIdleCallback — https://w3c.github.io/requestidlecallback/#the
 
 describe("Web Storage — https://html.spec.whatwg.org/#storage", () => {
   test("localStorage and sessionStorage are distinct Storage objects per window, the same on every access (https://html.spec.whatwg.org/#dom-localstorage, https://html.spec.whatwg.org/#dom-sessionstorage)", () => {
-    expect([win.localStorage === win.localStorage, win.localStorage === win.sessionStorage, win.localStorage.constructor.name]).toEqual([true, false, "Storage"]);
+    expect([
+      win.localStorage === win.localStorage,
+      win.localStorage === win.sessionStorage,
+      win.localStorage.constructor.name,
+    ]).toEqual([true, false, "Storage"]);
   });
 
   test("setItem stringifies; key(n) and length follow insertion; removeItem and clear (https://html.spec.whatwg.org/#dom-storage-setitem, https://html.spec.whatwg.org/#dom-storage-key, https://html.spec.whatwg.org/#dom-storage-length, https://html.spec.whatwg.org/#dom-storage-getitem, https://html.spec.whatwg.org/#dom-storage-removeitem, https://html.spec.whatwg.org/#dom-storage-clear)", () => {
@@ -259,7 +284,11 @@ describe("Location — https://html.spec.whatwg.org/#dom-location", () => {
 
   test("ancestorOrigins is an empty DOMStringList for a top-level window (https://html.spec.whatwg.org/#dom-location-ancestororigins, https://html.spec.whatwg.org/#concept-location-ancestor-origins-list)", () => {
     const list = win.location.ancestorOrigins;
-    expect([list.constructor.name, list.length, list === win.location.ancestorOrigins]).toEqual(["DOMStringList", 0, true]);
+    expect([list.constructor.name, list.length, list === win.location.ancestorOrigins]).toEqual([
+      "DOMStringList",
+      0,
+      true,
+    ]);
   });
 });
 
@@ -268,9 +297,14 @@ describe("DOMStringList — https://html.spec.whatwg.org/#the-domstringlist-inte
     const iframe = win.document.createElement("iframe");
     win.document.body.appendChild(iframe);
     const list = iframe.contentWindow.location.ancestorOrigins;
-    expect([list.length, list.item(0), list[0], list.item(5), list.contains("https://example.com"), list.contains("https://other.test")]).toEqual([
-      1, "https://example.com", "https://example.com", null, true, false,
-    ]);
+    expect([
+      list.length,
+      list.item(0),
+      list[0],
+      list.item(5),
+      list.contains("https://example.com"),
+      list.contains("https://other.test"),
+    ]).toEqual([1, "https://example.com", "https://example.com", null, true, false]);
   });
 });
 
@@ -311,7 +345,9 @@ describe("Navigator — https://html.spec.whatwg.org/#dom-navigator", () => {
 
 describe("BarProp — https://html.spec.whatwg.org/#barprop", () => {
   test("every bar reports visible", () => {
-    expect(["locationbar", "menubar", "personalbar", "scrollbars", "statusbar", "toolbar"].map((b) => win[b].visible)).toEqual([true, true, true, true, true, true]);
+    expect(
+      ["locationbar", "menubar", "personalbar", "scrollbars", "statusbar", "toolbar"].map((b) => win[b].visible),
+    ).toEqual([true, true, true, true, true, true]);
   });
 });
 
@@ -329,9 +365,18 @@ describe("origins — https://html.spec.whatwg.org/#dom-origin", () => {
         w.close();
       }
     };
-    expect(["https://x.test/", "http://x.test/", "http://localhost:3000/", "http://app.localhost/", "http://127.0.0.1/", "http://127.4.5.6/", "http://[::1]/", "file:///tmp/a.html"].map(secure)).toEqual([
-      true, false, true, true, true, true, true, true,
-    ]);
+    expect(
+      [
+        "https://x.test/",
+        "http://x.test/",
+        "http://localhost:3000/",
+        "http://app.localhost/",
+        "http://127.0.0.1/",
+        "http://127.4.5.6/",
+        "http://[::1]/",
+        "file:///tmp/a.html",
+      ].map(secure),
+    ).toEqual([true, false, true, true, true, true, true, true]);
   });
 });
 
@@ -347,7 +392,11 @@ describe("customElements — https://html.spec.whatwg.org/#dom-window-customelem
   test("one CustomElementRegistry per window, the same object on every access", () => {
     const other: any = createWindow();
     try {
-      expect([win.customElements === win.customElements, win.customElements === other.customElements, win.customElements.constructor.name]).toEqual([true, false, "CustomElementRegistry"]);
+      expect([
+        win.customElements === win.customElements,
+        win.customElements === other.customElements,
+        win.customElements.constructor.name,
+      ]).toEqual([true, false, "CustomElementRegistry"]);
     } finally {
       other.close();
     }

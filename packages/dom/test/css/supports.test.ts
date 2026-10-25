@@ -15,7 +15,12 @@ createWindow();
 
 describe("CSS.supports(property, value) — https://drafts.csswg.org/css-conditional-3/#dom-css-supports", () => {
   test("true when the value parses for a supported property; property names are ASCII case-insensitive", () => {
-    expect([CSS.supports("display", "grid"), CSS.supports("DISPLAY", "flex"), CSS.supports("display", "nope"), CSS.supports("not-a-prop", "1")]).toEqual([true, true, false, false]);
+    expect([
+      CSS.supports("display", "grid"),
+      CSS.supports("DISPLAY", "flex"),
+      CSS.supports("display", "nope"),
+      CSS.supports("not-a-prop", "1"),
+    ]).toEqual([true, true, false, false]);
   });
 
   test("a value with !important is not a value (false)", () => {
@@ -29,7 +34,11 @@ describe("CSS.supports(property, value) — https://drafts.csswg.org/css-conditi
 
 describe("CSS.supports(conditionText) — https://drafts.csswg.org/css-conditional-3/#dom-css-supports-conditiontext", () => {
   test("parenthesized declarations, with an optional !important", () => {
-    expect([CSS.supports("(display: grid)"), CSS.supports("(color: red !important)"), CSS.supports("(color: nope)")]).toEqual([true, true, false]);
+    expect([
+      CSS.supports("(display: grid)"),
+      CSS.supports("(color: red !important)"),
+      CSS.supports("(color: nope)"),
+    ]).toEqual([true, true, false]);
   });
 
   test("not / and / or with parentheses", () => {
@@ -42,7 +51,10 @@ describe("CSS.supports(conditionText) — https://drafts.csswg.org/css-condition
   });
 
   test("mixing and/or without parentheses, or a bare not, is a syntax error (false)", () => {
-    expect([CSS.supports("(color: red) and (gap: 1px) or (display: grid)"), CSS.supports("not not (color: red)")]).toEqual([false, false]);
+    expect([
+      CSS.supports("(color: red) and (gap: 1px) or (display: grid)"),
+      CSS.supports("not not (color: red)"),
+    ]).toEqual([false, false]);
   });
 
   test("a bare declaration without parentheses is accepted (browser compat)", () => {
@@ -56,12 +68,12 @@ describe("CSS.supports(conditionText) — https://drafts.csswg.org/css-condition
 
 describe("selector() — https://drafts.csswg.org/css-conditional-4/#at-supports-ext", () => {
   test("true for selectors the engine parses, false for invalid or unsupported ones", () => {
-    expect([CSS.supports("selector(:has(> img))"), CSS.supports("selector(a > b)"), CSS.supports("selector(:bogus)"), CSS.supports("not selector(:bogus)")]).toEqual([
-      true,
-      true,
-      false,
-      true,
-    ]);
+    expect([
+      CSS.supports("selector(:has(> img))"),
+      CSS.supports("selector(a > b)"),
+      CSS.supports("selector(:bogus)"),
+      CSS.supports("not selector(:bogus)"),
+    ]).toEqual([true, true, false, true]);
   });
 
   test("forgiving lists are not forgiving inside selector() (:is(:bogus) is unsupported)", () => {

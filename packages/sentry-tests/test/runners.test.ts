@@ -46,7 +46,9 @@ function parseEnvelope(buffer: Buffer): Item[] {
 }
 
 /** Run `args` in test/fixtures with SENTRY_DSN pointing at a fake Sentry server. */
-async function runAgainstSentry(args: string[]): Promise<{ envelopes: Item[][]; output: string; code: number | null; port: number }> {
+async function runAgainstSentry(
+  args: string[],
+): Promise<{ envelopes: Item[][]; output: string; code: number | null; port: number }> {
   const received: Buffer[] = [];
   const server = createServer((req, res) => {
     const chunks: Buffer[] = [];
@@ -61,7 +63,15 @@ async function runAgainstSentry(args: string[]): Promise<{ envelopes: Item[][]; 
   const child = spawn(process.execPath, args, {
     cwd: fixtures,
     // Not this run's Vitest worker variables: the child would think it is one.
-    env: { ...process.env, SENTRY_DSN: `http://public@127.0.0.1:${port}/1`, SENTRY_RELEASE: "r1", SENTRY_SPOTLIGHT: "", VITEST: undefined, VITEST_WORKER_ID: undefined, VITEST_POOL_ID: undefined },
+    env: {
+      ...process.env,
+      SENTRY_DSN: `http://public@127.0.0.1:${port}/1`,
+      SENTRY_RELEASE: "r1",
+      SENTRY_SPOTLIGHT: "",
+      VITEST: undefined,
+      VITEST_WORKER_ID: undefined,
+      VITEST_POOL_ID: undefined,
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
@@ -78,7 +88,11 @@ function expectCartReport(run: Awaited<ReturnType<typeof runAgainstSentry>>, fil
   const transactions = run.envelopes.flat().filter((i) => i.header.type === "transaction");
   expect(transactions).toHaveLength(1);
   const tx = transactions[0].payload;
-  expect(tx).toMatchObject({ transaction: file, release: "r1", contexts: { trace: { op: "test.file", status: "internal_error" } } });
+  expect(tx).toMatchObject({
+    transaction: file,
+    release: "r1",
+    contexts: { trace: { op: "test.file", status: "internal_error" } },
+  });
   const spans: Span[] = tx.spans;
   const find = (op: string, description: string) => spans.find((s) => s.op === op && s.description === description)!;
   const parentOf = (span: Span) => spans.find((s) => s.span_id === span.parent_span_id);
@@ -90,25 +104,48 @@ function expectCartReport(run: Awaited<ReturnType<typeof runAgainstSentry>>, fil
   expect(parentOf(adds)).toBe(suite);
   expect(adds.status).toBe("ok");
   // One span per run of hooks: the describe block's afterEach and the file's are one "afterEach".
-  expect(spans.filter((s) => s.parent_span_id === adds.span_id).map((s) => `${s.op} ${s.description} ${s.data.hooks ?? ""}`.trim())).toEqual(["test.hook beforeEach 1", "test.fn adds an item", "test.hook afterEach 2"]);
+  expect(
+    spans
+      .filter((s) => s.parent_span_id === adds.span_id)
+      .map((s) => `${s.op} ${s.description} ${s.data.hooks ?? ""}`.trim()),
+  ).toEqual(["test.hook beforeEach 1", "test.fn adds an item", "test.hook afterEach 2"]);
   const eventually = find("test.case", "eventually passes");
-  expect(spans.some((s) => s.parent_span_id === eventually.span_id && s.op === "test.hook" && s.description === "afterEach")).toBe(true);
+  expect(
+    spans.some((s) => s.parent_span_id === eventually.span_id && s.op === "test.hook" && s.description === "afterEach"),
+  ).toBe(true);
   const query = find("db.query", "SELECT * FROM items");
   expect(parentOf(query)).toMatchObject({ op: "test.fn", parent_span_id: adds.span_id });
   expect(query.data).toEqual({ rows: 1 });
 
   const events = run.envelopes.filter((e) => e[0].header.type === "event");
   const failure = events.find((e) => e[0].payload.fingerprint[0] === "sentry-tests.test-failure")!;
-  expect(failure[0].payload).toMatchObject({ fingerprint: ["sentry-tests.test-failure", file, "Cart > checks out"], level: "error" });
+  expect(failure[0].payload).toMatchObject({
+    fingerprint: ["sentry-tests.test-failure", file, "Cart > checks out"],
+    level: "error",
+  });
   // Jest retries it too (jest.retryTimes), a span per attempt: the issue links to the last one.
   const attempts = spans.filter((s) => s.op === "test.case" && s.description === "Cart > checks out");
   expect(attempts.at(-1)!.status).toBe("internal_error");
-  expect(failure[0].payload.contexts.trace).toMatchObject({ trace_id: tx.contexts.trace.trace_id, span_id: attempts.at(-1)!.span_id });
+  expect(failure[0].payload.contexts.trace).toMatchObject({
+    trace_id: tx.contexts.trace.trace_id,
+    span_id: attempts.at(-1)!.span_id,
+  });
   expect(failure[0].payload.breadcrumbs.values[0].message).toMatch(/^beforeEach \(/);
   const flaky = events.find((e) => e[0].payload.fingerprint[0] === "sentry-tests.flaky-test")!;
-  expect(flaky[0].payload.exception.values).toEqual([expect.objectContaining({ type: "FlakyTest", value: expect.stringMatching(/failed, then passed on retry 1\. The failed attempt:\n\nError: first try$/) })]);
+  expect(flaky[0].payload.exception.values).toEqual([
+    expect.objectContaining({
+      type: "FlakyTest",
+      value: expect.stringMatching(/failed, then passed on retry 1\. The failed attempt:\n\nError: first try$/),
+    }),
+  ]);
   // The describe block whose beforeAll threw: under Vitest an issue for the block, under Jest for its test.
-  expect(events.some((e) => e[0].payload.exception.values[0].value === "coupon service down" && /^Coupons( > applies a coupon)?$/.test(e[0].payload.fingerprint[2]))).toBe(true);
+  expect(
+    events.some(
+      (e) =>
+        e[0].payload.exception.values[0].value === "coupon service down" &&
+        /^Coupons( > applies a coupon)?$/.test(e[0].payload.fingerprint[2]),
+    ),
+  ).toBe(true);
   // A skipped test has no span; a test named "constructor" is a test like any other.
   expect(spans.some((s) => s.description === "pays later")).toBe(false);
   expect(find("test.case", "constructor").status).toBe("ok");
@@ -117,20 +154,45 @@ function expectCartReport(run: Awaited<ReturnType<typeof runAgainstSentry>>, fil
 }
 
 describe("Vitest: the sentryTests() plugin", () => {
-  test("a trace of describe blocks, tests, hooks and test functions; the failing test's page as it was before its afterEach hook; a flaky-test issue", { timeout: 60_000 }, async () => {
-    const failure = expectCartReport(await runAgainstSentry([vitest, "run", "--config", "vitest.config.ts"]), "cart.vitest.ts");
-    expect(failure.find((i) => i.header.filename === "page.html")?.payload).toBe(["<body>", "  <ul>", "    <li>Apple</li>", "  </ul>", "  <button>Checkout</button>", "</body>"].join("\n"));
-  });
+  test(
+    "a trace of describe blocks, tests, hooks and test functions; the failing test's page as it was before its afterEach hook; a flaky-test issue",
+    { timeout: 60_000 },
+    async () => {
+      const failure = expectCartReport(
+        await runAgainstSentry([vitest, "run", "--config", "vitest.config.ts"]),
+        "cart.vitest.ts",
+      );
+      expect(failure.find((i) => i.header.filename === "page.html")?.payload).toBe(
+        ["<body>", "  <ul>", "    <li>Apple</li>", "  </ul>", "  <button>Checkout</button>", "</body>"].join("\n"),
+      );
+    },
+  );
 });
 
 describe("Jest: the reporter and test runner", () => {
-  test("the same trace and issues from jest-circus's events, on an environment that is not @ctrl/dom's", { timeout: 60_000 }, async () => {
-    expectCartReport(await runAgainstSentry([jest, "--config", "jest.config.cjs"]), "cart.jest.cjs");
-  });
+  test(
+    "the same trace and issues from jest-circus's events, on an environment that is not @ctrl/dom's",
+    { timeout: 60_000 },
+    async () => {
+      expectCartReport(await runAgainstSentry([jest, "--config", "jest.config.cjs"]), "cart.jest.cjs");
+    },
+  );
 
-  test("without the test runner, the issues still go out and the summary says how to get traces", { timeout: 60_000 }, async () => {
-    const run = await runAgainstSentry([jest, "--config", "jest.config.cjs", "--testRunner", require.resolve("jest-circus/runner")]);
-    expect(run.envelopes.flat().some((i) => i.header.type === "transaction")).toBe(false);
-    expect(run.output).toContain(`@ctrl/sentry-tests: 0 traces, 2 failed tests, 1 flaky test → 127.0.0.1:${run.port} (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")`);
-  });
+  test(
+    "without the test runner, the issues still go out and the summary says how to get traces",
+    { timeout: 60_000 },
+    async () => {
+      const run = await runAgainstSentry([
+        jest,
+        "--config",
+        "jest.config.cjs",
+        "--testRunner",
+        require.resolve("jest-circus/runner"),
+      ]);
+      expect(run.envelopes.flat().some((i) => i.header.type === "transaction")).toBe(false);
+      expect(run.output).toContain(
+        `@ctrl/sentry-tests: 0 traces, 2 failed tests, 1 flaky test → 127.0.0.1:${run.port} (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")`,
+      );
+    },
+  );
 });
