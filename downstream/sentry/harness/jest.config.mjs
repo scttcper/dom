@@ -92,7 +92,9 @@ export default {
       init: {...upstream.testEnvironmentOptions?.sentryConfig?.init, dsn: false},
     },
   },
-  reporters: ['default'],
+  // RTD_SENTRY_REPORTER=1 (opt in, so a SENTRY_DSN in the shell never reports harness runs by
+  // accident): @ctrl/dom/sentry's reporter, sending to SENTRY_DSN / SENTRY_SPOTLIGHT (docs/sentry.md).
+  reporters: ['default', ...(process.env.RTD_SENTRY_REPORTER === '1' ? [pkg('sentry/src/jest.ts')] : [])],
   // Scratch experiments (run.ts --scratch DIR): specs outside the checkout, resolved as if they
   // lived in tests/js (see resolver.cjs). Never used for reported results.
   ...(process.env.RTD_SENTRY_SCRATCH

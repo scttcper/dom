@@ -22,6 +22,9 @@ import { parseArgs } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
+// RTD_SENTRY_REPORTER=1 (opt in, so a SENTRY_DSN in the shell never reports harness runs by
+// accident): @ctrl/dom/sentry's collector and reporter, sending to SENTRY_DSN / SENTRY_SPOTLIGHT.
+const SENTRY_REPORTER = process.env.RTD_SENTRY_REPORTER === "1";
 const manifest = JSON.parse(readFileSync(join(here, "manifest.json"), "utf8")) as {
   repository: string;
   branch: string;
@@ -362,7 +365,7 @@ const project = mergeConfig(upstreamProject, {
     }
   },
 });
-project.test.setupFiles = [${JSON.stringify(probe)}, ...(project.test.setupFiles ?? [])];
+project.test.setupFiles = [${JSON.stringify(probe)}, ...(project.test.setupFiles ?? [])${SENTRY_REPORTER ? `, ${JSON.stringify(join(repo, "packages/sentry/src/vitest-setup.ts"))}` : ""}];
 
 export default {
   ...upstreamRoot,
@@ -475,6 +478,7 @@ try {
       ...(values.cold ? ["--no-fsModuleCache"] : ["--fsModuleCachePath", join(checkout, "node_modules/.vitest-cache-rtd", mode)]),
       "--reporter",
       "default",
+      ...(SENTRY_REPORTER ? ["--reporter", join(repo, "packages/sentry/src/vitest.ts")] : []),
       "--reporter",
       "json",
       "--outputFile",

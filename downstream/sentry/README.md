@@ -34,6 +34,10 @@ node downstream/sentry/run.ts --files static/app/components/core/tabs/tabs.spec.
 | `--grep`, `--label`, `--no-report`, `--install`, `--latest` | Jest `-t`; output/report name; skip markdown; frozen install; move to upstream master (reports flag it) |
 | `--scratch DIR` | run ad-hoc `*.spec.tsx` experiments from DIR (resolved as if in `tests/js`); never used for results |
 
+`RTD_SENTRY_REPORTER=1` adds @ctrl/dom/sentry's Jest reporter (rtd modes), sending to
+`SENTRY_DSN` / `SENTRY_SPOTLIGHT`; `packages/sentry/scripts/relay-check.ts --run` runs a preset
+through Relay this way ([docs/sentry.md](../../docs/sentry.md#development)).
+
 ## What it does
 
 1. **Mirror**: `checkout/` (gitignored) is a shallow clone of `manifest.json`'s pinned commit. The
