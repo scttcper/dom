@@ -24,6 +24,8 @@ export default defineProject({
     server: { deps: { external: [/\/packages\/(dom|vitest-environment)\/src\//] } },
     environment: stack === "ctrl-dom" ? "ctrl-dom" : "jsdom",
     setupFiles: [impl === "stock" ? "./test/setup-stock.ts" : "./test/setup-ctrl-dom.ts"],
-    env: { CTRL_DOM_STACK: stack, JEST_DOM_IMPL: impl },
+    // Failure messages are compared as text (inline snapshots, oracle files): no colors, though
+    // CI's environment turns them on in Vitest's workers (an agent's turns them off).
+    env: { CTRL_DOM_STACK: stack, JEST_DOM_IMPL: impl, NO_COLOR: "1" },
   },
 });
