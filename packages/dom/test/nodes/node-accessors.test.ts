@@ -15,7 +15,7 @@
  * node it sanitizes (downstream/sentry TRIAGE.md cluster 4: 137 Sentry tests).
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 // The interface objects are untyped here on purpose: we call prototype getters on arbitrary nodes.
 let window: any;

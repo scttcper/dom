@@ -1,20 +1,20 @@
 // Identity probe for the react-router downstream runner. Prepended to upstream's
 // setupFilesAfterEnv, so it runs first in every test file and fails the file when the wrong DOM,
-// a second @rtd/dom instance, a second React, or a non-substituted Testing Library is loaded.
-// Each test file appends one receipt line to $RTD_RR_RECEIPTS (the runner checks them).
+// a second @ctrl/dom instance, a second React, or a non-substituted Testing Library is loaded.
+// Each test file appends one receipt line to $CTRL_DOM_RR_RECEIPTS (the runner checks them).
 'use strict';
 const {appendFileSync} = require('node:fs');
 
-const mode = process.env.RTD_RR_MODE;
-const repo = process.env.RTD_RR_REPO;
+const mode = process.env.CTRL_DOM_RR_MODE;
+const repo = process.env.CTRL_DOM_RR_REPO;
 const g = globalThis;
-const modules = g[Symbol.for('rtd.dom.modules')];
+const modules = g[Symbol.for('ctrl-dom.dom.modules')];
 
 // Files with a `@jest-environment node` docblock (server runtime, SSR) run without a DOM in every
 // mode: nothing to prove beyond that.
 if (typeof document === 'undefined') {
-  if (modules !== undefined) throw new Error('[react-router downstream probe] @rtd/dom modules on a DOM-less global');
-  appendFileSync(process.env.RTD_RR_RECEIPTS, JSON.stringify({mode, testPath: expect.getState().testPath, environment: 'node'}) + '\n');
+  if (modules !== undefined) throw new Error('[react-router downstream probe] @ctrl/dom modules on a DOM-less global');
+  appendFileSync(process.env.CTRL_DOM_RR_RECEIPTS, JSON.stringify({mode, testPath: expect.getState().testPath, environment: 'node'}) + '\n');
   return;
 }
 
@@ -29,20 +29,20 @@ const receipt = {
 };
 const fail = message => {
   receipt.error = message;
-  appendFileSync(process.env.RTD_RR_RECEIPTS, JSON.stringify(receipt) + '\n');
+  appendFileSync(process.env.CTRL_DOM_RR_RECEIPTS, JSON.stringify(receipt) + '\n');
   throw new Error(`[react-router downstream probe] ${message}`);
 };
 
 if (mode === 'jsdom') {
   if (modules !== undefined || !/jsdom/.test(navigator.userAgent)) fail('jsdom mode is not running on jsdom');
 } else {
-  if (modules === undefined) fail('rtd mode is not running under jest-environment-rtd');
-  // One @rtd/dom per worker: the module the test registry sees is the instance whose window the
-  // environment installed (the shim maps `@rtd/dom` to it; this proves the mapping applies).
-  const dom = require('@rtd/dom');
+  if (modules === undefined) fail('ctrl-dom mode is not running under @ctrl/dom-jest-environment');
+  // One @ctrl/dom per worker: the module the test registry sees is the instance whose window the
+  // environment installed (the shim maps `@ctrl/dom` to it; this proves the mapping applies).
+  const dom = require('@ctrl/dom');
   receipt.singleDomInstance =
-    dom === modules.dom && dom.Node === g.Node && document instanceof dom.Document && require('@rtd/dom/internal') === modules.internal;
-  if (!receipt.singleDomInstance) fail('two @rtd/dom instances (environment vs test registry)');
+    dom === modules.dom && dom.Node === g.Node && document instanceof dom.Document && require('@ctrl/dom/internal') === modules.internal;
+  if (!receipt.singleDomInstance) fail('two @ctrl/dom instances (environment vs test registry)');
 }
 
 for (const spec of ['@testing-library/react', '@testing-library/react/pure', '@testing-library/dom', '@testing-library/user-event', '@testing-library/jest-dom']) {
@@ -52,8 +52,8 @@ for (const spec of ['@testing-library/react', '@testing-library/react/pure', '@t
     receipt.testingLibrary[spec] = `unresolved: ${error.message.split('\n')[0]}`;
   }
 }
-if (mode === 'rtd-full') {
-  const shims = (process.env.RTD_RR_SHIMS ?? '').split(',').filter(Boolean);
+if (mode === 'ctrl-dom-full') {
+  const shims = (process.env.CTRL_DOM_RR_SHIMS ?? '').split(',').filter(Boolean);
   for (const [spec, value] of Object.entries(receipt.testingLibrary)) {
     const pkg = /^@testing-library\/([a-z-]+)/.exec(spec)[1];
     const ours = value.startsWith(`${repo}/packages/`);
@@ -61,7 +61,7 @@ if (mode === 'rtd-full') {
   }
 }
 
-// One React: render a hook through @testing-library/react (ours in rtd-full) with the React the
+// One React: render a hook through @testing-library/react (ours in ctrl-dom-full) with the React the
 // tests import. A second React/react-dom copy fails here with "Invalid hook call".
 {
   const React = require('react');
@@ -81,4 +81,4 @@ if (mode === 'rtd-full') {
   if (!receipt.singleReact) fail(`React instance check failed: ${receipt.reactError}`);
 }
 
-appendFileSync(process.env.RTD_RR_RECEIPTS, JSON.stringify(receipt) + '\n');
+appendFileSync(process.env.CTRL_DOM_RR_RECEIPTS, JSON.stringify(receipt) + '\n');

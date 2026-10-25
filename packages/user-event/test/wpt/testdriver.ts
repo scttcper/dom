@@ -1,6 +1,6 @@
 /**
  * A `test_driver` (https://web-platform-tests.org/writing-tests/testdriver.html) for the WPT
- * harness (packages/dom/test/wpt/harness.ts, `RunOptions.testdriver`) backed by @rtd/user-event.
+ * harness (packages/dom/test/wpt/harness.ts, `RunOptions.testdriver`) backed by @ctrl/dom/user-event.
  *
  * WebDriver input is emulated with user-event's own pointer/keyboard simulation, so tests that
  * drive sequential focus navigation (`send_keys(el, "")` = Tab) observe user-event's tab
@@ -14,7 +14,7 @@
  *
  * WebDriver key codes: https://w3c.github.io/webdriver/#keyboard-actions
  */
-import type * as dom from "@rtd/dom";
+import type * as dom from "@ctrl/dom";
 import { userEvent } from "../../src/index.ts";
 
 /** WebDriver's normalized key values (https://w3c.github.io/webdriver/#keyboard-actions) → user-event key names. */

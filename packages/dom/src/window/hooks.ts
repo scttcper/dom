@@ -2,10 +2,10 @@
 // them statically (they are built in parallel and some are optional).
 //
 // Each hook is consulted lazily, at call time. When a hook is null the Window falls back to a
-// public export of the same name from `@rtd/dom` (see interfaces.ts), and finally to a small
-// built-in fallback. Areas register through `@rtd/dom/internal`:
+// public export of the same name from `@ctrl/dom` (see interfaces.ts), and finally to a small
+// built-in fallback. Areas register through `@ctrl/dom/internal`:
 //
-//   import { windowHooks } from "@rtd/dom/internal";
+//   import { windowHooks } from "@ctrl/dom/internal";
 //   windowHooks.getComputedStyle = (element, pseudo) => ...;
 
 import type { Element } from "../nodes/Element.ts";

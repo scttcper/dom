@@ -8,7 +8,7 @@ import { checkHtmlElement, parseCSS, picoRed, type DOMNode, type MatcherContext,
 // --- toBeVisible ------------------------------------------------------------------------
 
 // TODO(jest-dom): when src/css/internal.ts lands (css agent), use `isDisplayNone(impl)`,
-// `isVisibilityHidden(impl)` and `computedValue(impl, "opacity")` for @rtd/dom elements
+// `isVisibilityHidden(impl)` and `computedValue(impl, "opacity")` for @ctrl/dom elements
 // (`element._impl`) instead of building a full CSSStyleDeclaration per ancestor.
 function isStyleVisible(element: DOMNode): boolean {
   const { getComputedStyle } = element.ownerDocument.defaultView;
@@ -118,7 +118,7 @@ export function toHaveStyle(this: MatcherContext, htmlElement: DOMNode, css: str
   const { getComputedStyle } = htmlElement.ownerDocument.defaultView;
 
   const expected = getStyleDeclaration(htmlElement.ownerDocument, parsedCSS);
-  // TODO(jest-dom): for @rtd/dom elements read only the expected properties through
+  // TODO(jest-dom): for @ctrl/dom elements read only the expected properties through
   // css/internal.ts `computedValue(impl, prop)` on the pass path (css agent).
   const received = getComputedStyle(htmlElement);
 

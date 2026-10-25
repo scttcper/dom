@@ -9,13 +9,13 @@
 //
 // TODO(aria): switch the state reads to html-forms' NodeImpl-level exports
 // (`inputType`, value/checkedness/selectedness from `src/html/forms/state.ts`,
-// `listOfOptions`, `isLabelable`) once they are re-exported from `@rtd/dom/internal`.
+// `listOfOptions`, `isLabelable`) once they are re-exported from `@ctrl/dom/internal`.
 // Until then dynamic state (value, checkedness, indeterminate, selectedness) is read
 // from the wrapper's IDL attributes when the element class implements them, falling back
 // to the content attributes (the initial state) otherwise.
 
-import { ELEMENT_NODE, DOCUMENT_NODE, HTML_NS, T, attr, treeRoot, type NodeImpl, derivedCache } from "@rtd/dom/internal";
-import { $impl, $version } from "@rtd/dom/internal";
+import { ELEMENT_NODE, DOCUMENT_NODE, HTML_NS, T, attr, treeRoot, type NodeImpl, derivedCache } from "@ctrl/dom/internal";
+import { $impl, $version } from "@ctrl/dom/internal";
 
 /** Canonical `type` IDL value of an HTML input: https://html.spec.whatwg.org/multipage/input.html#attr-input-type */
 const INPUT_TYPES = new Set([

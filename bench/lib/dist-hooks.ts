@@ -1,4 +1,4 @@
-// Resolve `@rtd/*` and `vitest-environment-rtd` to their bundled `dist/` entries instead of the
+// Resolve `@ctrl/dom` and its subpaths (`@ctrl/dom/vitest-environment` …) to their bundled `dist/` entries instead of the
 // TypeScript sources named in package.json `exports`. Used by the "*-dist" bench configurations
 // so startup can be measured without Node's type stripping (packages' exports stay on src/).
 
@@ -23,7 +23,7 @@ export function installDistResolution(): void {
         if (!existsSync(dist)) {
           throw new Error(`${specifier}: bundle ${dist} is missing (run \`pnpm build\`)`);
         }
-        (process as { __rtdDistResolutions?: number }).__rtdDistResolutions = ((process as { __rtdDistResolutions?: number }).__rtdDistResolutions ?? 0) + 1;
+        (process as { __ctrlDomDistResolutions?: number }).__ctrlDomDistResolutions = ((process as { __ctrlDomDistResolutions?: number }).__ctrlDomDistResolutions ?? 0) + 1;
         return { url: pathToFileURL(dist).href, format: "module", shortCircuit: true };
       }
       return nextResolve(specifier, context);

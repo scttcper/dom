@@ -13,8 +13,8 @@
  * stored (clamped at 0, no maximum) and read back, matching jsdom.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, CSS, type Window, type Document } from "@rtd/dom";
-import { hasAuthorStyles } from "@rtd/dom/internal";
+import { createWindow, CSS, type Window, type Document } from "@ctrl/dom";
+import { hasAuthorStyles } from "@ctrl/dom/internal";
 
 let window: Window;
 let document: Document;

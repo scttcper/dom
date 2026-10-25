@@ -2,16 +2,16 @@
 // React Aria downstream suite: run the unmodified upstream adobe/react-spectrum Jest suite for
 // `react-aria` and `react-aria-components` on
 //   jsdom     upstream baseline (jest-environment-jsdom, upstream's config unchanged)
-//   rtd-dom   testEnvironment swapped to jest-environment-rtd (stock Testing Library from upstream's lockfile)
-//   rtd-full  jest-environment-rtd + our built bundles for @testing-library/{react,dom,user-event,jest-dom}
+//   ctrl-dom   testEnvironment swapped to @ctrl/dom-jest-environment (stock Testing Library from upstream's lockfile)
+//   ctrl-dom-full  @ctrl/dom-jest-environment + our built bundles for @testing-library/{react,dom,user-event,jest-dom}
 //
 //   node downstream/react-aria/run.ts [--install] [--latest] [--preset smoke|interactions|all]
-//        [--files a,b] [--modes jsdom,rtd-dom,rtd-full] [--workers N] [--no-report]
+//        [--files a,b] [--modes jsdom,ctrl-dom,ctrl-dom-full] [--workers N] [--no-report]
 //
 // Template: downstream/base-ui/run.ts (Vitest); upstream know-how from the author's earlier Jest
 // runner (~/gh/vibedom/downstream/react-aria). Pinned commit (manifest.json), unmodified upstream
 // tests (refuses tracked local changes), upstream's frozen yarn.lock + exact Yarn, fresh reports,
-// every rtd mode compared with the jsdom baseline. See README.md.
+// every ctrl-dom mode compared with the jsdom baseline. See README.md.
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -31,7 +31,7 @@ const manifest = JSON.parse(readFileSync(join(here, "manifest.json"), "utf8")) a
   presets: Record<string, string[]>;
 };
 
-const MODES = ["jsdom", "rtd-dom", "rtd-full"] as const;
+const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full"] as const;
 type Mode = (typeof MODES)[number];
 const SHIM_PACKAGES = ["react", "dom", "user-event", "jest-dom"] as const;
 
@@ -58,7 +58,7 @@ const { values } = parseArgs({
 if (values.help) {
   console.log(
     "node downstream/react-aria/run.ts [--install] [--latest] [--preset smoke|interactions|all | --files a,b] " +
-      "[--modes jsdom,rtd-dom,rtd-full] [--workers N] [--checkout PATH] [--no-build] [--no-report] [--triage all|fake-raf,keep-globals,no-pointer-event,isolate] [--shims react,dom,user-event,jest-dom] [--grep TEST_NAME_PATTERN]",
+      "[--modes jsdom,ctrl-dom,ctrl-dom-full] [--workers N] [--checkout PATH] [--no-build] [--no-report] [--triage all|fake-raf,keep-globals,no-pointer-event,isolate] [--shims react,dom,user-event,jest-dom] [--grep TEST_NAME_PATTERN]",
   );
   process.exit(0);
 }
@@ -75,7 +75,7 @@ const workers = Number(values.workers);
 if (!Number.isSafeInteger(workers) || workers < 1) throw new Error("--workers must be a positive integer");
 // --triage [all|fake-raf,keep-globals,no-pointer-event,isolate]: apply jest-environment.mjs's triage shims (see there).
 // `isolate` is runner-level: workerIdleMemoryLimit: 1 makes Jest recycle the worker after every
-// test file, so no file sees interface prototypes another file patched (one @rtd/dom per worker).
+// test file, so no file sees interface prototypes another file patched (one @ctrl/dom per worker).
 const TRIAGE_SHIMS = ["fake-raf", "keep-globals", "no-pointer-event", "isolate"];
 const triageShims = values.triage === undefined ? null : values.triage === "" || values.triage === "all" ? TRIAGE_SHIMS : values.triage.split(",");
 for (const t of triageShims ?? []) if (!TRIAGE_SHIMS.includes(t)) throw new Error(`Unknown triage shim ${t}`);
@@ -193,7 +193,7 @@ const versions = Object.fromEntries(
   ].map((name) => [name, installedVersion(name)]),
 );
 
-// rtd-full uses our built bundles (packages/*/dist), so Jest needs no TS transform of our sources.
+// ctrl-dom-full uses our built bundles (packages/*/dist), so Jest needs no TS transform of our sources.
 // Jest's module registry is CommonJS: prefer the `.cjs` bundle (what a published package's
 // `require` condition resolves), else the ESM bundle, which jest-transform.cjs compiles to CJS.
 const DIST = (pkg: string, file: string): string => {
@@ -216,7 +216,7 @@ const distStale = (): string[] =>
     const dist = join(repo, "packages", pkg, "dist", "index.js");
     return !existsSync(dist) || statSync(dist).mtimeMs < newestMtime(join(repo, "packages", pkg, "src"), /\.(ts|tsx|js|json)$/);
   });
-if (modes.includes("rtd-full")) {
+if (modes.includes("ctrl-dom-full")) {
   const stale = distStale();
   if (stale.length && values.build) {
     console.log(`\n=== pnpm build (packages/*/dist stale for ${stale.join(", ")}) ===`);
@@ -231,7 +231,7 @@ const output = join(here, "output");
 const results = join(here, "results");
 // Generated configs live in an untracked directory inside the checkout (next to upstream's
 // jest.config.js, which they require); removed after the run.
-const harness = join(checkout, ".rtd-harness");
+const harness = join(checkout, ".ctrl-dom-harness");
 rmSync(harness, { recursive: true, force: true });
 mkdirSync(harness, { recursive: true });
 
@@ -250,17 +250,17 @@ const SHIM_MAP: Record<(typeof SHIM_PACKAGES)[number], Record<string, string>> =
     "^@testing-library/jest-dom$": DIST("jest-dom", "index.js"),
   },
 };
-// What our bundles import by bare specifier. @rtd/dom(/internal) go to jest-environment-rtd's
+// What our bundles import by bare specifier. @ctrl/dom(/internal) go to @ctrl/dom-jest-environment's
 // shims (the environment's single instance); React goes to upstream's copy (one React).
-const RTD_INTERNAL_MAP: Record<string, string> = {
-  "^@rtd/dom$": join(JEST_ENV, "src/shims/dom.cjs"),
-  "^@rtd/dom/internal$": join(JEST_ENV, "src/shims/dom-internal.cjs"),
-  "^@rtd/aria$": DIST("aria", "index.js"),
-  "^@rtd/aria/internal$": DIST("aria", "internal.js"),
-  "^@rtd/testing-library$": DIST("testing-library", "index.js"),
-  "^@rtd/react$": DIST("react", "index.js"),
-  "^@rtd/react/pure$": DIST("react", "pure.js"),
-  "^@rtd/user-event$": DIST("user-event", "index.js"),
+const CTRL_DOM_INTERNAL_MAP: Record<string, string> = {
+  "^@ctrl/dom$": join(JEST_ENV, "src/shims/dom.cjs"),
+  "^@ctrl/dom/internal$": join(JEST_ENV, "src/shims/dom-internal.cjs"),
+  "^@ctrl/dom/aria$": DIST("aria", "index.js"),
+  "^@ctrl/dom/aria/internal$": DIST("aria", "internal.js"),
+  "^@ctrl/dom/testing-library$": DIST("testing-library", "index.js"),
+  "^@ctrl/dom/react$": DIST("react", "index.js"),
+  "^@ctrl/dom/react/pure$": DIST("react", "pure.js"),
+  "^@ctrl/dom/user-event$": DIST("user-event", "index.js"),
 };
 const REACT_MAP: Record<string, string> = {
   "^react$": join(checkout, "node_modules/react"),
@@ -274,11 +274,11 @@ copyFileSync(join(here, "probe.cjs"), join(harness, "probe.cjs"));
 
 function writeHarness(mode: Mode, modeOut: string): string {
   const config = join(harness, `${mode}.config.cjs`);
-  const rtd = mode !== "jsdom";
-  const full = mode === "rtd-full";
+  const ctrlDom = mode !== "jsdom";
+  const full = mode === "ctrl-dom-full";
   const mapper = {
-    ...(rtd ? { "^@rtd/dom$": RTD_INTERNAL_MAP["^@rtd/dom$"], "^@rtd/dom/internal$": RTD_INTERNAL_MAP["^@rtd/dom/internal$"] } : {}),
-    ...(full ? { ...Object.assign({}, ...[...shimSet].map((s) => SHIM_MAP[s as keyof typeof SHIM_MAP])), ...RTD_INTERNAL_MAP, ...REACT_MAP } : {}),
+    ...(ctrlDom ? { "^@ctrl/dom$": CTRL_DOM_INTERNAL_MAP["^@ctrl/dom$"], "^@ctrl/dom/internal$": CTRL_DOM_INTERNAL_MAP["^@ctrl/dom/internal$"] } : {}),
+    ...(full ? { ...Object.assign({}, ...[...shimSet].map((s) => SHIM_MAP[s as keyof typeof SHIM_MAP])), ...CTRL_DOM_INTERNAL_MAP, ...REACT_MAP } : {}),
   };
   writeFileSync(
     config,
@@ -293,9 +293,9 @@ if (!Array.isArray(swc) || swc[0] !== '@swc/jest') throw new Error('Upstream tra
 module.exports = {
   ...base,
   rootDir: ${JSON.stringify(checkout)},
-  reporters: ['default'],${rtd && triageShims?.includes("isolate") ? "\n  // --triage isolate: recycle the worker after every test file\n  workerIdleMemoryLimit: 1," : ""}
-  cacheDirectory: ${JSON.stringify(join(checkout, "node_modules/.cache/jest-rtd", mode))},
-  ${rtd ? `testEnvironment: ${JSON.stringify(join(here, "jest-environment.mjs"))},` : ""}
+  reporters: ['default'],${ctrlDom && triageShims?.includes("isolate") ? "\n  // --triage isolate: recycle the worker after every test file\n  workerIdleMemoryLimit: 1," : ""}
+  cacheDirectory: ${JSON.stringify(join(checkout, "node_modules/.cache/jest-ctrl-dom", mode))},
+  ${ctrlDom ? `testEnvironment: ${JSON.stringify(join(here, "jest-environment.mjs"))},` : ""}
   setupFilesAfterEnv: [${JSON.stringify(join(harness, "probe.cjs"))}, ...base.setupFilesAfterEnv],
   moduleNameMapper: { ...base.moduleNameMapper, ...${JSON.stringify(mapper, null, 4)} },
   ${full ? `transform: { '^.+\\\\.(t|j)sx?$': [${JSON.stringify(join(here, "jest-transform.cjs"))}, { swc: swc[1], checkout: ${JSON.stringify(checkout)}, repo: ${JSON.stringify(repo)} }] },` : ""}
@@ -416,7 +416,7 @@ try {
     // /usr/bin/time -l (macOS) reports the peak RSS of jest and the workers it reaps.
     const timed = existsSync("/usr/bin/time") && process.platform === "darwin";
     // process.execPath, not `node` from PATH: upstream's .nvmrc would select another Node via
-    // version managers. Every mode runs on this Node (26+, needed by jest-environment-rtd).
+    // version managers. Every mode runs on this Node (26+, needed by @ctrl/dom-jest-environment).
     const env = {
       // upstream's `yarn test` script
       STRICT_MODE: "1",
@@ -425,13 +425,13 @@ try {
       // Inherited CI sharding variables must never silently shrink the selection.
       CI_NODE_TOTAL: undefined,
       CI_NODE_INDEX: undefined,
-      RTD_RA_JSON: jsonPath,
-      RTD_RA_TRIAGE: mode === "jsdom" ? "" : (triageShims ?? []).join(","),
-      RTD_RA_MODE: mode,
-      RTD_RA_REPO: repo,
-      RTD_RA_SHIMS: mode === "rtd-full" ? [...shimSet].join(",") : "",
-      RTD_RA_RECEIPTS: join(modeOut, "environments.jsonl"),
-      RTD_RA_TRANSFORMS: join(modeOut, "transforms.jsonl"),
+      CTRL_DOM_RA_JSON: jsonPath,
+      CTRL_DOM_RA_TRIAGE: mode === "jsdom" ? "" : (triageShims ?? []).join(","),
+      CTRL_DOM_RA_MODE: mode,
+      CTRL_DOM_RA_REPO: repo,
+      CTRL_DOM_RA_SHIMS: mode === "ctrl-dom-full" ? [...shimSet].join(",") : "",
+      CTRL_DOM_RA_RECEIPTS: join(modeOut, "environments.jsonl"),
+      CTRL_DOM_RA_TRANSFORMS: join(modeOut, "transforms.jsonl"),
     };
     const result = await run(
       timed ? "/usr/bin/time" : process.execPath,
@@ -520,7 +520,7 @@ if (values.report) {
   md.push(`# React Aria downstream: \`${preset}\` (${date})`, "");
   if (triageShims) {
     md.push(
-      `> **TRIAGE MODE (\`--triage ${triageShims.join(",")}\`)**: rtd modes ran with jest-environment.mjs's triage shims (workarounds for jest-environment blockers already filed in TRIAGE.md). These are not compatibility results.`,
+      `> **TRIAGE MODE (\`--triage ${triageShims.join(",")}\`)**: ctrl-dom modes ran with jest-environment.mjs's triage shims (workarounds for jest-environment blockers already filed in TRIAGE.md). These are not compatibility results.`,
       "",
     );
   }
@@ -531,7 +531,7 @@ if (values.report) {
     `- node ${process.version}, Jest workers ${workers}, STRICT_MODE=1 VIRT_ON=1, upstream versions: ${Object.entries(versions)
       .map(([k, v]) => `${k}@${v}`)
       .join(", ")}`,
-    `- rtd-full substitutes: ${[...shimSet].map((x) => `@testing-library/${x}`).join(", ")} (built bundles, packages/*/dist)`,
+    `- ctrl-dom-full substitutes: ${[...shimSet].map((x) => `@testing-library/${x}`).join(", ")} (built bundles, packages/*/dist)`,
     "",
   );
   md.push("## Per-mode results", "");
@@ -610,7 +610,7 @@ if (values.report) {
 
 // Exit non-zero when a run produced no report, a test file ran without a passing identity probe,
 // the jsdom baseline fails, or the discovered test set differs from jsdom (assertion failures
-// alone are expected for rtd modes).
+// alone are expected for ctrl-dom modes).
 const baselineRun = runs.find((r) => r.mode === "jsdom");
 process.exitCode = runs.some(
   (r) =>

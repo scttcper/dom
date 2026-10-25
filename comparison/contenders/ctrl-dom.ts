@@ -5,7 +5,7 @@
 //   ctrl-dom        the environment alone; stock @testing-library/* (swap only the DOM)
 //   ctrl-dom-stack  plus @ctrl/dom's Testing Library, user-event and jest-dom (the whole stack)
 //
-// The preload (bench/lib/dist-preload.js) sends bare `@rtd/*` imports (the bundles' own) to
+// The preload (bench/lib/dist-preload.js) sends bare `@ctrl/dom/*` imports (the bundles' own) to
 // dist/; the aliases send test files' imports straight to the bundles.
 
 import { execFileSync } from "node:child_process";
@@ -23,22 +23,22 @@ const bundle = (specifier: string): string => {
   return path;
 };
 
-const environment = bundle("vitest-environment-rtd");
+const environment = bundle("@ctrl/dom/vitest-environment");
 const preload = [new URL("../../bench/lib/dist-preload.js", import.meta.url).pathname];
 const env = distMapEnv();
 const external = [/[\\/]packages[\\/](dom|aria|testing-library|react|user-event|jest-dom|vitest-environment)[\\/]dist[\\/]/];
 
-// Jest: the environment bundle (its own `@rtd/dom` imports go to dist/ through the preload), and
-// test files' `@rtd/dom` to the environment's instance (jest-environment-rtd's shims, as its
+// Jest: the environment bundle (its own `@ctrl/dom` imports go to dist/ through the preload), and
+// test files' `@ctrl/dom` to the environment's instance (@ctrl/dom-jest-environment's shims, as its
 // preset maps them). The full stack maps stock Testing Library to the CommonJS bundles.
 const cjs = (pkg: string, entry: string) => join(repoRoot, "packages", pkg, "dist", `${entry}.cjs`);
 const shim = (file: string) => join(repoRoot, "packages/jest-environment/src/shims", file);
-const domShims = { "^@rtd/dom$": shim("dom.cjs"), "^@rtd/dom/internal$": shim("dom-internal.cjs") };
-/** Every other `@rtd/*` entry our bundles require, to its CommonJS bundle (derived, so a new entry cannot be missed). */
-const rtdCjs: Record<string, string> = Object.fromEntries(
+const domShims = { "^@ctrl/dom$": shim("dom.cjs"), "^@ctrl/dom/internal$": shim("dom-internal.cjs") };
+/** Every other `@ctrl/dom/*` entry our bundles require, to its CommonJS bundle (derived, so a new entry cannot be missed). */
+const ctrlDomCjs: Record<string, string> = Object.fromEntries(
   workspacePackages()
     .flatMap((p) => p.exports)
-    .filter((e) => e.specifier.startsWith("@rtd/") && !e.specifier.startsWith("@rtd/dom"))
+    .filter((e) => e.specifier.startsWith("@ctrl/dom/") && e.specifier !== "@ctrl/dom/internal")
     .map((e) => [`^${e.specifier}$`, e.dist.replace(/\.js$/, ".cjs")] as const)
     .filter(([, path]) => existsSync(path)),
 );
@@ -74,7 +74,7 @@ export const ctrlDom: Contender = {
   loadEnvironment,
   imports: { react: "@testing-library/react", userEvent: "@testing-library/user-event" },
   check,
-  jest: { label: () => `@ctrl/dom-jest-environment ${version()}`, testEnvironment: bundle("jest-environment-rtd"), moduleNameMapper: domShims },
+  jest: { label: () => `@ctrl/dom-jest-environment ${version()}`, testEnvironment: bundle("@ctrl/dom-jest-environment"), moduleNameMapper: domShims },
 };
 
 export const ctrlDomStack: Contender = {
@@ -91,21 +91,21 @@ export const ctrlDomStack: Contender = {
   // COMPARE_WORKER_FLAGS=0 leaves them out (to measure what they buy).
   execArgv: process.env.COMPARE_WORKER_FLAGS === "0" ? [] : workerExecArgv({ pool: "forks", compileCache: true }),
   alias: [
-    { find: /^@testing-library\/react$/, replacement: bundle("@rtd/react") },
-    { find: /^@testing-library\/dom$/, replacement: bundle("@rtd/testing-library") },
-    { find: /^@testing-library\/user-event$/, replacement: bundle("@rtd/user-event") },
-    { find: /^@testing-library\/jest-dom\/vitest$/, replacement: bundle("@rtd/jest-dom/vitest") },
+    { find: /^@testing-library\/react$/, replacement: bundle("@ctrl/dom/react") },
+    { find: /^@testing-library\/dom$/, replacement: bundle("@ctrl/dom/testing-library") },
+    { find: /^@testing-library\/user-event$/, replacement: bundle("@ctrl/dom/user-event") },
+    { find: /^@testing-library\/jest-dom\/vitest$/, replacement: bundle("@ctrl/dom/jest-dom/vitest") },
   ],
   loadEnvironment,
-  imports: { react: "@rtd/react", userEvent: "@rtd/user-event" },
+  imports: { react: "@ctrl/dom/react", userEvent: "@ctrl/dom/user-event" },
   sameDomAs: "ctrl-dom",
   check,
   jest: {
     label: () => `@ctrl/dom-jest-environment + its Testing Library ${version()}`,
-    testEnvironment: bundle("jest-environment-rtd"),
+    testEnvironment: bundle("@ctrl/dom-jest-environment"),
     moduleNameMapper: {
       ...domShims,
-      ...rtdCjs,
+      ...ctrlDomCjs,
       "^@testing-library/react$": cjs("react", "index"),
       "^@testing-library/dom$": cjs("testing-library", "index"),
       "^@testing-library/user-event$": cjs("user-event", "index"),

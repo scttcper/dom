@@ -32,8 +32,8 @@ import {
   IntersectionObserver,
   ResizeObserver,
   type Window,
-} from "@rtd/dom";
-import { createFileList } from "@rtd/dom/internal";
+} from "@ctrl/dom";
+import { createFileList } from "@ctrl/dom/internal";
 
 let window: Window;
 
@@ -178,8 +178,8 @@ describe("Navigator — https://html.spec.whatwg.org/#the-navigator-object", () 
   // React Aria's isMac() (/^Mac/i.test(navigator.platform)) false on every machine.
   test("platform defaults to \"\" and userAgent to a fixed string, whatever the host OS (jsdom parity)", () => {
     expect(window.navigator.platform).toBe("");
-    expect(window.navigator.userAgent).toBe("Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0");
-    expect(window.navigator.appVersion).toBe("5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0");
+    expect(window.navigator.userAgent).toBe("Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) ctrl-dom/0.0.0");
+    expect(window.navigator.appVersion).toBe("5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) ctrl-dom/0.0.0");
   });
 
   test("createWindow({ platform }) overrides navigator.platform", () => {

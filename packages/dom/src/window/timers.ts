@@ -5,7 +5,7 @@
 // timer of that global able to run. jsdom implements exactly that: `window.close()` clears every
 // pending timer and later setTimeout/setInterval calls return 0 without scheduling anything.
 //
-// @rtd/dom's timers stay the *host's* (Node's, or a fake clock's): handles are Node Timeout
+// @ctrl/dom's timers stay the *host's* (Node's, or a fake clock's): handles are Node Timeout
 // objects and Vitest/Jest fake timers replace the global functions (docs/deviations.md). What
 // we add is bookkeeping: every handle created through the window's setTimeout/setInterval (or
 // through the installed global's, see trackGlobalTimers) is remembered on the window together

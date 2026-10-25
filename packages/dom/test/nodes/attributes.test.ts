@@ -16,7 +16,7 @@
  *   - NamedNodeMap getNamedItem: https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import { differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 let document: Document;

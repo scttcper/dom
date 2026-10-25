@@ -12,7 +12,7 @@
 // run by agents, including this repository's, assert upstream's messages.
 
 import { ariaSnapshot, describeElement, envMaxLines } from "./aria-snapshot.ts";
-import { $impl, type NodeImpl } from "@rtd/dom/internal";
+import { $impl, type NodeImpl } from "@ctrl/dom/internal";
 
 declare const process: any;
 

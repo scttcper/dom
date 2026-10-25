@@ -9,7 +9,7 @@
  * (https://drafts.csswg.org/resize-observer/).
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, ResizeObserver } from "@rtd/dom";
+import { createWindow, ResizeObserver } from "@ctrl/dom";
 import { Tracker } from "./gc.ts";
 
 const HTML = `<div id=s style="height:100px;overflow:auto"><div style="display:flex;flex-direction:column;height:2000px">

@@ -12,7 +12,7 @@
  * `shareStorageWith` (models two same-origin tabs), so tests are isolated by default.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, Storage, type Window } from "@rtd/dom";
+import { createWindow, Storage, type Window } from "@ctrl/dom";
 
 let window: Window;
 

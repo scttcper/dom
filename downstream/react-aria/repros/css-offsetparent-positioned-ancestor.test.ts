@@ -14,7 +14,7 @@
  * - jsdom 26 (upstream's baseline): offsetParent is always null, but its getComputedStyle returns
  *   "" for transform/filter/..., so every ancestor "is a containing block" and the walk stops at
  *   the parent — the container — by accident.
- * - @rtd/dom: offsetParent is always null AND computed transform is "none", so the walk reaches
+ * - @ctrl/dom: offsetParent is always null AND computed transform is "none", so the walk reaches
  *   the viewport.
  *
  * The offsetParent algorithm needs no layout (computed `position`/`display` and the tree only),
@@ -48,11 +48,11 @@ const engines = {
     const require = createRequire(fileURLToPath(new URL("../checkout/package.json", import.meta.url)));
     return new (require("jsdom").JSDOM)("").window;
   },
-  rtd: windows.rtd,
+  "ctrl-dom": windows["ctrl-dom"],
 };
 
 describe.each(Object.keys(engines) as Array<keyof typeof engines>)("%s", (engine) => {
-  test.skipIf(engine !== "rtd" && !hasCheckout)("an overlay inside a position:relative container resolves that container as its containing block", () => {
+  test.skipIf(engine !== "ctrl-dom" && !hasCheckout)("an overlay inside a position:relative container resolves that container as its containing block", () => {
     const window = engines[engine]();
     const { document } = window;
     const container = document.createElement("div");
@@ -63,7 +63,7 @@ describe.each(Object.keys(engines) as Array<keyof typeof engines>)("%s", (engine
     expect(getContainingBlock(window, overlay) === container).toBe(true);
   });
 
-  test.skipIf(engine === "rtd")("(jsdom 26 gets there by accident: offsetParent is null)", () => {
+  test.skipIf(engine === "ctrl-dom")("(jsdom 26 gets there by accident: offsetParent is null)", () => {
     const { document } = engines[engine]();
     const container = document.createElement("div");
     container.style.position = "relative";
@@ -73,7 +73,7 @@ describe.each(Object.keys(engines) as Array<keyof typeof engines>)("%s", (engine
     expect(overlay.offsetParent).toBe(null);
   });
 
-  test.skipIf(engine !== "rtd")("offsetParent is the nearest positioned ancestor (CSSOM View)", () => {
+  test.skipIf(engine !== "ctrl-dom")("offsetParent is the nearest positioned ancestor (CSSOM View)", () => {
     const { document } = engines[engine]();
     const container = document.createElement("div");
     container.style.position = "relative";

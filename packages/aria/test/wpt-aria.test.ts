@@ -1,6 +1,6 @@
 /**
  * WPT accessibility suites — wai-aria, accname, html-aam — run unmodified through
- * packages/dom/test/wpt/harness.ts with a `test_driver` backed by @rtd/aria
+ * packages/dom/test/wpt/harness.ts with a `test_driver` backed by @ctrl/dom/aria
  * (test/wpt-testdriver.ts: `get_computed_role` → Testing Library's role for the element,
  * `get_computed_label` → `computeAccessibleName`).
  *
@@ -18,7 +18,7 @@
  * Original tests: https://github.com/web-platform-tests/wpt/tree/master/wai-aria,
  *   .../accname, .../html-aam (BSD-3-Clause), vendored under packages/dom/test/wpt/fixtures.
  *
- * Drop-in compatibility comes first: @rtd/aria must produce exactly what stock Testing Library
+ * Drop-in compatibility comes first: @ctrl/dom/aria must produce exactly what stock Testing Library
  * (aria-query@5.3.0 + dom-accessibility-api@0.5.16 on jsdom) produces. Every known failure in
  * packages/dom/test/wpt/expectations/aria.json was checked against that oracle and is a case
  * where WPT (Chromium-style computed roles / current specs) and stock Testing Library disagree;

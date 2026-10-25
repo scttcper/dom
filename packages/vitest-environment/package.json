@@ -1,8 +1,7 @@
 {
-  "name": "vitest-environment-rtd",
   "version": "0.0.0",
   "private": true,
-  "description": "Vitest environment that installs the @rtd/dom window as globals (environment: 'rtd').",
+  "description": "Vitest environment that installs the @ctrl/dom window as globals (environment: 'ctrl-dom').",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -31,8 +30,7 @@
     }
   },
   "dependencies": {
-    "@rtd/dom": "workspace:*",
-    "@rtd/testing-library": "workspace:*"
+    "@ctrl/dom": "workspace:*"
   },
   "peerDependencies": {
     "vitest": ">=5.0.0"

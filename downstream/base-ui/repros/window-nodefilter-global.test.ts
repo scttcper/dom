@@ -4,7 +4,7 @@
  * -> "ReferenceError: NodeFilter is not defined").
  *
  * NodeFilter is a callback interface with constants, exposed on Window as an object with
- * SHOW_* / FILTER_* constants. @rtd/dom exports it from src/index.ts, but
+ * SHOW_* / FILTER_* constants. @ctrl/dom exports it from src/index.ts, but
  * window/interfaces.ts only exposes exports that are functions (plus NAMESPACE_EXPORTS =
  * ["CSS"]), so `window.NodeFilter` / global `NodeFilter` is undefined.
  *

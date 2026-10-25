@@ -1,6 +1,6 @@
 /**
  * HTML user interaction WPT that drive input through test_driver (click, send_keys, Actions),
- * run through packages/dom/test/wpt/harness.ts with a test_driver backed by @rtd/user-event
+ * run through packages/dom/test/wpt/harness.ts with a test_driver backed by @ctrl/dom/user-event
  * (./testdriver.ts). Sequential focus navigation follows upstream user-event's tab order.
  *
  * Specs:

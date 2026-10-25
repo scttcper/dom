@@ -15,7 +15,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
-import { createWindow, type Document, type Window } from "@rtd/dom";
+import { createWindow, type Document, type Window } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let window: Window;
@@ -29,15 +29,15 @@ const ids = (list: ArrayLike<any>) => Array.from(list, (e: any) => e.id);
 const $$ = (sel: string) => ids(document.querySelectorAll(sel));
 const byId = (id: string) => document.getElementById(id) as any;
 
-/** Matched ids on @rtd/dom and on jsdom for the same markup. */
-function differential(html: string, sel: string): { rtd: string[]; jsdom: string[] } {
+/** Matched ids on @ctrl/dom and on jsdom for the same markup. */
+function differential(html: string, sel: string): { "ctrl-dom": string[]; jsdom: string[] } {
   document.body!.innerHTML = html;
   const jsdom = new JSDOM(`<!doctype html><body>${html}</body>`).window.document;
-  return { rtd: $$(sel), jsdom: ids(jsdom.querySelectorAll(sel)) };
+  return { "ctrl-dom": $$(sel), jsdom: ids(jsdom.querySelectorAll(sel)) };
 }
 
 function same(html: string, sel: string, expected: string[]): void {
-  expect(differential(html, sel)).toEqual({ rtd: expected, jsdom: expected });
+  expect(differential(html, sel)).toEqual({ "ctrl-dom": expected, jsdom: expected });
 }
 
 describe(":placeholder-shown — https://html.spec.whatwg.org/#selector-placeholder-shown", () => {

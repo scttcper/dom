@@ -2,7 +2,7 @@
 // https://github.com/testing-library/react-testing-library/blob/v16.3.3/src/__tests__/event-wrapper-nesting.js
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { render, fireEvent, getConfig } from "@rtd/react";
+import { render, fireEvent, getConfig } from "@ctrl/dom/react";
 
 // No lib.dom in this repo: environment globals are untyped here.
 declare const document: any;

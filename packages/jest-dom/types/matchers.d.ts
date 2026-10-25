@@ -5,7 +5,7 @@ import {
   type AllByBoundAttribute,
   type AllByRole,
   type AllByText,
-} from '@rtd/testing-library'
+} from '@ctrl/dom/testing-library'
 
 declare namespace matchers {
   interface DomQueryFunction {

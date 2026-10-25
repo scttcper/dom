@@ -10,7 +10,7 @@
  *   Web IDL — [EnforceRange] unsigned long long: https://webidl.spec.whatwg.org/#abstract-opdef-converttoint
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, type Window } from "@rtd/dom";
+import { createWindow, type Window } from "@ctrl/dom";
 
 let window: Window;
 let AbortSignalCtor: typeof AbortSignal;

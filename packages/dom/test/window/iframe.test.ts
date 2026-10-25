@@ -12,7 +12,7 @@
  * document URL set to the resolved `src`.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, type Window } from "@rtd/dom";
+import { createWindow, currentWindowOrNull, installGlobals, type Window } from "@ctrl/dom";
 
 type Frame = HTMLElement & { contentWindow: Window | null; contentDocument: Document | null };
 

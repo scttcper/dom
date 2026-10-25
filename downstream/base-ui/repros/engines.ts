@@ -1,5 +1,5 @@
 // Differential harness for downstream repros: the same scenario on a jsdom window (oracle) and
-// on an @rtd/dom window. jsdom comes from packages/react's devDependencies.
+// on an @ctrl/dom window. jsdom comes from packages/react's devDependencies.
 import { createRequire } from "node:module";
 import { describe } from "vitest";
 import { createWindow, installGlobals } from "../../../packages/dom/src/index.ts";
@@ -9,19 +9,19 @@ const { JSDOM } = require("jsdom") as { JSDOM: new (html: string, options?: obje
 
 export type AnyWindow = any;
 
-export const engines: Record<"jsdom" | "rtd", () => AnyWindow> = {
+export const engines: Record<"jsdom" | "ctrl-dom", () => AnyWindow> = {
   jsdom: () => new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/", pretendToBeVisual: true }).window,
-  rtd: () => createWindow({ url: "http://localhost/" }),
+  "ctrl-dom": () => createWindow({ url: "http://localhost/" }),
 };
 
 /** describe.each over both engines; `fn` receives a fresh window per call to make(). */
-export function differential(title: string, fn: (make: () => AnyWindow, engine: "jsdom" | "rtd") => void): void {
-  describe.each(["jsdom", "rtd"] as const)(`${title} [%s]`, (engine) => fn(engines[engine], engine));
+export function differential(title: string, fn: (make: () => AnyWindow, engine: "jsdom" | "ctrl-dom") => void): void {
+  describe.each(["jsdom", "ctrl-dom"] as const)(`${title} [%s]`, (engine) => fn(engines[engine], engine));
 }
 
 /** Install a window as globals for scenarios that need global `window`/`document` (React). */
-export function withGlobals<T>(window: AnyWindow, engine: "jsdom" | "rtd", body: () => T): T {
-  if (engine === "rtd") {
+export function withGlobals<T>(window: AnyWindow, engine: "jsdom" | "ctrl-dom", body: () => T): T {
+  if (engine === "ctrl-dom") {
     const uninstall = installGlobals(window, globalThis as never);
     try {
       return body();

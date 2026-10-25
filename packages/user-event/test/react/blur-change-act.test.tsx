@@ -10,7 +10,7 @@
  * clears React's act queue, and every update the flush schedules afterwards warns "An update to
  * … inside a test was not wrapped in act(...)". react-spectrum pins 14.6.5, whose CommonJS build
  * (the one Jest loads) dispatches `new Event('change')` directly, without `act()` (its ESM build
- * already used `dispatchDOMEvent`). This test pins that @rtd/user-event and stock 14.6.8 produce
+ * already used `dispatchDOMEvent`). This test pins that @ctrl/dom/user-event and stock 14.6.8 produce
  * the same act() warnings. React also logs "A component suspended inside an `act` scope …" for
  * the first such nested act() in a process; that warning is deduplicated, so only the per-update
  * warnings are compared.
@@ -22,14 +22,14 @@ import React, {useEffect, useRef, useState} from 'react'
 import * as stockRTL from '@testing-library/react'
 import {userEvent as stockUserEvent} from '@testing-library/user-event'
 import {describe, expect, test, vi} from 'vitest'
-import rtdUserEvent from '../../src/index.ts'
-import * as rtdRTL from '../upstream/_helpers/react.ts'
+import ctrlDomUserEvent from '../../src/index.ts'
+import * as ctrlDomRTL from '../upstream/_helpers/react.ts'
 
 type UE = typeof stockUserEvent
 type RTL = Pick<typeof stockRTL, 'render' | 'screen' | 'cleanup' | 'act'>
 
 const impls: Array<[string, UE, RTL]> = [
-  ['@rtd/user-event', rtdUserEvent as unknown as UE, rtdRTL as unknown as RTL],
+  ['@ctrl/dom/user-event', ctrlDomUserEvent as unknown as UE, ctrlDomRTL as unknown as RTL],
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 

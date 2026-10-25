@@ -13,7 +13,7 @@
 //
 // It is a token-cheap replacement for prettyDOM output when a coding agent reads a failing
 // test: no classes, styles or SVG paths, only roles, accessible names, the states Testing
-// Library filters on, and text. Roles, names and hiddenness come from @rtd/aria, the backend
+// Library filters on, and text. Roles, names and hiddenness come from @ctrl/dom/aria, the backend
 // ByRole uses, so the snapshot shows exactly what queries match:
 // - role: the first `role` token or the implicit role (html-aam element mappings,
 //   https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings, as aria-query 5.3 has them);
@@ -29,8 +29,8 @@
 // `{ hidden: true }`, a `- role … (+N more)` line for collapsed sibling runs and `# …`
 // comments for truncation.
 
-import { $impl, DOCUMENT_FRAGMENT_NODE, DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, attr, type NodeImpl } from "@rtd/dom/internal";
-import { roleSupportsProp } from "@rtd/aria";
+import { $impl, DOCUMENT_FRAGMENT_NODE, DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, attr, setFailureSnapshot, type NodeImpl } from "@ctrl/dom/internal";
+import { roleSupportsProp } from "@ctrl/dom/aria";
 import {
   ariaCheckedState,
   ariaPressedState,
@@ -47,7 +47,7 @@ import {
   isSubtreeInaccessibleImpl,
   isVisibilityHidden,
   tlRole,
-} from "@rtd/aria/internal";
+} from "@ctrl/dom/aria/internal";
 import { getDocument } from "./helpers.ts";
 import { envDebugFormat } from "./agent-debug.ts";
 
@@ -99,6 +99,10 @@ export function ariaSnapshot(container?: any, options: AriaSnapshotOptions = {})
   if (empty !== null) return header + empty;
   return header + budgetLines(lines, options.maxLines ?? envMaxLines() ?? DEFAULT_MAX_LINES).join("\n");
 }
+
+// The page of a test @ctrl/sentry-tests reports as failed, as its accessibility-snapshot.txt
+// attachment (@ctrl/dom's subscribeTestFailures).
+setFailureSnapshot((body) => ariaSnapshot(body, { maxLines: 2000 }));
 
 interface BuiltTree {
   root: NodeImpl;

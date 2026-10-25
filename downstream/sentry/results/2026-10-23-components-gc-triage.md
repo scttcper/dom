@@ -1,22 +1,22 @@
 # Sentry downstream: `components-gc-triage` (2026-10-23)
 
-> **TRIAGE MODE (`--triage`)**: rtd modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.
+> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.
 
 - upstream: https://github.com/getsentry/sentry @ `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba` (2026-10-23T13:58:39Z) — fix(agents): Avoid repeated user turns during tool continuations (#128645)
 - pinned: `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba`
 - selection: `static/app/components/`
 - node v26.12.1, Jest workers 6 (same for every mode), runs per mode 1, CI=true (upstream's CI code paths), **heap sampled after a forced GC per file (--gc; timings include the GCs)**
 - upstream versions: jest@30.5.1, jsdom@30.1.1, react@19.3.0, react-dom@19.3.0, @swc/jest@0.2.39, @testing-library/react@16.3.2, @testing-library/dom@10.4.1, @testing-library/user-event@14.6.7, @testing-library/jest-dom@7.0.1, @sentry/jest-environment@8.1.0, @floating-ui/react-dom@2.1.9
-- rtd-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
-- rtd-nohacks is an **experiment**: rtd-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
+- ctrl-dom-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
+- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
 
 ## Per-mode results
 
 | mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |
 | jsdom | 6429 | 0 | 3 | 6432 | 653 | 0 | 0 | 47.3s | 370.8s | 4156 MiB | 1085 MiB | 8 ms, 18 ms | 653/653 | RTL: stock; our packages changed during the run |
-| rtd-dom | 6356 | 73 | 3 | 6432 | 653 | 0 | 1 | 51.1s | 351.9s | 3584 MiB | 706 MiB | 8 ms, 12 ms | 653/653 | 1 React; RTL: stock |
-| rtd-full | 6289 | 140 | 3 | 6432 | 653 | 0 | 1 | 54.9s | 354.2s | 3072 MiB | 537 MiB | 9 ms, 15 ms | 653/653 | 1 React |
+| ctrl-dom | 6356 | 73 | 3 | 6432 | 653 | 0 | 1 | 51.1s | 351.9s | 3584 MiB | 706 MiB | 8 ms, 12 ms | 653/653 | 1 React; RTL: stock |
+| ctrl-dom-full | 6289 | 140 | 3 | 6432 | 653 | 0 | 1 | 54.9s | 354.2s | 3072 MiB | 537 MiB | 9 ms, 15 ms | 653/653 | 1 React |
 
 ## Jest worker memory across files
 
@@ -25,14 +25,14 @@ Sampled after each test file's environment teardown in every worker (after a for
 | mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: |
 | jsdom | 6 | 119 | 133 MiB | 232 MiB | 0.18 MiB | 0.25 MiB | 567 MiB | 1084 MiB |
-| rtd-dom | 6 | 114 | 108 MiB | 189 MiB | 0.17 MiB | -0.00 MiB | 504 MiB | 704 MiB |
-| rtd-full | 6 | 124.5 | 98 MiB | 230 MiB | 0.39 MiB | 0.31 MiB | 488 MiB | 535 MiB |
+| ctrl-dom | 6 | 114 | 108 MiB | 189 MiB | 0.17 MiB | -0.00 MiB | 504 MiB | 704 MiB |
+| ctrl-dom-full | 6 | 124.5 | 98 MiB | 230 MiB | 0.39 MiB | 0.31 MiB | 488 MiB | 535 MiB |
 
 ## jsdom
 
 No failing tests.
 
-## rtd-dom
+## ctrl-dom
 
 Compared with jsdom: **73 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 
@@ -146,7 +146,7 @@ Compared with jsdom: **73 pass on jsdom but fail here**, 0 missing (e.g. suite e
 | 1 | Unable to find an element with the text: progress N%. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text mat | app/components/events | `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx :: LogFileViewer renders only the final write when given carriage-return progress updates` |
 | 1 | Unable to find an element with the text: Failed to download attachment.. This could be because the text is broken up by multiple elements. In this case, you can provide a function  | app/components/events | `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx :: LogFileViewer renders an error when the attachment cannot be downloaded` |
 
-## rtd-full
+## ctrl-dom-full
 
 Compared with jsdom: **140 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 

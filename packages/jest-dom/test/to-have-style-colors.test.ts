@@ -1,19 +1,19 @@
 /**
- * @rtd/jest-dom divergence from upstream toHaveStyle: a single expected color matches the
+ * @ctrl/dom/jest-dom divergence from upstream toHaveStyle: a single expected color matches the
  * same color in any legacy sRGB serialization (named / hex / rgb() / hsl()), so tests pass
  * whether the DOM serializes colors as authored or as rgb(). Failure messages are upstream's.
  * Colors: https://drafts.csswg.org/css-color-4/#color-syntax
  */
 import { describe, expect, test } from "vitest";
 
-// @rtd/jest-dom-only behavior: skipped when the suite runs the stock implementation.
-const describeRtd = process.env.JEST_DOM_IMPL === "stock" ? describe.skip : describe;
+// @ctrl/dom/jest-dom-only behavior: skipped when the suite runs the stock implementation.
+const describeCtrlDom = process.env.JEST_DOM_IMPL === "stock" ? describe.skip : describe;
 import { canonicalColor, sameColor } from "../src/color.ts";
 import * as matchers from "../src/matchers.ts";
 
 declare const document: any;
 
-describeRtd("canonicalColor — https://drafts.csswg.org/css-color-4/#color-syntax", () => {
+describeCtrlDom("canonicalColor — https://drafts.csswg.org/css-color-4/#color-syntax", () => {
   test("named, hex, rgb() and hsl() forms of one color share a key", () => {
     const forms = ["red", "RED", "#f00", "#ff0000", "#ff0000ff", "rgb(255, 0, 0)", "rgba(255,0,0,1)", "rgb(255 0 0 / 100%)", "hsl(0, 100%, 50%)", "hsl(0deg 100% 50%)"];
     for (const form of forms) expect(canonicalColor(form), form).toBe(canonicalColor("red"));
@@ -33,7 +33,7 @@ describeRtd("canonicalColor — https://drafts.csswg.org/css-color-4/#color-synt
   });
 });
 
-describeRtd("toHaveStyle color serialization independence", () => {
+describeCtrlDom("toHaveStyle color serialization independence", () => {
   const ctx = { isNot: false, equals: Object.is, utils: { matcherHint: (n: string) => `expect(element)${n}()`, diff: (a: string, b: string) => `- ${a}\n+ ${b}` } };
 
   test("named expectation vs rgb() computed value and vice versa", () => {

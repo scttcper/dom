@@ -13,7 +13,7 @@
  * ElementInternals-validation,form-associated-callback}.html.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 // biome-ignore lint: untyped DOM surface in tests
 let window: any;

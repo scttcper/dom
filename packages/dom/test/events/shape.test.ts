@@ -17,7 +17,7 @@ import { describe, expect, test } from "vitest";
 // `toHaveBeenCalledWith` / `toEqual` diff output.
 import { stringify } from "vitest/internal/browser";
 import { JSDOM } from "jsdom";
-import * as rtd from "@rtd/dom";
+import * as ctrlDom from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 
 const vitestFormat = (v: unknown) => stringify(v);
@@ -85,7 +85,7 @@ describe("Event object shape (differential vs jsdom) — https://webidl.spec.wha
     const el = document.createElement("button");
     const calls: unknown[] = [];
     el.addEventListener("click", (e) => calls.push(e));
-    el.dispatchEvent(new rtd.MouseEvent("click", { bubbles: true }));
+    el.dispatchEvent(new ctrlDom.MouseEvent("click", { bubbles: true }));
     expect(vitestFormat(calls)).toBe(vitestFormat(jsdomCalls));
     expect(vitestFormat(calls)).toContain('MouseEvent {\n    "isTrusted": false,\n  }');
   });
@@ -94,17 +94,17 @@ describe("Event object shape (differential vs jsdom) — https://webidl.spec.wha
 describe("[LegacyUnforgeable] isTrusted — https://dom.spec.whatwg.org/#dom-event-istrusted", () => {
   // https://github.com/web-platform-tests/wpt/blob/master/dom/events/Event-isTrusted.any.js
   test("isTrusted is an own accessor with the same getter on every instance", () => {
-    const desc1 = Object.getOwnPropertyDescriptor(new rtd.Event("x"), "isTrusted");
+    const desc1 = Object.getOwnPropertyDescriptor(new ctrlDom.Event("x"), "isTrusted");
     expect(desc1).not.toBeUndefined();
     expect(typeof desc1!.get).toBe("function");
-    const desc2 = Object.getOwnPropertyDescriptor(new rtd.MouseEvent("x"), "isTrusted");
+    const desc2 = Object.getOwnPropertyDescriptor(new ctrlDom.MouseEvent("x"), "isTrusted");
     expect(desc2!.get).toBe(desc1!.get);
     expect(desc1!.enumerable).toBe(true);
     expect(desc1!.configurable).toBe(false);
   });
 
   test("DataTransfer has no own enumerable internals", () => {
-    const dt = new rtd.DataTransfer();
+    const dt = new ctrlDom.DataTransfer();
     dt.setData("text/plain", "x");
     expect(Object.keys(dt)).toEqual([]);
     expect(Object.keys(dt.items)).toEqual(["0"]);

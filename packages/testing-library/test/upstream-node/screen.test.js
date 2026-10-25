@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__node_tests__/screen.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {screen} from '../../src/index.ts'
 

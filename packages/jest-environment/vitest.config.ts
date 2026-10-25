@@ -2,7 +2,7 @@ import { defineProject } from "vitest/config";
 
 export default defineProject({
   test: {
-    name: "jest-environment-rtd",
+    name: "@ctrl/dom-jest-environment",
     include: ["test/**/*.test.{ts,tsx}"],
   },
 });

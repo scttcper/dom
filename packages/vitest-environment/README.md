@@ -41,7 +41,7 @@ export default defineConfig({ plugins: [ctrlDom()], test: { pool: "vmThreads" } 
 
 100 small React test files (`pnpm bench:suite --pool …`, full stack bundled):
 
-| pool | jsdom | happy-dom | rtd (environment only) | rtd (full stack) |
+| pool | jsdom | happy-dom | ctrl-dom (environment only) | ctrl-dom (full stack) |
 | --- | ---: | ---: | ---: | ---: |
 | default (forks, per-file isolation) | 11.7 s | 6.55 s | 5.94 s | 3.66 s |
 | vmForks | 2.12 s | 1.67 s | 1.66 s | 1.24 s |

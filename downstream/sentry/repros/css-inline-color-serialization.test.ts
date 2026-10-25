@@ -5,7 +5,7 @@
  *
  * Reading a declaration from `element.style` serializes the *specified* value: hex colors
  * serialize as `rgb()`/`rgba()` and keywords are lower-cased (`currentcolor`), including inside
- * color functions such as color-mix(). jsdom (cssstyle) does this; @rtd/dom returns the author
+ * color functions such as color-mix(). jsdom (cssstyle) does this; @ctrl/dom returns the author
  * text unchanged. (docs/deviations.md keeps author colors for getComputedStyle only.)
  *
  * Spec: https://drafts.csswg.org/cssom/#serialize-a-css-value

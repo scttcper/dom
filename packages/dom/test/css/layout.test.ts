@@ -18,7 +18,7 @@
  * pins that without the option every geometry API returns exactly what it always did.
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, ResizeObserver, type Document, type Window } from "@rtd/dom";
+import { createWindow, ResizeObserver, type Document, type Window } from "@ctrl/dom";
 
 interface Rect {
   x: number;

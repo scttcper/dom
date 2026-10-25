@@ -1,5 +1,5 @@
 /**
- * Differential tests: @rtd/testing-library on @rtd/dom vs stock @testing-library/dom@10.4.2
+ * Differential tests: @ctrl/dom/testing-library on @ctrl/dom vs stock @testing-library/dom@10.4.2
  * on jsdom. Every scenario renders the same markup into both DOMs, runs the same calls on
  * both libraries and compares the observable results: matched elements (by outerHTML), thrown
  * error names/messages (including the prettyDOM dump inside them), printed output.
@@ -25,7 +25,7 @@ function jsdomContainer(html: string): any {
   return dom.window.document.getElementById("root");
 }
 
-function rtdContainer(html: string): any {
+function ctrlDomContainer(html: string): any {
   document.body.innerHTML = `<div id="root">${html}</div>`;
   return document.getElementById("root");
 }
@@ -67,7 +67,7 @@ function differential(scenarios: Scenario[]): void {
   for (const s of scenarios) {
     test(s.name, () => {
       const expected = outcome(stock, jsdomContainer(s.html), s.run);
-      const actual = outcome(ours as unknown as Lib, rtdContainer(s.html), s.run);
+      const actual = outcome(ours as unknown as Lib, ctrlDomContainer(s.html), s.run);
       expect(actual).toEqual(expected);
     });
   }

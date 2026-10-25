@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/get-node-text.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {getNodeText} from '../../src/get-node-text.ts'
 import {render} from '../helpers/test-utils.js'

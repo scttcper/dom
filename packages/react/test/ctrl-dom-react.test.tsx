@@ -1,10 +1,10 @@
 /**
- * @rtd/react-specific behavior that the upstream suites do not pin.
+ * @ctrl/dom/react-specific behavior that the upstream suites do not pin.
  */
 import { describe, expect, test, vi } from "vitest";
 import * as React from "react";
-import * as pure from "@rtd/react/pure";
-import * as main from "@rtd/react";
+import * as pure from "@ctrl/dom/react/pure";
+import * as main from "@ctrl/dom/react";
 
 declare const document: any;
 

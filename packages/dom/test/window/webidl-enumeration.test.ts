@@ -9,7 +9,7 @@
  * the loop must yield the attribute names and nothing from our internals.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 
 let window: ReturnType<typeof createWindow>;
 let document: Document;

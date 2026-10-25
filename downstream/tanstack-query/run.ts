@@ -3,21 +3,21 @@
 // the React adapter packages (manifest.json `packages`: react-query, react-query-persist-client,
 // react-query-devtools) on
 //   jsdom     upstream baseline, unchanged (Vitest 4 + jsdom 27)
-//   rtd-dom   only the DOM environment swapped to our stock `vitest-environment-rtd`
+//   ctrl-dom   only the DOM environment swapped to our stock `@ctrl/dom/vitest-environment`
 //             (stock Testing Library from upstream's lockfile)
-//   rtd-full  @rtd/dom + our Testing Library packages aliased over
+//   ctrl-dom-full  @ctrl/dom + our Testing Library packages aliased over
 //             @testing-library/{react,dom,user-event,jest-dom}
 //
 //   node downstream/tanstack-query/run.ts [--install] [--latest] [--preset smoke|all]
-//        [--files a,b] [--modes jsdom,rtd-dom,rtd-full] [--workers N] [--rounds N] [--no-report]
+//        [--files a,b] [--modes jsdom,ctrl-dom,ctrl-dom-full] [--workers N] [--rounds N] [--no-report]
 //
 // Copied from downstream/radix/run.ts (kept independent so the other runners stay stable):
 // pinned commit (manifest.json), unmodified upstream tests (refuses tracked local changes),
-// upstream's own frozen lockfile + exact pnpm, fresh reports, versions/commit recorded, every rtd
+// upstream's own frozen lockfile + exact pnpm, fresh reports, versions/commit recorded, every ctrl-dom
 // mode compared against the jsdom baseline. Differences (README.md): one upstream project per
 // package (each package's own vite.config.ts) wrapped into a single Vitest run; type tests
 // (`typecheck.enabled`) and CI coverage are off; @testing-library/react-render-stream is inlined in
-// rtd-full so its own imports of @testing-library/react|dom reach our packages.
+// ctrl-dom-full so its own imports of @testing-library/react|dom reach our packages.
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -37,7 +37,7 @@ const manifest = JSON.parse(readFileSync(join(here, "manifest.json"), "utf8")) a
   packages: string[];
 };
 
-const MODES = ["jsdom", "rtd-dom", "rtd-full"] as const;
+const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full"] as const;
 type Mode = (typeof MODES)[number];
 
 const PRESETS: Record<string, string[]> = {
@@ -72,7 +72,7 @@ const { values } = parseArgs({
 if (values.help) {
   console.log(
     "node downstream/tanstack-query/run.ts [--install] [--latest] [--preset smoke|all | --files a,b] " +
-      "[--modes jsdom,rtd-dom,rtd-full] [--workers N] [--rounds N] [--checkout PATH] [--no-report] " +
+      "[--modes jsdom,ctrl-dom,ctrl-dom-full] [--workers N] [--rounds N] [--checkout PATH] [--no-report] " +
       "[--shims react,dom,user-event,jest-dom] [--grep TEST_NAME_PATTERN]",
   );
   process.exit(0);
@@ -229,14 +229,14 @@ const results = join(here, "results");
 // Generated files live in an untracked directory inside the checkout so Vitest's config loader
 // resolves upstream's own `vitest` and `vite` (a config outside the checkout would pick up our
 // workspace's Vitest 5). It is removed after the run.
-const harness = join(checkout, ".rtd-harness");
+const harness = join(checkout, ".ctrl-dom-harness");
 rmSync(harness, { recursive: true, force: true });
 mkdirSync(harness, { recursive: true });
 
 const P = (...parts: string[]): string => join(repo, "packages", ...parts);
-// Upstream runs Vitest 4.1; the Environment contract `vitest-environment-rtd` uses (`name`,
+// Upstream runs Vitest 4.1; the Environment contract `@ctrl/dom/vitest-environment` uses (`name`,
 // `viteEnvironment`, `setup(global, options) -> { teardown }`) is the same in Vitest 4.
-const RTD_ENVIRONMENT = P("vitest-environment/src/index.ts");
+const CTRL_DOM_ENVIRONMENT = P("vitest-environment/src/index.ts");
 const SHIM_ALIASES: Array<[RegExp, string]> = [
   [/^@testing-library\/react\/pure(\.js)?$/, P("react/src/pure.ts")],
   [/^@testing-library\/react\/dont-cleanup-after-each(\.js)?$/, P("react/src/dont-cleanup-after-each.ts")],
@@ -253,7 +253,7 @@ const ACTIVE_SHIMS = SHIM_ALIASES.filter(([re]) => shimSet.has(/@testing-library
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 // react-persist-client and react-query-devtools have no react-dom of their own (only react), so
 // `dedupe` cannot find one from their roots and our packages' `react-dom/client` import would fall
-// through to this workspace's react-dom (and, loaded natively, its React). rtd-full pins react-dom
+// through to this workspace's react-dom (and, loaded natively, its React). ctrl-dom-full pins react-dom
 // to the copy react-query resolves; the react-dom guard below checks it.
 const REACT_DOM = realpathSync(dirname(createRequire(join(checkout, manifest.packages[0], "package.json")).resolve("react-dom/package.json")));
 /** Third-party Testing Library add-ons (not ours, never aliased): excluded from the stock-import guard. */
@@ -276,15 +276,15 @@ const receipt: Record<string, unknown> = { mode, userAgent: navigator.userAgent,
 if (mode === 'jsdom') {
   if (!navigator.userAgent.includes('jsdom')) throw new Error('Wrong DOM environment for jsdom mode');
 } else {
-  // The environment (vitest-environment-rtd, loaded natively) and this test realm must share
-  // one @rtd/dom module instance: the globals must be instances of the classes we import here.
+  // The environment (@ctrl/dom/vitest-environment, loaded natively) and this test realm must share
+  // one @ctrl/dom module instance: the globals must be instances of the classes we import here.
   const dom = await import(${JSON.stringify(P("dom/src/index.ts"))});
   receipt.singleDomInstance = document instanceof dom.Document && g.Node === dom.Node && g.window === g;
-  if (!receipt.singleDomInstance) throw new Error('rtd mode is not running on a single @rtd/dom instance (environment vs test realm)');
+  if (!receipt.singleDomInstance) throw new Error('ctrl-dom mode is not running on a single @ctrl/dom instance (environment vs test realm)');
 }
-if (mode === 'rtd-full') {
+if (mode === 'ctrl-dom-full') {
   const checks: Record<string, boolean> = {};
-${(mode === "rtd-full" ? shimChecks : [])
+${(mode === "ctrl-dom-full" ? shimChecks : [])
   .map(([spec, file]) => `  checks[${JSON.stringify(spec)}] = (await import(${JSON.stringify(spec)})) === (await import(${JSON.stringify(file)}));`)
   .join("\n")}
   receipt.shims = checks;
@@ -294,8 +294,8 @@ appendFileSync(${JSON.stringify(join(modeOut, "environments.jsonl"))}, JSON.stri
 `,
   );
 
-  const rtd = mode !== "jsdom";
-  const full = mode === "rtd-full";
+  const ctrlDom = mode !== "jsdom";
+  const full = mode === "ctrl-dom-full";
   const resolutions = join(modeOut, "resolutions.jsonl");
   const config = join(harness, `${mode}.config.mts`);
   const imports = manifest.packages.map((dir, i) => `import upstream${i} from ${JSON.stringify(`../${dir}/vite.config.ts`)};`).join("\n");
@@ -312,10 +312,10 @@ const seen = new Set<string>();
 // Records how react / react-dom / vitest / Testing Library imports resolve, so the report can
 // prove there is exactly one React and where every @testing-library/* import went.
 const receipts = {
-  name: 'rtd-downstream-resolution-receipts',
+  name: 'ctrl-dom-downstream-resolution-receipts',
   enforce: 'pre' as const,
   async resolveId(source: string, importer: string | undefined, options: any) {
-    // The second test catches react-dom after rtd-full's alias rewrote it to a path.
+    // The second test catches react-dom after ctrl-dom-full's alias rewrote it to a path.
     const bare = /^(react|react-dom|vitest|@testing-library\\/[a-z-]+)(\\/|$)/.test(source) || /\\/node_modules\\/react-dom(\\/|$)/.test(source);
     const ours = source.startsWith(repo + '/packages/');
     if (!bare && !ours) return null;
@@ -340,11 +340,11 @@ const wrap = (upstream: any, dir: string) => {
       // Type tests (*.test-d.tsx, tsc) do not touch the DOM; CI coverage is not what we measure.
       typecheck: { enabled: false },
       coverage: { enabled: false },
-      ${rtd ? `environment: ${JSON.stringify(RTD_ENVIRONMENT)},` : ""}
+      ${ctrlDom ? `environment: ${JSON.stringify(CTRL_DOM_ENVIRONMENT)},` : ""}
       ${
-        rtd
+        ctrlDom
           ? `server: { deps: {
-        // One @rtd/dom module instance: the environment (loaded by Vitest's environment loader) and
+        // One @ctrl/dom module instance: the environment (loaded by Vitest's environment loader) and
         // the test realm must share it, so it is loaded natively by Node (which runs our .ts) in both.
         external: [/${escape(join(repo, "packages") + "/")}(dom|vitest-environment)\\/src\\//],
         ${
@@ -455,7 +455,7 @@ function collect(report: any): Map<string, Assertion> {
 const runs: ModeRun[] = [];
 mkdirSync(output, { recursive: true });
 
-// --rounds N interleaves the modes (jsdom, rtd-dom, rtd-full, jsdom, …) so load from other
+// --rounds N interleaves the modes (jsdom, ctrl-dom, ctrl-dom-full, jsdom, …) so load from other
 // processes on a shared machine hits every mode alike; wall/RSS are reported as medians and the
 // counts/failures come from the last round (tests that flip between rounds are listed).
 try {
@@ -490,7 +490,7 @@ try {
       const before = mode === "jsdom" ? null : sourceFingerprint();
       const start = performance.now();
       // /usr/bin/time -l (macOS) reports the peak RSS of vitest and the workers it reaps.
-      // process.execPath (not the checkout's .nvmrc Node 24): @rtd/* runs on Node 26.
+      // process.execPath (not the checkout's .nvmrc Node 24): @ctrl/dom runs on Node 26.
       const timed = existsSync("/usr/bin/time") && process.platform === "darwin";
       const result = await run(
         timed ? "/usr/bin/time" : process.execPath,
@@ -539,7 +539,7 @@ try {
         // devtools), our packages would otherwise pick our workspace's copy, whose natively loaded
         // `require('react')` is a second React the react receipts never see.
         r.reactDomIds = [...new Set(res.filter((x) => /\/node_modules\/react-dom\/(index|client)\.js$/.test(x.id ?? "")).map((x) => x.id.replace(/\/(index|client)\.js$/, "") as string))];
-        // In rtd-full every @testing-library/* import (other than third-party add-ons) must land in our packages/.
+        // In ctrl-dom-full every @testing-library/* import (other than third-party add-ons) must land in our packages/.
         r.stockTestingLibrary = [
           ...new Set(
             res
@@ -596,8 +596,8 @@ for (const r of runs) {
   if ((r.reactIds?.length ?? 0) > 1) guardFailures.push(`${r.mode}: ${r.reactIds!.length} React module ids`);
   if ((r.reactDomIds?.length ?? 0) > 1) guardFailures.push(`${r.mode}: ${r.reactDomIds!.length} react-dom copies (${r.reactDomIds!.join(", ")})`);
   if (r.reactDomIds?.some((id) => !id.startsWith(checkout + "/"))) guardFailures.push(`${r.mode}: react-dom resolved outside the upstream checkout`);
-  if (r.mode === "rtd-full" && shimSet.size === 4 && r.stockTestingLibrary?.length) {
-    guardFailures.push(`rtd-full: stock Testing Library imported: ${r.stockTestingLibrary.join(", ")}`);
+  if (r.mode === "ctrl-dom-full" && shimSet.size === 4 && r.stockTestingLibrary?.length) {
+    guardFailures.push(`ctrl-dom-full: stock Testing Library imported: ${r.stockTestingLibrary.join(", ")}`);
   }
   if ((r.files ?? 0) > 0 && r.receipts === 0) guardFailures.push(`${r.mode}: no environment receipts (probe never ran)`);
 }
@@ -628,10 +628,10 @@ if (!values["no-report"]) {
     `- node ${process.version}, workers ${workers}, upstream versions: ${Object.entries(versions)
       .map(([k, v]) => `${k}@${v}`)
       .join(", ")}`,
-    `- rtd environment: stock \`vitest-environment-rtd\` (default options, default userAgent); rtd-full substitutes: ${[...shimSet].map((x) => `@testing-library/${x}`).join(", ")}`,
+    `- ctrl-dom environment: stock \`@ctrl/dom/vitest-environment\` (default options, default userAgent); ctrl-dom-full substitutes: ${[...shimSet].map((x) => `@testing-library/${x}`).join(", ")}`,
     `- measurement: ${rounds} round(s), modes interleaved; wall/peak RSS are ${rounds > 1 ? "medians (wall range in parentheses)" : "single samples"}; ${workers} workers in every mode`,
     `- typecheck and coverage off in every mode (upstream enables type tests; they never touch the DOM)`,
-    `- guards: ${guardFailures.length ? "**FAILED** — " + guardFailures.join("; ") : "one React id per mode, single @rtd/dom instance (probe), rtd-full imports only our @testing-library/* — all OK"}`,
+    `- guards: ${guardFailures.length ? "**FAILED** — " + guardFailures.join("; ") : "one React id per mode, single @ctrl/dom instance (probe), ctrl-dom-full imports only our @testing-library/* — all OK"}`,
     "",
   );
   md.push("## Per-mode results", "");
@@ -641,7 +641,7 @@ if (!values["no-report"]) {
     const notes: string[] = [];
     if (!r.reportFound) notes.push("**no JSON report**");
     if (r.reactIds?.length) notes.push(r.reactIds.length === 1 ? "1 React" : `**${r.reactIds.length} React ids**`);
-    if (r.mode === "rtd-full") notes.push(`stock TL imports: ${r.stockTestingLibrary?.length ?? "?"}`);
+    if (r.mode === "ctrl-dom-full") notes.push(`stock TL imports: ${r.stockTestingLibrary?.length ?? "?"}`);
     if (r.sourceStable === false) notes.push("our sources changed during the run");
     if (r.unstable?.length) notes.push(`**${r.unstable.length} tests changed status between rounds**`);
     md.push(
@@ -713,7 +713,7 @@ if (!values["no-report"]) {
 if (guardFailures.length) console.error(`\nGuard failures:\n- ${guardFailures.join("\n- ")}`);
 
 // Exit non-zero when a run produced no report, a guard failed, the jsdom baseline failed, or the
-// discovered test set differs from jsdom (assertion failures alone are expected for rtd modes).
+// discovered test set differs from jsdom (assertion failures alone are expected for ctrl-dom modes).
 const baselineRun = runs.find((r) => r.mode === "jsdom");
 process.exitCode =
   runs.some(

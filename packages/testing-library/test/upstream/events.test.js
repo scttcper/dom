@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/events.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {eventMap, eventAliasMap} from '../../src/event-map.ts'
 import {fireEvent, createEvent} from '../../src/index.ts'

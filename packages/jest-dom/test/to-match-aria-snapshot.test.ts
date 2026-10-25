@@ -9,12 +9,12 @@
  *   (`matchesNode`, `containsList`, `listEqual`) and
  *   packages/playwright-core/src/utils/isomorphic/ariaSnapshot.ts (`KeyParser`).
  *
- * Runs on @rtd/dom with our matchers only (the stock jest-dom oracle has no counterpart).
+ * Runs on @ctrl/dom with our matchers only (the stock jest-dom oracle has no counterpart).
  */
 import { describe, expect, test } from "vitest";
-import { ariaSnapshot } from "@rtd/testing-library";
+import { ariaSnapshot } from "@ctrl/dom/testing-library";
 
-const ours = process.env.JEST_DOM_IMPL !== "stock" && process.env.RTD_STACK !== "jsdom";
+const ours = process.env.JEST_DOM_IMPL !== "stock" && process.env.CTRL_DOM_STACK !== "jsdom";
 
 function render(html: string): HTMLElement {
   document.body.innerHTML = html;

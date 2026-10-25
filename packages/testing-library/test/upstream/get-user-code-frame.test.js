@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/get-user-code-frame.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import jestSnapshotSerializerAnsi from '../helpers/ansi-serializer.js'
 import fs from 'fs'
@@ -7,7 +7,7 @@ import {getUserCodeFrame} from '../../src/get-user-code-frame.ts'
 
 expect.addSnapshotSerializer(jestSnapshotSerializerAnsi)
 
-// DIVERGENCE(rtd): Vitest module factories must provide `default` for `import fs from 'fs'`.
+// DIVERGENCE(ctrl-dom): Vitest module factories must provide `default` for `import fs from 'fs'`.
 vi.mock('fs', () => {
   // We setup the contents of a sample file
   const readFileSync = vi.fn(
@@ -43,7 +43,7 @@ test('it returns only user code frame when code frames from node_modules are fir
       at Object.<anonymous> (/sample-error/node_modules/@es2050/console/build/index.js:4:10)
       ${userStackFrame}
   `
-  // DIVERGENCE(rtd): Vitest spies invoke implementations with `new`, so use a constructible function.
+  // DIVERGENCE(ctrl-dom): Vitest spies invoke implementations with `new`, so use a constructible function.
   globalErrorMock.mockImplementationOnce(function () {
     return {stack}
   })
@@ -66,7 +66,7 @@ test('it returns only user code frame when node code frames are present afterwar
       at Object.<anonymous> (/sample-error/error-example.js:14:1)
       at internal/main/run_main_module.js:17:47
   `
-  // DIVERGENCE(rtd): Vitest spies invoke implementations with `new`, so use a constructible function.
+  // DIVERGENCE(ctrl-dom): Vitest spies invoke implementations with `new`, so use a constructible function.
   globalErrorMock.mockImplementationOnce(function () {
     return {stack}
   })
@@ -90,7 +90,7 @@ test("it returns empty string if file from code frame can't be read", () => {
   const stack = `Error: Kaboom
       ${userStackFrame}
   `
-  // DIVERGENCE(rtd): Vitest spies invoke implementations with `new`, so use a constructible function.
+  // DIVERGENCE(ctrl-dom): Vitest spies invoke implementations with `new`, so use a constructible function.
   globalErrorMock.mockImplementationOnce(function () {
     return {stack}
   })

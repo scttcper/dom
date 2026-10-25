@@ -24,7 +24,7 @@ import {
   formatFailureSnapshot,
   resetFailureSnapshot,
   type FailureSnapshot,
-} from "@rtd/testing-library/agent";
+} from "@ctrl/dom/testing-library/agent";
 
 declare const document: unknown;
 

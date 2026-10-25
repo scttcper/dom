@@ -1,34 +1,34 @@
-// Fast paths for nodes owned by @rtd/dom.
+// Fast paths for nodes owned by @ctrl/dom.
 //
 // user-event works on any DOM (it must, to be a drop-in on jsdom/happy-dom too), but when the
-// node is an @rtd/dom wrapper it can skip the public API and use @rtd/dom/internal:
+// node is an @ctrl/dom wrapper it can skip the public API and use @ctrl/dom/internal:
 //
 // - UI value / UI selection: upstream patches `value`, `setSelectionRange`, `selectionStart`,
 //   `selectionEnd`, `select` and `setRangeText` on every focused <input>/<textarea> instance
 //   (document/interceptor.ts) to tell programmatic writes from simulated user input, which costs
 //   six `defineProperty` calls per element and boxed `String`/`Number` objects per keystroke.
-//   @rtd/dom keeps the UI value and UI selection as element state and exposes them through
+//   @ctrl/dom keeps the UI value and UI selection as element state and exposes them through
 //   `getUIValue/setUIValue/getUISelection/setUISelection` (src/html/forms/ui.ts), so React's
 //   `_valueTracker` (an own `value` property React installs on the node) never sees simulated
 //   input — exactly what the interceptor achieves on jsdom — without touching the element.
 // - Tree/attribute reads (isElementType, isDisabled, getTreeDiff, focusability) walk NodeImpl.
 // - CSS reads (`pointer-events`, `display`, `visibility`) go through css/internal.ts.
 //
-// Each hook is used only when @rtd/dom/internal actually exports it (the import is static: a
+// Each hook is used only when @ctrl/dom/internal actually exports it (the import is static: a
 // top-level `await import()` would make the package an async ES module that `require()` and the
 // CommonJS build cannot load). Expected contracts are
-// documented on `RtdFormsUI` / `RtdCss`.
+// documented on `CtrlDomFormsUI` / `CtrlDomCss`.
 
-import * as rtdInternal from '@rtd/dom/internal'
-import type {NodeImpl} from '@rtd/dom/internal'
+import * as ctrlDomInternal from '@ctrl/dom/internal'
+import type {NodeImpl} from '@ctrl/dom/internal'
 import type {Element, Node} from './dom-types.ts'
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 /**
- * @rtd/dom html-forms UI state (`src/html/forms/ui.ts`, re-exported from `@rtd/dom/internal`).
+ * @ctrl/dom html-forms UI state (`src/html/forms/ui.ts`, re-exported from `@ctrl/dom/internal`).
  * All functions take the public wrapper of an <input> or <textarea>.
  */
-export interface RtdFormsUI {
+export interface CtrlDomFormsUI {
   /** The value as displayed in the UI (unsanitized; e.g. "1e" while typing into type=number). */
   getUIValue(el: Element): string
   /**
@@ -46,11 +46,11 @@ export interface RtdFormsUI {
 }
 
 /**
- * Contract expected from @rtd/dom css (`src/css/internal.ts`).
+ * Contract expected from @ctrl/dom css (`src/css/internal.ts`).
  *
- * TODO(css): export from `@rtd/dom/internal`.
+ * TODO(css): export from `@ctrl/dom/internal`.
  */
-export interface RtdCss {
+export interface CtrlDomCss {
   /** Computed value of `property` for the element (specified + inherited, no layout). */
   computedValue(el: NodeImpl, property: string): string
   isDisplayNone(el: NodeImpl): boolean
@@ -59,7 +59,7 @@ export interface RtdCss {
 
 type InternalModule = Record<string, unknown>
 
-const internal: InternalModule | null = rtdInternal as unknown as InternalModule
+const internal: InternalModule | null = ctrlDomInternal as unknown as InternalModule
 
 function pick<T>(names: Array<keyof T & string>): T | null {
   if (internal === null) return null
@@ -72,8 +72,8 @@ function pick<T>(names: Array<keyof T & string>): T | null {
   return out as T
 }
 
-/** @rtd/dom UI value/selection hooks, or null while html-forms does not provide them. */
-export const rtdUI: RtdFormsUI | null = pick<RtdFormsUI>([
+/** @ctrl/dom UI value/selection hooks, or null while html-forms does not provide them. */
+export const ctrlDomUI: CtrlDomFormsUI | null = pick<CtrlDomFormsUI>([
   'getUIValue',
   'setUIValue',
   'clearUIValue',
@@ -81,8 +81,8 @@ export const rtdUI: RtdFormsUI | null = pick<RtdFormsUI>([
   'setUISelection',
 ])
 
-/** @rtd/dom computed-style fast reads, or null while css does not provide them. */
-export const rtdCss: RtdCss | null = pick<RtdCss>([
+/** @ctrl/dom computed-style fast reads, or null while css does not provide them. */
+export const ctrlDomCss: CtrlDomCss | null = pick<CtrlDomCss>([
   'computedValue',
   'isDisplayNone',
   'isVisibilityHidden',
@@ -90,14 +90,14 @@ export const rtdCss: RtdCss | null = pick<RtdCss>([
 
 const NodeImplClass = (internal?.NodeImpl ?? null) as (abstract new (...args: never[]) => NodeImpl) | null
 
-/** The NodeImpl behind an @rtd/dom wrapper, or null for nodes of other DOM implementations. */
+/** The NodeImpl behind an @ctrl/dom wrapper, or null for nodes of other DOM implementations. */
 export function implOf(node: Node | null | undefined): NodeImpl | null {
   if (NodeImplClass === null || node == null) return null
   const impl = (node as {[$impl]?: unknown})[$impl]
   return impl instanceof NodeImplClass ? impl : null
 }
 
-/** Whether `el` is an @rtd/dom element and the html-forms UI hooks are available. */
-export function hasRtdUI(el: Element): boolean {
-  return rtdUI !== null && implOf(el) !== null
+/** Whether `el` is an @ctrl/dom element and the html-forms UI hooks are available. */
+export function hasCtrlDomUI(el: Element): boolean {
+  return ctrlDomUI !== null && implOf(el) !== null
 }

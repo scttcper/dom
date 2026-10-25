@@ -13,8 +13,8 @@
  * The fallback evaluator is used until the css area registers windowHooks.evaluateMediaQuery.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, MediaQueryList, type Window } from "@rtd/dom";
-import { evaluateMediaQueryList, windowHooks } from "@rtd/dom/internal";
+import { createWindow, MediaQueryList, type Window } from "@ctrl/dom";
+import { evaluateMediaQueryList, windowHooks } from "@ctrl/dom/internal";
 
 let window: Window;
 

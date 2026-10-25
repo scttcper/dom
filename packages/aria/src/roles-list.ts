@@ -4,8 +4,8 @@
 // Specs: https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings,
 //        https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion
 
-import { ELEMENT_NODE, attr, getComputedStyleOverride, type NodeImpl } from "@rtd/dom/internal";
-import type { Element } from "@rtd/dom";
+import { ELEMENT_NODE, attr, getComputedStyleOverride, type NodeImpl } from "@ctrl/dom/internal";
+import type { Element } from "@ctrl/dom";
 import { implicitRole } from "./role.ts";
 import { isInaccessibleImpl, isInaccessibleWithStyle } from "./hidden.ts";
 import { computeAccessibleNameImpl, computeAccessibleDescriptionImpl, type GetComputedStyle } from "./accname.ts";
@@ -76,7 +76,7 @@ export interface PrettyRolesOptions {
 
 /**
  * Testing Library's `prettyRoles(dom, { hidden, includeDescription })`. `prettyDOM` formats
- * `el.cloneNode(false)` (it lives in @rtd/testing-library, which passes its own).
+ * `el.cloneNode(false)` (it lives in @ctrl/dom/testing-library, which passes its own).
  */
 export function prettyRoles(dom: Element, options: PrettyRolesOptions, prettyDOM: (node: Element) => string): string {
   const root = implOf(dom);

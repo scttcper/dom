@@ -1,2 +1,2 @@
 [test]
-preload = ["@rtd/register"]
+preload = ["@ctrl/dom/register"]

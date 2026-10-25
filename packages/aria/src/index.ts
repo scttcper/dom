@@ -1,6 +1,6 @@
-// @rtd/aria — roles, accessible names/descriptions, states and accessibility-tree
-// exclusion for @rtd/dom. Replaces aria-query + dom-accessibility-api for
-// @rtd/testing-library and @rtd/jest-dom.
+// @ctrl/dom/aria — roles, accessible names/descriptions, states and accessibility-tree
+// exclusion for @ctrl/dom. Replaces aria-query + dom-accessibility-api for
+// @ctrl/dom/testing-library and @ctrl/dom/jest-dom.
 //
 // Specs: https://w3c.github.io/accname/, https://www.w3.org/TR/html-aam-1.0/,
 //        https://w3c.github.io/aria/, https://w3c.github.io/core-aam/
@@ -13,9 +13,9 @@
 // - aria-query@5.3.0-shaped data: `roles`, `elementRoles`, `roleElements`, `aria`, `dom`.
 // - Testing Library role-helpers: `getImplicitAriaRoles`, `getRoles`, `prettyRoles`,
 //   `computeAria*`, `computeHeadingLevel`.
-// - NodeImpl-level hot-path API: `@rtd/aria/internal`.
+// - NodeImpl-level hot-path API: `@ctrl/dom/aria/internal`.
 
-import type { Element, Node } from "@rtd/dom";
+import type { Element, Node } from "@ctrl/dom";
 import {
   computeAccessibleNameImpl,
   computeAccessibleDescriptionImpl,
@@ -27,6 +27,7 @@ import { isDisabledImpl } from "./states.ts";
 import * as S from "./states.ts";
 import { implOf } from "./tree.ts";
 import { isInaccessible, isSubtreeInaccessible } from "./hidden.ts";
+import { quote, setNodeDescriber } from "@ctrl/dom/internal";
 
 export type { ComputeTextAlternativeOptions, GetComputedStyle, StyleLike } from "./accname.ts";
 export type { IsInaccessibleOptions, IsSubtreeInaccessibleOptions } from "./hidden.ts";
@@ -64,6 +65,15 @@ export function computeAccessibleDescription(root: Element, options?: ComputeTex
 export function getRole(element: Element): string | null {
   return daaGetRole(implOf(element), 5);
 }
+
+// Ours: span descriptions (@ctrl/dom trace.ts) name elements the way queries find them, by role
+// and accessible name: `button "Save"`, `option "Apple"`. Called only while tracing.
+setNodeDescriber((node) => {
+  const role = getRole(node as Element);
+  if (role === null || role === "generic" || role === "presentation" || role === "none") return null;
+  const name = computeAccessibleName(node as Element);
+  return name === "" ? role : `${role} ${quote(name)}`;
+});
 
 /** dom-accessibility-api@0.6 `isDisabled`. */
 export function isDisabled(element: Element): boolean {

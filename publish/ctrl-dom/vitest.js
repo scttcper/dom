@@ -37,7 +37,7 @@ const COMPILE_CACHE_IMPORT = '--import=data:text/javascript,import{enableCompile
 export function workerExecArgv({ compileCache = false }) {
   const flags = [];
   // The same override as the environment's own compileCache option.
-  const env = process.env.CTRL_DOM_COMPILE_CACHE ?? process.env.RTD_COMPILE_CACHE;
+  const env = process.env.CTRL_DOM_COMPILE_CACHE;
   if (env === "1" || (env !== "0" && compileCache)) flags.push(COMPILE_CACHE_IMPORT);
   // Not added: `--min-semi-space-size=16` (−7% worker CPU, +13 MB RSS per worker, no measurable
   // wall time; bench/README.md "Worker startup").
@@ -73,7 +73,7 @@ export function ctrlDom(options = {}) {
           environment,
           environmentOptions: { "ctrl-dom": environmentOptions },
           ...(debug && shellDebug === undefined ? { env: { CTRL_DOM_DEBUG: debug } } : {}),
-          // Added after the project's own setup files, so its afterEach runs before theirs.
+          // Added after the project's own setup files, so the afterEach hooks they register run first.
           ...(agentMode ? { setupFiles: [failureSnapshot] } : {}),
         },
       };

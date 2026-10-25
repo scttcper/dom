@@ -14,7 +14,7 @@
  * tests/compat/test/surface/ checks each profile against the real jsdom.
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, Event as RtdEvent, EventTarget as RtdEventTarget, Node as RtdNode, FormData as RtdFormData, type Window } from "@rtd/dom";
+import { createWindow, currentWindowOrNull, installGlobals, Event as CtrlDomEvent, EventTarget as CtrlDomEventTarget, Node as CtrlDomNode, FormData as CtrlDomFormData, type Window } from "@ctrl/dom";
 
 type G = Record<string, unknown>;
 
@@ -71,7 +71,7 @@ describe("events at the window expose the WindowProxy — https://dom.spec.whatw
       },
       true,
     );
-    window.document.body!.dispatchEvent(new RtdEvent("click", { bubbles: true }));
+    window.document.body!.dispatchEvent(new CtrlDomEvent("click", { bubbles: true }));
     expect(seen).toEqual([[window.document.body, target, target, target]]);
   });
 
@@ -92,7 +92,7 @@ describe("events at the window expose the WindowProxy — https://dom.spec.whatw
     const window = createWindow();
     let got: unknown = null;
     window.addEventListener("focus", (e) => (got = e.target));
-    window.dispatchEvent(new RtdEvent("focus"));
+    window.dispatchEvent(new CtrlDomEvent("focus"));
     expect(got).toBe(window);
     window.close();
   });
@@ -101,8 +101,8 @@ describe("events at the window expose the WindowProxy — https://dom.spec.whatw
 describe("interface objects — https://webidl.spec.whatwg.org/#es-interfaces", () => {
   test("DOM interfaces are installed as non-enumerable data properties", () => {
     const { target } = installOn();
-    expect(target.Node).toBe(RtdNode);
-    expect(target.EventTarget).toBe(RtdEventTarget);
+    expect(target.Node).toBe(CtrlDomNode);
+    expect(target.EventTarget).toBe(CtrlDomEventTarget);
     for (const name of ["Element", "HTMLElement", "Document", "Text", "Event", "CustomEvent", "Storage", "Location", "History", "DOMRect", "IntersectionObserver", "FileReader", "FileList", "DOMParser", "XMLSerializer", "MessageEvent"]) {
       expect(typeof target[name], name).toBe("function");
     }
@@ -124,7 +124,7 @@ describe("interface objects — https://webidl.spec.whatwg.org/#es-interfaces", 
     const a = createWindow() as unknown as G;
     const b = createWindow() as unknown as G;
     expect(a.HTMLElement).toBe(b.HTMLElement);
-    expect(a.Node).toBe(RtdNode);
+    expect(a.Node).toBe(CtrlDomNode);
   });
 });
 
@@ -149,10 +149,10 @@ describe("installing on globalThis", () => {
     try {
       expect(g.window).toBe(g);
       expect(g.document).toBe(window.document);
-      expect(g.EventTarget).toBe(RtdEventTarget);
+      expect(g.EventTarget).toBe(CtrlDomEventTarget);
       expect(g.navigator).toBe(window.navigator);
       expect(g.localStorage).toBe(window.localStorage);
-      expect(g.FormData).toBe(RtdFormData);
+      expect(g.FormData).toBe(CtrlDomFormData);
       expect(g.FormData).not.toBe(before.FormData);
       expect(g.DOMException).toBe(before.DOMException);
       expect(g.setTimeout).toBe(before.setTimeout);

@@ -12,12 +12,12 @@
 // loaded lazily, so output stays identical in every case.
 
 import { createRequire } from "node:module";
-import { COMMENT_NODE, DOCUMENT_FRAGMENT_NODE, ELEMENT_NODE, TEXT_NODE, serializeNode, type NodeImpl } from "@rtd/dom/internal";
+import { COMMENT_NODE, DOCUMENT_FRAGMENT_NODE, ELEMENT_NODE, TEXT_NODE, serializeNode, type NodeImpl } from "@ctrl/dom/internal";
 import { getUserCodeFrame } from "./get-user-code-frame.ts";
 import { getDocument } from "./helpers.ts";
 import { getConfig } from "./config.ts";
 import { matchesSelector } from "./selectors.ts";
-import { $impl, SVG_NS } from "@rtd/dom/internal";
+import { $impl, SVG_NS } from "@ctrl/dom/internal";
 import { ariaSnapshot, type AriaSnapshotOptions } from "./aria-snapshot.ts";
 import { envDebugFormat, type DebugFormat } from "./agent-debug.ts";
 

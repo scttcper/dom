@@ -11,15 +11,15 @@
  * into test/wpt/accname.json. Original harness:
  * https://github.com/eps1lon/dom-accessibility-api/tree/main/tests/wpt-jsdom
  *
- * For every case @rtd/aria on @rtd/dom must produce exactly what dom-accessibility-api
+ * For every case @ctrl/dom/aria on @ctrl/dom must produce exactly what dom-accessibility-api
  * 0.5.16 produces on jsdom (the observable behavior Testing Library users rely on). Whether
  * that matches the WPT expectation is reported separately: upstream itself fails some cases
  * (see tests/wpt-jsdom/to-run.yaml upstream), so it is informational only.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { createWindow, type Element } from "@rtd/dom";
-import { computeAccessibleDescription, computeAccessibleName } from "@rtd/aria";
+import { createWindow, type Element } from "@ctrl/dom";
+import { computeAccessibleDescription, computeAccessibleName } from "@ctrl/dom/aria";
 import { loadOracle } from "./helpers.ts";
 import { AUTHOR_STYLES_SUPPORTED } from "../src/style.ts";
 

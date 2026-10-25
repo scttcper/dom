@@ -19,7 +19,7 @@
  *   - Comment constructor: https://dom.spec.whatwg.org/#interface-comment
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 let document: Document;

@@ -14,7 +14,7 @@
  *   - indexed properties: https://webidl.spec.whatwg.org/#dfn-support-indexed-properties
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 const tryName = (f: () => unknown) => {

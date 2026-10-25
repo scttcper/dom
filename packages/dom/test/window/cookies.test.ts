@@ -12,7 +12,7 @@
  * other hosts.
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 function win(url: string): any {
   return createWindow({ url });

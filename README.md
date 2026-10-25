@@ -59,6 +59,22 @@ Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
 (node:test, Bun) and agent-friendly debug output are in the
 [package README](publish/ctrl-dom/README.md).
 
+### Failing and flaky tests in Sentry
+
+[`@ctrl/sentry-tests`](packages/sentry-tests/README.md), its own package, works with any DOM: each
+failing test becomes a Sentry issue with the failing line, what the test did as breadcrumbs and the
+page when it failed attached; each flaky test a `FlakyTest` issue; and each test file a trace with
+a span per describe block, test, hook and test function. On @ctrl/dom the traces also hold every
+query, `waitFor`, user-event action and render (`findByRole("option", …) (40 checks)`), and
+failures get an accessibility snapshot.
+
+```ts
+plugins: [ctrlDom(), sentryTests()]                // Vitest
+reporters: ["default", "@ctrl/sentry-tests/jest"], testRunner: "@ctrl/sentry-tests/jest-runner"   // Jest
+```
+
+Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` locally.
+
 ## Performance
 
 The same 100 React test files under Vitest and Jest, and benchmarks of what component tests do,

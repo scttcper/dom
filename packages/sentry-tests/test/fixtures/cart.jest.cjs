@@ -1,0 +1,48 @@
+// The Jest twin of cart.vitest.ts.
+"use strict";
+const { tracingChannel } = require("node:diagnostics_channel");
+
+const spans = tracingChannel("sentry-tests:span");
+const traced = (op, description, fn) => spans.traceSync(fn, { op, description, data: { rows: 1 }, async: false });
+
+jest.retryTimes(1);
+
+describe("Cart", () => {
+  let items;
+  beforeEach(() => {
+    items = ["Apple"];
+  });
+  afterEach(() => {
+    items = [];
+  });
+
+  test("adds an item", () => {
+    traced("db.query", "SELECT * FROM items", () => {});
+    expect(items).toHaveLength(1);
+  });
+
+  test("checks out", () => {
+    expect(items[0]).toBe("Pear");
+  });
+});
+
+// A failure outside any test: Jest fails the block's tests with it.
+describe("Coupons", () => {
+  beforeAll(() => {
+    throw new Error("coupon service down");
+  });
+  test("applies a coupon", () => {});
+});
+
+test.skip("pays later", () => {});
+// A test named like an Object.prototype member.
+test("constructor", () => {});
+
+// A file-level hook: top-level tests run it, and so do the describe block's.
+afterEach(() => {});
+
+let attempts = 0;
+test("eventually passes", () => {
+  attempts++;
+  if (attempts === 1) throw new Error("first try");
+});

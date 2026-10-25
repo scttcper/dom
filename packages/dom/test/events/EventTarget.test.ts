@@ -12,7 +12,7 @@
  * Mostly ported from WPT dom/events (links per describe block); original assertions kept.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { CustomEvent, Event, EventTarget, type Document, type Window } from "@rtd/dom";
+import { CustomEvent, Event, EventTarget, type Document, type Window } from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 import { $listeners } from "../../src/keys.ts";
 

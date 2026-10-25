@@ -13,7 +13,7 @@
  *   HTML Standard — https://html.spec.whatwg.org/#dom-animationframeprovider-requestanimationframe
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createWindow, installGlobals, type Window } from "@rtd/dom";
+import { createWindow, installGlobals, type Window } from "@ctrl/dom";
 
 type AnyFn = (...args: unknown[]) => unknown;
 

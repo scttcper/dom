@@ -14,8 +14,8 @@
  * on `daa06` (jest-dom 7); the default export matches 0.5.16 (Testing Library 10.4).
  */
 import { afterEach, describe, expect, test } from "vitest";
-import { computeAccessibleDescription, daa06, isDisabled } from "@rtd/aria";
-import type { Element } from "@rtd/dom";
+import { computeAccessibleDescription, daa06, isDisabled } from "@ctrl/dom/aria";
+import type { Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
 
 const { document, renderIntoDocument, cleanup } = makeDocument();

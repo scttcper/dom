@@ -14,7 +14,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 const table: [string, string][] = new Function(readFileSync(new URL("./wpt/semantics/interfaces.js", import.meta.url), "utf8") + "\nreturn elements;")();
 

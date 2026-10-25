@@ -1,12 +1,12 @@
 /**
  * Downstream repro (React Aria `all` preset: "Jest worker encountered 4 child process
- * exceptions, exceeding retry limit" on rtd-dom/rtd-full, which fails whichever test files the
+ * exceptions, exceeding retry limit" on ctrl-dom/ctrl-dom-full, which fails whichever test files the
  * crashed workers had queued; with --workers 1 the run dies with
  * `ReferenceError: window is not defined` at react-dom-client `schedulerEvent = window.event`).
  *
  * Work a test file leaves scheduled (React's scheduler uses the global's `setImmediate`, which
  * jest-environment-node exposes and the window's close() does not cancel) runs after the
- * environment's teardown. jest-environment-rtd's teardown calls installGlobals' uninstall, which
+ * environment's teardown. @ctrl/dom-jest-environment's teardown calls installGlobals' uninstall, which
  * deletes `window`, `document`, ... from the vm global, so that late code throws a ReferenceError
  * and the uncaught exception kills the worker. Under jest-environment-jsdom the global IS the
  * window, so `window` stays defined after teardown (and late callbacks are harmless).
@@ -18,7 +18,7 @@
 import { describe, expect, test } from "vitest";
 import { environments } from "./engines.ts";
 
-describe.each(["jsdom", "rtd"] as const)("jest-environment-%s", (engine) => {
+describe.each(["jsdom", "ctrl-dom"] as const)("jest-environment-%s", (engine) => {
   test("`window` is still defined on the test global after teardown (late React work can read window.event)", async () => {
     const env = await environments[engine]();
     if (env === null) return;

@@ -12,7 +12,7 @@
  *   Media Queries 5 — https://drafts.csswg.org/mediaqueries-5/#evaluating
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, CSS, CSSStyleSheet, type Window, type Document, type Element } from "@rtd/dom";
+import { createWindow, CSS, CSSStyleSheet, type Window, type Document, type Element } from "@ctrl/dom";
 import {
   computedValue,
   computedVisibility,
@@ -21,7 +21,7 @@ import {
   pointerEvents,
   pseudoContent,
   NodeCache,
-} from "@rtd/dom/internal";
+} from "@ctrl/dom/internal";
 import { $css, $impl, $styleVersion } from "../../src/keys.ts";
 
 let window: Window;

@@ -1,5 +1,5 @@
-// Jest environment for @rtd/dom: `testEnvironment: "rtd"` (resolves `jest-environment-rtd`), or
-// `preset: "jest-environment-rtd"` to also get the module mapping below.
+// Jest environment for @ctrl/dom: `testEnvironment: "ctrl-dom"` (resolves `@ctrl/dom-jest-environment`), or
+// `preset: "@ctrl/dom-jest-environment"` to also get the module mapping below.
 //
 // The test file's global is an ordinary, non-contextified vm global
 // (vm.constants.DONT_CONTEXTIFY), like jest-environment-jsdom 30's (jsdom creates its window that
@@ -7,17 +7,17 @@
 // contextifies a Proxy instead, so each global lookup goes through V8's named-property
 // interceptors and the Proxy; that alone cost ~10% of Sentry's suite CPU. The constructor
 // creates one window and installs it on that global, plus the Node globals jest-environment-node
-// provides. Jest keeps workers alive across test files, so @rtd/dom is imported once per worker,
+// provides. Jest keeps workers alive across test files, so @ctrl/dom is imported once per worker,
 // here, in the outer realm.
 //
-// One @rtd/dom per worker (the singleton strategy): Jest evaluates test-file modules in a
-// fresh module registry inside the vm context, so a plain `require("@rtd/dom")` from a test
-// (or from @rtd/react, @rtd/user-event, ...) would load a second copy whose NodeImpl, current
+// One @ctrl/dom per worker (the singleton strategy): Jest evaluates test-file modules in a
+// fresh module registry inside the vm context, so a plain `require("@ctrl/dom")` from a test
+// (or from @ctrl/dom/react, @ctrl/dom/user-event, ...) would load a second copy whose NodeImpl, current
 // window and caches are unrelated to the window installed here. Instead the environment puts
-// the modules it loaded on the vm global under `Symbol.for("rtd.dom.modules")`. Published
+// the modules it loaded on the vm global under `Symbol.for("ctrl-dom.dom.modules")`. Published
 // `@ctrl/dom` / `@ctrl/dom/internal` resolve to bridges that return those objects
-// (scripts/release.ts, writeBridges); in this workspace the preset maps `@rtd/dom` /
-// `@rtd/dom/internal` to tiny CommonJS shims (src/shims/*.cjs) that do the same. Every module in
+// (scripts/release.ts, writeBridges); in this workspace the preset maps `@ctrl/dom` /
+// `@ctrl/dom/internal` to tiny CommonJS shims (src/shims/*.cjs) that do the same. Every module in
 // the test registry therefore sees the same instance as the environment.
 
 import { constants as vmConstants, createContext, type Context } from "node:vm";
@@ -26,13 +26,13 @@ import { LegacyFakeTimers, ModernFakeTimers } from "@jest/fake-timers";
 import type { Circus, Global } from "@jest/types";
 import { ModuleMocker } from "jest-mock";
 import { installCommonGlobals } from "jest-util";
-import * as dom from "@rtd/dom";
-import * as internal from "@rtd/dom/internal";
-import type { CompatProfile, Window, WindowOptions } from "@rtd/dom";
+import * as dom from "@ctrl/dom";
+import * as internal from "@ctrl/dom/internal";
+import type { CompatProfile, Window, WindowOptions } from "@ctrl/dom";
 import { failureSnapshotHandler } from "./failure-snapshot.ts";
 
 /** The vm-global key the bridges and shims read. */
-export const RTD_MODULES = Symbol.for("rtd.dom.modules");
+export const CTRL_DOM_MODULES = Symbol.for("ctrl-dom.dom.modules");
 
 export interface CtrlDomTestEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
   customExportConditions?: string[];
@@ -48,12 +48,12 @@ export interface CtrlDomTestEnvironmentOptions extends Omit<WindowOptions, "shar
    * with Date and performance.now() advancing by the same amount. findBy/waitFor, user-event
    * delays, debounces and timeouts stop costing wall time; ordering and app-visible time are
    * unchanged. `false` keeps real-time timers (waitFor polls in real time). The CTRL_DOM_TIME_SKIP
-   * environment variable ("0"/"1"; also RTD_TIME_SKIP) overrides it. See
+   * environment variable ("0"/"1"; also CTRL_DOM_TIME_SKIP) overrides it. See
    * packages/dom/src/window/clock.ts.
    */
   timeSkip?: boolean;
   /**
-   * APIs beyond jsdom's (@rtd/dom window/compat.ts): "jsdom-26" (default: jest-environment-jsdom
+   * APIs beyond jsdom's (@ctrl/dom window/compat.ts): "jsdom-26" (default: jest-environment-jsdom
    * 30 ships jsdom 26, so no PointerEvent), "jsdom-30" (for suites written for an environment built
    * on jsdom >= 27, which has PointerEvent) or "modern" (everything, including matchMedia,
    * ResizeObserver and the `inert` IDL attribute).
@@ -66,7 +66,7 @@ export interface CtrlDomTestEnvironmentOptions extends Omit<WindowOptions, "shar
  * that suites actually use: custom environments and @sentry/jest-environment (which copies it to
  * `global.jsdom`) call `reconfigure({ url })` to change the URL without navigating.
  */
-export interface RtdDom {
+export interface CtrlDomDom {
   readonly window: Window;
   /** https://github.com/jsdom/jsdom#reconfiguring-the-jsdom-with-reconfiguresettings */
   reconfigure(settings: { url?: string; windowTop?: unknown }): void;
@@ -155,7 +155,7 @@ function reportToHost(error: unknown): void {
 
 /**
  * jsdom's "Not implemented" diagnostics (navigation, window.alert, form submission, ...; only
- * under the jsdom profiles, @rtd/dom window/not-implemented.ts), forwarded to the test file's
+ * under the jsdom profiles, @ctrl/dom window/not-implemented.ts), forwarded to the test file's
  * console as jest-environment-jsdom does: with jsdom 26 (`sendTo` omitting jsdom errors, then
  * its "jsdomError" listener) once, as the Error; with jsdom 27+ (`forwardTo`, then the same
  * listener) as `error.stack`, then as the Error.
@@ -174,7 +174,7 @@ const ERROR_CONSTRUCTORS = ["Error", "TypeError", "RangeError", "SyntaxError", "
 
 /**
  * Our DOM runs in the worker's realm while test code runs in the vm context, so a TypeError
- * thrown by @rtd/dom is not `instanceof` the test realm's TypeError (`expect(fn).toThrow(TypeError)`
+ * thrown by @ctrl/dom is not `instanceof` the test realm's TypeError (`expect(fn).toThrow(TypeError)`
  * would fail). Give the context's error constructors a Symbol.hasInstance that also accepts the
  * outer realm's instances; errors created in the context keep working as before.
  */
@@ -190,13 +190,13 @@ function bridgeErrorRealms(global: Record<string, unknown>): void {
   }
 }
 
-function createDom(window: Window): RtdDom {
+function createDom(window: Window): CtrlDomDom {
   return {
     window,
     reconfigure(settings) {
       // jsdom: "windowTop" overrides window.top; "url" replaces the document URL (no
       // navigation, no history entry, no events). Only the URL is supported here.
-      if (settings.windowTop !== undefined) throw new TypeError("jest-environment-rtd: dom.reconfigure() does not support windowTop");
+      if (settings.windowTop !== undefined) throw new TypeError("@ctrl/dom-jest-environment: dom.reconfigure() does not support windowTop");
       if (settings.url === undefined) return;
       const url = URL.parse(String(settings.url));
       if (url === null) throw new TypeError(`Could not parse "${settings.url}" as a URL`);
@@ -212,15 +212,17 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
   fakeTimersModern: ModernFakeTimers | null;
   moduleMocker: ModuleMocker | null;
   customExportConditions: string[];
-  rtdWindow: Window | null;
-  /** jest-environment-jsdom's `dom`, reduced to what suites use (see RtdDom). */
-  dom: RtdDom | null;
+  ctrlDomWindow: Window | null;
+  /** jest-environment-jsdom's `dom`, reduced to what suites use (see CtrlDomDom). */
+  dom: CtrlDomDom | null;
   /** The file's timers (see CtrlDomTestEnvironmentOptions.timeSkip). */
   clock: InstanceType<typeof internal.VirtualClock> | null;
   /** Only with CTRL_DOM_DEBUG set: failure snapshots (./failure-snapshot.ts). */
-  declare handleTestEvent?: (event: Circus.Event) => Promise<void> | void;
+  declare handleTestEvent?: (event: Circus.Event, state: Circus.State) => Promise<void> | void;
+  /** Stops adding the page and the clock to @ctrl/sentry-tests' failure reports. */
+  #unsubscribeFailures: (() => void) | null = null;
 
-  constructor(config: JestEnvironmentConfig, _context: EnvironmentContext) {
+  constructor(config: JestEnvironmentConfig, _environmentContext: EnvironmentContext) {
     const { projectConfig } = config;
     const { customExportConditions, nodeFetch, timeSkip, ...windowOptions } = (projectConfig.testEnvironmentOptions ?? {}) as CtrlDomTestEnvironmentOptions;
     // Resolve packages' "browser" builds, like jest-environment-jsdom.
@@ -243,18 +245,18 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     (global.Error as ErrorConstructor).stackTraceLimit = 100;
 
     const window = dom.createWindow({ ...windowOptions, compat: windowOptions.compat ?? "jsdom-26", url: windowOptions.url ?? DEFAULT_URL });
-    this.rtdWindow = window;
+    this.ctrlDomWindow = window;
     this.dom = createDom(window);
     // Baseline for undoing interface prototype patches at teardown (they are shared per worker),
     // taken before the compat profile adjusts prototype members so teardown also undoes that.
     internal.captureInterfaceBaseline();
     dom.installGlobals(window, global);
-    Object.defineProperty(global, RTD_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
+    Object.defineProperty(global, CTRL_DOM_MODULES, { value: { dom, internal }, configurable: true, enumerable: false, writable: false });
     bridgeErrorRealms(global as Record<string, unknown>);
     // The file's timers live on a virtual clock (idle time skipping unless timeSkip is false):
     // window.setTimeout & co. delegate to these globals, and teardown disposes the clock, so a
     // long app timer (TanStack Query GC, polling) cannot keep this vm context alive.
-    const envSkip = process.env.CTRL_DOM_TIME_SKIP ?? process.env.RTD_TIME_SKIP;
+    const envSkip = process.env.CTRL_DOM_TIME_SKIP;
     const skip = envSkip === "1" ? true : envSkip === "0" ? false : timeSkip !== false;
     this.clock = internal.installClock(new internal.VirtualClock({ skip }), global).clock;
 
@@ -274,8 +276,10 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     internal.guardInterfaceDefinitions(global as never);
     internal.setUncaughtExceptionHandler(reportToHost);
     internal.setNotImplementedHandler(forwardNotImplemented(global));
-    const onTestEvent = failureSnapshotHandler(() => this.rtdWindow?.document);
+    const onTestEvent = failureSnapshotHandler(() => this.ctrlDomWindow?.document);
     if (onTestEvent !== undefined) this.handleTestEvent = onTestEvent;
+    // @ctrl/sentry-tests' failure reports from this file get the accessibility snapshot and clock.
+    this.#unsubscribeFailures = internal.subscribeTestFailures(() => this.ctrlDomWindow?.document);
   }
 
   async setup(): Promise<void> {}
@@ -296,12 +300,14 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
    * crashing the worker with a ReferenceError. The vm context is discarded with the file.
    */
   async teardown(): Promise<void> {
+    this.#unsubscribeFailures?.();
+    this.#unsubscribeFailures = null;
     internal.setUncaughtExceptionHandler(null);
     internal.setNotImplementedHandler(null);
     this.fakeTimers?.dispose();
     this.fakeTimersModern?.dispose();
-    this.rtdWindow?.close();
-    this.rtdWindow = null;
+    this.ctrlDomWindow?.close();
+    this.ctrlDomWindow = null;
     this.clock?.dispose();
     this.clock = null;
     this.dom = null;

@@ -15,7 +15,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import {
   compileSelectorList,
   matchesSelector,
@@ -486,11 +486,11 @@ describe("differential vs jsdom (@asamuzakjp/dom-selector) — https://drafts.cs
     "[class|=odd]", "[class$=ive]", "[class*=hap]", "input[type=TEXT]", "input[type=text s]", "li[class=EVEN i]",
   ];
   const jsdom = new JSDOM(html);
-  const rtd = createWindow({ html });
+  const ctrlDom = createWindow({ html });
   for (const sel of selectors) {
     test(`${sel}`, () => {
       const want = Array.from(jsdom.window.document.querySelectorAll(sel), (e: AnyEl) => e.id);
-      expect(Array.from(rtd.document.querySelectorAll(sel), (e: AnyEl) => e.id)).toEqual(want);
+      expect(Array.from(ctrlDom.document.querySelectorAll(sel), (e: AnyEl) => e.id)).toEqual(want);
     });
   }
 });

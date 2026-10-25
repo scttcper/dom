@@ -4,7 +4,7 @@
 // Same matching semantics as upstream; label associations are computed once per query
 // (see LabelContext) instead of once per element.
 
-import { attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@rtd/dom/internal";
+import { attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { getConfig } from "../config.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext } from "../label-helpers.ts";
@@ -19,7 +19,7 @@ import {
 } from "../query-helpers.ts";
 import { matchesSelector } from "../selectors.ts";
 import type { SelectorMatcherOptions } from "./text.ts";
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 import { envDebugFormat } from "../agent-debug.ts";
 import { labelCandidates } from "../candidates.ts";
 

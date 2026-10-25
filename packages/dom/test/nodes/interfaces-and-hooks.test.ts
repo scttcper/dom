@@ -15,7 +15,7 @@
  *     https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 const chain = (proto: AnyWindow) => {

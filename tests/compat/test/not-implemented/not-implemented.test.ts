@@ -3,7 +3,7 @@
  * and `type`) at the same points as the real jsdom of each profile, observed differentially.
  *
  * Oracles: jsdom 26.1.0 (`jsdom-26`) and 30.1.3 (`jsdom`), each with a VirtualConsole whose
- * "jsdomError" events are collected (lib/jsdom/browser/not-implemented.js). @rtd/dom: a window of
+ * "jsdomError" events are collected (lib/jsdom/browser/not-implemented.js). @ctrl/dom: a window of
  * the matching profile with setNotImplementedHandler collecting (window/not-implemented.ts).
  *
  * Where jsdom reports, per the spec algorithms it stops short of:
@@ -18,8 +18,8 @@
  */
 import { createRequire } from "node:module";
 import { afterEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
-import { setNotImplementedHandler } from "@rtd/dom/internal";
+import { createWindow } from "@ctrl/dom";
+import { setNotImplementedHandler } from "@ctrl/dom/internal";
 
 const require = createRequire(import.meta.url);
 const ORACLES = { "jsdom-26": require("jsdom-26"), "jsdom-30": require("jsdom") } as const;
@@ -52,7 +52,7 @@ async function onJsdom(profile: Profile, scenario: Scenario): Promise<Reported[]
   return reported;
 }
 
-async function onRtd(profile: Profile | "modern", scenario: Scenario): Promise<Reported[]> {
+async function onCtrlDom(profile: Profile | "modern", scenario: Scenario): Promise<Reported[]> {
   const reported: Reported[] = [];
   setNotImplementedHandler((e) => reported.push({ message: e.message, type: e.type }));
   const window = createWindow({ html: HTML, url: URL_, compat: profile });
@@ -167,7 +167,7 @@ for (const profile of ["jsdom-26", "jsdom-30"] as const) {
       test(`${name}: ${REPORTED.has(name) ? "the" : "no"} "Not implemented" errors jsdom reports`, async () => {
         const expected = await onJsdom(profile, scenario);
         expect(expected.length > 0).toBe(REPORTED.has(name));
-        expect(await onRtd(profile, scenario)).toEqual(expected);
+        expect(await onCtrlDom(profile, scenario)).toEqual(expected);
       });
     }
   });
@@ -175,7 +175,7 @@ for (const profile of ["jsdom-26", "jsdom-30"] as const) {
 
 describe("other configurations — https://html.spec.whatwg.org/#navigate", () => {
   test('"modern" reports nothing', async () => {
-    for (const scenario of Object.values(SCENARIOS)) expect(await onRtd("modern", scenario)).toEqual([]);
+    for (const scenario of Object.values(SCENARIOS)) expect(await onCtrlDom("modern", scenario)).toEqual([]);
   });
 
   test("without a handler nothing is reported (and nothing throws)", async () => {

@@ -1,7 +1,7 @@
 // Port of @testing-library/dom src/queries/title.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/queries/title.ts
 
-import { asciiLowercase, attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@rtd/dom/internal";
+import { asciiLowercase, attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "../matches.ts";

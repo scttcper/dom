@@ -1,4 +1,4 @@
-// `@ctrl/dom/register`: importing it installs an @rtd/dom window as the global, for test runners
+// `@ctrl/dom/register`: importing it installs an @ctrl/dom window as the global, for test runners
 // without a DOM environment of their own.
 //
 //   node --import @ctrl/dom/register --test           (or `import "@ctrl/dom/register"` first in a file)
@@ -10,7 +10,7 @@
 // and CTRL_DOM_TEST_HOOKS ("0" to leave the runner alone). For anything else call
 // `register(options)` (it replaces this registration) or import `@ctrl/dom/register/pure`.
 
-import type { CompatProfile } from "@rtd/dom";
+import type { CompatProfile } from "@ctrl/dom";
 import { register } from "./pure.ts";
 
 export { register, unregister, isRegistered, type RegisterOptions, type Registration } from "./pure.ts";

@@ -307,6 +307,22 @@ A line for your `CLAUDE.md` / `AGENTS.md`:
 
 Details: [docs/agent-debugging.md](https://github.com/scttcper/dom/blob/main/docs/agent-debugging.md).
 
+## Sentry
+
+[`@ctrl/sentry-tests`](https://www.npmjs.com/package/@ctrl/sentry-tests) puts test runs in Sentry:
+failing tests as issues with the failing line, what the test did as breadcrumbs and the page
+attached, flaky tests as `FlakyTest` issues, and each test file as a trace of its describe blocks,
+tests, hooks and test functions. On @ctrl/dom the traces also hold every Testing Library query,
+`waitFor`, user-event action and render (`findByRole("option", …) (40 checks)`), and failures get
+an accessibility snapshot of the page.
+
+```ts
+plugins: [ctrlDom(), sentryTests()]                // Vitest, sentryTests from @ctrl/sentry-tests/vitest
+```
+
+Setup for Vitest and Jest:
+[its README](https://github.com/scttcper/dom/blob/main/packages/sentry-tests/README.md).
+
 ## Differences from jsdom
 
 There is no script execution, no navigation and no network, as in jsdom and happy-dom, and no

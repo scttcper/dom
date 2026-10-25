@@ -4,7 +4,7 @@
 // @ts-nocheck -- ported verbatim; upstream types these tests against lib.dom, which this monorepo
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
-import {isJsdomEnv, isLegacyJsdomEnv, isRtdEnv, render} from '#testHelpers'
+import {isJsdomEnv, isLegacyJsdomEnv, isCtrlDomEnv, render} from '#testHelpers'
 import {waitFor} from '@testing-library/dom'
 
 test('`Selection.setBaseAndExtent()` resets input selection in browser', async () => {
@@ -15,11 +15,11 @@ test('`Selection.setBaseAndExtent()` resets input selection in browser', async (
 
   element.ownerDocument.getSelection()?.setBaseAndExtent(element, 0, element, 0)
 
-  // divergence: @rtd/dom keeps the input's own selection, like jsdom
-  expect(element.selectionStart).toBe(isJsdomEnv() || isRtdEnv() ? 3 : 0)
+  // divergence: @ctrl/dom keeps the input's own selection, like jsdom
+  expect(element.selectionStart).toBe(isJsdomEnv() || isCtrlDomEnv() ? 3 : 0)
 })
 
-// @rtd/dom queues `select` per https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
+// @ctrl/dom queues `select` per https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
 test('events are not dispatched on same microtask in browser', async () => {
   const {element} = render<HTMLInputElement>(`<input value="foo"/>`)
   const onSelect = vi.fn()
@@ -52,8 +52,8 @@ test('`HTMLInputElement.focus()` in contenteditable changes `Selection` in brows
   expect(element.ownerDocument.getSelection()).toHaveProperty(
     'anchorNode',
     // divergence: jsdom 30 moves the Selection onto the focused input itself
-    // @rtd/dom, like jsdom 20, leaves the document Selection alone on focus()
-    isLegacyJsdomEnv() || isRtdEnv()
+    // @ctrl/dom, like jsdom 20, leaves the document Selection alone on focus()
+    isLegacyJsdomEnv() || isCtrlDomEnv()
       ? xpathNode('//span')
       : isJsdomEnv()
         ? xpathNode('//input')

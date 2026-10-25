@@ -1,4 +1,4 @@
-// jest-dom matcher benchmark: @rtd/jest-dom on @rtd/dom vs stock @testing-library/jest-dom
+// jest-dom matcher benchmark: @ctrl/dom/jest-dom on @ctrl/dom vs stock @testing-library/jest-dom
 // on jsdom and happy-dom. Fresh process per sample; median (min–max).
 //   node packages/jest-dom/bench/run.ts [samples=7]
 import { execFileSync } from "node:child_process";
@@ -16,7 +16,7 @@ const fmt = (xs: number[], d = 3) => `${median(xs).toFixed(d)} (${Math.min(...xs
 console.log(`### 10 jest-dom assertions on a login form (${iterations} iterations/sample, ${samples} samples)`);
 console.log("| stack | ms/iteration | setup ms | heap MB | rss MB |");
 console.log("| --- | --- | --- | --- | --- |");
-for (const stack of ["rtd", "jsdom", "happy-dom"]) {
+for (const stack of ["ctrl-dom", "jsdom", "happy-dom"]) {
   const runs: any[] = [];
   try {
     for (let i = 0; i < samples; i++) {

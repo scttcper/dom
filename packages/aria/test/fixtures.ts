@@ -1,5 +1,5 @@
 // Differential fixtures: markup evaluated by the upstream oracle on jsdom and by
-// @rtd/aria on @rtd/dom. Markup is written fully explicit (tbody, closing tags, no
+// @ctrl/dom/aria on @ctrl/dom. Markup is written fully explicit (tbody, closing tags, no
 // self-closing non-void elements) so both parsers build identical trees.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

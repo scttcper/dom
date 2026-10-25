@@ -9,8 +9,8 @@
  *   - notify mutation observers: https://dom.spec.whatwg.org/#notify-mutation-observers
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, MutationObserver, MutationRecord, type Document, type Element } from "@rtd/dom";
-import { activeObservers } from "@rtd/dom/internal";
+import { createWindow, MutationObserver, MutationRecord, type Document, type Element } from "@ctrl/dom";
+import { activeObservers } from "@ctrl/dom/internal";
 
 let document: Document;
 

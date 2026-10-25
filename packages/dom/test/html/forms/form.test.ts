@@ -15,7 +15,7 @@
  *   disabled               https://html.spec.whatwg.org/#concept-fe-disabled
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import { implicitSubmission } from "../../../src/html/forms/index.ts";
 import { isActuallyDisabled } from "../../../src/html/forms/form-associated.ts";
 import { $impl } from "../../../src/keys.ts";

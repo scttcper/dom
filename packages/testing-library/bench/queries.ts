@@ -1,8 +1,8 @@
-// Query microbenchmarks: @rtd/testing-library on @rtd/dom vs stock @testing-library/dom@10.4.2
+// Query microbenchmarks: @ctrl/dom/testing-library on @ctrl/dom vs stock @testing-library/dom@10.4.2
 // on jsdom and on happy-dom.
 //
 //   node packages/testing-library/bench/queries.ts            # driver: all combos, fresh process per sample
-//   node packages/testing-library/bench/queries.ts --worker rtd 1000 role
+//   node packages/testing-library/bench/queries.ts --worker ctrl-dom 1000 role
 //
 // Each worker process builds one form, warms the query up, then times it for ~MEASURE_MS and
 // prints JSON {opsPerSec, usPerOp, heapUsedMB (after GC), rssMB}. The driver runs SAMPLES
@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const SAMPLES = Number(process.env.SAMPLES ?? 5);
 const MEASURE_MS = Number(process.env.MEASURE_MS ?? 400);
-const IMPLS = (process.env.IMPLS ?? "rtd,jsdom,happy-dom").split(",");
+const IMPLS = (process.env.IMPLS ?? "ctrl-dom,jsdom,happy-dom").split(",");
 const SIZES = (process.env.SIZES ?? "100,1000").split(",").map(Number);
 const QUERIES = (process.env.QUERIES ?? "role,label,text,testid").split(",");
 
@@ -28,8 +28,8 @@ function formHtml(elements: number): { html: string; last: number } {
 }
 
 async function setup(impl: string, html: string): Promise<{ lib: any; container: any }> {
-  if (impl === "rtd") {
-    const { createWindow } = await import("@rtd/dom");
+  if (impl === "ctrl-dom") {
+    const { createWindow } = await import("@ctrl/dom");
     const lib = await import("../src/index.ts");
     const window: any = createWindow({ url: "http://localhost/" });
     window.document.body.innerHTML = html;

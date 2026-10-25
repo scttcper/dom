@@ -4,11 +4,11 @@ Two kinds of compatibility checks live here. Both are owned by the lead; area ag
 as acceptance gates and report scenarios they believe are wrong (with a spec link) instead of
 editing them.
 
-## 1. DOM differential suite (`test/**`, project `@rtd/compat`)
+## 1. DOM differential suite (`test/**`, project `compat`)
 
 Every scenario is a function of a window that performs DOM operations and returns plain data.
 It runs on **jsdom** (the oracle: its DOM/forms code is generated from WebIDL and checked
-against web-platform-tests) and on **@rtd/dom** in the same process, and the normalized
+against web-platform-tests) and on **@ctrl/dom** in the same process, and the normalized
 observations must be equal (`src/harness.ts`).
 
 When jsdom is wrong or missing an API, the scenario pins the spec-correct value instead, and
@@ -46,12 +46,12 @@ mocking our XHR, and axios's XHR adapter). `test/surface/`: each compat profile'
 surface against jsdom 26 and 30 (packages/dom/src/window/compat.ts).
 
 ```bash
-pnpm vitest run --project @rtd/compat                 # compare @rtd/dom with the oracle
-pnpm vitest run --project @rtd/compat -t radio        # one area
-COMPAT_ORACLE=1 pnpm vitest run --project @rtd/compat # print jsdom's observations (review new scenarios)
+pnpm vitest run --project compat                 # compare @ctrl/dom with the oracle
+pnpm vitest run --project compat -t radio        # one area
+COMPAT_ORACLE=1 pnpm vitest run --project compat # print jsdom's observations (review new scenarios)
 ```
 
-`@rtd/dom` is imported lazily: if it fails to load, every test fails with the load error and
+`@ctrl/dom` is imported lazily: if it fails to load, every test fails with the load error and
 oracle mode still works.
 
 ## 2. React suite (`react/**`, three projects)
@@ -62,14 +62,14 @@ differential. Instead the same files run in three Vitest projects with explicit 
 | Project | Environment | Testing Library |
 | --- | --- | --- |
 | `compat:react-jsdom` | jsdom | stock packages; proves every expectation |
-| `compat:react-rtd` | `vitest-environment-rtd` | stock packages (DOM swap only) |
-| `compat:react-rtd-full` | `vitest-environment-rtd` | `@rtd/react`, `@rtd/testing-library`, `@rtd/user-event`, `@rtd/jest-dom` aliased over `@testing-library/*` |
+| `compat:react-ctrl-dom` | `@ctrl/dom/vitest-environment` | stock packages (DOM swap only) |
+| `compat:react-ctrl-dom-full` | `@ctrl/dom/vitest-environment` | `@ctrl/dom/react`, `@ctrl/dom/testing-library`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom` aliased over `@testing-library/*` |
 
 Tests that jsdom cannot pass because jsdom lacks a spec feature use `specOnly(reason)`, which
 skips them only in the jsdom project.
 
 ```bash
 pnpm vitest run --project compat:react-jsdom
-pnpm vitest run --project compat:react-rtd
-pnpm vitest run --project compat:react-rtd-full
+pnpm vitest run --project compat:react-ctrl-dom
+pnpm vitest run --project compat:react-ctrl-dom-full
 ```

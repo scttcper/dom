@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, test } from "vitest";
 
 const pkg = fileURLToPath(new URL("..", import.meta.url));
-const out = mkdtempSync(join(tmpdir(), "rtd-failure-snapshot-"));
+const out = mkdtempSync(join(tmpdir(), "ctrl-dom-failure-snapshot-"));
 afterAll(() => rmSync(out, { recursive: true, force: true }));
 
 interface VitestJson {

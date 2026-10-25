@@ -8,12 +8,12 @@
  *   https://w3c.github.io/aria/#conflict_resolution_presentation_none
  *
  * Original: https://github.com/eps1lon/dom-accessibility-api/blob/main/sources/__tests__/getRole.js
- * (MIT). Upstream HEAD (0.6+) treats role="none" like "presentation"; @rtd/aria's default
+ * (MIT). Upstream HEAD (0.6+) treats role="none" like "presentation"; @ctrl/dom/aria's default
  * `getRole` matches 0.5.16 (Testing Library 10.4) and `daa06.getRole` matches 0.6.3 — the
  * role="none" cases are asserted against both below.
  */
 import { describe, expect, it } from "vitest";
-import { getRole, daa06 } from "@rtd/aria";
+import { getRole, daa06 } from "@ctrl/dom/aria";
 import { makeDocument } from "./helpers.ts";
 
 const { document } = makeDocument();

@@ -1,9 +1,9 @@
-// Run by test/register.test.ts as `bun test` in this directory (bunfig.toml preloads @rtd/register).
+// Run by test/register.test.ts as `bun test` in this directory (bunfig.toml preloads @ctrl/dom/register).
 import { expect, test } from "bun:test";
-import * as matchers from "@rtd/jest-dom/matchers";
-import * as dom from "@rtd/dom";
-import { render, screen } from "@rtd/react";
-import userEvent from "@rtd/user-event";
+import * as matchers from "@ctrl/dom/jest-dom/matchers";
+import * as dom from "@ctrl/dom";
+import { render, screen } from "@ctrl/dom/react";
+import userEvent from "@ctrl/dom/user-event";
 import { Signup } from "../signup.ts";
 
 expect.extend(matchers as never);

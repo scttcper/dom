@@ -5,7 +5,7 @@
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
 import {isElementType} from '#src/utils/index.ts'
-import {setup, isRtdEnv} from '#testHelpers'
+import {setup, isCtrlDomEnv} from '#testHelpers'
 
 describe('check element type per namespace, tagname and props', () => {
   test('check in HTML document', async () => {
@@ -20,8 +20,8 @@ describe('check element type per namespace, tagname and props', () => {
     ).toBe(true)
   })
 
-  // divergence: @rtd/dom's DOMParser does not parse XML (no XML parser; not needed for React tests).
-  test.skipIf(isRtdEnv())('check in XML document', async () => {
+  // divergence: @ctrl/dom's DOMParser does not parse XML (no XML parser; not needed for React tests).
+  test.skipIf(isCtrlDomEnv())('check in XML document', async () => {
     // const {element} = setup(`<input readonly="true"/>`)
     const dom = new DOMParser().parseFromString(
       `

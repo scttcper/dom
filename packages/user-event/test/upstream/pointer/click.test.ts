@@ -4,7 +4,7 @@
 // @ts-nocheck -- ported verbatim; upstream types these tests against lib.dom, which this monorepo
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
-import {isJsdomEnv, setup, isRtdEnv} from '#testHelpers'
+import {isJsdomEnv, setup, isCtrlDomEnv} from '#testHelpers'
 
 test('click element', async () => {
   const {element, getClickEventsSnapshot, getEvents, user} = setup('<div />')
@@ -251,9 +251,9 @@ describe('label', () => {
     })
 
     // JSDOM does not set `HTMLLabelElement.control` to the form-associated custom element
-    // divergence: @rtd/dom does not resolve `label.control` to form-associated custom elements yet.
+    // divergence: @ctrl/dom does not resolve `label.control` to form-associated custom elements yet.
     // TODO(html-forms): labelable FACE per https://html.spec.whatwg.org/#category-label
-    expect(getEvents('click')).toHaveLength(isJsdomEnv() || isRtdEnv() ? 1 : 2)
+    expect(getEvents('click')).toHaveLength(isJsdomEnv() || isCtrlDomEnv() ? 1 : 2)
   })
 
   test('click nested FACE', async () => {

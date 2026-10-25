@@ -22,11 +22,12 @@ import {
   type queries,
 } from "./dtl.ts";
 import act, { getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
+import { traceSync, tracing } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
 
 // Containers React can render into / hydrate. Typed loosely on purpose: these are whatever
-// DOM the test environment provides (@rtd/dom, or jsdom/happy-dom for the stock comparison).
+// DOM the test environment provides (@ctrl/dom, or jsdom/happy-dom for the stock comparison).
 type RendererableContainer = ReactDOMClient.Container;
 type HydrateableContainer = Parameters<(typeof ReactDOMClient)["hydrateRoot"]>[0];
 type DOMElement = any;
@@ -362,13 +363,17 @@ function renderRoot(
       });
     },
     rerender: (rerenderUi: React.ReactNode) => {
-      renderRoot(rerenderUi, {
-        container,
-        baseElement,
-        root,
-        wrapper: WrapperComponent,
-        reactStrictMode,
-      });
+      const rerender = () =>
+        renderRoot(rerenderUi, {
+          container,
+          baseElement,
+          root,
+          wrapper: WrapperComponent,
+          reactStrictMode,
+        });
+      // Ours: a span when something subscribes to @ctrl/dom's tracing channel.
+      if (tracing()) traceSync("react.rerender", `rerender(${describeElement(rerenderUi)})`, rerender);
+      else rerender();
       // Intentionally do not return anything to avoid unnecessarily complicating the API.
       // folks can use all the same utilities we return in the first place that are bound to
       // the container
@@ -404,7 +409,89 @@ export function render<
   BaseElement extends RendererableContainer | HydrateableContainer = Container,
 >(ui: React.ReactNode, options: RenderOptions<Q, Container, BaseElement>): RenderResult<Q, Container, BaseElement>;
 export function render(ui: React.ReactNode, options?: Omit<RenderOptions, "queries"> | undefined): RenderResult;
-export function render(
+export function render(ui: React.ReactNode, options?: RenderOptions<any, any, any>): any {
+  // Ours: a span per render when something subscribes to @ctrl/dom's tracing channel.
+  if (!tracing()) return renderUntraced(ui, options);
+  return traceSync("react.render", `render(${describeElement(ui)})`, () => renderUntraced(ui, options));
+}
+
+/**
+ * `<Signup />` for a React element: the component under test, through wrappers that test helpers
+ * add (providers, StrictMode, fragments, a data router's route element, as in a
+ * `render(<RouterProvider router={createMemoryRouter([{ element: <Providers>{ui}</Providers> }])} />)` helper).
+ */
+function describeElement(ui: React.ReactNode): string {
+  if (!React.isValidElement(ui)) return typeof ui === "string" ? JSON.stringify(ui) : String(ui);
+  let element: React.ReactElement = ui;
+  for (let depth = 0; depth < 10; depth++) {
+    const inner = isWrapper(element) ? wrappedElement(element) : null;
+    if (inner === null) break;
+    element = inner;
+  }
+  return describeTree(element, 0);
+}
+
+/** `<Signup />`; a host element shows what it holds: `<div><Checkbox /></div>`, `<div>…</div>`. */
+function describeTree(element: React.ReactElement, depth: number): string {
+  const name = componentName(element.type) || "Component";
+  if (typeof element.type !== "string") return `<${name} />`;
+  const children = (element.props as { children?: React.ReactNode }).children;
+  if (children === undefined || children === null || children === false) return `<${name} />`;
+  const only = onlyElement(children);
+  return only !== null && depth < 2 ? `<${name}>${describeTree(only, depth + 1)}</${name}>` : `<${name}>…</${name}>`;
+}
+
+/** A component's display name, without the `$1` suffix bundlers add when names collide. */
+function componentName(type: unknown): string {
+  if (typeof type === "string") return type;
+  if (typeof type === "symbol") return type.description?.replace(/^react\./, "") ?? "";
+  const t = type as { displayName?: string; name?: string; render?: { name?: string }; type?: { name?: string } } | null;
+  const name = t?.displayName ?? t?.name ?? t?.render?.name ?? t?.type?.name ?? "";
+  return name.replace(/\$\d+$/, "");
+}
+
+const WRAPPER = /(?:Providers?|Context|Router|Wrapper|Fragment|StrictMode|Suspense|Profiler)$/;
+
+/**
+ * Providers, routers and the like, plus anonymous components with a single child element: test
+ * helpers build their wrappers in factories (`makeAllTheProviders()` returning a function).
+ */
+function isWrapper(element: React.ReactElement): boolean {
+  if (typeof element.type === "symbol") return true;
+  const name = componentName(element.type);
+  return WRAPPER.test(name) || (name === "" && onlyElement((element.props as { children?: React.ReactNode }).children) !== null);
+}
+
+interface Route {
+  element?: React.ReactNode;
+  children?: Route[];
+}
+
+/** The one element a wrapper renders: its only child, or a data router's first route element. */
+function wrappedElement(element: React.ReactElement): React.ReactElement | null {
+  const props = element.props as { children?: React.ReactNode; router?: { routes?: Route[] } };
+  return onlyElement(props.children) ?? firstRouteElement(props.router?.routes);
+}
+
+/** The first route element that is not an `<Outlet />` (a layout route's), depth first. */
+function firstRouteElement(routes: Route[] | undefined): React.ReactElement | null {
+  for (const route of routes ?? []) {
+    const element = onlyElement(route.element);
+    if (element !== null && componentName(element.type) !== "Outlet") return element;
+    const nested = firstRouteElement(route.children);
+    if (nested !== null) return nested;
+  }
+  return null;
+}
+
+function onlyElement(node: React.ReactNode): React.ReactElement | null {
+  if (React.isValidElement(node)) return node;
+  if (!Array.isArray(node)) return null;
+  const elements = node.filter((n) => React.isValidElement(n));
+  return elements.length === 1 ? (elements[0] as React.ReactElement) : null;
+}
+
+function renderUntraced(
   ui: React.ReactNode,
   {
     container,

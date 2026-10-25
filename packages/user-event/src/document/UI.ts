@@ -2,13 +2,13 @@
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/document/UI.ts
 //
 // Two implementations behind one API:
-// - @rtd/dom elements (when html-forms provides the hooks, see ../rtd.ts): the UI value and UI
+// - @ctrl/dom elements (when html-forms provides the hooks, see ../ctrl-dom.ts): the UI value and UI
 //   selection are element state inside the DOM; no interceptors, no boxed values.
 // - every other DOM: upstream's approach — the UI state is stored under symbols on the element
 //   and written through the interceptors installed by prepareDocument (interceptor.ts).
 
 import type {HTMLInputElement, HTMLTextAreaElement} from '../dom-types.ts'
-import {hasRtdUI, rtdUI} from '../rtd.ts'
+import {hasCtrlDomUI, ctrlDomUI} from '../ctrl-dom.ts'
 
 const UIValue = Symbol('Displayed value in UI')
 const UISelection = Symbol('Displayed selection in UI')
@@ -44,8 +44,8 @@ export function setUIValue(element: HTMLInputElement | HTMLTextAreaElement, valu
     el[InitialValue] = el.value
   }
 
-  if (hasRtdUI(el)) {
-    rtdUI!.setUIValue(el, value)
+  if (hasCtrlDomUI(el)) {
+    ctrlDomUI!.setUIValue(el, value)
     return
   }
 
@@ -58,16 +58,16 @@ export function setUIValue(element: HTMLInputElement | HTMLTextAreaElement, valu
 
 export function getUIValue(element: HTMLInputElement | HTMLTextAreaElement) {
   const el = element as EditableElement
-  if (hasRtdUI(el)) {
-    return rtdUI!.getUIValue(el)
+  if (hasCtrlDomUI(el)) {
+    return ctrlDomUI!.getUIValue(el)
   }
   return el[UIValue] === undefined ? el.value : String(el[UIValue])
 }
 
 /** Flag the IDL value as clean. This does not change the value. */
 export function setUIValueClean(element: HTMLInputElement | HTMLTextAreaElement) {
-  if (hasRtdUI(element)) {
-    rtdUI!.clearUIValue(element)
+  if (hasCtrlDomUI(element)) {
+    ctrlDomUI!.clearUIValue(element)
     return
   }
   ;(element as EditableElement)[UIValue] = undefined
@@ -103,8 +103,8 @@ export function setUISelection(
   const valueLength = getUIValue(el).length
   const sanitizeOffset = (o: number) => Math.max(0, Math.min(valueLength, o))
 
-  if (hasRtdUI(el)) {
-    // @rtd/dom stores start/end/direction like the selection API. user-event also needs the
+  if (hasCtrlDomUI(el)) {
+    // @ctrl/dom stores start/end/direction like the selection API. user-event also needs the
     // anchor for 'modify' (shift-extend); it is remembered next to the DOM state and only
     // trusted while the DOM selection still matches it (a programmatic change resets it).
     const anchorOffset =
@@ -112,7 +112,7 @@ export function setUISelection(
     const focusOffset = sanitizeOffset(focusOffsetParam)
     el[UISelection] = {anchorOffset, focusOffset}
     // Same direction upstream ends up with: it calls `setSelectionRange(start, end)`.
-    rtdUI!.setUISelection(el, Math.min(anchorOffset, focusOffset), Math.max(anchorOffset, focusOffset), 'none')
+    ctrlDomUI!.setUISelection(el, Math.min(anchorOffset, focusOffset), Math.max(anchorOffset, focusOffset), 'none')
     return
   }
 
@@ -154,8 +154,8 @@ export type UISelectionRange = UISelection & {
 export function getUISelection(element: HTMLInputElement | HTMLTextAreaElement): UISelectionRange {
   const el = element as EditableElement
   let sel: UISelection
-  if (hasRtdUI(el)) {
-    const {start, end} = rtdUI!.getUISelection(el)
+  if (hasCtrlDomUI(el)) {
+    const {start, end} = ctrlDomUI!.getUISelection(el)
     const remembered = el[UISelection]
     sel =
       remembered !== undefined &&
@@ -178,7 +178,7 @@ export function getUISelection(element: HTMLInputElement | HTMLTextAreaElement):
 }
 
 export function hasUISelection(element: HTMLInputElement | HTMLTextAreaElement) {
-  return hasRtdUI(element) || !!(element as EditableElement)[UISelection]
+  return hasCtrlDomUI(element) || !!(element as EditableElement)[UISelection]
 }
 
 /** Flag the IDL selection as clean. This does not change the selection. */

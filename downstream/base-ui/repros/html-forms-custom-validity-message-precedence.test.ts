@@ -4,7 +4,7 @@
  * When an input has a custom validity error AND a native constraint failure (here
  * typeMismatch on type=email), `validationMessage` must report the custom message: it is what
  * the UA shows, and what Base UI reads back to decide which message it owns. jsdom (the
- * baseline) and Chromium both return the custom message; @rtd/dom returns its localized
+ * baseline) and Chromium both return the custom message; @ctrl/dom returns its localized
  * typeMismatch text ("Please include an '@' ...").
  *
  * Spec: https://html.spec.whatwg.org/#dom-cva-validationmessage

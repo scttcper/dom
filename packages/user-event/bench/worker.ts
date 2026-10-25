@@ -4,9 +4,9 @@
 // Configs:
 //   stock-jsdom      stock @testing-library/user-event on jsdom        (what people run today)
 //   stock-happy-dom  stock @testing-library/user-event on happy-dom
-//   stock-rtd        stock @testing-library/user-event on @rtd/dom     (swap only the DOM)
-//   rtd-jsdom        @rtd/user-event on jsdom                          (isolates user-event)
-//   rtd              @rtd/user-event on @rtd/dom                       (the target)
+//   stock-ctrl-dom        stock @testing-library/user-event on @ctrl/dom     (swap only the DOM)
+//   ctrl-dom-jsdom        @ctrl/dom/user-event on jsdom                          (isolates user-event)
+//   ctrl-dom              @ctrl/dom/user-event on @ctrl/dom                       (the target)
 // Append `:nodelay` to a config to run with `delay: null` (no yielding at all), which shows the
 // CPU cost without timers.
 
@@ -36,7 +36,7 @@ async function makeWindow(): Promise<Win> {
     w.document.write(html)
     return w
   }
-  const {createWindow} = await import('@rtd/dom')
+  const {createWindow} = await import('@ctrl/dom')
   return createWindow({html}) as unknown as Win
 }
 

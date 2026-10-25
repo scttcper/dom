@@ -1,38 +1,38 @@
-// Vitest environment adapter used by the Base UI downstream runner for the `rtd-dom` and
-// `rtd-full` modes.
+// Vitest environment adapter used by the Base UI downstream runner for the `ctrl-dom` and
+// `ctrl-dom-full` modes.
 //
-// Upstream Base UI pins Vitest 5.0.x, the same major as our `vitest-environment-rtd`, so this
+// Upstream Base UI pins Vitest 5.0.x, the same major as our `@ctrl/dom/vitest-environment`, so this
 // adapter implements the same `Environment` contract (`name`, `viteEnvironment`, `setup()` ->
-// `{ teardown }`). It is kept separate (instead of pointing upstream at `vitest-environment-rtd`
+// `{ teardown }`). It is kept separate (instead of pointing upstream at `@ctrl/dom/vitest-environment`
 // directly) so the runner can:
 //
 //   - pin the window options that make both engines take the same headless code paths (see
 //     the userAgent note below), and use upstream's own `url: 'http://localhost'`;
-//   - keep working while `@rtd/dom`'s window/global-install layer is still being built: if
+//   - keep working while `@ctrl/dom`'s window/global-install layer is still being built: if
 //     `installGlobals` is missing it falls back to a minimal local installer;
-//   - publish `globalThis.__rtdDownstream` so the runner's identity probe can prove that the
-//     DOM in the test realm really is the @rtd/dom instance this adapter created (and not a
+//   - publish `globalThis.__ctrlDomDownstream` so the runner's identity probe can prove that the
+//     DOM in the test realm really is the @ctrl/dom instance this adapter created (and not a
 //     second copy of the module graph; see run.ts `server.deps.external`).
 //
 // userAgent: Base UI (and `@mui/internal-test-utils`) branch on `/jsdom/.test(navigator.userAgent)`
 // to skip tests that need real layout and to install a headless requestAnimationFrame shim
-// (test/setupVitest.ts). A UA containing "jsdom" makes @rtd/dom exercise exactly the tests and
+// (test/setupVitest.ts). A UA containing "jsdom" makes @ctrl/dom exercise exactly the tests and
 // branches the jsdom baseline exercises: no tests, assertions or skip conditions are edited, and
 // the runner verifies identical discovered/skipped counts. It measures jsdom replacement, not a
 // claim of layout-capable browser behaviour.
 
 import * as dom from "../../packages/dom/src/index.ts";
 
-export const RTD_DOWNSTREAM_USER_AGENT = "Mozilla/5.0 (darwin) rtd-dom (jsdom-compatible headless)";
+export const CTRL_DOM_DOWNSTREAM_USER_AGENT = "Mozilla/5.0 (darwin) ctrl-dom (jsdom-compatible headless)";
 
 interface EnvironmentOptions {
-  rtd?: Record<string, unknown>;
+  "ctrl-dom"?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
 type Global = Record<PropertyKey, unknown>;
 
-/** Minimal installer used only when @rtd/dom does not export installGlobals yet. */
+/** Minimal installer used only when @ctrl/dom does not export installGlobals yet. */
 function fallbackInstall(window: Record<PropertyKey, unknown>, target: Global): () => void {
   const saved = new Map<PropertyKey, PropertyDescriptor | undefined>();
   const define = (key: PropertyKey, descriptor: PropertyDescriptor): void => {
@@ -108,15 +108,15 @@ const TRIAGE_SHIMS: Record<string, (global: Global, document: any) => { patched:
 };
 
 export default {
-  name: "rtd-downstream",
+  name: "ctrl-dom-downstream",
   viteEnvironment: "client",
 
   setup(global: Global, options: EnvironmentOptions) {
-    const { triage, ...rtd } = (options?.rtd ?? {}) as Record<string, unknown>;
+    const { triage, ...ctrlDom } = (options?.["ctrl-dom"] ?? {}) as Record<string, unknown>;
     const window = dom.createWindow({
       url: "http://localhost",
-      userAgent: RTD_DOWNSTREAM_USER_AGENT,
-      ...rtd,
+      userAgent: CTRL_DOM_DOWNSTREAM_USER_AGENT,
+      ...ctrlDom,
     } as never) as unknown as Record<PropertyKey, unknown> & { close?: () => void; document: unknown };
     const install = (dom as Record<string, unknown>).installGlobals as
       | ((w: unknown, target: Global) => () => void)
@@ -132,7 +132,7 @@ export default {
         triageRestores.push(restore);
       }
     }
-    Object.defineProperty(global, "__rtdDownstream", {
+    Object.defineProperty(global, "__ctrlDomDownstream", {
       value: { window, document: window.document, Document: dom.Document, installer, triageAdded },
       configurable: true,
       enumerable: false,
@@ -140,7 +140,7 @@ export default {
     });
     return {
       teardown() {
-        delete global.__rtdDownstream;
+        delete global.__ctrlDomDownstream;
         for (const restore of triageRestores) restore();
         try {
           window.close?.();

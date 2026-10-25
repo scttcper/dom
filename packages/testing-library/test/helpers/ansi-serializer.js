@@ -6,7 +6,7 @@
 const ANSI = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g
 
 // Read by the Jest-compatible toThrowErrorMatching*Snapshot shims in test/setup.ts.
-globalThis.__rtdStripAnsiInSnapshots = true
+globalThis.__ctrlDomStripAnsiInSnapshots = true
 
 export default {
   test: value => typeof value === 'string' && value.replace(ANSI, '') !== value,

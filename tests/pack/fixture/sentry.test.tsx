@@ -1,0 +1,35 @@
+// (s1) @ctrl/sentry-tests under Vitest: a passing, a failing and a flaky test, one in a describe block.
+// sentry.check.mjs runs this file against a fake Sentry server and checks what arrives.
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, test } from "vitest";
+import { Signup } from "./app.tsx";
+
+test("signs up", async () => {
+  const user = userEvent.setup();
+  render(<Signup />);
+  await user.type(screen.getByLabelText("Name"), "Ada");
+  await user.click(screen.getByRole("button", { name: "Sign up" }));
+  expect(await screen.findByRole("status")).toBeTruthy();
+});
+
+describe("Signup", () => {
+  test("types a name", async () => {
+    render(<Signup />);
+    await userEvent.setup().type(screen.getByLabelText("Name"), "Grace");
+  });
+});
+
+test("greets before signing up", () => {
+  render(<Signup />);
+  console.error("about to look for the greeting");
+  // Fails on purpose: nothing has a status role before the form is submitted.
+  screen.getByRole("status");
+});
+
+let attempts = 0;
+test("passes on the retry", { retry: 1 }, () => {
+  render(<Signup />);
+  attempts++;
+  if (attempts === 1) throw new Error("first attempt fails");
+});

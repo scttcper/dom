@@ -17,7 +17,7 @@
  * jsdom has no close watchers, popovers or dialog methods; these assert the spec directly.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let win: any;

@@ -1,5 +1,5 @@
 /**
- * jest-environment-rtd's global surface and teardown, compared with jest-environment-jsdom
+ * @ctrl/dom-jest-environment's global surface and teardown, compared with jest-environment-jsdom
  * (@jest/environment-jsdom-abstract 30, whose global is a jsdom window).
  *
  * Specs / reference behavior:
@@ -14,21 +14,24 @@
  *   XMLHttpRequest Standard — https://xhr.spec.whatwg.org/#the-send()-method (jsdom's window
  *     has XMLHttpRequest; axios's browser build, which the "browser" export condition selects,
  *     needs it since fetch is absent)
+ *   node:diagnostics_channel (https://nodejs.org/api/diagnostics_channel.html), the channel
+ *     @ctrl/sentry-tests publishes failed tests on
  */
+import { channel } from "node:diagnostics_channel";
 import { createServer } from "node:http";
 import { describe, expect, test } from "vitest";
-import RtdEnvironment from "../src/index.ts";
+import CtrlDomEnvironment from "../src/index.ts";
 
 type AnyGlobal = Record<string, any>;
 
-function environment(testEnvironmentOptions: Record<string, unknown> = {}): RtdEnvironment {
-  return new RtdEnvironment(
+function environment(testEnvironmentOptions: Record<string, unknown> = {}): CtrlDomEnvironment {
+  return new CtrlDomEnvironment(
     { globalConfig: {}, projectConfig: { testEnvironmentOptions, globals: {}, fakeTimers: {}, testPath: "x.test.js" } } as never,
     { console, docblockPragmas: {}, testPath: "x.test.js" } as never,
   );
 }
 
-async function withEnvironment(options: Record<string, unknown>, body: (env: RtdEnvironment, global: AnyGlobal) => void | Promise<void>): Promise<void> {
+async function withEnvironment(options: Record<string, unknown>, body: (env: CtrlDomEnvironment, global: AnyGlobal) => void | Promise<void>): Promise<void> {
   const env = environment(options);
   await env.setup();
   try {
@@ -60,7 +63,7 @@ describe("fetch primitives — https://fetch.spec.whatwg.org/#fetch-method", () 
 describe("environment.dom.reconfigure — https://github.com/jsdom/jsdom#reconfiguring-the-jsdom-with-reconfiguresettings", () => {
   test("reconfigure({ url }) replaces the document URL without navigating", async () => {
     await withEnvironment({}, (env, global) => {
-      expect(env.dom!.window).toBe(env.rtdWindow);
+      expect(env.dom!.window).toBe(env.ctrlDomWindow);
       const length = global.history.length;
       env.dom!.reconfigure({ url: "https://sentry.io/organizations/org-slug/issues/?project=1#hash" });
       expect(global.location.href).toBe("https://sentry.io/organizations/org-slug/issues/?project=1#hash");
@@ -155,7 +158,7 @@ describe("XMLHttpRequest — https://xhr.spec.whatwg.org/#the-send()-method", ()
   });
 });
 
-describe("compat profiles — @rtd/dom src/window/compat.ts", () => {
+describe("compat profiles — @ctrl/dom src/window/compat.ts", () => {
   test("jsdom-26 by default, like jest-environment-jsdom 30: no PointerEvent or onpointer* handlers, no matchMedia", async () => {
     await withEnvironment({}, (_env, global) => {
       expect(typeof global.PointerEvent).toBe("undefined");
@@ -204,5 +207,29 @@ describe("interface isolation — definitions on shared interface objects stay u
       expect(Object.getOwnPropertyDescriptor(proto, "outerHTML")!.configurable).toBe(true);
     });
     expect(Object.hasOwn(proto!, "outerHTML")).toBe(false);
+  });
+});
+
+describe("@ctrl/sentry-tests' failure reports (its \"sentry-tests:failure\" channel)", () => {
+  test("a failure in this environment's document gets the accessibility snapshot and the clock; another document's, and any after teardown, get nothing", async () => {
+    const env = environment();
+    await env.setup();
+    const global = env.global as AnyGlobal;
+    // As the Testing Library a test file loads does, against the environment's DOM instance.
+    await import("@ctrl/dom/testing-library");
+    global.document.body.innerHTML = "<button>Save</button>";
+    const publish = (document: unknown) => {
+      const message = { test: "saves", error: new Error("no"), document, attachments: [] as Array<{ filename: string; data: string }>, contexts: {} as Record<string, unknown>, waitUntil() {} };
+      channel("sentry-tests:failure").publish(message);
+      return message;
+    };
+    const ours = publish(global.document);
+    expect(ours.attachments.map((a) => a.filename)).toEqual(["accessibility-snapshot.txt"]);
+    expect(ours.attachments[0].data).toContain('button "Save"');
+    expect(ours.contexts.clock).toEqual({ skipped_ms: 0, pending_timers: 0 });
+    expect(publish({ body: {} }).attachments).toEqual([]);
+    const document = global.document;
+    await env.teardown();
+    expect(publish(document).attachments).toEqual([]);
   });
 });

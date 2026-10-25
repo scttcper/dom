@@ -9,7 +9,7 @@
  *   CSS Conditional 5 font-tech()/font-format() — https://drafts.csswg.org/css-conditional-5/#at-supports-ext
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, CSS } from "@rtd/dom";
+import { createWindow, CSS } from "@ctrl/dom";
 
 createWindow();
 

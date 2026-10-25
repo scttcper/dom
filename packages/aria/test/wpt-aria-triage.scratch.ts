@@ -1,12 +1,12 @@
-// Scratch (not part of the suite): run the WPT accessibility dirs with the @rtd/aria
+// Scratch (not part of the suite): run the WPT accessibility dirs with the @ctrl/dom/aria
 // testdriver, and for every get_computed_role/get_computed_label call also compute what stock
 // Testing Library (jsdom + aria-query + dom-accessibility-api@0.5.16) returns for the same
 // element (serialized document re-parsed in jsdom). Writes a JSON report to TRIAGE_OUT.
 import { test } from "vitest";
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Element } from "@rtd/dom";
-import { computeAccessibleName } from "@rtd/aria";
+import type { Element } from "@ctrl/dom";
+import { computeAccessibleName } from "@ctrl/dom/aria";
 import { runWPT, FIXTURES, JS_TEST, jsTestRunsInWindow } from "../../dom/test/wpt/harness.ts";
 import { wptComputedRole, wptRoleName } from "./wpt-testdriver.ts";
 import { loadOracle } from "./helpers.ts";

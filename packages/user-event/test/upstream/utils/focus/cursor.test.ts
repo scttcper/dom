@@ -29,7 +29,7 @@ cases<{
     expectedOffset,
   }) => {
     const {element} = setup(`<div>${html}</div>`)
-    // divergence: `document.evaluate` -> evaluateXPath (no XPath in @rtd/dom), see _helpers/xpath.ts
+    // divergence: `document.evaluate` -> evaluateXPath (no XPath in @ctrl/dom), see _helpers/xpath.ts
     const node = evaluateXPath(nodeSelector, element)
     expect(node).toBeTruthy()
     const expectedNode = expectedSelector

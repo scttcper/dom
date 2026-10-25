@@ -1,9 +1,9 @@
-// Structural DOM types for @rtd/user-event.
+// Structural DOM types for @ctrl/dom/user-event.
 //
 // The monorepo compiles without lib.dom (we are the DOM), and user-event must accept nodes from
-// any DOM implementation (@rtd/dom, jsdom, happy-dom, a browser). These interfaces declare only
+// any DOM implementation (@ctrl/dom, jsdom, happy-dom, a browser). These interfaces declare only
 // the members user-event touches, with types compatible with lib.dom, so callers can pass
-// lib.dom-typed nodes and @rtd/dom wrappers alike.
+// lib.dom-typed nodes and @ctrl/dom wrappers alike.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

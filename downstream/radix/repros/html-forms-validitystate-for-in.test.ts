@@ -1,11 +1,11 @@
 /**
- * Downstream repro (Radix Primitives: 4 `form.test.tsx` failures in both rtd modes, "given
+ * Downstream repro (Radix Primitives: 4 `form.test.tsx` failures in both ctrl-dom modes, "given
  * components used outside `Form.Field` (explicit wiring)": `Form.Message` never shows,
  * `aria-describedby` never set, `Form.ValidityState` renders nothing).
  *
  * Radix copies native validity with `for (const key in control.validity)` (form.tsx
  * `validityStateToObject` / `hasBuiltInError`). WebIDL attributes are enumerable accessors on the
- * interface prototype, so for…in yields the 11 ValidityState attributes. On @rtd/dom the
+ * interface prototype, so for…in yields the 11 ValidityState attributes. On @ctrl/dom the
  * accessors are non-enumerable class getters and the instance has an enumerable own `_el` field,
  * so for…in yields only `_el`: `hasBuiltInError` sees `validity._el` (the element, truthy) as a
  * built-in error and the copied validity has no `valueMissing`.

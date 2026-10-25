@@ -1,5 +1,5 @@
 /**
- * React 19 controlled form controls on @rtd/dom.
+ * React 19 controlled form controls on @ctrl/dom.
  *
  * React's inputValueTracking wraps the `value`/`checked` property descriptors from
  * HTMLInputElement/HTMLTextAreaElement.prototype and fires onChange only when the DOM value
@@ -9,13 +9,13 @@
  *   https://html.spec.whatwg.org/#the-select-element (select value / change)
  */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { createWindow, installGlobals } from "@rtd/dom";
+import { createWindow, installGlobals } from "@ctrl/dom";
 import { act, useState } from "react";
 import type { Root } from "react-dom/client";
 import { setUIValue } from "../../../src/html/forms/ui.ts";
 
 // react-dom feature-detects the DOM (`canUseDOM`, `'oninput' in document`) when it is first
-// evaluated, so it must load after a window is installed as the global — as in a jsdom/rtd
+// evaluated, so it must load after a window is installed as the global — as in a jsdom/ctrl-dom
 // vitest environment.
 const bootstrap = installGlobals(createWindow());
 const { createRoot } = await import("react-dom/client");

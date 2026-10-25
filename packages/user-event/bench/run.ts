@@ -1,8 +1,8 @@
-// user-event benchmark: stock @testing-library/user-event on jsdom / happy-dom vs @rtd/user-event
-// on @rtd/dom. Methodology follows bench/README.md: fresh process per sample, interleaved
+// user-event benchmark: stock @testing-library/user-event on jsdom / happy-dom vs @ctrl/dom/user-event
+// on @ctrl/dom. Methodology follows bench/README.md: fresh process per sample, interleaved
 // configs, median of per-process medians with [min–max], heap after GC and peak RSS next to time.
 //
-//   node packages/user-event/bench/run.ts [--samples 5] [--workloads type,click] [--configs rtd,stock-jsdom] [--nodelay]
+//   node packages/user-event/bench/run.ts [--samples 5] [--workloads type,click] [--configs ctrl-dom,stock-jsdom] [--nodelay]
 
 import {execFileSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
@@ -14,7 +14,7 @@ const flag = (name: string, def: string) => {
 }
 const samples = Number(flag('samples', '5'))
 const workloads = flag('workloads', 'type,click,tab,selectOptions').split(',')
-let configs = flag('configs', 'stock-jsdom,stock-happy-dom,stock-rtd,rtd-jsdom,rtd').split(',')
+let configs = flag('configs', 'stock-jsdom,stock-happy-dom,stock-ctrl-dom,ctrl-dom-jsdom,ctrl-dom').split(',')
 if (args.includes('--nodelay')) configs = configs.map(c => `${c}:nodelay`)
 const iterations: Record<string, number> = {type: 30, click: 100, tab: 10, selectOptions: 50}
 

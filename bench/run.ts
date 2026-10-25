@@ -3,8 +3,8 @@
 //
 //   pnpm bench                                  all workloads, default configs, 5 samples
 //   pnpm bench --workloads dom/,react/form      ids or id prefixes (comma separated)
-//   pnpm bench --configs jsdom,rtd --samples 3
-//   pnpm bench --workloads startup/ --configs jsdom,happy-dom,rtd-dom,rtd-dom-dist
+//   pnpm bench --configs jsdom,ctrl-dom --samples 3
+//   pnpm bench --workloads startup/ --configs jsdom,happy-dom,ctrl-dom,ctrl-dom-dist
 //   pnpm bench --iterations 5 --warmup 1        override per-workload iteration counts
 //   pnpm bench --name nightly                   results file name
 //   pnpm bench --list                           list workloads and configs
@@ -52,7 +52,7 @@ function configsFor(w: AnyWorkload): ConfigName[] {
   const requested = flags.configs?.split(",").filter(Boolean);
   if (requested) {
     for (const c of requested) if (!isConfig(c)) throw new Error(`unknown config ${c} (have: ${CONFIGS.join(", ")})`);
-    const allowed = w.configs ?? (w.kind === "dom" ? [...DOM_CONFIGS, "rtd-dom-dist" as const] : [...CONFIGS]);
+    const allowed = w.configs ?? (w.kind === "dom" ? [...DOM_CONFIGS, "ctrl-dom-dist" as const] : [...CONFIGS]);
     return (requested as ConfigName[]).filter((c) => allowed.includes(c));
   }
   if (w.kind === "startup") return w.configs ?? [...CONFIGS];

@@ -13,7 +13,7 @@
  * Vitest worker's own timers are never replaced.
  */
 import { afterEach, describe, expect, test } from "vitest";
-import { VirtualClock, installClock, type InstalledClock } from "@rtd/dom/internal";
+import { VirtualClock, installClock, type InstalledClock } from "@ctrl/dom/internal";
 
 type G = {
   setTimeout: (cb: (...a: unknown[]) => void, ms?: number, ...args: unknown[]) => { hasRef(): boolean; ref(): unknown; unref(): unknown; refresh(): unknown };

@@ -4,7 +4,7 @@
  *
  *   jsdom-26  jsdom 26.1.0, what jest-environment-jsdom 30 ships (the Jest default)
  *   jsdom-30  jsdom 30.1.3, Vitest's jsdom environment (the Vitest and createWindow default)
- *   modern    everything @rtd/dom implements
+ *   modern    everything @ctrl/dom implements
  *
  * Spec: Web IDL §3.7 "Interface objects" and §3.7.3 "Interface prototype object"
  *   https://webidl.spec.whatwg.org/#es-interfaces
@@ -14,7 +14,7 @@
  * interface member a jsdom profile exposes beyond that jsdom version must be listed there with
  * the profiles that get it, so exposing a new API fails here until someone decides which
  * profiles should see it (docs/deviations.md groups the entries by profile). Entries hidden from
- * a profile must be absent from its installation, and every entry must name an API @rtd/dom
+ * a profile must be absent from its installation, and every entry must name an API @ctrl/dom
  * really has, at the exact interface that owns it, that at least one of the two jsdoms lacks.
  *
  * The oracles are constructed the way jest-environment-jsdom and Vitest's jsdom environment do
@@ -29,8 +29,8 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import { describe, expect, test } from "vitest";
-import { createWindow, installGlobals, type CompatProfile } from "@rtd/dom";
-import { COMPAT, deferredCompatMembers } from "@rtd/dom/internal";
+import { createWindow, installGlobals, type CompatProfile } from "@ctrl/dom";
+import { COMPAT, deferredCompatMembers } from "@ctrl/dom/internal";
 import { DEVIATIONS, renderDeviations } from "../../../../scripts/compat-doc.ts";
 
 type AnyRecord = Record<string, any>;

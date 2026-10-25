@@ -11,10 +11,10 @@ changed status between rounds.
 | mode | passed | failed | skipped | wall | peak RSS |
 | --- | --: | --: | --: | --: | --: |
 | jsdom | 477 | 0 | 0 | 9.6s (9.0–14.2) | 243 MiB |
-| rtd-dom | 477 | 0 | 0 | 7.9s (7.6–10.9) | 239 MiB |
-| rtd-full | 477 | 0 | 0 | 9.1s (8.6–10.5) | 300 MiB |
+| ctrl-dom | 477 | 0 | 0 | 7.9s (7.6–10.9) | 239 MiB |
+| ctrl-dom-full | 477 | 0 | 0 | 9.1s (8.6–10.5) | 300 MiB |
 
-Shared machine (other agents running suites): wall moves by seconds run to run. rtd-full aliases
+Shared machine (other agents running suites): wall moves by seconds run to run. ctrl-dom-full aliases
 our Testing Library *sources* (`packages/*/src`), so each worker also pays Vite's transform of
 them, which is where its extra wall and RSS go (same as the Radix runner).
 
@@ -28,19 +28,19 @@ into a `shadowDOMTarget`.
 
 ### Harness: a second React through react-dom (fixed in run.ts)
 
-The first rtd-full run failed 48 tests in `react-query-persist-client` and `react-query-devtools`
+The first ctrl-dom-full run failed 48 tests in `react-query-persist-client` and `react-query-devtools`
 ("An update to Root inside a test was not wrapped in act(...)", empty `<body>`). Those packages
 depend on `react` but not on `react-dom`, so Vite's `resolve.dedupe` found no react-dom from their
 roots and our `@testing-library/react` source's `import "react-dom/client"` fell through to this
 workspace's react-dom 19.3.1, whose natively loaded `require("react")` is a second React. The
-existing guard only looked at `react` records. run.ts now pins `react-dom` in rtd-full to the
+existing guard only looked at `react` records. run.ts now pins `react-dom` in ctrl-dom-full to the
 copy `react-query` resolves, and the guard also fails the run when react-dom resolves to more than
-one copy or outside the checkout. Not a @rtd bug.
+one copy or outside the checkout. Not a @ctrl/dom bug.
 
 ## Notes
 
 - Type tests (`*.test-d.tsx`, `typecheck.enabled` upstream) and CI coverage are off in every mode:
   tsc never touches the DOM.
 - `@testing-library/react-render-stream` (used by `useInfiniteQuery.test.tsx`) imports
-  `@testing-library/react`/`dom` itself and jsdom 25 for its DOM snapshots; rtd-full inlines it so
+  `@testing-library/react`/`dom` itself and jsdom 25 for its DOM snapshots; ctrl-dom-full inlines it so
   its Testing Library imports reach ours (the stock-import guard ignores the add-on itself).

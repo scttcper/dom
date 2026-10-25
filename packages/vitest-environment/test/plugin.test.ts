@@ -15,7 +15,7 @@ const isCompileCacheImport = (arg: string) => arg.startsWith("--import=data:text
 beforeEach(() => {
   // This repository's Vitest config turns the compile cache on for every test (vitest.config.ts).
   vi.stubEnv("CTRL_DOM_COMPILE_CACHE", undefined);
-  vi.stubEnv("RTD_COMPILE_CACHE", undefined);
+  vi.stubEnv("CTRL_DOM_COMPILE_CACHE", undefined);
 });
 
 afterEach(() => {

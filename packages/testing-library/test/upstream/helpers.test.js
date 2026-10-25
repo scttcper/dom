@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/helpers.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {screen} from '../../src/index.ts'
 import {getDocument, getWindowFromNode, checkContainerType} from '../../src/helpers.ts'

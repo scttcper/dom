@@ -4,7 +4,7 @@ import { defineProject } from "vitest/config";
 // environment; the node:test and bun test runs are spawned as child processes.
 export default defineProject({
   test: {
-    name: "@rtd/register",
+    name: "@ctrl/dom/register",
     include: ["test/**/*.test.ts"],
     environment: "node",
     server: { deps: { external: [/\/packages\/(dom|register)\/src\//] } },

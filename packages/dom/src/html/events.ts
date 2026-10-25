@@ -42,7 +42,7 @@ export function fireSyntheticClick(target: EventTarget): boolean {
  * https://html.spec.whatwg.org/#queue-an-element-task — a macrotask on the element's window. Its
  * `_task` uses the window's timers (the test file's virtual clock or fake timers, so the task is
  * ordered with the test's own timers) and close() cancels it. A bare `setTimeout` here is the
- * outer Node realm's real timer under jest-environment-rtd (this module is loaded outside the test
+ * outer Node realm's real timer under @ctrl/dom-jest-environment (this module is loaded outside the test
  * file's vm global): user-event's post-click wait on the virtual clock then resolved before a
  * <details> `toggle` fired. Documents without a browsing context use the current window.
  */

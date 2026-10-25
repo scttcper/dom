@@ -6,7 +6,7 @@
  * and §4.2 "Accessible Description Computation"
  *   https://w3c.github.io/html-aam/#accessible-description-computation
  *
- * Every assertion runs on both engines (helpers.ts `both`): @rtd/aria on @rtd/dom and
+ * Every assertion runs on both engines (helpers.ts `both`): @ctrl/dom/aria on @ctrl/dom and
  * dom-accessibility-api@0.5.16 on jsdom. Tests prefixed "oracle:" pin a documented deviation
  * of that oracle from HTML-AAM (docs/deviations.md, "Accessible names follow
  * dom-accessibility-api@0.5.16"), with the spec's value in a comment.
@@ -15,11 +15,11 @@ import { describe, expect, test } from "vitest";
 import { both, testNode } from "./helpers.ts";
 
 function expectName(html: string, expected: string): void {
-  expect(both(html, (api, doc) => api.name(testNode(doc)))).toEqual({ rtd: expected, upstream: expected });
+  expect(both(html, (api, doc) => api.name(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
 }
 
 function expectDescription(html: string, expected: string): void {
-  expect(both(html, (api, doc) => api.description(testNode(doc)))).toEqual({ rtd: expected, upstream: expected });
+  expect(both(html, (api, doc) => api.description(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
 }
 
 const AAM = "https://w3c.github.io/html-aam/";
@@ -193,7 +193,7 @@ describe(`4.1.14 area element — ${AAM}#area-element-accessible-name-computatio
   test("alt names the area (display:none in the UA sheet, so only with hidden content included)", () => {
     expect(
       both(`<map name="m"><area data-test href="/a" alt="North"></map>`, (api, doc) => api.name(testNode(doc), { hidden: true })),
-    ).toEqual({ rtd: "North", upstream: "North" });
+    ).toEqual({ "ctrl-dom": "North", upstream: "North" });
   });
 });
 

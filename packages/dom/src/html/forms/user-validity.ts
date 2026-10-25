@@ -11,7 +11,7 @@
 // submission is requested by the user or `requestSubmit()` (https://html.spec.whatwg.org/#concept-form-submit
 // step 6.3). The reset algorithms set it back to false.
 //
-// A DOM without a UI has no user: @rtd/user-event, Testing Library's `fireEvent` and our own
+// A DOM without a UI has no user: @ctrl/dom/user-event, Testing Library's `fireEvent` and our own
 // activation behaviors stand in for it, and the first two dispatch UNTRUSTED events. So here
 // "the user committed a change" is: a `change` event is dispatched with the control as its
 // target, trusted or not (user-event fires it on blur after typing, on selectOptions, on

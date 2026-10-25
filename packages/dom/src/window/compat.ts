@@ -7,7 +7,7 @@
 //
 //   jsdom-26  what jest-environment-jsdom 30 exposes (it ships jsdom 26.1): the Jest default
 //   jsdom-30  what jsdom 30 exposes (Vitest's jsdom environment): the Vitest and createWindow default
-//   modern    everything @rtd/dom implements
+//   modern    everything @ctrl/dom implements
 //
 // COMPAT lists every API we expose that jsdom 30 or jsdom 26 lacks, with the profiles that get it
 // and why. tests/compat/test/surface/ diffs each jsdom profile's installed surface against the

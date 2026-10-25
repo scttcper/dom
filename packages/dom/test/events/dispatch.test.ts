@@ -13,8 +13,8 @@
  * table is built with DOM calls (helpers.ts).
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { CustomEvent, Event, EventTarget, MouseEvent, TransitionEvent, type Document, type Window } from "@rtd/dom";
-import { dispatchTrusted, fireAnEvent, getCurrentEvent } from "@rtd/dom/internal";
+import { CustomEvent, Event, EventTarget, MouseEvent, TransitionEvent, type Document, type Window } from "@ctrl/dom";
+import { dispatchTrusted, fireAnEvent, getCurrentEvent } from "@ctrl/dom/internal";
 import { buildTable, setup } from "./helpers.ts";
 
 let window: Window;

@@ -13,7 +13,7 @@
  * no animation frame callback runs again for the rest of the test file.
  *
  * Under jest-environment-jsdom this cannot happen because jest.useFakeTimers() fakes
- * requestAnimationFrame itself; under jest-environment-rtd it does not, because
+ * requestAnimationFrame itself; under @ctrl/dom-jest-environment it does not, because
  * jest-environment-node constructs its ModernFakeTimers (which snapshot the global's timer
  * functions via @sinonjs/fake-timers withGlobal) before the window is installed.
  *
@@ -26,7 +26,7 @@
 import { describe, expect, test } from "vitest";
 import { runJestFixture } from "./engines.ts";
 
-describe.each(["jsdom", "rtd"] as const)("jest-environment-%s", (engine) => {
+describe.each(["jsdom", "ctrl-dom"] as const)("jest-environment-%s", (engine) => {
   test("requestAnimationFrame keeps working after a frame was requested under fake timers that were uninstalled", { timeout: 60_000 }, () => {
     const result = runJestFixture("raf-fake-timers.fixture.cjs", engine);
     if (result === null) return; // needs the upstream checkout (pnpm downstream:react-aria --install)

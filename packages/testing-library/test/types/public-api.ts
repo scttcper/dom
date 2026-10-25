@@ -1,5 +1,5 @@
 // Type-level test (covered by `pnpm typecheck`, not run by Vitest): every public name of
-// @testing-library/dom@10.4.2 must be exported by the published typings of "@rtd/testing-library"
+// @testing-library/dom@10.4.2 must be exported by the published typings of "@ctrl/dom/testing-library"
 // (types/index.d.ts, resolved through the package "types" condition under nodenext).
 
 import {
@@ -81,7 +81,7 @@ import {
   within,
   wrapAllByQueryWithSuggestion,
   wrapSingleQueryWithSuggestion,
-} from "@rtd/testing-library";
+} from "@ctrl/dom/testing-library";
 import type {
   Config,
   BoundFunctions,
@@ -93,7 +93,7 @@ import type {
   Suggestion,
   waitForOptions,
   PrettyDOMOptions,
-} from "@rtd/testing-library";
+} from "@ctrl/dom/testing-library";
 
 export const all = [
   buildQueries,

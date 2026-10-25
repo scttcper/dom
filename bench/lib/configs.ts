@@ -1,31 +1,33 @@
 // Bench configurations: which DOM and which testing-library stack a worker process loads.
 //
-//   jsdom          jsdom (via Vitest's own jsdom environment setup) + stock @testing-library/*
-//   happy-dom      happy-dom (via Vitest's own happy-dom environment setup) + stock @testing-library/*
-//   rtd-dom        @rtd/dom (via vitest-environment-rtd) + stock @testing-library/*  (DOM swap only)
-//   rtd            @rtd/dom + @rtd/testing-library + @rtd/react + @rtd/user-event + @rtd/jest-dom
-//   rtd-dom-dist   rtd-dom, but every @rtd/* import resolves to the bundled packages/*/dist
-//   rtd-dist       rtd, bundled
+//   jsdom               jsdom (via Vitest's own jsdom environment setup) + stock @testing-library/*
+//   happy-dom           happy-dom (via Vitest's own happy-dom environment setup) + stock @testing-library/*
+//   ctrl-dom            @ctrl/dom (via @ctrl/dom/vitest-environment) + stock @testing-library/*  (DOM swap only)
+//   ctrl-dom-full       @ctrl/dom + its Testing Library, React, user-event and jest-dom
+//   ctrl-dom-dist       ctrl-dom, with every @ctrl/dom import resolved to the bundled packages/*/dist
+//   ctrl-dom-full-dist  ctrl-dom-full, bundled
+//
+// bench/compare.ts maps these by position onto an older checkout's names: keep the order.
 //
 // Nothing here statically imports a DOM or testing library: a worker must install the DOM
 // globals before React / testing-library modules evaluate, and startup workloads time imports.
 
 import { installDistResolution } from "./dist-hooks.ts";
 
-export const CONFIGS = ["jsdom", "happy-dom", "rtd-dom", "rtd", "rtd-dom-dist", "rtd-dist"] as const;
+export const CONFIGS = ["jsdom", "happy-dom", "ctrl-dom", "ctrl-dom-full", "ctrl-dom-dist", "ctrl-dom-full-dist"] as const;
 export type ConfigName = (typeof CONFIGS)[number];
 
 /** Configurations run by default for non-startup workloads. */
-export const DEFAULT_CONFIGS: ConfigName[] = ["jsdom", "happy-dom", "rtd-dom", "rtd"];
-/** For DOM-only workloads the testing-library stack is irrelevant: rtd === rtd-dom. */
-export const DOM_CONFIGS: ConfigName[] = ["jsdom", "happy-dom", "rtd-dom"];
+export const DEFAULT_CONFIGS: ConfigName[] = ["jsdom", "happy-dom", "ctrl-dom", "ctrl-dom-full"];
+/** For DOM-only workloads the testing-library stack is irrelevant: ctrl-dom-full === ctrl-dom. */
+export const DOM_CONFIGS: ConfigName[] = ["jsdom", "happy-dom", "ctrl-dom"];
 
 export function isConfig(name: string): name is ConfigName {
   return (CONFIGS as readonly string[]).includes(name);
 }
 
-const isRtd = (c: ConfigName) => c.startsWith("rtd");
-const isFullStack = (c: ConfigName) => c === "rtd" || c === "rtd-dist";
+const isCtrlDom = (c: ConfigName) => c.startsWith("ctrl-dom");
+const isFullStack = (c: ConfigName) => c === "ctrl-dom-full" || c === "ctrl-dom-full-dist";
 const isDist = (c: ConfigName) => c.endsWith("-dist");
 
 /** Loose handle on whichever implementation a config loaded. DOM types are intentionally `any`. */
@@ -36,11 +38,11 @@ export interface Env {
   React: typeof import("react");
   createRoot: (container: any) => any;
   act: (cb: () => unknown) => Promise<void>;
-  /** @testing-library/dom or @rtd/testing-library */
+  /** @testing-library/dom or @ctrl/dom/testing-library */
   dom: any;
-  /** @testing-library/react or @rtd/react */
+  /** @testing-library/react or @ctrl/dom/react */
   rtl: any;
-  /** default export of @testing-library/user-event or @rtd/user-event */
+  /** default export of @testing-library/user-event or @ctrl/dom/user-event */
   userEvent: any;
   /** jest-dom matcher functions, callable through `expectMatcher` */
   matchers: Record<string, (...args: any[]) => { pass: boolean; message: () => string }>;
@@ -59,7 +61,7 @@ export interface StartupTimings {
 export function domSpecifier(c: ConfigName): string {
   if (c === "jsdom") return "jsdom";
   if (c === "happy-dom") return "happy-dom";
-  return "@rtd/dom";
+  return "@ctrl/dom";
 }
 
 let vitestRuntime: any = null;
@@ -76,7 +78,7 @@ export function dynamicImport(specifier: string): Promise<any> {
  */
 export async function prepare(c: ConfigName): Promise<void> {
   if (isDist(c)) installDistResolution();
-  if (!isRtd(c)) vitestRuntime = await import("vitest/runtime");
+  if (!isCtrlDom(c)) vitestRuntime = await import("vitest/runtime");
 }
 
 /**
@@ -88,21 +90,21 @@ export async function installDom(c: ConfigName): Promise<StartupTimings> {
   await import(domSpecifier(c));
   const t1 = performance.now();
   let setupPath: string;
-  if (!isRtd(c)) {
+  if (!isCtrlDom(c)) {
     const env = vitestRuntime.builtinEnvironments[c];
     await env.setup(globalThis, {});
     setupPath = `vitest builtin ${c} environment`;
   } else {
-    setupPath = await installRtd();
+    setupPath = await installCtrlDom();
   }
   const t2 = performance.now();
   return { importMs: t1 - t0, setupMs: t2 - t1, totalMs: t2 - t0, setupPath };
 }
 
-async function installRtd(): Promise<string> {
-  const env = (await dynamicImport("vitest-environment-rtd")).default;
+async function installCtrlDom(): Promise<string> {
+  const env = (await dynamicImport("@ctrl/dom/vitest-environment")).default;
   await env.setup(globalThis, {});
-  return "vitest-environment-rtd";
+  return "@ctrl/dom/vitest-environment";
 }
 
 /** Install the DOM and load React + the configuration's testing-library stack. */
@@ -114,10 +116,10 @@ export async function loadEnv(c: ConfigName): Promise<Env> {
   const { createRoot } = await import("react-dom/client");
   const full = isFullStack(c);
   const [dom, rtl, ue, matchers] = await Promise.all([
-    import(full ? "@rtd/testing-library" : "@testing-library/dom"),
-    import(full ? "@rtd/react" : "@testing-library/react"),
-    import(full ? "@rtd/user-event" : "@testing-library/user-event"),
-    import(full ? "@rtd/jest-dom/matchers" : "@testing-library/jest-dom/matchers"),
+    import(full ? "@ctrl/dom/testing-library" : "@testing-library/dom"),
+    import(full ? "@ctrl/dom/react" : "@testing-library/react"),
+    import(full ? "@ctrl/dom/user-event" : "@testing-library/user-event"),
+    import(full ? "@ctrl/dom/jest-dom/matchers" : "@testing-library/jest-dom/matchers"),
   ]);
   const g = globalThis as any;
   return {

@@ -1,5 +1,4 @@
 {
-  "name": "@rtd/testing-library",
   "version": "0.0.0",
   "private": true,
   "description": "Drop-in replacement for @testing-library/dom.",
@@ -40,9 +39,8 @@
     }
   },
   "dependencies": {
-    "@rtd/dom": "workspace:*",
-    "@rtd/aria": "workspace:*",
     "@babel/code-frame": "^7.10.4",
+    "@ctrl/dom": "workspace:*",
     "picocolors": "1.1.1",
     "pretty-format": "^27.0.2"
   },
@@ -50,7 +48,6 @@
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
     "happy-dom": "21.0.4",
-    "jsdom": "30.1.3",
-    "vitest-environment-rtd": "workspace:*"
+    "jsdom": "30.1.3"
   }
 }

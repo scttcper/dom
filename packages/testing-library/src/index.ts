@@ -1,5 +1,5 @@
-// @rtd/testing-library — drop-in replacement for @testing-library/dom@10.4.2, running on
-// @rtd/dom internals. Port of @testing-library/dom src/index.js (MIT).
+// @ctrl/dom/testing-library — drop-in replacement for @testing-library/dom@10.4.2, running on
+// @ctrl/dom internals. Port of @testing-library/dom src/index.js (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/index.js
 //
 // Exports exactly upstream's names (explicit lists: internal helpers in the same modules

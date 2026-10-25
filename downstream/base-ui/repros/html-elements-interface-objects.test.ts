@@ -1,5 +1,5 @@
 /**
- * Downstream repro (Base UI: blocks ~all rtd tests). Every HTML element interface must be an
+ * Downstream repro (Base UI: blocks ~all ctrl-dom tests). Every HTML element interface must be an
  * interface object on the global. react-dom's commit phase runs
  * `element instanceof window.HTMLIFrameElement` (getActiveElementDeep) on every commit, so a
  * missing HTMLIFrameElement throws "Right-hand side of 'instanceof' is not an object".

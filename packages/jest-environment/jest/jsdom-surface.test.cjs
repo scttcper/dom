@@ -1,6 +1,6 @@
 /**
  * Integration: idioms from suites written against jest-environment-jsdom (Sentry's frontend
- * suite) under a real Jest 30 run on jest-environment-rtd.
+ * suite) under a real Jest 30 run on @ctrl/dom-jest-environment.
  *
  * Specs / reference behavior:
  *   Fetch Standard — https://fetch.spec.whatwg.org/#fetch-method (absent under jsdom)

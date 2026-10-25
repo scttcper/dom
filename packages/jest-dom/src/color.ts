@@ -1,8 +1,8 @@
 // Canonical color comparison for toHaveStyle: `red`, `#f00`, `rgb(255 0 0)` and
 // `hsl(0 100% 50%)` all canonicalize to the same key, so a test passes whether the DOM
-// serializes colors as authored (jsdom <= 26, happy-dom, @rtd/dom) or as rgb() (jsdom 30).
+// serializes colors as authored (jsdom <= 26, happy-dom, @ctrl/dom) or as rgb() (jsdom 30).
 // Legacy sRGB forms only: https://drafts.csswg.org/css-color-4/#color-syntax
-// The named-color table mirrors @rtd/dom src/css/colors.ts (kept local: this module also
+// The named-color table mirrors @ctrl/dom src/css/colors.ts (kept local: this module also
 // runs against foreign DOMs in the oracle runs).
 
 /** https://drafts.csswg.org/css-color-4/#named-colors — packed 0xRRGGBB. */

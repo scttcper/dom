@@ -1,9 +1,9 @@
 // @vitest-environment node
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__node_tests__/pretty-dom.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
-// DIVERGENCE(rtd): jsdom replaced by @rtd/dom windows that are not installed as globals.
-import {JSDOM} from '../helpers/rtd-jsdom.js'
+// DIVERGENCE(ctrl-dom): jsdom replaced by @ctrl/dom windows that are not installed as globals.
+import {JSDOM} from '../helpers/ctrl-dom-jsdom.js'
 import {prettyDOM} from '../../src/pretty-dom.ts'
 
 function render(html) {

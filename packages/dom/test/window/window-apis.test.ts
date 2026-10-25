@@ -39,7 +39,7 @@
  *   - customElements:         https://html.spec.whatwg.org/#dom-window-customelements
  */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let win: any;

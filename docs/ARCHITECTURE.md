@@ -12,15 +12,17 @@ Library stack, for testing React components on Node.js:
 @ctrl/dom                     replaces jsdom / happy-dom                   nodes, parser, selectors, css, events, window
 @ctrl/dom/vitest-environment  installs the DOM as Vitest's test globals (@ctrl/dom-jest-environment: Jest's)
 @ctrl/dom/register            the same for node:test / bun test (no environment)
+@ctrl/sentry-tests            test runs in Sentry for Vitest and Jest, any DOM (its own package)
 bench/                        benchmarks vs jsdom and happy-dom
 ```
 
-Each lives in `packages/<name>/` as a workspace package named `@rtd/<name>` (`packages/dom` is
-`@rtd/dom`, `packages/react` is `@rtd/react`; the environments are `vitest-environment-rtd` and
-`jest-environment-rtd`). Code, tests, bench and downstream runners import those names, and the
-build renames them to the published ones (see Packaging); no `@rtd/` name ships.
+Each lives in `packages/<name>/`, and code, tests, bench and downstream runners import them by
+their published names: the root `package.json` is `@ctrl/dom` inside the workspace, its `exports`
+sending each subpath to a member's sources (`packages/react` is `@ctrl/dom/react`). The Jest
+environment and the Sentry reporter are packages of their own, `@ctrl/dom-jest-environment` and
+`@ctrl/sentry-tests`.
 
-The upper layers are allowed (and expected) to reach into `@rtd/dom/internal` instead of
+The upper layers are allowed (and expected) to reach into `@ctrl/dom/internal` instead of
 going through the public DOM API. That is the point of consolidating: `getByRole` walks
 `NodeImpl` records, computes roles with an integer `switch`, and asks the CSS layer
 "is this element display:none?" through a direct function with a per-node cache, instead of
@@ -33,11 +35,11 @@ unmodified (people will swap only the environment first). `bench/` runs both sta
 
 What ships is assembled by `pnpm build` (scripts/release.ts) into `release/`:
 
-- `@ctrl/dom`: `@rtd/dom` at the root and every other runtime package under a subpath
+- `@ctrl/dom`: `@ctrl/dom` at the root and every other runtime package under a subpath
   (`@ctrl/dom/aria`, `/testing-library`, `/react`, `/user-event`, `/jest-dom`,
   `/vitest-environment`, `/register`), plus the Jest preset and the Vitest plugin from
   publish/ctrl-dom/.
-- `@ctrl/dom-jest-environment`: `jest-environment-rtd`, a package of its own so Vitest users do not
+- `@ctrl/dom-jest-environment`: `@ctrl/dom-jest-environment`, a package of its own so Vitest users do not
   install Jest's dependencies.
 
 Every published package is under `@ctrl`. Vitest gets no environment package: it looks a custom
@@ -46,7 +48,7 @@ plugin loads the environment by path and answers for the name "ctrl-dom" itself 
 docblocks).
 
 Each workspace bundle keeps cross-package imports as bare specifiers (scripts/build.ts), and the
-assembly rewrites them to published ones (`@rtd/aria` → `@ctrl/dom/aria`): inside `@ctrl/dom` they
+assembly rewrites them to published ones (`@ctrl/dom/aria` → `@ctrl/dom/aria`): inside `@ctrl/dom` they
 are self-references, so every internal package exists once. `@ctrl/dom` and `@ctrl/dom/internal`
 resolve to generated bridges that return the DOM instance the running environment published on
 the test global, so test code and the bundles share it even where a test file's modules are
@@ -113,7 +115,7 @@ New hot fields need an entry in this table.
 ### Wrappers
 
 Wrapper internal fields are keyed by registered symbols from `src/keys.ts` (`this[$impl]`,
-`this[$listeners]`, `doc[$version]`, ...; re-exported by `@rtd/dom/internal`), never by
+`this[$listeners]`, `doc[$version]`, ...; re-exported by `@ctrl/dom/internal`), never by
 `_`-prefixed strings: `Object.keys(node)`, `for...in` and `JSON.stringify` must see no internals
 (Jest's diff/--json walk own enumerable keys). Methods may keep `_name` (prototype members are
 not enumerable). New wrapper fields get a key in keys.ts.
@@ -190,7 +192,7 @@ Allocation-free preorder iteration: `for (let n = root.first; n !== null; n = ne
    computed styles, live collections are created on first use.
 3. Zero cost when unused: mutation observers, ranges, custom elements, stylesheets.
 4. Caches are version-stamped, never eagerly invalidated by walking.
-5. Startup: importing `@rtd/dom` and creating a window must stay far below happy-dom
+5. Startup: importing `@ctrl/dom` and creating a window must stay far below happy-dom
    (target: < 15 ms import from the bundled build, < 1 ms `createWindow`). Where a fresh Vitest
    worker's time goes, why `installGlobals` loads Node's undici, and why a V8 startup snapshot
    of the DOM was measured and not shipped: bench/README.md, "Worker startup".
@@ -212,7 +214,7 @@ document. Intentionally retained:
 - a window's own state while it is open (its custom element registry, storage, history);
 - host timers created through `window.setTimeout` & co. (they are the host's), until they fire,
   are cleared or the window closes (`close()` clears the ones created through the window's, or
-  under jest-environment-rtd / Vitest VM pools the file global's, setTimeout/setInterval);
+  under @ctrl/dom-jest-environment / Vitest VM pools the file global's, setTimeout/setInterval);
 - process-wide, bounded string caches (compiled selectors ≤ 2048, inline style blocks ≤ 2000,
   media query lists ≤ 500, `pattern` regexps ≤ 256, uppercase tag names ≤ 1024) and per-process
   interface objects;

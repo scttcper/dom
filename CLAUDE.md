@@ -34,7 +34,7 @@ before changing anything.
 ## Tests
 
 - Vitest. Tests live in `packages/<pkg>/test/**/*.test.ts(x)`; run one package with
-  `pnpm vitest run --project @rtd/dom` (project names are the workspace package names, `@rtd/<dir>`, which the build renames to `@ctrl/dom/<dir>`).
+  `pnpm vitest run --project @ctrl/dom` (project names are the published names: `@ctrl/dom/react`, `@ctrl/dom-jest-environment`, `@ctrl/sentry-tests`).
 - **Every spec test file starts with a doc block naming the spec(s) and linking the sections
   under test. `describe` names include the section title and URL; each test name states the
   algorithm step or behavior it pins.** See `packages/dom/test/nodes/tree.test.ts`.
@@ -81,7 +81,7 @@ repo. Upstream projects are MIT/Apache-2.0: keep attribution comments on ported 
 
 ```bash
 pnpm test                               # all packages
-pnpm vitest run --project @rtd/dom      # one package
+pnpm vitest run --project @ctrl/dom      # one package
 pnpm typecheck                          # tsc -b over everything
 pnpm bench                              # benchmarks (bench/)
 pnpm bench:compare --base ../base --head .  # regression check between two clean checkouts

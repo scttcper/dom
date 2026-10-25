@@ -1,7 +1,7 @@
 // `pnpm test:pack`: end-to-end check of what users would install.
 //
-// 1. `pnpm build` (which assembles release/, scripts/release.ts), then `pnpm pack` the two
-//    published packages (@ctrl/dom, @ctrl/dom-jest-environment).
+// 1. `pnpm build` (which assembles release/, scripts/release.ts), then `pnpm pack` the
+//    published packages (@ctrl/dom, @ctrl/dom-jest-environment, @ctrl/sentry-tests).
 // 2. A fresh project OUTSIDE the repository (os.tmpdir()) installs the tarballs (pnpm overrides
 //    pin the Jest environment's @ctrl/dom peer to its tarball) plus react, react-dom, vitest, jest,
 //    typescript and the stock @testing-library/* packages from the registry, at the versions the
@@ -24,6 +24,10 @@
 //         (skipped when bun is not installed; no loader hook, the test's instanceof checks remain)
 //    (f1) `ctrl-dom debug` (the bin) on a failing Vitest test under the ctrlDom() plugin
 //    (f2) `ctrl-dom debug` on a failing Jest test under the preset
+//    (s1) @ctrl/sentry-tests: Vitest's sentryTests() plugin next to ctrlDom(), against a fake Sentry
+//         server (sentry.check.mjs)
+//    (s2) @ctrl/sentry-tests: Jest's reporter and test runner under the preset, against a fake
+//         Sentry server
 //    (e)  tsc --noEmit over a TS test file and type-level checks using our declarations
 //    (es) (e) without skipLibCheck: our .d.ts files (and the module augmentations they make to
 //         vitest and jest) type-check too
@@ -53,7 +57,7 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const fixtureDir = fileURLToPath(new URL("../fixture/", import.meta.url));
 
 /** Published package directories (release/<dir>, assembled by `pnpm build`). */
-const PUBLISHED = ["ctrl-dom", "dom-jest-environment"];
+const PUBLISHED = ["ctrl-dom", "dom-jest-environment", "sentry-tests"];
 
 const readJson = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 
@@ -310,6 +314,22 @@ const checks: Check[] = [
     mustLoad: [],
   },
   {
+    id: "s1",
+    title: "@ctrl/sentry-tests, Vitest: sentryTests() next to ctrlDom(), against a fake Sentry server",
+    bin: process.execPath,
+    cmd: ["sentry.check.mjs", "vitest"],
+    mustLoad: [],
+    recordLoads: false,
+  },
+  {
+    id: "s2",
+    title: "@ctrl/sentry-tests, Jest: reporter and test runner, against a fake Sentry server",
+    bin: process.execPath,
+    cmd: ["sentry.check.mjs", "jest"],
+    mustLoad: [],
+    recordLoads: false,
+  },
+  {
     id: "es",
     title: "(e) without skipLibCheck",
     cmd: ["tsc", "--noEmit", "-p", "tsconfig.json", "--skipLibCheck", "false"],
@@ -366,7 +386,7 @@ for (const check of checks) {
     encoding: "utf8",
     env: {
       ...process.env,
-      RTD_LOAD_LOG: log,
+      CTRL_DOM_LOAD_LOG: log,
       NODE_OPTIONS: check.recordLoads === false ? (process.env.NODE_OPTIONS ?? "") : `${process.env.NODE_OPTIONS ?? ""} --import ${join(project, "record-loads.mjs")}`.trim(),
       CI: "1",
     },

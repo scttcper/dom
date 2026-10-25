@@ -5,7 +5,7 @@
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
 import {setUISelectionClean} from '#src/document/UI.ts'
-import {isRtdEnv, setup} from '#testHelpers'
+import {isCtrlDomEnv, setup} from '#testHelpers'
 
 describe('clear elements', () => {
   test('clear text input', async () => {
@@ -116,8 +116,8 @@ describe('throw error when clear is impossible', () => {
   })
 
   // divergence: this patches the instance's `setSelectionRange`, which user-event only calls on
-  // DOMs without native UI selection state; on @rtd/dom it writes the UI selection directly.
-  test.skipIf(isRtdEnv())('abort if selecting content is prevented', async () => {
+  // DOMs without native UI selection state; on @ctrl/dom it writes the UI selection directly.
+  test.skipIf(isCtrlDomEnv())('abort if selecting content is prevented', async () => {
     const {element, user} = setup<HTMLInputElement>(`<input value="hello"/>`)
     // In some environments a `select` event handler can reset the selection before we can clear the input.
     // In browser the `.clear()` API is done before the event is dispatched.

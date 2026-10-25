@@ -25,7 +25,7 @@
  * built on exactly these transitions.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 let win: any;
 let doc: any;

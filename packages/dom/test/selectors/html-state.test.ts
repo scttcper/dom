@@ -21,7 +21,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let win: any;
@@ -38,7 +38,7 @@ const $ = (id: string) => doc.getElementById(id);
 function same(html: string, sel: string, expected: string[]): void {
   doc.body.innerHTML = html;
   const jsdom = new JSDOM(`<!doctype html><body>${html}</body>`, { url: "https://example.com/page" }).window.document;
-  expect({ rtd: $$(sel), jsdom: ids(jsdom.querySelectorAll(sel)) }).toEqual({ rtd: expected, jsdom: expected });
+  expect({ "ctrl-dom": $$(sel), jsdom: ids(jsdom.querySelectorAll(sel)) }).toEqual({ "ctrl-dom": expected, jsdom: expected });
 }
 
 describe(":link — https://html.spec.whatwg.org/#selector-link", () => {

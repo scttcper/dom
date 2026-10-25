@@ -33,7 +33,7 @@ function isInterfaceName(name: string): boolean {
  * that `installGlobals` exposes on the host global.
  */
 /**
- * Exported from @rtd/dom but not on Window.prototype: installGlobals defines them on the global
+ * Exported from @ctrl/dom but not on Window.prototype: installGlobals defines them on the global
  * only for compat profiles that expose them (window/compat.ts: ResizeObserver is "modern" only).
  */
 const NOT_ON_WINDOW = new Set(["ResizeObserver"]);
@@ -77,12 +77,12 @@ export function ensureInterfaces(proto: object, fallbacks: InterfaceMap = {}): I
 
 type EventConstructor = new (type: string, init?: Record<string, unknown>) => import("../events/Event.ts").Event;
 
-/** An Event subclass exported by `@rtd/dom` (events area), looked up lazily. */
+/** An Event subclass exported by `@ctrl/dom` (events area), looked up lazily. */
 export function eventInterface(name: string): EventConstructor {
   return dom[name] as EventConstructor;
 }
 
-/** Look up an optional public export of `@rtd/dom` by name (lazy: areas land in parallel). */
+/** Look up an optional public export of `@ctrl/dom` by name (lazy: areas land in parallel). */
 export function domExport<T = unknown>(name: string): T | undefined {
   return dom[name] as T | undefined;
 }

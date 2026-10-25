@@ -1,12 +1,12 @@
 // Port of @testing-library/dom src/queries/display-value.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/queries/display-value.ts
 
-import { ELEMENT_NODE, HTML_NS, nextInTree, T } from "@rtd/dom/internal";
+import { ELEMENT_NODE, HTML_NS, nextInTree, T } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "../matches.ts";
 import { getNodeTextImpl } from "../get-node-text.ts";
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 function queryAllByDisplayValue(container: any, value: Matcher, { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {}): any[] {
   checkContainerType(container);

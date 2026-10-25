@@ -10,7 +10,7 @@
  * DOM Standard dispatch steps 11–13: https://dom.spec.whatwg.org/#concept-event-dispatch
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 
 // biome-ignore lint: untyped DOM surface in tests
 let window: any;

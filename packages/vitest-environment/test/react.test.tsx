@@ -1,8 +1,8 @@
-// @vitest-environment rtd
+// @vitest-environment ctrl-dom
 // @vitest-environment-options { "url": "http://localhost:3000/app?x=1", "width": 1280, "compat": "modern" }
 /**
  * Integration: stock React 19 + @testing-library/react + @testing-library/dom from
- * node_modules running on vitest-environment-rtd (the drop-in path: swap only the environment).
+ * node_modules running on @ctrl/dom/vitest-environment (the drop-in path: swap only the environment).
  *
  * Specs exercised through the libraries:
  *   HTML Standard — The Window object: https://html.spec.whatwg.org/#the-window-object

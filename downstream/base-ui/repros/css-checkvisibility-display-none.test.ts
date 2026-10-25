@@ -3,7 +3,7 @@
  * tabindex lands on a `hidden` tab).
  *
  * Base UI's visibility helper prefers `element.checkVisibility()` when it exists (jsdom does not
- * implement it, so the baseline falls back to getComputedStyle). @rtd/dom implements
+ * implement it, so the baseline falls back to getComputedStyle). @ctrl/dom implements
  * checkVisibility but returns true for an element with the `hidden` attribute, whose computed
  * display is "none" (getComputedStyle agrees). checkVisibility must return false when the
  * element has no associated box (display: none on it or an ancestor).

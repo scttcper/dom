@@ -1,2 +1,2 @@
-// The single import point for the DOM Testing Library API inside @rtd/react.
-export * from "@rtd/testing-library";
+// The single import point for the DOM Testing Library API inside @ctrl/dom/react.
+export * from "@ctrl/dom/testing-library";

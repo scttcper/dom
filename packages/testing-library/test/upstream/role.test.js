@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/role.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import jestSnapshotSerializerAnsi from '../helpers/ansi-serializer.js'
 import {configure, getConfig} from '../../src/config.ts'
@@ -586,8 +586,8 @@ describe('configuration', () => {
       configure({computedStyleSupportsPseudoElements: true})
       const {queryByRole} = render('<button>Hello, Dave!</button>')
 
-      // DIVERGENCE(rtd): jsdom logs "Not implemented: window.computedStyle(elt, pseudoElt)"
-      // twice here; @rtd/dom supports pseudo-element computed styles, so nothing is logged and
+      // DIVERGENCE(ctrl-dom): jsdom logs "Not implemented: window.computedStyle(elt, pseudoElt)"
+      // twice here; @ctrl/dom supports pseudo-element computed styles, so nothing is logged and
       // the name still matches.
       expect(queryByRole('button', {name: 'Hello, Dave!'})).not.toBeNull()
 

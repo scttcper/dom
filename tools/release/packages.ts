@@ -29,6 +29,12 @@ export const PACKAGES: ReleasePackage[] = [
     paths: [...member("jest-environment"), "publish/dom-jest-environment"],
     peersOnCtrlDom: true,
   },
+  {
+    name: "@ctrl/sentry-tests",
+    pkgRoot: "release/sentry-tests",
+    paths: [...member("sentry-tests"), "packages/sentry-tests/README.md"],
+    peersOnCtrlDom: false,
+  },
 ];
 
 export const tagFormat = (name: string) => `${name}@\${version}`;

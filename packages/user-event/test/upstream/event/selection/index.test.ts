@@ -12,7 +12,7 @@ import {
   setSelection,
   setSelectionRange,
 } from '#src/event/selection/index.ts'
-import {isJsdomEnv, isLegacyJsdomEnv, isRtdEnv, setup} from '#testHelpers'
+import {isJsdomEnv, isLegacyJsdomEnv, isCtrlDomEnv, setup} from '#testHelpers'
 
 test('range on input', async () => {
   const {element} = setup('<input value="foo"/>')
@@ -45,8 +45,8 @@ test('range on contenteditable', async () => {
   expect(getInputRange(element)).toEqual(
     // divergence: jsdom 30 places the Selection on the focused contenteditable element
     // (offset 0) instead of inside its first text node like the browser.
-    // @rtd/dom, like jsdom 20, does not move the Selection into a focused contenteditable
-    isLegacyJsdomEnv() || isRtdEnv()
+    // @ctrl/dom, like jsdom 20, does not move the Selection into a focused contenteditable
+    isLegacyJsdomEnv() || isCtrlDomEnv()
       ? undefined
       : isJsdomEnv()
         ? expect.objectContaining({

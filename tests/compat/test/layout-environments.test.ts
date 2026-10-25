@@ -1,18 +1,18 @@
 /**
  * The layout-lite opt-in reaches the window through each environment's options (docs/layout.md):
- * Jest's `testEnvironmentOptions.layout` (jest-environment-rtd) — the Vitest form,
+ * Jest's `testEnvironmentOptions.layout` (@ctrl/dom-jest-environment) — the Vitest form,
  * `environmentOptions["ctrl-dom"].layout`, is exercised by tests/compat/vitest.layout.config.ts.
  * Off by default in every compat profile.
  *
  * Spec: CSSOM View offsetHeight — https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetheight
  */
 import { describe, expect, test } from "vitest";
-import RtdEnvironment from "../../../packages/jest-environment/src/index.ts";
+import CtrlDomEnvironment from "../../../packages/jest-environment/src/index.ts";
 
 type AnyGlobal = Record<string, any>;
 
 async function offsetHeightUnder(testEnvironmentOptions: Record<string, unknown>): Promise<number> {
-  const env = new RtdEnvironment(
+  const env = new CtrlDomEnvironment(
     { globalConfig: {}, projectConfig: { testEnvironmentOptions, globals: {}, fakeTimers: {}, testPath: "x.test.js" } } as never,
     { console, docblockPragmas: {}, testPath: "x.test.js" } as never,
   );
@@ -27,7 +27,7 @@ async function offsetHeightUnder(testEnvironmentOptions: Record<string, unknown>
   }
 }
 
-describe("jest-environment-rtd testEnvironmentOptions.layout", () => {
+describe("@ctrl/dom-jest-environment testEnvironmentOptions.layout", () => {
   test('"lite" turns layout-lite on', async () => {
     expect(await offsetHeightUnder({ layout: "lite" })).toBe(42);
   });

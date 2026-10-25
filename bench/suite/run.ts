@@ -3,8 +3,8 @@
 // run a fresh process, environments interleaved. Reports wall time (what users feel) next to
 // Vitest's own per-file diagnostics and worker memory.
 //
-//   pnpm bench:suite                              jsdom, happy-dom, rtd, rtd-full; 3 samples
-//   pnpm bench:suite --envs jsdom,rtd --samples 5 --files 100 --workers 4
+//   pnpm bench:suite                              jsdom, happy-dom, ctrl-dom, ctrl-dom-full; 3 samples
+//   pnpm bench:suite --envs jsdom,ctrl-dom --samples 5 --files 100 --workers 4
 //
 // Writes bench/results/<date>-suite-<name>.md/.json.
 
@@ -23,7 +23,7 @@ const scratch = join(benchDir, "results", ".suite-tmp");
 
 const { values: flags } = parseArgs({
   options: {
-    envs: { type: "string", default: "jsdom,happy-dom,rtd,rtd-full,rtd-dist,rtd-full-dist" },
+    envs: { type: "string", default: "jsdom,happy-dom,ctrl-dom,ctrl-dom-full,ctrl-dom-dist,ctrl-dom-full-dist" },
     samples: { type: "string", default: "3" },
     files: { type: "string", default: "100" },
     workers: { type: "string" },

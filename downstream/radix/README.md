@@ -8,8 +8,8 @@ jsdom baseline.
 | mode | DOM | Testing Library |
 | --- | --- | --- |
 | `jsdom` | jsdom 29.1.1 (upstream config, unchanged) | stock, from upstream's lockfile |
-| `rtd-dom` | `@rtd/dom` via the stock `vitest-environment-rtd` | stock, from upstream's lockfile |
-| `rtd-full` | `@rtd/dom` via the stock `vitest-environment-rtd` | ours: `@testing-library/{react,dom,user-event,jest-dom}` (+ subpaths) aliased to `packages/*` |
+| `ctrl-dom` | `@ctrl/dom` via the stock `@ctrl/dom/vitest-environment` | stock, from upstream's lockfile |
+| `ctrl-dom-full` | `@ctrl/dom` via the stock `@ctrl/dom/vitest-environment` | ours: `@testing-library/{react,dom,user-event,jest-dom}` (+ subpaths) aliased to `packages/*` |
 
 ## Why Radix
 
@@ -26,13 +26,13 @@ pnpm downstream:radix --install            # first time: clone pinned commit + f
 pnpm downstream:radix --preset smoke       # 6 files
 pnpm downstream:radix --preset interactions # 24 interaction-heavy packages
 pnpm downstream:radix --preset all         # the whole unit project
-pnpm downstream:radix --files packages/react/form/ --modes rtd-dom --grep 'explicit wiring'
+pnpm downstream:radix --files packages/react/form/ --modes ctrl-dom --grep 'explicit wiring'
 pnpm vitest run --config downstream/vitest.config.ts radix   # standalone repros
 ```
 
 Other flags: `--workers N` (default 4 in every mode), `--rounds N` (interleave the modes N times;
 report median wall/RSS and list tests that change status between rounds), `--latest` (upstream `main` instead of the pin), `--shims dom,react`
-(rtd-full subset, for bisecting), `--upstream-retry`, `--no-report`.
+(ctrl-dom-full subset, for bisecting), `--upstream-retry`, `--no-report`.
 
 ## How it works
 
@@ -42,21 +42,21 @@ report median wall/RSS and list tests that change status between rounds), `--lat
 - `--install` runs upstream's exact `pnpm@11.5.0` with `--frozen-lockfile --ignore-scripts`,
   filtered to the root, `packages/**` and `internal/**` (Storybook and the Next.js SSR app are not
   needed).
-- A wrapper config is generated per mode in `checkout/.rtd-harness/` (deleted afterwards). It
+- A wrapper config is generated per mode in `checkout/.ctrl-dom-harness/` (deleted afterwards). It
   imports upstream's `vitest.config.mts`, picks the `unit` project and `mergeConfig`s in: the
-  environment, the rtd-full aliases, `resolve.dedupe` for React/Vitest, and
+  environment, the ctrl-dom-full aliases, `resolve.dedupe` for React/Vitest, and
   `test.server.deps.external` for `packages/(dom|vitest-environment)/src` so the environment and
-  the test realm share ONE `@rtd/dom` instance.
+  the test realm share ONE `@ctrl/dom` instance.
 - Vitest runs with this process's Node (26), not the checkout's `.nvmrc` (24).
 
 ## Differences from the Base UI runner
 
 - **No environment adapter.** Upstream is on Vitest 4.1; the Environment contract our
-  `vitest-environment-rtd` uses (`name`, `viteEnvironment`, `setup() -> { teardown }`) is the same
+  `@ctrl/dom/vitest-environment` uses (`name`, `viteEnvironment`, `setup() -> { teardown }`) is the same
   in Vitest 4, so the stock environment is used with default options (default URL
   `http://localhost:3000/`, same as Vitest's jsdom environment).
 - **Default userAgent.** Radix never branches on `navigator.userAgent` (checked: no `jsdom`/UA
-  checks in packages, internal or the setup file), so the rtd modes keep @rtd/dom's default UA.
+  checks in packages, internal or the setup file), so the ctrl-dom modes keep @ctrl/dom's default UA.
 - **retry forced to 0** in every mode. Upstream sets `retry: 1`, which would hide intermittent
   failures on either engine; `--upstream-retry` restores it. The jsdom baseline passes with 0.
 
@@ -64,9 +64,9 @@ report median wall/RSS and list tests that change status between rounds), `--lat
 
 - one `react` module id per mode (resolution records plugin, `output/<mode>/resolutions.jsonl`);
 - a setup-file probe per worker (`output/<mode>/environments.jsonl`): jsdom mode runs jsdom;
-  rtd modes satisfy `document instanceof Document && Node === dom.Node && window === globalThis`
-  against the `@rtd/dom` module the test realm imports (single instance);
-- rtd-full: each aliased specifier imports the same module object as our package entry, and no
+  ctrl-dom modes satisfy `document instanceof Document && Node === dom.Node && window === globalThis`
+  against the `@ctrl/dom` module the test realm imports (single instance);
+- ctrl-dom-full: each aliased specifier imports the same module object as our package entry, and no
   `@testing-library/*` import resolved outside `packages/`;
 - discovered test counts equal jsdom's; the jsdom baseline must exit 0.
 
@@ -74,5 +74,5 @@ report median wall/RSS and list tests that change status between rounds), `--lat
 
 - `output/<mode>/` (gitignored): Vitest JSON, log, `summary.json`, records.
 - `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS (`/usr/bin/time -l`), tests that
-  pass on jsdom but fail on rtd, failures by component and error signature.
+  pass on jsdom but fail on ctrl-dom, failures by component and error signature.
 - `TRIAGE.md`: clusters with owners and repros (`repros/`, run via `downstream/vitest.config.ts`).

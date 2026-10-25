@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/wait-for-element-to-be-removed.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {waitForElementToBeRemoved} from '../../src/index.ts'
 import {renderIntoDocument} from '../helpers/test-utils.js'

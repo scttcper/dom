@@ -5,7 +5,7 @@ import { CONFIGS } from "../lib/configs.ts";
 
 /**
  * Startup workloads run once per fresh process (cold), timed from before the first import.
- *  - startup/import: `await import()` of the DOM library alone (jsdom / happy-dom / @rtd/dom).
+ *  - startup/import: `await import()` of the DOM library alone (jsdom / happy-dom / @ctrl/dom).
  *  - startup/env: import the DOM library, create the window, install globals (what a Vitest
  *    environment does per test file).
  *  - startup/first-render: startup/env + import React, react-dom and the testing-library stack,
@@ -16,7 +16,7 @@ export const startupWorkloads: StartupWorkload[] = [
     id: "startup/import",
     title: "Import the DOM library only (cold)",
     kind: "startup",
-    configs: ["jsdom", "happy-dom", "rtd-dom", "rtd-dom-dist"],
+    configs: ["jsdom", "happy-dom", "ctrl-dom", "ctrl-dom-dist"],
   },
   {
     id: "startup/env",

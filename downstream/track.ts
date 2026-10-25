@@ -47,7 +47,7 @@ const SUITES: Record<string, { preset: string; output: (mode: string) => string;
     scope: "`packages/react-router`, Jest in ESM mode",
   },
 };
-const MODES = ["jsdom", "rtd-dom", "rtd-full"];
+const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full"];
 
 const { values: flags } = parseArgs({
   options: {
@@ -135,9 +135,9 @@ if (flags.readme) {
       return n(c.passed) + (long ? ` (${intermittent} intermittent)` : "\\*");
     };
     const total = n(jsdom.passed + jsdom.failed);
-    short.push(`| [${meta.title}](downstream/${suite}/TRIAGE.md) | ${total} | ${cell("jsdom", false)} | ${cell("rtd-dom", false)} | ${cell("rtd-full", false)} |`);
+    short.push(`| [${meta.title}](downstream/${suite}/TRIAGE.md) | ${total} | ${cell("jsdom", false)} | ${cell("ctrl-dom", false)} | ${cell("ctrl-dom-full", false)} |`);
     detailed.push(
-      `| [${meta.title}](../downstream/${suite}/TRIAGE.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom", true)} | ${cell("rtd-dom", true)} | ${cell("rtd-full", true)} |`,
+      `| [${meta.title}](../downstream/${suite}/TRIAGE.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom", true)} | ${cell("ctrl-dom", true)} | ${cell("ctrl-dom-full", true)} |`,
     );
   }
   writeSection(join(here, "../README.md"), [...short, ...(anyIntermittent ? ["", "<sub>\\* includes tests that fail intermittently.</sub>"] : []), ""].join("\n"));

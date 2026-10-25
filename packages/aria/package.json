@@ -1,5 +1,4 @@
 {
-  "name": "@rtd/aria",
   "version": "0.0.0",
   "private": true,
   "description": "ARIA roles, accessible name/description and states (replaces aria-query + dom-accessibility-api).",
@@ -33,7 +32,7 @@
     }
   },
   "dependencies": {
-    "@rtd/dom": "workspace:*"
+    "@ctrl/dom": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.2",

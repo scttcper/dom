@@ -12,7 +12,7 @@
  * (docs/deviations.md), so only the IDL half is tested.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { ErrorEvent, Event, type Document, type Window } from "@rtd/dom";
+import { ErrorEvent, Event, type Document, type Window } from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 
 let window: Window;

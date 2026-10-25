@@ -10,7 +10,7 @@
  * - HTML attribute state mappings — https://www.w3.org/TR/html-aam-1.0/#html-attribute-state-and-property-mappings
  * - Accessibility tree exclusion — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion
  *
- * Roles, names and hiddenness come from the same @rtd/aria functions `*ByRole` uses, so the last
+ * Roles, names and hiddenness come from the same @ctrl/dom/aria functions `*ByRole` uses, so the last
  * block checks the snapshot against the queries themselves.
  */
 import { beforeEach, describe, expect, test } from "vitest";

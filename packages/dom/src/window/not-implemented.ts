@@ -8,10 +8,10 @@
 // forward it to console.error, and suites assert on it (Sentry: "JSDOM throws an error on
 // navigation", `message: 'Not implemented: navigation to another Document'`).
 //
-// Under the "jsdom-26" and "jsdom-30" profiles @rtd/dom builds the same Error (message and
+// Under the "jsdom-26" and "jsdom-30" profiles @ctrl/dom builds the same Error (message and
 // `type`) at the same points and hands it to the handler an environment installs
 // (setNotImplementedHandler), which forwards it the way that environment's jsdom counterpart
-// does. There is no handler by default, and "modern" never reports. What @rtd/dom itself does at
+// does. There is no handler by default, and "modern" never reports. What @ctrl/dom itself does at
 // those points is unchanged: it often implements the operation jsdom only stubs.
 
 import type { CompatProfile } from "./compat.ts";

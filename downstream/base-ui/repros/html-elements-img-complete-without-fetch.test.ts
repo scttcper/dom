@@ -1,9 +1,9 @@
 /**
- * Downstream repro (Base UI Avatar.Image keepMounted tests: 6 failures in both rtd modes).
+ * Downstream repro (Base UI Avatar.Image keepMounted tests: 6 failures in both ctrl-dom modes).
  *
  * Base UI derives the initial loading status from `img.complete`: an `<img src>` that is not
  * complete is "loading" until load/error fires. jsdom (no resource loading) reports
- * `complete === false` for an `<img>` with a src that was never fetched; @rtd/dom reports
+ * `complete === false` for an `<img>` with a src that was never fetched; @ctrl/dom reports
  * `true` (docs/deviations.md HTML row), so the component starts in "loaded"/"error" and the
  * tests' expected ['loading', ...] status sequence never happens.
  *

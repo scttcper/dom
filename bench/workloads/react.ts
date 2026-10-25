@@ -1,5 +1,5 @@
 // React + testing-library workloads. Every configuration runs the same unmodified development
-// React; only the DOM and (for `rtd`) the testing-library stack differ. Workloads are written
+// React; only the DOM and (for `ctrl-dom`) the testing-library stack differ. Workloads are written
 // with createElement (Node runs these files directly, without a JSX transform).
 //
 // Form fixtures follow ~/gh/vibedom/bench/dom-bench/react-test-workloads.mjs; the keyed list

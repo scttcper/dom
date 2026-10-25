@@ -1,6 +1,6 @@
 // Ported from @testing-library/react@16.3.3
 // https://github.com/testing-library/react-testing-library/blob/v16.3.3/src/__tests__/auto-cleanup-skip.js
-// `require('../')` -> dynamic `import("@rtd/react")` (ESM); same assertions.
+// `require('../')` -> dynamic `import("@ctrl/dom/react")` (ESM); same assertions.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
 
@@ -9,10 +9,10 @@ declare const document: any;
 declare const window: any;
 declare const Event: any;
 
-let render: typeof import("@rtd/react").render;
+let render: typeof import("@ctrl/dom/react").render;
 beforeAll(async () => {
   process.env.RTL_SKIP_AUTO_CLEANUP = "true";
-  const rtl = await import("@rtd/react");
+  const rtl = await import("@ctrl/dom/react");
   render = rtl.render;
 });
 

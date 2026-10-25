@@ -2,7 +2,7 @@
 import { registerHooks } from "node:module";
 import { appendFileSync } from "node:fs";
 
-const log = process.env.RTD_LOAD_LOG;
+const log = process.env.CTRL_DOM_LOAD_LOG;
 if (log) {
   registerHooks({
     load(url, context, nextLoad) {

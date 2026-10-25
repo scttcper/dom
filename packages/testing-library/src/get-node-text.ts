@@ -3,7 +3,7 @@
 //
 // Walks NodeImpl children directly instead of `Array.from(node.childNodes).filter().map()`.
 
-import { asciiLowercase, attr, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, type NodeImpl } from "@rtd/dom/internal";
+import { asciiLowercase, attr, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, type NodeImpl } from "@ctrl/dom/internal";
 import { implOf } from "./helpers.ts";
 
 /** `el.matches('input[type=submit], input[type=button], input[type=reset]')` without the selector engine. */

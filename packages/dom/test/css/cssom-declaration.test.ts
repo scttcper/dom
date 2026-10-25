@@ -19,7 +19,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
-import { createWindow, type Document, type Window } from "@rtd/dom";
+import { createWindow, type Document, type Window } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let window: Window;
@@ -35,9 +35,9 @@ function style(): any {
 
 const jsdomDoc = new JSDOM("<!doctype html><body></body>").window.document;
 /** Runs `fn` on a fresh inline style of ours and of jsdom; returns both results. */
-function onBoth<R>(fn: (s: any) => R): { rtd: R; jsdom: R } {
+function onBoth<R>(fn: (s: any) => R): { "ctrl-dom": R; jsdom: R } {
   const theirs = jsdomDoc.body.appendChild(jsdomDoc.createElement("div")).style;
-  return { rtd: fn(style()), jsdom: fn(theirs) };
+  return { "ctrl-dom": fn(style()), jsdom: fn(theirs) };
 }
 
 describe("cssText — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext", () => {
@@ -48,26 +48,26 @@ describe("cssText — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-cs
         s.cssText = "width: 10px; height: 5px";
         return [s.color, s.width, s.height, s.length];
       }),
-    ).toEqual({ rtd: ["", "10px", "5px", 2], jsdom: ["", "10px", "5px", 2] });
+    ).toEqual({ "ctrl-dom": ["", "10px", "5px", 2], jsdom: ["", "10px", "5px", 2] });
   });
 
   test("setter: invalid declarations and unknown properties are dropped; the last valid one of a property wins", () => {
     expect(onBoth((s) => ((s.cssText = "color: nope; foo: bar; width: 1px; width: 2px"), s.cssText))).toEqual({
-      rtd: "width: 2px;",
+      "ctrl-dom": "width: 2px;",
       jsdom: "width: 2px;",
     });
   });
 
   test("getter: serializes declarations as `name: value;` joined by a space, !important kept (https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block)", () => {
     expect(onBoth((s) => ((s.cssText = "color:red  !IMPORTANT;width:1px"), s.cssText))).toEqual({
-      rtd: "color: red !important; width: 1px;",
+      "ctrl-dom": "color: red !important; width: 1px;",
       jsdom: "color: red !important; width: 1px;",
     });
   });
 
   test("getter: longhands that complete a shorthand serialize as the shorthand (preferred order)", () => {
     expect(onBoth((s) => ((s.cssText = "margin-top:1px;margin-right:2px;margin-bottom:1px;margin-left:2px"), s.cssText))).toEqual({
-      rtd: "margin: 1px 2px;",
+      "ctrl-dom": "margin: 1px 2px;",
       jsdom: "margin: 1px 2px;",
     });
   });
@@ -101,7 +101,7 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
 
   test("step 4: an empty value removes the property", () => {
     expect(onBoth((s) => (s.setProperty("color", "red"), s.setProperty("color", ""), [s.color, s.length]))).toEqual({
-      rtd: ["", 0],
+      "ctrl-dom": ["", 0],
       jsdom: ["", 0],
     });
   });
@@ -115,7 +115,7 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
   });
 
   test("step 6: an unparsable value is ignored and keeps the old value", () => {
-    expect(onBoth((s) => (s.setProperty("width", "1px"), s.setProperty("width", "wide"), s.width))).toEqual({ rtd: "1px", jsdom: "1px" });
+    expect(onBoth((s) => (s.setProperty("width", "1px"), s.setProperty("width", "wide"), s.width))).toEqual({ "ctrl-dom": "1px", jsdom: "1px" });
   });
 
   test("step 8: a shorthand sets each longhand with the priority", () => {
@@ -138,7 +138,7 @@ describe("setProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaratio
 describe("removeProperty — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty", () => {
   test("returns the old value; removing a missing property returns \"\"", () => {
     expect(onBoth((s) => (s.color = "red", [s.removeProperty("color"), s.removeProperty("color")]))).toEqual({
-      rtd: ["red", ""],
+      "ctrl-dom": ["red", ""],
       jsdom: ["red", ""],
     });
   });
@@ -194,7 +194,7 @@ describe("parentRule — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration
 describe("cssFloat and named attributes — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-cssfloat", () => {
   test("cssFloat reads and writes float", () => {
     expect(onBoth((s) => ((s.cssFloat = "left"), [s.getPropertyValue("float"), s.cssFloat]))).toEqual({
-      rtd: ["left", "left"],
+      "ctrl-dom": ["left", "left"],
       jsdom: ["left", "left"],
     });
   });
@@ -243,14 +243,14 @@ describe("cascade-only shorthands — https://drafts.csswg.org/css-cascade-5/#sh
   });
 
   test("the declaration block keeps the shorthand as written (jsdom-compatible style.overflow)", () => {
-    expect(onBoth((s) => ((s.overflow = "hidden"), s.cssText))).toEqual({ rtd: "overflow: hidden;", jsdom: "overflow: hidden;" });
+    expect(onBoth((s) => ((s.overflow = "hidden"), s.cssText))).toEqual({ "ctrl-dom": "overflow: hidden;", jsdom: "overflow: hidden;" });
   });
 });
 
 describe("expanded shorthands — https://drafts.csswg.org/cssom/#concept-shorthands-preferred-order", () => {
   test("flex: single number → <grow> 1 0% (https://drafts.csswg.org/css-flexbox-1/#flex-property)", () => {
     expect(onBoth((s) => ((s.flex = "2"), [s.flexGrow, s.flexShrink, s.flexBasis]))).toEqual({
-      rtd: ["2", "1", "0%"],
+      "ctrl-dom": ["2", "1", "0%"],
       jsdom: ["2", "1", "0%"],
     });
   });
@@ -265,14 +265,14 @@ describe("expanded shorthands — https://drafts.csswg.org/cssom/#concept-shorth
 
   test("border: sets width/style/color on four sides and resets border-image", () => {
     expect(onBoth((s) => ((s.border = "1px solid red"), [s.borderLeftWidth, s.borderTopStyle, s.borderBottomColor, s.border]))).toEqual({
-      rtd: ["1px", "solid", "red", "1px solid red"],
+      "ctrl-dom": ["1px", "solid", "red", "1px solid red"],
       jsdom: ["1px", "solid", "red", "1px solid red"],
     });
   });
 
   test("margin with one to four values expands per the box model", () => {
     expect(onBoth((s) => ((s.margin = "1px 2px 3px"), [s.marginTop, s.marginRight, s.marginBottom, s.marginLeft]))).toEqual({
-      rtd: ["1px", "2px", "3px", "2px"],
+      "ctrl-dom": ["1px", "2px", "3px", "2px"],
       jsdom: ["1px", "2px", "3px", "2px"],
     });
   });

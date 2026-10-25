@@ -1,8 +1,8 @@
 {
-  "name": "jest-environment-rtd",
+  "name": "@ctrl/dom-jest-environment",
   "version": "0.0.0",
   "private": true,
-  "description": "Jest environment that installs the @rtd/dom window as globals (testEnvironment: 'rtd').",
+  "description": "Jest environment that installs the @ctrl/dom window as globals (testEnvironment: 'ctrl-dom').",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -37,12 +37,11 @@
     }
   },
   "dependencies": {
+    "@ctrl/dom": "workspace:*",
     "@jest/environment": "30.4.1",
-    "@rtd/dom": "workspace:*",
-    "jest-mock": "30.4.1",
     "@jest/fake-timers": "30.4.1",
-    "jest-util": "30.4.1",
-    "@rtd/testing-library": "workspace:*"
+    "jest-mock": "30.4.1",
+    "jest-util": "30.4.1"
   },
   "peerDependencies": {
     "jest": ">=30.0.0"

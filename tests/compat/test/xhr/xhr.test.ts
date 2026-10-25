@@ -16,7 +16,7 @@
  *   - redirects:                 https://fetch.spec.whatwg.org/#http-redirect-fetch
  *
  * Both windows live at the server's origin, so requests are same-origin (jsdom enforces CORS,
- * which @rtd/dom does not: docs/deviations.md). The server never sends Date, and the observations
+ * which @ctrl/dom does not: docs/deviations.md). The server never sends Date, and the observations
  * leave out headers the two HTTP clients choose differently (User-Agent, Connection).
  */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";

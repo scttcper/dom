@@ -8,7 +8,7 @@
 // before the accessible name, which is only computed for role- and state-matching, visible
 // candidates. Filters are pure, so the reordering does not change results.
 
-import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@rtd/dom/internal";
+import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { aria, styleOverride } from "../aria.ts";
 import {
   computeAriaSelected,

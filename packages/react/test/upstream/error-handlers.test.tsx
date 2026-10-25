@@ -3,7 +3,7 @@
 // React 19 only (the React 18 `toErrorDev` branches are dropped: this package peers on react@^19).
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { render, renderHook } from "@rtd/react";
+import { render, renderHook } from "@ctrl/dom/react";
 
 // No lib.dom in this repo: environment globals are untyped here.
 declare const document: any;

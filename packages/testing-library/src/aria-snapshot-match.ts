@@ -31,7 +31,7 @@
 // node whose children) scores best against it, projected onto the template's shape, so the
 // diff shows only what differs rather than every node the template leaves out.
 
-import { roleSupportsProp } from "@rtd/aria";
+import { roleSupportsProp } from "@ctrl/dom/aria";
 import { ariaSnapshot, ariaSnapshotTree, envMaxLines, quote, truncate, yamlValue, type SnapshotNode } from "./aria-snapshot.ts";
 import { diffLines, type Op } from "./aria-snapshot-diff.ts";
 

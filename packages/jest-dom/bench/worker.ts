@@ -1,6 +1,6 @@
 // One jest-dom benchmark sample in a fresh process:
 //   node --expose-gc worker.ts <stack> <iterations>
-// stacks: rtd (@rtd/jest-dom on @rtd/dom), jsdom / happy-dom (stock @testing-library/jest-dom).
+// stacks: ctrl-dom (@ctrl/dom/jest-dom on @ctrl/dom), jsdom / happy-dom (stock @testing-library/jest-dom).
 // The document is mutated every iteration to defeat caching across iterations.
 // Prints { setupMs, perIterationMs, heapUsedMB, rssMB }.
 
@@ -10,8 +10,8 @@ const g = globalThis as any;
 
 const t0 = performance.now();
 let document: any;
-if (stack === "rtd") {
-  const dom: any = await import("@rtd/dom");
+if (stack === "ctrl-dom") {
+  const dom: any = await import("@ctrl/dom");
   const win = dom.createWindow();
   dom.installGlobals(win, g);
   document = win.document;
@@ -22,7 +22,7 @@ if (stack === "rtd") {
   const { Window } = await import("happy-dom");
   document = new Window().document;
 }
-const matchers: any = stack === "rtd" ? await import("@rtd/jest-dom/matchers") : await import("@testing-library/jest-dom/matchers");
+const matchers: any = stack === "ctrl-dom" ? await import("@ctrl/dom/jest-dom/matchers") : await import("@testing-library/jest-dom/matchers");
 const setupMs = performance.now() - t0;
 
 document.body.innerHTML = `

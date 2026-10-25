@@ -5,8 +5,8 @@
 //   node --expose-gc packages/aria/bench/role-name.ts sample <engine>
 //
 // Engines:
-//   rtd       @rtd/aria on @rtd/dom (warm passes hit the version-stamped name/hidden caches)
-//   rtd-invalidated  same, but the document is mutated before every pass (no cache hits)
+//   ctrl-dom       @ctrl/dom/aria on @ctrl/dom (warm passes hit the version-stamped name/hidden caches)
+//   ctrl-dom-invalidated  same, but the document is mutated before every pass (no cache hits)
 //   jsdom     Testing Library 10.4.2 getImplicitAriaRoles (aria-query 5.3.0) + dom-accessibility-api 0.5.16 on jsdom
 //   happy-dom same upstream stack on happy-dom
 //
@@ -17,7 +17,7 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 const require = createRequire(import.meta.url);
 
@@ -55,17 +55,17 @@ type Env = { invalidate?: () => void; body: any; elements: any[]; role(el: any):
 
 async function setup(engine: string): Promise<Env> {
   const html = formHtml();
-  if (engine.startsWith("rtd")) {
-    const { createWindow } = await import("@rtd/dom");
-    const aria = await import("@rtd/aria");
-    const internal = await import("@rtd/aria/internal");
+  if (engine.startsWith("ctrl-dom")) {
+    const { createWindow } = await import("@ctrl/dom");
+    const aria = await import("@ctrl/dom/aria");
+    const internal = await import("@ctrl/dom/aria/internal");
     const doc = createWindow().document;
     doc.body!.innerHTML = html;
     const elements = Array.from(doc.body!.querySelectorAll("form *")).map((e: any) => e[$impl]);
     void aria;
     let k = 0;
     return {
-      // rtd-invalidated: mutate the document before every pass so no version-stamped cache hits.
+      // ctrl-dom-invalidated: mutate the document before every pass so no version-stamped cache hits.
       invalidate: engine.endsWith("invalidated") ? () => doc.body!.setAttribute("data-pass", String(k++)) : undefined,
       body: doc.body,
       elements,
@@ -132,7 +132,7 @@ function median(xs: number[]): number {
 function driver(): void {
   const self = fileURLToPath(import.meta.url);
   const samples = Number(process.env.SAMPLES ?? 7);
-  const engines = (process.env.ENGINES ?? "rtd,rtd-invalidated,jsdom,happy-dom").split(",");
+  const engines = (process.env.ENGINES ?? "ctrl-dom,ctrl-dom-invalidated,jsdom,happy-dom").split(",");
   const rows = new Map<string, any[]>(engines.map((e) => [e, []]));
   // Interleave engines within each round so machine-load drift hits all of them alike.
   for (let i = 0; i < samples; i++) {

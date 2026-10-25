@@ -1,5 +1,5 @@
 // Ported from https://github.com/testing-library/dom-testing-library/blob/main/src/__tests__/fake-timers.js (MIT).
-// Assertions are upstream's; intentional differences are marked `DIVERGENCE(rtd):`.
+// Assertions are upstream's; intentional differences are marked `DIVERGENCE(ctrl-dom):`.
 
 import {waitFor, waitForElementToBeRemoved} from '../../src/index.ts'
 import {render} from '../helpers/test-utils.js'
@@ -24,7 +24,7 @@ test('real timers', async () => {
   await runWaitFor()
 })
 
-// DIVERGENCE(rtd): Jest's legacy fake timers do not exist in Vitest; the "legacy" cases run
+// DIVERGENCE(ctrl-dom): Jest's legacy fake timers do not exist in Vitest; the "legacy" cases run
 // with Vitest's (@sinonjs/fake-timers) clock instead, exercising our Vitest detection.
 test('legacy', async () => {
   vi.useFakeTimers()
@@ -100,7 +100,7 @@ test('legacy fake timers do waitFor requestAnimationFrame', async () => {
 })
 
 test('modern fake timers do waitFor requestAnimationFrame', async () => {
-  // DIVERGENCE(rtd): Jest's modern timers fake requestAnimationFrame by default; Vitest's need it listed.
+  // DIVERGENCE(ctrl-dom): Jest's modern timers fake requestAnimationFrame by default; Vitest's need it listed.
   vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame', 'Date', 'performance']})
 
   let exited = false

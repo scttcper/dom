@@ -13,7 +13,7 @@
 //   https://www.w3.org/TR/wai-aria-1.2/#aria-valuenow
 //   https://www.w3.org/TR/wai-aria-1.2/#aria-disabled
 
-import { HTML_NS, T, attr, type NodeImpl } from "@rtd/dom/internal";
+import { HTML_NS, T, attr, type NodeImpl } from "@ctrl/dom/internal";
 import { checkedness, indeterminate, optionSelected } from "./forms.ts";
 import { anyTag } from "./role.ts";
 

@@ -1,4 +1,4 @@
-// Public entry point of @rtd/dom.
+// Public entry point of @ctrl/dom.
 
 // Evaluation order matters (see nodes/create.ts): base node modules first, then the element
 // registry, which installs the element-class lookup used by createElement and the parser.
@@ -119,9 +119,9 @@ export { Selection } from "./traversal/Selection.ts";
 export { NodeFilter, NodeIterator, TreeWalker } from "./traversal/TreeWalker.ts";
 
 // --- window area: expose this namespace to window/interfaces.ts (interface objects, hooks) ---
-import * as rtdDomNamespace from "./index.ts";
+import * as ctrlDomDomNamespace from "./index.ts";
 import { registerDomNamespace } from "./window/interfaces.ts";
-registerDomNamespace(rtdDomNamespace);
+registerDomNamespace(ctrlDomDomNamespace);
 
 // --- selectors: install html element-state predicates (must stay last; see selectors/state.ts) ---
 import "./selectors/html-predicates.ts";

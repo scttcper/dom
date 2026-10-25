@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 // Base UI downstream suite: run the unmodified upstream `@base-ui/react` Vitest suite on
 //   jsdom     upstream baseline, unchanged
-//   rtd-dom   only the DOM environment swapped to @rtd/dom (stock Testing Library from upstream's lockfile)
-//   rtd-full  @rtd/dom + our Testing Library shims (@testing-library/{react,dom,user-event,jest-dom})
+//   ctrl-dom   only the DOM environment swapped to @ctrl/dom (stock Testing Library from upstream's lockfile)
+//   ctrl-dom-full  @ctrl/dom + our Testing Library shims (@testing-library/{react,dom,user-event,jest-dom})
 //
 //   node downstream/base-ui/run.ts [--install] [--latest] [--preset smoke|interactions|all]
-//        [--files a,b] [--modes jsdom,rtd-dom,rtd-full] [--workers N] [--no-report]
+//        [--files a,b] [--modes jsdom,ctrl-dom,ctrl-dom-full] [--workers N] [--no-report]
 //
 // Methodology (from ~/gh/vibedom/downstream/base-ui): pinned commit (manifest.json), unmodified
 // upstream tests (refuses tracked local changes), upstream's own frozen lockfile + exact pnpm,
-// fresh reports (old ones are deleted first), versions/commit recorded, every rtd mode compared
+// fresh reports (old ones are deleted first), versions/commit recorded, every ctrl-dom mode compared
 // against the jsdom baseline. See README.md.
 
 import { spawn, spawnSync } from "node:child_process";
@@ -22,13 +22,16 @@ import { parseArgs } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
+// CTRL_DOM_SENTRY_REPORTER=1 (opt in, so a SENTRY_DSN in the shell never reports harness runs by
+// accident): @ctrl/sentry-tests' runner and reporter, sending to SENTRY_DSN / SENTRY_SPOTLIGHT.
+const SENTRY_REPORTER = process.env.CTRL_DOM_SENTRY_REPORTER === "1";
 const manifest = JSON.parse(readFileSync(join(here, "manifest.json"), "utf8")) as {
   repository: string;
   branch: string;
   commit: string;
 };
 
-const MODES = ["jsdom", "rtd-dom", "rtd-full"] as const;
+const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full"] as const;
 type Mode = (typeof MODES)[number];
 
 const PRESETS: Record<string, string[]> = {
@@ -79,7 +82,7 @@ const { values } = parseArgs({
 if (values.help) {
   console.log(
     "node downstream/base-ui/run.ts [--install] [--latest] [--preset smoke|interactions|all | --files a,b] " +
-      "[--modes jsdom,rtd-dom,rtd-full] [--workers N] [--checkout PATH] [--cold] [--no-report] [--triage] [--shims react,dom,user-event,jest-dom] [--grep TEST_NAME_PATTERN]",
+      "[--modes jsdom,ctrl-dom,ctrl-dom-full] [--workers N] [--checkout PATH] [--cold] [--no-report] [--triage] [--shims react,dom,user-event,jest-dom] [--grep TEST_NAME_PATTERN]",
   );
   process.exit(0);
 }
@@ -245,7 +248,7 @@ const results = join(here, "results");
 // Generated files live in an untracked directory inside the checkout so Vitest's config loader
 // resolves upstream's own `vitest`, `vite` and plugins (a config outside the checkout would pick
 // up our workspace's Vitest). It is removed after the run.
-const harness = join(checkout, ".rtd-harness");
+const harness = join(checkout, ".ctrl-dom-harness");
 rmSync(harness, { recursive: true, force: true });
 mkdirSync(harness, { recursive: true });
 
@@ -260,7 +263,7 @@ const SHIM_ALIASES: Array<[RegExp, string]> = [
   [/^@testing-library\/jest-dom\/matchers(\.js)?$/, P("jest-dom/src/matchers.ts")],
   [/^@testing-library\/jest-dom$/, P("jest-dom/src/index.ts")],
 ];
-// --shims selects which Testing Library packages rtd-full substitutes (bisecting a failure to one
+// --shims selects which Testing Library packages ctrl-dom-full substitutes (bisecting a failure to one
 // of our packages); the default is all four.
 const shimSet = new Set(values.shims!.split(",").map((s) => s.trim()));
 for (const s of shimSet) if (!["react", "dom", "user-event", "jest-dom"].includes(s)) throw new Error(`Unknown shim ${s}`);
@@ -268,7 +271,7 @@ const ACTIVE_SHIMS = SHIM_ALIASES.filter(([re]) => shimSet.has(/@testing-library
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 
 function writeHarness(mode: Mode, modeOut: string): string {
-  const environment = mode === "jsdom" ? "jsdom" : join(here, "rtd-environment.ts");
+  const environment = mode === "jsdom" ? "jsdom" : join(here, "ctrl-dom-environment.ts");
   const probe = join(harness, `${mode}-probe.ts`);
   const shimChecks = ACTIVE_SHIMS.filter(([, file]) => !file.includes("dont-cleanup")).map(
     ([re, file]) => [re.source.replace(/\\\//g, "/").replace(/^\^|\(\\\.js\)\?\$$|\$$/g, ""), file] as const,
@@ -281,18 +284,18 @@ const mode = ${JSON.stringify(mode)};
 const g = globalThis as any;
 const receipt: Record<string, unknown> = { mode, userAgent: navigator.userAgent, documentConstructor: document.constructor.name, testPath: g.expect?.getState?.().testPath ?? null };
 if (mode === 'jsdom') {
-  if (g.__rtdDownstream || !navigator.userAgent.includes('jsdom')) throw new Error('Wrong DOM environment for jsdom mode');
+  if (g.__ctrlDomDownstream || !navigator.userAgent.includes('jsdom')) throw new Error('Wrong DOM environment for jsdom mode');
 } else {
   const dom = await import(${JSON.stringify(P("dom/src/index.ts"))});
-  receipt.installer = g.__rtdDownstream?.installer;
-  receipt.triage = g.__rtdDownstream?.triageAdded ?? [];
-  receipt.singleDomInstance = g.__rtdDownstream?.Document === dom.Document && document instanceof dom.Document && g.Node === dom.Node;
-  if (!g.__rtdDownstream || g.__rtdDownstream.document !== document) throw new Error('rtd mode is not running on the @rtd/dom window created by rtd-environment.ts');
-  if (!receipt.singleDomInstance) throw new Error('Two @rtd/dom module instances are loaded (environment vs test realm)');
+  receipt.installer = g.__ctrlDomDownstream?.installer;
+  receipt.triage = g.__ctrlDomDownstream?.triageAdded ?? [];
+  receipt.singleDomInstance = g.__ctrlDomDownstream?.Document === dom.Document && document instanceof dom.Document && g.Node === dom.Node;
+  if (!g.__ctrlDomDownstream || g.__ctrlDomDownstream.document !== document) throw new Error('ctrl-dom mode is not running on the @ctrl/dom window created by ctrl-dom-environment.ts');
+  if (!receipt.singleDomInstance) throw new Error('Two @ctrl/dom module instances are loaded (environment vs test realm)');
 }
-if (mode === 'rtd-full') {
+if (mode === 'ctrl-dom-full') {
   const checks: Record<string, boolean> = {};
-${(mode === "rtd-full" ? shimChecks : [])
+${(mode === "ctrl-dom-full" ? shimChecks : [])
   .map(
     ([spec, file]) =>
       `  checks[${JSON.stringify(spec)}] = (await import(${JSON.stringify(spec)})) === (await import(${JSON.stringify(file)}));`,
@@ -305,8 +308,8 @@ appendFileSync(${JSON.stringify(join(modeOut, "environments.jsonl"))}, JSON.stri
 `,
   );
 
-  const rtd = mode !== "jsdom";
-  const full = mode === "rtd-full";
+  const ctrlDom = mode !== "jsdom";
+  const full = mode === "ctrl-dom-full";
   const resolutions = join(modeOut, "resolutions.jsonl");
   const config = join(harness, `${mode}.config.mts`);
   writeFileSync(
@@ -322,7 +325,7 @@ const seen = new Set<string>();
 // Records how react / react-dom / vitest / Testing Library imports resolve, so the report can
 // prove there is exactly one React and that the shim aliases reached @mui/internal-test-utils.
 const receipts = {
-  name: 'rtd-downstream-resolution-receipts',
+  name: 'ctrl-dom-downstream-resolution-receipts',
   enforce: 'pre' as const,
   async resolveId(source: string, importer: string | undefined, options: any) {
     const bare = /^(react|react-dom|vitest|@testing-library\\/[a-z-]+)(\\/|$)/.test(source);
@@ -347,11 +350,11 @@ const project = mergeConfig(upstreamProject, {
   test: {
     name: '@base-ui/react',
     environment: ${JSON.stringify(environment)},
-    ${rtd ? `environmentOptions: { rtd: { url: 'http://localhost'${values.triage ? ", triage: true" : ""} } },` : ""}
+    ${ctrlDom ? `environmentOptions: { "ctrl-dom": { url: 'http://localhost'${values.triage ? ", triage: true" : ""} } },` : ""}
     ${
-      rtd
+      ctrlDom
         ? `server: { deps: {
-      // One @rtd/dom module instance: the environment (loaded by Vitest's environment loader) and
+      // One @ctrl/dom module instance: the environment (loaded by Vitest's environment loader) and
       // the test realm must share it, so it is loaded natively by Node (which runs our .ts) in both.
       external: [/${escape(join(repo, "packages") + "/")}(dom|vitest-environment)\\/src\\//],
       ${full ? `// Its imports of @testing-library/* must go through the aliases above (with a --shims
@@ -362,7 +365,7 @@ const project = mergeConfig(upstreamProject, {
     }
   },
 });
-project.test.setupFiles = [${JSON.stringify(probe)}, ...(project.test.setupFiles ?? [])];
+project.test.setupFiles = [${JSON.stringify(probe)}, ...(project.test.setupFiles ?? [])];${SENTRY_REPORTER ? `\nproject.test.runner = ${JSON.stringify(join(repo, "packages/sentry-tests/src/vitest-runner.ts"))};` : ""}
 
 export default {
   ...upstreamRoot,
@@ -420,7 +423,7 @@ function sourceFingerprint(): string {
   for (const pkg of ["dom", "aria", "testing-library", "react", "user-event", "jest-dom"]) {
     if (existsSync(P(pkg, "src"))) walk(P(pkg, "src"));
   }
-  for (const file of ["run.ts", "rtd-environment.ts"]) hash.update(readFileSync(join(here, file)));
+  for (const file of ["run.ts", "ctrl-dom-environment.ts"]) hash.update(readFileSync(join(here, file)));
   return hash.digest("hex").slice(0, 16);
 }
 
@@ -472,9 +475,10 @@ try {
       // Vitest 5 caches transformed modules on disk. Transforms embed resolved import ids, and
       // the modes resolve @testing-library/* differently, so every mode gets its own cache
       // (--cold disables it: slower, but every resolveId receipt is recorded).
-      ...(values.cold ? ["--no-fsModuleCache"] : ["--fsModuleCachePath", join(checkout, "node_modules/.vitest-cache-rtd", mode)]),
+      ...(values.cold ? ["--no-fsModuleCache"] : ["--fsModuleCachePath", join(checkout, "node_modules/.vitest-cache-ctrl-dom", mode)]),
       "--reporter",
       "default",
+      ...(SENTRY_REPORTER ? ["--reporter", join(repo, "packages/sentry-tests/src/vitest.ts")] : []),
       "--reporter",
       "json",
       "--outputFile",
@@ -581,7 +585,7 @@ if (!values["no-report"]) {
   md.push(`# Base UI downstream: \`${preset}\` (${date})`, "");
   if (triage) {
     md.push(
-      "> **TRIAGE MODE (`--triage`)**: the rtd environment applied the triage shims in `rtd-environment.ts` (workarounds for blockers already filed in TRIAGE.md) to look past them. These are not compatibility results.",
+      "> **TRIAGE MODE (`--triage`)**: the ctrl-dom environment applied the triage shims in `ctrl-dom-environment.ts` (workarounds for blockers already filed in TRIAGE.md) to look past them. These are not compatibility results.",
       "",
     );
   }
@@ -592,8 +596,8 @@ if (!values["no-report"]) {
     `- node ${process.version}, workers ${workers}, upstream versions: ${Object.entries(versions)
       .map(([k, v]) => `${k}@${v}`)
       .join(", ")}`,
-    `- rtd-full substitutes: ${[...shimSet].map((x) => `@testing-library/${x}`).join(", ")}`,
-    `- rtd modes run with userAgent containing "jsdom" (same headless branches as the baseline; see README).`,
+    `- ctrl-dom-full substitutes: ${[...shimSet].map((x) => `@testing-library/${x}`).join(", ")}`,
+    `- ctrl-dom modes run with userAgent containing "jsdom" (same headless branches as the baseline; see README).`,
     "",
   );
   md.push("## Per-mode results", "");
@@ -605,7 +609,7 @@ if (!values["no-report"]) {
     if (r.installer?.length) notes.push(`installer: ${r.installer.join(",")}`);
     if (r.triage?.length) notes.push(`triage shims patched: ${r.triage.join(", ")}`);
     if (r.reactIds?.length) notes.push(r.reactIds.length === 1 ? "1 React" : `**${r.reactIds.length} React ids**`);
-    if (r.mode === "rtd-full" && values.cold) notes.push(`shim files imported by internal-test-utils: ${Object.keys(r.shimHits ?? {}).length}`);
+    if (r.mode === "ctrl-dom-full" && values.cold) notes.push(`shim files imported by internal-test-utils: ${Object.keys(r.shimHits ?? {}).length}`);
     if (r.sourceStable === false) notes.push("our sources changed during the run");
     md.push(
       `| ${r.mode} | ${r.passed ?? "?"} | ${r.failed ?? "?"} | ${r.skipped ?? "?"} | ${r.total ?? "?"} | ${r.files ?? "?"} | ${r.suiteErrors?.length ?? "?"} | ${r.code ?? r.signal} | ${(r.wallMs / 1000).toFixed(1)}s | ${mib(r.peakRssBytes)} | ${r.receipts ?? 0} | ${notes.join("; ")} |`,
@@ -672,7 +676,7 @@ if (!values["no-report"]) {
 }
 
 // Exit non-zero when a run produced no report, the environment could not be verified, or the
-// discovered test set differs from jsdom (assertion failures alone are expected for rtd modes).
+// discovered test set differs from jsdom (assertion failures alone are expected for ctrl-dom modes).
 const baselineRun = runs.find((r) => r.mode === "jsdom");
 process.exitCode = runs.some(
   (r) =>

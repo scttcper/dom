@@ -1,13 +1,13 @@
-// Benchmarks @rtd/react + @rtd/jest-dom vs stock @testing-library/* on jsdom and happy-dom.
+// Benchmarks @ctrl/dom/react + @ctrl/dom/jest-dom vs stock @testing-library/* on jsdom and happy-dom.
 // Fresh process per sample; reports median and min–max of per-iteration time, setup
 // (environment + library import) time, heap after GC and RSS.
 //
-//   node packages/react/bench/run.ts [samples=7] [stacks=rtd,jsdom,happy-dom]
+//   node packages/react/bench/run.ts [samples=7] [stacks=ctrl-dom,jsdom,happy-dom]
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const samples = Number(process.argv[2] ?? 7);
-const stacks = (process.argv[3] ?? "rtd,jsdom,happy-dom").split(",");
+const stacks = (process.argv[3] ?? "ctrl-dom,jsdom,happy-dom").split(",");
 const worker = fileURLToPath(new URL("./worker.ts", import.meta.url));
 const scenarios: Array<[string, number]> = [
   ["tree", 100],

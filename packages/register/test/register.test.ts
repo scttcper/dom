@@ -1,5 +1,5 @@
 /**
- * @rtd/register (`@ctrl/dom/register`): a window installed as the process global for test runners
+ * @ctrl/dom/register (`@ctrl/dom/register`): a window installed as the process global for test runners
  * without a DOM environment.
  *
  * Spec: HTML Standard — The Window object (the global register() installs)
@@ -11,8 +11,8 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vitest";
-import * as dom from "@rtd/dom";
-import { isRegistered, register, unregister } from "@rtd/register/pure";
+import * as dom from "@ctrl/dom";
+import { isRegistered, register, unregister } from "@ctrl/dom/register/pure";
 
 const fixtures = fileURLToPath(new URL("../fixtures/", import.meta.url));
 const host = globalThis as unknown as Record<PropertyKey, unknown>;
@@ -33,14 +33,14 @@ describe("register(options) / unregister() — https://html.spec.whatwg.org/#the
     expect(host.matchMedia).toBeUndefined();
     expect(globalThis.setTimeout).not.toBe(hostSetTimeout);
     expect(globalThis.Date).not.toBe(hostDate);
-    expect(host[Symbol.for("rtd.dom.modules")]).toMatchObject({ dom: { createWindow: dom.createWindow } });
+    expect(host[Symbol.for("ctrl-dom.dom.modules")]).toMatchObject({ dom: { createWindow: dom.createWindow } });
     unregister();
     expect(isRegistered()).toBe(false);
     expect(host.document).toBeUndefined();
     expect(host.window).toBeUndefined();
     expect(globalThis.setTimeout).toBe(hostSetTimeout);
     expect(globalThis.Date).toBe(hostDate);
-    expect(host[Symbol.for("rtd.dom.modules")]).toBeUndefined();
+    expect(host[Symbol.for("ctrl-dom.dom.modules")]).toBeUndefined();
   });
 
   test("passes window options through (url, compat, width) and timeSkip: false keeps real Date", () => {
@@ -80,38 +80,38 @@ function run(cmd: string, args: string[], cwd: string, env: Record<string, strin
 }
 
 describe("node:test — https://nodejs.org/api/test.html", () => {
-  test("node --import @rtd/register --test: render, user-event, node:assert and jest-dom matchers on `expect`; auto cleanup; time skipping", () => {
-    const { status, output } = run(process.execPath, ["--import", "@rtd/register", "--test", "node/signup.test.ts"], fixtures);
+  test("node --import @ctrl/dom/register --test: render, user-event, node:assert and jest-dom matchers on `expect`; auto cleanup; time skipping", () => {
+    const { status, output } = run(process.execPath, ["--import", "@ctrl/dom/register", "--test", "node/signup.test.ts"], fixtures);
     expect(output).toMatch(/ℹ pass 3/);
     expect(status, output).toBe(0);
   });
 
   test("CTRL_DOM_URL configures the preload", () => {
     const url = "http://app.test/start";
-    const { status, output } = run(process.execPath, ["--import", "@rtd/register", "--test", "node/signup.test.ts"], fixtures, { CTRL_DOM_URL: url, EXPECT_URL: url });
+    const { status, output } = run(process.execPath, ["--import", "@ctrl/dom/register", "--test", "node/signup.test.ts"], fixtures, { CTRL_DOM_URL: url, EXPECT_URL: url });
     expect(status, output).toBe(0);
   });
 
-  test('a per-file `import "@rtd/register"` without a preload', () => {
+  test('a per-file `import "@ctrl/dom/register"` without a preload', () => {
     const { status, output } = run(process.execPath, ["--test", "node/per-file.test.ts"], fixtures);
     expect(output).toMatch(/ℹ pass 2/);
     expect(status, output).toBe(0);
   });
 
   test("--test-isolation=none: every file shares the one registration", () => {
-    const { status, output } = run(process.execPath, ["--import", "@rtd/register", "--test", "--test-isolation=none", "node/signup.test.ts", "node/per-file.test.ts"], fixtures);
+    const { status, output } = run(process.execPath, ["--import", "@ctrl/dom/register", "--test", "--test-isolation=none", "node/signup.test.ts", "node/per-file.test.ts"], fixtures);
     expect(output).toMatch(/ℹ pass 5/);
     expect(status, output).toBe(0);
   });
 
   test("after the last test the window closes and its timers are dropped, so a leftover interval does not keep the process alive", () => {
-    const { status, output, error } = run(process.execPath, ["--import", "@rtd/register", "--test", "node/interval.test.ts"], fixtures, {}, 10_000);
+    const { status, output, error } = run(process.execPath, ["--import", "@ctrl/dom/register", "--test", "node/interval.test.ts"], fixtures, {}, 10_000);
     expect(error).toBeUndefined();
     expect(status, output).toBe(0);
   });
 
   test("an exception thrown by an event listener fails the running test (report an exception → uncaughtException)", () => {
-    const { status, output } = run(process.execPath, ["--import", "@rtd/register", "--test", "node/uncaught.test.ts"], fixtures);
+    const { status, output } = run(process.execPath, ["--import", "@ctrl/dom/register", "--test", "node/uncaught.test.ts"], fixtures);
     expect(status).toBe(1);
     expect(output).toMatch(/✖ a throwing listener fails the test/);
     expect(output).toMatch(/listener boom/);
