@@ -1,4 +1,4 @@
-// Vitest environment for @rtd/dom, published as `@ctrl/dom/vitest-environment` and loaded by path
+// Vitest environment for @ctrl/dom, published as `@ctrl/dom/vitest-environment` and loaded by path
 // by the `ctrlDom()` plugin (publish/ctrl-dom/vitest.js), which also answers for the name
 // "ctrl-dom":
 //
@@ -7,19 +7,21 @@
 //
 // or per file: `// @vitest-environment ctrl-dom`. Vitest passes a docblock's
 // `@vitest-environment-options` under the environment's name, hence the "ctrl-dom" key; `ctrlDom`
-// and the workspace name `rtd` (this repository's own tests) are accepted too.
+// is accepted too. A docblock with options but no `@vitest-environment` files them under the
+// configured environment, which the plugin sets to this module's path.
 //
 // Setup creates one window and makes it the worker's global (installGlobals); teardown closes
 // it (cancelling its pending animation frames, idle callbacks and tasks) and restores every
 // global it replaced. React's IS_REACT_ACT_ENVIRONMENT is left to the testing library.
 
 import { enableCompileCache } from "node:module";
+import { fileURLToPath } from "node:url";
 import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { Environment } from "vitest/runtime";
-import type { CompatProfile, WindowOptions } from "@rtd/dom";
+import type { CompatProfile, WindowOptions } from "@ctrl/dom";
 
-type Dom = typeof import("@rtd/dom");
-type Internal = typeof import("@rtd/dom/internal");
+type Dom = typeof import("@ctrl/dom");
+type Internal = typeof import("@ctrl/dom/internal");
 
 let dom: Dom | null = null;
 let internal: Internal | null = null;
@@ -36,18 +38,18 @@ let internal: Internal | null = null;
 async function load(options: Record<string, unknown>): Promise<void> {
   if (dom !== null) return;
   if (compileCache(options)) enableCompileCache?.();
-  [dom, internal] = await Promise.all([import("@rtd/dom"), import("@rtd/dom/internal")]);
+  [dom, internal] = await Promise.all([import("@ctrl/dom"), import("@ctrl/dom/internal")]);
 }
 
 /**
  * The global key under which the environment publishes the DOM modules it loaded (the same one
- * jest-environment-rtd uses). In VM pools Vitest evaluates a test file's modules inside the vm
- * context, so an import of @rtd/dom from test code (or from our Testing Library bundles) would
+ * @ctrl/dom-jest-environment uses). In VM pools Vitest evaluates a test file's modules inside the vm
+ * context, so an import of @ctrl/dom from test code (or from our Testing Library bundles) would
  * otherwise evaluate a second DOM: its classes fail `instanceof` against the installed globals and
  * every file pays for the evaluation. Published `@ctrl/dom` and `@ctrl/dom/internal` resolve to
  * bridges that return these objects (scripts/release.ts, writeBridges).
  */
-const DOM_MODULES = Symbol.for("rtd.dom.modules");
+const DOM_MODULES = Symbol.for("ctrl-dom.dom.modules");
 
 function publishModules(global: object): void {
   Object.defineProperty(global, DOM_MODULES, { value: { dom: dom!, internal: internal! }, configurable: true, enumerable: false, writable: false });
@@ -65,7 +67,7 @@ function reportToHost(error: unknown): void {
 
 /**
  * jsdom's "Not implemented" diagnostics (navigation, window.alert, form submission, ...; only
- * under the jsdom profiles, @rtd/dom window/not-implemented.ts), forwarded as under Vitest's
+ * under the jsdom profiles, @ctrl/dom window/not-implemented.ts), forwarded as under Vitest's
  * jsdom environment, whose JSDOM gets jsdom's default virtual console: `console.error(e.stack,
  * e.detail)` on the test's console.
  */
@@ -78,12 +80,12 @@ export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * Skip idle time (default true): timers live on a virtual clock that jumps to the next timer
    * whenever the event loop has nothing else to do (no pending immediates, no I/O), with Date and
    * performance.now() advancing by the same amount. `false` keeps real-time timers. The
-   * CTRL_DOM_TIME_SKIP environment variable ("0"/"1"; also RTD_TIME_SKIP) overrides it. See
-   * @rtd/dom window/clock.ts.
+   * CTRL_DOM_TIME_SKIP environment variable ("0"/"1") overrides it. See
+   * @ctrl/dom window/clock.ts.
    */
   timeSkip?: boolean;
   /**
-   * APIs beyond jsdom's (@rtd/dom window/compat.ts): "jsdom-30" (default, what Vitest's jsdom
+   * APIs beyond jsdom's (@ctrl/dom window/compat.ts): "jsdom-30" (default, what Vitest's jsdom
    * environment exposes), "jsdom-26" (jest-environment-jsdom 30's) or "modern" (everything,
    * including matchMedia, ResizeObserver and the `inert` IDL attribute).
    */
@@ -93,7 +95,7 @@ export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareSto
    * Vitest plugin turns it on when it routes Testing Library to @ctrl/dom's bundles). It applies to
    * every module the worker loads afterwards: a win for a few large bundles, a loss for many small
    * CommonJS files such as stock Testing Library's. The CTRL_DOM_COMPILE_CACHE environment
-   * variable ("0"/"1"; also RTD_COMPILE_CACHE) overrides it; NODE_COMPILE_CACHE enables it for the
+   * variable ("0"/"1"; also CTRL_DOM_COMPILE_CACHE) overrides it; NODE_COMPILE_CACHE enables it for the
    * whole process regardless.
    */
   compileCache?: boolean;
@@ -102,9 +104,12 @@ export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareSto
 /** Same default URL as Vitest's jsdom and happy-dom environments. */
 const DEFAULT_URL = "http://localhost:3000/";
 
+/** The environment by path, as the ctrlDom() plugin configures it. */
+const SELF = fileURLToPath(import.meta.url);
+
 /** This environment's options out of Vitest's `environmentOptions` (see the header). */
 function ownOptions(options: Record<string, unknown> | undefined): CtrlDomEnvironmentOptions {
-  return (options?.["ctrl-dom"] ?? options?.ctrlDom ?? options?.rtd ?? {}) as CtrlDomEnvironmentOptions;
+  return (options?.["ctrl-dom"] ?? options?.ctrlDom ?? options?.[SELF] ?? {}) as CtrlDomEnvironmentOptions;
 }
 
 function windowOptions(options: Record<string, unknown>): WindowOptions {
@@ -113,14 +118,14 @@ function windowOptions(options: Record<string, unknown>): WindowOptions {
 }
 
 function timeSkip(options: Record<string, unknown>): boolean {
-  const env = process.env.CTRL_DOM_TIME_SKIP ?? process.env.RTD_TIME_SKIP;
+  const env = process.env.CTRL_DOM_TIME_SKIP;
   if (env === "1") return true;
   if (env === "0") return false;
   return ownOptions(options).timeSkip !== false;
 }
 
 function compileCache(options: Record<string, unknown>): boolean {
-  const env = process.env.CTRL_DOM_COMPILE_CACHE ?? process.env.RTD_COMPILE_CACHE;
+  const env = process.env.CTRL_DOM_COMPILE_CACHE;
   if (env === "1") return true;
   if (env === "0") return false;
   return ownOptions(options).compileCache === true;
@@ -163,7 +168,7 @@ const VM_HOST_GLOBALS = [
 ];
 
 const environment: Environment = {
-  name: "rtd",
+  name: "ctrl-dom",
   viteEnvironment: "client",
   // Setup takes well under a millisecond; prewarming would only compete with the worker.
   prewarmModules: false,

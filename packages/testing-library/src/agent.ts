@@ -1,16 +1,16 @@
-// `@rtd/testing-library/agent` (published `@ctrl/dom/testing-library/agent`): support for
+// `@ctrl/dom/testing-library/agent` (published `@ctrl/dom/testing-library/agent`): support for
 // @ctrl/dom's agent tooling that is not part of the @testing-library/dom API (docs/agent-debugging.md):
 // - `matchAriaSnapshot`: Playwright-style aria snapshot matching, behind jest-dom's
 //   `toMatchAriaSnapshot`;
 // - failure snapshots: under `CTRL_DOM_DEBUG`, the Jest environment and the Vitest setup file
-//   (vitest-environment-rtd/failure-snapshot) append one budgeted snapshot of `document.body` to
+//   (@ctrl/dom/vitest-environment/failure-snapshot) append one budgeted snapshot of `document.body` to
 //   the error of every failing test, plus what changed since the last snapshot the test took.
 
 import { ariaSnapshotLines, budgetLines, envMaxLines, lastBodySnapshot, resetBodySnapshot } from "./aria-snapshot.ts";
 import { diffAriaSnapshots } from "./aria-snapshot-diff.ts";
 import { ERROR_MAX_LINES, envDebugFormat } from "./agent-debug.ts";
 import { prettyDOM } from "./pretty-dom.ts";
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 export { AriaTemplateError, matchAriaSnapshot, parseAriaTemplate, type AriaSnapshotMatch } from "./aria-snapshot-match.ts";
 export { envDebugFormat } from "./agent-debug.ts";

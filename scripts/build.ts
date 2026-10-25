@@ -2,7 +2,7 @@
 //
 // Per package:
 //   dist/<entry>.js        ESM bundle per `exports` entry (rolldown). A package with several
-//                          entries (@rtd/dom + @rtd/dom/internal) gets shared chunks in
+//                          entries (@ctrl/dom + @ctrl/dom/internal) gets shared chunks in
 //                          dist/_chunks/ so its entries keep sharing module state.
 //   dist/<entry>.cjs       CommonJS bundle, only for the packages a Jest test file loads
 //                          through Jest's own module registry (CJS_PACKAGES, see below).
@@ -42,12 +42,12 @@ const { values: flags } = parseArgs({
  * Packages that also get CommonJS bundles. Jest (without `--experimental-vm-modules`) cannot
  * `require()` an ES module from a test file: its runtime implements `require(esm)` only on top
  * of `vm.SourceTextModule`, which Node 26 still hides behind that flag. So everything a Jest
- * test file `require`s needs a CJS build. @rtd/dom does not: published, its CommonJS entry is a
+ * test file `require`s needs a CJS build. @ctrl/dom does not: published, its CommonJS entry is a
  * bridge returning the environment's own (ESM) instance (scripts/release.ts, writeBridges), and
- * in the workspace jest-environment-rtd's preset maps it to an equivalent shim. The environments
+ * in the workspace @ctrl/dom-jest-environment's preset maps it to an equivalent shim. The environments
  * themselves are loaded by Node in the outer realm, where `require(esm)` works.
  */
-const CJS_PACKAGES = new Set(["@rtd/aria", "@rtd/testing-library", "@rtd/react", "@rtd/user-event", "@rtd/jest-dom"]);
+const CJS_PACKAGES = new Set(["@ctrl/dom/aria", "@ctrl/dom/testing-library", "@ctrl/dom/react", "@ctrl/dom/user-event", "@ctrl/dom/jest-dom"]);
 
 const external = (id: string) => !id.startsWith(".") && !isAbsolute(id) && !id.startsWith("\0");
 
@@ -70,7 +70,7 @@ function shipsOwnTypes(pkg: WorkspacePackage): boolean {
  * the output root (mirrors packages/, so <out>/<dir>/src/... belongs to packages/<dir>).
  */
 function emitDeclarations(pkgs: WorkspacePackage[]): string {
-  const out = mkdtempSync(join(tmpdir(), "rtd-dts-"));
+  const out = mkdtempSync(join(tmpdir(), "ctrl-dom-dts-"));
   const tsconfig = join(out, "tsconfig.json");
   writeFileSync(
     tsconfig,
@@ -96,14 +96,14 @@ function emitDeclarations(pkgs: WorkspacePackage[]): string {
 
 /**
  * Declaration files whose structural DOM types are replaced by the lib.dom globals of the same
- * name in the published types. @rtd/user-event's src/dom-types.ts declares minimal DOM
+ * name in the published types. @ctrl/dom/user-event's src/dom-types.ts declares minimal DOM
  * interfaces so the monorepo compiles without lib.dom, but TypeScript cannot prove lib.dom's
  * `HTMLElement` assignable to them (deeply recursive structural check), so `user.click(
  * screen.getByRole(...))` failed to type-check for users. Upstream user-event is typed against
  * lib.dom; aliasing restores exactly that. (Found by `pnpm test:pack` check (e).)
  * TODO(user-event): make dom-types.ts assignable from lib.dom and drop this.
  */
-const LIB_DOM_ALIASES: Record<string, string> = { "@rtd/user-event": "dom-types.d.ts" };
+const LIB_DOM_ALIASES: Record<string, string> = { "@ctrl/dom/user-event": "dom-types.d.ts" };
 
 /** lib.dom's constraints on generic interfaces that the structural copies leave unconstrained. */
 const LIB_DOM_PARAMS: Record<string, string> = { NodeListOf: "<T extends Node>", HTMLCollectionOf: "<T extends Element>" };

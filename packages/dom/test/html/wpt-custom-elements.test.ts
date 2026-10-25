@@ -41,7 +41,7 @@ describe("Custom elements — custom-elements (https://github.com/web-platform-t
   defineWPT("custom-elements/createElement-reentrant-construction.window.js");
   defineWPT("custom-elements/custom-element-reaction-queue.html");
   defineWPT("custom-elements/disconnected-callbacks.html", "XMLHttpRequest documents (no network)");
-  defineWPT("custom-elements/element-internals-aria-element-reflection.html", "test_driver.get_computed_label (no testdriver for @rtd/dom-only suites)");
+  defineWPT("custom-elements/element-internals-aria-element-reflection.html", "test_driver.get_computed_label (no testdriver for @ctrl/dom-only suites)");
   defineWPT("custom-elements/element-internals-shadowroot.html");
   defineWPT("custom-elements/enqueue-custom-element-callback-reactions-inside-another-callback.html");
   defineWPT("custom-elements/historical.html");

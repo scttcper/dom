@@ -6,7 +6,7 @@
 // (https://html.spec.whatwg.org/#labeled-control) that a whole query shares
 // (`LabelContext`), and aria-labelledby ids resolve through a lazily built id map.
 
-import { asciiLowercase, attr, ELEMENT_NODE, HTML_NS, nextInTree, T, TEXT_NODE, treeRoot, type NodeImpl } from "@rtd/dom/internal";
+import { asciiLowercase, attr, ELEMENT_NODE, HTML_NS, nextInTree, T, TEXT_NODE, treeRoot, type NodeImpl } from "@ctrl/dom/internal";
 import { matchesSelector } from "./selectors.ts";
 import { implOf } from "./helpers.ts";
 

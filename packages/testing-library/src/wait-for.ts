@@ -4,7 +4,7 @@
 import { getWindowFromNode, getDocument, jestFakeTimersAreEnabled, advanceFakeTimersByTime, checkContainerType } from "./helpers.ts";
 import { getConfig, runWithExpensiveErrorDiagnosticsDisabled } from "./config.ts";
 import { envDebugFormat } from "./agent-debug.ts";
-import { tracePromise, tracing, type SpanContext } from "@rtd/dom/internal";
+import { tracePromise, tracing, type SpanContext } from "@ctrl/dom/internal";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface WaitForOptions {
@@ -157,7 +157,7 @@ function waitForImpl<T>(
 
     function checkCallback() {
       if (promiseStatus === "pending") return;
-      // Ours: how many times the callback ran, for the waitFor/findBy span (@rtd/dom trace.ts).
+      // Ours: how many times the callback ran, for the waitFor/findBy span (@ctrl/dom trace.ts).
       if (span !== null) span.data.checks = ((span.data.checks as number | undefined) ?? 0) + 1;
       try {
         const result: any = runWithExpensiveErrorDiagnosticsDisabled(callback);

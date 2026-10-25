@@ -1,14 +1,14 @@
-// Run by test/register.test.ts as `node --import @rtd/register --test`: React + @rtd/react +
+// Run by test/register.test.ts as `node --import @ctrl/dom/register --test`: React + @ctrl/dom/react +
 // user-event under node:test, asserting with node:assert and with jest-dom's matchers on the
 // standalone `expect` package.
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { expect } from "expect";
-import * as matchers from "@rtd/jest-dom/matchers";
-import * as dom from "@rtd/dom";
+import * as matchers from "@ctrl/dom/jest-dom/matchers";
+import * as dom from "@ctrl/dom";
 import { createElement } from "react";
-import { render, screen } from "@rtd/react";
-import userEvent from "@rtd/user-event";
+import { render, screen } from "@ctrl/dom/react";
+import userEvent from "@ctrl/dom/user-event";
 import { Signup } from "../signup.ts";
 
 expect.extend(matchers);

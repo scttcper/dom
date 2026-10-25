@@ -1,6 +1,6 @@
 /**
- * `getComputedStyleOverride` (@rtd/dom/internal): detecting a user-replaced
- * `window.getComputedStyle`, which the upper layers (@rtd/aria, @rtd/testing-library) must read
+ * `getComputedStyleOverride` (@ctrl/dom/internal): detecting a user-replaced
+ * `window.getComputedStyle`, which the upper layers (@ctrl/dom/aria, @ctrl/dom/testing-library) must read
  * styles through, as the stock packages do.
  *
  * Spec: CSSOM §9 "Extensions to the Window Interface" —
@@ -13,8 +13,8 @@
  * replacement bound to that window, including Vitest spies (which may call through).
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createWindow, installGlobals, type Window } from "@rtd/dom";
-import { $impl, getComputedStyleOverride } from "@rtd/dom/internal";
+import { createWindow, installGlobals, type Window } from "@ctrl/dom";
+import { $impl, getComputedStyleOverride } from "@ctrl/dom/internal";
 
 let cleanup: (() => void) | null = null;
 afterEach(() => {

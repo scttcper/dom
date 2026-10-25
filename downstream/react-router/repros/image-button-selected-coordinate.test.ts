@@ -1,14 +1,14 @@
 /**
  * Downstream repro (React Router: `__tests__/dom/data-browser-router-test.tsx` › "Router:
  * <DataBrowserRouter> / <DataHashRouter> › useSubmit/Form FormData › includes the correct
- * submitter value(s) in tree order", both rtd modes). Fixed in @rtd/dom; kept as a differential
+ * submitter value(s) in tree order", both ctrl-dom modes). Fixed in @ctrl/dom; kept as a differential
  * check.
  *
  * The test clicks an `<input type=image name=tasks>` with `fireEvent.click(img, { clientX: 1,
  * clientY: 2 })` and expects `tasks.x=1&tasks.y=2` in the submitted FormData. An image button's
  * activation behavior records the coordinate the click selected; constructing the entry list then
  * appends `name.x` / `name.y` from it. jsdom takes the click's offsetX/offsetY (which, without
- * layout, mirror clientX/clientY). @rtd/dom always appended 0,0.
+ * layout, mirror clientX/clientY). @ctrl/dom always appended 0,0.
  *
  * Spec: https://html.spec.whatwg.org/#image-button-state-(type=image)
  *       https://html.spec.whatwg.org/#constructing-the-form-data-set (step 5.2)

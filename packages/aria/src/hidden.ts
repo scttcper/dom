@@ -6,12 +6,12 @@
 // Ported from @testing-library/dom role-helpers.js and
 // https://github.com/eps1lon/dom-accessibility-api/blob/main/sources/is-inaccessible.ts
 
-import { ELEMENT_NODE, HTML_NS, attr, nodeCache, type NodeCache, type NodeImpl } from "@rtd/dom/internal";
-import type { Element } from "@rtd/dom";
+import { ELEMENT_NODE, HTML_NS, attr, nodeCache, type NodeCache, type NodeImpl } from "@ctrl/dom/internal";
+import type { Element } from "@ctrl/dom";
 import { isDisplayNone, isVisibilityHidden } from "./style.ts";
 import type { GetComputedStyle } from "./accname.ts";
 import { implOf } from "./tree.ts";
-import { $styleVersion, $version, $window, getComputedStyleOverride } from "@rtd/dom/internal";
+import { $styleVersion, $version, $window, getComputedStyleOverride } from "@ctrl/dom/internal";
 
 /**
  * Subtree exclusion for one element: `element.hidden === true` (HTMLElement only),

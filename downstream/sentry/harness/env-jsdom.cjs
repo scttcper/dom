@@ -5,6 +5,6 @@
 const path = require('node:path');
 const {instrument} = require('./instrument.cjs');
 
-const Upstream = require(path.join(process.env.RTD_SENTRY_CHECKOUT, 'tests/js/sentry-test/jest-environment.cjs'));
+const Upstream = require(path.join(process.env.CTRL_DOM_SENTRY_CHECKOUT, 'tests/js/sentry-test/jest-environment.cjs'));
 
 module.exports = instrument(Upstream);

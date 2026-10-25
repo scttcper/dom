@@ -6,7 +6,7 @@
  * (BSD-3-Clause, W3C). This is a re-implementation of the subset our DOM tests use, not a copy.
  *
  * How it works: `runWPT(file)` reads a vendored `.html` test from test/wpt/fixtures, builds a
- * fresh @rtd/dom window, materializes the test's markup (parsed with parse5 — independent of our
+ * fresh @ctrl/dom window, materializes the test's markup (parsed with parse5 — independent of our
  * own parser, which has its own tests), concatenates every inline/local `<script>` into ONE
  * sloppy-mode function evaluated `with` a scope object (window, document, interface objects,
  * harness functions), runs it, waits for async tests, and returns one result per WPT subtest.
@@ -19,7 +19,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Script, createContext } from "node:vm";
 import { describe, test as vitestTest } from "vitest";
-import * as dom from "@rtd/dom";
+import * as dom from "@ctrl/dom";
 import { $mode } from "../../src/keys.ts";
 import { fireAnEvent } from "../../src/events/fire.ts";
 
@@ -643,15 +643,15 @@ export interface RunOptions {
   prelude?: string;
   /**
    * `test_driver` (https://web-platform-tests.org/writing-tests/testdriver.html) for tests that
-   * use it, e.g. one backed by @rtd/aria (`get_computed_role`/`get_computed_label`) or
-   * @rtd/user-event (`click`, `send_keys`). Without one, every call rejects.
+   * use it, e.g. one backed by @ctrl/dom/aria (`get_computed_role`/`get_computed_label`) or
+   * @ctrl/dom/user-event (`click`, `send_keys`). Without one, every call rejects.
    */
   testdriver?: (window: dom.Window, document: dom.Document) => Record<string, unknown>;
   /** Milliseconds to wait for async tests. */
   timeout?: number;
   /**
    * Iframes whose `src` is never set (srcdoc / about:blank, e.g. custom-elements' `test_with_window`)
-   * use @rtd/dom's own nested windows instead of the fixture-loading emulation. Default true
+   * use @ctrl/dom's own nested windows instead of the fixture-loading emulation. Default true
    * (WPT_NATIVE_FRAMES=0 turns it off).
    */
   nativeFrames?: boolean;
@@ -678,7 +678,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
   // jsdom-compatible default that keeps the author's spelling (docs/deviations.md).
   const url = "http://web-platform.test:8000/" + fileWithQuery;
   // An iframe's document gets a nested window of the parent (same storage shed, sessionStorage
-  // of the same top-level window, `parent`), like @rtd/dom's own iframes.
+  // of the same top-level window, `parent`), like @ctrl/dom's own iframes.
   const window =
     parent === undefined
       ? dom.createWindow({ url, cssComputedColors: "rgb" })
@@ -717,7 +717,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
       if (k === "window" || k === "self") return windowProxy;
       if (k === "parent" && parent !== undefined) return parent.proxy;
       // Indexed access to child browsing contexts (https://html.spec.whatwg.org/#windowproxy-getownproperty),
-      // which @rtd/dom's Window (not a Proxy) lacks: `frames[0]`, `self[0]`.
+      // which @ctrl/dom's Window (not a Proxy) lacks: `frames[0]`, `self[0]`.
       if (typeof k === "string" && /^\d+$/.test(k)) return (doc.querySelectorAll("iframe")[Number(k)] as unknown as { contentWindow?: unknown } | undefined)?.contentWindow ?? undefined;
       if (k in t) {
         const v = Reflect.get(t, k, t);
@@ -792,7 +792,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
       errors.push(err && typeof err === "object" && "message" in err ? `${err.name}: ${err.message}\n${err.stack}` : String(e));
     }
   }
-  // The load event: <body onload> (inline handlers are not compiled by @rtd/dom), a global
+  // The load event: <body onload> (inline handlers are not compiled by @ctrl/dom), a global
   // `onload = fn` assigned by the scripts, and listeners on the window.
   const body = doc.body;
   const inline = body?.getAttribute("onload");
@@ -813,7 +813,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
 
 /**
  * Window named properties (https://html.spec.whatwg.org/#named-access-on-the-window-object),
- * which @rtd/dom's Window does not implement (it would need a Proxy global): tests use element
+ * which @ctrl/dom's Window does not implement (it would need a Proxy global): tests use element
  * ids as globals (`input.value`). Every id / applicable `name` in the markup at load time gets a
  * lazy getter on the script global that looks the element up live; assigning replaces it.
  */
@@ -891,12 +891,12 @@ function instrumentIframes(doc: dom.Document, file: string, owner?: FrameOwner):
     let loaded: LoadedDocument | null = null;
     let src = "";
     let ours = false;
-    // @rtd/dom's own iframe support fires `load` for its about:blank document; only the
+    // @ctrl/dom's own iframe support fires `load` for its about:blank document; only the
     // emulated load of the fixture may reach the test's handlers.
     el.addEventListener(
       "load",
       (e) => {
-        // With nativeFrames (default), frames whose `src` was never set (srcdoc / about:blank) use @rtd/dom's nested window.
+        // With nativeFrames (default), frames whose `src` was never set (srcdoc / about:blank) use @ctrl/dom's nested window.
         if (!ours && !(native && src === "")) e.stopImmediatePropagation();
       },
       true,

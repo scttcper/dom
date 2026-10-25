@@ -1,8 +1,8 @@
 // Port of @testing-library/dom src/helpers.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/helpers.ts
 
-import type { NodeImpl } from "@rtd/dom/internal";
-import { $impl } from "@rtd/dom/internal";
+import type { NodeImpl } from "@ctrl/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 // Constant node.nodeType for text nodes, see:
 // https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType#Node_type_constants
@@ -102,12 +102,12 @@ function getTypeName(object: unknown): string {
 
 /**
  * The NodeImpl behind a container passed to a query. Queries in this package walk
- * @rtd/dom internals directly; `checkContainerType` must have run first.
+ * @ctrl/dom internals directly; `checkContainerType` must have run first.
  */
 export function implOf(node: any): NodeImpl {
   const impl = node[$impl];
   if (impl === undefined) {
-    throw new TypeError("@rtd/testing-library requires nodes created by @rtd/dom.");
+    throw new TypeError("@ctrl/dom/testing-library requires nodes created by @ctrl/dom.");
   }
   return impl;
 }

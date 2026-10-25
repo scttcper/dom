@@ -9,12 +9,12 @@ jest-fixed-jsdom 0.0.10 on jest-environment-jsdom 30 (jsdom 26.1.0), React 19.2.
 | mode | passed | failed | skipped | wall | peak RSS |
 | --- | --: | --: | --: | --: | --: |
 | jsdom | 1729 | 0 | 0 | 8.6s (8.5–9.2) | 552 MiB |
-| rtd-dom | 1728 | 1 | 0 | 6.0s (5.3–6.0) | 526 MiB |
-| rtd-full | 1728 | 1 | 0 | 3.5s (3.4–3.9) | 430 MiB |
+| ctrl-dom | 1728 | 1 | 0 | 6.0s (5.3–6.0) | 526 MiB |
+| ctrl-dom-full | 1728 | 1 | 0 | 3.5s (3.4–3.9) | 430 MiB |
 
 Both remaining differences are intermittent and come from documented deviations (host classes,
-React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd modes in
-`downstream/baseline.json`. Started at rtd-dom 2 / rtd-full 3 failing.
+React's scheduler on `setImmediate`); they are listed as `flaky` for the ctrl-dom modes in
+`downstream/baseline.json`. Started at ctrl-dom 2 / ctrl-dom-full 3 failing.
 
 | # | tests | modes | cause | owner | status |
 | --: | --: | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 ## 2. Host `File` in deep equality (deviation, intermittent): 1 test
 
 - Test: `src/__tests__/useForm/getValues.test.tsx` › "getValues return defaultValues deep merge
-  with form values" (failed in 3/3 rounds in each rtd mode, passed in 2 of 6 earlier rtd-dom runs;
+  with form values" (failed in 3/3 rounds in each ctrl-dom mode, passed in 2 of 6 earlier ctrl-dom runs;
   never failed on jsdom).
 - Cause: the test builds `new File([''], 'filename')` during render and again in the expectation
   and compares with `toEqual`. A File's `lastModified` defaults to the creation time
@@ -59,7 +59,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 ## 3. React's scheduler on `setImmediate` (deviation, intermittent): 1 test
 
 - Test: `src/__tests__/useFieldArray.test.tsx` › "not corrupt parent state when remove is called
-  with values prop" (rtd-dom: failed 2/6 and 2/8 isolated runs, 1/3 full-suite rounds; rtd-full
+  with values prop" (ctrl-dom: failed 2/6 and 2/8 isolated runs, 1/3 full-suite rounds; ctrl-dom-full
   1/3 rounds; jsdom: 0 failures in 15+ runs).
 - Cause: the test is a regression test for an ordering race between a `values` prop update and
   `remove()`; the final state sometimes keeps a trailing empty row (`[{ name: 'Bob', … }, {}]`).
@@ -67,7 +67,7 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
   falls back to `setTimeout(0)`; @ctrl/dom-jest-environment keeps Node's `setImmediate`
   (docs/deviations.md, "Window": React's scheduler already prefers it under Node), which runs
   React's work earlier relative to `waitFor`'s polling and the test's effects. Evidence: with
-  `setImmediate` and `MessageChannel` deleted from the rtd global it passed 8/8. Not time skipping:
+  `setImmediate` and `MessageChannel` deleted from the ctrl-dom global it passed 8/8. Not time skipping:
   `CTRL_DOM_TIME_SKIP=0` still failed 2/8.
 - Status: deviation; a browser's scheduler runs on `MessageChannel`, which orders like
   `setImmediate`, so this is a latent race in the code under test.
@@ -75,5 +75,5 @@ React's scheduler on `setImmediate`); they are listed as `flaky` for the rtd mod
 ## Notes
 
 - jest-fixed-jsdom puts Node's `fetch`/`Request`/`Response`/`Blob`/streams on the jsdom global;
-  the rtd modes use @ctrl/dom-jest-environment's equivalent, `testEnvironmentOptions.nodeFetch: true`.
+  the ctrl-dom modes use @ctrl/dom-jest-environment's equivalent, `testEnvironmentOptions.nodeFetch: true`.
 - `Server` project (`*.server.test.tsx`, testEnvironment node) is not run: it never touches a DOM.

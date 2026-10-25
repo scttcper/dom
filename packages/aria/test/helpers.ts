@@ -1,12 +1,12 @@
-// Shared test helpers for @rtd/aria: an @rtd/dom document per test file, and the upstream
+// Shared test helpers for @ctrl/dom/aria: an @ctrl/dom document per test file, and the upstream
 // oracle (jsdom + dom-accessibility-api + aria-query + Testing Library role-helpers, the
 // exact versions @testing-library/dom@10.4.2 and @testing-library/jest-dom@7 resolve).
 
 import { createRequire } from "node:module";
-import { createWindow, type Document, type Element } from "@rtd/dom";
-import * as rtd from "@rtd/aria";
+import { createWindow, type Document, type Element } from "@ctrl/dom";
+import * as ctrlDom from "@ctrl/dom/aria";
 
-/** dom-accessibility-api test-utils `render`/`renderIntoDocument`/`cleanup`, on @rtd/dom. */
+/** dom-accessibility-api test-utils `render`/`renderIntoDocument`/`cleanup`, on @ctrl/dom. */
 export function makeDocument(): {
   document: Document;
   render(html: string, container?: Element): Element;
@@ -101,7 +101,7 @@ export function jestDomImplicitRoles(ariaQuery: any): (node: any) => string[] {
 }
 
 /**
- * The same accessibility API surface on both engines: @rtd/aria on @rtd/dom, and the upstream
+ * The same accessibility API surface on both engines: @ctrl/dom/aria on @ctrl/dom, and the upstream
  * oracle (dom-accessibility-api@0.5.16 / 0.6.3 + Testing Library 10.4.2 role-helpers on
  * jsdom). Spec tests probe one element through it and assert the spec value on both engines,
  * so every assertion is also a differential one.
@@ -148,23 +148,23 @@ function roleIds(roles: Record<string, any[]>): Record<string, string[]> {
 export function engines(): Engine[] {
   const O = loadOracle();
   const RH = O.roleHelpers;
-  const rtdApi: AriaApi = {
-    name: (el, o) => rtd.computeAccessibleName(el, o),
-    description: (el) => rtd.computeAccessibleDescription(el),
-    role: (el) => rtd.getRole(el),
-    implicitRoles: (el) => rtd.getImplicitAriaRoles(el),
-    inaccessible: (el) => rtd.isInaccessible(el),
-    subtreeInaccessible: (el) => rtd.isSubtreeInaccessible(el),
-    roles: (c, o) => roleIds(rtd.getRoles(c, o) as any),
-    checked: (el) => rtd.computeAriaChecked(el),
-    pressed: (el) => rtd.computeAriaPressed(el),
-    expanded: (el) => rtd.computeAriaExpanded(el),
-    selected: (el) => rtd.computeAriaSelected(el),
-    current: (el) => rtd.computeAriaCurrent(el),
-    level: (el) => rtd.computeHeadingLevel(el),
-    busy: (el) => rtd.computeAriaBusy(el),
-    valueNow: (el) => rtd.computeAriaValueNow(el),
-    disabled: (el) => rtd.daa06.isDisabled(el),
+  const ctrlDomApi: AriaApi = {
+    name: (el, o) => ctrlDom.computeAccessibleName(el, o),
+    description: (el) => ctrlDom.computeAccessibleDescription(el),
+    role: (el) => ctrlDom.getRole(el),
+    implicitRoles: (el) => ctrlDom.getImplicitAriaRoles(el),
+    inaccessible: (el) => ctrlDom.isInaccessible(el),
+    subtreeInaccessible: (el) => ctrlDom.isSubtreeInaccessible(el),
+    roles: (c, o) => roleIds(ctrlDom.getRoles(c, o) as any),
+    checked: (el) => ctrlDom.computeAriaChecked(el),
+    pressed: (el) => ctrlDom.computeAriaPressed(el),
+    expanded: (el) => ctrlDom.computeAriaExpanded(el),
+    selected: (el) => ctrlDom.computeAriaSelected(el),
+    current: (el) => ctrlDom.computeAriaCurrent(el),
+    level: (el) => ctrlDom.computeHeadingLevel(el),
+    busy: (el) => ctrlDom.computeAriaBusy(el),
+    valueNow: (el) => ctrlDom.computeAriaValueNow(el),
+    disabled: (el) => ctrlDom.daa06.isDisabled(el),
   };
   const oracleApi: AriaApi = {
     name: (el, o) => O.daa05.computeAccessibleName(el, o),
@@ -184,14 +184,14 @@ export function engines(): Engine[] {
     valueNow: (el) => RH.computeAriaValueNow(el),
     disabled: (el) => O.daa06.isDisabled(el),
   };
-  const rtdDoc = createWindow().document;
+  const ctrlDomDoc = createWindow().document;
   return [
     {
-      engine: "@rtd/aria on @rtd/dom",
-      api: rtdApi,
+      engine: "@ctrl/dom/aria on @ctrl/dom",
+      api: ctrlDomApi,
       load(html) {
-        rtdDoc.body!.innerHTML = html;
-        return rtdDoc;
+        ctrlDomDoc.body!.innerHTML = html;
+        return ctrlDomDoc;
       },
     },
     {
@@ -205,7 +205,7 @@ export function engines(): Engine[] {
 }
 
 /**
- * Runs `probe(api, doc)` on both engines and returns `[rtd, oracle]` results; the caller
+ * Runs `probe(api, doc)` on both engines and returns `[ctrl-dom, oracle]` results; the caller
  * asserts the spec value against both (`expectBoth`).
  */
 export function onBoth<R>(html: string, probe: (api: AriaApi, doc: any) => R): [R, R] {
@@ -213,10 +213,10 @@ export function onBoth<R>(html: string, probe: (api: AriaApi, doc: any) => R): [
   return [probe(a.api, a.load(html)), probe(b.api, b.load(html))];
 }
 
-/** `{ rtd, upstream }` from `onBoth`, for one `toEqual` that shows both sides on failure. */
-export function both<R>(html: string, probe: (api: AriaApi, doc: any) => R): { rtd: R; upstream: R } {
-  const [rtdResult, upstream] = onBoth(html, probe);
-  return { rtd: rtdResult, upstream };
+/** `{ ctrl-dom, upstream }` from `onBoth`, for one `toEqual` that shows both sides on failure. */
+export function both<R>(html: string, probe: (api: AriaApi, doc: any) => R): { "ctrl-dom": R; upstream: R } {
+  const [ctrlDomResult, upstream] = onBoth(html, probe);
+  return { "ctrl-dom": ctrlDomResult, upstream };
 }
 
 /** `[data-test]` of a loaded document. */

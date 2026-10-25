@@ -2,7 +2,7 @@
 // https://github.com/testing-library/react-testing-library/blob/v16.3.3/src/__tests__/stopwatch.js
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { render, fireEvent, screen } from "@rtd/react";
+import { render, fireEvent, screen } from "@ctrl/dom/react";
 
 class StopWatch extends React.Component<{}, { lapse: number; running: boolean }> {
   state = { lapse: 0, running: false };

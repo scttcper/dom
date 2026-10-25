@@ -3,16 +3,16 @@
 Pinned `adobe/react-spectrum@d5fb723a` (2026-10-23), Jest 30.4.2, React 19.3.0, upstream
 baseline `jest-environment-jsdom` 30.4.1 / jsdom **26.1.0**.
 
-**Current** (`results/2026-10-23-all.md`, 3006 tests): rtd-dom 2996 passed, **1 failed**; rtd-full
-2989 passed, **8 failed**, 7 of them from the user-event version pin (cluster 10). Started at rtd-dom 297 failed + 68 missing, rtd-full 266 + 92.
+**Current** (`results/2026-10-23-all.md`, 3006 tests): ctrl-dom 2996 passed, **1 failed**; ctrl-dom-full
+2989 passed, **8 failed**, 7 of them from the user-event version pin (cluster 10). Started at ctrl-dom 297 failed + 68 missing, ctrl-dom-full 266 + 92.
 
 What is left:
 
 | mode | tests | cause | status |
 | --- | --: | --- | --- |
 | both | 1 | `useOverlayPosition` "at top": bottom 518 vs 350 | parked: passes only on jsdom 26, which returns `""` for unset computed properties. With `offsetParent` null (jsdom never implements it), React Aria's `getContainingBlock` walks up and counts `transform !== 'none'` as a containing block, so on jsdom 26 the 600 px container wins (600 − 250 = 350). jsdom 30 and we compute `none`, the walk ends at the 768 px viewport: 768 − 250 = 518 |
-| rtd-full | 6 | Checkbox/Radio/Switch "press state with keyboard": `onPress` ×2 | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
-| rtd-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
+| ctrl-dom-full | 6 | Checkbox/Radio/Switch "press state with keyboard": `onPress` ×2 | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
+| ctrl-dom-full | 1 | Autocomplete async filtering "autofocus the first item when typing forward": `act()` warning | user-event 14.6.5 vs 14.6.8 (cluster 10), not ours |
 
 Fixed since (1b93804): `ariaHideOutside.test.js` or `DOMFunctions.test.tsx` failing to load
 ("Cannot read properties of undefined (reading 'doc')" in `inHTMLDocument`) whenever both ran in one
@@ -38,7 +38,7 @@ jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 | 7 | `validationMessage` text differs from jsdom ("Constraints not satisfied") | html-forms | 19 | `repros/html-forms-validation-message-text.test.ts` | fixed (5a8c966) |
 | 8 | Teardown deletes `window` → late React work kills the Jest worker | jest-environment | 1 file + whatever the crashed worker had queued (5–29) | `repros/jest-environment-teardown-removes-window.test.ts` | fixed (cf0a3f9) |
 | 9 | iframe child window shares the parent's interface objects | window (+ html-elements) | 4 | `repros/window-iframe-shares-interface-objects.test.ts` | deviation (docs/deviations.md); the 4 tests pass since 87efa87 + 8c7dfa5 (clusters 15, 16) |
-| 10 | rtd-full: keyboard Space press fires onPress twice; Autocomplete `act()` warning | user-event 14.6.5 vs 14.6.8 | 7 | `packages/user-event/test/react/press.test.tsx`, `packages/user-event/test/react/blur-change-act.test.tsx` | upstream version pin (not ours) |
+| 10 | ctrl-dom-full: keyboard Space press fires onPress twice; Autocomplete `act()` warning | user-event 14.6.5 vs 14.6.8 | 7 | `packages/user-event/test/react/press.test.tsx`, `packages/user-event/test/react/blur-change-act.test.tsx` | upstream version pin (not ours) |
 | 11 | Unattributed (focus/selection in collections, dnd, act warnings, …) | — | ~120 | — | resolved into 12-20 and the fixes above |
 | 12 | `inert` IDL attribute exposed: drag tests saw rows behind the drag (hide-outside used `inert`, jsdom has none) | html | Table/Tree/GridList DnD + masked failures | — | fixed (f5b3a69) |
 | 13 | `AbortSignal.timeout` on Node's real-time timer: fake timers never abort it (`runAfterKeyboard`) | window | 5 | — | fixed (12fda74) |
@@ -49,7 +49,7 @@ jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 | 18 | `InputEvent.getTargetRanges` (native beforeinput path) / `hidden` returning "until-found" | events / html | 2 | — | fixed (99e97df) |
 | 19 | Canceled `invalid` events let a required form submit; blocked submit focused the invalid control | html-forms | 2 | — | fixed (1750669) |
 | 20 | `window.matchMedia` present, so mock-match-media never installed (`setMedia` did nothing) | environments | 3 | — | fixed: absent by default, `matchMedia: true` opts in (fe768ef) |
-| 21 | rtd-full: user-event's fallback `PointerEvent` lost `pointerType`/`width`/`pressure` | user-event | 29 | `packages/user-event/test/event/fallback-constructors.test.ts` | fixed (c8832bb) |
+| 21 | ctrl-dom-full: user-event's fallback `PointerEvent` lost `pointerType`/`width`/`pressure` | user-event | 29 | `packages/user-event/test/event/fallback-constructors.test.ts` | fixed (c8832bb) |
 
 ## 1. css: the `CSS` namespace object is frozen
 
@@ -57,7 +57,7 @@ jsdom 26, jest-environment-jsdom, or stock user-event) and fails on our stack.
 module scope ("jsdom does not implement CSS.supports"). WebIDL namespace operations are writable,
 configurable data properties; @ctrl/dom freezes `CSS`, so the assignment throws `TypeError: Cannot
 assign to read only property 'supports' of object '[object CSS]'` and the whole file (63 tests)
-fails to load in both rtd modes.
+fails to load in both ctrl-dom modes.
 
 ## 2. window/events: `PointerEvent` exists (the tests assume jsdom; not a bug)
 
@@ -121,8 +121,8 @@ the module's interfaces, so prototype patches leak into later files of the same 
 alone — an earlier file spied on `HTMLElement.prototype.clientHeight` and only `mockReset()` it),
 `DOMFunctions.test.tsx` / `ariaHideOutside.test.js` fail to load in some runs (shadow-dom-testing-
 library patches `ShadowRoot.prototype.outerHTML` once, the next file's `ShadowRoot.prototype
-.outerHTML == null` check calls that getter on the prototype). Results differ between rtd-dom and
-rtd-full purely through worker scheduling. `--triage isolate` (Jest `workerIdleMemoryLimit: 1`:
+.outerHTML == null` check calls that getter on the prototype). Results differ between ctrl-dom and
+ctrl-dom-full purely through worker scheduling. `--triage isolate` (Jest `workerIdleMemoryLimit: 1`:
 recycle the worker after every file) removes it. Proposed fix: snapshot the own property
 descriptors of every installed interface object and prototype at environment setup and restore
 them in teardown (cheap: ~300 objects), or per-window interface objects (window owner).
@@ -173,7 +173,7 @@ useFocusVisible "Setups global event listeners in a different window" (4): React
 'example', Received: 'example-focusVisible'"). Each browsing context needs its own interface
 objects.
 
-## 10. user-event version pin (rtd-full only): Space press on Checkbox/Radio fires onPress twice
+## 10. user-event version pin (ctrl-dom-full only): Space press on Checkbox/Radio fires onPress twice
 
 RAC Checkbox, CheckboxField, RadioGroup, RadioField "should support press state with keyboard":
 `onPress` called 2× after `user.keyboard('[Space>]')` + `user.keyboard('[/Space]')`.
@@ -182,7 +182,7 @@ RAC Checkbox, CheckboxField, RadioGroup, RadioField "should support press state 
 tracks **14.6.8**. Upstream commit 71a5475 (testing-library/user-event#1325) changed the `click`
 dispatched by a Space keyup from `pointerType: "undefined"` (`String(undefined)`) to `""`. React
 Aria's `usePress` treats `detail === 0 && !pointerType` as a virtual click and presses again, so
-stock 14.6.8 double-presses like ours; the rtd-dom baseline passes only because it runs
+stock 14.6.8 double-presses like ours; the ctrl-dom baseline passes only because it runs
 14.6.5. `packages/user-event/test/react/press.test.tsx` runs a usePress-style component under both
 our user-event and stock 14.6.8 and asserts the same event sequence and press count. We keep
 14.6.8's behavior rather than reintroduce the old string.

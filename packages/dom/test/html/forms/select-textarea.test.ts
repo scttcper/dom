@@ -12,7 +12,7 @@
  * select-ask-for-reset,common-HTMLOptionsCollection*}.html and the-textarea-element/value-defaultValue-textContent.html.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 
 // biome-ignore lint: untyped DOM surface in tests
 let window: any;

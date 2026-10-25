@@ -1,4 +1,4 @@
-// @vitest-environment rtd
+// @vitest-environment ctrl-dom
 /**
  * Retention after Testing Library cleanup: render → interact → cleanup must leave nothing of the
  * rendered tree reachable (elements, containers, React roots/fibers, listeners, per-node caches,
@@ -13,13 +13,13 @@
 import { Suspense, createContext, lazy, use, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { describe, expect, test } from "vitest";
-import { cleanup, render, renderHook, screen, waitFor, act, fireEvent } from "@rtd/react";
-import { userEvent } from "@rtd/user-event";
+import { cleanup, render, renderHook, screen, waitFor, act, fireEvent } from "@ctrl/dom/react";
+import { userEvent } from "@ctrl/dom/user-event";
 import { Tracker, heapSlope } from "./gc.ts";
-import { getByRole, prettyDOM } from "@rtd/testing-library";
-import { createWindow, currentWindowOrNull, setCurrentWindow } from "@rtd/dom";
+import { getByRole, prettyDOM } from "@ctrl/dom/testing-library";
+import { createWindow, currentWindowOrNull, setCurrentWindow } from "@ctrl/dom";
 
-// @rtd/user-event declares its own structural DOM types; @rtd/react returns @rtd/dom's.
+// @ctrl/dom/user-event declares its own structural DOM types; @ctrl/dom/react returns @ctrl/dom's.
 type User = Record<"type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover", (...args: any[]) => Promise<void>>;
 const setupUser = (): User => userEvent.setup() as unknown as User;
 

@@ -1,5 +1,5 @@
 // Divergence from upstream: upstream's tests import `getConfig`/`configure` from
-// `@testing-library/dom`. @rtd/user-event reads its config from `@rtd/testing-library` when that
+// `@testing-library/dom`. @ctrl/dom/user-event reads its config from `@ctrl/dom/testing-library` when that
 // loads (falling back to `@testing-library/dom`), so tests configure whichever module user-event
 // actually uses.
 

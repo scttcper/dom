@@ -1,5 +1,5 @@
 /**
- * Own enumerable keys of platform objects: nothing from @rtd/dom's implementation state.
+ * Own enumerable keys of platform objects: nothing from @ctrl/dom's implementation state.
  *
  * Specs: WebIDL §3.7 (https://webidl.spec.whatwg.org/#es-platform-objects) — a platform object's
  * own properties are only what the spec defines (indexed/named properties, [LegacyUnforgeable]
@@ -13,13 +13,13 @@
  */
 import { JSDOM } from "jsdom";
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 const HTML = `<!doctype html><html><head><style>p { color: red }</style></head><body>
   <form><input id=i value=x><select><option>a</option></select><textarea>t</textarea><button>b</button></form>
   <a href="#x">l</a><p class="c" data-x="1" style="color: blue">text<!--c--></p><template><b></b></template></body></html>`;
 
-/** Interesting objects of a window (rtd or jsdom), each touched so lazy internals exist. */
+/** Interesting objects of a window (ctrl-dom or jsdom), each touched so lazy internals exist. */
 function objects(window: any): Record<string, object> {
   const d = window.document;
   const p = d.querySelector("p");
@@ -65,11 +65,11 @@ function objects(window: any): Record<string, object> {
   };
 }
 
-const rtd = objects(createWindow({ html: HTML }));
+const ctrlDom = objects(createWindow({ html: HTML }));
 const jsdom = objects(new JSDOM(HTML).window);
 
 describe("EnumerableOwnProperties — https://tc39.es/ecma262/#sec-enumerableownproperties", () => {
-  for (const name of Object.keys(rtd)) {
+  for (const name of Object.keys(ctrlDom)) {
     // jsdom additionally exposes [LegacyUnforgeable] members (document.location, Location's
     // members) and indexed properties of some collections as own properties; ours live on the
     // prototype or behind index getters. What matters: nothing beyond what jsdom has.
@@ -80,8 +80,8 @@ describe("EnumerableOwnProperties — https://tc39.es/ecma262/#sec-enumerableown
         return keys;
       };
       const allowed = new Set(Object.keys(jsdom[name]));
-      expect(Object.keys(rtd[name]).filter((k) => !allowed.has(k))).toEqual([]);
-      expect(forIn(rtd[name]).filter((k) => !allowed.has(k))).toEqual([]);
+      expect(Object.keys(ctrlDom[name]).filter((k) => !allowed.has(k))).toEqual([]);
+      expect(forIn(ctrlDom[name]).filter((k) => !allowed.has(k))).toEqual([]);
     });
   }
 
@@ -96,7 +96,7 @@ describe("EnumerableOwnProperties — https://tc39.es/ecma262/#sec-enumerableown
 
 describe("SerializeJSONObject — https://tc39.es/ecma262/#sec-serializejsonobject", () => {
   test("JSON.stringify of an object holding connected nodes does not throw and serializes nodes as {}", () => {
-    const { input, document } = rtd as { input: object; document: object };
+    const { input, document } = ctrlDom as { input: object; document: object };
     expect(JSON.stringify({ error: { actual: input, document } })).toBe('{"error":{"actual":{},"document":{}}}');
   });
 });

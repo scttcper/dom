@@ -1,4 +1,4 @@
-// Fast internal CSS API for @rtd/aria, @rtd/testing-library, @rtd/jest-dom, @rtd/user-event
+// Fast internal CSS API for @ctrl/dom/aria, @ctrl/dom/testing-library, @ctrl/dom/jest-dom, @ctrl/dom/user-event
 // and src/html. Works on NodeImpl, allocates nothing on cache hits (per-element StyleRecord in
 // NodeCache, stamped with Document._version / Document._styleVersion), and with no author
 // style sheets reduces to inline-style + UA-default checks without rule matching.

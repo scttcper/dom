@@ -1,4 +1,4 @@
-// Vitest setup for @rtd/user-event's tests.
+// Vitest setup for @ctrl/dom/user-event's tests.
 //
 // Mirrors upstream's test environment (https://github.com/testing-library/user-event/tree/v14.6.8/testenv):
 // jest-dom matchers, and upstream's own `toMatchInlineSnapshot` /

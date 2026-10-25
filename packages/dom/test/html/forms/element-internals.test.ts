@@ -19,7 +19,7 @@
  * Web) rely on these details.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 let window: any;
 let document: any;

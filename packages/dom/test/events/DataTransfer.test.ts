@@ -10,7 +10,7 @@
  * patterns of @testing-library/user-event (setData/getData, items.add(file), files, types).
  */
 import { describe, expect, test } from "vitest";
-import { DataTransfer, DataTransferItem, DataTransferItemList } from "@rtd/dom";
+import { DataTransfer, DataTransferItem, DataTransferItemList } from "@ctrl/dom";
 
 describe("DataTransfer — https://html.spec.whatwg.org/#the-datatransfer-interface", () => {
   test("constructor: empty store, dropEffect none, effectAllowed uninitialized", () => {

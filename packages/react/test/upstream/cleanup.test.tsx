@@ -3,7 +3,7 @@
 // `jest.*` -> `vi.*`. `jest.resetAllMocks()` -> `vi.resetAllMocks()`.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { render, cleanup } from "@rtd/react";
+import { render, cleanup } from "@ctrl/dom/react";
 
 // No lib.dom in this repo: environment globals are untyped here.
 declare const document: any;

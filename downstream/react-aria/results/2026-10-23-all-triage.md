@@ -1,22 +1,22 @@
 # React Aria downstream: `all` (2026-10-23)
 
-> **TRIAGE MODE (`--triage fake-raf,keep-globals,no-pointer-event,isolate`)**: rtd modes ran with jest-environment.mjs's triage shims (workarounds for jest-environment blockers already filed in TRIAGE.md). These are not compatibility results.
+> **TRIAGE MODE (`--triage fake-raf,keep-globals,no-pointer-event,isolate`)**: ctrl-dom modes ran with jest-environment.mjs's triage shims (workarounds for jest-environment blockers already filed in TRIAGE.md). These are not compatibility results.
 
 - upstream: https://github.com/adobe/react-spectrum @ `d5fb723a1c192e3a1a25c8cfdd4e26b900995307` (2026-10-23T05:09:37Z) — fix(usePress): only skip Enter default prevention on macOS for Control + Enter (#10820)
 - pinned: `d5fb723a1c192e3a1a25c8cfdd4e26b900995307`
 - filters: `packages/react-aria/test/`, `packages/react-aria-components/test/`
 - node v26.12.1, Jest workers 4, STRICT_MODE=1 VIRT_ON=1, upstream versions: jest@30.4.2, jest-environment-jsdom@30.4.1, jsdom@26.1.0, @swc/jest@0.2.39, react@19.3.0, react-dom@19.3.0, @testing-library/react@16.3.2, @testing-library/dom@10.4.1, @testing-library/user-event@14.6.5, @testing-library/jest-dom@6.9.1
-- rtd-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (built bundles, packages/*/dist)
+- ctrl-dom-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (built bundles, packages/*/dist)
 
 ## Per-mode results
 
 | mode | passed | failed | skipped | total | files | suite errors | exit | wall | peak RSS | env receipts | notes |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |
-| rtd-dom | 2704 | 223 | 9 | 2936 | 152 | 2 | 1 | 12.4s | 861 MiB | 152 | 1 React |
-| rtd-full | 2685 | 249 | 9 | 2943 | 152 | 1 | 1 | 11.7s | 867 MiB | 152 | 1 React |
+| ctrl-dom | 2704 | 223 | 9 | 2936 | 152 | 2 | 1 | 12.4s | 861 MiB | 152 | 1 React |
+| ctrl-dom-full | 2685 | 249 | 9 | 2943 | 152 | 1 | 1 | 11.7s | 867 MiB | 152 | 1 React |
 | jsdom | 2997 | 0 | 9 | 3006 | 152 | 0 | 0 | 14.6s | 984 MiB | 152 | 1 React |
 
-## rtd-dom
+## ctrl-dom
 
 ### Suite errors (file failed to load)
 
@@ -406,7 +406,7 @@ Compared with jsdom: **223 pass on jsdom but fail here**, 70 missing, 0 added, 0
 | 1 | Error: expect(element).not.toHaveAttribute("data-focus-visible") // element.hasAttribute("data-focus-visible") | RAC/Form | `packages/react-aria-components/test/Form.test.js :: Form shows focus-visible when a form library moves focus to the first invalid field on submit` |
 | 1 | Error: expect(jest.fn()).toHaveBeenCalled() | react-aria/numberfield | `packages/react-aria/test/numberfield/useNumberField.test.ts :: useNumberField hook should return numberFieldProps all events are merged into the input element` |
 
-## rtd-full
+## ctrl-dom-full
 
 ### Suite errors (file failed to load)
 

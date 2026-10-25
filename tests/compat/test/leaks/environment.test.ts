@@ -9,8 +9,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { createRequire } from "node:module";
-import environment from "vitest-environment-rtd";
-import { createWindow, currentWindowOrNull, installGlobals } from "@rtd/dom";
+import environment from "@ctrl/dom/vitest-environment";
+import { createWindow, currentWindowOrNull, installGlobals } from "@ctrl/dom";
 import { Tracker, heapSlope } from "./gc.ts";
 
 type AnyGlobal = Record<string, any>;
@@ -28,13 +28,13 @@ function useDocument(global: AnyGlobal, tracker: Tracker | null): void {
   global.matchMedia("(min-width: 1px)").addEventListener("change", () => {});
 }
 
-describe("vitest-environment-rtd setup/teardown ×N", () => {
+describe("@ctrl/dom/vitest-environment setup/teardown ×N", () => {
   test("every window, document and node is collectable after teardown; no current window remains", async () => {
     const tracker = new Tracker();
     // Each cycle in its own async function: a suspended async frame keeps its locals.
     const cycle = async () => {
       const global: AnyGlobal = { setTimeout, clearTimeout };
-      const env = await environment.setup(global, { rtd: { compat: "modern" } });
+      const env = await environment.setup(global, { "ctrl-dom": { compat: "modern" } });
       useDocument(global, tracker);
       await env.teardown(global);
       expect(global.document).toBeUndefined();
@@ -48,7 +48,7 @@ describe("vitest-environment-rtd setup/teardown ×N", () => {
     const { bytesPerCycle, points } = await heapSlope(
       async () => {
         const global: AnyGlobal = { setTimeout, clearTimeout };
-        const env = await environment.setup(global, { rtd: { compat: "modern" } });
+        const env = await environment.setup(global, { "ctrl-dom": { compat: "modern" } });
         useDocument(global, null);
         await env.teardown(global);
       },
@@ -86,24 +86,24 @@ describe("installGlobals / uninstall ×N on the real global", () => {
   });
 });
 
-describe("jest-environment-rtd constructor/setup/teardown ×N", () => {
+describe("@ctrl/dom-jest-environment constructor/setup/teardown ×N", () => {
   test("windows and documents are collectable after teardown", async () => {
     const require = createRequire(new URL("../../../../packages/jest-environment/package.json", import.meta.url));
-    let RtdEnvironment: any;
+    let CtrlDomEnvironment: any;
     try {
-      RtdEnvironment = (await import("../../../../packages/jest-environment/src/index.ts")).default;
+      CtrlDomEnvironment = (await import("../../../../packages/jest-environment/src/index.ts")).default;
       require.resolve("jest-environment-node");
     } catch {
-      return; // jest-environment-rtd's dependencies are not installed
+      return; // @ctrl/dom-jest-environment's dependencies are not installed
     }
     const tracker = new Tracker();
     const cycle = async () => {
-      const env = new RtdEnvironment(
+      const env = new CtrlDomEnvironment(
         { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();
-      tracker.track("window", env.rtdWindow);
+      tracker.track("window", env.ctrlDomWindow);
       useDocument(env.global, tracker);
       await env.teardown();
     };
@@ -116,21 +116,21 @@ describe("jest-environment-rtd constructor/setup/teardown ×N", () => {
   // behind (TanStack Query's 5 min cache GC, polling intervals) must not keep a finished test
   // file's global, window and module graph alive (Sentry: 7.2 MiB retained per file before).
   test("timers a test file left pending do not retain its global, window or closures", async () => {
-    let RtdEnvironment: any;
+    let CtrlDomEnvironment: any;
     try {
-      RtdEnvironment = (await import("../../../../packages/jest-environment/src/index.ts")).default;
+      CtrlDomEnvironment = (await import("../../../../packages/jest-environment/src/index.ts")).default;
     } catch {
-      return; // jest-environment-rtd's dependencies are not installed
+      return; // @ctrl/dom-jest-environment's dependencies are not installed
     }
     const tracker = new Tracker();
     const cycle = async () => {
-      const env = new RtdEnvironment(
+      const env = new CtrlDomEnvironment(
         { globalConfig: {}, projectConfig: { testEnvironmentOptions: { compat: "modern" }, globals: {}, fakeTimers: {}, testPath: "x.test.js" } },
         { console, docblockPragmas: {}, testPath: "x.test.js" },
       );
       await env.setup();
       const global = env.global;
-      tracker.track("window", env.rtdWindow);
+      tracker.track("window", env.ctrlDomWindow);
       tracker.track("global", global);
       const moduleState = tracker.track("closure", { cache: new Array(1000).fill(global) });
       global.setTimeout(() => moduleState, 300_000);
@@ -144,7 +144,7 @@ describe("jest-environment-rtd constructor/setup/teardown ×N", () => {
   });
 });
 
-describe("vitest-environment-rtd setupVM/teardown ×N (VM pools)", () => {
+describe("@ctrl/dom/vitest-environment setupVM/teardown ×N (VM pools)", () => {
   test("timers a test file left pending do not retain its vm context or closures", async () => {
     const tracker = new Tracker();
     const cycle = async () => {

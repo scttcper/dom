@@ -15,8 +15,8 @@
  *        https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
-import * as rtd from "@rtd/aria";
+import { createWindow } from "@ctrl/dom";
+import * as ctrlDom from "@ctrl/dom/aria";
 import { loadOracle } from "./helpers.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -72,7 +72,7 @@ function ours(): unknown {
   window.document.body!.innerHTML = HTML;
   (window as any).getComputedStyle = replaced;
   try {
-    return evaluate(window.document, { daa05: rtd, daa06: rtd.daa06, getRoles: rtd.getRoles as never });
+    return evaluate(window.document, { daa05: ctrlDom, daa06: ctrlDom.daa06, getRoles: ctrlDom.getRoles as never });
   } finally {
     window.close();
   }
@@ -89,10 +89,10 @@ describe("user-replaced getComputedStyle — https://drafts.csswg.org/cssom/#dom
   test("without a replacement the cascade applies (stylesheet rules hide)", () => {
     const window = createWindow();
     window.document.body!.innerHTML = HTML;
-    const tabs = rtd.getRoles(window.document.body as never).tab ?? [];
+    const tabs = ctrlDom.getRoles(window.document.body as never).tab ?? [];
     expect(tabs.map((t: any) => t.textContent)).toEqual(["Details"]);
     const save = window.document.querySelector("button:not([aria-describedby])") as never;
-    expect(rtd.computeAccessibleName(save)).toBe("Save");
+    expect(ctrlDom.computeAccessibleName(save)).toBe("Save");
     window.close();
   });
 
@@ -101,8 +101,8 @@ describe("user-replaced getComputedStyle — https://drafts.csswg.org/cssom/#dom
     window.document.body!.innerHTML = HTML;
     (window as any).getComputedStyle = () => ({ display: "none", visibility: "visible", getPropertyValue: (p: string) => (p === "display" ? "none" : "") });
     const tab = window.document.querySelector(".gone") as never;
-    expect(rtd.isInaccessible(tab, { getComputedStyle: replaced as never })).toBe(false);
-    expect(rtd.isInaccessible(tab)).toBe(true);
+    expect(ctrlDom.isInaccessible(tab, { getComputedStyle: replaced as never })).toBe(false);
+    expect(ctrlDom.isInaccessible(tab)).toBe(true);
     window.close();
   });
 });

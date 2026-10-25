@@ -8,22 +8,22 @@
  * `pointerType: "undefined"` (`String(undefined)`); 14.6.8 fixed it to `""`
  * (testing-library/user-event#1325, 71a5475). React Aria's `isVirtualClick()` treats
  * `detail === 0 && !pointerType` as a virtual click and presses again, so stock 14.6.8 — the
- * version @rtd/user-event is a drop-in for — fires `onPress` twice exactly like we do.
- * This test pins that @rtd/user-event and stock 14.6.8 produce the same React-visible sequence.
+ * version @ctrl/dom/user-event is a drop-in for — fires `onPress` twice exactly like we do.
+ * This test pins that @ctrl/dom/user-event and stock 14.6.8 produce the same React-visible sequence.
  */
 
 import React, {useRef} from 'react'
 import * as stockRTL from '@testing-library/react'
 import {userEvent as stockUserEvent} from '@testing-library/user-event'
 import {describe, expect, test, vi} from 'vitest'
-import rtdUserEvent from '../../src/index.ts'
-import * as rtdRTL from '../upstream/_helpers/react.ts'
+import ctrlDomUserEvent from '../../src/index.ts'
+import * as ctrlDomRTL from '../upstream/_helpers/react.ts'
 
 type UE = typeof stockUserEvent
 type RTL = Pick<typeof stockRTL, 'render' | 'screen' | 'cleanup'>
 
 const impls: Array<[string, UE, RTL]> = [
-  ['@rtd/user-event', rtdUserEvent as unknown as UE, rtdRTL as unknown as RTL],
+  ['@ctrl/dom/user-event', ctrlDomUserEvent as unknown as UE, ctrlDomRTL as unknown as RTL],
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 

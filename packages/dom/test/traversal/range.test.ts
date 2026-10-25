@@ -17,7 +17,7 @@
  *   - document.createRange: https://dom.spec.whatwg.org/#dom-document-createrange
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 const BODY = '<div id="root"><p id="a">abc<b id="b">def</b>ghi</p><p id="c">jkl</p></div>';

@@ -4,7 +4,7 @@
 // With the default `selector` ('*') and `ignore` ('script, style') the query is a single
 // NodeImpl walk with no selector matching; other values go through the selector engine.
 
-import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@rtd/dom/internal";
+import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher } from "../matches.ts";

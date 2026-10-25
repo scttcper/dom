@@ -25,7 +25,7 @@ import {render} from './helpers/test-utils.js'
  * @link https://github.com/jsdom/jsdom
  */
 function getDOMElement(htmlString, selector) {
-  // Divergence: built on the suite's DOM (jsdom or @rtd/dom) instead of always jsdom.
+  // Divergence: built on the suite's DOM (jsdom or @ctrl/dom) instead of always jsdom.
   return parseStandalone(htmlString).querySelector(selector)
 }
 

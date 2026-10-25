@@ -6,7 +6,7 @@
  *
  * React Aria renders the native `validationMessage` when no custom message is given. jsdom
  * (every version) returns the generic "Constraints not satisfied" for any failing constraint;
- * @rtd/dom returns Chrome's per-constraint strings. Both are allowed by HTML (the text is UA
+ * @ctrl/dom returns Chrome's per-constraint strings. Both are allowed by HTML (the text is UA
  * defined: https://html.spec.whatwg.org/#dom-cva-validationmessage), but tests written against
  * jsdom assert jsdom's string, and the difference is not listed in docs/deviations.md.
  *
@@ -15,7 +15,7 @@
 import { describe, expect, test } from "vitest";
 import { windows } from "./engines.ts";
 
-describe.each(["jsdom", "rtd"] as const)("%s", (engine) => {
+describe.each(["jsdom", "ctrl-dom"] as const)("%s", (engine) => {
   test("validationMessage of an empty required input matches jsdom's 'Constraints not satisfied'", () => {
     const { document } = windows[engine]();
     const input = document.createElement("input");

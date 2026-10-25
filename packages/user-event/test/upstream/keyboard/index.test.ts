@@ -5,7 +5,7 @@
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
 import userEvent from '#src/index.ts'
-import {addListeners, render, resetWrappers, setup, isRtdEnv} from '#testHelpers'
+import {addListeners, render, resetWrappers, setup, isCtrlDomEnv} from '#testHelpers'
 
 test('type without focus', async () => {
   const {element, user} = setup('<input/>', {focus: false})
@@ -197,8 +197,8 @@ customElements.define(
   },
 )
 
-// divergence: @rtd/dom has no nested browsing contexts (`iframe.contentWindow` is null).
-test.skipIf(isRtdEnv())('typing on focused element with iframe', async () => {
+// divergence: @ctrl/dom has no nested browsing contexts (`iframe.contentWindow` is null).
+test.skipIf(isCtrlDomEnv())('typing on focused element with iframe', async () => {
   let iframe: HTMLIFrameElement
   let iframeButton: HTMLElement
   const {user} = setup(

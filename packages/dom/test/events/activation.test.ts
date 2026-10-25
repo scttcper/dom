@@ -14,8 +14,8 @@
  * dom/events/legacy-pre-activation-behavior.window.js.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { Event, MouseEvent, PointerEvent, type Document, type Element } from "@rtd/dom";
-import { fireSyntheticPointerEvent } from "@rtd/dom/internal";
+import { Event, MouseEvent, PointerEvent, type Document, type Element } from "@ctrl/dom";
+import { fireSyntheticPointerEvent } from "@ctrl/dom/internal";
 import { setup } from "./helpers.ts";
 
 let document: Document;

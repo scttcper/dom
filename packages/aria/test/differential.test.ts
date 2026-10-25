@@ -1,5 +1,5 @@
 /**
- * Differential tests: @rtd/aria on @rtd/dom vs the upstream stack on jsdom.
+ * Differential tests: @ctrl/dom/aria on @ctrl/dom vs the upstream stack on jsdom.
  *
  * Oracle (exact versions the drop-in targets resolve):
  *   - @testing-library/dom@10.4.2 role-helpers (getImplicitAriaRoles, isInaccessible,
@@ -19,8 +19,8 @@
  * difference fails with a per-element diff.
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, type Element } from "@rtd/dom";
-import * as rtd from "@rtd/aria";
+import { createWindow, type Element } from "@ctrl/dom";
+import * as ctrlDom from "@ctrl/dom/aria";
 import { comboFixtures, fixtures, type Fixture } from "./fixtures.ts";
 import { jestDomImplicitRoles, loadOracle } from "./helpers.ts";
 
@@ -82,7 +82,7 @@ function oracleResults(fx: Fixture) {
   };
 }
 
-function rtdResults(fx: Fixture) {
+function ctrlDomResults(fx: Fixture) {
   const doc = createWindow().document;
   doc.body!.innerHTML = fx.html;
   fx.setup?.(doc);
@@ -90,36 +90,36 @@ function rtdResults(fx: Fixture) {
   const all = [body, ...Array.from(body.querySelectorAll("*"))] as Element[];
   const perElement = all.map((el, i) => ({
     el: describeEl(el, i),
-    tlImplicit: rtd.getImplicitAriaRoles(el),
-    jestDomImplicit: rtd.getImplicitAriaRolesJestDom(el),
-    daa05Role: rtd.getRole(el),
-    daa06Role: rtd.daa06.getRole(el),
-    name05: rtd.computeAccessibleName(el),
-    name06: rtd.daa06.computeAccessibleName(el),
-    nameHidden: rtd.computeAccessibleName(el, { hidden: true }),
-    desc05: rtd.computeAccessibleDescription(el),
-    desc06: rtd.daa06.computeAccessibleDescription(el),
-    tlInaccessible: rtd.isInaccessible(el),
-    daaInaccessible: rtd.isInaccessible(el),
-    daaSubtreeInaccessible: rtd.isSubtreeInaccessible(el),
-    disabled06: rtd.isDisabled(el),
-    selected: rtd.computeAriaSelected(el),
-    busy: rtd.computeAriaBusy(el),
-    checked: rtd.computeAriaChecked(el),
-    pressed: rtd.computeAriaPressed(el),
-    current: rtd.computeAriaCurrent(el),
-    expanded: rtd.computeAriaExpanded(el),
-    level: rtd.computeHeadingLevel(el),
-    valueNow: rtd.computeAriaValueNow(el),
-    valueMax: rtd.computeAriaValueMax(el),
-    valueMin: rtd.computeAriaValueMin(el),
-    valueText: rtd.computeAriaValueText(el),
+    tlImplicit: ctrlDom.getImplicitAriaRoles(el),
+    jestDomImplicit: ctrlDom.getImplicitAriaRolesJestDom(el),
+    daa05Role: ctrlDom.getRole(el),
+    daa06Role: ctrlDom.daa06.getRole(el),
+    name05: ctrlDom.computeAccessibleName(el),
+    name06: ctrlDom.daa06.computeAccessibleName(el),
+    nameHidden: ctrlDom.computeAccessibleName(el, { hidden: true }),
+    desc05: ctrlDom.computeAccessibleDescription(el),
+    desc06: ctrlDom.daa06.computeAccessibleDescription(el),
+    tlInaccessible: ctrlDom.isInaccessible(el),
+    daaInaccessible: ctrlDom.isInaccessible(el),
+    daaSubtreeInaccessible: ctrlDom.isSubtreeInaccessible(el),
+    disabled06: ctrlDom.isDisabled(el),
+    selected: ctrlDom.computeAriaSelected(el),
+    busy: ctrlDom.computeAriaBusy(el),
+    checked: ctrlDom.computeAriaChecked(el),
+    pressed: ctrlDom.computeAriaPressed(el),
+    current: ctrlDom.computeAriaCurrent(el),
+    expanded: ctrlDom.computeAriaExpanded(el),
+    level: ctrlDom.computeHeadingLevel(el),
+    valueNow: ctrlDom.computeAriaValueNow(el),
+    valueMax: ctrlDom.computeAriaValueMax(el),
+    valueMin: ctrlDom.computeAriaValueMin(el),
+    valueText: ctrlDom.computeAriaValueText(el),
   }));
   return {
     structure: all.map((el) => el.localName),
     perElement,
-    roles: rolesIndex(rtd.getRoles(body), all),
-    rolesHidden: rolesIndex(rtd.getRoles(body, { hidden: true }), all),
+    roles: rolesIndex(ctrlDom.getRoles(body), all),
+    rolesHidden: rolesIndex(ctrlDom.getRoles(body, { hidden: true }), all),
   };
 }
 
@@ -127,7 +127,7 @@ describe("differential: roles, names, descriptions, states, hidden — https://w
   for (const fx of [...fixtures, ...comboFixtures]) {
     test(`fixture "${fx.name}" matches the upstream stack on jsdom`, () => {
       const expected = oracleResults(fx);
-      const actual = rtdResults(fx);
+      const actual = ctrlDomResults(fx);
       // Both parsers must build the same tree for the comparison to be meaningful.
       expect(actual.structure).toEqual(expected.structure);
       for (let i = 0; i < expected.perElement.length; i++) {
@@ -141,28 +141,28 @@ describe("differential: roles, names, descriptions, states, hidden — https://w
 
 describe("differential: aria-query data surface — https://www.w3.org/TR/wai-aria-1.2/#role_definitions", () => {
   test("roles map equals aria-query@5.3.0 (keys, props, superClass, ...)", () => {
-    expect(rtd.roles.keys()).toEqual(O.ariaQuery.roles.keys());
+    expect(ctrlDom.roles.keys()).toEqual(O.ariaQuery.roles.keys());
     for (const key of O.ariaQuery.roles.keys()) {
-      expect(rtd.roles.get(key)).toEqual(O.ariaQuery.roles.get(key));
+      expect(ctrlDom.roles.get(key)).toEqual(O.ariaQuery.roles.get(key));
     }
-    expect(rtd.roles.get("nope")).toBeUndefined();
-    expect(rtd.roles.has("button")).toBe(true);
+    expect(ctrlDom.roles.get("nope")).toBeUndefined();
+    expect(ctrlDom.roles.has("button")).toBe(true);
   });
 
   test("elementRoles / roleElements equal aria-query@5.3.0", () => {
-    expect(rtd.elementRoles.entries()).toEqual(O.ariaQuery.elementRoles.entries().map(([k, v]: any) => [k, [...v]]));
+    expect(ctrlDom.elementRoles.entries()).toEqual(O.ariaQuery.elementRoles.entries().map(([k, v]: any) => [k, [...v]]));
     for (const [concept] of O.ariaQuery.elementRoles.entries()) {
-      expect(rtd.elementRoles.get(concept)).toEqual([...O.ariaQuery.elementRoles.get(concept)]);
+      expect(ctrlDom.elementRoles.get(concept)).toEqual([...O.ariaQuery.elementRoles.get(concept)]);
     }
     for (const role of O.ariaQuery.roleElements.keys()) {
-      expect(rtd.roleElements.get(role)).toEqual([...O.ariaQuery.roleElements.get(role)]);
+      expect(ctrlDom.roleElements.get(role)).toEqual([...O.ariaQuery.roleElements.get(role)]);
     }
   });
 
   test("forEach and iteration follow aria-query's TLookup interface", () => {
     const seen: string[] = [];
-    rtd.roles.forEach((_value, key) => seen.push(key));
+    ctrlDom.roles.forEach((_value, key) => seen.push(key));
     expect(seen).toEqual(O.ariaQuery.roles.keys());
-    expect([...rtd.roles].length).toBe(O.ariaQuery.roles.keys().length);
+    expect([...ctrlDom.roles].length).toBe(O.ariaQuery.roles.keys().length);
   });
 });

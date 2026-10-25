@@ -3,11 +3,11 @@
  *
  * Oracle: stock @testing-library/user-event@14.6.8 on jsdom (what people run today).
  * Subjects:
- *   - @rtd/user-event on jsdom — the port itself must produce the same events, defaults and
+ *   - @ctrl/dom/user-event on jsdom — the port itself must produce the same events, defaults and
  *     DOM state as upstream on the same DOM;
- *   - @rtd/user-event on @rtd/dom — the target stack. Skipped (with the reason) until
- *     @rtd/dom provides what the scenarios need (form controls, event dispatch with
- *     propagation, focus, Selection); see `rtdUnsupportedReason()`.
+ *   - @ctrl/dom/user-event on @ctrl/dom — the target stack. Skipped (with the reason) until
+ *     @ctrl/dom provides what the scenarios need (form controls, event dispatch with
+ *     propagation, focus, Selection); see `ctrlDomUnsupportedReason()`.
  *
  * Each scenario builds a fresh window, attaches capture listeners on the document for every
  * event type user-event dispatches, runs the same API calls and records for each event: type,
@@ -20,7 +20,7 @@
 import {JSDOM} from 'jsdom'
 import {userEvent as stockUserEvent} from '@testing-library/user-event'
 import {describe, expect, test} from 'vitest'
-import rtdUserEvent from '../../src/index.ts'
+import ctrlDomUserEvent from '../../src/index.ts'
 
 type AnyUserEvent = typeof stockUserEvent
 type User = ReturnType<AnyUserEvent['setup']>
@@ -142,7 +142,7 @@ const scenarios: Scenario[] = [
   {
     // Only values that are valid floating-point numbers at every step: for intermediate
     // strings like "-1." upstream normalizes the IDL value with `String(Number(v))` to work
-    // around jsdom ("-1." -> "-1", "-1.5e3" -> "-1500"), while @rtd/dom sanitizes like the
+    // around jsdom ("-1." -> "-1", "-1.5e3" -> "-1500"), while @ctrl/dom sanitizes like the
     // browser ("-1." -> "", "-1.5e3" stays). See docs/deviations.md and number-input.test.ts.
     name: 'number input',
     html: `<input id="n" type="number"/>`,
@@ -415,7 +415,7 @@ function jsdomEnv(html: string): Env {
  * - jsdom 30 queues them with a timer, so where they land relative to user-event's actions
  *   depends on how user-event yields between actions (`setTimeout` upstream, `setImmediate`
  *   here for `delay: 0`; docs/deviations.md) — they still fire before the API call resolves;
- * - @rtd/dom does not yet queue one per `setSelectionRange()`.
+ * - @ctrl/dom does not yet queue one per `setSelectionRange()`.
  *   TODO(html-forms): fire `select` per https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
  */
 function withoutSelectEvents<T extends {log: Array<Record<string, unknown>>}>(r: T): T {
@@ -439,11 +439,11 @@ async function runScenario(userEvent: AnyUserEvent, makeEnv: (html: string) => E
   }
 }
 
-describe('@rtd/user-event on jsdom vs stock @testing-library/user-event on jsdom', () => {
+describe('@ctrl/dom/user-event on jsdom vs stock @testing-library/user-event on jsdom', () => {
   for (const s of scenarios) {
     test(`same events and DOM state: ${s.name}`, async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-      const actual = await runScenario(rtdUserEvent as unknown as AnyUserEvent, jsdomEnv, s)
+      const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, jsdomEnv, s)
       expect(expected.error).toBeUndefined()
       expect(expected.log.length).toBeGreaterThan(0)
       expect(withoutSelectEvents(actual)).toEqual(withoutSelectEvents(expected))
@@ -453,7 +453,7 @@ describe('@rtd/user-event on jsdom vs stock @testing-library/user-event on jsdom
   for (const s of errorScenarios) {
     test(`same error message: ${s.name}`, async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-      const actual = await runScenario(rtdUserEvent as unknown as AnyUserEvent, jsdomEnv, s)
+      const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, jsdomEnv, s)
       expect(expected.error).toBeTypeOf('string')
       expect(actual.error).toBe(expected.error)
       expect(actual.log).toEqual(expected.log)
@@ -461,25 +461,25 @@ describe('@rtd/user-event on jsdom vs stock @testing-library/user-event on jsdom
   }
 })
 
-// --- @rtd/dom ---------------------------------------------------------------------------
+// --- @ctrl/dom ---------------------------------------------------------------------------
 
-type RtdDom = {createWindow(options?: {html?: string}): Window & {close?(): void}}
+type CtrlDomDom = {createWindow(options?: {html?: string}): Window & {close?(): void}}
 
-async function loadRtd(): Promise<RtdDom | null> {
+async function loadCtrlDom(): Promise<CtrlDomDom | null> {
   try {
-    return (await import('@rtd/dom' as string)) as RtdDom
+    return (await import('@ctrl/dom' as string)) as CtrlDomDom
   } catch {
     return null
   }
 }
 
-const rtd = await loadRtd()
+const ctrlDom = await loadCtrlDom()
 
-/** Why the @rtd/dom subject cannot run yet, or null when it can. */
-function rtdUnsupportedReason(): string | null {
-  if (rtd === null) return '@rtd/dom failed to import'
+/** Why the @ctrl/dom subject cannot run yet, or null when it can. */
+function ctrlDomUnsupportedReason(): string | null {
+  if (ctrlDom === null) return '@ctrl/dom failed to import'
   try {
-    const win = rtd.createWindow({html: '<!doctype html><html><body><div><input id="a" value="x"></div></body></html>'})
+    const win = ctrlDom.createWindow({html: '<!doctype html><html><body><div><input id="a" value="x"></div></body></html>'})
     const w = win as unknown as Record<string, unknown>
     const doc = win.document
     for (const name of ['KeyboardEvent', 'PointerEvent', 'MouseEvent', 'InputEvent', 'FocusEvent', 'HTMLElement']) {
@@ -502,7 +502,7 @@ function rtdUnsupportedReason(): string | null {
   }
 }
 
-const rtdReason = rtdUnsupportedReason()
+const ctrlDomReason = ctrlDomUnsupportedReason()
 
 /**
  * `pointer-events` is an inherited property (https://drafts.csswg.org/css-ui/#pointer-events-control),
@@ -511,36 +511,36 @@ const rtdReason = rtdUnsupportedReason()
  * declared") depends on it.
  * TODO(css): inherit `pointer-events` in getComputedStyle; then this probe returns true.
  */
-function rtdInheritsPointerEvents(): boolean {
-  if (rtdReason !== null) return false
-  const win = rtd!.createWindow({html: '<!doctype html><html><body><div style="pointer-events: none"><b id="b"></b></div></body></html>'})
+function ctrlDomInheritsPointerEvents(): boolean {
+  if (ctrlDomReason !== null) return false
+  const win = ctrlDom!.createWindow({html: '<!doctype html><html><body><div style="pointer-events: none"><b id="b"></b></div></body></html>'})
   return win.getComputedStyle(win.document.getElementById('b')!).pointerEvents === 'none'
 }
-const rtdComputesInheritedPointerEvents = rtdInheritsPointerEvents()
+const ctrlDomComputesInheritedPointerEvents = ctrlDomInheritsPointerEvents()
 
-function rtdEnv(html: string): Env {
-  const win = rtd!.createWindow({html: `<!doctype html><html><body>${html}</body></html>`})
+function ctrlDomEnv(html: string): Env {
+  const win = ctrlDom!.createWindow({html: `<!doctype html><html><body>${html}</body></html>`})
   return {window: win, document: win.document, close: () => win.close?.()}
 }
 
-describe('@rtd/user-event on @rtd/dom vs stock @testing-library/user-event on jsdom', () => {
-  if (rtdReason !== null) test.skip(`@rtd/dom not ready: ${rtdReason}`, () => {})
+describe('@ctrl/dom/user-event on @ctrl/dom vs stock @testing-library/user-event on jsdom', () => {
+  if (ctrlDomReason !== null) test.skip(`@ctrl/dom not ready: ${ctrlDomReason}`, () => {})
 
   for (const s of scenarios) {
-    test.skipIf(rtdReason !== null)(`same events and DOM state: ${s.name}`, async () => {
+    test.skipIf(ctrlDomReason !== null)(`same events and DOM state: ${s.name}`, async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-      const actual = await runScenario(rtdUserEvent as unknown as AnyUserEvent, rtdEnv, s)
+      const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, ctrlDomEnv, s)
       expect(withoutSelectEvents(actual)).toEqual(withoutSelectEvents(expected))
     })
   }
 
   for (const s of errorScenarios) {
     const needsInheritance = s.name === 'pointer-events: none on an ancestor'
-    test.skipIf(rtdReason !== null || (needsInheritance && !rtdComputesInheritedPointerEvents))(
+    test.skipIf(ctrlDomReason !== null || (needsInheritance && !ctrlDomComputesInheritedPointerEvents))(
       `same error message: ${s.name}`,
       async () => {
       const expected = await runScenario(stockUserEvent, jsdomEnv, s)
-        const actual = await runScenario(rtdUserEvent as unknown as AnyUserEvent, rtdEnv, s)
+        const actual = await runScenario(ctrlDomUserEvent as unknown as AnyUserEvent, ctrlDomEnv, s)
         expect(actual.error).toBe(expected.error)
       },
     )

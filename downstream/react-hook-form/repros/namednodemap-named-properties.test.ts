@@ -1,7 +1,7 @@
 /**
  * Downstream repro (react-hook-form: `src/__tests__/useForm/register.test.tsx` › "register
  * disabled not throw errors with disabled input" and "work correctly with toggle disabled
- * attribute and validation", both rtd modes). Fixed in @rtd/dom (NamedNodeMap named properties);
+ * attribute and validation", both ctrl-dom modes). Fixed in @ctrl/dom (NamedNodeMap named properties);
  * kept as a differential check.
  *
  * react-hook-form reads a single checkbox's value in `getCheckboxValue` (src/logic):
@@ -10,7 +10,7 @@
  *   return { value: option.value, isValid: true };
  *
  * `'value' in el.attributes` is a WebIDL named property ([LegacyUnenumerableNamedProperties] on
- * NamedNodeMap): true in browsers and jsdom when the element has a `value` attribute. @rtd/dom
+ * NamedNodeMap): true in browsers and jsdom when the element has a `value` attribute. @ctrl/dom
  * had no named properties on NamedNodeMap (a documented Proxy-free deviation), so a checked
  * `<input type=checkbox value="test">` produced `true`, the form state was `{ test: true }`
  * instead of `{ test: "test" }`, and the validation/JSON assertions failed.
@@ -50,7 +50,7 @@ differential("NamedNodeMap named properties (react-hook-form getCheckboxValue)",
     expect("value" in input.attributes).toBe(false);
     expect(getCheckboxValue(input)).toEqual({ value: true, isValid: true });
     input.setAttribute("value", "x");
-    // (jsdom also lists own index keys here; @rtd/dom's indices are prototype accessors, see docs/deviations.md.)
+    // (jsdom also lists own index keys here; @ctrl/dom's indices are prototype accessors, see docs/deviations.md.)
     expect(Object.keys(input.attributes)).not.toContain("value");
   });
 });

@@ -178,7 +178,7 @@ export function attrAssociatedElements(el: NodeImpl, localName: string): NodeImp
 
 // TODO(aria): accname/relations read aria-labelledby/-describedby/-owns/... attributes only;
 // when hasExplicitAttrElements(el, name) is true they should use attrAssociatedElements(el, name)
-// (exported from @rtd/dom/internal) so WPT html/dom/aria-element-reflection-labelledby.html passes.
+// (exported from @ctrl/dom/internal) so WPT html/dom/aria-element-reflection-labelledby.html passes.
 /** Whether `el` has explicitly set (and still current) element references for `localName`. */
 export function hasExplicitAttrElements(el: NodeImpl, localName: string): boolean {
   return liveExplicit(el, localName) !== null;

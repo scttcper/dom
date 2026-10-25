@@ -2,8 +2,8 @@
  * Differential smoke scenarios: the same React tests run against
  *   - stock @testing-library/react@16.3.3 + @testing-library/jest-dom@7.0.1 on jsdom
  *     (stock.test.tsx, the oracle), and
- *   - @rtd/react + @rtd/jest-dom on the project's DOM (rtd.test.tsx; @rtd/dom when
- *     RTD_STACK=rtd).
+ *   - @ctrl/dom/react + @ctrl/dom/jest-dom on the project's DOM (ctrl-dom.test.tsx; @ctrl/dom when
+ *     CTRL_DOM_STACK=ctrl-dom).
  * Each scenario returns a plain-text transcript of everything observable (DOM, query
  * results, error messages, matcher pass/fail + failure messages, console.error output),
  * and both files compare it to the same oracle file in __oracle__/.
@@ -32,12 +32,12 @@ export interface Lib {
 export function captureMatcherContext(): object {
   let ctx: object | undefined;
   expect.extend({
-    __rtdCaptureContext(this: object) {
+    __ctrlDomCaptureContext(this: object) {
       ctx = this;
       return { pass: true, message: () => "" };
     },
   });
-  (expect(null) as any).__rtdCaptureContext();
+  (expect(null) as any).__ctrlDomCaptureContext();
   return ctx!;
 }
 
@@ -275,8 +275,8 @@ export const scenarios: Record<string, Scenario> = {
     t.match("toHaveStyle", panel, { display: "none" });
     // Not a named color on purpose: jsdom 30 computes `red` as rgb(255, 0, 0) while keeping
     // `red` in element.style (so stock jest-dom fails toHaveStyle("color: red") there), and
-    // @rtd/dom keeps the keyword like the jsdom versions jest-dom's own tests were written
-    // against. That intentional difference is pinned in @rtd/jest-dom's to-have-style suite.
+    // @ctrl/dom keeps the keyword like the jsdom versions jest-dom's own tests were written
+    // against. That intentional difference is pinned in @ctrl/dom/jest-dom's to-have-style suite.
     t.match("toHaveStyle", panel, "color: rgb(255, 0, 0); display: none");
     t.match("toBePressed", button);
     t.match("toHaveAttribute", button, "aria-expanded", "false");

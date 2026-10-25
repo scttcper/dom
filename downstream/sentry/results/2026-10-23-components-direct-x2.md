@@ -1,33 +1,33 @@
 # Sentry downstream: `components-direct-x2` (2026-10-23)
 
-> **TRIAGE MODE (`--triage`)**: rtd modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.
+> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.
 
 - upstream: https://github.com/getsentry/sentry @ `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba` (2026-10-23T13:58:39Z) — fix(agents): Avoid repeated user turns during tool continuations (#128645)
 - pinned: `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba`
 - selection: `static/app/components/`
 - node v26.12.1, Jest workers 6 (same for every mode), runs per mode 2 (interleaved; timings are medians, counts from the last run), CI=true (upstream's CI code paths), no forced GC
 - upstream versions: jest@30.5.1, jsdom@30.1.1, react@19.3.0, react-dom@19.3.0, @swc/jest@0.2.39, @testing-library/react@16.3.2, @testing-library/dom@10.4.1, @testing-library/user-event@14.6.7, @testing-library/jest-dom@7.0.1, @sentry/jest-environment@8.1.0, @floating-ui/react-dom@2.1.9
-- rtd-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
-- rtd-nohacks is an **experiment**: rtd-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
+- ctrl-dom-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
+- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
 
 ## Per-mode results
 
 | mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |
 | jsdom | 6429 | 0 | 3 | 6432 | 653 | 0 | 0 | 70.4s | 375.4s | 7689 MiB | 1506 MiB | 9 ms, 25 ms | 653/653 | RTL: stock |
-| rtd-dom | 6357 | 72 | 3 | 6432 | 653 | 0 | 1 | 57.1s | 347.9s | 7724 MiB | 1591 MiB | 8 ms, 12 ms | 653/653 | 1 React; RTL: stock |
-| rtd-direct | 6357 | 72 | 3 | 6432 | 653 | 0 | 1 | 61.0s | 314.4s | 6858 MiB | 1429 MiB | 7 ms, 14 ms | 653/653 | 1 React; RTL: stock |
+| ctrl-dom | 6357 | 72 | 3 | 6432 | 653 | 0 | 1 | 57.1s | 347.9s | 7724 MiB | 1591 MiB | 8 ms, 12 ms | 653/653 | 1 React; RTL: stock |
+| ctrl-dom-direct | 6357 | 72 | 3 | 6432 | 653 | 0 | 1 | 61.0s | 314.4s | 6858 MiB | 1429 MiB | 7 ms, 14 ms | 653/653 | 1 React; RTL: stock |
 
 <details><summary>individual runs</summary>
 
 | mode | run | wall | CPU | peak tree RSS |
 | --- | --: | --: | --: | --: |
 | jsdom | 1 | 63.6s | 367.5s | 8359 MiB |
-| rtd-dom | 1 | 57.6s | 349.2s | 8245 MiB |
-| rtd-direct | 1 | 55.7s | 320.9s | 7354 MiB |
+| ctrl-dom | 1 | 57.6s | 349.2s | 8245 MiB |
+| ctrl-dom-direct | 1 | 55.7s | 320.9s | 7354 MiB |
 | jsdom | 2 | 77.2s | 383.3s | 7020 MiB |
-| rtd-dom | 2 | 56.5s | 346.7s | 7204 MiB |
-| rtd-direct | 2 | 66.3s | 308.0s | 6363 MiB |
+| ctrl-dom | 2 | 56.5s | 346.7s | 7204 MiB |
+| ctrl-dom-direct | 2 | 66.3s | 308.0s | 6363 MiB |
 
 </details>
 
@@ -38,14 +38,14 @@ Sampled after each test file's environment teardown in every worker (no forced G
 | mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: |
 | jsdom | 6 | 124 | 285 MiB | 590 MiB | -2.23 MiB | 2.00 MiB | 1162 MiB | 1351 MiB |
-| rtd-dom | 6 | 118.5 | 139 MiB | 689 MiB | 0.04 MiB | 3.24 MiB | 1094 MiB | 1456 MiB |
-| rtd-direct | 6 | 115 | 179 MiB | 902 MiB | 2.00 MiB | 1.26 MiB | 893 MiB | 1391 MiB |
+| ctrl-dom | 6 | 118.5 | 139 MiB | 689 MiB | 0.04 MiB | 3.24 MiB | 1094 MiB | 1456 MiB |
+| ctrl-dom-direct | 6 | 115 | 179 MiB | 902 MiB | 2.00 MiB | 1.26 MiB | 893 MiB | 1391 MiB |
 
 ## jsdom
 
 No failing tests.
 
-## rtd-dom
+## ctrl-dom
 
 Compared with jsdom: **72 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 
@@ -157,7 +157,7 @@ Compared with jsdom: **72 pass on jsdom but fail here**, 0 missing (e.g. suite e
 | 1 | Unable to find an element with the text: progress N%. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text mat | app/components/events | `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx :: LogFileViewer renders only the final write when given carriage-return progress updates` |
 | 1 | Unable to find an element with the text: Failed to download attachment.. This could be because the text is broken up by multiple elements. In this case, you can provide a function  | app/components/events | `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx :: LogFileViewer renders an error when the attachment cannot be downloaded` |
 
-## rtd-direct
+## ctrl-dom-direct
 
 Compared with jsdom: **72 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 

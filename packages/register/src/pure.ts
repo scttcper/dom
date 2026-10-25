@@ -1,4 +1,4 @@
-// Global registration of an @rtd/dom window for test runners that have no DOM environment of
+// Global registration of an @ctrl/dom window for test runners that have no DOM environment of
 // their own (node:test, bun test), published as `@ctrl/dom/register/pure`. `@ctrl/dom/register`
 // (src/index.ts) calls `register()` on import; this entry only exports the API. In the spirit of
 // happy-dom's `@happy-dom/global-registrator`:
@@ -8,20 +8,20 @@
 //   ...
 //   unregister();
 //
-// Same defaults as vitest-environment-rtd (packages/vitest-environment/src/index.ts): the
+// Same defaults as @ctrl/dom/vitest-environment (packages/vitest-environment/src/index.ts): the
 // "jsdom-30" compat profile, http://localhost:3000/, timers/Date/performance on a skipping virtual
 // clock, unhandled listener exceptions re-emitted as the process's "uncaughtException" (which
 // node:test attributes to the running test), jsdom's "Not implemented" diagnostics on
 // console.error, and the DOM modules published on the global for @ctrl/dom's bridges.
 
 import { createRequire } from "node:module";
-import * as dom from "@rtd/dom";
-import * as internal from "@rtd/dom/internal";
-import type { CompatProfile, Window, WindowOptions } from "@rtd/dom";
+import * as dom from "@ctrl/dom";
+import * as internal from "@ctrl/dom/internal";
+import type { CompatProfile, Window, WindowOptions } from "@ctrl/dom";
 
 export interface RegisterOptions extends Omit<WindowOptions, "shareStorageWith"> {
   /**
-   * APIs beyond jsdom's (@rtd/dom window/compat.ts): "jsdom-30" (default, as under the Vitest
+   * APIs beyond jsdom's (@ctrl/dom window/compat.ts): "jsdom-30" (default, as under the Vitest
    * environment), "jsdom-26" or "modern" (everything, including matchMedia and ResizeObserver).
    */
   compat?: CompatProfile;
@@ -54,14 +54,14 @@ export interface Registration {
 const DEFAULT_URL = "http://localhost:3000/";
 
 /** The key @ctrl/dom's bridges read (shared with both environments). */
-const DOM_MODULES = Symbol.for("rtd.dom.modules");
+const DOM_MODULES = Symbol.for("ctrl-dom.dom.modules");
 
 const host = globalThis as unknown as Record<PropertyKey, unknown>;
 
 let current: { registration: Registration; close: () => void; teardown: () => void } | null = null;
 
 function timeSkip(option: boolean | undefined): boolean {
-  const env = process.env.CTRL_DOM_TIME_SKIP ?? process.env.RTD_TIME_SKIP;
+  const env = process.env.CTRL_DOM_TIME_SKIP;
   if (env === "1") return true;
   if (env === "0") return false;
   return option !== false;

@@ -1,8 +1,8 @@
 /**
  * React 19 forms through Testing Library + user-event — the scenarios real component tests
  * exercise. Runs unchanged in three projects (see vitest.react.shared.ts): jsdom with stock
- * Testing Library (proves every expectation below), @rtd/dom with stock Testing Library, and
- * @rtd/dom with our Testing Library packages aliased in.
+ * Testing Library (proves every expectation below), @ctrl/dom with stock Testing Library, and
+ * @ctrl/dom with our Testing Library packages aliased in.
  *
  * Specs behind the behavior:
  *   - input value / dirty flag / value tracker interplay: https://html.spec.whatwg.org/#dom-input-value

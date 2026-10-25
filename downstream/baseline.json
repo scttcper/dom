@@ -10,7 +10,7 @@
         "failing": [],
         "flaky": []
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 9198,
         "failed": 1,
         "skipped": 1578,
@@ -23,7 +23,7 @@
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ]
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 9197,
         "failed": 2,
         "skipped": 1578,
@@ -50,14 +50,14 @@
         "failing": [],
         "flaky": []
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 1134,
         "failed": 0,
         "skipped": 9,
         "failing": [],
         "flaky": []
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 1134,
         "failed": 0,
         "skipped": 9,
@@ -77,7 +77,7 @@
         "failing": [],
         "flaky": []
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 2996,
         "failed": 1,
         "skipped": 9,
@@ -86,7 +86,7 @@
         ],
         "flaky": []
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 2989,
         "failed": 8,
         "skipped": 9,
@@ -118,7 +118,7 @@
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ]
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 6428,
         "failed": 1,
         "skipped": 3,
@@ -130,7 +130,7 @@
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ]
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 6429,
         "failed": 0,
         "skipped": 3,
@@ -153,14 +153,14 @@
         "failing": [],
         "flaky": []
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 477,
         "failed": 0,
         "skipped": 0,
         "failing": [],
         "flaky": []
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 477,
         "failed": 0,
         "skipped": 0,
@@ -180,7 +180,7 @@
         "failing": [],
         "flaky": []
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 1728,
         "failed": 1,
         "skipped": 0,
@@ -192,7 +192,7 @@
           "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
         ]
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 1728,
         "failed": 1,
         "skipped": 0,
@@ -217,7 +217,7 @@
         "failing": [],
         "flaky": []
       },
-      "rtd-dom": {
+      "ctrl-dom": {
         "passed": 2565,
         "failed": 4,
         "skipped": 15,
@@ -229,7 +229,7 @@
         ],
         "flaky": []
       },
-      "rtd-full": {
+      "ctrl-dom-full": {
         "passed": 2565,
         "failed": 4,
         "skipped": 15,

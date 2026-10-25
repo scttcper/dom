@@ -15,7 +15,7 @@
  * components (Lexical, Slate, TipTap) and user-event's `type()` on editing hosts depend on these.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 let document: any;
 

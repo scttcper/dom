@@ -14,7 +14,7 @@
  *   - interface MutationRecord: https://dom.spec.whatwg.org/#interface-mutationrecord
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, MutationObserver, type Document } from "@rtd/dom";
+import { createWindow, MutationObserver, type Document } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 let document: Document;

@@ -7,7 +7,7 @@
 import { expect, test } from "vitest";
 import { useState } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ariaSnapshot, getByRole } from "@rtd/testing-library";
+import { ariaSnapshot, getByRole } from "@ctrl/dom/testing-library";
 
 function Checkout() {
   const [open, setOpen] = useState(false);

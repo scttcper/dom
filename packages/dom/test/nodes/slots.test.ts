@@ -12,7 +12,7 @@
  *     (assigned slot: https://dom.spec.whatwg.org/#slotable-assigned-slot)
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 const names = (list: AnyWindow) => [...list].map((n: AnyWindow) => describeNode(n));

@@ -4,7 +4,7 @@
 // `queryAllByAttribute` scans NodeImpl attribute records instead of running
 // `querySelectorAll('[attr]')` + `getAttribute` per element.
 
-import { asciiLowercase, attr, describeCall, ELEMENT_NODE, F_HTML, nextInTree, tracePromise, traceSync, tracing, type SpanContext } from "@rtd/dom/internal";
+import { asciiLowercase, attr, describeCall, ELEMENT_NODE, F_HTML, nextInTree, tracePromise, traceSync, tracing, type SpanContext } from "@ctrl/dom/internal";
 import { getSuggestedQuery, type Variant } from "./suggestions.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "./matches.ts";
 import { waitForInSpan } from "./wait-for.ts";
@@ -127,7 +127,7 @@ const QUERY_OP = "testing-library.query";
 
 const matchCount = (result: unknown): number => (Array.isArray(result) ? result.length : result ? 1 : 0);
 
-/** Ours: a span per call when something subscribes to @ctrl/dom's tracing channel (@rtd/dom trace.ts). */
+/** Ours: a span per call when something subscribes to @ctrl/dom's tracing channel (@ctrl/dom trace.ts). */
 function traceQuery(name: string, query: AnyQuery): AnyQuery {
   return (container: any, ...args: any[]) => {
     if (!tracing()) return query(container, ...args);

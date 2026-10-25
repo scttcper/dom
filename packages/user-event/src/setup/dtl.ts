@@ -1,16 +1,16 @@
 // Bridge to the Testing Library DOM config (`getConfig().asyncWrapper/eventWrapper/
-// getElementError`), which framework adapters (@rtd/react, @testing-library/react) configure
+// getElementError`), which framework adapters (@ctrl/dom/react, @testing-library/react) configure
 // with `act()` as a side effect of being imported.
 //
 // Upstream imports `getConfig` from `@testing-library/dom`; we import it from
-// `@rtd/testing-library` (our drop-in, a hard dependency), falling back to a built-in default
+// `@ctrl/dom/testing-library` (our drop-in, a hard dependency), falling back to a built-in default
 // config (identity wrappers) only if that module does not provide getConfig/configure.
 //
 // The import is static on purpose: a top-level `await import()` here made the package an
 // async ES module, which `require()` (Node's require(esm), Jest) cannot load and which cannot
 // be bundled to CommonJS (scripts/build.ts).
 
-import * as rtdTestingLibrary from '@rtd/testing-library'
+import * as ctrlDomTestingLibrary from '@ctrl/dom/testing-library'
 import type {Element} from '../dom-types.ts'
 
 export interface DTLConfig {
@@ -42,9 +42,9 @@ function load(mod: Partial<DTLModule> & {default?: Partial<DTLModule>}): DTLModu
     : null
 }
 
-const dtl: DTLModule | null = load(rtdTestingLibrary as unknown as Partial<DTLModule>)
+const dtl: DTLModule | null = load(ctrlDomTestingLibrary as unknown as Partial<DTLModule>)
 /** Which module provides `getConfig` ('default' when none could be loaded). */
-export const dtlSource: string = dtl ? '@rtd/testing-library' : 'default'
+export const dtlSource: string = dtl ? '@ctrl/dom/testing-library' : 'default'
 
 /** The Testing Library DOM module user-event reads its config from, or null (built-in defaults). */
 export const dtlModule: DTLModule | null = dtl
@@ -52,11 +52,11 @@ export const dtlModule: DTLModule | null = dtl
 /**
  * Mixed setups: stock `@testing-library/react` configures stock `@testing-library/dom`, not
  * ours. When a React act environment is active (`IS_REACT_ACT_ENVIRONMENT`, which RTL sets),
- * @rtd/testing-library's `asyncWrapper` is still its default (no @rtd adapter configured it)
+ * @ctrl/dom/testing-library's `asyncWrapper` is still its default (no @ctrl/dom adapter configured it)
  * and a *different* `@testing-library/dom` instance is importable, user-event reads that
  * one's config instead, so stock RTL's `act()` wrapping applies. The import is dynamic (no
  * top-level await: the package must stay loadable with `require()`), triggered at the first
- * API call; when `@testing-library/dom` is aliased to @rtd/testing-library it resolves to the
+ * API call; when `@testing-library/dom` is aliased to @ctrl/dom/testing-library it resolves to the
  * same module and nothing changes. Plain DOM tests never load anything.
  */
 let fallback: DTLModule | null = null

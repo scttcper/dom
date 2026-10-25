@@ -1,12 +1,12 @@
 /**
- * React integration tests for @rtd/user-event.
+ * React integration tests for @ctrl/dom/user-event.
  *
- * Every scenario runs twice in the same environment: with @rtd/user-event and with stock
+ * Every scenario runs twice in the same environment: with @ctrl/dom/user-event and with stock
  * @testing-library/user-event@14.6.8 (each paired with the React Testing Library adapter that
  * configures the Testing Library DOM module it reads `asyncWrapper`/`eventWrapper` from). The
  * assertions are identical, so a difference in how React observes the simulated input — e.g.
  * React's `_valueTracker` missing a change, `onChange` firing a different number of times,
- * effects not flushing between keystrokes — fails the @rtd row.
+ * effects not flushing between keystrokes — fails the @ctrl/dom row.
  *
  * Covers: controlled inputs (cursor, transforms, rejected changes), forms (Enter implicit
  * submission, submit buttons), checkbox / radio / select, focus and blur handlers with `tab`,
@@ -18,14 +18,14 @@ import React, {useEffect, useLayoutEffect, useRef, useState} from 'react'
 import * as stockRTL from '@testing-library/react'
 import {userEvent as stockUserEvent} from '@testing-library/user-event'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-import rtdUserEvent from '../../src/index.ts'
-import * as rtdRTL from '../upstream/_helpers/react.ts'
+import ctrlDomUserEvent from '../../src/index.ts'
+import * as ctrlDomRTL from '../upstream/_helpers/react.ts'
 
 type UE = typeof stockUserEvent
 type RTL = Pick<typeof stockRTL, 'render' | 'screen' | 'cleanup' | 'act'>
 
 const impls: Array<[name: string, userEvent: UE, rtl: RTL]> = [
-  ['@rtd/user-event', rtdUserEvent as unknown as UE, rtdRTL as unknown as RTL],
+  ['@ctrl/dom/user-event', ctrlDomUserEvent as unknown as UE, ctrlDomRTL as unknown as RTL],
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 

@@ -386,7 +386,7 @@ for (const check of checks) {
     encoding: "utf8",
     env: {
       ...process.env,
-      RTD_LOAD_LOG: log,
+      CTRL_DOM_LOAD_LOG: log,
       NODE_OPTIONS: check.recordLoads === false ? (process.env.NODE_OPTIONS ?? "") : `${process.env.NODE_OPTIONS ?? ""} --import ${join(project, "record-loads.mjs")}`.trim(),
       CI: "1",
     },

@@ -1,10 +1,10 @@
 /**
- * Downstream repro (Base UI useDismiss touch tests: 2 failures in both rtd modes;
+ * Downstream repro (Base UI useDismiss touch tests: 2 failures in both ctrl-dom modes;
  * `fireEvent.touchStart(el, { touches: [{ clientX, clientY }] })`).
  *
  * Testing Library users pass plain objects as touches. jsdom accepts them (it has no Touch
  * interface, so TouchEventInit members are not converted) and exposes them on the event;
- * @rtd/dom performs the WebIDL conversion and throws "Failed to convert value to 'Touch'",
+ * @ctrl/dom performs the WebIDL conversion and throws "Failed to convert value to 'Touch'",
  * so the test crashes before the component runs.
  *
  * Spec: https://w3c.github.io/touch-events/#touchevent-interface (sequence<Touch> touches)

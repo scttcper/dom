@@ -1,5 +1,5 @@
 /**
- * XMLHttpRequest: what @rtd/dom's implementation adds on top of the jsdom differential suite
+ * XMLHttpRequest: what @ctrl/dom's implementation adds on top of the jsdom differential suite
  * (tests/compat/test/xhr/): its transport, its window, and its deviations.
  *
  * Spec: XMLHttpRequest Standard
@@ -19,7 +19,7 @@
  */
 import http, { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { createWindow, installGlobals, Document } from "@rtd/dom";
+import { createWindow, installGlobals, Document } from "@ctrl/dom";
 
 type AnyRecord = Record<string, any>;
 

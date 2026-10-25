@@ -29,7 +29,7 @@ const PAGE = `
     </form>
   </main>`;
 
-function rtd(html = PAGE): any {
+function ctrlDom(html = PAGE): any {
   document.body.innerHTML = html;
   return document.body;
 }
@@ -71,28 +71,28 @@ describe("defaults without CTRL_DOM_DEBUG are byte-identical to stock @testing-l
   ];
   for (const [name, run] of cases) {
     test(`${name}: same error message`, () => {
-      expect(messageOf(() => run(ours as any, rtd()))).toBe(messageOf(() => run(stock, jsdomBody())));
+      expect(messageOf(() => run(ours as any, ctrlDom()))).toBe(messageOf(() => run(stock, jsdomBody())));
     });
   }
 
   test("prettyDOM with an explicit format: \"pretty\" equals stock prettyDOM", () => {
-    expect(ours.prettyDOM(rtd(), undefined, { format: "pretty" } as any)).toBe(stock.prettyDOM(jsdomBody()));
+    expect(ours.prettyDOM(ctrlDom(), undefined, { format: "pretty" } as any)).toBe(stock.prettyDOM(jsdomBody()));
   });
 
   test("a CTRL_DOM_DEBUG value that is not a format is ignored", () => {
     process.env.CTRL_DOM_DEBUG = "1";
-    expect(ours.prettyDOM(rtd())).toBe(stock.prettyDOM(jsdomBody()));
+    expect(ours.prettyDOM(ctrlDom())).toBe(stock.prettyDOM(jsdomBody()));
   });
 });
 
 describe("prettyDOM format option", () => {
   test("format: \"aria\" prints the accessibility snapshot and takes its options", () => {
-    rtd(`<ul>${"<li>x</li>".repeat(9)}</ul>`);
+    ctrlDom(`<ul>${"<li>x</li>".repeat(9)}</ul>`);
     expect(ours.prettyDOM(document.body, undefined, { format: "aria", collapseAfter: 1 } as any)).toBe(ours.ariaSnapshot(document.body, { collapseAfter: 1 }));
   });
 
   test("format: \"compact\" drops class/style attributes and SVG internals, without colors", () => {
-    rtd(`<button class="btn" style="color:red" data-state="on"><svg class="i" aria-hidden="true" viewBox="0 0 2 2"><path d="M0 0"/></svg>Go</button>`);
+    ctrlDom(`<button class="btn" style="color:red" data-state="on"><svg class="i" aria-hidden="true" viewBox="0 0 2 2"><path d="M0 0"/></svg>Go</button>`);
     expect(ours.prettyDOM(document.body, undefined, { format: "compact" } as any)).toBe(
       ["<body>", "  <button", '    data-state="on"', "  >", "    <svg", '      aria-hidden="true"', "    />", "    Go", "  </button>", "</body>"].join("\n"),
     );
@@ -100,7 +100,7 @@ describe("prettyDOM format option", () => {
 
   test("CTRL_DOM_DEBUG=aria makes it the default for prettyDOM, screen.debug and logDOM", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    rtd(`<h1>Hi</h1>`);
+    ctrlDom(`<h1>Hi</h1>`);
     expect(ours.prettyDOM()).toBe('- heading "Hi" [level=1]');
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     ours.screen.debug();
@@ -112,7 +112,7 @@ describe("prettyDOM format option", () => {
 describe("query errors under CTRL_DOM_DEBUG=aria", () => {
   test("getByRole lists hidden, role-less and same-role candidates, then the snapshot instead of HTML", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    const message = messageOf(() => ours.getByRole(rtd(), "button", { name: "Submit" }));
+    const message = messageOf(() => ours.getByRole(ctrlDom(), "button", { name: "Submit" }));
     expect(message).toBe(
       [
         'Unable to find an accessible element with the role "button" and name "Submit"',
@@ -144,7 +144,7 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
 
   test("getByRole names a state mismatch and a same-name element with another role", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    rtd(`<button aria-pressed="false">Bold</button><a href="/bold">Bold</a>`);
+    ctrlDom(`<button aria-pressed="false">Bold</button><a href="/bold">Bold</a>`);
     const message = messageOf(() => ours.getByRole(document.body, "button", { name: "Bold", pressed: true }));
     expect(message).toContain('- button "Bold" [pressed=false]  # role and name match, state is not { pressed: true }');
     expect(message).toContain('- link "Bold"  # same name, role "link"');
@@ -152,21 +152,21 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
 
   test("getByRole ranks similar names (case, substring) above unrelated ones", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    rtd(`<button>Cancel</button><button>save changes</button>`);
+    ctrlDom(`<button>Cancel</button><button>save changes</button>`);
     const lines = messageOf(() => ours.getByRole(document.body, "button", { name: "Save" })).split("\n");
     expect(lines.slice(2, 5)).toEqual(["Closest matches:", '- button "save changes"  # similar name', '- button "Cancel"  # same role, other name']);
   });
 
   test("getByText points at text split across elements and at similar text", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    const message = messageOf(() => ours.getByText(rtd(), "Total: $42.00"));
+    const message = messageOf(() => ours.getByText(ctrlDom(), "Total: $42.00"));
     expect(message).toContain('- paragraph: "Total: $42.00"  # text split across child elements of <p>: use a function matcher or getByRole');
     expect(message).toContain('- strong: "$42.00"  # similar text in <strong>');
   });
 
   test("getByLabelText lists the form controls with their names and placeholder-only fields", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    const message = messageOf(() => ours.getByLabelText(rtd(), "Coupon"));
+    const message = messageOf(() => ours.getByLabelText(ctrlDom(), "Coupon"));
     expect(message).toContain(
       [
         "Labelled form controls:",
@@ -178,14 +178,14 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
 
   test("multiple matches print each element as its snapshot line", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    const message = messageOf(() => ours.getByRole(rtd(), "textbox"));
+    const message = messageOf(() => ours.getByRole(ctrlDom(), "textbox"));
     expect(message).toContain(['Here are the matching elements:', "", '- textbox "Email address"', "- textbox", ""].join("\n"));
     expect(message).not.toContain("<input");
   });
 
   test("findBy* timeouts carry the candidates and print the snapshot once", async () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    rtd();
+    ctrlDom();
     const message = await asyncMessageOf(() => ours.findByRole(document.body, "button", { name: /submit/i }, { timeout: 50 }));
     expect(message).toContain("Closest matches:");
     expect(message.split("Accessibility snapshot of").length).toBe(2);
@@ -193,7 +193,7 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
 
   test("waitFor timeouts with a plain assertion error append the snapshot", async () => {
     process.env.CTRL_DOM_DEBUG = "aria";
-    rtd(`<h1>Hi</h1>`);
+    ctrlDom(`<h1>Hi</h1>`);
     const message = await asyncMessageOf(() =>
       ours.waitFor(
         () => {
@@ -208,7 +208,7 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
   test("CTRL_DOM_DEBUG_LINES bounds the snapshot in errors", () => {
     process.env.CTRL_DOM_DEBUG = "aria";
     process.env.CTRL_DOM_DEBUG_LINES = "2";
-    const message = messageOf(() => ours.getByRole(rtd(), "slider"));
+    const message = messageOf(() => ours.getByRole(ctrlDom(), "slider"));
     expect(message.endsWith(["- banner:", '  - navigation "Main":', "# … 12 more lines (raise maxLines or CTRL_DOM_DEBUG_LINES)"].join("\n"))).toBe(true);
   });
 });
@@ -216,7 +216,7 @@ describe("query errors under CTRL_DOM_DEBUG=aria", () => {
 describe("query errors under CTRL_DOM_DEBUG=compact", () => {
   test("the candidates stay; the context is HTML without class/style/SVG internals", () => {
     process.env.CTRL_DOM_DEBUG = "compact";
-    const message = messageOf(() => ours.getByRole(rtd(), "button", { name: "Submit" }));
+    const message = messageOf(() => ours.getByRole(ctrlDom(), "button", { name: "Submit" }));
     expect(message).toContain("Closest matches:");
     expect(message).toContain("DOM of <body> without class/style/SVG internals (CTRL_DOM_DEBUG=compact):\n<body>");
     expect(message).not.toContain("class=");
@@ -226,7 +226,7 @@ describe("query errors under CTRL_DOM_DEBUG=compact", () => {
 
 describe("diffAriaSnapshots", () => {
   test("shows removed and added lines under their unchanged parents", () => {
-    rtd(`<nav aria-label="Main"><button aria-expanded="false">Menu</button></nav><main><h1>Home</h1><p>a</p><p>b</p></main>`);
+    ctrlDom(`<nav aria-label="Main"><button aria-expanded="false">Menu</button></nav><main><h1>Home</h1><p>a</p><p>b</p></main>`);
     const before = ours.ariaSnapshot();
     document.querySelector("button")!.setAttribute("aria-expanded", "true");
     document.querySelector("nav")!.insertAdjacentHTML("beforeend", `<ul role="menu"><li role="menuitem">Settings</li></ul>`);

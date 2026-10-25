@@ -1,11 +1,11 @@
 /**
  * Downstream repro (Radix Primitives: 2 `packages/core/primitive/src/aria-hidden.test.tsx`
- * failures in both rtd modes: "inert > supports in jsdom" and the suppressOthers shadow-DOM
+ * failures in both ctrl-dom modes: "inert > supports in jsdom" and the suppressOthers shadow-DOM
  * snapshot).
  *
  * Radix's `supportsInert()` is `HTMLElement.prototype.hasOwnProperty('inert')`, and
  * `suppressOthers` uses `inert` when supported, `aria-hidden` otherwise. jsdom 29 does not
- * implement the `inert` IDL attribute; @rtd/dom does (spec-correct), so `suppressOthers` writes
+ * implement the `inert` IDL attribute; @ctrl/dom does (spec-correct), so `suppressOthers` writes
  * `inert="true"` where the jsdom-recorded inline snapshot expects `aria-hidden="true"`, and the
  * test that literally asserts "not yet supported in jsdom" fails. This is a jsdom fixture
  * assumption, not a spec bug (same category as Base UI's visualViewport parity cluster).

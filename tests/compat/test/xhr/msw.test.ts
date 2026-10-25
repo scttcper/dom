@@ -1,6 +1,6 @@
 /**
  * Mocking XMLHttpRequest the way test suites do: MSW (3 and 2) and axios's XHR adapter on top of
- * @rtd/dom's XMLHttpRequest, installed as the global like the environments install it.
+ * @ctrl/dom's XMLHttpRequest, installed as the global like the environments install it.
  *
  * Spec: XMLHttpRequest Standard, https://xhr.spec.whatwg.org/#the-send()-method (the events a
  * mocked response must still produce) and https://xhr.spec.whatwg.org/#request-error-steps.
@@ -14,7 +14,7 @@
  */
 import { createServer, type Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { createWindow, installGlobals } from "@rtd/dom";
+import { createWindow, installGlobals } from "@ctrl/dom";
 
 // Installed as msw-3 / msw-2 (aliases): see .pnpmfile.cjs for why Vitest must not see an "msw".
 type Msw = typeof import("msw-3");

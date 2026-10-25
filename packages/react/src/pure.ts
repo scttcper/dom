@@ -22,12 +22,12 @@ import {
   type queries,
 } from "./dtl.ts";
 import act, { getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
-import { traceSync, tracing } from "@rtd/dom/internal";
+import { traceSync, tracing } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
 
 // Containers React can render into / hydrate. Typed loosely on purpose: these are whatever
-// DOM the test environment provides (@rtd/dom, or jsdom/happy-dom for the stock comparison).
+// DOM the test environment provides (@ctrl/dom, or jsdom/happy-dom for the stock comparison).
 type RendererableContainer = ReactDOMClient.Container;
 type HydrateableContainer = Parameters<(typeof ReactDOMClient)["hydrateRoot"]>[0];
 type DOMElement = any;

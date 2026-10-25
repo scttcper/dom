@@ -1,23 +1,23 @@
 # Sentry downstream: `views-triage` (2026-10-23)
 
-> **TRIAGE MODE (`--triage`)**: rtd modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline) to look past them. These are not compatibility results.
+> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline) to look past them. These are not compatibility results.
 
 - upstream: https://github.com/getsentry/sentry @ `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba` (2026-10-23T13:58:39Z) — fix(agents): Avoid repeated user turns during tool continuations (#128645)
 - pinned: `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba`
 - selection: `static/app/views/issueDetails/`, `static/app/views/issueList/`, `static/app/views/discover/`, `static/app/views/automations/`, `static/app/views/alerts/`, `static/app/views/projectDetail/`, `static/app/views/organizationStats/`, `static/app/views/navigation/`, `static/app/views/authV2/`
 - node v26.12.1, Jest workers 6 (same for every mode), runs per mode 1, CI=true (upstream's CI code paths), no forced GC
 - upstream versions: jest@30.5.1, jsdom@30.1.1, react@19.3.0, react-dom@19.3.0, @swc/jest@0.2.39, @testing-library/react@16.3.2, @testing-library/dom@10.4.1, @testing-library/user-event@14.6.7, @testing-library/jest-dom@7.0.1, @sentry/jest-environment@8.1.0, @floating-ui/react-dom@2.1.9
-- rtd-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
-- rtd-nohacks is an **experiment**: rtd-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
+- ctrl-dom-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
+- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
 
 ## Per-mode results
 
 | mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |
 | jsdom | 1818 | 0 | 0 | 1818 | 236 | 0 | 0 | 31.4s | 160.9s | 7956 MiB | 1764 MiB | 8 ms, 12 ms | 236/236 | RTL: stock |
-| rtd-dom | 1810 | 8 | 0 | 1818 | 236 | 0 | 1 | 58.7s | 183.7s | 8344 MiB | 1587 MiB | 7 ms, 42 ms | 236/236 | 1 React; RTL: stock |
-| rtd-full | 1781 | 37 | 0 | 1818 | 236 | 0 | 1 | 39.3s | 163.1s | 8012 MiB | 1674 MiB | 6 ms, 19 ms | 236/236 | 1 React |
-| rtd-nohacks | 1734 | 84 | 0 | 1818 | 236 | 0 | 1 | 32.8s | 155.0s | 7958 MiB | 1695 MiB | 6 ms, 9 ms | 236/236 | 1 React |
+| ctrl-dom | 1810 | 8 | 0 | 1818 | 236 | 0 | 1 | 58.7s | 183.7s | 8344 MiB | 1587 MiB | 7 ms, 42 ms | 236/236 | 1 React; RTL: stock |
+| ctrl-dom-full | 1781 | 37 | 0 | 1818 | 236 | 0 | 1 | 39.3s | 163.1s | 8012 MiB | 1674 MiB | 6 ms, 19 ms | 236/236 | 1 React |
+| ctrl-dom-nohacks | 1734 | 84 | 0 | 1818 | 236 | 0 | 1 | 32.8s | 155.0s | 7958 MiB | 1695 MiB | 6 ms, 9 ms | 236/236 | 1 React |
 
 ## Jest worker memory across files
 
@@ -26,15 +26,15 @@ Sampled after each test file's environment teardown in every worker (no forced G
 | mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: |
 | jsdom | 6 | 37.5 | 357 MiB | 1113 MiB | 16.86 MiB | 4.69 MiB | 1130 MiB | 1750 MiB |
-| rtd-dom | 6 | 41.5 | 193 MiB | 983 MiB | 15.01 MiB | 18.84 MiB | 1363 MiB | 1569 MiB |
-| rtd-full | 6 | 39 | 189 MiB | 984 MiB | 18.62 MiB | 10.61 MiB | 1139 MiB | 1657 MiB |
-| rtd-nohacks | 6 | 38.5 | 177 MiB | 1096 MiB | 19.31 MiB | 14.30 MiB | 1165 MiB | 1693 MiB |
+| ctrl-dom | 6 | 41.5 | 193 MiB | 983 MiB | 15.01 MiB | 18.84 MiB | 1363 MiB | 1569 MiB |
+| ctrl-dom-full | 6 | 39 | 189 MiB | 984 MiB | 18.62 MiB | 10.61 MiB | 1139 MiB | 1657 MiB |
+| ctrl-dom-nohacks | 6 | 38.5 | 177 MiB | 1096 MiB | 19.31 MiB | 14.30 MiB | 1165 MiB | 1693 MiB |
 
 ## jsdom
 
 No failing tests.
 
-## rtd-dom
+## ctrl-dom
 
 Compared with jsdom: **8 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 
@@ -69,7 +69,7 @@ Compared with jsdom: **8 pass on jsdom but fail here**, 0 missing (e.g. suite er
 | 1 | Error: expect(element).toBeVisible() | app/views/authV2 | `static/app/views/authV2/passwordReset/index.spec.tsx :: PasswordReset preserves the form when password validation fails` |
 | 1 | TestingLibraryElementError: Unable to find an accessible element with the role "menuitemradio" and name "Admin" | app/views/navigation | `static/app/views/navigation/primary/userDropdown.spec.tsx :: UserDropdown shows admin link if user is admin` |
 
-## rtd-full
+## ctrl-dom-full
 
 Compared with jsdom: **37 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 
@@ -150,7 +150,7 @@ Compared with jsdom: **37 pass on jsdom but fail here**, 0 missing (e.g. suite e
 | 1 | TestingLibraryElementError: Unable to find an accessible element with the role "link" and name "Issues" | app/views/navigation | `static/app/views/navigation/topBar.spec.tsx :: TopBar keeps only the page-title label inside the single TopBar heading` |
 | 1 | Unable to find role="link" and name "Projects" | app/views/projectDetail | `static/app/views/projectDetail/projectDetail.spec.tsx :: ProjectDetail Renders the breadcrumb trail and page title` |
 
-## rtd-nohacks
+## ctrl-dom-nohacks
 
 Compared with jsdom: **84 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 

@@ -10,7 +10,7 @@
  *   state predicates       https://html.spec.whatwg.org/#pseudo-classes
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import * as state from "../../../src/html/forms/state.ts";
 import { setUIValue, getUIValue } from "../../../src/html/forms/ui.ts";
 import { $impl } from "../../../src/keys.ts";

@@ -1,10 +1,10 @@
 /**
  * Downstream repro (Base UI: scroll-area [data-scrolling] tests and drawer scroll/swipe tests,
- * ~16 failures in both rtd modes).
+ * ~16 failures in both ctrl-dom modes).
  *
  * Tests set scroll positions without layout: `el.scrollTop = 40` after mocking scrollHeight /
  * clientHeight, or Testing Library's idiom `fireEvent.scroll(el, { target: { scrollTop: 1 } })`
- * (which assigns the property before dispatching). jsdom keeps the assigned offsets; @rtd/dom
+ * (which assigns the property before dispatching). jsdom keeps the assigned offsets; @ctrl/dom
  * follows CSSOM View's "no associated box -> do nothing" and reads back 0, so components that
  * read `scrollTop` in their scroll handler never see a scroll.
  *

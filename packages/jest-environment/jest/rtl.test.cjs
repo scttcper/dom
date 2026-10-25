@@ -1,6 +1,6 @@
 /**
  * Integration: stock React 19 + @testing-library/react from node_modules under Jest 30 with
- * jest-environment-rtd (via the package's jest-preset).
+ * @ctrl/dom-jest-environment (via the package's jest-preset).
  *
  * Specs exercised through the libraries:
  *   HTML Standard — The Window object: https://html.spec.whatwg.org/#the-window-object
@@ -41,9 +41,9 @@ describe("environment globals — https://html.spec.whatwg.org/#the-window-objec
     expect(document.createElement("div")).toBeInstanceOf(HTMLElement);
   });
 
-  test("@rtd/dom required from a test is the environment's instance (singleton shim)", () => {
-    const dom = require("@rtd/dom");
-    const internal = require("@rtd/dom/internal");
+  test("@ctrl/dom required from a test is the environment's instance (singleton shim)", () => {
+    const dom = require("@ctrl/dom");
+    const internal = require("@ctrl/dom/internal");
     expect(dom.Node).toBe(Node);
     expect(dom.currentWindowOrNull().document).toBe(document);
     expect(typeof internal.windowHooks).toBe("object");

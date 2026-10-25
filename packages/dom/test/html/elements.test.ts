@@ -25,7 +25,7 @@
  *   tables: https://html.spec.whatwg.org/#the-table-element
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { styleSheetHooks } from "../../src/html/resources.ts";
 
 let window: any;

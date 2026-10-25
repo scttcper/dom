@@ -50,7 +50,7 @@ import {
   BeforeUnloadEvent,
   type Document,
   type Window,
-} from "@rtd/dom";
+} from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 
 let window: Window;

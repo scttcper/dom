@@ -1,5 +1,5 @@
-// Internal API for sibling packages (@rtd/aria, @rtd/testing-library, @rtd/user-event,
-// @rtd/jest-dom, vitest-environment-rtd). Not for end users: no stability guarantees.
+// Internal API for sibling packages (@ctrl/dom/aria, @ctrl/dom/testing-library, @ctrl/dom/user-event,
+// @ctrl/dom/jest-dom, @ctrl/dom/vitest-environment). Not for end users: no stability guarantees.
 //
 // Everything here works on NodeImpl (see nodes/NodeImpl.ts). Prefer these over the public DOM
 // API in hot paths: they are monomorphic and allocation-free.
@@ -173,7 +173,7 @@ let memoResult: ComputedStyleOverride | null = null;
 
 /**
  * The user-replaced `getComputedStyle` of `node`'s window (`ownerDocument.defaultView`), bound
- * to that window, or null when it is @rtd/dom's own (the prototype method, or the bound copy
+ * to that window, or null when it is @ctrl/dom's own (the prototype method, or the bound copy
  * installGlobals put on a host global) or there is no window / no function.
  */
 export function getComputedStyleOverride(node: NodeImplType): ComputedStyleOverride | null {

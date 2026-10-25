@@ -8,22 +8,22 @@ parentheses), report `results/2026-10-23-all.md`. No test changed status between
 | preset | mode | passed | failed | skipped | wall | peak RSS |
 | --- | --- | --: | --: | --: | --: | --: |
 | smoke (6 files) | jsdom | 237 | 0 | 4 | 2.1s (2.0–4.1) | 248 MiB |
-| | rtd-dom | 233 | 4 | 4 | 1.6s (1.4–2.0) | 227 MiB |
-| | rtd-full | 233 | 4 | 4 | 1.8s (1.7–1.9) | 231 MiB |
+| | ctrl-dom | 233 | 4 | 4 | 1.6s (1.4–2.0) | 227 MiB |
+| | ctrl-dom-full | 233 | 4 | 4 | 1.8s (1.7–1.9) | 231 MiB |
 | interactions (24 files) | jsdom | 767 | 0 | 4 | 6.5s (6.0–7.5) | 277 MiB |
-| | rtd-dom | 763 | 4 | 4 | 4.8s (4.7–5.1) | 237 MiB |
-| | rtd-full | 763 | 4 | 4 | 4.9s (4.5–5.2) | 273 MiB |
+| | ctrl-dom | 763 | 4 | 4 | 4.8s (4.7–5.1) | 237 MiB |
+| | ctrl-dom-full | 763 | 4 | 4 | 4.9s (4.5–5.2) | 273 MiB |
 | all (47 files) | jsdom | 1134 | 0 | 9 | 11.3s (10.3–12.9) | 260 MiB |
-| | rtd-dom | 1128 | 6 | 9 | 9.1s (8.3–9.1) | 258 MiB |
-| | rtd-full | 1128 | 6 | 9 | 8.1s (7.8–8.4) | 242 MiB |
+| | ctrl-dom | 1128 | 6 | 9 | 9.1s (8.3–9.1) | 258 MiB |
+| | ctrl-dom-full | 1128 | 6 | 9 | 8.1s (7.8–8.4) | 242 MiB |
 
 The machine was shared with other heavy agents; RSS is `/usr/bin/time -l` max RSS and moves by
-tens of MiB run to run, so treat it as noise at this suite size. rtd-full fails the same
-tests as rtd-dom: none of the failures come from our Testing Library packages.
+tens of MiB run to run, so treat it as noise at this suite size. ctrl-dom-full fails the same
+tests as ctrl-dom: none of the failures come from our Testing Library packages.
 
 ## Clusters (by count)
 
-| # | cluster | owner | rtd-dom | rtd-full | repro |
+| # | cluster | owner | ctrl-dom | ctrl-dom-full | repro |
 | --: | --- | --- | --: | --: | --- |
 | 1 | `for…in` over `ValidityState` yields `_el`, not its WebIDL attributes | html-forms (convention: dom-core) | 4 | 4 | `repros/html-forms-validitystate-for-in.test.ts` |
 | 2 | `HTMLElement.prototype.inert` exists (jsdom 29 has none): the tests assume jsdom | html-elements (decision) | 2 | 2 | `repros/html-elements-inert-jsdom-parity.test.ts` |

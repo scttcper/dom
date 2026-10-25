@@ -21,8 +21,8 @@
  *                             https://html.spec.whatwg.org/#the-iframe-element:html-element-removing-steps
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
-import { implicitSubmission, $impl } from "@rtd/dom/internal";
+import { createWindow } from "@ctrl/dom";
+import { implicitSubmission, $impl } from "@ctrl/dom/internal";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let win: any;

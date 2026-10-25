@@ -1,40 +1,40 @@
 # Sentry downstream: `components-triage-x3` (2026-10-23)
 
-> **TRIAGE MODE (`--triage`)**: rtd modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.
+> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform "", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.
 
 - upstream: https://github.com/getsentry/sentry @ `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba` (2026-10-23T13:58:39Z) — fix(agents): Avoid repeated user turns during tool continuations (#128645)
 - pinned: `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba`
 - selection: `static/app/components/`
 - node v26.12.1, Jest workers 6 (same for every mode), runs per mode 3 (interleaved; timings are medians, counts from the last run), CI=true (upstream's CI code paths), no forced GC
 - upstream versions: jest@30.5.1, jsdom@30.1.1, react@19.3.0, react-dom@19.3.0, @swc/jest@0.2.39, @testing-library/react@16.3.2, @testing-library/dom@10.4.1, @testing-library/user-event@14.6.7, @testing-library/jest-dom@7.0.1, @sentry/jest-environment@8.1.0, @floating-ui/react-dom@2.1.9
-- rtd-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
-- rtd-nohacks is an **experiment**: rtd-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
+- ctrl-dom-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
+- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
 
 ## Per-mode results
 
 | mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |
 | jsdom | 6429 | 0 | 3 | 6432 | 653 | 0 | 0 | 43.7s | 280.0s | 9556 MiB | 2036 MiB | 8 ms, 12 ms | 653/653 | RTL: stock; our packages changed during the run |
-| rtd-dom | 6357 | 72 | 3 | 6432 | 653 | 0 | 1 | 44.5s | 269.8s | 9745 MiB | 2313 MiB | 6 ms, 9 ms | 653/653 | 1 React; RTL: stock; our packages changed during the run |
-| rtd-full | 6289 | 140 | 3 | 6432 | 653 | 0 | 1 | 46.3s | 258.2s | 9260 MiB | 1978 MiB | 6 ms, 9 ms | 653/653 | 1 React; our packages changed during the run |
-| rtd-nohacks | 0 | 0 | 0 | 0 | 653 | 653 | 1 | 49.8s | 252.2s | 8538 MiB | 2002 MiB | NaN ms, NaN ms | 0/653 | **0 React ids** |
+| ctrl-dom | 6357 | 72 | 3 | 6432 | 653 | 0 | 1 | 44.5s | 269.8s | 9745 MiB | 2313 MiB | 6 ms, 9 ms | 653/653 | 1 React; RTL: stock; our packages changed during the run |
+| ctrl-dom-full | 6289 | 140 | 3 | 6432 | 653 | 0 | 1 | 46.3s | 258.2s | 9260 MiB | 1978 MiB | 6 ms, 9 ms | 653/653 | 1 React; our packages changed during the run |
+| ctrl-dom-nohacks | 0 | 0 | 0 | 0 | 653 | 653 | 1 | 49.8s | 252.2s | 8538 MiB | 2002 MiB | NaN ms, NaN ms | 0/653 | **0 React ids** |
 
 <details><summary>individual runs</summary>
 
 | mode | run | wall | CPU | peak tree RSS |
 | --- | --: | --: | --: | --: |
 | jsdom | 1 | 43.7s | 280.0s | 9556 MiB |
-| rtd-dom | 1 | 42.1s | 252.0s | 9837 MiB |
-| rtd-full | 1 | 46.3s | 254.4s | 9341 MiB |
-| rtd-nohacks | 1 | 49.8s | 252.2s | 8665 MiB |
+| ctrl-dom | 1 | 42.1s | 252.0s | 9837 MiB |
+| ctrl-dom-full | 1 | 46.3s | 254.4s | 9341 MiB |
+| ctrl-dom-nohacks | 1 | 49.8s | 252.2s | 8665 MiB |
 | jsdom | 2 | 40.8s | 268.4s | 9997 MiB |
-| rtd-dom | 2 | 44.5s | 269.8s | 9745 MiB |
-| rtd-full | 2 | 45.3s | 258.2s | 9260 MiB |
-| rtd-nohacks | 2 | 65.9s | 289.5s | 8538 MiB |
+| ctrl-dom | 2 | 44.5s | 269.8s | 9745 MiB |
+| ctrl-dom-full | 2 | 45.3s | 258.2s | 9260 MiB |
+| ctrl-dom-nohacks | 2 | 65.9s | 289.5s | 8538 MiB |
 | jsdom | 3 | 51.4s | 290.0s | 9417 MiB |
-| rtd-dom | 3 | 44.7s | 274.3s | 9049 MiB |
-| rtd-full | 3 | 48.4s | 269.0s | 9036 MiB |
-| rtd-nohacks | 3 | 1.6s | 4.0s | 659 MiB |
+| ctrl-dom | 3 | 44.7s | 274.3s | 9049 MiB |
+| ctrl-dom-full | 3 | 48.4s | 269.0s | 9036 MiB |
+| ctrl-dom-nohacks | 3 | 1.6s | 4.0s | 659 MiB |
 
 </details>
 
@@ -45,14 +45,14 @@ Sampled after each test file's environment teardown in every worker (no forced G
 | mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: |
 | jsdom | 6 | 120 | 203 MiB | 796 MiB | 1.42 MiB | 4.04 MiB | 1383 MiB | 1889 MiB |
-| rtd-dom | 6 | 116.5 | 138 MiB | 773 MiB | 1.42 MiB | 4.46 MiB | 1372 MiB | 2180 MiB |
-| rtd-full | 6 | 125 | 144 MiB | 692 MiB | 4.17 MiB | 6.06 MiB | 1557 MiB | 1951 MiB |
+| ctrl-dom | 6 | 116.5 | 138 MiB | 773 MiB | 1.42 MiB | 4.46 MiB | 1372 MiB | 2180 MiB |
+| ctrl-dom-full | 6 | 125 | 144 MiB | 692 MiB | 4.17 MiB | 6.06 MiB | 1557 MiB | 1951 MiB |
 
 ## jsdom
 
 No failing tests.
 
-## rtd-dom
+## ctrl-dom
 
 Compared with jsdom: **72 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 
@@ -164,7 +164,7 @@ Compared with jsdom: **72 pass on jsdom but fail here**, 0 missing (e.g. suite e
 | 1 | Unable to find an element with the text: progress N%. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text mat | app/components/events | `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx :: LogFileViewer renders only the final write when given carriage-return progress updates` |
 | 1 | Unable to find an element with the text: Failed to download attachment.. This could be because the text is broken up by multiple elements. In this case, you can provide a function  | app/components/events | `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx :: LogFileViewer renders an error when the attachment cannot be downloaded` |
 
-## rtd-full
+## ctrl-dom-full
 
 Compared with jsdom: **140 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
 
@@ -386,7 +386,7 @@ Compared with jsdom: **140 pass on jsdom but fail here**, 0 missing (e.g. suite 
 | 1 | TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Authorize Discord" | app/components/pipeline | `static/app/components/pipeline/integrationDiscord/index.spec.tsx :: DiscordOAuthLoginStep shows busy state when isAdvancing is true` |
 | 1 | TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "TypeError: nested failure" | app/components/events | `static/app/components/events/interfaces/crashContent/exception/relatedExceptions.spec.tsx :: ExceptionGroupContext renders colored text without escape codes when given ANSI exception values` |
 
-## rtd-nohacks
+## ctrl-dom-nohacks
 
 ### Suite errors (file failed outside a test)
 

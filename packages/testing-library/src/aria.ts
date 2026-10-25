@@ -1,11 +1,11 @@
-// Accessibility backend used by ByRole, role helpers and suggestions: @rtd/aria's
+// Accessibility backend used by ByRole, role helpers and suggestions: @ctrl/dom/aria's
 // NodeImpl-level API (roles via integer tag switches, accessible names and the
 // accessibility-tree exclusion check cached per node, stamped with the document version).
 // It reproduces the exact libraries @testing-library/dom@10.4.2 uses (aria-query 5.3.0
 // element roles, dom-accessibility-api 0.5.16 names/descriptions).
 
-import { getComputedStyleOverride, type NodeImpl } from "@rtd/dom/internal";
-import { roleSupportsProp, type GetComputedStyle } from "@rtd/aria";
+import { getComputedStyleOverride, type NodeImpl } from "@ctrl/dom/internal";
+import { roleSupportsProp, type GetComputedStyle } from "@ctrl/dom/aria";
 import {
   implicitRole as ariaImplicitRole,
   tlRoleMatches,
@@ -16,7 +16,7 @@ import {
   isInaccessibleWithStyle,
   isDisplayNone,
   isVisibilityHidden,
-} from "@rtd/aria/internal";
+} from "@ctrl/dom/aria/internal";
 
 const PSEUDO_OPTIONS = { computedStyleSupportsPseudoElements: true };
 
@@ -35,7 +35,7 @@ function nameOptions(computedStyleSupportsPseudoElements: boolean, gcs: GetCompu
   // dom-accessibility-api defaults getComputedStyle to `window.getComputedStyle.bind(window)`.
   if (gcs !== null) return { computedStyleSupportsPseudoElements, getComputedStyle: gcs };
   // `undefined` ≡ `{computedStyleSupportsPseudoElements: false}` (the library default) and
-  // lets @rtd/aria serve the name from its per-node cache.
+  // lets @ctrl/dom/aria serve the name from its per-node cache.
   return computedStyleSupportsPseudoElements ? PSEUDO_OPTIONS : undefined;
 }
 

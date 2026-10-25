@@ -8,7 +8,7 @@ export function recordLoads(): Plugin {
     name: "record-loads",
     enforce: "pre",
     transform(_code, id) {
-      if (process.env.RTD_LOAD_LOG) appendFileSync(process.env.RTD_LOAD_LOG, `${process.pid}\tvite\t${id}\n`);
+      if (process.env.CTRL_DOM_LOAD_LOG) appendFileSync(process.env.CTRL_DOM_LOAD_LOG, `${process.pid}\tvite\t${id}\n`);
       return null;
     },
   };

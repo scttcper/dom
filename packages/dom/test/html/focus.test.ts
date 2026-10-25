@@ -17,7 +17,7 @@
  * Some cases port web-platform-tests html/interaction/focus/ (links inline).
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import { isFocusable, sequentialFocusOrder, matchesFocus, matchesFocusWithin } from "../../src/html/focus.ts";
 import { $impl } from "../../src/keys.ts";
 

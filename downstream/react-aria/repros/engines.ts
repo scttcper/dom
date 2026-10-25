@@ -33,29 +33,29 @@ export function jestConfig(testEnvironmentOptions: Record<string, unknown> = {})
   };
 }
 
-export const environments: Record<"jsdom" | "rtd", () => Promise<AnyEnvironment | null>> = {
+export const environments: Record<"jsdom" | "ctrl-dom", () => Promise<AnyEnvironment | null>> = {
   async jsdom() {
     if (!hasCheckout) return null;
     const { TestEnvironment } = requireFromCheckout("jest-environment-jsdom");
     const { config, context } = jestConfig();
     return new TestEnvironment(config, context);
   },
-  async rtd() {
+  async "ctrl-dom"() {
     const { TestEnvironment } = await import("../../../packages/jest-environment/src/index.ts");
     const { config, context } = jestConfig();
     return new TestEnvironment(config as never, context as never) as unknown as AnyEnvironment;
   },
 };
 
-export const windows: Record<"jsdom" | "rtd", () => any> = {
+export const windows: Record<"jsdom" | "ctrl-dom", () => any> = {
   jsdom: () => new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/", pretendToBeVisual: true }).window,
-  rtd: () => createWindow({ url: "http://localhost/" }),
+  "ctrl-dom": () => createWindow({ url: "http://localhost/" }),
 };
 
 export { installGlobals };
 
 /** Run a Jest fixture (repros/fixtures) with the upstream checkout's Jest under one environment. */
-export function runJestFixture(fixture: string, engine: "jsdom" | "rtd", extraArgs: string[] = []): { failures: string[]; message: string } | null {
+export function runJestFixture(fixture: string, engine: "jsdom" | "ctrl-dom", extraArgs: string[] = []): { failures: string[]; message: string } | null {
   if (!hasCheckout) return null;
   const { spawnSync } = requireFromReact("node:child_process") as typeof import("node:child_process");
   const environment = engine === "jsdom" ? "jsdom" : fileURLToPath(new URL("../jest-environment.mjs", import.meta.url));

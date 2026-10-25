@@ -6,7 +6,7 @@
 // fake-timer detection only looks for a global `jest` (vitest users do the same shim).
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { render, waitForElementToBeRemoved, screen, waitFor } from "@rtd/react";
+import { render, waitForElementToBeRemoved, screen, waitFor } from "@ctrl/dom/react";
 
 const g = globalThis as any;
 beforeAll(() => {

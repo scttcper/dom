@@ -10,13 +10,13 @@
 // These keep jest-dom's own (non-spec) definitions on purpose — e.g. toBeDisabled treats a
 // disabled custom element or a disabled <button> as disabling its descendants — because the
 // pass/fail result is the contract. They only read attributes and walk parents, which is
-// already cheap on @rtd/dom.
+// already cheap on @ctrl/dom.
 
-import { roles } from "@rtd/aria";
+import { roles } from "@ctrl/dom/aria";
 import { checkHtmlElement, getMessage, getTag, toSentence, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
 
 // Roles whose aria-query definition has an `aria-checked` prop, in `roles.keys()` order —
-// upstream's `roles.keys().filter(roleSupportsChecked)`, over @rtd/aria's aria-query data:
+// upstream's `roles.keys().filter(roleSupportsChecked)`, over @ctrl/dom/aria's aria-query data:
 // checkbox, menuitemcheckbox, menuitemradio, option, radio, switch, treeitem.
 const ariaRoles = roles as unknown as { keys(): string[]; get(role: string): { props: Record<string, unknown> } | undefined };
 const ROLES_SUPPORTING_CHECKED: string[] = ariaRoles.keys().filter((role) => ariaRoles.get(role)?.props["aria-checked"] !== undefined);

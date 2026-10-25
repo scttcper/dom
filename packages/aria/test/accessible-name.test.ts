@@ -8,11 +8,11 @@
  *   https://w3c.github.io/aria/#namefromprohibited
  *
  * Original: https://github.com/eps1lon/dom-accessibility-api/blob/main/sources/__tests__/accessible-name.js
- * (MIT). Assertions are kept verbatim; differences are noted inline. Runs on @rtd/dom.
+ * (MIT). Assertions are kept verbatim; differences are noted inline. Runs on @ctrl/dom.
  */
 import { afterEach, beforeAll, describe, expect, it, test, vi } from "vitest";
-import { computeAccessibleName } from "@rtd/aria";
-import type { Element } from "@rtd/dom";
+import { computeAccessibleName } from "@ctrl/dom/aria";
+import type { Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
 
 const { document, renderIntoDocument, cleanup } = makeDocument();
@@ -547,7 +547,7 @@ describe("prohibited naming — https://w3c.github.io/aria/#namefromprohibited",
 	);
 });
 
-// Intentional difference: with no `getComputedStyle` option, @rtd/aria reads styles through
+// Intentional difference: with no `getComputedStyle` option, @ctrl/dom/aria reads styles through
 // the css fast path and never calls window.getComputedStyle (upstream counts its calls). The
 // injected-implementation behavior is kept.
 describe("options.getComputedStyle — https://w3c.github.io/accname/#step2A", () => {
@@ -592,7 +592,7 @@ describe("options.getComputedStyle — https://w3c.github.io/accname/#step2A", (
 });
 
 // Intentional difference: upstream checks that JSDOM logs "Not implemented" errors for
-// pseudo-element styles. @rtd/aria never logs; `true` only enables ::before/::after content.
+// pseudo-element styles. @ctrl/dom/aria never logs; `true` only enables ::before/::after content.
 describe("options.computedStyleSupportsPseudoElements — https://w3c.github.io/accname/#step2F.ii", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();

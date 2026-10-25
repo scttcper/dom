@@ -30,8 +30,8 @@
  * semantics, delegatesFocus), so they assert the spec directly.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
-import { $impl } from "@rtd/dom/internal";
+import { createWindow } from "@ctrl/dom";
+import { $impl } from "@ctrl/dom/internal";
 import { sequentialFocusOrder } from "../../src/html/focus.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

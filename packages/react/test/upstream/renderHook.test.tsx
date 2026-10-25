@@ -3,7 +3,7 @@
 // React 18-gated tests are dropped.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import React, { useEffect } from "react";
-import { configure, renderHook, type Config } from "@rtd/react/pure";
+import { configure, renderHook, type Config } from "@ctrl/dom/react/pure";
 
 test("gives committed result", () => {
   const { result } = renderHook(() => {

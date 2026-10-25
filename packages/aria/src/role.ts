@@ -24,7 +24,7 @@
 //   https://w3c.github.io/aria/#document-handling_author-errors_roles
 //   https://w3c.github.io/aria/#conflict_resolution_presentation_none
 
-import { ELEMENT_NODE, HTML_NS, T, attr, tagId, type NodeImpl } from "@rtd/dom/internal";
+import { ELEMENT_NODE, HTML_NS, T, attr, tagId, type NodeImpl } from "@ctrl/dom/internal";
 import { inputType, selectSize } from "./forms.ts";
 
 /** Tag id by local name for any namespace (type selectors / `localName` checks are namespace-agnostic). */

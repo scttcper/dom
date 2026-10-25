@@ -14,7 +14,7 @@
  * fill iframe documents (e.g. Floating UI's iframe focus tests).
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 
 let document: Document;
 

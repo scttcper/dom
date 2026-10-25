@@ -1,7 +1,7 @@
 // Port of @testing-library/dom src/suggestions.js (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/suggestions.js
 
-import { attr } from "@rtd/dom/internal";
+import { attr } from "@ctrl/dom/internal";
 import { getDefaultNormalizer } from "./matches.ts";
 import { getNodeTextImpl } from "./get-node-text.ts";
 import { getConfig } from "./config.ts";

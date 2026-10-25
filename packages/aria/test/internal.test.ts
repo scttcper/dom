@@ -1,6 +1,6 @@
 /**
- * @rtd/aria internals: version-stamped caches and the NodeImpl-level role filter used by
- * @rtd/testing-library's `*ByRole`.
+ * @ctrl/dom/aria internals: version-stamped caches and the NodeImpl-level role filter used by
+ * @ctrl/dom/testing-library's `*ByRole`.
  *
  * Specs:
  *   https://w3c.github.io/accname/#computation-steps (names must track DOM + form state)
@@ -9,11 +9,11 @@
  *   https://html.spec.whatwg.org/multipage/forms.html#dom-lfe-labels (label association)
  */
 import { describe, expect, test } from "vitest";
-import { computeAccessibleName, getImplicitRole, isInaccessible, roleSupportsProp, superClassRoles, getRoles } from "@rtd/aria";
-import { tlRoleMatches, tlRole } from "@rtd/aria/internal";
-import type { Element } from "@rtd/dom";
+import { computeAccessibleName, getImplicitRole, isInaccessible, roleSupportsProp, superClassRoles, getRoles } from "@ctrl/dom/aria";
+import { tlRoleMatches, tlRole } from "@ctrl/dom/aria/internal";
+import type { Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 const { document, renderIntoDocument } = makeDocument();
 const $ = (sel: string) => document.querySelector(sel) as Element;

@@ -12,7 +12,7 @@ import type { NodeImpl } from "./NodeImpl.ts";
  * beyond what the DOM tree already holds.
  */
 export class NodeCache {
-  // --- @rtd/aria ---
+  // --- @ctrl/dom/aria ---
   /** `Document._version` at which `role` was computed. */
   roleVersion: number;
   /** Computed (explicit-or-implicit) role, "" for none. */
@@ -30,7 +30,7 @@ export class NodeCache {
   /** Opaque computed-style record owned by src/css. */
   style: object | null;
 
-  // --- @rtd/aria (appended by the aria agent) ---
+  // --- @ctrl/dom/aria (appended by the aria agent) ---
   /** `Document._styleVersion` at which `name` was computed (paired with `nameVersion`). */
   ariaNameStyleVersion: number;
   /** `Document._version` at which `ariaHiddenBits` was computed. */

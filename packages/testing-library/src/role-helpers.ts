@@ -5,7 +5,7 @@
 // visibility checks (`isInaccessible`, `isSubtreeInaccessible`) and ARIA state readers are
 // testing-library's own semantics and are ported here over NodeImpl.
 
-import { attr, ELEMENT_NODE, HTML_NS, T, type NodeImpl } from "@rtd/dom/internal";
+import { attr, ELEMENT_NODE, HTML_NS, T, type NodeImpl } from "@ctrl/dom/internal";
 import { aria, isVisibilityHidden, styleOverride } from "./aria.ts";
 import { prettyDOM } from "./pretty-dom.ts";
 import { getConfig } from "./config.ts";
@@ -30,7 +30,7 @@ export function isSubtreeInaccessibleImpl(element: NodeImpl): boolean {
  * Implements aria-hidden semantics (i.e. parent overrides child)
  * Ignores "Child Presentational: True" characteristics
  *
- * The default subtree check is memoized per element by @rtd/aria (stamped with the document
+ * The default subtree check is memoized per element by @ctrl/dom/aria (stamped with the document
  * version), which covers upstream's per-query `subtreeIsInaccessibleCache` and more.
  */
 export function isInaccessibleImpl(element: NodeImpl): boolean {

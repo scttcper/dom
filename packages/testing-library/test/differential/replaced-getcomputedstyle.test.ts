@@ -8,7 +8,7 @@
  * dom-accessibility-api@0.5.16's name computation defaults to
  * `window.getComputedStyle.bind(window)`. So with the replacement in place, stylesheet rules
  * hide nothing from ByRole, getRoles, isInaccessible, suggestions or accessible names, while
- * inline styles, `hidden` and `aria-hidden` still do. @rtd/testing-library must agree.
+ * inline styles, `hidden` and `aria-hidden` still do. @ctrl/dom/testing-library must agree.
  *
  * Oracle: stock Testing Library on jsdom with the same replacement on the jsdom window (role
  * helpers) and on the global window (dom-accessibility-api's default). Spec of record: the
@@ -68,7 +68,7 @@ function jsdomContainer(html: string): any {
   return dom.window.document.getElementById("root");
 }
 
-function rtdContainer(html: string): any {
+function ctrlDomContainer(html: string): any {
   document.head.innerHTML = STYLES;
   document.body.innerHTML = `<div id="root">${html}</div>`;
   return document.getElementById("root");
@@ -103,7 +103,7 @@ function differential(scenarios: Scenario[]): void {
   for (const s of scenarios) {
     test(s.name, () => {
       const expected = outcome(stock, jsdomContainer(s.html), s.run);
-      const actual = outcome(ours as unknown as Lib, rtdContainer(s.html), s.run);
+      const actual = outcome(ours as unknown as Lib, ctrlDomContainer(s.html), s.run);
       expect(actual).toEqual(expected);
     });
   }
@@ -129,9 +129,9 @@ describe("accessible names read window.getComputedStyle — https://w3c.github.i
   ]);
 });
 
-describe("Vitest spies on getComputedStyle (rtd only)", () => {
+describe("Vitest spies on getComputedStyle (ctrl-dom only)", () => {
   test("a spy that calls through leaves results unchanged; mockImplementation is honored", () => {
-    const c = rtdContainer(TABS);
+    const c = ctrlDomContainer(TABS);
     const names = () => ours.queryAllByRole(c, "tab").map((t: any) => t.textContent);
     const real = names();
     expect(real).toEqual(["Details"]);

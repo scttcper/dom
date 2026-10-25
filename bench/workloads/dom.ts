@@ -444,7 +444,7 @@ export const domWorkloads: Workload[] = [
           return { document: w.document, close: () => void w.happyDOM.close() };
         };
       } else {
-        const { createWindow, currentWindowOrNull, setCurrentWindow } = await import("@rtd/dom");
+        const { createWindow, currentWindowOrNull, setCurrentWindow } = await import("@ctrl/dom");
         open = () => {
           // Keep the environment's window current (createWindow activates the new one).
           const previous = currentWindowOrNull();

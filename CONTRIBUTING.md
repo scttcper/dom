@@ -15,7 +15,7 @@ pnpm bench                # vs jsdom / happy-dom
 pnpm bench:suite          # 100-file Vitest suite under each environment
 pnpm bench:compare --base ../base --head .   # regression check between two clean checkouts
 pnpm compare --readme     # the README's performance table (comparison/)
-pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom / rtd-full
+pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / ctrl-dom / ctrl-dom-full
 node downstream/track.ts  # compare the latest downstream runs with downstream/baseline.json
 pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
 pnpm docs:spec            # regenerate docs/spec-coverage.md
@@ -47,10 +47,12 @@ What each import is and where its source lives:
 | `@ctrl/dom-jest-environment` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
 | `@ctrl/sentry-tests` | [packages/sentry-tests](packages/sentry-tests) | @sentry/jest-environment | test runs in Sentry for Vitest and Jest, any DOM: traces, failing and flaky tests |
 
-Inside the repository each directory under `packages/` is a workspace package named after it
-(`packages/react` is `@rtd/react`, the environments are `vitest-environment-rtd` and
-`jest-environment-rtd`), and code imports those names. `pnpm build` renames them to the
-published ones, and no `@rtd/` name ships.
+Inside the repository, code imports the published names. The root `package.json` is `@ctrl/dom`:
+its `exports` send each subpath to a member's sources (`@ctrl/dom/react` → `packages/react/src`),
+and every package that imports one depends on it with `"@ctrl/dom": "workspace:*"`. @ctrl/dom's
+members have no name of their own; `packages/jest-environment` and `packages/sentry-tests` are
+`@ctrl/dom-jest-environment` and `@ctrl/sentry-tests`, published as they are. A new subpath goes
+in the member's `exports` and the root's.
 
 ## CI and releases
 

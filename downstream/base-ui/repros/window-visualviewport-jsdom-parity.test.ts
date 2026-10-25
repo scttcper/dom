@@ -1,9 +1,9 @@
 /**
  * Downstream repro (Base UI: getViewportRect "falls back to the document element without a
- * visual viewport" + 3 NavigationMenu `prop: side` tests; 4 failures in both rtd modes).
+ * visual viewport" + 3 NavigationMenu `prop: side` tests; 4 failures in both ctrl-dom modes).
  *
  * jsdom has no `window.visualViewport`; Floating UI then uses the document element's client
- * box (0x0 without layout) for collision detection. @rtd/dom exposes a VisualViewport sized
+ * box (0x0 without layout) for collision detection. @ctrl/dom exposes a VisualViewport sized
  * 1024x768, so with zero-sized triggers/popups Floating UI flips sides differently and the
  * jsdom-only assertions (`expect(window.visualViewport).toBe(undefined)`) fail. This is a jsdom
  * test assumption about jsdom rather than a spec bug (the same finding as ~/gh/vibedom).

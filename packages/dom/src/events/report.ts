@@ -15,7 +15,7 @@
 //    listener on the window that calls preventDefault() and re-emits the error as
 //    `process.emit("uncaughtException", error)` when the test registered no "error" listener
 //    of its own; that listener works unchanged against our windows, and
-//    vitest-environment-rtd should do the same (or install a handler here that does it) so
+//    @ctrl/dom/vitest-environment should do the same (or install a handler here that does it) so
 //    uncaught listener errors fail tests exactly like under jsdom.
 // 4. Re-entrancy: an exception thrown while reporting (e.g. by an "error" listener) goes
 //    straight to the uncaught-exception handler instead of dispatching another ErrorEvent

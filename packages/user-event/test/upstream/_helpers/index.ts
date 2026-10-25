@@ -18,19 +18,19 @@ export function isJsdomEnv() {
 
 /**
  * Divergence from upstream: upstream's suite runs on jsdom 20, we run on jsdom 30 (and
- * @rtd/dom). Newer jsdom fixed several quirks the upstream assertions branch on via
+ * @ctrl/dom). Newer jsdom fixed several quirks the upstream assertions branch on via
  * `isJsdomEnv()` (inherited computed styles, Selection updates on focus, async `select` events,
  * `isContentEditable`). Tests asserting those quirks use this instead; on jsdom >= 21 they take
- * the browser branch. Verified by running the suite against stock user-event (RTD_UE_IMPL=stock):
+ * the browser branch. Verified by running the suite against stock user-event (CTRL_DOM_UE_IMPL=stock):
  * it fails the same assertions without this.
  */
 /**
- * Divergence: @rtd/dom is a third environment besides jsdom and the browser. Where the upstream
- * assertions branch on the environment, @rtd/dom takes the branch matching its documented
+ * Divergence: @ctrl/dom is a third environment besides jsdom and the browser. Where the upstream
+ * assertions branch on the environment, @ctrl/dom takes the branch matching its documented
  * behavior (noted at each use).
  */
-export function isRtdEnv() {
-  return window.navigator.userAgent.includes(' rtd/')
+export function isCtrlDomEnv() {
+  return window.navigator.userAgent.includes(' ctrl-dom/')
 }
 
 export function isLegacyJsdomEnv() {

@@ -14,7 +14,7 @@
  */
 import { inspect } from "node:util";
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, MutationObserver, Node, type Document, type Element } from "@rtd/dom";
+import { createWindow, MutationObserver, Node, type Document, type Element } from "@ctrl/dom";
 
 let document: Document;
 const XHTML = "http://www.w3.org/1999/xhtml";

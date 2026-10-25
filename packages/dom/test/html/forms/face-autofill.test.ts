@@ -15,7 +15,7 @@
  * `autocomplete` as a plain string), so these assert the spec directly.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let w: any;

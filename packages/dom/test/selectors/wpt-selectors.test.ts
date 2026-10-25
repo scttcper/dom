@@ -17,7 +17,7 @@
  * Original tests: https://github.com/web-platform-tests/wpt/tree/master/css/selectors and
  * https://github.com/web-platform-tests/wpt/tree/master/html/semantics/selectors (3-clause BSD).
  * Not vendored: tests that need layout (i18n :lang via offsetWidth), WebDriver input
- * (focus-visible-*, :active/:hover, :user-valid — they belong with @rtd/user-event's testdriver),
+ * (focus-visible-*, :active/:hover, :user-valid — they belong with @ctrl/dom/user-event's testdriver),
  * media playback, fullscreen, and markup iframes. The older subset in ./wpt-runner.test.ts stays.
  */
 import { describe } from "vitest";
@@ -107,7 +107,7 @@ describe("Selectors 4 \u00a714 :has() and dynamic style invalidation through get
     defineWPT("css/selectors/invalidation/not-pseudo-containing-complex-in-has.html");
     defineWPT("css/selectors/invalidation/not-pseudo-containing-sibling-relationship-in-has.html");
     defineWPT("css/selectors/invalidation/nth-child-whole-subtree.html");
-    defineWPT("css/selectors/invalidation/open-pseudo-class-in-has.html", "needs WebDriver input via test_driver (run with @rtd/user-event's testdriver in packages/user-event)");
+    defineWPT("css/selectors/invalidation/open-pseudo-class-in-has.html", "needs WebDriver input via test_driver (run with @ctrl/dom/user-event's testdriver in packages/user-event)");
     defineWPT("css/selectors/invalidation/placeholder-shown.html");
     defineWPT("css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html");
     defineWPT("css/selectors/invalidation/selectorText-dynamic-001.html");
@@ -133,7 +133,7 @@ describe("Selectors 4 (https://drafts.csswg.org/selectors-4/)", () => {
     defineWPT("css/selectors/focus-visible-018-2.html");
     defineWPT("css/selectors/focus-visible-020.html");
     defineWPT("css/selectors/focus-visible-023.html");
-    defineWPT("css/selectors/focus-visible-026.html", "needs WebDriver input via test_driver (run with @rtd/user-event's testdriver in packages/user-event)");
+    defineWPT("css/selectors/focus-visible-026.html", "needs WebDriver input via test_driver (run with @ctrl/dom/user-event's testdriver in packages/user-event)");
     defineWPT("css/selectors/focus-visible-script-focus-001.html");
     defineWPT("css/selectors/focus-within-009.html");
     defineWPT("css/selectors/has-specificity.html");
@@ -147,11 +147,11 @@ describe("Selectors 4 (https://drafts.csswg.org/selectors-4/)", () => {
     defineWPT("css/selectors/is-where-error-recovery.html");
     defineWPT("css/selectors/is-where-pseudo-classes.html");
     defineWPT("css/selectors/is-where-shadow.html", "::slotted() rules are not applied by the cascade");
-    defineWPT("css/selectors/modal-pseudo-class.html", "needs WebDriver input via test_driver (run with @rtd/user-event's testdriver in packages/user-event)");
+    defineWPT("css/selectors/modal-pseudo-class.html", "needs WebDriver input via test_driver (run with @ctrl/dom/user-event's testdriver in packages/user-event)");
     defineWPT("css/selectors/not-specificity.html");
     defineWPT("css/selectors/nth-last-child-invalid.html");
     defineWPT("css/selectors/nth-of-type-namespace.html");
-    defineWPT("css/selectors/open-pseudo.html", "needs WebDriver input via test_driver (run with @rtd/user-event's testdriver in packages/user-event)");
+    defineWPT("css/selectors/open-pseudo.html", "needs WebDriver input via test_driver (run with @ctrl/dom/user-event's testdriver in packages/user-event)");
     defineWPT("css/selectors/placeholder-shown.html");
     defineWPT("css/selectors/quirks-mode-import.html");
     defineWPT("css/selectors/selector-after-font-family.html");

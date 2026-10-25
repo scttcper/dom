@@ -2,7 +2,7 @@
  * The fast DOM printer in src/pretty-dom.ts must produce byte-identical output to upstream's
  * `prettyFormat.format(dom, {plugins: [DOMElementFilter(filterNode), DOMCollection], ...})`
  * (https://github.com/testing-library/dom-testing-library/blob/main/src/pretty-dom.js). This
- * runs both on the same @rtd/dom nodes over many fixtures and option combinations.
+ * runs both on the same @ctrl/dom nodes over many fixtures and option combinations.
  */
 
 import { describe, expect, test } from "vitest";

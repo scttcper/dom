@@ -1,5 +1,5 @@
 // Shared fixtures for the events tests.
-import { createWindow, type Document, type Window } from "@rtd/dom";
+import { createWindow, type Document, type Window } from "@ctrl/dom";
 
 export interface Fixture {
   window: Window;

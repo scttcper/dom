@@ -8,7 +8,7 @@
  * Two mechanisms collide:
  *   - collections/indexed.ts installs indexed accessors `0..n-1` lazily on the collection
  *     PROTOTYPE and remembers the bound in `table.count` (grows on demand, never shrinks);
- *   - window/isolation.ts (jest-environment-rtd since cf0a3f9: captureInterfaceBaseline() in the
+ *   - window/isolation.ts (@ctrl/dom-jest-environment since cf0a3f9: captureInterfaceBaseline() in the
  *     constructor, restoreInterfaces() at teardown) deletes every prototype key added after the
  *     baseline — including those index accessors. `table.count` still says they exist, so they
  *     are never re-added: indexed access on HTMLCollection is broken for the rest of the worker.
@@ -23,8 +23,8 @@ import { differential } from "./engines.ts";
 import { captureInterfaceBaseline, restoreInterfaces } from "../../../packages/dom/src/internal.ts";
 
 /** One Jest test file: fresh window, a few children, then the environment's teardown. */
-function testFile(make: () => any, engine: "jsdom" | "rtd"): string[] {
-  if (engine === "rtd") captureInterfaceBaseline(); // RtdEnvironment constructor
+function testFile(make: () => any, engine: "jsdom" | "ctrl-dom"): string[] {
+  if (engine === "ctrl-dom") captureInterfaceBaseline(); // CtrlDomEnvironment constructor
   const window = make();
   const div = window.document.createElement("div");
   // More children than the initial index-getter bound (32), so the table grows after the baseline.
@@ -32,7 +32,7 @@ function testFile(make: () => any, engine: "jsdom" | "rtd"): string[] {
   window.document.body.append(div);
   const seen = [div.children[0]?.textContent, div.children[39]?.textContent, Array.from(div.children).length === 40 && Array.from(div.children).every(Boolean) ? "ok" : "holes"];
   window.close();
-  if (engine === "rtd") restoreInterfaces(); // RtdEnvironment teardown
+  if (engine === "ctrl-dom") restoreInterfaces(); // CtrlDomEnvironment teardown
   return seen;
 }
 

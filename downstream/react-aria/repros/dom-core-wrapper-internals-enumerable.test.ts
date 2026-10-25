@@ -5,7 +5,7 @@
  * read only property 'type' | 'props' | 'cellProps' | 'style' of object '#<Object>'", thrown
  * while Jest formats a failed `expect(document.activeElement).toBe(cell)` / `toEqual` diff).
  *
- * @rtd/dom wrappers keep their internals as enumerable own string-keyed properties (`_impl`,
+ * @ctrl/dom wrappers keep their internals as enumerable own string-keyed properties (`_impl`,
  * `_listeners`, `_childNodes`, ... on nodes; `_s`, `_view`, ... on events). Anything that walks
  * own enumerable keys — JSON.stringify, Jest's equality/diff/pretty-format, structured logging —
  * walks into NodeImpl records (cyclic: impl.node -> wrapper) and React's frozen element objects
@@ -18,7 +18,7 @@
 import { describe, expect, test } from "vitest";
 import { windows } from "./engines.ts";
 
-describe.each(["jsdom", "rtd"] as const)("%s", (engine) => {
+describe.each(["jsdom", "ctrl-dom"] as const)("%s", (engine) => {
   test("a connected element has no own enumerable properties", () => {
     const { document } = windows[engine]();
     const button = document.createElement("button");

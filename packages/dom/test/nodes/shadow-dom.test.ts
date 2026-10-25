@@ -12,8 +12,8 @@
  * HTML Standard: assignedNodes()/assign() — https://html.spec.whatwg.org/#the-slot-element
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, Event, type Document, type Element } from "@rtd/dom";
-import { assignedNodes, assignManually } from "@rtd/dom/internal";
+import { createWindow, Event, type Document, type Element } from "@ctrl/dom";
+import { assignedNodes, assignManually } from "@ctrl/dom/internal";
 import { $focused, $impl } from "../../src/keys.ts";
 
 let document: Document;

@@ -9,7 +9,7 @@
  * `request.url === route`. With cross-fetch (Sentry's jsdom baseline) a relative URL stays
  * relative and matches; with native (undici) Request the URL is resolved to
  * "http://localhost/..." and the route never matches, so the component gets the default empty
- * response. @rtd/dom's window exposes the host's fetch/Request/Response/Headers
+ * response. @ctrl/dom's window exposes the host's fetch/Request/Response/Headers
  * (window/Window.ts HOST_DELEGATES), jsdom's window does not.
  *
  * Not a spec bug (browsers have fetch); the owner decides between jsdom parity under Jest

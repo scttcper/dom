@@ -1,10 +1,10 @@
-// Minimal testharness.js stand-in for running Web Platform Tests .html files against @rtd/dom
+// Minimal testharness.js stand-in for running Web Platform Tests .html files against @ctrl/dom
 // inside vitest. Inline scripts are evaluated (test-only) with the window's properties in
 // scope. Implements the subset of https://web-platform-tests.org/writing-tests/testharness-api.html
 // the ported css/cssom files use.
 
-import { createWindow } from "@rtd/dom";
-import { setComputedColorMode } from "@rtd/dom/internal";
+import { createWindow } from "@ctrl/dom";
+import { setComputedColorMode } from "@ctrl/dom/internal";
 
 export interface SubtestResult {
   name: string;

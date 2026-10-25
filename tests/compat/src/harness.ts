@@ -2,7 +2,7 @@
  * Differential compatibility harness.
  *
  * A scenario is a function of a window that performs DOM operations and returns an
- * "observation" (plain data). Each scenario runs twice — on jsdom, the oracle, and on @rtd/dom —
+ * "observation" (plain data). Each scenario runs twice — on jsdom, the oracle, and on @ctrl/dom —
  * and the JSON-normalized observations must be equal.
  *
  * jsdom is used as the oracle because its forms, events and DOM implementations are generated
@@ -12,14 +12,14 @@
  */
 import { JSDOM, VirtualConsole } from "jsdom";
 
-// Loaded lazily so a broken @rtd/dom (other areas are mid-edit) fails each test with the
+// Loaded lazily so a broken @ctrl/dom (other areas are mid-edit) fails each test with the
 // load error instead of failing the whole file, and oracle mode keeps working.
-let rtdCreateWindow: ((options?: { url?: string }) => unknown) | null = null;
-let rtdLoadError: unknown = null;
+let ctrlDomCreateWindow: ((options?: { url?: string }) => unknown) | null = null;
+let ctrlDomLoadError: unknown = null;
 try {
-  ({ createWindow: rtdCreateWindow } = await import("@rtd/dom"));
+  ({ createWindow: ctrlDomCreateWindow } = await import("@ctrl/dom"));
 } catch (error) {
-  rtdLoadError = error;
+  ctrlDomLoadError = error;
 }
 import { expect, test } from "vitest";
 
@@ -33,7 +33,7 @@ export interface DifferentialOptions {
   /** Markup placed in <body> before the scenario runs. */
   body?: string;
   /**
-   * jsdom gets this wrong; compare @rtd/dom against `expected` instead. `spec` must link the
+   * jsdom gets this wrong; compare @ctrl/dom against `expected` instead. `spec` must link the
    * section that defines the behavior.
    */
   jsdomDeviation?: { expected: unknown; spec: string; reason: string };
@@ -42,7 +42,7 @@ export interface DifferentialOptions {
    * into the spec-correct expectation. `spec` must link the section that defines the behavior.
    */
   jsdomFix?: { fix: (observed: any) => unknown; spec: string; reason: string };
-  /** Known @rtd/dom gap: registered as `test.fails` so the suite stays green and the gap visible. */
+  /** Known @ctrl/dom gap: registered as `test.fails` so the suite stays green and the gap visible. */
   knownGap?: string;
 }
 
@@ -56,9 +56,9 @@ export function makeJsdomWindow(body = "", url = "http://localhost/"): AnyWindow
   return dom.window;
 }
 
-export function makeRtdWindow(body = "", url = "http://localhost/"): AnyWindow {
-  if (rtdCreateWindow === null) throw rtdLoadError;
-  const window = rtdCreateWindow({ url }) as AnyWindow;
+export function makeCtrlDomWindow(body = "", url = "http://localhost/"): AnyWindow {
+  if (ctrlDomCreateWindow === null) throw ctrlDomLoadError;
+  const window = ctrlDomCreateWindow({ url }) as AnyWindow;
   if (body !== "") window.document.body.innerHTML = body;
   return window;
 }
@@ -148,7 +148,7 @@ export function differential(name: string, scenario: Scenario, options: Differen
     return;
   }
   const run = () => {
-    const actual = observe(scenario, makeRtdWindow(options.body));
+    const actual = observe(scenario, makeCtrlDomWindow(options.body));
     expect(actual).toEqual(expectedObservation(scenario, options));
   };
   if (options.knownGap) test.fails(`${name} [known gap: ${options.knownGap}]`, run);
@@ -171,7 +171,7 @@ export async function observeAsync(scenario: AsyncScenario, window: AnyWindow): 
 
 /**
  * Register a differential test of an asynchronous scenario (networking): jsdom first, then
- * @rtd/dom, one after the other. `url` (or a function returning it, for servers started in
+ * @ctrl/dom, one after the other. `url` (or a function returning it, for servers started in
  * beforeAll) is both windows' document URL.
  */
 export function differentialAsync(name: string, scenario: AsyncScenario, options: Omit<DifferentialOptions, "jsdomDeviation"> & { url?: string | (() => string) } = {}): void {
@@ -186,7 +186,7 @@ export function differentialAsync(name: string, scenario: AsyncScenario, options
   }
   const run = async () => {
     const want = await expected();
-    expect(await observeAsync(scenario, makeRtdWindow(options.body, url()))).toEqual(want);
+    expect(await observeAsync(scenario, makeCtrlDomWindow(options.body, url()))).toEqual(want);
   };
   if (options.knownGap) test.fails(`${name} [known gap: ${options.knownGap}]`, run);
   else test(name, run);

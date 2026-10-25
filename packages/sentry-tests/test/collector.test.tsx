@@ -9,9 +9,9 @@
 import { channel } from "node:diagnostics_channel";
 import { afterEach, describe, expect, test } from "vitest";
 import { createContext, StrictMode, useState, type ReactNode } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@rtd/react";
-import userEvent from "@rtd/user-event";
-import { tracing, traceSync } from "@rtd/dom/internal";
+import { cleanup, fireEvent, render, screen, waitFor } from "@ctrl/dom/react";
+import userEvent from "@ctrl/dom/user-event";
+import { tracing, traceSync } from "@ctrl/dom/internal";
 import { createCollector, type CollectedSpan, type Collector } from "../src/collector.ts";
 import { pageHtml } from "../src/html.ts";
 import type { FailureMessage } from "../src/channels.ts";
@@ -54,7 +54,7 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
     const { spans, test: testSpan } = await asTest(collector, async () => {
       render(<Save />);
       const user = userEvent.setup();
-      // @rtd/user-event types elements with its own DOM interfaces (src/dom-types.ts).
+      // @ctrl/dom/user-event types elements with its own DOM interfaces (src/dom-types.ts).
       await user.type(screen.getByRole("textbox", { name: "Name" }) as never, "Ada");
       await user.click(screen.getByRole("button", { name: "Save" }) as never);
       await screen.findByText("Saved");

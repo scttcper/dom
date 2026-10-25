@@ -2,7 +2,7 @@
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/document/prepareDocument.ts
 
 import type {Document, Element, Event, HTMLInputElement} from '../dom-types.ts'
-import {hasRtdUI} from '../rtd.ts'
+import {hasCtrlDomUI} from '../ctrl-dom.ts'
 import {dispatchDOMEvent} from '../event/index.ts'
 import {isElementType} from '../utils/index.ts'
 import {
@@ -67,8 +67,8 @@ function prepareElement(el: Element) {
     return
   }
 
-  // @rtd/dom elements keep UI value/selection natively (see ../rtd.ts): no interceptors.
-  if (isElementType(el, ['input', 'textarea']) && !hasRtdUI(el)) {
+  // @ctrl/dom elements keep UI value/selection natively (see ../ctrl-dom.ts): no interceptors.
+  if (isElementType(el, ['input', 'textarea']) && !hasCtrlDomUI(el)) {
     prepareValueInterceptor(el)
     prepareSelectionInterceptor(el)
     prepareRangeTextInterceptor(el)

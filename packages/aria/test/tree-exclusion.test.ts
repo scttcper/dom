@@ -7,7 +7,7 @@
  *   HTML §15.3.1 "Hidden elements" (UA display:none rules) — https://html.spec.whatwg.org/#hidden-elements
  *   CSS Display §2.5 visibility (inherited) — https://drafts.csswg.org/css-display/#visibility
  *
- * Every assertion runs on both engines (helpers.ts `both`): @rtd/aria on @rtd/dom and
+ * Every assertion runs on both engines (helpers.ts `both`): @ctrl/dom/aria on @ctrl/dom and
  * Testing Library 10.4.2 / dom-accessibility-api@0.5.16 on jsdom. Tests prefixed "oracle:"
  * pin where that implementation is narrower than the spec.
  */
@@ -15,7 +15,7 @@ import { describe, expect, test } from "vitest";
 import { both, testNode } from "./helpers.ts";
 
 function expectInaccessible(html: string, expected: boolean): void {
-  expect(both(html, (api, doc) => api.inaccessible(testNode(doc)))).toEqual({ rtd: expected, upstream: expected });
+  expect(both(html, (api, doc) => api.inaccessible(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
 }
 
 describe("display: none — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion", () => {
@@ -82,9 +82,9 @@ describe("hidden attribute and aria-hidden — https://www.w3.org/TR/wai-aria-1.
 
   test("isSubtreeInaccessible looks at the element only (hidden, aria-hidden, display:none)", () => {
     const probe = (html: string) => both(html, (api, doc) => api.subtreeInaccessible(testNode(doc)));
-    expect(probe(`<div aria-hidden="true"><b data-test>x</b></div>`)).toEqual({ rtd: false, upstream: false });
-    expect(probe(`<b data-test style="display:none">x</b>`)).toEqual({ rtd: true, upstream: true });
-    expect(probe(`<b data-test style="visibility:hidden">x</b>`)).toEqual({ rtd: false, upstream: false });
+    expect(probe(`<div aria-hidden="true"><b data-test>x</b></div>`)).toEqual({ "ctrl-dom": false, upstream: false });
+    expect(probe(`<b data-test style="display:none">x</b>`)).toEqual({ "ctrl-dom": true, upstream: true });
+    expect(probe(`<b data-test style="visibility:hidden">x</b>`)).toEqual({ "ctrl-dom": false, upstream: false });
   });
 });
 
@@ -100,9 +100,9 @@ describe("inert — https://html.spec.whatwg.org/#the-inert-attribute", () => {
 describe("getRoles honors exclusion — https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion", () => {
   test("excluded elements are listed only with hidden: true", () => {
     const html = `<button data-id="v">v</button><button data-id="h" style="visibility:hidden">h</button><div style="display:none"><button data-id="n">n</button></div>`;
-    expect(both(html, (api, doc) => api.roles(doc.body))).toEqual({ rtd: { button: ["v"] }, upstream: { button: ["v"] } });
+    expect(both(html, (api, doc) => api.roles(doc.body))).toEqual({ "ctrl-dom": { button: ["v"] }, upstream: { button: ["v"] } });
     expect(both(html, (api, doc) => api.roles(doc.body, { hidden: true }))).toEqual({
-      rtd: { button: ["v", "h", "n"] },
+      "ctrl-dom": { button: ["v", "h", "n"] },
       upstream: { button: ["v", "h", "n"] },
     });
   });

@@ -16,7 +16,7 @@
  * Lit/Stencil-style rendering and `document.importNode(template.content, true)` rely on them.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 let document: any;
 

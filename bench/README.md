@@ -10,16 +10,16 @@ pnpm bench                                   # every workload, default configs, 
 pnpm bench --list                            # workloads and configs
 pnpm bench --workloads dom/,react/form       # ids or id prefixes, comma separated
 pnpm bench --skip react/fill                 # exclude ids/prefixes
-pnpm bench --configs jsdom,rtd --samples 3   # subset of configurations
+pnpm bench --configs jsdom,ctrl-dom --samples 3   # subset of configurations
 pnpm bench --iterations 5 --warmup 1         # override per-workload iteration counts
 pnpm bench --name before-cache               # results file name suffix
 pnpm bench --keep-going                      # keep sampling a config after it errors
 
 pnpm build                                   # bundle packages/*/dist (needed by *-dist configs)
-pnpm bench --workloads startup/              # startup incl. bundled @rtd
+pnpm bench --workloads startup/              # startup incl. bundled @ctrl/dom
 
 pnpm bench:suite                             # Vitest end-to-end suite (100 files)
-pnpm bench:suite --envs jsdom,rtd --samples 5 --files 100 --workers 4
+pnpm bench:suite --envs jsdom,ctrl-dom --samples 5 --files 100 --workers 4
 ```
 
 Results go to `bench/results/<date>-<name>.md` (tables) and `.json` (every raw sample). The
@@ -31,9 +31,9 @@ directory is git-ignored; copy numbers you want to keep into a doc.
 | --- | --- | --- |
 | `jsdom` | jsdom, installed by Vitest's own `jsdom` environment code | stock `@testing-library/{dom,react,user-event,jest-dom}` |
 | `happy-dom` | happy-dom, via Vitest's own `happy-dom` environment code | stock |
-| `rtd-dom` | `@rtd/dom` via `vitest-environment-rtd` | stock (the "swap only the environment" path) |
-| `rtd` | `@rtd/dom` | `@rtd/testing-library`, `@rtd/react`, `@rtd/user-event`, `@rtd/jest-dom` |
-| `rtd-dom-dist`, `rtd-dist` | as above, but every `@rtd/*` import resolves to the bundled `packages/*/dist/*.js` | |
+| `ctrl-dom` | `@ctrl/dom` via `@ctrl/dom/vitest-environment` | stock (the "swap only the environment" path) |
+| `ctrl-dom-full` | `@ctrl/dom` | `@ctrl/dom/testing-library`, `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom` |
+| `ctrl-dom-dist`, `ctrl-dom-full-dist` | as above, but every `@ctrl/dom` import resolves to the bundled `packages/*/dist/*.js` | |
 
 The `*-dist` configurations exist so startup can be measured without Node's TypeScript type
 stripping. They are redirected with a `module.registerHooks` resolve hook (`lib/dist-hooks.ts`
@@ -41,7 +41,7 @@ in-process; `lib/dist-preload.js`, plain JavaScript so workers never load the ty
 the suite's Vitest workers); packages' `exports` still point at `src/`. The runner warns when a
 bundle is older than its sources.
 
-DOM-only workloads (`dom/*`) run `jsdom`, `happy-dom`, `rtd-dom` (the testing stack is
+DOM-only workloads (`dom/*`) run `jsdom`, `happy-dom`, `ctrl-dom` (the testing stack is
 irrelevant there). React workloads run the first four. Startup runs all six.
 
 ## Workloads
@@ -82,7 +82,7 @@ Leak workload: `dom/window-churn` creates a window from a 250-row form document,
 focuses, adds a listener and closes it, 10 times per iteration (what a reused test worker does
 per file); extra `heapSlopeKBPerWindow` is the least-squares slope of heap-after-GC per closed
 window (≈0 when `close()` releases everything). Retention itself is asserted by the leak suite
-(`tests/compat/test/leaks`, `pnpm vitest run --project @rtd/leaks`).
+(`tests/compat/test/leaks`, `pnpm vitest run --project compat:leaks`).
 
 Every workload **verifies its observable result** after every iteration (untimed), so a DOM
 that skips work fails instead of winning. A failing configuration is reported with its error
@@ -124,9 +124,9 @@ rotating mix of static render + role queries, a stateful click, and a user-event
 sample (fresh process, default pool, interleaved) with:
 
 - `jsdom`, `happy-dom`: Vitest's built-in environments;
-- `rtd`: `environment: 'rtd'` (vitest-environment-rtd), stock testing-library;
-- `rtd-full`: `rtd` plus `resolve.alias` of `@testing-library/{react,dom,user-event}` and
-  `@testing-library/jest-dom/vitest` to the `@rtd` drop-ins, with the same test files.
+- `ctrl-dom`: `environment: 'ctrl-dom'` (@ctrl/dom/vitest-environment), stock testing-library;
+- `ctrl-dom-full`: `ctrl-dom` plus `resolve.alias` of `@testing-library/{react,dom,user-event}` and
+  `@testing-library/jest-dom/vitest` to the `@ctrl/dom` drop-ins, with the same test files.
 
 It reports **wall time** of the whole `vitest run` (what users feel), Vitest's own per-file
 diagnostics summed over files (`environmentSetupDuration`, setup files, collect/import, test
@@ -145,7 +145,7 @@ cache on) and ~32 ms with stock Testing Library (off). It splits into:
 
 | step | ms | notes |
 | --- | ---: | --- |
-| import `@rtd/dom` (1.4 MB bundle) | 8.7 cached / 19 uncached | ~10 ms of the uncached import is V8 compiling the bundle; evaluation ~4 ms (class creation, prototype mixins; nothing large left to defer) |
+| import `@ctrl/dom` (1.4 MB bundle) | 8.7 cached / 19 uncached | ~10 ms of the uncached import is V8 compiling the bundle; evaluation ~4 ms (class creation, prototype mixins; nothing large left to defer) |
 | `installGlobals` | 11 | 10.7 ms of it is Node loading undici (below); our own work ~0.5 ms |
 | `createWindow` | 2 | first window per process includes `preparePrototype` (interface objects, ~0.3 ms real) |
 | clock, handlers | 0.3 | |
@@ -205,7 +205,7 @@ undici, test-file imports) are outside what a DOM snapshot can hold.
 ### Worker flags (`ctrlDom()`)
 
 What did pay is how the worker process itself runs. Self time per worker, aggregated over the
-100 profiles: Node's module loader (resolution + compilation) ~31 ms, @rtd/dom ~17 ms (import and
+100 profiles: Node's module loader (resolution + compilation) ~31 ms, @ctrl/dom ~17 ms (import and
 test work), Vitest's own modules ~12 ms, react-dom ~10 ms, undici ~5 ms, GC ~4.4 ms (profiler
 inflated, but the proportions hold). Two flags, measured on comparison/'s suite (whole stack,
 3 workers, 9 interleaved runs each; `COMPARE_WORKER_FLAGS=0` / `COMPARE_EXEC_ARGV` select them):
@@ -244,8 +244,8 @@ publish/ctrl-dom/vitest.js).
 
 ## Regression check (`compare.ts`)
 
-`pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`rtd` for React
-rows, `rtd-dom` for DOM rows, the bundles for startup) from two checkouts of the repository and
+`pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React
+rows, `ctrl-dom` for DOM rows, the bundles for startup) from two checkouts of the repository and
 fails when head regresses. Both must be clean checkouts with dependencies installed and `pnpm
 build` run: the main working tree times about 10% differently from a fresh checkout of the same
 commit. For each sample index every workload runs base then head (head first on odd samples), a
@@ -258,9 +258,9 @@ peak RSS are reported next to them. CI runs it on pull requests with 9 samples
 ## Bundling (`pnpm build`, `scripts/build.ts`)
 
 One rolldown build per package from its `exports` entries into `packages/<pkg>/dist/`
-(`--minify` optional; see `scripts/build.ts` for the CJS builds and declarations it also writes). Bare specifiers stay external, so `@rtd/react`'s bundle imports
-`@rtd/dom` rather than embedding a second DOM; packages with several entries
-(`@rtd/dom` + `@rtd/dom/internal`) share chunks.
+(`--minify` optional; see `scripts/build.ts` for the CJS builds and declarations it also writes). Bare specifiers stay external, so `@ctrl/dom/react`'s bundle imports
+`@ctrl/dom` rather than embedding a second DOM; packages with several entries
+(`@ctrl/dom` + `@ctrl/dom/internal`) share chunks.
 
 ## Files
 
@@ -268,8 +268,8 @@ One rolldown build per package from its `exports` entries into `packages/<pkg>/d
 run.ts                 orchestrator (flags above), writes results/
 worker.ts              one sample in a fresh process
 lib/configs.ts         configurations: install DOM globals, load testing stack, matcher helper
-lib/dist-hooks.ts      resolve @rtd/* to dist/ for *-dist configs
-lib/dist-preload.js    the same, as an --import preload for Vitest workers (RTD_DIST_MAP)
+lib/dist-hooks.ts      resolve @ctrl/dom to dist/ for *-dist configs
+lib/dist-preload.js    the same, as an --import preload for Vitest workers (CTRL_DOM_DIST_MAP)
 lib/packages.ts        workspace package/exports discovery (shared with scripts/build.ts)
 lib/report.ts          markdown + terminal tables
 lib/stats.ts           median/quantiles/formatting

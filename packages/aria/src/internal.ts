@@ -1,4 +1,4 @@
-// NodeImpl-level API for @rtd/testing-library and @rtd/jest-dom hot paths. No wrappers, no
+// NodeImpl-level API for @ctrl/dom/testing-library and @ctrl/dom/jest-dom hot paths. No wrappers, no
 // allocation on the role/hidden paths. Not for end users: no stability guarantees.
 //
 // Typical `*ByRole` loop (see packages/testing-library):
@@ -48,7 +48,7 @@ export { labelsOf, inputType, isLabelable } from "./forms.ts";
 export { isDisplayNone, isVisibilityHidden, isDisplayInline } from "./style.ts";
 export { implOf, queryIdRefs } from "./tree.ts";
 
-import { attr, type NodeImpl } from "@rtd/dom/internal";
+import { attr, type NodeImpl } from "@ctrl/dom/internal";
 import { implicitRole } from "./role.ts";
 
 /**

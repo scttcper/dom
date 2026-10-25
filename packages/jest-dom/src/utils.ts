@@ -29,7 +29,7 @@ export interface MatcherResult {
   message: () => string;
 }
 
-/** DOM objects here may come from @rtd/dom or (in oracle/differential runs) from jsdom. */
+/** DOM objects here may come from @ctrl/dom or (in oracle/differential runs) from jsdom. */
 export type DOMNode = any;
 
 type MatcherFn = (...args: any[]) => unknown;

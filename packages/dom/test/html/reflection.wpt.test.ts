@@ -19,7 +19,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 const DIR = new URL("./wpt/reflection/", import.meta.url);
 const read = (name: string) => readFileSync(new URL(name, DIR), "utf8");

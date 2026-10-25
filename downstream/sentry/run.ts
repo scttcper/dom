@@ -2,17 +2,17 @@
 // Sentry downstream suite: run getsentry/sentry's real frontend Jest suite (unmodified specs,
 // upstream setup, upstream Jest/SWC/resolver) on
 //   jsdom        upstream exactly as configured (@sentry/jest-environment/jsdom + its hacks)
-//   rtd-dom      testEnvironment -> jest-environment-rtd; stock Testing Library
-//   rtd-full     + @testing-library/{react,dom,user-event,jest-dom} -> our built bundles
-//   rtd-nohacks  EXPERIMENT: rtd-full + undo upstream's jsdom-only speed hacks (harness/nohacks.ts)
-//   rtd-direct   EXPERIMENT: rtd-dom with a DONT_CONTEXTIFY vm context (opt-in via --modes)
+//   ctrl-dom      testEnvironment -> @ctrl/dom-jest-environment; stock Testing Library
+//   ctrl-dom-full     + @testing-library/{react,dom,user-event,jest-dom} -> our built bundles
+//   ctrl-dom-nohacks  EXPERIMENT: ctrl-dom-full + undo upstream's jsdom-only speed hacks (harness/nohacks.ts)
+//   ctrl-dom-direct   EXPERIMENT: ctrl-dom with a DONT_CONTEXTIFY vm context (opt-in via --modes)
 //
 //   node downstream/sentry/run.ts [--install] [--latest] [--preset smoke|perf|components|views|all]
-//        [--files a,b] [--modes jsdom,rtd-dom,rtd-full,rtd-nohacks] [--workers 6] [--repeat N]
+//        [--files a,b] [--modes jsdom,ctrl-dom,ctrl-dom-full,ctrl-dom-nohacks] [--workers 6] [--repeat N]
 //        [--gc] [--shard i/n] [--grep PATTERN] [--shims react,dom,user-event,jest-dom] [--no-report]
 //
 // See README.md. Methodology follows downstream/base-ui/run.ts (pinned commit, refuses tracked
-// local changes, upstream's frozen lockfile + exact pnpm, stale output deleted first, every rtd
+// local changes, upstream's frozen lockfile + exact pnpm, stale output deleted first, every ctrl-dom
 // mode compared with the jsdom baseline).
 
 import { spawn, spawnSync } from "node:child_process";
@@ -31,7 +31,7 @@ const manifest = JSON.parse(readFileSync(join(here, "manifest.json"), "utf8")) a
   packageManager: string;
 };
 
-const MODES = ["jsdom", "rtd-dom", "rtd-full", "rtd-nohacks", "rtd-direct"] as const;
+const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full", "ctrl-dom-nohacks", "ctrl-dom-direct"] as const;
 type Mode = (typeof MODES)[number];
 
 const PRESETS: Record<string, string[]> = {
@@ -54,7 +54,7 @@ const PRESETS: Record<string, string[]> = {
     "static/app/components/timeRangeSelector/index.spec.tsx",
   ],
   // Fast iteration set (39 files, ~40 s/mode at --workers 4): chosen from the full-suite reports
-  // of 2026-10-23 among files passing in jsdom, rtd-dom and rtd-full with and without time
+  // of 2026-10-23 among files passing in jsdom, ctrl-dom and ctrl-dom-full with and without time
   // skipping. The 9 slowest on jsdom (they set wall time; searchQueryBuilder is left to smoke),
   // 25 spread evenly over the duration distribution (per-file overhead dominates the small
   // ones), and the 5 that gained most from idle time skipping. Use full runs for checkpoints.
@@ -119,7 +119,7 @@ const { values } = parseArgs({
     checkout: { type: "string", default: join(here, "checkout") },
     preset: { type: "string", default: "smoke" },
     files: { type: "string" },
-    modes: { type: "string", default: "jsdom,rtd-dom,rtd-full,rtd-nohacks" },
+    modes: { type: "string", default: "jsdom,ctrl-dom,ctrl-dom-full,ctrl-dom-nohacks" },
     workers: { type: "string", default: "6" },
     repeat: { type: "string", default: "1" },
     gc: { type: "boolean", default: false },
@@ -139,7 +139,7 @@ const { values } = parseArgs({
 if (values.help) {
   console.log(
     "node downstream/sentry/run.ts [--install] [--latest] [--preset smoke|perf|components|views|all | --files a,b] " +
-      "[--modes jsdom,rtd-dom,rtd-full,rtd-nohacks] [--workers 6] [--repeat N] [--gc] [--shard i/n] [--grep PATTERN] " +
+      "[--modes jsdom,ctrl-dom,ctrl-dom-full,ctrl-dom-nohacks] [--workers 6] [--repeat N] [--gc] [--shard i/n] [--grep PATTERN] " +
       "[--shims react,dom,user-event,jest-dom] [--label NAME] [--no-report]",
   );
   process.exit(0);
@@ -176,7 +176,7 @@ function run(executable: string, argv: string[], cwd: string, log?: string, env:
       for (const stream of [child.stdout!, child.stderr!]) {
         stream.on("data", (chunk: Buffer) => {
           out.write(chunk);
-          if (process.env.RTD_SENTRY_QUIET !== "1") process.stdout.write(chunk);
+          if (process.env.CTRL_DOM_SENTRY_QUIET !== "1") process.stdout.write(chunk);
         });
       }
     }
@@ -284,9 +284,9 @@ const versions = Object.fromEntries(
   ["jest", "jsdom", "react", "react-dom", "@swc/jest", "@testing-library/react", "@testing-library/dom", "@testing-library/user-event", "@testing-library/jest-dom", "@sentry/jest-environment", "@floating-ui/react-dom"].map((n) => [n, installedVersion(n)]),
 );
 
-// Our side: rtd-full uses the built bundles (pnpm build); record how fresh they are.
+// Our side: ctrl-dom-full uses the built bundles (pnpm build); record how fresh they are.
 const DIST = ["react/dist/index.cjs", "testing-library/dist/index.cjs", "user-event/dist/index.cjs", "jest-dom/dist/index.cjs", "aria/dist/index.cjs"];
-if (modes.some((m) => m === "rtd-full" || m === "rtd-nohacks")) {
+if (modes.some((m) => m === "ctrl-dom-full" || m === "ctrl-dom-nohacks")) {
   for (const f of DIST) if (!existsSync(join(repo, "packages", f))) throw new Error(`packages/${f} is missing: run pnpm build`);
 }
 function newestMtime(dir: string): number {
@@ -424,13 +424,13 @@ for (let iteration = 1; iteration <= repeat; iteration++) {
       checkout,
       logPath,
       {
-        RTD_SENTRY_CHECKOUT: checkout,
-        RTD_SENTRY_MODE: mode,
-        RTD_SENTRY_OUT: modeOut,
-        RTD_SENTRY_SHIMS: values.shims!,
-        RTD_SENTRY_GC: values.gc ? "1" : "0",
-        ...(values.scratch ? { RTD_SENTRY_SCRATCH: resolve(values.scratch) } : {}),
-        RTD_SENTRY_TRIAGE: values.triage ? "1" : "0",
+        CTRL_DOM_SENTRY_CHECKOUT: checkout,
+        CTRL_DOM_SENTRY_MODE: mode,
+        CTRL_DOM_SENTRY_OUT: modeOut,
+        CTRL_DOM_SENTRY_SHIMS: values.shims!,
+        CTRL_DOM_SENTRY_GC: values.gc ? "1" : "0",
+        ...(values.scratch ? { CTRL_DOM_SENTRY_SCRATCH: resolve(values.scratch) } : {}),
+        CTRL_DOM_SENTRY_TRIAGE: values.triage ? "1" : "0",
         // Workers inherit execArgv from the parent, so --expose-gc reaches them.
         CI: "true",
         FORCE_COLOR: "0",
@@ -589,15 +589,15 @@ if (!values["no-report"]) {
   const baseline = last.get("jsdom")?.assertions;
   const md: string[] = [];
   md.push(`# Sentry downstream: \`${label}\` (${date})`, "");
-  if (values.triage) md.push("> **TRIAGE MODE (`--triage`)**: rtd modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform \"\", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.", "");
+  if (values.triage) md.push("> **TRIAGE MODE (`--triage`)**: ctrl-dom modes ran with workarounds for blockers already filed in TRIAGE.md (navigator.platform \"\", writable navigator.clipboard, index-getter tables pre-warmed before the isolation baseline, pending host timers cleared at teardown) to look past them. These are not compatibility results.", "");
   md.push(
     `- upstream: ${manifest.repository.replace(/\.git$/, "")} @ \`${commit}\` (${commitInfo[0]}) — ${commitInfo[1]}`,
     `- pinned: \`${manifest.commit}\`${commit === manifest.commit ? "" : " (**--latest: differs from pin**)"}`,
     `- selection: ${filters.length ? filters.map((f) => `\`${f}\``).join(", ") : "(every spec of upstream's root Jest config)"}${values.shard ? `, shard ${values.shard}` : ""}${values.grep ? `, -t \`${values.grep}\`` : ""}`,
     `- node ${process.version}, Jest workers ${workers} (same for every mode), runs per mode ${repeat}${repeat > 1 ? " (interleaved; timings are medians, counts from the last run)" : ""}, CI=true (upstream's CI code paths), ${values.gc ? "**heap sampled after a forced GC per file (--gc; timings include the GCs)**" : "no forced GC"}`,
     `- upstream versions: ${Object.entries(versions).map(([k, v]) => `${k}@${v}`).join(", ")}`,
-    `- rtd-full substitutes: ${values.shims!.split(",").map((x) => `@testing-library/${x}`).join(", ")} (packages/*/dist/*.cjs)${staleDist.length ? `; **dist older than src for: ${staleDist.join(", ")}**` : ""}`,
-    `- rtd-nohacks is an **experiment**: rtd-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.`,
+    `- ctrl-dom-full substitutes: ${values.shims!.split(",").map((x) => `@testing-library/${x}`).join(", ")} (packages/*/dist/*.cjs)${staleDist.length ? `; **dist older than src for: ${staleDist.join(", ")}**` : ""}`,
+    `- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.`,
     "",
   );
   md.push("## Per-mode results", "");
@@ -610,7 +610,7 @@ if (!values["no-report"]) {
     const notes: string[] = [];
     if (!r.reportFound) notes.push("**no JSON report**");
     if (mode !== "jsdom") notes.push(r.reactIds?.length === 1 ? "1 React" : `**${r.reactIds?.length ?? 0} React ids**`);
-    if (r.rtlIds?.length) notes.push(`RTL: ${r.rtlIds.map((x) => (x.startsWith("<rtd>") ? "ours" : "stock")).join(",")}`);
+    if (r.rtlIds?.length) notes.push(`RTL: ${r.rtlIds.map((x) => (x.startsWith("<ctrl-dom>") ? "ours" : "stock")).join(",")}`);
     if (r.sourceStable === false) notes.push("our packages changed during the run");
     md.push(
       `| ${mode} | ${r.passed ?? "?"} | ${r.failed ?? "?"} | ${r.skipped ?? "?"} | ${r.total ?? "?"} | ${r.files ?? "?"} | ${r.suiteErrors?.length ?? "?"} | ${r.code ?? r.signal} | ${sec(median(all.map((x) => x.wallMs)))} | ${sec(median(all.map((x) => x.cpuMs ?? 0)))} | ${mib(median(all.map((x) => x.peakTreeRssBytes)))} | ${mib(median(all.map((x) => x.peakRssBytes ?? 0)))} | ${median(env).toFixed(0)} ms, ${pct(env, 0.95).toFixed(0)} ms | ${r.receiptFiles ?? 0}/${r.files ?? "?"} | ${notes.join("; ")} |`,
@@ -696,7 +696,7 @@ if (!values["no-report"]) {
 }
 
 // Non-zero when a run produced no report, identities were not proven, or the discovered test set
-// differs from jsdom (assertion failures alone are expected for rtd modes).
+// differs from jsdom (assertion failures alone are expected for ctrl-dom modes).
 const lastByMode = new Map(runs.map((r) => [r.mode, r]));
 const jsdomRun = lastByMode.get("jsdom");
 process.exitCode = [...lastByMode.values()].some(

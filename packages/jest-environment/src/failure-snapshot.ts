@@ -8,13 +8,13 @@
 // rejected; `event.error` is what it threw) appends the report. Without CTRL_DOM_DEBUG the
 // environment defines no handler at all, so Jest's behavior and output are unchanged.
 //
-// The report code lives in @rtd/testing-library/agent and is imported on the first event, in the
+// The report code lives in @ctrl/dom/testing-library/agent and is imported on the first event, in the
 // environment's realm: it reads the same DOM instance (the environment loaded it), and the last
 // snapshot the test took is kept on the document, which both realms share.
 
 import type { Circus } from "@jest/types";
 
-type Agent = typeof import("@rtd/testing-library/agent");
+type Agent = typeof import("@ctrl/dom/testing-library/agent");
 
 /** The values of CTRL_DOM_DEBUG that turn agent mode on (agent-debug.ts, envDebugFormat). */
 function debugEnabled(): boolean {
@@ -28,7 +28,7 @@ export function failureSnapshotHandler(getDocument: () => unknown): ((event: Cir
   let agent: Agent | null = null;
   return async (event) => {
     if (event.name !== "test_start" && event.name !== "test_fn_failure") return;
-    agent ??= await import("@rtd/testing-library/agent");
+    agent ??= await import("@ctrl/dom/testing-library/agent");
     const document = getDocument();
     if (document == null) return;
     if (event.name === "test_start") {

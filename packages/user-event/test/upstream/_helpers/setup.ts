@@ -80,7 +80,7 @@ export function render<Elements extends Element | Element[] = HTMLElement>(
 }
 
 function assertSingleNodeFromXPath(xpath: string, context: Node) {
-  // Divergence: upstream uses `document.evaluate`; @rtd/dom has no XPath (not needed for
+  // Divergence: upstream uses `document.evaluate`; @ctrl/dom has no XPath (not needed for
   // testing React components), so the tiny subset these tests use is evaluated in xpath.ts.
   const node = evaluateXPath(xpath, context)
 

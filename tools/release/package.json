@@ -1,5 +1,5 @@
 {
-  "name": "@rtd/release-tools",
+  "name": "ctrl-dom-release-tools",
   "private": true,
   "description": "semantic-release setup for the published packages. Not part of the pnpm workspace: install with `pnpm install --dir tools/release --ignore-workspace` (the release workflow does).",
   "type": "module",

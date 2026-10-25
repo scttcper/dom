@@ -10,12 +10,12 @@
  *   - Dialog close steps (step 13): https://html.spec.whatwg.org/#close-the-dialog
  *   - Close a browsing context (no tasks run afterwards): https://html.spec.whatwg.org/#close-a-browsing-context
  *
- * Under jest-environment-rtd @rtd/dom is loaded outside the test file's vm global; tasks on the
+ * Under @ctrl/dom-jest-environment @ctrl/dom is loaded outside the test file's vm global; tasks on the
  * host realm's real timers raced user-event's waits on the file's virtual clock (Sentry's
  * CollapsibleContent "fires onToggle" saw no `toggle` after `await user.click()`).
  */
 import { afterEach, describe, expect, test } from "vitest";
-import { createWindow, installGlobals, type Window } from "@rtd/dom";
+import { createWindow, installGlobals, type Window } from "@ctrl/dom";
 
 type Pending = { fn: () => void; cleared: boolean };
 

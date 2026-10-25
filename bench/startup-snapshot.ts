@@ -1,6 +1,6 @@
 // Reproduces the V8 startup snapshot experiment (bench/README.md, "Worker startup"): builds a
 // userland snapshot (https://nodejs.org/api/cli.html#--build-snapshot-entry) holding the evaluated
-// @rtd/dom bundle, then times a fresh process that imports the DOM, creates a window and installs
+// @ctrl/dom bundle, then times a fresh process that imports the DOM, creates a window and installs
 // it as the global, with and without the snapshot.
 //
 //   pnpm build && node bench/startup-snapshot.ts [--samples 15] [--warm] [--keep]
@@ -17,7 +17,7 @@
 // How the snapshot reaches importers: the entry puts the evaluated modules on globalThis and, at
 // deserialization (v8.startupSnapshot.addDeserializeCallback), registers a module.registerHooks
 // `load` hook that answers the dist entries' URLs with `export const { ... } = <snapshot module>`,
-// so every `import "@rtd/dom"` in the process (environment, test code, Testing Library bundles)
+// so every `import "@ctrl/dom"` in the process (environment, test code, Testing Library bundles)
 // gets the snapshot instance without evaluating the bundle.
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -37,7 +37,7 @@ const { values: flags } = parseArgs({
 const distIndex = join(repoRoot, "packages/dom/dist/index.js");
 const distInternal = join(repoRoot, "packages/dom/dist/internal.js");
 statSync(distIndex); // run `pnpm build` first
-const dir = mkdtempSync(join(tmpdir(), "rtd-snapshot-"));
+const dir = mkdtempSync(join(tmpdir(), "ctrl-dom-snapshot-"));
 
 const warmup = `
 for (let i = 0; i < 3; i++) {
@@ -60,7 +60,7 @@ writeFileSync(
 import * as internal from ${JSON.stringify(distInternal)};
 import { startupSnapshot } from "node:v8";
 import { registerHooks } from "node:module";
-const KEY = Symbol.for("rtd.dom.snapshot");
+const KEY = Symbol.for("ctrl-dom.dom.snapshot");
 globalThis[KEY] = { dom, internal };
 // A deserialized userland snapshot comes back without console.Console (Node 26.12), which
 // Vitest's worker needs (new Console(...) for its console interception): put it back.
@@ -76,7 +76,7 @@ startupSnapshot.addDeserializeCallback(() => {
     load(url, context, next) {
       const target = targets.get(url);
       if (target === undefined) return next(url, context);
-      return { format: "module", shortCircuit: true, source: "const m = globalThis[Symbol.for('rtd.dom.snapshot')]." + target[0] + "; export const { " + target[1].join(", ") + " } = m;" };
+      return { format: "module", shortCircuit: true, source: "const m = globalThis[Symbol.for('ctrl-dom.dom.snapshot')]." + target[0] + "; export const { " + target[1].join(", ") + " } = m;" };
     },
   });
 });
@@ -100,7 +100,7 @@ const used = now();
 globalThis.gc?.();
 globalThis.gc?.();
 const m = process.memoryUsage();
-console.log(JSON.stringify({ snapshot: globalThis[Symbol.for("rtd.dom.snapshot")] !== undefined, bootMs: boot, importMs: imported - boot, createWindowMs: created - imported, installGlobalsMs: installed - created, firstUseMs: used - installed, totalMs: used, heapMB: m.heapUsed / 2 ** 20, rssMB: m.rss / 2 ** 20 }));
+console.log(JSON.stringify({ snapshot: globalThis[Symbol.for("ctrl-dom.dom.snapshot")] !== undefined, bootMs: boot, importMs: imported - boot, createWindowMs: created - imported, installGlobalsMs: installed - created, firstUseMs: used - installed, totalMs: used, heapMB: m.heapUsed / 2 ** 20, rssMB: m.rss / 2 ** 20 }));
 `,
 );
 

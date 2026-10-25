@@ -7,7 +7,7 @@
 //   https://drafts.csswg.org/css-display/#visibility (visibility is inherited)
 //   https://drafts.csswg.org/css-content-3/#content-property
 //
-// All reads go through the css area's fast API (`@rtd/dom/internal`, src/css/internal.ts):
+// All reads go through the css area's fast API (`@ctrl/dom/internal`, src/css/internal.ts):
 // per-element records stamped with Document._version/_styleVersion, and with no author
 // styles a plain inline-style + UA-default check without rule matching.
 
@@ -33,7 +33,7 @@ import {
   tagId,
   uaDisplay,
   type NodeImpl,
-} from "@rtd/dom/internal";
+} from "@ctrl/dom/internal";
 
 const K_NONE = 0;
 const K_INLINE = 1;

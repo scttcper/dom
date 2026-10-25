@@ -1,5 +1,5 @@
 /**
- * jest-environment-rtd under a real Jest 30 run (spawned): the stock React + Testing Library
+ * @ctrl/dom-jest-environment under a real Jest 30 run (spawned): the stock React + Testing Library
  * suite in jest/ passes, and an unhandled listener exception fails its test.
  *
  * Spec: HTML Standard — The Window object https://html.spec.whatwg.org/#the-window-object,
@@ -31,7 +31,7 @@ function jestWith(env: Record<string, string | undefined>, ...args: string[]): J
 describe("Jest integration — https://html.spec.whatwg.org/#the-window-object", () => {
   test("stock React + Testing Library suite passes", { timeout: 60_000 }, () => {
     const result = jest("--runInBand");
-    // A suite that failed to load (e.g. a broken @rtd/dom import) reports its error here.
+    // A suite that failed to load (e.g. a broken @ctrl/dom import) reports its error here.
     expect(result.testResults.map((r) => r.message).join("").trim()).toBe("");
     const failures = result.testResults.flatMap((r) => r.assertionResults.filter((a) => a.status !== "passed"));
     expect(failures).toEqual([]);

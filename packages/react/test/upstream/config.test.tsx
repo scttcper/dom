@@ -1,7 +1,7 @@
 // Ported from @testing-library/react@16.3.3
 // https://github.com/testing-library/react-testing-library/blob/v16.3.3/src/__tests__/config.js
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
-import { configure, getConfig, type Config } from "@rtd/react";
+import { configure, getConfig, type Config } from "@ctrl/dom/react";
 
 describe("configuration API", () => {
   let originalConfig: Config;

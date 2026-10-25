@@ -9,7 +9,7 @@
  *   const getNodeType = lookupGetter(Node.prototype, 'nodeType');
  *   ... transformCaseFunc(getNodeName(currentNode))
  * `lookupGetter` walks the prototype chain of Node.prototype for an accessor and otherwise
- * returns `() => null`. @rtd/dom declares `nodeName` as a TypeScript `abstract get` on Node, so
+ * returns `() => null`. @ctrl/dom declares `nodeName` as a TypeScript `abstract get` on Node, so
  * there is no accessor on Node.prototype at runtime (only on Element/Text/... subclasses), and
  * DOMPurify reads `null` for every node.
  *

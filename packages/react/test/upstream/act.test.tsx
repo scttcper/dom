@@ -3,7 +3,7 @@
 // `jest.fn` -> `vi.fn`; otherwise unchanged.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { act, render, fireEvent, screen } from "@rtd/react";
+import { act, render, fireEvent, screen } from "@ctrl/dom/react";
 
 declare const global: any;
 

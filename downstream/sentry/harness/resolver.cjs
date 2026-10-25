@@ -4,27 +4,27 @@
 //     resolved as if imported from Sentry's tests/js workspace, so there is exactly one React;
 //   - bare imports made from this harness directory resolve from Sentry's tests/js workspace
 //     (the harness lives outside the checkout).
-// Receipts for react / react-dom / @testing-library/* / @rtd/* resolutions are appended to
-// $RTD_SENTRY_OUT/resolutions.jsonl (deduplicated per worker) so the report can prove one React
-// and that rtd-full resolved @testing-library/* to our bundles.
+// Receipts for react / react-dom / @testing-library/* / @ctrl/dom resolutions are appended to
+// $CTRL_DOM_SENTRY_OUT/resolutions.jsonl (deduplicated per worker) so the report can prove one React
+// and that ctrl-dom-full resolved @testing-library/* to our bundles.
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
 
-const checkout = process.env.RTD_SENTRY_CHECKOUT;
-const out = process.env.RTD_SENTRY_OUT;
+const checkout = process.env.CTRL_DOM_SENTRY_CHECKOUT;
+const out = process.env.CTRL_DOM_SENTRY_OUT;
 const repo = path.resolve(__dirname, '../../..');
 const ours = path.join(repo, 'packages') + path.sep;
 const harness = __dirname + path.sep;
-const scratch = process.env.RTD_SENTRY_SCRATCH;
+const scratch = process.env.CTRL_DOM_SENTRY_SCRATCH;
 const upstream = require(path.join(checkout, 'tests/js/jestWorkspaceResolver.cjs'));
 const testsJs = path.join(checkout, 'tests/js');
 
 const REDIRECT = /^(react|react-dom|scheduler)(\/|$)/;
-const RECORD = /^(react|react-dom|@testing-library\/[a-z-]+|@rtd\/[a-z-]+)(\/|$)/;
+const RECORD = /^(react|react-dom|@testing-library\/[a-z-]+|@ctrl\/dom)(\/|$)/;
 const seen = new Set();
 const fmt = p =>
-  p.startsWith(checkout + path.sep) ? path.relative(checkout, p) : p.startsWith(repo + path.sep) ? '<rtd>/' + path.relative(repo, p) : p;
+  p.startsWith(checkout + path.sep) ? path.relative(checkout, p) : p.startsWith(repo + path.sep) ? '<ctrl-dom>/' + path.relative(repo, p) : p;
 
 module.exports = function resolve(request, options) {
   let opts = options;

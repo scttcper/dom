@@ -1,15 +1,10 @@
 {
-  "name": "@rtd/compat",
   "version": "0.0.0",
   "private": true,
-  "description": "Differential compatibility suites: the same scenarios on jsdom (oracle) and @rtd/dom, compared observation by observation.",
+  "description": "Differential compatibility suites: the same scenarios on jsdom (oracle) and @ctrl/dom, compared observation by observation.",
   "type": "module",
   "dependencies": {
-    "@rtd/dom": "workspace:*",
-    "@rtd/jest-dom": "workspace:*",
-    "@rtd/react": "workspace:*",
-    "@rtd/testing-library": "workspace:*",
-    "@rtd/user-event": "workspace:*",
+    "@ctrl/dom": "workspace:*",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
@@ -23,8 +18,7 @@
     "msw-2": "npm:msw@2.15.0",
     "msw-3": "npm:msw@3.0.3",
     "react": "19.3.1",
-    "react-dom": "19.3.1",
-    "vitest-environment-rtd": "workspace:*"
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@tanstack/react-virtual": "3.14.22"

@@ -16,7 +16,7 @@
  *     the default keeps the author's serialization, docs/deviations.md)
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document, type Window } from "@rtd/dom";
+import { createWindow, type Document, type Window } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let window: Window;

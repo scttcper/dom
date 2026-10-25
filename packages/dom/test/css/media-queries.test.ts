@@ -13,7 +13,7 @@
  * pointer, no reduced motion (src/css/media.ts); createWindow options change it.
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function mm(query: string, options: Record<string, unknown> = {}): boolean {

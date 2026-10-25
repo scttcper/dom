@@ -7,14 +7,14 @@ import {
   CDATA_SECTION_NODE,
   treeRoot,
   type NodeImpl,
-} from "@rtd/dom/internal";
-import type { Element, Node } from "@rtd/dom";
-import { $impl } from "@rtd/dom/internal";
+} from "@ctrl/dom/internal";
+import type { Element, Node } from "@ctrl/dom";
+import { $impl } from "@ctrl/dom/internal";
 
 /** The NodeImpl behind a public wrapper. */
 export function implOf(node: Node | Element): NodeImpl {
   const impl = (node as unknown as { [$impl]?: NodeImpl })[$impl];
-  if (impl === undefined) throw new TypeError("Expected a node created by @rtd/dom.");
+  if (impl === undefined) throw new TypeError("Expected a node created by @ctrl/dom.");
   return impl;
 }
 

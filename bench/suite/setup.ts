@@ -1,4 +1,4 @@
-// Suite setup file: jest-dom matchers (aliased to @rtd/jest-dom under BENCH_ENV=rtd-full),
+// Suite setup file: jest-dom matchers (aliased to @ctrl/dom/jest-dom under BENCH_ENV=ctrl-dom-full),
 // auto-cleanup comes from @testing-library/react itself, plus a per-file memory record taken in
 // the worker after the file's tests finish.
 
@@ -7,8 +7,8 @@ import { appendFileSync } from "node:fs";
 import { afterAll } from "vitest";
 
 // *-dist environments must really load the bundles (bench/lib/dist-preload.js), not sources.
-if ((process.env.BENCH_ENV ?? "").endsWith("-dist") && !((process as { __rtdDistResolutions?: number }).__rtdDistResolutions! > 0)) {
-  throw new Error(`BENCH_ENV=${process.env.BENCH_ENV}: no @rtd/* import was resolved to dist/ (is the preload active?)`);
+if ((process.env.BENCH_ENV ?? "").endsWith("-dist") && !((process as { __ctrlDomDistResolutions?: number }).__ctrlDomDistResolutions! > 0)) {
+  throw new Error(`BENCH_ENV=${process.env.BENCH_ENV}: no @ctrl/dom import was resolved to dist/ (is the preload active?)`);
 }
 
 afterAll(() => {

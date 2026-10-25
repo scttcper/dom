@@ -1,5 +1,5 @@
 /**
- * Downstream repro (Base UI rtd-dom: most stock-Testing-Library failures; rtd-full: every
+ * Downstream repro (Base UI ctrl-dom: most stock-Testing-Library failures; ctrl-dom-full: every
  * `toHaveAccessibleName` failure from @mui/internal-test-utils' chai plugin).
  *
  * WebIDL constants are defined on BOTH the interface object and the interface prototype

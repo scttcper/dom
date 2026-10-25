@@ -11,7 +11,7 @@
  * document URL and the session history.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, type Window } from "@rtd/dom";
+import { createWindow, type Window } from "@ctrl/dom";
 
 let window: Window;
 

@@ -1,5 +1,5 @@
-// `preset: "jest-environment-rtd"`: the environment plus the mapping that makes every module
-// in a test file share the environment's @rtd/dom instance (see src/index.ts).
+// `preset: "@ctrl/dom-jest-environment"`: the environment plus the mapping that makes every module
+// in a test file share the environment's @ctrl/dom instance (see src/index.ts).
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
@@ -11,7 +11,7 @@ const source = path.join(__dirname, "src/index.ts");
 module.exports = {
   testEnvironment: fs.existsSync(source) ? source : path.join(__dirname, "dist/index.js"),
   moduleNameMapper: {
-    "^@rtd/dom$": path.join(__dirname, "src/shims/dom.cjs"),
-    "^@rtd/dom/internal$": path.join(__dirname, "src/shims/dom-internal.cjs"),
+    "^@ctrl/dom$": path.join(__dirname, "src/shims/dom.cjs"),
+    "^@ctrl/dom/internal$": path.join(__dirname, "src/shims/dom-internal.cjs"),
   },
 };

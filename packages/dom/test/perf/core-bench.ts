@@ -1,7 +1,7 @@
-// Core DOM hot-path microbenchmark: @rtd/dom vs jsdom vs happy-dom.
+// Core DOM hot-path microbenchmark: @ctrl/dom vs jsdom vs happy-dom.
 //
 //   node packages/dom/test/perf/core-bench.ts            # driver: fresh process per sample
-//   node packages/dom/test/perf/core-bench.ts rtd        # one sample for one implementation
+//   node packages/dom/test/perf/core-bench.ts ctrl-dom        # one sample for one implementation
 //
 // Each sample runs in a fresh process; the driver reports the median and min–max of 5 samples
 // per workload, plus heap-after-GC and RSS at the end of a sample. Not a vitest test (*.ts,
@@ -29,7 +29,7 @@ type El = {
 };
 
 async function makeDocument(impl: string): Promise<Doc> {
-  if (impl === "rtd") {
+  if (impl === "ctrl-dom") {
     const { createWindow } = await import("../../src/index.ts");
     return createWindow().document as unknown as Doc;
   }
@@ -149,7 +149,7 @@ if (arg !== undefined) {
   await sample(arg);
 } else {
   const file = fileURLToPath(import.meta.url);
-  const impls = ["rtd", "happy-dom", "jsdom"];
+  const impls = ["ctrl-dom", "happy-dom", "jsdom"];
   const results: Record<string, Record<string, number[]>> = {};
   for (let s = 0; s < 5; s++) {
     for (const impl of impls) {
@@ -163,8 +163,8 @@ if (arg !== undefined) {
       const xs = byImpl[impl];
       row[impl] = `${median(xs).toFixed(1)} (${Math.min(...xs).toFixed(1)}–${Math.max(...xs).toFixed(1)})`;
     }
-    row["jsdom / rtd"] = (median(byImpl.jsdom) / median(byImpl.rtd)).toFixed(1) + "x";
-    row["happy / rtd"] = (median(byImpl["happy-dom"]) / median(byImpl.rtd)).toFixed(1) + "x";
+    row["jsdom / ctrl-dom"] = (median(byImpl.jsdom) / median(byImpl["ctrl-dom"])).toFixed(1) + "x";
+    row["happy / ctrl-dom"] = (median(byImpl["happy-dom"]) / median(byImpl["ctrl-dom"])).toFixed(1) + "x";
     return row;
   });
   console.table(rows);

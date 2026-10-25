@@ -15,13 +15,14 @@
 // look a custom environment up by name as an unscoped `vitest-environment-<name>` package, so the
 // ctrlDom() plugin references the environment by path and answers for the name itself.
 //
-// The workspace names (@rtd/*, *-environment-rtd) are internal. Every bundle and declaration
-// keeps its cross-package imports as bare specifiers (scripts/build.ts), and they are rewritten
-// here to the published ones (`@rtd/aria` → `@ctrl/dom/aria`): inside @ctrl/dom they become
-// self-references, so each internal package still exists exactly once. `@ctrl/dom` and
-// `@ctrl/dom/internal` themselves resolve to generated bridges (writeBridges) that hand every
-// importer the DOM instance the running environment loaded. Hand-written files (READMEs,
-// manifests' static fields, the Jest preset, the Vitest plugin) live in publish/<package>/.
+// The workspace uses the published names: the root package.json is @ctrl/dom, its exports send
+// each subpath to a member's sources, and @ctrl/dom's members (packages/<dir> without a name of
+// their own) import each other as `@ctrl/dom/aria` and so on. Every bundle and declaration keeps
+// those imports as bare specifiers (scripts/build.ts), which inside the published @ctrl/dom are
+// self-references, so each member still exists exactly once. `@ctrl/dom` and `@ctrl/dom/internal`
+// themselves resolve to generated bridges (writeBridges) that hand every importer the DOM
+// instance the running environment loaded. Hand-written files (READMEs, manifests' static fields,
+// the Jest preset, the Vitest plugin) live in publish/<package>/.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -31,59 +32,32 @@ const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 export const releaseDir = join(repoRoot, "release");
 const publishDir = join(repoRoot, "publish");
 
-/** Workspace package name → subpath of @ctrl/dom ("" is the package root). */
-const SUBPATHS: Record<string, string> = {
-  "@rtd/dom": "",
-  "@rtd/aria": "aria",
-  "@rtd/testing-library": "testing-library",
-  "@rtd/react": "react",
-  "@rtd/user-event": "user-event",
-  "@rtd/jest-dom": "jest-dom",
-  "vitest-environment-rtd": "vitest-environment",
-  "@rtd/register": "register",
-};
-
-/** packages/<dir> for each @ctrl/dom member, in SUBPATHS order. */
-const MEMBER_DIRS: Record<string, string> = {
-  "@rtd/dom": "dom",
-  "@rtd/aria": "aria",
-  "@rtd/testing-library": "testing-library",
-  "@rtd/react": "react",
-  "@rtd/user-event": "user-event",
-  "@rtd/jest-dom": "jest-dom",
-  "vitest-environment-rtd": "vitest-environment",
-  "@rtd/register": "register",
+/** @ctrl/dom's members: packages/<dir> → its subpath ("" is the package root). */
+const MEMBERS: Record<string, string> = {
+  dom: "",
+  aria: "aria",
+  "testing-library": "testing-library",
+  react: "react",
+  "user-event": "user-event",
+  "jest-dom": "jest-dom",
+  "vitest-environment": "vitest-environment",
+  register: "register",
 };
 
 /** Peer ranges where members disagree (jest-dom alone allows older Vitest/Jest than the environments). */
 const PEER_OVERRIDES: Record<string, string> = { vitest: ">=5.0.0", jest: ">=30.0.0", "@jest/globals": ">=30.0.0" };
 
-/** Rewrite workspace package names to the published ones (specifiers, messages, docs). */
-export function rewriteNames(text: string): string {
-  return text
-    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom|register)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
-      const sub = SUBPATHS[`@rtd/${pkg}`];
-      return `@ctrl/dom${sub ? `/${sub}` : ""}${rest}`;
-    })
-    .replaceAll("vitest-environment-rtd", "@ctrl/dom/vitest-environment")
-    .replaceAll("jest-environment-rtd", "@ctrl/dom-jest-environment");
-}
 
 type Json = Record<string, any>;
 const readJson = (path: string): Json => JSON.parse(readFileSync(path, "utf8"));
 const writeJson = (path: string, value: unknown) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 
-const TEXT = /\.(?:[cm]?js|d\.[cm]?ts|json)$/;
-
-/** Copy a directory, rewriting names in code/declaration files and dropping per-package NOTICE copies. */
+/** Copy a directory, dropping per-package NOTICE copies (each published package has one at its root). */
 function copyTree(from: string, to: string): void {
   if (!existsSync(from)) throw new Error(`missing ${relative(repoRoot, from)} (run pnpm build first)`);
   cpSync(from, to, { recursive: true });
   for (const e of readdirSync(to, { withFileTypes: true, recursive: true })) {
-    if (!e.isFile()) continue;
-    const path = join(e.parentPath, e.name);
-    if (e.name === "NOTICE" || e.name === "LICENSE") rmSync(path);
-    else if (TEXT.test(e.name)) writeFileSync(path, rewriteNames(readFileSync(path, "utf8")));
+    if (e.isFile() && (e.name === "NOTICE" || e.name === "LICENSE")) rmSync(join(e.parentPath, e.name));
   }
 }
 
@@ -128,14 +102,14 @@ function copyPublishFiles(name: string, to: string, files: string[]): void {
     cpSync(from, join(to, file), { recursive: true });
   }
   for (const f of ["NOTICE", "LICENSE"]) {
-    if (existsSync(join(repoRoot, f))) writeFileSync(join(to, f), rewriteNames(readFileSync(join(repoRoot, f), "utf8")));
+    if (existsSync(join(repoRoot, f))) cpSync(join(repoRoot, f), join(to, f));
   }
 }
 
 /**
  * `@ctrl/dom` and `@ctrl/dom/internal` resolve to these bridges rather than to the DOM's entries.
  * The ctrl-dom environments publish the DOM modules they loaded on the test global
- * (Symbol.for("rtd.dom.modules")), and a bridge hands that instance to every importer: test code,
+ * (Symbol.for("ctrl-dom.dom.modules")), and a bridge hands that instance to every importer: test code,
  * and @ctrl/dom's own Testing Library bundles through their self-references. Jest and Vitest's VM
  * pools evaluate a test file's modules inside a vm context, where a plain import would evaluate
  * a second DOM per file whose classes fail `instanceof` against the installed globals; in Vitest's
@@ -155,7 +129,7 @@ async function writeBridges(ctrlDom: string): Promise<void> {
     const ns = await import(pathToFileURL(join(ctrlDom, "dist", "dom", `${entry}.js`)).href);
     const names = Object.keys(ns).sort();
     if (names.includes("default")) throw new Error(`dist/dom/${entry}.js has a default export, which the bridge cannot destructure`);
-    const shared = `globalThis[Symbol.for("rtd.dom.modules")]?.${key}`;
+    const shared = `globalThis[Symbol.for("ctrl-dom.dom.modules")]?.${key}`;
     const header = "// Generated by scripts/release.ts (writeBridges): the running ctrl-dom environment's DOM, else a fresh load.";
     writeFileSync(
       join(out, `${entry}.js`),
@@ -201,10 +175,9 @@ export async function assembleRelease(): Promise<string[]> {
   const ctrlDom = join(releaseDir, "ctrl-dom");
   const members: Json[] = [];
   let exportsMap: Json = {};
-  for (const [workspaceName, sub] of Object.entries(SUBPATHS)) {
-    const pkgDir = join(repoRoot, "packages", MEMBER_DIRS[workspaceName]);
+  for (const [dir, sub] of Object.entries(MEMBERS)) {
+    const pkgDir = join(repoRoot, "packages", dir);
     const pkg = readJson(join(pkgDir, "package.json"));
-    if (pkg.name !== workspaceName) throw new Error(`packages/${MEMBER_DIRS[workspaceName]} is ${pkg.name}, expected ${workspaceName}`);
     members.push(pkg);
     const distDir = sub || "dom";
     copyTree(join(pkgDir, "dist"), join(ctrlDom, "dist", distDir));

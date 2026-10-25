@@ -6,7 +6,7 @@
  * Each describe block names one step (the current editor's draft anchors; dom-accessibility-api
  * and our source comments use the older lettered names #step2A..#step2I, given in brackets).
  *
- * Every assertion runs on both engines (helpers.ts `both`): @rtd/aria on @rtd/dom and
+ * Every assertion runs on both engines (helpers.ts `both`): @ctrl/dom/aria on @ctrl/dom and
  * dom-accessibility-api@0.5.16 on jsdom, the oracle `*ByRole({ name })` users' tests were
  * written against. Where that oracle deviates from the spec the test says so and pins the
  * oracle's value (docs/deviations.md, "Accessible names follow dom-accessibility-api@0.5.16").
@@ -19,7 +19,7 @@ function nameOf(html: string, options?: { hidden?: boolean }) {
 }
 
 function expectName(html: string, expected: string, options?: { hidden?: boolean }): void {
-  expect(nameOf(html, options)).toEqual({ rtd: expected, upstream: expected });
+  expect(nameOf(html, options)).toEqual({ "ctrl-dom": expected, upstream: expected });
 }
 
 describe("2A Hidden Not Referenced [step2A] — https://w3c.github.io/accname/#comp_hidden_not_referenced", () => {
@@ -304,7 +304,7 @@ describe("2G Text Node — https://w3c.github.io/accname/#comp_text_node", () =>
         b.append("Sa", "ve");
         return api.name(b);
       }),
-    ).toEqual({ rtd: "Save", upstream: "Save" });
+    ).toEqual({ "ctrl-dom": "Save", upstream: "Save" });
   });
 
   test("comments contribute nothing", () => {
@@ -337,7 +337,7 @@ describe("prohibited naming — https://w3c.github.io/aria/#namefromprohibited",
 
   test("presentational role conflict resolution: a global aria-label makes role=presentation ignored, so the label names it (https://w3c.github.io/aria/#conflict_resolution_presentation_none)", () => {
     expect(both(`<span data-test role="presentation" aria-label="x">c</span>`, (api, doc) => [api.role(testNode(doc)), api.name(testNode(doc))])).toEqual({
-      rtd: [null, "x"],
+      "ctrl-dom": [null, "x"],
       upstream: [null, "x"],
     });
   });

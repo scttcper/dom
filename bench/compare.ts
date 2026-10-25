@@ -49,9 +49,9 @@ for (const [side, dir] of Object.entries(sides)) {
 
 /** Workload → configuration measured: our full stack for React rows, the DOM alone otherwise; startup from the bundles users load. */
 const PLAN: Array<[workload: string, config: string]> = [
-  ["startup/import", "rtd-dom-dist"],
-  ["startup/env", "rtd-dom-dist"],
-  ["startup/first-render", "rtd-dist"],
+  ["startup/import", "ctrl-dom-dist"],
+  ["startup/env", "ctrl-dom-dist"],
+  ["startup/first-render", "ctrl-dom-full-dist"],
   ...[
     "react/form-10-getByRole",
     "react/fill-10-submit",
@@ -62,9 +62,9 @@ const PLAN: Array<[workload: string, config: string]> = [
     "react/findby-waitfor",
     "react/mount-unmount-churn",
     "react/styled-form-rerender",
-  ].map((w): [string, string] => [w, "rtd"]),
+  ].map((w): [string, string] => [w, "ctrl-dom-full"]),
   // The stock Testing Library path (getComputedStyle per element and ancestor) under author styles.
-  ["react/styled-form-rerender", "rtd-dom"],
+  ["react/styled-form-rerender", "ctrl-dom"],
   ...[
     "dom/create-4k",
     "dom/build-1000-rows",
@@ -77,7 +77,7 @@ const PLAN: Array<[workload: string, config: string]> = [
     "dom/event-propagation-30",
     "dom/mutation-observer-50",
     "dom/window-churn",
-  ].map((w): [string, string] => [w, "rtd-dom"]),
+  ].map((w): [string, string] => [w, "ctrl-dom"]),
 ];
 
 const patterns = flags.workloads?.split(",").filter(Boolean);

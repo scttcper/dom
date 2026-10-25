@@ -21,8 +21,8 @@
  * `window.close()` cancels whatever is pending.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow, type Window } from "@rtd/dom";
-import { $timers } from "@rtd/dom/internal";
+import { createWindow, type Window } from "@ctrl/dom";
+import { $timers } from "@ctrl/dom/internal";
 
 let window: Window;
 

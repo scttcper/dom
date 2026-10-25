@@ -8,8 +8,8 @@ baseline.
 | mode | DOM | Testing Library |
 | --- | --- | --- |
 | `jsdom` | jsdom 27.4.0 (upstream configs, unchanged) | stock, from upstream's lockfile |
-| `rtd-dom` | `@rtd/dom` via the stock `vitest-environment-rtd` | stock, from upstream's lockfile |
-| `rtd-full` | `@rtd/dom` via the stock `vitest-environment-rtd` | ours: `@testing-library/{react,dom,user-event,jest-dom}` (+ subpaths) aliased to `packages/*/src` |
+| `ctrl-dom` | `@ctrl/dom` via the stock `@ctrl/dom/vitest-environment` | stock, from upstream's lockfile |
+| `ctrl-dom-full` | `@ctrl/dom` via the stock `@ctrl/dom/vitest-environment` | ours: `@testing-library/{react,dom,user-event,jest-dom}` (+ subpaths) aliased to `packages/*/src` |
 
 ## Why TanStack Query
 
@@ -25,13 +25,13 @@ packages resolve each other's `src/` through an export condition (no build).
 ```bash
 node downstream/tanstack-query/run.ts --install            # first time: clone pinned commit + frozen install, smoke
 node downstream/tanstack-query/run.ts --preset all         # the three projects
-node downstream/tanstack-query/run.ts --files packages/react-query/src/__tests__/useQuery.test.tsx --modes rtd-full --grep 'should retry'
+node downstream/tanstack-query/run.ts --files packages/react-query/src/__tests__/useQuery.test.tsx --modes ctrl-dom-full --grep 'should retry'
 node downstream/track.ts --suites tanstack-query           # compare the latest run with downstream/baseline.json
 ```
 
 Other flags: `--workers N` (default 4 in every mode), `--rounds N` (interleave the modes N times;
 median wall/RSS, tests that change status between rounds), `--latest` (upstream `main`),
-`--shims react,dom,user-event,jest-dom` (rtd-full subset), `--no-report`.
+`--shims react,dom,user-event,jest-dom` (ctrl-dom-full subset), `--no-report`.
 
 ## How it works
 
@@ -40,14 +40,14 @@ median wall/RSS, tests that change status between rounds), `--latest` (upstream 
 - `--install` runs upstream's exact `pnpm@12.4.2` with `--frozen-lockfile --ignore-scripts`,
   filtered to the root and `{./packages/<tested>}...` (no examples, integrations or other
   frameworks).
-- Per mode it writes `checkout/.rtd-harness/<mode>.config.mts` (deleted afterwards): it imports
-  each package's own `vite.config.ts`, `mergeConfig`s in the environment, the rtd-full aliases,
+- Per mode it writes `checkout/.ctrl-dom-harness/<mode>.config.mts` (deleted afterwards): it imports
+  each package's own `vite.config.ts`, `mergeConfig`s in the environment, the ctrl-dom-full aliases,
   `resolve.dedupe` for React/Vitest, `test.server.deps.external` for
-  `packages/(dom|vitest-environment)/src` (one `@rtd/dom` instance shared by the environment and
+  `packages/(dom|vitest-environment)/src` (one `@ctrl/dom` instance shared by the environment and
   the test realm), anchors `dir`/`setupFiles` to the package, and runs the three as one Vitest
   `projects` run. Filters are passed as absolute paths (each project matches them against its own
   `src/`).
-- Differences from upstream's own setup: `typecheck.enabled` and CI coverage off; rtd-full pins
+- Differences from upstream's own setup: `typecheck.enabled` and CI coverage off; ctrl-dom-full pins
   `react-dom` (see guards) and inlines `@testing-library/react-render-stream`.
 - Vitest runs with this process's Node (26), not the checkout's `.nvmrc` (24).
 
@@ -57,9 +57,9 @@ median wall/RSS, tests that change status between rounds), `--latest` (upstream 
   resolution records (`output/<mode>/resolutions.jsonl`). react-dom matters here: two of the
   packages depend on `react` only, so a bare `react-dom/client` import from our sources would
   otherwise resolve to this workspace's react-dom and its React (TRIAGE.md);
-- a setup-file probe per test file (`output/<mode>/environments.jsonl`): jsdom mode is jsdom; rtd
-  modes run on the `@rtd/dom` module the test realm imports;
-- rtd-full: each aliased specifier is our package entry, and no `@testing-library/*` import (other
+- a setup-file probe per test file (`output/<mode>/environments.jsonl`): jsdom mode is jsdom; ctrl-dom
+  modes run on the `@ctrl/dom` module the test realm imports;
+- ctrl-dom-full: each aliased specifier is our package entry, and no `@testing-library/*` import (other
   than the render-stream add-on) resolved outside `packages/`;
 - discovered test counts equal jsdom's; the jsdom baseline must exit 0.
 
@@ -67,5 +67,5 @@ median wall/RSS, tests that change status between rounds), `--latest` (upstream 
 
 - `output/<mode>/` (gitignored): Vitest JSON, log, `summary.json`, records.
 - `results/<date>-<preset>.md`: per-mode counts, wall, peak RSS, tests that pass on jsdom but fail
-  on rtd, failures by file and error signature.
+  on ctrl-dom, failures by file and error signature.
 - `TRIAGE.md`: what differs and why.

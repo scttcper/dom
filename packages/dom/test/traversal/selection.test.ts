@@ -8,7 +8,7 @@
  *   - createContextualFragment — https://html.spec.whatwg.org/#dom-range-createcontextualfragment
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, Range, StaticRange, type Document } from "@rtd/dom";
+import { createWindow, Range, StaticRange, type Document } from "@ctrl/dom";
 import { liveRangeCount } from "../../src/traversal/live.ts";
 
 let document: Document;

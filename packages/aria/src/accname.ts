@@ -21,13 +21,13 @@ import {
   type AttrRecord,
   type NodeCache,
   type NodeImpl,
-} from "@rtd/dom/internal";
-import type { Element, Node } from "@rtd/dom";
+} from "@ctrl/dom/internal";
+import type { Element, Node } from "@ctrl/dom";
 import { daaGetRole, anyTag, type Flavor } from "./role.ts";
 import { controlValue, inputType, labelsOf, selectedOptions } from "./forms.ts";
 import { queryIdRefs, textContent } from "./tree.ts";
 import { isDisplayInline, isDisplayNone, isVisibilityHidden, pseudoText } from "./style.ts";
-import { $impl, $styleVersion, $version, getComputedStyleOverride } from "@rtd/dom/internal";
+import { $impl, $styleVersion, $version, getComputedStyleOverride } from "@ctrl/dom/internal";
 
 /** Minimal CSSStyleDeclaration shape read from a user-supplied `getComputedStyle`. */
 export interface StyleLike {

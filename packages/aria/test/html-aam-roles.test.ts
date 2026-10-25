@@ -7,7 +7,7 @@
  *   HTML-AAM §3.5 "HTML Attribute State and Property Mappings" — https://w3c.github.io/html-aam/#html-attribute-state-and-property-mappings
  *   WAI-ARIA 1.2 §6.6/6.7 states and properties — https://www.w3.org/TR/wai-aria-1.2/#state_prop_def
  *
- * Every assertion runs on both engines (helpers.ts `both`): @rtd/aria on @rtd/dom and
+ * Every assertion runs on both engines (helpers.ts `both`): @ctrl/dom/aria on @ctrl/dom and
  * Testing Library 10.4.2 role-helpers (aria-query@5.3.0) on jsdom. aria-query's table ignores
  * element context (header in sectioning content, td in a grid, ...): tests prefixed "oracle:"
  * pin that documented deviation (docs/deviations.md, "Roles follow aria-query@5.3.0"), with
@@ -17,12 +17,12 @@ import { describe, expect, test } from "vitest";
 import { both, testNode, type AriaApi } from "./helpers.ts";
 
 function expectRoles(html: string, expected: string[]): void {
-  expect(both(html, (api, doc) => api.implicitRoles(testNode(doc)))).toEqual({ rtd: expected, upstream: expected });
+  expect(both(html, (api, doc) => api.implicitRoles(testNode(doc)))).toEqual({ "ctrl-dom": expected, upstream: expected });
 }
 
 function expectState<K extends keyof AriaApi>(html: string, state: K, expected: unknown): void {
   expect(both(html, (api, doc) => (api[state] as (el: unknown) => unknown)(testNode(doc)))).toEqual({
-    rtd: expected,
+    "ctrl-dom": expected,
     upstream: expected,
   });
 }
@@ -233,11 +233,11 @@ describe("explicit roles — https://w3c.github.io/aria/#document-handling_autho
   test("getRoles groups elements by their first role token; inaccessible elements only with hidden: true", () => {
     const html = `<div data-id="a" role="tab button"></div><button data-id="b">b</button><button data-id="c" hidden>c</button><nav data-id="d" aria-hidden="true"></nav>`;
     expect(both(html, (api, doc) => api.roles(doc.body))).toEqual({
-      rtd: { tab: ["a"], button: ["b"] },
+      "ctrl-dom": { tab: ["a"], button: ["b"] },
       upstream: { tab: ["a"], button: ["b"] },
     });
     expect(both(html, (api, doc) => api.roles(doc.body, { hidden: true }))).toEqual({
-      rtd: { tab: ["a"], button: ["b", "c"], navigation: ["d"] },
+      "ctrl-dom": { tab: ["a"], button: ["b", "c"], navigation: ["d"] },
       upstream: { tab: ["a"], button: ["b", "c"], navigation: ["d"] },
     });
   });
@@ -254,7 +254,7 @@ describe("aria-checked — https://www.w3.org/TR/wai-aria-1.2/#aria-checked, htt
         el.checked = false;
         return api.checked(el);
       }),
-    ).toEqual({ rtd: false, upstream: false });
+    ).toEqual({ "ctrl-dom": false, upstream: false });
   });
 
   test("an indeterminate checkbox is neither checked nor unchecked (mixed)", () => {
@@ -264,7 +264,7 @@ describe("aria-checked — https://www.w3.org/TR/wai-aria-1.2/#aria-checked, htt
         el.indeterminate = true;
         return api.checked(el);
       }),
-    ).toEqual({ rtd: undefined, upstream: undefined });
+    ).toEqual({ "ctrl-dom": undefined, upstream: undefined });
   });
 
   test("native checkedness wins over aria-checked on inputs", () => {

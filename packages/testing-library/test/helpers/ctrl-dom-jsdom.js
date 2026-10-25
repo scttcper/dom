@@ -1,7 +1,7 @@
-// The slice of jsdom's `JSDOM` API that upstream's __node_tests__ use, backed by @rtd/dom
+// The slice of jsdom's `JSDOM` API that upstream's __node_tests__ use, backed by @ctrl/dom
 // windows that are NOT installed as globals ("works without a global dom").
 
-import {createWindow} from '@rtd/dom'
+import {createWindow} from '@ctrl/dom'
 
 export class JSDOM {
   constructor(html = '') {

@@ -33,12 +33,12 @@ test("counter ${i}", () => {
   );
 }
 
-const envs = ["jsdom", "happy-dom", "rtd"];
+const envs = ["jsdom", "happy-dom", "ctrl-dom"];
 for (let r = 0; r < rounds; r++) {
   for (const env of r % 2 === 0 ? envs : envs.toReversed()) {
     const t = performance.now();
     const { stdout: out } = spawnSync("pnpm", ["exec", "vitest", "run", "--config", `${here}vitest.config.ts`], {
-      env: { ...process.env, RTD_BENCH_ENV: env },
+      env: { ...process.env, CTRL_DOM_BENCH_ENV: env },
       encoding: "utf8",
       cwd: `${here}..`,
     });

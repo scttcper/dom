@@ -1,5 +1,5 @@
 {
-  "name": "ctrl-dom-monorepo",
+  "name": "@ctrl/dom",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/scttcper/dom#readme",
@@ -11,6 +11,45 @@
     "url": "git+https://github.com/scttcper/dom.git"
   },
   "type": "module",
+  "exports": {
+    ".": "./packages/dom/src/index.ts",
+    "./internal": "./packages/dom/src/internal.ts",
+    "./aria": "./packages/aria/src/index.ts",
+    "./aria/internal": "./packages/aria/src/internal.ts",
+    "./testing-library": {
+      "types": "./packages/testing-library/types/index.d.ts",
+      "default": "./packages/testing-library/src/index.ts"
+    },
+    "./testing-library/agent": {
+      "types": "./packages/testing-library/types/agent.d.ts",
+      "default": "./packages/testing-library/src/agent.ts"
+    },
+    "./react": "./packages/react/src/index.ts",
+    "./react/pure": "./packages/react/src/pure.ts",
+    "./react/dont-cleanup-after-each": "./packages/react/src/dont-cleanup-after-each.ts",
+    "./user-event": "./packages/user-event/src/index.ts",
+    "./jest-dom": {
+      "types": "./packages/jest-dom/types/index.d.ts",
+      "default": "./packages/jest-dom/src/index.ts"
+    },
+    "./jest-dom/matchers": {
+      "types": "./packages/jest-dom/types/matchers-standalone.d.ts",
+      "default": "./packages/jest-dom/src/matchers.ts"
+    },
+    "./jest-dom/vitest": {
+      "types": "./packages/jest-dom/types/vitest.d.ts",
+      "default": "./packages/jest-dom/src/vitest.ts"
+    },
+    "./jest-dom/jest-globals": {
+      "types": "./packages/jest-dom/types/jest-globals.d.ts",
+      "default": "./packages/jest-dom/src/jest-globals.ts"
+    },
+    "./vitest-environment": "./packages/vitest-environment/src/index.ts",
+    "./vitest-environment/failure-snapshot": "./packages/vitest-environment/src/failure-snapshot.ts",
+    "./register": "./packages/register/src/index.ts",
+    "./register/pure": "./packages/register/src/pure.ts",
+    "./package.json": "./package.json"
+  },
   "packageManager": "pnpm@12.15.0",
   "engines": {
     "node": ">=26"
@@ -21,11 +60,11 @@
     "test:pack": "node tests/pack/src/run.ts",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint",
-    "bench": "pnpm --filter @rtd/bench run bench",
+    "bench": "pnpm --filter ./bench run bench",
     "build": "node scripts/build.ts",
     "docs:compat": "node scripts/compat-doc.ts",
     "docs:spec": "node scripts/spec-coverage.ts",
-    "bench:suite": "pnpm --filter @rtd/bench run bench:suite",
+    "bench:suite": "pnpm --filter ./bench run bench:suite",
     "bench:compare": "node bench/compare.ts",
     "compare": "node comparison/run.ts",
     "compare:report": "node comparison/report.ts",

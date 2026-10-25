@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test,
 import * as React from "react";
 import ReactDOM from "react-dom";
 import ReactDOMServer from "react-dom/server";
-import { fireEvent, render, screen, configure, type Config } from "@rtd/react";
+import { fireEvent, render, screen, configure, type Config } from "@ctrl/dom/react";
 
 // No lib.dom in this repo: environment globals are untyped here.
 declare const document: any;

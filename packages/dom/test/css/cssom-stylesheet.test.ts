@@ -15,7 +15,7 @@
  *   CSS Nesting 1 CSSNestedDeclarations — https://drafts.csswg.org/css-nesting-1/#cssnesteddeclarations
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, CSSStyleSheet, type Document, type Window } from "@rtd/dom";
+import { createWindow, CSSStyleSheet, type Document, type Window } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let window: Window;

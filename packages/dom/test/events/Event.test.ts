@@ -26,7 +26,7 @@ import {
   TouchEvent,
   UIEvent,
   type Document,
-} from "@rtd/dom";
+} from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 
 let document: Document;

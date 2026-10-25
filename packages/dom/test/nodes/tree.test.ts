@@ -9,7 +9,7 @@
  * (connectedness flags, the document id index, focus fixup).
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 
 let document: Document;
 

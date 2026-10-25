@@ -16,7 +16,7 @@
  *   - host-including inclusive ancestor: https://dom.spec.whatwg.org/#concept-tree-host-including-inclusive-ancestor
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, type Element } from "@rtd/dom";
+import { createWindow, type Element } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 /** Child-list records of `mo` as [target, added, removed, previousSibling, nextSibling]. */

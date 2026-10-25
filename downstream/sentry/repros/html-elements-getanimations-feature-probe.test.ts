@@ -11,7 +11,7 @@
  *           .then(() => panel.setAttribute('hidden', 'until-found'));
  *   }
  * jsdom has no Element.getAnimations, so collapsing hides the panel synchronously inside
- * React's commit. @rtd/dom implements getAnimations() (always `[]`, docs/deviations.md
+ * React's commit. @ctrl/dom implements getAnimations() (always `[]`, docs/deviations.md
  * "Animations"), so React Aria takes the animated path and `hidden` lands a microtask later:
  * `rerender(...); expect(panel).not.toBeVisible()` fails.
  *

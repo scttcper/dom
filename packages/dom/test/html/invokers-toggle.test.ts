@@ -40,7 +40,7 @@
  * spec directly. Radix, React Aria and Headless UI menus, dialogs and disclosures sit on them.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let win: any;

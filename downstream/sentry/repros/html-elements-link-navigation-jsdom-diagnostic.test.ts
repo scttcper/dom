@@ -8,7 +8,7 @@
  * Activating an `<a href>` that leaves the document makes jsdom report
  * "Error: Not implemented: navigation (except hash changes)" through its virtual console, which
  * Jest's jsdom environment forwards to `console.error`. The Sentry tests assert that this
- * console.error happened. @rtd/dom deliberately never navigates and logs nothing
+ * console.error happened. @ctrl/dom deliberately never navigates and logs nothing
  * (docs/deviations.md "Links never navigate"), so the assertion fails.
  *
  * Options for the owner: keep the deviation (recommended; the upstream assertion pins a jsdom

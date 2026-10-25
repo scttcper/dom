@@ -14,7 +14,7 @@ export function setCurrentWindow(window: Window | null): void {
 }
 
 export function currentWindow(): Window {
-  if (current === null) throw new TypeError("No active @rtd/dom window. Create one with createWindow().");
+  if (current === null) throw new TypeError("No active @ctrl/dom window. Create one with createWindow().");
   return current;
 }
 

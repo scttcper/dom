@@ -1,2 +1,2 @@
-// Target setup: vitest-environment-rtd provides the @rtd/dom globals; matchers from @rtd/jest-dom.
-import "@rtd/jest-dom/vitest";
+// Target setup: @ctrl/dom/vitest-environment provides the @ctrl/dom globals; matchers from @ctrl/dom/jest-dom.
+import "@ctrl/dom/jest-dom/vitest";

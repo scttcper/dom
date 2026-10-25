@@ -14,7 +14,7 @@
  *     (short: https://webidl.spec.whatwg.org/#es-short, unsigned long: https://webidl.spec.whatwg.org/#es-unsigned-long)
  */
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { describeNode, differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 const name = (t: AnyWindow) => (t === null ? "null" : t?.nodeType ? describeNode(t) : t?.document ? "window" : String(t));

@@ -1,9 +1,9 @@
 /**
  * Downstream repro (Base UI: FloatingFocusManager "JSDOM-only coverage iframe focus navigation"
- * x2 and ToastViewport "rebinds owner-document listeners" x1; 3 failures in both rtd modes).
+ * x2 and ToastViewport "rebinds owner-document listeners" x1; 3 failures in both ctrl-dom modes).
  *
  * A connected `<iframe>` gets a nested browsing context with its own window/document in jsdom
- * (`contentWindow`, `contentDocument` of about:blank). @rtd/dom documents "no nested browsing
+ * (`contentWindow`, `contentDocument` of about:blank). @ctrl/dom documents "no nested browsing
  * context" (docs/deviations.md), so tests that render into an iframe document throw
  * "Expected iframe window and document".
  *

@@ -2,7 +2,7 @@
 // Prints one JSON line: { setupMs, perIterationMs, heapUsedMB, rssMB }.
 //
 // stacks:
-//   rtd        @rtd/react + @rtd/jest-dom on @rtd/dom (vitest-environment-rtd globals)
+//   ctrl-dom        @ctrl/dom/react + @ctrl/dom/jest-dom on @ctrl/dom (@ctrl/dom/vitest-environment globals)
 //   jsdom      stock @testing-library/react + @testing-library/jest-dom on jsdom
 //   happy-dom  stock @testing-library/react + @testing-library/jest-dom on happy-dom
 import * as React from "react";
@@ -31,9 +31,9 @@ if (stack === "jsdom") {
 } else if (stack === "happy-dom") {
   const { Window } = await import("happy-dom");
   installWindowGlobals(new Window({ url: "http://localhost/" }));
-} else if (stack === "rtd") {
+} else if (stack === "ctrl-dom") {
   // TODO(react): use the window agent's installGlobals once it exists.
-  const dom: any = await import("@rtd/dom");
+  const dom: any = await import("@ctrl/dom");
   const win = dom.createWindow();
   if (typeof dom.installGlobals === "function") dom.installGlobals(win);
   else installWindowGlobals(win);
@@ -41,8 +41,8 @@ if (stack === "jsdom") {
 g.IS_REACT_ACT_ENVIRONMENT = true;
 
 const stockLib = stack === "jsdom" || stack === "happy-dom";
-const rtl: any = stockLib ? await import("@testing-library/react/pure.js") : await import("@rtd/react/pure");
-const matchers: any = stockLib ? await import("@testing-library/jest-dom/matchers") : await import("@rtd/jest-dom/matchers");
+const rtl: any = stockLib ? await import("@testing-library/react/pure.js") : await import("@ctrl/dom/react/pure");
+const matchers: any = stockLib ? await import("@testing-library/jest-dom/matchers") : await import("@ctrl/dom/jest-dom/matchers");
 const setupMs = performance.now() - t0;
 
 // Minimal matcher context: only the pass path runs in the benchmark.

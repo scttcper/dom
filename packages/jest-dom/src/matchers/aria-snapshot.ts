@@ -1,6 +1,6 @@
 // toMatchAriaSnapshot: an @ctrl/dom addition (upstream jest-dom has no such matcher). Playwright's
 // aria snapshot assertion (https://playwright.dev/docs/aria-snapshots#partial-matching) for
-// component tests, over @rtd/testing-library's ariaSnapshot model:
+// component tests, over @ctrl/dom/testing-library's ariaSnapshot model:
 //
 //   expect(screen.getByRole("form")).toMatchAriaSnapshot(`
 //     - textbox "Email"
@@ -11,12 +11,12 @@
 // template against the closest part of the tree, then the received snapshot, which can be
 // pasted back as a template.
 
-import { AriaTemplateError, matchAriaSnapshot } from "@rtd/testing-library/agent";
-import { $impl } from "@rtd/dom/internal";
+import { AriaTemplateError, matchAriaSnapshot } from "@ctrl/dom/testing-library/agent";
+import { $impl } from "@ctrl/dom/internal";
 import { NodeTypeError, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
 
 export function toMatchAriaSnapshot(this: MatcherContext, container: DOMNode, template: string): MatcherResult {
-  // An @rtd/dom element, document or fragment (the snapshot is computed on its NodeImpl tree).
+  // An @ctrl/dom element, document or fragment (the snapshot is computed on its NodeImpl tree).
   if (container == null || typeof container !== "object" || container[$impl] === undefined) {
     throw new NodeTypeError(container, toMatchAriaSnapshot, this);
   }

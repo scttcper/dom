@@ -1,5 +1,5 @@
-// Test setup for @rtd/testing-library. The DOM comes from vitest-environment-rtd
-// (`environment: "rtd"`); files under test/upstream-node/ (port of upstream's
+// Test setup for @ctrl/dom/testing-library. The DOM comes from @ctrl/dom/vitest-environment
+// (`environment: "ctrl-dom"`); files under test/upstream-node/ (port of upstream's
 // __node_tests__) run in the node environment without a global DOM.
 
 import * as matchers from "@testing-library/jest-dom/matchers";
@@ -37,7 +37,7 @@ function thrownMessage(utils: any, assertion: any): string {
     if (!threw) throw new Error("Received function did not throw");
   }
   const message = String(error != null && typeof error.message === "string" ? error.message : error);
-  return (globalThis as any).__rtdStripAnsiInSnapshots ? message.replace(ANSI, "") : message;
+  return (globalThis as any).__ctrlDomStripAnsiInSnapshots ? message.replace(ANSI, "") : message;
 }
 
 chai.use((chaiInstance, utils) => {

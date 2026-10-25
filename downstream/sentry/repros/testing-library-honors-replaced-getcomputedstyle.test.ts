@@ -5,10 +5,10 @@
  * Sentry's tests/js/setup.ts replaces `window.getComputedStyle` with `(el) => el.style`
  * ("The full jsdom CSS cascade is too slow"), so stylesheet rules never hide anything from
  * stock Testing Library: `isInaccessible()` (and dom-accessibility-api) call
- * `element.ownerDocument.defaultView.getComputedStyle`. @rtd/testing-library's ByRole filter
- * (role-helpers `isInaccessibleImpl`) reads @rtd/dom's cascade directly and ignores the
+ * `element.ownerDocument.defaultView.getComputedStyle`. @ctrl/dom/testing-library's ByRole filter
+ * (role-helpers `isInaccessibleImpl`) reads @ctrl/dom's cascade directly and ignores the
  * replaced function, so an element hidden by a stylesheet `display: none` is excluded and
- * `getByRole` fails where stock Testing Library (jsdom or @rtd/dom) finds it.
+ * `getByRole` fails where stock Testing Library (jsdom or @ctrl/dom) finds it.
  *
  * The internal fast path is fine; it should only be taken while `window.getComputedStyle` is
  * still the window's own implementation (fall back to calling the replaced function, as
@@ -31,7 +31,7 @@ differential("ByRole honours a user-replaced window.getComputedStyle", (make, en
     document.head.innerHTML = "<style>.overflow { display: none }</style>";
     document.body.innerHTML = '<ul role="tablist"><li role="tab">Details</li><li role="tab" class="overflow">Attachments</li></ul>';
     window.getComputedStyle = (el: any) => el.style;
-    // jsdom: stock Testing Library (Sentry's baseline); rtd: @rtd/testing-library (rtd-full).
+    // jsdom: stock Testing Library (Sentry's baseline); ctrl-dom: @ctrl/dom/testing-library (ctrl-dom-full).
     const lib = engine === "jsdom" ? stock : ours;
     const names = await withGlobals(window, engine, () => lib.queryAllByRole(document.body, "tab").map((t: any) => t.textContent));
     expect(names).toEqual(["Details", "Attachments"]);

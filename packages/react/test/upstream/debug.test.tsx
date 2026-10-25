@@ -3,7 +3,7 @@
 // The inline snapshot uses vitest's array formatting, which matches jest's here.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, test, vi } from "vitest";
 import * as React from "react";
-import { render, screen } from "@rtd/react";
+import { render, screen } from "@ctrl/dom/react";
 
 beforeEach(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});

@@ -6,12 +6,12 @@
 // hidden from the accessibility tree, or a state filter does not match. These helpers list such
 // elements in aria snapshot syntax with a `# reason` comment, best guesses first.
 //
-// Roles, names and hiddenness use the same @rtd/aria functions ByRole uses (html-aam roles,
+// Roles, names and hiddenness use the same @ctrl/dom/aria functions ByRole uses (html-aam roles,
 // https://www.w3.org/TR/html-aam-1.0/#html-element-role-mappings; accname,
 // https://w3c.github.io/accname/#mapping_additional_nd_name).
 
-import { ELEMENT_NODE, attr, nextInTree, type NodeImpl } from "@rtd/dom/internal";
-import { computeAccessibleNameImpl, isInaccessibleImpl, tlRole, tlRoleMatches } from "@rtd/aria/internal";
+import { ELEMENT_NODE, attr, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
+import { computeAccessibleNameImpl, isInaccessibleImpl, tlRole, tlRoleMatches } from "@ctrl/dom/aria/internal";
 import { describeElement, hiddenReason, nodeKey, nodeProps, quote, truncate, type SnapshotNode } from "./aria-snapshot.ts";
 import { getNodeTextImpl } from "./get-node-text.ts";
 import { implOf } from "./helpers.ts";

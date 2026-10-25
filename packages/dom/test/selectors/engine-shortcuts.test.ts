@@ -17,7 +17,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
-import { createWindow, type Document } from "@rtd/dom";
+import { createWindow, type Document } from "@ctrl/dom";
 import { compileSelectorList } from "../../src/selectors/internal.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

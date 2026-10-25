@@ -11,7 +11,7 @@
  *   - indexed iterable interfaces — https://webidl.spec.whatwg.org/#es-iterable
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, NodeList, HTMLCollection, type Document } from "@rtd/dom";
+import { createWindow, NodeList, HTMLCollection, type Document } from "@ctrl/dom";
 import { $mode } from "../../src/keys.ts";
 
 let document: Document;

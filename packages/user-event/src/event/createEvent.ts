@@ -3,7 +3,7 @@
 
 import type {ClipboardEvent, ClipboardEventInit, Element, Event, EventInit, EventModifierInit, FocusEvent, FocusEventInit, InputEvent, InputEventInit, KeyboardEvent, KeyboardEventInit, MouseEvent, MouseEventInit, PointerEvent, PointerEventInit, UIEvent, UIEventInit, Window} from '../dom-types.ts'
 import {getWindow} from '../utils/index.ts'
-import {implOf} from '../rtd.ts'
+import {implOf} from '../ctrl-dom.ts'
 import {eventMap} from './eventMap.ts'
 import {
   type EventType,
@@ -67,7 +67,7 @@ export function createEvent<K extends EventType>(
   }
 
   // A fallback class (the window lacks the interface, e.g. PointerEvent under
-  // jest-environment-rtd's jsdom 26 parity) takes upstream's path: its native superclass
+  // @ctrl/dom-jest-environment's jsdom 26 parity) takes upstream's path: its native superclass
   // constructor would drop the members only the initializers set (pointerType, width, ...).
   if (implOf(target) !== null && !constructors.fallbacks.has(EventType)) {
     return createNativeEvent(constructors[EventType], EventType, type, defaultInit, init, modifiers) as FixedDocumentEventMap[K]
@@ -83,7 +83,7 @@ export function createEvent<K extends EventType>(
 }
 
 /**
- * @rtd/dom path: its event constructors implement the full UI Events / Pointer Events /
+ * @ctrl/dom path: its event constructors implement the full UI Events / Pointer Events /
  * Input Events / Clipboard API init dictionaries, so the event is created in one constructor
  * call instead of upstream's ~20 `Object.defineProperty` overrides per event (which also turn
  * every event into a dictionary-mode object).

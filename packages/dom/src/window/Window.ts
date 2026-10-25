@@ -123,7 +123,7 @@ export interface ResolvedWindowOptions {
 // jsdom/x`; ours is that string as jsdom produces it on Linux CI, pinned (docs/deviations.md).
 // https://html.spec.whatwg.org/#dom-navigator-platform (implementation-defined).
 const DEFAULT_PLATFORM = "";
-const DEFAULT_USER_AGENT = "Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) rtd/0.0.0";
+const DEFAULT_USER_AGENT = "Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) ctrl-dom/0.0.0";
 const DEFAULT_LANGUAGES: readonly string[] = Object.freeze(["en-US", "en"]);
 
 /** @internal A nested browsing context (an <iframe>'s), see window/browsing-context.ts. */

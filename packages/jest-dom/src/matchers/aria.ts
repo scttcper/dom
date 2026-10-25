@@ -6,16 +6,16 @@
 // https://github.com/testing-library/jest-dom/blob/v7.0.1/src/to-have-description.js
 // https://github.com/testing-library/jest-dom/blob/v7.0.1/src/to-have-errormessage.js
 
-import { getImplicitAriaRolesJestDom } from "@rtd/aria";
+import { getImplicitAriaRolesJestDom } from "@ctrl/dom/aria";
 import { computeAccessibleDescription, computeAccessibleName } from "../aria.ts";
 import { ELEMENT_ROLES } from "../element-roles.generated.ts";
 import { checkHtmlElement, deprecate, getMessage, normalize, type DOMNode, type MatcherContext, type MatcherResult } from "../utils.ts";
-import { $impl } from "@rtd/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
 
 // --- toHaveRole -------------------------------------------------------------------------
 //
 // Upstream builds ~112 CSS selectors from aria-query's elementRoles and calls
-// `element.matches(selector)` on each until one matches. @rtd/dom elements use @rtd/aria's
+// `element.matches(selector)` on each until one matches. @ctrl/dom elements use @ctrl/dom/aria's
 // `getImplicitAriaRolesJestDom` (the same rules over NodeImpl). Foreign elements (jsdom, in
 // oracle runs) use ELEMENT_ROLES: that same list precompiled from aria-query@5.3.2
 // (scripts/gen-element-roles.ts) and evaluated with attribute reads.

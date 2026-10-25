@@ -1,4 +1,4 @@
-// Forms performance comparison: @rtd/dom vs jsdom vs happy-dom.
+// Forms performance comparison: @ctrl/dom vs jsdom vs happy-dom.
 //
 //   node packages/dom/test/perf/forms-perf.ts            # all implementations, 7 samples each
 //   node packages/dom/test/perf/forms-perf.ts --samples 11
@@ -11,15 +11,15 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-type Impl = "rtd" | "jsdom" | "happy-dom";
-const IMPLS: Impl[] = ["rtd", "jsdom", "happy-dom"];
+type Impl = "ctrl-dom" | "jsdom" | "happy-dom";
+const IMPLS: Impl[] = ["ctrl-dom", "jsdom", "happy-dom"];
 
 // biome-ignore lint: untyped DOM surface
 type AnyWindow = any;
 
 async function makeWindow(impl: Impl): Promise<AnyWindow> {
-  if (impl === "rtd") {
-    const { createWindow } = await import("@rtd/dom");
+  if (impl === "ctrl-dom") {
+    const { createWindow } = await import("@ctrl/dom");
     return createWindow({ url: "http://localhost/" });
   }
   if (impl === "jsdom") {
@@ -152,7 +152,7 @@ function main(): void {
   const samplesArg = process.argv.indexOf("--samples");
   const samples = samplesArg === -1 ? 7 : Number(process.argv[samplesArg + 1]);
   const file = fileURLToPath(import.meta.url);
-  const all: Record<Impl, Record<string, number[]>> = { rtd: {}, jsdom: {}, "happy-dom": {} };
+  const all: Record<Impl, Record<string, number[]>> = { "ctrl-dom": {}, jsdom: {}, "happy-dom": {} };
   for (let s = 0; s < samples; s++) {
     for (const impl of IMPLS) {
       const out = execFileSync(process.execPath, ["--expose-gc", file, "--child", impl], { encoding: "utf8", maxBuffer: 1 << 24 });
@@ -160,10 +160,10 @@ function main(): void {
       for (const [k, v] of Object.entries(r)) (all[impl][k] ??= []).push(v);
     }
   }
-  const ops = Object.keys(all.rtd);
+  const ops = Object.keys(all["ctrl-dom"]);
   const fmt = (xs: number[]) => `${median(xs).toFixed(2)} (${Math.min(...xs).toFixed(2)}–${Math.max(...xs).toFixed(2)})`;
-  const rows = ops.map((op) => [op, ...IMPLS.map((impl) => fmt(all[impl][op])), (median(all.jsdom[op]) / median(all.rtd[op])).toFixed(1) + "×", (median(all["happy-dom"][op]) / median(all.rtd[op])).toFixed(1) + "×"]);
-  const header = ["operation (median ms, min–max)", ...IMPLS, "jsdom/rtd", "happy/rtd"];
+  const rows = ops.map((op) => [op, ...IMPLS.map((impl) => fmt(all[impl][op])), (median(all.jsdom[op]) / median(all["ctrl-dom"][op])).toFixed(1) + "×", (median(all["happy-dom"][op]) / median(all["ctrl-dom"][op])).toFixed(1) + "×"]);
+  const header = ["operation (median ms, min–max)", ...IMPLS, "jsdom/ctrl-dom", "happy/ctrl-dom"];
   const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
   const line = (r: string[]) => "| " + r.map((c, i) => c.padEnd(widths[i])).join(" | ") + " |";
   console.log(`Node ${process.version}, ${samples} samples per implementation (fresh process each)\n`);

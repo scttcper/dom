@@ -1,5 +1,5 @@
 /**
- * vitest-environment-rtd setup/teardown contract.
+ * @ctrl/dom/vitest-environment setup/teardown contract.
  *
  * Spec: HTML Standard — The Window object (the global the environment installs)
  *   https://html.spec.whatwg.org/#the-window-object
@@ -8,11 +8,11 @@
  */
 import { runInContext } from "node:vm";
 import { describe, expect, test, vi } from "vitest";
-import environment from "vitest-environment-rtd";
+import environment from "@ctrl/dom/vitest-environment";
 
 describe("Environment object — https://html.spec.whatwg.org/#the-window-object", () => {
-  test("is a client environment named rtd", () => {
-    expect(environment.name).toBe("rtd");
+  test("is a client environment named ctrl-dom", () => {
+    expect(environment.name).toBe("ctrl-dom");
     expect(environment.viteEnvironment).toBe("client");
     expect(typeof environment.setup).toBe("function");
     expect(typeof environment.setupVM).toBe("function");
@@ -20,9 +20,9 @@ describe("Environment object — https://html.spec.whatwg.org/#the-window-object
 });
 
 describe("setup(global, options) / teardown", () => {
-  test("installs a window on the given global with environmentOptions.rtd, and teardown restores it", async () => {
+  test("installs a window on the given global with environmentOptions['ctrl-dom'], and teardown restores it", async () => {
     const global: Record<string, unknown> = { Event: "node-event", setTimeout };
-    const env = await environment.setup(global, { rtd: { url: "http://example.test/a", width: 640, height: 480 } });
+    const env = await environment.setup(global, { "ctrl-dom": { url: "http://example.test/a", width: 640, height: 480 } });
     expect(global.window).toBe(global);
     expect((global.location as Location).href).toBe("http://example.test/a");
     expect(global.innerWidth).toBe(640);
@@ -70,7 +70,7 @@ describe("setup(global, options) / teardown", () => {
   });
 
   test("teardown cancels pending animation frames and tasks created by the window", async () => {
-    // The window's frames and tasks live on the environment's virtual clock (@rtd/dom
+    // The window's frames and tasks live on the environment's virtual clock (@ctrl/dom
     // window/clock.ts), which teardown disposes: nothing pending may run afterwards.
     const global: Record<string, unknown> = {};
     const env = await environment.setup(global, {});
@@ -111,7 +111,7 @@ describe("interface isolation between VM-pool test files — https://webidl.spec
 
 describe("setupVM(options)", () => {
   test("returns a vm context whose global is the window, with host timers and URL", async () => {
-    const vm = await environment.setupVM!({ rtd: { url: "http://localhost:5173/" } });
+    const vm = await environment.setupVM!({ "ctrl-dom": { url: "http://localhost:5173/" } });
     const context = vm.getVmContext();
     expect(runInContext("window === globalThis && location.href", context)).toBe("http://localhost:5173/");
     expect(runInContext("document.createElement('p').tagName", context)).toBe("P");

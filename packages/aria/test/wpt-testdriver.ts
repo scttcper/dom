@@ -1,5 +1,5 @@
 // `test_driver` for the WPT accessibility suites (wai-aria, accname, html-aam), backed by
-// @rtd/aria. https://web-platform-tests.org/writing-tests/testdriver.html#accessibility
+// @ctrl/dom/aria. https://web-platform-tests.org/writing-tests/testdriver.html#accessibility
 //
 // - `get_computed_role(el)` → the role Testing Library's `*ByRole` matches the element
 //   against (`tlRole`: first token of the `role` attribute, else the aria-query@5.3.0
@@ -15,9 +15,9 @@
 //        https://w3c.github.io/aria/#document-handling_author-errors_roles,
 //        https://w3c.github.io/accname/#mapping_additional_nd_te
 
-import type { Element } from "@rtd/dom";
-import { computeAccessibleName } from "@rtd/aria";
-import { implOf, tlRole } from "@rtd/aria/internal";
+import type { Element } from "@ctrl/dom";
+import { computeAccessibleName } from "@ctrl/dom/aria";
+import { implOf, tlRole } from "@ctrl/dom/aria/internal";
 
 /**
  * Pure naming differences between Testing Library / aria-query role names and the

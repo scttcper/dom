@@ -65,11 +65,11 @@ async function runStartup(w: StartupWorkload, config: ConfigName): Promise<Omit<
   if (w.id === "startup/first-render") {
     const t1 = performance.now();
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-    const full = config === "rtd" || config === "rtd-dist";
+    const full = config === "ctrl-dom-full" || config === "ctrl-dom-full-dist";
     const React = await import("react");
-    const rtl: any = await import(full ? "@rtd/react" : "@testing-library/react");
-    await import(full ? "@rtd/user-event" : "@testing-library/user-event");
-    await import(full ? "@rtd/jest-dom/matchers" : "@testing-library/jest-dom/matchers");
+    const rtl: any = await import(full ? "@ctrl/dom/react" : "@testing-library/react");
+    await import(full ? "@ctrl/dom/user-event" : "@testing-library/user-event");
+    await import(full ? "@ctrl/dom/jest-dom/matchers" : "@testing-library/jest-dom/matchers");
     const t2 = performance.now();
     const view = rtl.render(React.createElement("button", { type: "button" }, "Hello"));
     const button = rtl.screen.getByRole("button", { name: "Hello" });

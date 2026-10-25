@@ -107,7 +107,7 @@ function describeValue(value: unknown, depth: number): string {
 let nodeDescriber: ((node: unknown) => string | null) | null = null;
 
 /**
- * Lets a higher layer name elements in span descriptions: @rtd/aria registers role and accessible
+ * Lets a higher layer name elements in span descriptions: @ctrl/dom/aria registers role and accessible
  * name (`button "Save"`), the way queries find them. Called only while tracing.
  */
 export function setNodeDescriber(describer: ((node: unknown) => string | null) | null): void {
@@ -153,7 +153,7 @@ export const FAILURE_CHANNEL = "sentry-tests:failure";
 let failureSnapshot: ((body: unknown) => string) | null = null;
 
 /**
- * Lets a higher layer describe the page of a failed test: @rtd/testing-library registers its
+ * Lets a higher layer describe the page of a failed test: @ctrl/dom/testing-library registers its
  * accessibility snapshot. Called only when a test fails with @ctrl/sentry-tests reporting.
  */
 export function setFailureSnapshot(snapshot: ((body: unknown) => string) | null): void {

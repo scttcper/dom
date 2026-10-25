@@ -3,14 +3,14 @@
  * live document.
  *
  * Specs: ECMAScript WeakRef liveness (https://tc39.es/ecma262/#sec-weak-ref-objects);
- * HTML window.close() (https://html.spec.whatwg.org/#dom-window-close) — @rtd/dom closes the
+ * HTML window.close() (https://html.spec.whatwg.org/#dom-window-close) — @ctrl/dom closes the
  * window for good (docs/deviations.md), cancelling its animation frames, idle callbacks and tasks;
  * DOM remove (https://dom.spec.whatwg.org/#concept-node-remove); CSSOM adoptedStyleSheets
  * (https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets).
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, type ShadowRoot, type Window } from "@rtd/dom";
-import { $css } from "@rtd/dom/internal";
+import { createWindow, currentWindowOrNull, installGlobals, type ShadowRoot, type Window } from "@ctrl/dom";
+import { $css } from "@ctrl/dom/internal";
 import { Tracker, collectGarbage, heapSlope } from "./gc.ts";
 
 const HTML = `<!doctype html><html><head><style>.a { color: red } @media (min-width: 10px) { .b { display: none } }</style></head>

@@ -65,7 +65,7 @@ function configurableDescriptor(desc: PropertyDescriptor): PropertyDescriptor {
  * the getter outlived its file, and the next file in the worker crashed reading
  * `ShadowRoot.prototype.outerHTML` (it calls the getter on the prototype). Patches `realm`'s own
  * `Object.defineProperty`, `Object.defineProperties` and `Reflect.defineProperty` (a test file's
- * vm global has its own intrinsics; @rtd/dom's code in the outer realm is unaffected). Call after
+ * vm global has its own intrinsics; @ctrl/dom's code in the outer realm is unaffected). Call after
  * `captureInterfaceBaseline()`. docs/deviations.md.
  */
 export function guardInterfaceDefinitions(realm: RealmGlobal): void {

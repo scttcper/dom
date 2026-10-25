@@ -7,11 +7,11 @@ suite (`--preset all`, 354 files, 10,777 tests, 1,578 skipped identically in eve
 | mode | passed | failed | skipped | wall | peak RSS |
 | --- | --: | --: | --: | --: | --: |
 | jsdom (baseline) | 9199 | 0 | 1578 | 81.5s | 506 MiB |
-| rtd-dom | 9197 | 2 | 1578 | 58.8s | 394 MiB |
-| rtd-full | 9197 | 2 | 1578 | 54.3s | 390 MiB |
+| ctrl-dom | 9197 | 2 | 1578 | 58.8s | 394 MiB |
+| ctrl-dom-full | 9197 | 2 | 1578 | 54.3s | 390 MiB |
 
 Latest full run: 2026-10-23 (quiet machine), report `results/2026-10-23-all.md`. The first run
-(119 failures per rtd mode, 9 clusters below) was fixed by the owning areas; every repro in
+(119 failures per ctrl-dom mode, 9 clusters below) was fixed by the owning areas; every repro in
 `repros/` now passes on both engines (`pnpm vitest run --config downstream/vitest.config.ts`).
 
 ## Remaining: upstream timing race (not a DOM bug)
@@ -36,7 +36,7 @@ before `trigger.focus()` in that test.
 ## Resolved clusters (first full run)
 
 
-| # | cluster | owner | rtd-dom | rtd-full | repro |
+| # | cluster | owner | ctrl-dom | ctrl-dom-full | repro |
 | --: | --- | --- | --: | --: | --- |
 | 1 | `NodeFilter` not exposed on window | window | 74 | 74 | `repros/window-nodefilter-global.test.ts` |
 | 2 | Assigned `scrollTop`/`scrollLeft` dropped without layout | css | 19 | 13 | `repros/css-scroll-offsets-without-layout.test.ts` |
@@ -66,9 +66,9 @@ before `trigger.focus()` in that test.
   "dismisses from a bottom-edge scroll container" fail. Tests use
   `fireEvent.scroll(viewport, { target: { scrollTop: 1 } })` or `el.scrollTop = 40` after mocking
   `scrollHeight`/`clientHeight`. jsdom stores the value. @ctrl/dom reads back 0.
-- In rtd-full, 2 of the 13 show up as `element.getAnimations is not a function`. The scroll-end
+- In ctrl-dom-full, 2 of the 13 show up as `element.getAnimations is not a function`. The scroll-end
   path in `ScrollAreaViewport.tsx` is reached in a different order. jsdom also lacks
-  `getAnimations`, so that error is a side effect, not a separate cluster. In rtd-dom, 8 of the 19
+  `getAnimations`, so that error is a side effect, not a separate cluster. In ctrl-dom, 8 of the 19
   show up as "Found multiple elements by [data-testid=viewport]" after the first failure in a file.
 - Fix: keep assigned offsets (clamped at 0) when there is no box, as jsdom does, and record it in
   `docs/deviations.md`. `fireEvent.scroll({ target: { scrollTop } })` is a very common Testing
@@ -96,7 +96,7 @@ before `trigger.focus()` in that test.
   "broken".
 - Spec: https://html.spec.whatwg.org/#dom-img-complete
 
-### 5. user-event yield heuristic (user-event): 6 tests, rtd-full only
+### 5. user-event yield heuristic (user-event): 6 tests, ctrl-dom-full only
 
 - Symptom: Select closed-trigger typeahead (`expected '' to be 'Cherry'`) and
   `Combobox.createItems` closed-trigger typeahead fail intermittently and depend on test order. A
@@ -150,18 +150,18 @@ before `trigger.focus()` in that test.
 
 | cluster | owner | impact when found | repro |
 | --- | --- | --- | --- |
-| HTML element interface objects (`HTMLIFrameElement` etc.) missing from window. react-dom's commit phase throws `Right-hand side of 'instanceof' is not an object` | html-elements | 607/608 smoke tests failed in both rtd modes | `repros/html-elements-interface-objects.test.ts` |
-| `Node` constants (`ELEMENT_NODE`, ...) only static, not on `Node.prototype`. Stock dom-accessibility-api computes every accessible name as `""` | dom-core | smoke: 134 rtd-dom failures (stock getByRole name matching), 9 rtd-full (`toHaveAccessibleName` from @mui/internal-test-utils) | `repros/dom-core-node-constants-on-prototype.test.ts` |
+| HTML element interface objects (`HTMLIFrameElement` etc.) missing from window. react-dom's commit phase throws `Right-hand side of 'instanceof' is not an object` | html-elements | 607/608 smoke tests failed in both ctrl-dom modes | `repros/html-elements-interface-objects.test.ts` |
+| `Node` constants (`ELEMENT_NODE`, ...) only static, not on `Node.prototype`. Stock dom-accessibility-api computes every accessible name as `""` | dom-core | smoke: 134 ctrl-dom failures (stock getByRole name matching), 9 ctrl-dom-full (`toHaveAccessibleName` from @mui/internal-test-utils) | `repros/dom-core-node-constants-on-prototype.test.ts` |
 
 ## Observations (not failures)
 
-- No differences in failures between rtd-dom and rtd-full apart from cluster 5: our Testing
+- No differences in failures between ctrl-dom and ctrl-dom-full apart from cluster 5: our Testing
   Library, React, and jest-dom shims are behaviorally equivalent to the stock packages on this
   suite.
-- Harness check: one React instance (resolution records), one `@rtd/dom` instance per worker
-  (`globalThis.Node === (await import('@rtd/dom')).Node`), and every `@testing-library/*`
+- Harness check: one React instance (resolution records), one `@ctrl/dom` instance per worker
+  (`globalThis.Node === (await import('@ctrl/dom')).Node`), and every `@testing-library/*`
   specifier (including those imported by `@mui/internal-test-utils`) resolved to our packages in
-  rtd-full.
-- rtd-full wall time was 176s against 278s for jsdom on the full suite, with the same worker
+  ctrl-dom-full.
+- ctrl-dom-full wall time was 176s against 278s for jsdom on the full suite, with the same worker
   count. The machine was shared with other agents, so treat this as a diagnostic, not a
   benchmark.

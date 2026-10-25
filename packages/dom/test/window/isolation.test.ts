@@ -6,8 +6,8 @@
  */
 import { constants as vmConstants, createContext } from "node:vm";
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
-import { captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces } from "@rtd/dom/internal";
+import { createWindow } from "@ctrl/dom";
+import { captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces } from "@ctrl/dom/internal";
 
 describe("restoreInterfaces", () => {
   test("keeps the index getters collections grow on demand (downstream/sentry TRIAGE #1)", () => {

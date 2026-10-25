@@ -4,7 +4,7 @@
 // @ts-nocheck -- ported verbatim; upstream types these tests against lib.dom, which this monorepo
 // does not load (we are the DOM). Vitest does not typecheck; src/ is fully typed.
 
-import {isRtdEnv, render} from '#testHelpers'
+import {isCtrlDomEnv, render} from '#testHelpers'
 import {
   getUIValue,
   setUIValue,
@@ -50,9 +50,9 @@ test('keep track of value in UI', async () => {
   expect(getUIValue(element)).toBe('3')
 
   setUIValue(element, '3.')
-  // divergence: upstream's jsdom workaround stores String(Number('3.')) = '3'; @rtd/dom sanitizes
+  // divergence: upstream's jsdom workaround stores String(Number('3.')) = '3'; @ctrl/dom sanitizes
   // like the browser ('3.' is not a valid floating-point number -> ''). docs/deviations.md
-  expect(element).toHaveValue(isRtdEnv() ? null : 3)
+  expect(element).toHaveValue(isCtrlDomEnv() ? null : 3)
   expect(getUIValue(element)).toBe('3.')
 
   setUIValue(element, '3.5')

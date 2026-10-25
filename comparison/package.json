@@ -1,5 +1,4 @@
 {
-  "name": "@rtd/comparison",
   "version": "0.0.0",
   "private": true,
   "description": "Benchmarks jsdom, happy-dom and ctrl-dom the same way under Vitest and Jest, and generates the README's benchmark table.",
@@ -9,12 +8,8 @@
     "report": "node report.ts"
   },
   "dependencies": {
+    "@ctrl/dom": "workspace:*",
     "@happy-dom/jest-environment": "21.0.4",
-    "@rtd/dom": "workspace:*",
-    "@rtd/jest-dom": "workspace:*",
-    "@rtd/react": "workspace:*",
-    "@rtd/testing-library": "workspace:*",
-    "@rtd/user-event": "workspace:*",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
@@ -26,7 +21,6 @@
     "jest-environment-jsdom": "30.5.2",
     "jsdom": "30.1.3",
     "react": "19.3.1",
-    "react-dom": "19.3.1",
-    "vitest-environment-rtd": "workspace:*"
+    "react-dom": "19.3.1"
   }
 }

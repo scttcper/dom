@@ -4,7 +4,7 @@
 import { getConfig } from "./config.ts";
 import { getWindowFromNode } from "./helpers.ts";
 import { eventMap, eventAliasMap } from "./event-map.ts";
-import { describeNode, traceSync, tracing } from "@rtd/dom/internal";
+import { describeNode, traceSync, tracing } from "@ctrl/dom/internal";
 
 function fireEvent_(element: any, event: any): boolean {
   // Ours: a span per event when something subscribes to @ctrl/dom's tracing channel.

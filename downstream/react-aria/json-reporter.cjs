@@ -1,8 +1,8 @@
 // Jest reporter for the react-aria downstream runner: writes the same shape as `jest --json`
-// (formatTestResults) to $RTD_RA_JSON, but without `failureDetails` and with cycles replaced.
+// (formatTestResults) to $CTRL_DOM_RA_JSON, but without `failureDetails` and with cycles replaced.
 //
 // Why not `--json --outputFile`: Jest JSON.stringify()s the raw thrown values in
-// `failureDetails`. When an assertion error carries a DOM node, @rtd/dom wrappers (whose
+// `failureDetails`. When an assertion error carries a DOM node, @ctrl/dom wrappers (whose
 // internal fields such as `_impl` are enumerable own properties, unlike jsdom's symbol-keyed
 // impl) make that structure circular and Jest crashes after the run without writing a report.
 // That is a filed finding (TRIAGE.md, dom-core); this reporter keeps the report robust to it.
@@ -25,6 +25,6 @@ module.exports = class SafeJsonReporter {
       }
       return value;
     });
-    writeFileSync(process.env.RTD_RA_JSON, json);
+    writeFileSync(process.env.CTRL_DOM_RA_JSON, json);
   }
 };

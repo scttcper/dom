@@ -13,7 +13,7 @@
  * React's scheduler and many "run after paint" helpers use postMessage / MessageChannel.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 
 let window: any;
 

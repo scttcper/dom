@@ -21,7 +21,7 @@ import {userEventApi} from './api.ts'
 import {wrapAsync} from './wrapAsync.ts'
 import {resolveConfigSource} from './dtl.ts'
 import {type DirectOptions} from './directApi.ts'
-import {describeCall, tracePromise, tracing} from '@rtd/dom/internal'
+import {describeCall, tracePromise, tracing} from '@ctrl/dom/internal'
 
 /**
  * Default options applied when API is called per `userEvent.anyApi()`

@@ -11,17 +11,17 @@ stock `@testing-library/react` / `user-event` / `jest-dom`. Run: 2026-10-23, `--
 | mode | passed | failed | skipped | wall | peak RSS |
 | --- | --: | --: | --: | --: | --: |
 | jsdom | 2569 | 0 | 15 | 24.9s (24.2–26.0) | 1039 MiB |
-| rtd-dom | 2565 | 4 | 15 | 16.6s (16.5–19.7) | 1026 MiB |
-| rtd-full | 2565 | 4 | 15 | 13.7s (13.3–15.7) | 1008 MiB |
+| ctrl-dom | 2565 | 4 | 15 | 16.6s (16.5–19.7) | 1026 MiB |
+| ctrl-dom-full | 2565 | 4 | 15 | 13.7s (13.3–15.7) | 1008 MiB |
 
-Started at rtd-dom 6 / rtd-full 10 failing plus 10 files (273 tests) failing to load in rtd-full.
+Started at ctrl-dom 6 / ctrl-dom-full 10 failing plus 10 files (273 tests) failing to load in ctrl-dom-full.
 
 | # | tests | modes | cause | owner | status |
 | --: | --: | --- | --- | --- | --- |
 | 1 | 2 | both | image button submitted `name.x=0&name.y=0` instead of the click's coordinate | html-forms | **fixed** (repro `repros/image-button-selected-coordinate.test.ts`) |
 | 2 | 4 | both | `AbortSignal` is Node's: deep equality of a `Request` sees its abort listeners | dom-core (host delegates, decision) | deviation |
-| 3 | 1 | rtd-full, intermittent | `defer` "freezes the UI for aborted deferreds" waits on a real 50 ms `setTimeout` | upstream timing | flaky |
-| 4 | 4 + 10 files | rtd-full | harness: `.cjs` targets for ESM imports; workspace shims throw in `@jest-environment node` files | downstream runner | fixed in run.ts |
+| 3 | 1 | ctrl-dom-full, intermittent | `defer` "freezes the UI for aborted deferreds" waits on a real 50 ms `setTimeout` | upstream timing | flaky |
+| 4 | 4 + 10 files | ctrl-dom-full | harness: `.cjs` targets for ESM imports; workspace shims throw in `@jest-environment node` files | downstream runner | fixed in run.ts |
 
 ## 1. Image button selected coordinate (fixed): 2 tests
 
@@ -61,9 +61,9 @@ Started at rtd-dom 6 / rtd-full 10 failing plus 10 files (273 tests) failing to 
 ## 3. Real-timer race (flaky): 1 test
 
 - Test: `__tests__/data-memory-router-test.tsx` › "createMemoryRouter › defer › freezes the UI
-  for aborted deferreds": failed in 1 of 3 rtd-full full-suite rounds; passed 6/6 isolated runs in
+  for aborted deferreds": failed in 1 of 3 ctrl-dom-full full-suite rounds; passed 6/6 isolated runs in
   every mode (and every jsdom run). It waits on `await new Promise((r) => setTimeout(r, 50))`
-  between steps, so it depends on scheduling under load. Listed as `flaky` for rtd-full in
+  between steps, so it depends on scheduling under load. Listed as `flaky` for ctrl-dom-full in
   `downstream/baseline.json`.
 
 ## 4. Harness issues found on the way (fixed in run.ts)
@@ -76,8 +76,8 @@ Started at rtd-dom 6 / rtd-full 10 failing plus 10 files (273 tests) failing to 
   `require`).
 - **`@jest-environment node` files.** 10 files (server runtime, SSR, `data-router-no-dom`,
   273 tests) opt out of the DOM with a docblock but still load `@testing-library/jest-dom` from
-  `setupFilesAfterEnv`. Our jest-dom imports `@rtd/dom/internal`, and jest-environment-rtd's
-  workspace shims throw without the environment. The runner now maps `@rtd/dom(/internal)` to the
+  `setupFilesAfterEnv`. Our jest-dom imports `@ctrl/dom/internal`, and @ctrl/dom-jest-environment's
+  workspace shims throw without the environment. The runner now maps `@ctrl/dom(/internal)` to the
   published package's bridges (`release/ctrl-dom/dist/bridge`), which return the environment's DOM
   when there is one and load it otherwise, so these files behave as with stock jest-dom (and with
   published `@ctrl/dom`). The other Jest runners still use the shims: a `@jest-environment node`

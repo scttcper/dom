@@ -14,7 +14,7 @@
  *   CSS Scoping 1 §3 shadow encapsulation — https://drafts.csswg.org/css-scoping-1/#shadow-dom
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, type Window, type Document, type Element } from "@rtd/dom";
+import { createWindow, type Window, type Document, type Element } from "@ctrl/dom";
 import { setHoverTarget } from "../../src/selectors/internal.ts";
 import { $impl } from "../../src/keys.ts";
 

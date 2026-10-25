@@ -17,7 +17,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { createWindow } from "@rtd/dom";
+import { createWindow } from "@ctrl/dom";
 import { TEST_QSA, TEST_MATCH, invalidSelectors, validSelectors, scopedSelectors, type ValidSelector } from "./wpt/selectors.data.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
