@@ -49,7 +49,8 @@ export { windowInterfaces } from "./window/Window.ts";
 export { captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces } from "./window/isolation.ts";
 export { COMPAT, COMPAT_PROFILES, DEFAULT_COMPAT, compatExposes, deferredCompatMembers, hiddenGlobals, resolveCompat, type CompatEntry, type CompatProfile } from "./window/compat.ts";
 export { trackGlobalTimers } from "./window/timers.ts";
-export { VirtualClock, VirtualTimeout, installClock, clockNow, virtualDate, virtualPerformance, type InstalledClock, type VirtualClockOptions } from "./window/clock.ts";
+export { VirtualClock, VirtualTimeout, installClock, clockNow, clockStats, virtualDate, virtualPerformance, type InstalledClock, type VirtualClockOptions } from "./window/clock.ts";
+export { SPAN_CHANNEL, describeCall, describeNode, spanChannel, tracePromise, traceSync, tracing, type SpanContext } from "./trace.ts";
 
 // --- events area ---
 export { dispatch, getCurrentEvent, retarget, nodeGetTheParent, setAssignedSlotLookup } from "./events/dispatch.ts";

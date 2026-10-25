@@ -21,6 +21,7 @@ import {userEventApi} from './api.ts'
 import {wrapAsync} from './wrapAsync.ts'
 import {resolveConfigSource} from './dtl.ts'
 import {type DirectOptions} from './directApi.ts'
+import {describeCall, tracePromise, tracing} from '@rtd/dom/internal'
 
 /**
  * Default options applied when API is called per `userEvent.anyApi()`
@@ -140,7 +141,7 @@ export function setupSub(this: Instance, options: Options) {
 function wrapAndBindImpl<
   Args extends unknown[],
   Impl extends (this: Instance, ...args: Args) => Promise<unknown>,
->(instance: Instance, impl: Impl) {
+>(instance: Instance, impl: Impl, name: string = impl.name) {
   function method(...args: Args) {
     setLevelRef(instance, ApiLevel.Call)
 
@@ -156,7 +157,10 @@ function wrapAndBindImpl<
       })
     // Mixed setups (stock RTL + this package) resolve the config source once (see dtl.ts).
     const pending = resolveConfigSource()
-    return pending === undefined ? run() : pending.then(run)
+    const go = () => (pending === undefined ? run() : pending.then(run))
+    // Ours: a span per action when something subscribes to @ctrl/dom's tracing channel.
+    if (!tracing()) return go()
+    return tracePromise(`user-event.${name}`, describeCall(`user.${name}`, args), go)
   }
   Object.defineProperty(method, 'name', {get: () => impl.name})
 
@@ -186,7 +190,8 @@ export function createInstance(
       ...(Object.fromEntries(
         Object.entries(userEventApi).map(([name, api]) => [
           name,
-          wrapAndBindImpl(instance, api as (this: Instance, ...args: unknown[]) => Promise<unknown>),
+          // Ours: the API's name for its span (bundlers may rename the function: `type$1`).
+          wrapAndBindImpl(instance, api as (this: Instance, ...args: unknown[]) => Promise<unknown>, name),
         ]),
       ) as unknown as UserEventApi),
       setup: setupSub.bind(instance),

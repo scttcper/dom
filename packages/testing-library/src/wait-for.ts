@@ -4,6 +4,8 @@
 import { getWindowFromNode, getDocument, jestFakeTimersAreEnabled, advanceFakeTimersByTime, checkContainerType } from "./helpers.ts";
 import { getConfig, runWithExpensiveErrorDiagnosticsDisabled } from "./config.ts";
 import { envDebugFormat } from "./agent-debug.ts";
+import { tracePromise, tracing, type SpanContext } from "@rtd/dom/internal";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface WaitForOptions {
   container?: any;
@@ -45,6 +47,7 @@ function waitForImpl<T>(
       characterData: true,
     },
   }: WaitForOptions,
+  span: SpanContext | null = null,
 ): Promise<T> {
   if (typeof callback !== "function") {
     throw new TypeError("Received `callback` arg must be a function");
@@ -113,9 +116,13 @@ function waitForImpl<T>(
         reject(e);
         return;
       }
-      intervalId = setInterval(checkRealTimersCallback, interval);
+      // Ours: when traced, checks from the interval and the MutationObserver run in waitFor's async
+      // context, so a traced query in the callback stays the waitFor/findBy span's child.
+      const inSpan = span !== null ? AsyncLocalStorage.snapshot() : null;
+      const onTick = inSpan === null ? checkRealTimersCallback : () => inSpan(checkRealTimersCallback);
+      intervalId = setInterval(onTick, interval);
       const { MutationObserver } = getWindowFromNode(container);
-      observer = new MutationObserver(checkRealTimersCallback);
+      observer = new MutationObserver(onTick);
       observer.observe(container, mutationObserverOptions);
       checkCallback();
     }
@@ -150,6 +157,8 @@ function waitForImpl<T>(
 
     function checkCallback() {
       if (promiseStatus === "pending") return;
+      // Ours: how many times the callback ran, for the waitFor/findBy span (@rtd/dom trace.ts).
+      if (span !== null) span.data.checks = ((span.data.checks as number | undefined) ?? 0) + 1;
       try {
         const result: any = runWithExpensiveErrorDiagnosticsDisabled(callback);
         if (typeof result?.then === "function") {
@@ -193,8 +202,31 @@ function waitForImpl<T>(
 }
 
 export function waitFor<T>(callback: () => T | Promise<T>, options?: WaitForOptions): Promise<T> {
+  // Ours: a span with the callback's source and how many times it ran, when something subscribes
+  // to @ctrl/dom's tracing channel.
+  if (!tracing()) return waitForInSpan(callback, options, null);
+  return tracePromise("testing-library.wait_for", `waitFor(${describeCallback(callback)})`, (span) => waitForInSpan(callback, options, span));
+}
+
+/** waitFor without a span of its own, counting the callback's runs on `span` (findBy* passes its query span). */
+export function waitForInSpan<T>(callback: () => T | Promise<T>, options: WaitForOptions | undefined, span: SpanContext | null): Promise<T> {
   // create the error here so its stack trace is as close to the
   // calling code as possible
   const stackTraceError = new Error("STACK_TRACE_MESSAGE");
-  return getConfig().asyncWrapper(() => waitForImpl(callback, { stackTraceError, ...options }));
+  return getConfig().asyncWrapper(() => waitForImpl(callback, { stackTraceError, ...options }, span));
+}
+
+/**
+ * A callback's source on one line, shortened: `() => expect(screen.getByText("Done")).toBeVisible()`.
+ * Undoes what transforms do to imported names: Vite's `__vite_ssr_import_0__.screen` and the
+ * `(0, expect)(…)` call form (Vite, Babel).
+ */
+function describeCallback(callback: unknown): string {
+  if (typeof callback !== "function") return String(callback);
+  const source = Function.prototype.toString
+    .call(callback)
+    .replace(/\s+/g, " ")
+    .replace(/__vite_ssr_import_\d+__\./g, "")
+    .replace(/\(0, ?([\w$.]+)\)/g, "$1");
+  return source.length > 120 ? `${source.slice(0, 119)}…` : source;
 }

@@ -22,6 +22,7 @@ import {
   type queries,
 } from "./dtl.ts";
 import act, { getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
+import { traceSync, tracing } from "@rtd/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
 
@@ -362,13 +363,17 @@ function renderRoot(
       });
     },
     rerender: (rerenderUi: React.ReactNode) => {
-      renderRoot(rerenderUi, {
-        container,
-        baseElement,
-        root,
-        wrapper: WrapperComponent,
-        reactStrictMode,
-      });
+      const rerender = () =>
+        renderRoot(rerenderUi, {
+          container,
+          baseElement,
+          root,
+          wrapper: WrapperComponent,
+          reactStrictMode,
+        });
+      // Ours: a span when something subscribes to @ctrl/dom's tracing channel.
+      if (tracing()) traceSync("react.rerender", `rerender(${describeElement(rerenderUi)})`, rerender);
+      else rerender();
       // Intentionally do not return anything to avoid unnecessarily complicating the API.
       // folks can use all the same utilities we return in the first place that are bound to
       // the container
@@ -404,7 +409,21 @@ export function render<
   BaseElement extends RendererableContainer | HydrateableContainer = Container,
 >(ui: React.ReactNode, options: RenderOptions<Q, Container, BaseElement>): RenderResult<Q, Container, BaseElement>;
 export function render(ui: React.ReactNode, options?: Omit<RenderOptions, "queries"> | undefined): RenderResult;
-export function render(
+export function render(ui: React.ReactNode, options?: RenderOptions<any, any, any>): any {
+  // Ours: a span per render when something subscribes to @ctrl/dom's tracing channel.
+  if (!tracing()) return renderUntraced(ui, options);
+  return traceSync("react.render", `render(${describeElement(ui)})`, () => renderUntraced(ui, options));
+}
+
+/** `<Signup />` for a React element (the component's displayName or name). */
+function describeElement(ui: React.ReactNode): string {
+  if (!React.isValidElement(ui)) return typeof ui === "string" ? JSON.stringify(ui) : String(ui);
+  const type = ui.type as string | { displayName?: string; name?: string };
+  const name = typeof type === "string" ? type : (type.displayName ?? type.name ?? "Component");
+  return `<${name || "Component"} />`;
+}
+
+function renderUntraced(
   ui: React.ReactNode,
   {
     container,

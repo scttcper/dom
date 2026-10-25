@@ -4,8 +4,17 @@
 import { getConfig } from "./config.ts";
 import { getWindowFromNode } from "./helpers.ts";
 import { eventMap, eventAliasMap } from "./event-map.ts";
+import { describeNode, traceSync, tracing } from "@rtd/dom/internal";
 
 function fireEvent_(element: any, event: any): boolean {
+  // Ours: a span per event when something subscribes to @ctrl/dom's tracing channel.
+  if (tracing() && event && element) {
+    return traceSync("testing-library.fire_event", `fireEvent.${event.type}(${describeNode(element)})`, () => fireEventUntraced(element, event));
+  }
+  return fireEventUntraced(element, event);
+}
+
+function fireEventUntraced(element: any, event: any): boolean {
   return getConfig().eventWrapper(() => {
     if (!event) {
       throw new Error(`Unable to fire an event - please provide an event object.`);

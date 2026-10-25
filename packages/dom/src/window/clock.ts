@@ -525,6 +525,11 @@ export function clockNow(): number {
   return activeClock === null ? realNow() : activeClock.now();
 }
 
+/** The active clock's skipped time and pending timers (for test observability), or null without one. */
+export function clockStats(): { skippedMs: number; pendingTimers: number } | null {
+  return activeClock === null ? null : { skippedMs: activeClock.skipped, pendingTimers: activeClock.size };
+}
+
 // --- installing on a global ------------------------------------------------------------------
 
 type Global = Record<PropertyKey, unknown>;

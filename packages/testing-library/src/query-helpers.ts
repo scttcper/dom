@@ -4,10 +4,10 @@
 // `queryAllByAttribute` scans NodeImpl attribute records instead of running
 // `querySelectorAll('[attr]')` + `getAttribute` per element.
 
-import { asciiLowercase, attr, ELEMENT_NODE, F_HTML, nextInTree } from "@rtd/dom/internal";
+import { asciiLowercase, attr, describeCall, ELEMENT_NODE, F_HTML, nextInTree, tracePromise, traceSync, tracing, type SpanContext } from "@rtd/dom/internal";
 import { getSuggestedQuery, type Variant } from "./suggestions.ts";
 import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "./matches.ts";
-import { waitFor } from "./wait-for.ts";
+import { waitForInSpan } from "./wait-for.ts";
 import { getConfig } from "./config.ts";
 import { implOf } from "./helpers.ts";
 import { agentElementSummary, envDebugFormat } from "./agent-debug.ts";
@@ -102,14 +102,40 @@ export function makeGetAllQuery(allQuery: AnyQuery, getMissingError: GetErrorFun
 
 // this accepts a getter query function and returns a function which calls
 // waitFor and passing a function which invokes the getter.
-export function makeFindQuery(getter: AnyQuery): AnyQuery {
+// Ours: `name` labels the span recorded when something subscribes to @ctrl/dom's tracing channel
+// (one span per find, with how many times the getter ran).
+export function makeFindQuery(getter: AnyQuery, name = "find"): AnyQuery {
   return (container: any, text: any, options: any, waitForOptions: any) => {
-    return waitFor(
-      () => {
-        return getter(container, text, options);
-      },
-      { container, ...waitForOptions },
-    );
+    const find = (span: SpanContext | null) =>
+      waitForInSpan(
+        () => {
+          return getter(container, text, options);
+        },
+        { container, ...waitForOptions },
+        span,
+      );
+    if (!tracing()) return find(null);
+    return tracePromise(QUERY_OP, describeCall(name, [text, options]), async (span) => {
+      const result = await find(span);
+      span.data.matches = matchCount(result);
+      return result;
+    });
+  };
+}
+
+const QUERY_OP = "testing-library.query";
+
+const matchCount = (result: unknown): number => (Array.isArray(result) ? result.length : result ? 1 : 0);
+
+/** Ours: a span per call when something subscribes to @ctrl/dom's tracing channel (@rtd/dom trace.ts). */
+function traceQuery(name: string, query: AnyQuery): AnyQuery {
+  return (container: any, ...args: any[]) => {
+    if (!tracing()) return query(container, ...args);
+    return traceSync(QUERY_OP, describeCall(name, args), (span) => {
+      const result = query(container, ...args);
+      span.data.matches = matchCount(result);
+      return result;
+    });
   };
 }
 
@@ -158,8 +184,10 @@ export function buildQueries(queryAllBy: AnyQuery, getMultipleError: GetErrorFun
   const getByWithSuggestions = wrapSingleQueryWithSuggestion(getBy, queryAllBy.name, "get");
   const getAllWithSuggestions = wrapAllByQueryWithSuggestion(getAllBy, queryAllBy.name.replace("query", "get"), "getAll");
 
-  const findAllBy = makeFindQuery(wrapAllByQueryWithSuggestion(getAllBy, queryAllBy.name, "findAll"));
-  const findBy = makeFindQuery(wrapSingleQueryWithSuggestion(getBy, queryAllBy.name, "find"));
+  // Ours: span names ("getByRole") from the queryAllBy* function's name.
+  const by = queryAllBy.name.startsWith("queryAll") ? queryAllBy.name.slice("queryAll".length) : "";
+  const findAllBy = makeFindQuery(wrapAllByQueryWithSuggestion(getAllBy, queryAllBy.name, "findAll"), `findAll${by}`);
+  const findBy = makeFindQuery(wrapSingleQueryWithSuggestion(getBy, queryAllBy.name, "find"), `find${by}`);
 
-  return [queryBy, getAllWithSuggestions, getByWithSuggestions, findAllBy, findBy];
+  return [traceQuery(`query${by}`, queryBy), traceQuery(`getAll${by}`, getAllWithSuggestions), traceQuery(`get${by}`, getByWithSuggestions), findAllBy, findBy];
 }
