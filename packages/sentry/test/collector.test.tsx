@@ -125,7 +125,9 @@ describe("collector: spans from the tracing channel", () => {
     const [failure] = collected.failures;
     expect(failure.error).toMatchObject({ name: "Error", message: "boom" });
     expect(failure.aria).toContain('button "Save"');
-    expect(failure.html).toContain("<button>Save</button>");
+    // The body as indented markup, no terminal colors.
+    expect(failure.html).toMatch(/<button>\n\s+Save\n\s+<\/button>/);
+    expect(failure.html).not.toContain("\u001b[");
     expect(failure.clock).toMatchObject({ skippedMs: expect.any(Number), pendingTimers: expect.any(Number) });
   });
 

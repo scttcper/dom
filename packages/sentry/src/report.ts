@@ -210,7 +210,8 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     const failures = test.collected?.failures ?? [];
     const context = failures.at(-1);
     const error = failed ? (test.errors[0] ?? failures.at(-1)?.error) : (failures[0]?.error ?? test.errors[0]);
-    const exception = [toException(error ?? { message: "Test failed" }, report.root)];
+    const pageAttached = options.snapshots && (context?.aria !== undefined || context?.html !== undefined);
+    const exception = [toException(error ?? { message: "Test failed" }, report.root, pageAttached)];
     if (!failed) {
       exception.push({
         type: "FlakyTest",
@@ -236,7 +237,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
             ...base.contexts,
             ...(traced ? { trace: { trace_id: traceId, span_id: testSpans.get(test), parent_span_id: rootSpanId, op: "test.case" } } : {}),
             test: { name: test.name, file, duration_ms: test.duration, retries: test.retries, flaky: test.flaky },
-            ...(context?.clock ? { clock: { skipped_ms: context.clock.skippedMs, pending_timers: context.clock.pendingTimers } } : {}),
+            ...(context?.clock ? { clock: { skipped_ms: Math.round(context.clock.skippedMs), pending_timers: context.clock.pendingTimers } } : {}),
           },
           breadcrumbs: { values: breadcrumbs(test.collected?.spans ?? [], test.console ?? []) },
         },
@@ -281,8 +282,20 @@ function tag(value: string): string {
   return value.length > MAX_TAG ? `${value.slice(0, MAX_TAG - 1)}…` : value;
 }
 
-function toException(error: ErrorInfo, root: string): Record<string, unknown> {
-  const message = error.message.length > MAX_MESSAGE ? `${error.message.slice(0, MAX_MESSAGE - 1)}…` : error.message;
+/** Terminal colors (Testing Library highlights the DOM in its messages under Jest). */
+const ANSI = /\u001b\[[0-9;]*m/g;
+
+/**
+ * Where a Testing Library message starts dumping the page: the DOM (`Ignored nodes: …` then the
+ * markup), the role listing, or agent mode's snapshot. Redundant once the page is attached.
+ */
+const PAGE_DUMP = /\n\n(?:Ignored nodes: |Here are the accessible roles:|Accessibility snapshot of <body>|DOM of <body>|<body)/;
+
+function toException(error: ErrorInfo, root: string, pageAttached = false): Record<string, unknown> {
+  let text = error.message.replace(ANSI, "");
+  const dump = pageAttached ? PAGE_DUMP.exec(text) : null;
+  if (dump !== null) text = `${text.slice(0, dump.index)}\n\n(The page when the test failed is attached: accessibility-snapshot.txt, page.html.)`;
+  const message = text.length > MAX_MESSAGE ? `${text.slice(0, MAX_MESSAGE - 1)}…` : text;
   // Vitest's parsed frames come newest first, like V8 prints them; Sentry wants oldest first.
   const frames = error.frames !== undefined ? [...error.frames].reverse() : parseStack(error.stack);
   return {

@@ -159,6 +159,15 @@ describe("buildReport: an issue per failing test", () => {
     ]);
   });
 
+  test("the message loses terminal colors, and its page dump when the page is attached", () => {
+    const message = "Unable to find role=\"option\" and name \"Option Three\"\n\nIgnored nodes: comments, script, style\n\u001b[36m<body>\u001b[39m\n  <div />";
+    const withPage = testCase({ state: "fail", errors: [{ name: "TestingLibraryElementError", message }], collected: collected([{ aria: "- button", html: "<body />" }]) });
+    expect(payloads(buildReport(file([withPage]), options()))[1].exception.values[0].value).toBe('Unable to find role="option" and name "Option Three"\n\n(The page when the test failed is attached: accessibility-snapshot.txt, page.html.)');
+    const withoutPage = payloads(buildReport(file([withPage]), options({ snapshots: false })))[1].exception.values[0].value;
+    expect(withoutPage).toContain("Ignored nodes: comments, script, style\n<body>\n  <div />");
+    expect(withoutPage).not.toContain("\u001b[");
+  });
+
   test("snapshots: false attaches nothing; failures: false sends no issue", () => {
     expect(buildReport(file([failing]), options({ snapshots: false })).envelopes[1].items).toHaveLength(1);
     expect(buildReport(file([failing]), options({ failures: false })).failures).toBe(0);

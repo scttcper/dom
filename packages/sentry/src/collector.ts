@@ -10,7 +10,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { performance } from "node:perf_hooks";
 import { clockStats, spanChannel, type SpanContext } from "@rtd/dom/internal";
-import { ariaSnapshot } from "@rtd/testing-library";
+import { ariaSnapshot, prettyDOM } from "@rtd/testing-library";
 import { spanId } from "./envelope.ts";
 
 /** A finished span, in Sentry's span shape minus the trace id (report.ts adds it). */
@@ -152,14 +152,22 @@ function captureFailureContext(document: unknown, error: unknown): FailureContex
     const e = error as Error;
     context.error = { name: e.name, message: e.message, stack: typeof e.stack === "string" ? e.stack : undefined };
   }
-  const doc = document as { body?: unknown; documentElement?: { outerHTML?: string } } | null | undefined;
+  const doc = document as { body?: { outerHTML?: string } } | null | undefined;
   if (doc?.body != null) {
     try {
       context.aria = ariaSnapshot(doc.body as never, { maxLines: MAX_ARIA_LINES });
     } catch {
       // A document that is not ours (a jsdom project) has no snapshot.
     }
-    const html = doc.documentElement?.outerHTML;
+    // The body as indented markup, without <style>/<script> (CSS-in-JS fills the head with them)
+    // and without terminal colors: readable in Sentry's attachment viewer.
+    let html: string | undefined;
+    try {
+      const pretty = prettyDOM(doc.body as never, MAX_HTML, { highlight: false });
+      html = typeof pretty === "string" ? pretty : undefined;
+    } catch {
+      html = doc.body.outerHTML;
+    }
     if (typeof html === "string") context.html = html.length > MAX_HTML ? `${html.slice(0, MAX_HTML)}\n<!-- truncated -->` : html;
   }
   const clock = clockStats();

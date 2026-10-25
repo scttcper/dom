@@ -125,7 +125,9 @@ export default class CtrlDomSentryReporter {
 function jestError(result: JestAssertionResult): ErrorInfo {
   const detail = result.failureDetails[0] as { name?: unknown; message?: unknown; stack?: unknown } | undefined;
   if (detail !== undefined && typeof detail.message === "string") {
-    return { name: typeof detail.name === "string" ? detail.name : undefined, message: detail.message, stack: typeof detail.stack === "string" ? detail.stack : undefined };
+    // The error crosses from Jest's worker without its stack; failureMessages keeps it as text.
+    const stack = typeof detail.stack === "string" ? detail.stack : result.failureMessages[0];
+    return { name: typeof detail.name === "string" ? detail.name : undefined, message: detail.message, stack };
   }
   const text = result.failureMessages[0] ?? "Test failed";
   const at = text.search(/\n\s+at /);
