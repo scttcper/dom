@@ -15,6 +15,13 @@ test("signs up", async () => {
   expect(await screen.findByRole("status")).toBeInTheDocument();
 });
 
+describe("Signup", () => {
+  test("types a name", async () => {
+    render(h(Signup));
+    await userEvent.setup().type(screen.getByLabelText("Name"), "Grace");
+  });
+});
+
 test("greets before signing up", () => {
   render(h(Signup));
   // Fails on purpose: nothing has a status role before the form is submitted.

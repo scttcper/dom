@@ -7,7 +7,8 @@
 // - an error event per failing test, fingerprinted by file and test name so a test that fails
 //   again lands in the same issue, linked to its test span, with the spans as breadcrumbs and the
 //   page's accessibility snapshot and HTML attached;
-// - a warning event per flaky test (failed, then passed on a retry), grouped the same way.
+// - a warning event per flaky test (failed, then passed on a retry), grouped the same way;
+// - an error event per test file that failed to load (its tests never ran).
 //
 // https://develop.sentry.dev/sdk/data-model/event-payloads/transaction/
 
@@ -38,6 +39,15 @@ export interface TestCaseReport {
   errors: ErrorInfo[];
   /** What the worker collected for the test (null when it collected nothing). */
   collected: CollectedTest | null;
+  /** The test's console output (Vitest reports it per test), shown as breadcrumbs. */
+  console?: ConsoleEntry[];
+}
+
+export interface ConsoleEntry {
+  /** Epoch seconds. */
+  timestamp: number;
+  stream: "stdout" | "stderr";
+  message: string;
 }
 
 export interface TestFileReport {
@@ -49,6 +59,8 @@ export interface TestFileReport {
   project?: string;
   tests: TestCaseReport[];
   environmentSetupMs?: number;
+  /** Why the file failed to load or run, when it did (an import error, a syntax error). */
+  fileErrors?: ErrorInfo[];
 }
 
 export interface BuiltReport {
@@ -61,6 +73,9 @@ export interface BuiltReport {
 /** Sentry keeps at most 1000 spans per transaction. */
 const MAX_SPANS = 1000;
 const MAX_BREADCRUMBS = 100;
+const MAX_CONSOLE_MESSAGE = 1000;
+/** The test name a file-level failure is reported under. */
+export const FILE_FAILURE = "(file failed to load)";
 const MAX_MESSAGE = 8192;
 /** Sentry truncates tag values longer than this. */
 const MAX_TAG = 200;
@@ -68,7 +83,8 @@ const MAX_TAG = 200;
 export function buildReport(report: TestFileReport, options: ResolvedOptions): BuiltReport {
   const out: BuiltReport = { envelopes: [], traces: 0, failures: 0, flaky: 0 };
   const tests = report.tests.filter((t) => t.state !== "skip");
-  if (tests.length === 0) return out;
+  const fileErrors = report.fileErrors ?? [];
+  if (tests.length === 0 && fileErrors.length === 0) return out;
   const file = relative(report.root, report.file) || report.file;
   const traceId = uuid();
   const rootSpanId = spanId();
@@ -91,6 +107,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   const testSpans = new Map<TestCaseReport, string>();
   let start = Infinity;
   let end = -Infinity;
+  // Test spans first (every test keeps one), then the collected spans while the limit allows.
   for (const test of tests) {
     const id = spanId();
     testSpans.set(test, id);
@@ -107,19 +124,31 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
       start_timestamp: testStart,
       timestamp: testEnd,
       status: test.state === "pass" ? "ok" : "internal_error",
-      origin: "auto.test.ctrl-dom",
+      origin: "auto.test.ctrl_dom",
       data: { "test.retries": test.retries, "test.flaky": test.flaky, ...(test.collected?.droppedSpans ? { "spans.dropped": test.collected.droppedSpans } : {}) },
     });
-    for (const span of test.collected?.spans ?? []) {
+  }
+  // In start order, so a span that fits always has its parent before it. A span whose parent was
+  // dropped anyway (the collector's per-test limit drops by end time) hangs off its test's span:
+  // Relay rejects a parent_span_id that is not in the transaction.
+  const kept = new Set<string>(testSpans.values());
+  for (const test of tests) {
+    const testSpan = testSpans.get(test)!;
+    const ordered = [...(test.collected?.spans ?? [])].sort((a, b) => a.start_timestamp - b.start_timestamp);
+    for (const span of ordered) {
       if (spans.length >= MAX_SPANS) {
         dropped++;
         continue;
       }
-      spans.push({ ...span, trace_id: traceId, parent_span_id: span.parent_span_id ?? id, origin: "auto.test.ctrl-dom" });
+      const parent = span.parent_span_id !== undefined && kept.has(span.parent_span_id) ? span.parent_span_id : testSpan;
+      kept.add(span.span_id);
+      spans.push({ ...span, trace_id: traceId, parent_span_id: parent, origin: "auto.test.ctrl_dom" });
     }
   }
 
-  if (options.traces) {
+  // Sampled per file: a file's trace is whole or absent, and its issues link to it only when sent.
+  const traced = options.traces && tests.length > 0 && (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
+  if (traced) {
     const failed = tests.some((t) => t.state === "fail");
     const eventId = uuid();
     out.envelopes.push({
@@ -138,7 +167,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
             tags,
             contexts: {
               ...base.contexts,
-              trace: { trace_id: traceId, span_id: rootSpanId, op: "test.file", status: failed ? "internal_error" : "ok", origin: "auto.test.ctrl-dom", ...(dropped ? { data: { "spans.dropped": dropped } } : {}) },
+              trace: { trace_id: traceId, span_id: rootSpanId, op: "test.file", status: failed ? "internal_error" : "ok", origin: "auto.test.ctrl_dom", ...(dropped ? { data: { "spans.dropped": dropped } } : {}) },
             },
             spans,
             ...(report.environmentSetupMs !== undefined ? { measurements: { environment_setup: { value: report.environmentSetupMs, unit: "millisecond" } } } : {}),
@@ -179,11 +208,11 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
           tags: { ...tags, "test.name": tag(test.name), flaky: String(test.flaky), retries: String(test.retries) },
           contexts: {
             ...base.contexts,
-            trace: { trace_id: traceId, span_id: testSpans.get(test), parent_span_id: rootSpanId, op: "test.case" },
+            ...(traced ? { trace: { trace_id: traceId, span_id: testSpans.get(test), parent_span_id: rootSpanId, op: "test.case" } } : {}),
             test: { name: test.name, file, duration_ms: test.duration, retries: test.retries, flaky: test.flaky },
             ...(context?.clock ? { clock: { skipped_ms: context.clock.skippedMs, pending_timers: context.clock.pendingTimers } } : {}),
           },
-          breadcrumbs: { values: breadcrumbs(test.collected?.spans ?? []) },
+          breadcrumbs: { values: breadcrumbs(test.collected?.spans ?? [], test.console ?? []) },
         },
       },
     ];
@@ -191,6 +220,33 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     out.envelopes.push({ eventId, items });
     if (failed) out.failures++;
     else out.flaky++;
+  }
+
+  if (options.failures) {
+    for (const error of fileErrors.slice(0, 1)) {
+      const eventId = uuid();
+      out.envelopes.push({
+        eventId,
+        items: [
+          {
+            type: "event",
+            payload: {
+              ...base,
+              event_id: eventId,
+              timestamp: Date.now() / 1000,
+              level: "error",
+              logger: `${report.runner}.test`,
+              transaction: `${file} > ${FILE_FAILURE}`,
+              fingerprint: ["ctrl-dom.test-failure", file, FILE_FAILURE],
+              exception: { values: [toException(error, report.root)] },
+              tags: { ...tags, "test.name": FILE_FAILURE, flaky: "false", retries: "0" },
+              contexts: { ...base.contexts, test: { name: FILE_FAILURE, file } },
+            },
+          },
+        ],
+      });
+      out.failures++;
+    }
   }
   return out;
 }
@@ -211,19 +267,26 @@ function toException(error: ErrorInfo, root: string): Record<string, unknown> {
   };
 }
 
-/** What the test did before it failed, oldest first: the issue page's breadcrumb timeline. */
-function breadcrumbs(spans: readonly CollectedSpan[]): Record<string, unknown>[] {
-  return [...spans]
-    .sort((a, b) => a.start_timestamp - b.start_timestamp)
-    .slice(-MAX_BREADCRUMBS)
-    .map((s) => ({
+/** What the test did and printed before it failed, oldest first: the issue page's breadcrumb timeline. */
+function breadcrumbs(spans: readonly CollectedSpan[], output: readonly ConsoleEntry[]): Record<string, unknown>[] {
+  const crumbs = [
+    ...spans.map((s) => ({
       type: "default",
       category: s.op,
       message: s.description,
       timestamp: s.start_timestamp,
       level: s.status === "ok" ? "info" : "error",
       data: { duration_ms: Math.round((s.timestamp - s.start_timestamp) * 1e6) / 1e3, ...s.data },
-    }));
+    })),
+    ...output.map((c) => ({
+      type: "default",
+      category: "console",
+      message: c.message.length > MAX_CONSOLE_MESSAGE ? `${c.message.slice(0, MAX_CONSOLE_MESSAGE - 1)}…` : c.message,
+      timestamp: c.timestamp,
+      level: c.stream === "stderr" ? "error" : "info",
+    })),
+  ];
+  return crumbs.sort((a, b) => a.timestamp - b.timestamp).slice(-MAX_BREADCRUMBS);
 }
 
 function attachments(context: FailureContext): EnvelopeItem[] {

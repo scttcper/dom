@@ -4,7 +4,7 @@
 // Testing Library's cleanup), then writes the file's results for the reporter to read.
 
 import { createHash } from "node:crypto";
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { startCollecting, type CollectedTest } from "./collector.ts";
 
@@ -64,7 +64,11 @@ export function createJestCollector(options: { dir: string; testPath: string; ge
     finish() {
       collector.stop();
       const data: JestFileData = { testPath: options.testPath, tests };
-      writeFileSync(jestDataFile(options.dir, options.testPath), JSON.stringify(data));
+      // Reporting must never fail a test file: without the data, the reporter sends the results alone.
+      try {
+        mkdirSync(options.dir, { recursive: true });
+        writeFileSync(jestDataFile(options.dir, options.testPath), JSON.stringify(data));
+      } catch {}
     },
   };
 }

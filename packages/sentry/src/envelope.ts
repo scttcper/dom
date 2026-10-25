@@ -83,6 +83,8 @@ export interface Target {
   dsn: Dsn | null;
 }
 
+const SEND_TIMEOUT_MS = 15_000;
+
 /** POST one envelope; resolves to an error message, or null when it was accepted. */
 export async function sendEnvelope(envelope: Envelope, target: Target): Promise<string | null> {
   try {
@@ -90,6 +92,8 @@ export async function sendEnvelope(envelope: Envelope, target: Target): Promise<
       method: "POST",
       headers: { "content-type": "application/x-sentry-envelope" },
       body: serializeEnvelope(envelope, target.dsn),
+      // An unreachable endpoint must not hold up the end of the run.
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     });
     if (response.ok) return null;
     return `${target.label} answered ${response.status} ${(await response.text().catch(() => "")).slice(0, 200)}`.trim();

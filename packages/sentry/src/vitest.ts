@@ -5,9 +5,10 @@
 //   plugins: [ctrlDom({ sentry: true })]   // SENTRY_DSN and/or SENTRY_SPOTLIGHT
 
 import type { Reporter, TestCase, TestModule, Vitest } from "vitest/node";
+import type { UserConsoleLog } from "vitest";
 import { sendEnvelope } from "./envelope.ts";
 import { resolveOptions, type CtrlDomSentryOptions, type ResolvedOptions } from "./options.ts";
-import { buildReport, type TestCaseReport } from "./report.ts";
+import { buildReport, type ConsoleEntry, type ErrorInfo, type TestCaseReport } from "./report.ts";
 import { Delivery } from "./delivery.ts";
 
 export type { CtrlDomSentryOptions } from "./options.ts";
@@ -17,6 +18,8 @@ export class SentryReporter implements Reporter {
   #root = process.cwd();
   #vitest: Vitest | null = null;
   #delivery: Delivery | null;
+  /** Each test's console output, by task id, until its file is reported. */
+  #console = new Map<string, ConsoleEntry[]>();
 
   constructor(options: CtrlDomSentryOptions = {}) {
     this.options = resolveOptions(options);
@@ -28,13 +31,36 @@ export class SentryReporter implements Reporter {
     this.#root = vitest.config.root;
   }
 
+  onUserConsoleLog(log: UserConsoleLog): void {
+    if (this.options === null || log.taskId === undefined) return;
+    const entries = this.#console.get(log.taskId) ?? [];
+    entries.push({ timestamp: log.time / 1000, stream: log.type, message: log.content.trimEnd() });
+    this.#console.set(log.taskId, entries);
+  }
+
   onTestModuleEnd(module: TestModule): void {
     if (this.options === null || this.#delivery === null) return;
-    const tests = [...module.children.allTests()].map(toTestCaseReport);
+    const tests = [...module.children.allTests()].map((test) => {
+      const report = toTestCaseReport(test);
+      const output = this.#console.get(test.id);
+      if (output !== undefined) {
+        report.console = output;
+        this.#console.delete(test.id);
+      }
+      return report;
+    });
     const project = module.project.name;
     this.#delivery.add(
       buildReport(
-        { runner: "vitest", root: this.#root, file: module.moduleId, ...(project ? { project } : {}), tests, environmentSetupMs: module.diagnostic().environmentSetupDuration },
+        {
+          runner: "vitest",
+          root: this.#root,
+          file: module.moduleId,
+          ...(project ? { project } : {}),
+          tests,
+          environmentSetupMs: module.diagnostic().environmentSetupDuration,
+          fileErrors: module.errors().map(toErrorInfo),
+        },
         this.options,
       ),
     );
@@ -59,12 +85,17 @@ function toTestCaseReport(test: TestCase): TestCaseReport {
     duration: diagnostic?.duration ?? 0,
     retries: diagnostic?.retryCount ?? 0,
     flaky: diagnostic?.flaky ?? false,
-    errors: (result.errors ?? []).map((e) => ({
-      name: e.name,
-      message: e.message,
-      stack: e.stack,
-      ...(e.stacks ? { frames: e.stacks.map((s) => ({ method: s.method, file: s.file, line: s.line, column: s.column })) } : {}),
-    })),
+    errors: (result.errors ?? []).map(toErrorInfo),
     collected: test.meta().ctrlDomSentry ?? null,
+  };
+}
+
+/** Vitest's serialized errors carry source-mapped frames (`stacks`). */
+function toErrorInfo(e: { name?: string; message: string; stack?: string; stacks?: ReadonlyArray<{ method: string; file: string; line: number; column: number }> }): ErrorInfo {
+  return {
+    name: e.name,
+    message: e.message,
+    stack: e.stack,
+    ...(e.stacks ? { frames: e.stacks.map((s) => ({ method: s.method, file: s.file, line: s.line, column: s.column })) } : {}),
   };
 }

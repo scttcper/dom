@@ -19,6 +19,11 @@ export interface CtrlDomSentryOptions {
   release?: string;
   /** One trace per test file, a span per test and per traced call (default true). */
   traces?: boolean;
+  /**
+   * Fraction of test files sent as traces, for suites big enough to matter for span quota.
+   * Failures and flaky tests are always sent. Default: `SENTRY_TRACES_SAMPLE_RATE`, else 1.
+   */
+  tracesSampleRate?: number;
   /** An issue per failing test, grouped by test (default true). */
   failures?: boolean;
   /** An issue per test that failed and then passed on a retry (default true). */
@@ -34,6 +39,7 @@ export interface ResolvedOptions {
   environment: string;
   release: string | undefined;
   traces: boolean;
+  tracesSampleRate: number;
   failures: boolean;
   flaky: boolean;
   snapshots: boolean;
@@ -58,11 +64,17 @@ export function resolveOptions(options: CtrlDomSentryOptions = {}, env: NodeJS.P
     environment: options.environment ?? env.SENTRY_ENVIRONMENT ?? (env.CI ? "ci" : "local"),
     release: options.release ?? env.SENTRY_RELEASE ?? env.GITHUB_SHA ?? gitCommit(),
     traces: options.traces ?? true,
+    tracesSampleRate: sampleRate(options.tracesSampleRate ?? env.SENTRY_TRACES_SAMPLE_RATE),
     failures: options.failures ?? true,
     flaky: options.flaky ?? true,
     snapshots: options.snapshots ?? true,
     tags: options.tags ?? {},
   };
+}
+
+function sampleRate(value: number | string | undefined): number {
+  const rate = typeof value === "string" ? Number(value) : (value ?? 1);
+  return Number.isFinite(rate) ? Math.min(1, Math.max(0, rate)) : 1;
 }
 
 function spotlightFromEnv(value: string | undefined): boolean | string {

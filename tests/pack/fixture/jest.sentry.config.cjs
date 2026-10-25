@@ -3,7 +3,7 @@
 "use strict";
 module.exports = {
   preset: "@ctrl/dom",
-  testMatch: ["<rootDir>/sentry.jest.test.cjs"],
+  testMatch: ["<rootDir>/sentry.jest.test.cjs", "<rootDir>/sentry-broken.jest.test.cjs"],
   setupFilesAfterEnv: ["@ctrl/dom/jest-dom"],
   reporters: ["default", "@ctrl/dom/sentry/jest"],
 };

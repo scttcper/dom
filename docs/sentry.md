@@ -8,8 +8,10 @@
   time the virtual clock skipped.
 - **Each failing test becomes an issue**, grouped by file and test name, so the same test failing
   again lands in the same issue. The event links to the test's span in the trace, lists what the
-  test did as breadcrumbs, and attaches the page as it was when the test failed (its
-  accessibility snapshot and HTML), captured before Testing Library's cleanup emptied it.
+  test did (and, under Vitest, what it printed) as breadcrumbs, points at the failing line with
+  the source around it, and attaches the page as it was when the test failed (its accessibility
+  snapshot and HTML), captured before Testing Library's cleanup emptied it. A file that fails to
+  load is an issue too.
 - **Each flaky test becomes an issue**: a test that failed and then passed on a retry, with the
   failed attempt's error.
 
@@ -60,6 +62,7 @@ environment variable fallback.
 | `environment` | `SENTRY_ENVIRONMENT`, else `ci` under CI, else `local` | |
 | `release` | `SENTRY_RELEASE`, else `GITHUB_SHA`, else the checkout's commit | regressions are tracked per release |
 | `traces` | `true` | one trace per test file |
+| `tracesSampleRate` | `SENTRY_TRACES_SAMPLE_RATE`, else `1` | fraction of files sent as traces; failures and flaky tests are always sent |
 | `failures` | `true` | an issue per failing test |
 | `flaky` | `true` | an issue per flaky test |
 | `snapshots` | `true` | attach the page's accessibility snapshot and HTML to failure events |
@@ -87,6 +90,14 @@ at most 300 spans and a file at most 1000 (Sentry's limit); the rest are counted
 
 Spans come from @ctrl/dom's own Testing Library, React Testing Library and user-event. With stock
 Testing Library (`ctrlDom({ testingLibrary: false })`) a trace has the tests' spans only.
+
+## Cost
+
+Nothing is collected unless a DSN or Spotlight is set. With reporting on, Sentry's own component
+tests (the 15-file smoke set, 589 tests, on @ctrl/dom's Jest environment) took the same wall and
+CPU time as without it, within run-to-run noise; the reporter sends while the run continues. A
+large suite sends one transaction per file, which counts against span quota: `tracesSampleRate`
+keeps a fraction of them.
 
 ## How it works
 
@@ -120,3 +131,17 @@ tracingChannel("ctrl-dom:span").subscribe({
   page.
 - The attached HTML is the page as rendered, so it holds whatever the test rendered. Set
   `snapshots: false` if that shouldn't leave CI.
+- Jest reports console output per file, not per test, so Jest failures have no console
+  breadcrumbs.
+
+## Development
+
+`node packages/sentry/scripts/relay-check.ts` runs what the reporter builds through Relay,
+Sentry's ingestion service (Docker, `getsentry/relay`), and fails if Relay rejects an envelope or
+had to drop or fix a field. With `--run "<command>"` it runs a real suite with `SENTRY_DSN`
+pointing at Relay instead, for example the downstream suites, whose runners add the reporter
+with `RTD_SENTRY_REPORTER=1`:
+
+```sh
+RTD_SENTRY_REPORTER=1 node packages/sentry/scripts/relay-check.ts --run "node downstream/sentry/run.ts --preset components --modes rtd-full"
+```

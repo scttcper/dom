@@ -19,6 +19,7 @@ pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom 
 node downstream/track.ts  # compare the latest downstream runs with downstream/baseline.json
 pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
 pnpm docs:spec            # regenerate docs/spec-coverage.md
+node packages/sentry/scripts/relay-check.ts   # @ctrl/dom/sentry's envelopes through Relay (Docker)
 ```
 
 ## Packages

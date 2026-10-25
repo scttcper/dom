@@ -2,7 +2,7 @@
 // sentry.check.mjs runs this file against a fake Sentry server and checks what arrives.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { Signup } from "./app.tsx";
 
 test("signs up", async () => {
@@ -13,8 +13,16 @@ test("signs up", async () => {
   expect(await screen.findByRole("status")).toBeTruthy();
 });
 
+describe("Signup", () => {
+  test("types a name", async () => {
+    render(<Signup />);
+    await userEvent.setup().type(screen.getByLabelText("Name"), "Grace");
+  });
+});
+
 test("greets before signing up", () => {
   render(<Signup />);
+  console.error("about to look for the greeting");
   // Fails on purpose: nothing has a status role before the form is submitted.
   screen.getByRole("status");
 });

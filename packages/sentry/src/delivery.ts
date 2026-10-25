@@ -29,14 +29,17 @@ export class Delivery {
     this.#pump();
   }
 
-  /** Wait for every envelope; a one-line summary (null when nothing was reported). */
+  /** Wait for every envelope; a one-line summary of the run (null when nothing was reported). Starts a new run's totals. */
   async flush(): Promise<string | null> {
     if (this.#queue.length > 0 || this.#active > 0) await new Promise<void>((resolve) => this.#idle.push(resolve));
     const { traces, failures, flaky } = this.#totals;
+    const errors = [...this.#errors];
+    this.#totals = { traces: 0, failures: 0, flaky: 0 };
+    this.#errors.clear();
     if (traces + failures + flaky === 0) return null;
     const what = [plural(traces, "trace"), plural(failures, "failed test"), plural(flaky, "flaky test")].join(", ");
     const where = this.#options.targets.map((t) => t.label).join(" and ");
-    const problems = this.#errors.size > 0 ? `; not delivered: ${[...this.#errors].join("; ")}` : "";
+    const problems = errors.length > 0 ? `; not delivered: ${errors.join("; ")}` : "";
     return `@ctrl/dom/sentry: ${what} → ${where}${problems}`;
   }
 

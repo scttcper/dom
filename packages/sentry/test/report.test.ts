@@ -10,7 +10,8 @@ import { afterEach, describe, expect, test } from "vitest";
 import { parseDsn, parseStack, sendEnvelope, serializeEnvelope, toSentryFrames, type Envelope } from "../src/envelope.ts";
 import { Delivery } from "../src/delivery.ts";
 import { resolveOptions, type ResolvedOptions } from "../src/options.ts";
-import { buildReport, type TestCaseReport, type TestFileReport } from "../src/report.ts";
+import { buildReport, FILE_FAILURE, type TestCaseReport, type TestFileReport } from "../src/report.ts";
+import { circusTestName } from "../src/jest-collector.ts";
 import type { CollectedTest } from "../src/collector.ts";
 
 const ROOT = "/repo";
@@ -19,6 +20,7 @@ const options = (overrides: Partial<ResolvedOptions> = {}): ResolvedOptions => (
   environment: "ci",
   release: "abc123",
   traces: true,
+  tracesSampleRate: 1,
   failures: true,
   flaky: true,
   snapshots: true,
@@ -80,8 +82,32 @@ describe("buildReport: a transaction per test file", () => {
     expect(tx.timestamp).toBe(1000.5);
   });
 
+  test("span origins use only what Relay accepts (lowercase letters, underscores, dots)", () => {
+    const [tx] = payloads(buildReport(file([testCase({})]), options()));
+    const origins = [tx.contexts.trace.origin, ...tx.spans.map((s: any) => s.origin)];
+    for (const origin of origins) expect(origin).toMatch(/^[a-z_]+(\.[a-z_]+)*$/);
+  });
+
   test("skipped tests are left out; a file with only skipped tests sends nothing", () => {
     expect(buildReport(file([testCase({ state: "skip" })]), options()).envelopes).toEqual([]);
+  });
+
+  test("a transaction keeps at most 1000 spans, test spans first; the rest are counted", () => {
+    const many = Array.from({ length: 400 }, (_, i) => testCase({ name: `t${i}`, collected: { ...collected(), spans: Array.from({ length: 3 }, (_, j) => ({ ...collected().spans[0], span_id: `${i}-${j}` })) } }));
+    const [tx] = payloads(buildReport(file(many), options()));
+    expect(tx.spans).toHaveLength(1000);
+    expect(tx.spans.filter((s: any) => s.op === "test.case")).toHaveLength(400);
+    // 400 test spans + 1,200 collected: 600 collected spans fit.
+    expect(tx.contexts.trace.data["spans.dropped"]).toBe(600);
+  });
+
+  test("every kept span's parent is in the transaction: an orphan hangs off its test's span", () => {
+    const orphan = { ...collected().spans[2], span_id: "dddddddddddddddd", parent_span_id: "0000000000000000" };
+    const [tx] = payloads(buildReport(file([testCase({ collected: { ...collected(), spans: [...collected().spans, orphan] } })]), options()));
+    const ids = new Set(tx.spans.map((s: any) => s.span_id).concat(tx.contexts.trace.span_id));
+    for (const span of tx.spans) expect(ids.has(span.parent_span_id)).toBe(true);
+    const testSpan = tx.spans.find((s: any) => s.op === "test.case");
+    expect(tx.spans.find((s: any) => s.span_id === "dddddddddddddddd").parent_span_id).toBe(testSpan.span_id);
   });
 
   test("traces: false sends no transaction", () => {
@@ -127,6 +153,43 @@ describe("buildReport: an issue per failing test", () => {
   test("snapshots: false attaches nothing; failures: false sends no issue", () => {
     expect(buildReport(file([failing]), options({ snapshots: false })).envelopes[1].items).toHaveLength(1);
     expect(buildReport(file([failing]), options({ failures: false })).failures).toBe(0);
+  });
+});
+
+describe("buildReport: console output, files that fail to load, sampling", () => {
+  test("a test's console output joins its spans in the failure's breadcrumbs, in time order", () => {
+    const failing = testCase({ state: "fail", errors: [{ message: "boom" }], console: [{ timestamp: 1000.15, stream: "stderr", message: "Warning: An update to Signup inside a test was not wrapped in act(...)" }] });
+    const event = payloads(buildReport(file([failing]), options()))[1];
+    expect(event.breadcrumbs.values.map((b: any) => [b.category, b.level])).toEqual([
+      ["react.render", "info"],
+      ["testing-library.wait_for", "info"],
+      ["console", "error"],
+      ["testing-library.query", "error"],
+    ]);
+  });
+
+  test("a file that failed to load is an issue of its own, with no trace", () => {
+    const report = buildReport({ ...file([]), fileErrors: [{ name: "SyntaxError", message: "Unexpected token" }] }, options());
+    expect(report).toMatchObject({ traces: 0, failures: 1 });
+    const [event] = payloads(report);
+    expect(event.fingerprint).toEqual(["ctrl-dom.test-failure", "src/signup.test.tsx", FILE_FAILURE]);
+    expect(event.exception.values[0]).toMatchObject({ type: "SyntaxError", value: "Unexpected token" });
+  });
+
+  test("tracesSampleRate 0 sends no trace, and failures still go out without a trace link", () => {
+    const report = buildReport(file([testCase({ state: "fail", errors: [{ message: "boom" }] })]), options({ tracesSampleRate: 0 }));
+    expect(report).toMatchObject({ traces: 0, failures: 1 });
+    expect(payloads(report)[0].contexts.trace).toBeUndefined();
+  });
+});
+
+describe("Jest test names", () => {
+  test("the environment's name for a test matches the reporter's (describe blocks and title joined with ' > ')", () => {
+    const root = { name: "ROOT_DESCRIBE_BLOCK" };
+    const outer = { name: "Signup", parent: root };
+    const inner = { name: "when invalid", parent: outer };
+    expect(circusTestName({ name: "shows an error", parent: inner })).toBe(["Signup", "when invalid", "shows an error"].join(" > "));
+    expect(circusTestName({ name: "top level", parent: root })).toBe("top level");
   });
 });
 
@@ -216,6 +279,17 @@ describe("delivery", () => {
     expect(items.sort()).toEqual(["event", "transaction"]);
   });
 
+  test("each run's summary counts that run only (watch mode)", async () => {
+    const { port } = await fakeSentry();
+    const resolved = resolveOptions({ dsn: `http://public@127.0.0.1:${port}/42` }, {})!;
+    const delivery = new Delivery(resolved, sendEnvelope);
+    delivery.add(buildReport(file([testCase({})]), resolved));
+    expect(await delivery.flush()).toMatch(/: 1 trace, 0 failed tests/);
+    expect(await delivery.flush()).toBeNull();
+    delivery.add(buildReport(file([testCase({})]), resolved));
+    expect(await delivery.flush()).toMatch(/: 1 trace, 0 failed tests/);
+  });
+
   test("a rejected envelope is reported in the summary, not thrown", async () => {
     const { port } = await fakeSentry(429);
     const resolved = resolveOptions({ dsn: `http://public@127.0.0.1:${port}/42` }, {})!;
@@ -228,6 +302,8 @@ describe("delivery", () => {
     expect(resolveOptions({}, {})).toBeNull();
     expect(resolveOptions({}, { SENTRY_SPOTLIGHT: "1" })!.targets[0].url).toBe("http://localhost:8969/stream");
     expect(resolveOptions({}, { SENTRY_SPOTLIGHT: "false" })).toBeNull();
-    expect(resolveOptions({}, { SENTRY_DSN: "https://k@h/1", CI: "true", SENTRY_RELEASE: "v1" })).toMatchObject({ environment: "ci", release: "v1" });
+    expect(resolveOptions({}, { SENTRY_DSN: "https://k@h/1", CI: "true", SENTRY_RELEASE: "v1" })).toMatchObject({ environment: "ci", release: "v1", tracesSampleRate: 1 });
+    expect(resolveOptions({}, { SENTRY_DSN: "https://k@h/1", SENTRY_TRACES_SAMPLE_RATE: "0.25" })!.tracesSampleRate).toBe(0.25);
+    expect(resolveOptions({ tracesSampleRate: 7 }, { SENTRY_DSN: "https://k@h/1" })!.tracesSampleRate).toBe(1);
   });
 });

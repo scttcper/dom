@@ -6,5 +6,5 @@ import { ctrlDom } from "@ctrl/dom/vitest";
 
 export default defineConfig({
   plugins: [ctrlDom({ sentry: true })],
-  test: { include: ["sentry.test.tsx"], globals: true },
+  test: { include: ["sentry.test.tsx", "sentry-broken.test.tsx"], globals: true },
 });

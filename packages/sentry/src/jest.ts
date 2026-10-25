@@ -8,7 +8,7 @@
 // @ctrl/dom-jest-environment then collects each test's spans and failure snapshot there
 // (jest-collector.ts); the reporter reads them as each file's results arrive.
 
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sendEnvelope } from "./envelope.ts";
@@ -34,6 +34,8 @@ interface JestTestResult {
   testFilePath: string;
   testResults: JestAssertionResult[];
   perfStats: { start: number; end: number };
+  /** Set when the file could not run (it failed to load). */
+  testExecError?: { message: string; stack?: string | null } | null;
 }
 interface JestTest {
   path: string;
@@ -51,9 +53,12 @@ export default class CtrlDomSentryReporter {
     this.options = resolveOptions(reporterOptions);
     if (this.options === null) return;
     this.#delivery = new Delivery(this.options, sendEnvelope);
-    // Inherited by the workers Jest starts after constructing its reporters.
-    this.#dir = mkdtempSync(join(tmpdir(), "ctrl-dom-sentry-"));
-    process.env.CTRL_DOM_SENTRY_DIR = this.#dir;
+    // Inherited by the workers Jest starts after constructing its reporters. Kept until the
+    // process exits: in watch mode every run writes there.
+    const dir = mkdtempSync(join(tmpdir(), "ctrl-dom-sentry-"));
+    this.#dir = dir;
+    process.env.CTRL_DOM_SENTRY_DIR = dir;
+    process.once("exit", () => rmSync(dir, { recursive: true, force: true }));
   }
 
   onTestResult(test: JestTest, testResult: JestTestResult): void {
@@ -76,13 +81,25 @@ export default class CtrlDomSentryReporter {
     });
     const displayName = test.context?.config?.displayName;
     const project = typeof displayName === "string" ? displayName : displayName?.name;
-    this.#delivery.add(buildReport({ runner: "jest", root: test.context?.config?.rootDir ?? this.#rootDir, file: testResult.testFilePath, ...(project ? { project } : {}), tests }, this.options));
+    const execError = testResult.testExecError;
+    this.#delivery.add(
+      buildReport(
+        {
+          runner: "jest",
+          root: test.context?.config?.rootDir ?? this.#rootDir,
+          file: testResult.testFilePath,
+          ...(project ? { project } : {}),
+          tests,
+          ...(execError ? { fileErrors: [{ message: execError.message, stack: execError.stack ?? undefined }] } : {}),
+        },
+        this.options,
+      ),
+    );
   }
 
   async onRunComplete(): Promise<void> {
     if (this.#delivery === null) return;
     const summary = await this.#delivery.flush();
-    if (this.#dir !== null) rmSync(this.#dir, { recursive: true, force: true });
     if (summary !== null) process.stderr.write(`${summary}\n`);
   }
 
@@ -90,12 +107,14 @@ export default class CtrlDomSentryReporter {
     return undefined;
   }
 
+  /** The environment's data for a file, removed once read (a watch-mode rerun writes it again). */
   #readCollected(testPath: string): JestFileData | null {
     if (this.#dir === null) return null;
     const file = jestDataFile(this.#dir, testPath);
-    if (!existsSync(file)) return null;
     try {
-      return JSON.parse(readFileSync(file, "utf8")) as JestFileData;
+      const data = JSON.parse(readFileSync(file, "utf8")) as JestFileData;
+      rmSync(file, { force: true });
+      return data;
     } catch {
       return null;
     }
