@@ -16,7 +16,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6
@@ -28,8 +28,27 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm fmt:check
-      - run: pnpm test
       # Builds every package and assembles release/ (scripts/release.ts), then installs the three
       # tarballs into a fresh project and runs every documented setup against them.
       - run: pnpm build
       - run: pnpm test:pack --no-build
+
+  # The test files split three ways (Vitest shards by file), next to `check`.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # This repository's runners have 2 vCPUs, where Vitest's default (all but one) is a single
+      # worker: every file ran one after another.
+      - run: pnpm test --shard=${{ matrix.shard }}/3 --maxWorkers=100%
