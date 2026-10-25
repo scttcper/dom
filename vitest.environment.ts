@@ -9,12 +9,12 @@ import type { Plugin } from "vitest/config";
 
 const ENVIRONMENT = fileURLToPath(new URL("./packages/vitest-environment/src/index.ts", import.meta.url));
 
-/** `environment: "ctrl-dom"` (and `// @vitest-environment ctrl-dom`) for a project. */
-export function ctrlDomEnvironment(): Plugin {
+/** `environment: "ctrl-dom"` (and `// @vitest-environment ctrl-dom`) for a project: its sources, or `path` (bench's bundle). */
+export function ctrlDomEnvironment(path = ENVIRONMENT): Plugin {
   return {
     name: "ctrl-dom-environment",
     enforce: "pre",
-    config: (config) => ((config as { test?: { environment?: string } }).test?.environment === "ctrl-dom" ? { test: { environment: ENVIRONMENT } } : undefined),
-    resolveId: (id) => (id === "vitest-environment-ctrl-dom" ? ENVIRONMENT : null),
+    config: (config) => ((config as { test?: { environment?: string } }).test?.environment === "ctrl-dom" ? { test: { environment: path } } : undefined),
+    resolveId: (id) => (id === "vitest-environment-ctrl-dom" ? path : null),
   };
 }

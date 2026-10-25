@@ -12,7 +12,7 @@
 
 import { relative } from "node:path";
 import { TestRunner, type RunnerTask, type RunnerTestCase, type RunnerTestFile, type RunnerTestSuite, type TestTryOptions, type VitestTestRunner } from "vitest";
-import { createCollector, realNow, type CollectedFile, type CollectedSpan, type OpenSpan } from "./collector.ts";
+import { createCollector, realNow, type CollectedFile, type CollectedSpan, type Collector, type OpenSpan } from "./collector.ts";
 
 declare module "vitest" {
   interface TaskMeta {
@@ -45,7 +45,8 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
   const base = Base.prototype as VitestTestRunner;
 
   return class SentryTestRunner extends Base {
-    #collector = createCollector();
+    /** Subscribed for one run of files (onBeforeCollect to onAfterRunFiles). */
+    #collector!: Collector;
     #files = new Map<string, RunnerTestFile>();
     #tasks = new Map<string, RunnerTask>();
     /** The task behind each describe block's and test's span. */
@@ -59,6 +60,16 @@ export function withSentry<T extends RunnerClass>(Base: T): T {
       super(...args);
       const trace = this.trace as Trace;
       this.trace = ((name: string, attributes: Record<string, unknown> | (() => unknown), cb?: () => unknown) => this.#trace(trace, name, attributes, cb)) as Trace;
+    }
+
+    onBeforeCollect(paths: string[]): unknown {
+      this.#collector = createCollector();
+      return base.onBeforeCollect?.call(this, paths);
+    }
+
+    onAfterRunFiles(files: RunnerTestFile[]): void {
+      this.#collector.stop();
+      return super.onAfterRunFiles(files);
     }
 
     onCollected(files: RunnerTestFile[]): unknown {

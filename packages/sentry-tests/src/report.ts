@@ -60,8 +60,11 @@ export interface TestFileReport {
   /** What the worker's runner collected; without it there is no trace, only the issues. */
   collected: CollectedFile | null;
   environmentSetupMs?: number;
-  /** Why the file failed to load or run, when it did (an import error, a syntax error). */
-  fileErrors?: ErrorInfo[];
+  /**
+   * Failures outside any test, each an issue under its name: the file failing to load (an import
+   * or syntax error, named FILE_FAILURE), a describe block's beforeAll or afterAll throwing.
+   */
+  outsideTests?: Array<{ name: string; error: ErrorInfo }>;
 }
 
 export interface BuiltReport {
@@ -87,8 +90,8 @@ const NOT_BREADCRUMBS = new Set(["test.case", "test.fn", "test.suite", "test.col
 export function buildReport(report: TestFileReport, options: ResolvedOptions): BuiltReport {
   const out: BuiltReport = { envelopes: [], traces: 0, failures: 0, flaky: 0 };
   const tests = report.tests.filter((t) => t.state !== "skip");
-  const fileErrors = report.fileErrors ?? [];
-  if (tests.length === 0 && fileErrors.length === 0) return out;
+  const outsideTests = report.outsideTests ?? [];
+  if (tests.length === 0 && outsideTests.length === 0) return out;
   // A file outside the root (a monorepo package's tests run from elsewhere) keeps its full path.
   const relativePath = relative(report.root, report.file);
   const file = relativePath === "" || relativePath.startsWith("..") ? report.file : relativePath;
@@ -216,9 +219,10 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     // first span under Jest, the one span holding every attempt under Vitest).
     const context: FailureContext | undefined = failed ? record?.failures.at(-1) : record?.failures[0];
     const attempt = failed ? record?.spanIds.at(-1) : record?.spanIds[0];
-    // The worker's capture has the error object itself: Jest's results can lose its name
+    // The runner's last error is the last attempt's (Vitest keeps every attempt's), the one the
+    // capture is from. The capture has the error object itself: Jest's results can lose its name
     // (`TestingLibraryElementError` arrives as a plain Error).
-    const reported = failed ? (test.errors[0] ?? context?.error) : (context?.error ?? test.errors[0]);
+    const reported = failed ? (test.errors.at(-1) ?? context?.error) : (context?.error ?? test.errors[0]);
     const error = reported !== undefined && !reported.name && context?.error?.name ? { ...reported, name: context.error.name } : reported;
     const attached = options.attachments ? (context?.attachments ?? []) : [];
     const exception = toException(error ?? { message: "Test failed" }, report.root, attached.map((a) => a.filename));
@@ -260,7 +264,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   }
 
   if (options.failures) {
-    for (const error of fileErrors.slice(0, 1)) {
+    for (const { name, error } of outsideTests) {
       const eventId = uuid();
       out.envelopes.push({
         eventId,
@@ -273,11 +277,11 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
               timestamp: Date.now() / 1000,
               level: "error",
               logger: `${report.runner}.test`,
-              transaction: `${file} > ${FILE_FAILURE}`,
-              fingerprint: ["sentry-tests.test-failure", file, FILE_FAILURE],
+              transaction: `${file} > ${name}`,
+              fingerprint: ["sentry-tests.test-failure", file, name],
               exception: { values: [toException(error, report.root)] },
-              tags: { ...tags, "test.name": FILE_FAILURE, flaky: "false", retries: "0" },
-              contexts: { ...base.contexts, test: { name: FILE_FAILURE, file } },
+              tags: { ...tags, "test.name": tag(name), flaky: "false", retries: "0" },
+              contexts: { ...base.contexts, test: { name, file } },
             },
           },
         ],

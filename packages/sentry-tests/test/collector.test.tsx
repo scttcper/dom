@@ -171,6 +171,14 @@ describe("collector: spans from the tracing channel, under the runner's", () => 
     expect(tracing()).toBe(false);
   });
 
+  test("collectors subscribed at the same time (one per runner) keep to their own spans", async () => {
+    const other = collecting();
+    const collector = collecting();
+    const { spans } = await asTest(collector, () => traceSync("custom.op", "mine", () => {}));
+    expect(spans.map(line)).toContain("custom.op mine");
+    expect(other.finish().spans).toEqual([]);
+  });
+
   test("span ids are 16 hex characters, unique within the file (Sentry rejects anything else)", async () => {
     const collector = collecting();
     const { spans } = await asTest(collector, () => {

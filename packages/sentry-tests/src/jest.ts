@@ -15,7 +15,7 @@ import { sendEnvelope } from "./envelope.ts";
 import { Delivery } from "./delivery.ts";
 import { jestDataFile, type JestFileData } from "./jest-collector.ts";
 import { resolveOptions, type SentryTestsOptions, type ResolvedOptions } from "./options.ts";
-import { buildReport, type ErrorInfo, type TestCaseReport } from "./report.ts";
+import { buildReport, FILE_FAILURE, type ErrorInfo, type TestCaseReport } from "./report.ts";
 
 export type { SentryTestsOptions } from "./options.ts";
 
@@ -91,7 +91,7 @@ export default class SentryTestsReporter {
           ...(project ? { project } : {}),
           tests,
           collected: data?.collected ?? null,
-          ...(execError ? { fileErrors: [{ message: execError.message, stack: execError.stack ?? undefined }] } : {}),
+          ...(execError ? { outsideTests: [{ name: FILE_FAILURE, error: { message: execError.message, stack: execError.stack ?? undefined } }] } : {}),
         },
         this.options,
       ),

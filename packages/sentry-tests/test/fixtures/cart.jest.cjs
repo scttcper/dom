@@ -26,6 +26,18 @@ describe("Cart", () => {
   });
 });
 
+// A failure outside any test: Jest fails the block's tests with it.
+describe("Coupons", () => {
+  beforeAll(() => {
+    throw new Error("coupon service down");
+  });
+  test("applies a coupon", () => {});
+});
+
+test.skip("pays later", () => {});
+// A test named like an Object.prototype member.
+test("constructor", () => {});
+
 // A file-level hook: top-level tests run it, and so do the describe block's.
 afterEach(() => {});
 

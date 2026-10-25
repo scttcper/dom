@@ -1,7 +1,7 @@
 // A describe block with hooks, a passing, a failing and a flaky test, and a span of the test's own
 // on the "sentry-tests:span" channel (runners.test.ts checks what reaches Sentry).
 import { tracingChannel } from "node:diagnostics_channel";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "vitest";
 
 const spans = tracingChannel("sentry-tests:span");
 const traced = <T>(op: string, description: string, fn: () => T): T => spans.traceSync(fn, { op, description, data: { rows: 1 }, async: false });
@@ -24,7 +24,19 @@ describe("Cart", () => {
   });
 });
 
+// A failure outside any test: Vitest skips the block's tests and keeps the error on the block.
+describe("Coupons", () => {
+  beforeAll(() => {
+    throw new Error("coupon service down");
+  });
+  test("applies a coupon", () => {});
+});
+
+test.skip("pays later", () => {});
+test("constructor", () => {});
+
 // A file-level hook: top-level tests run it, and so do the describe block's.
+afterAll(() => {});
 afterEach(() => {});
 
 let attempts = 0;

@@ -114,6 +114,13 @@ export function createJestCollector(options: { dir: string; testPath: string; ge
         case "test_done":
           pop(event.test!.errors.length > 0);
           break;
+        // A skipped or todo test is started and never done: it gets no span.
+        case "test_skip":
+        case "test_todo":
+          stack.pop();
+          collector.enter(stack.at(-1) ?? null);
+          collector.test(circusTestName(event.test!)).spanIds.pop();
+          break;
         case "hook_start": {
           const hook = event.hook!;
           if (isJestsOwn(hook)) {

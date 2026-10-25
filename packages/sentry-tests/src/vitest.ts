@@ -14,7 +14,7 @@ import type { Plugin } from "vitest/config";
 import type { UserConsoleLog } from "vitest";
 import { sendEnvelope } from "./envelope.ts";
 import { resolveOptions, type SentryTestsOptions, type ResolvedOptions } from "./options.ts";
-import { buildReport, type ConsoleEntry, type ErrorInfo, type TestCaseReport } from "./report.ts";
+import { buildReport, FILE_FAILURE, type ConsoleEntry, type ErrorInfo, type TestCaseReport } from "./report.ts";
 import { Delivery } from "./delivery.ts";
 // TaskMeta.sentryTests
 import type {} from "./vitest-runner.ts";
@@ -98,7 +98,11 @@ export class SentryReporter implements Reporter {
           tests,
           collected: module.meta().sentryTests ?? null,
           environmentSetupMs: module.diagnostic().environmentSetupDuration,
-          fileErrors: module.errors().map(toErrorInfo),
+          // A describe block's beforeAll/afterAll failure is on its suite, not the file.
+          outsideTests: [
+            ...module.errors().map((e) => ({ name: FILE_FAILURE, error: toErrorInfo(e) })),
+            ...[...module.children.allSuites()].flatMap((suite) => suite.errors().map((e) => ({ name: suite.fullName, error: toErrorInfo(e) }))),
+          ],
         },
         this.options,
       ),

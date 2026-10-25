@@ -82,8 +82,7 @@ const MAX_WAIT_MS = 5000;
 /** Epoch seconds from the real clock. */
 export const realNow = (): number => (performance.timeOrigin + performance.now()) / 1000;
 
-const OPEN = Symbol("sentry-tests.span");
-type Traced = SpanContext & { [OPEN]?: OpenSpan };
+type Traced = SpanContext & { [slot: symbol]: OpenSpan | undefined };
 
 /**
  * Span ids: 16 hex characters, unique within a test file's trace. 4 random bytes per worker and a
@@ -121,6 +120,9 @@ export interface Collector {
 
 export function createCollector(): Collector {
   const current = new AsyncLocalStorage<OpenSpan>();
+  // Where this collector keeps a traced call's span on its context: its own key, so collectors
+  // subscribed at the same time (one per runner) never take each other's spans.
+  const OPEN = Symbol("sentry-tests.span");
   const spanId = spanIds();
   let entered: OpenSpan | null = null;
   let file = emptyFile();
@@ -243,5 +245,6 @@ export function createCollector(): Collector {
 }
 
 function emptyFile(): CollectedFile {
-  return { startedAt: 0, endedAt: 0, spans: [], tests: {}, droppedSpans: 0 };
+  // No prototype: a test named "constructor" or "toString" is a key like any other.
+  return { startedAt: 0, endedAt: 0, spans: [], tests: Object.create(null) as Record<string, CollectedTest>, droppedSpans: 0 };
 }

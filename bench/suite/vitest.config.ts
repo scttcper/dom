@@ -34,7 +34,8 @@ const fullStackAliases = [
 ];
 
 export default defineConfig({
-  plugins: [ctrlDomEnvironment()],
+  // *-dist: the environment's bundle too, as users installing the packages load it.
+  plugins: [ctrlDomEnvironment(dist ? distEntry.get("@ctrl/dom/vitest-environment") : undefined)],
   root,
   resolve: { alias: env === "ctrl-dom-full" ? fullStackAliases : [] },
   test: {

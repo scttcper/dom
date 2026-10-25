@@ -230,6 +230,12 @@ describe("buildReport: an issue per failing test", () => {
     expect(withoutPage).not.toContain("\u001b[");
   });
 
+  test("a test that failed on every attempt reports its last attempt's error, the one its page is from", () => {
+    const data = collected([{ error: { message: "save failed" }, attachments: [{ filename: "page.html", contentType: "text/html", data: "<body>saving</body>" }], contexts: {} }]);
+    const failing = testCase({ state: "fail", retries: 1, errors: [{ message: "loading failed" }, { message: "save failed" }] });
+    expect(payloads(buildReport(file([failing], data), options()))[1].exception.values[0].value).toBe("save failed");
+  });
+
   test("an error whose name the runner lost (Jest's results) takes it from the worker's capture", () => {
     const data = collected([{ error: { name: "TestingLibraryElementError", message: "Unable to find role" }, attachments: [], contexts: {} }]);
     const event = payloads(buildReport(file([testCase({ state: "fail", errors: [{ message: "Unable to find role" }] })], data), options()))[1];
@@ -283,7 +289,7 @@ describe("buildReport: console output, files that fail to load, sampling", () =>
   });
 
   test("a file that failed to load is an issue of its own, with no trace", () => {
-    const report = buildReport({ ...file([], null), fileErrors: [{ name: "SyntaxError", message: "Unexpected token" }] }, options());
+    const report = buildReport({ ...file([], null), outsideTests: [{ name: FILE_FAILURE, error: { name: "SyntaxError", message: "Unexpected token" } }] }, options());
     expect(report).toMatchObject({ traces: 0, failures: 1 });
     const [event] = payloads(report);
     expect(event.fingerprint).toEqual(["sentry-tests.test-failure", "src/signup.test.tsx", FILE_FAILURE]);

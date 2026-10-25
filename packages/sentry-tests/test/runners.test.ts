@@ -107,7 +107,12 @@ function expectCartReport(run: Awaited<ReturnType<typeof runAgainstSentry>>, fil
   expect(failure[0].payload.breadcrumbs.values[0].message).toMatch(/^beforeEach \(/);
   const flaky = events.find((e) => e[0].payload.fingerprint[0] === "sentry-tests.flaky-test")!;
   expect(flaky[0].payload.exception.values).toEqual([expect.objectContaining({ type: "FlakyTest", value: expect.stringMatching(/failed, then passed on retry 1\. The failed attempt:\n\nError: first try$/) })]);
-  expect(run.output).toContain(`@ctrl/sentry-tests: 1 trace, 1 failed test, 1 flaky test → 127.0.0.1:${run.port}`);
+  // The describe block whose beforeAll threw: under Vitest an issue for the block, under Jest for its test.
+  expect(events.some((e) => e[0].payload.exception.values[0].value === "coupon service down" && /^Coupons( > applies a coupon)?$/.test(e[0].payload.fingerprint[2]))).toBe(true);
+  // A skipped test has no span; a test named "constructor" is a test like any other.
+  expect(spans.some((s) => s.description === "pays later")).toBe(false);
+  expect(find("test.case", "constructor").status).toBe("ok");
+  expect(run.output).toContain(`@ctrl/sentry-tests: 1 trace, 2 failed tests, 1 flaky test → 127.0.0.1:${run.port}`);
   return failure;
 }
 
@@ -126,6 +131,6 @@ describe("Jest: the reporter and test runner", () => {
   test("without the test runner, the issues still go out and the summary says how to get traces", { timeout: 60_000 }, async () => {
     const run = await runAgainstSentry([jest, "--config", "jest.config.cjs", "--testRunner", require.resolve("jest-circus/runner")]);
     expect(run.envelopes.flat().some((i) => i.header.type === "transaction")).toBe(false);
-    expect(run.output).toContain(`@ctrl/sentry-tests: 0 traces, 1 failed test, 1 flaky test → 127.0.0.1:${run.port} (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")`);
+    expect(run.output).toContain(`@ctrl/sentry-tests: 0 traces, 2 failed tests, 1 flaky test → 127.0.0.1:${run.port} (no traces: add testRunner: "@ctrl/sentry-tests/jest-runner")`);
   });
 });
