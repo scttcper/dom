@@ -98,13 +98,10 @@ Only adapter bridge in ctrl-dom modes: `global.jsdom.reconfigure({url})` (Sentry
 
 ## Adapter gaps (@ctrl/dom-jest-environment)
 
-- **`global.jsdom.reconfigure({url})`**: jsdom-specific API used by `sentry-test/utils`'
-  `setWindowLocation()`. The harness bridges it with the window's internal URL setter.
-  Proposed: @ctrl/dom-jest-environment exposes an equivalent (`this.global.jsdom = { reconfigure }`
-  or a documented `ctrl-dom.setURL(url)`), since every jsdom-based suite that changes the URL uses it.
-- **Late work after teardown killed workers** (fixed by the jest-environment owner in
-  `cf0a3f9` during this run: globals stay on the discarded vm global). Before the fix, the
-  components preset lost 21 files and restarted ~130 workers per run.
+None open. `sentry-test/utils`' `setWindowLocation()` calls jsdom's `reconfigure({url})`, which
+the environment provides as `environment.dom.reconfigure` (as jest-environment-jsdom's `dom`), and
+work a test file leaves behind after teardown finds the globals still in place instead of crashing
+the worker.
 
 ## Caveats
 
@@ -112,60 +109,29 @@ Only adapter bridge in ctrl-dom modes: `global.jsdom.reconfigure({url})` (Sentry
   changed during the run" when `packages/*/{src,dist}` fingerprints differ before/after. Several
   runs on 2026-10-23 overlapped with uncommitted @ctrl/dom work, and some clusters seen only in
   such runs were transient.
-- Wall/CPU numbers come from a shared machine; modes are run back to back with equal workers.
+- Wall time depends on the worker count and machine load: compare modes from one interleaved
+  run with equal workers, and treat CPU as the steadier signal.
 - `navigator.platform` follows the host OS on @ctrl/dom (see TRIAGE.md): results on macOS differ
   from results on Linux CI.
 
-## Status (2026-10-23, pinned `503ad2e4`, 6 workers, CPU = user+sys of Jest + workers)
+## Status (2026-10-25, pinned `503ad2e4`, @ctrl/dom `59f208d`, 4 workers)
 
-The tree was being edited by other agents throughout (reports flag "our packages changed during
-the run"); runs where every ctrl-dom file failed to import (mid-edit @ctrl/dom) were discarded and
-rerun. Wall times are noisy on the shared machine; CPU is the steadier signal.
+Compatibility is tracked in `downstream/baseline.json` (`node downstream/track.ts`): on the
+components preset jsdom passes 6,429 tests, ctrl-dom 6,428 (one test that also flakes on jsdom)
+and ctrl-dom-full 6,429.
 
-Compatibility, as-is (`results/2026-10-23-{smoke-cold,components,views}.md`; passed / failed):
+Time and memory (components: 653 files, 6,432 tests; 3 interleaved runs, medians; warm Jest
+caches; nothing else running; CPU = user+sys of Jest and its workers):
 
-| preset | jsdom | ctrl-dom | ctrl-dom-full | ctrl-dom-nohacks |
-| --- | --- | --- | --- | --- |
-| smoke (15 files, 589 tests) | 589 / 0 | 542 / 47 | 541 / 48 | 541 / 48 |
-| components (653 files, 6,432 tests) | 6,429 / 0 | 5,993 / 432 | 5,923 / 502 | 5,913 / 512 |
-| views (9 areas, 1,818 tests) | 1,818 / 0 | 1,561 / 257 | 1,533 / 285 | 1,499 / 319 |
-
-With `--triage` (workarounds for TRIAGE.md clusters 1, 2, 5 and the timer leak):
-
-| preset | jsdom | ctrl-dom | ctrl-dom-full | ctrl-dom-nohacks |
-| --- | --- | --- | --- | --- |
-| smoke | 589 / 0 | 587 / 2 | 586 / 3 | 585 / 4 |
-| components | 6,429 / 0 | 6,357 / 72 | 6,289 / 140 | 6,272 / 157 |
-| views | 1,818 / 0 | 1,810 / 8 | 1,781 / 37 | 1,734 / 84 |
-| all (2,437 files, 23,426 tests) | 23,421 / 0 | 23,244 / 177 | 23,017 / 404 | — |
-
-Time and memory (components, `--triage`, 3 interleaved runs, medians;
-`results/2026-10-23-components-triage-x3.md`):
-
-| mode | wall | CPU | peak tree RSS | env setup / file (median) |
-| --- | --: | --: | --: | --: |
-| jsdom | 43.7 s | 280 s | 9.6 GiB | 8 ms |
-| ctrl-dom | 44.5 s | 270 s | 9.7 GiB | 6 ms |
-| ctrl-dom-full | 46.3 s | 258 s | 9.3 GiB | 6 ms |
-| ctrl-dom-nohacks (2 valid runs) | 49.8 / 65.9 s | 252 / 290 s | 8.6 GiB | 6 ms |
-
-Direct-context experiment (components, `--triage`, 2 interleaved runs, heavier machine load;
-`results/2026-10-23-components-direct-x2.md`): CPU jsdom 368 / 383 s, ctrl-dom 349 / 347 s,
-**ctrl-dom-direct 321 / 308 s** (same 6,357 / 72 results) — the contextified jest-environment-node
-context costs ctrl-dom ~10% CPU on this suite.
-
-Worker memory (forced GC per file, `results/2026-10-23-components-gc-triage.md`):
-
-| mode | heap growth / file | heap after last file | max worker RSS |
+| mode | wall | CPU | peak tree RSS |
 | --- | --: | --: | --: |
-| jsdom | 0.18 MiB | 232 MiB | 1,084 MiB |
-| ctrl-dom, timers **not** cleared (window timers leak, TRIAGE.md) | **7.2 MiB** | 1,023 MiB | 1,695 MiB |
-| ctrl-dom, timers cleared (workaround) | 0.17 MiB | 189 MiB | 704 MiB |
-| ctrl-dom-full, timers cleared | 0.39 MiB | 230 MiB | 535 MiB |
+| jsdom | 53.3 s | 234 s | 8.8 GiB |
+| ctrl-dom | 32.7 s (−39%) | 196 s (−16%) | 7.3 GiB (−18%) |
+| ctrl-dom-full | 31.3 s (−41%, 1.70x) | 189 s (−19%) | 7.5 GiB (−15%) |
 
-Full suite (`all`, triage, no forced GC): heap growth/file jsdom 0.55 MiB, ctrl-dom 0.04 MiB,
-ctrl-dom-full −0.47 MiB; max worker RSS 2,380 / 2,051 / 1,721 MiB; peak tree RSS 10.1 / 8.4 / 6.9 GiB.
-Upstream sets no `workerIdleMemoryLimit`; ctrl-dom needs none once window timers are cleared at
-teardown, and would need one without that fix.
+Wall time drops more than CPU because the environments' virtual clock skips idle time: a test
+waiting on a timer (a `findBy` timeout, a debounce) jumps ahead instead of sleeping. A mode's
+first run after its Jest cache is cleared is ~10 s slower (transforms); the medians are warm runs.
 
-See `TRIAGE.md` for clusters, owners and repros, and `results/*.md` for every run.
+Earlier measurements (2026-10-23, before most performance work, on a shared machine) are in
+`results/2026-10-23-*.md`. See `TRIAGE.md` for what still differs, with owners and repros.
