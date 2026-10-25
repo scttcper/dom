@@ -114,24 +114,29 @@ the worker.
 - `navigator.platform` follows the host OS on @ctrl/dom (see TRIAGE.md): results on macOS differ
   from results on Linux CI.
 
-## Status (2026-10-25, pinned `503ad2e4`, @ctrl/dom `59f208d`, 4 workers)
+## Status (2026-10-25, pinned `503ad2e4`, @ctrl/dom `6614e19`, 4 workers)
 
 Compatibility is tracked in `downstream/baseline.json` (`node downstream/track.ts`): on the
-components preset jsdom passes 6,429 tests, ctrl-dom 6,428 (one test that also flakes on jsdom)
-and ctrl-dom-full 6,429.
+components preset all three modes pass 6,429 tests (one modal test flakes in every mode,
+jsdom included).
 
 Time and memory (components: 653 files, 6,432 tests; 3 interleaved runs, medians; warm Jest
-caches; nothing else running; CPU = user+sys of Jest and its workers):
+caches; nothing else running; CPU = user+sys of Jest and its workers;
+[report](results/2026-10-25-components.md)):
 
 | mode | wall | CPU | peak tree RSS |
 | --- | --: | --: | --: |
-| jsdom | 53.3 s | 234 s | 8.8 GiB |
-| ctrl-dom | 32.7 s (−39%) | 196 s (−16%) | 7.3 GiB (−18%) |
-| ctrl-dom-full | 31.3 s (−41%, 1.70x) | 189 s (−19%) | 7.5 GiB (−15%) |
+| jsdom | 52.1 s | 229 s | 8.3 GiB |
+| ctrl-dom | 33.8 s (−35%) | 202 s (−12%) | 7.6 GiB (−9%) |
+| ctrl-dom-full | 31.4 s (−40%, 1.66x) | 191 s (−17%) | 6.7 GiB (−19%) |
 
 Wall time drops more than CPU because the environments' virtual clock skips idle time: a test
 waiting on a timer (a `findBy` timeout, a debounce) jumps ahead instead of sleeping. A mode's
 first run after its Jest cache is cleared is ~10 s slower (transforms); the medians are warm runs.
+Peak tree RSS is the noisiest column (ctrl-dom's three runs: 6.8, 7.6 and 8.4 GiB): it depends on
+when the four workers happen to collect garbage. Per worker, the heap a forced GC leaves between
+files is 145–165 MiB on ctrl-dom-full (perf preset, `--gc`); before @ctrl/dom stopped finished
+files' realms from staying alive (`6614e19`) it was 230–280 MiB.
 
 Earlier measurements (2026-10-23, before most performance work, on a shared machine) are in
 `results/2026-10-23-*.md`. See `TRIAGE.md` for what still differs, with owners and repros.
