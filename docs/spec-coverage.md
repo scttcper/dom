@@ -1327,7 +1327,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [es-interfaces](https://webidl.spec.whatwg.org/#es-interfaces) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts`, `dom/window/isolation.test.ts`, `vitest-environment/environment.test.ts`, `compat/surface/profiles.test.ts` |
 | [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
 | [es-legacy-platform-objects](https://webidl.spec.whatwg.org/#es-legacy-platform-objects) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
-| [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts`, `dom/window/clock.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts` |
+| [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts`, `dom/window/window-apis.test.ts` |
 | [es-namespaces](https://webidl.spec.whatwg.org/#es-namespaces) | `dom/css/CSS.ts` | `dom/css/view.test.ts`; WPT: `css/cssom/CSS-namespace-object-class-string.html` |
 | [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |

@@ -71,6 +71,18 @@ export function clearTimers(window: Window): void {
 }
 
 /**
+ * The timeout the timer initialisation steps work with: the IDL argument is a `long`
+ * (https://webidl.spec.whatwg.org/#es-long: truncated, wrapped to 32 bits, NaN to 0) and a
+ * negative one is 0 (https://html.spec.whatwg.org/#timer-initialisation-steps), as in jsdom.
+ * Node's setTimeout would warn instead (TimeoutNegativeWarning, TimeoutNaNWarning,
+ * TimeoutOverflowWarning) and use 1 ms.
+ */
+function timerTimeout(timeout: unknown): number {
+  const ms = (timeout as number) | 0;
+  return ms < 0 ? 0 : ms;
+}
+
+/**
  * https://html.spec.whatwg.org/#timer-initialisation-steps, delegated to `host` (the window's
  * current host global, so fake timers apply): returns 0 and schedules nothing once the window
  * is closed (jsdom), otherwise the host's handle, tracked so close() clears it.
@@ -83,9 +95,10 @@ export function startTimer(
   timeout: unknown,
   args: unknown[],
 ): unknown {
+  const ms = timerTimeout(timeout);
   if (window[$closed]) return 0;
   const start = host[repeat ? "setInterval" : "setTimeout"] as HostTimerFunction;
-  const handle = args.length === 0 ? start(handler, timeout) : start(handler, timeout, ...args);
+  const handle = args.length === 0 ? start(handler, ms) : start(handler, ms, ...args);
   trackTimer(window, handle, host[repeat ? "clearInterval" : "clearTimeout"] as ClearFunction);
   return handle;
 }
@@ -96,14 +109,16 @@ function wrapTimer(window: Window, target: Record<string, unknown>, repeat: bool
   // Method syntax: named like the original, not a constructor.
   const wrapper = {
     setTimeout(handler: unknown, timeout?: unknown, ...args: unknown[]): unknown {
+      const ms = timerTimeout(timeout);
       if (window[$closed]) return 0;
-      const handle = args.length === 0 ? original(handler, timeout) : original(handler, timeout, ...args);
+      const handle = args.length === 0 ? original(handler, ms) : original(handler, ms, ...args);
       trackTimer(window, handle, clear);
       return handle;
     },
     setInterval(handler: unknown, timeout?: unknown, ...args: unknown[]): unknown {
+      const ms = timerTimeout(timeout);
       if (window[$closed]) return 0;
-      const handle = args.length === 0 ? original(handler, timeout) : original(handler, timeout, ...args);
+      const handle = args.length === 0 ? original(handler, ms) : original(handler, ms, ...args);
       trackTimer(window, handle, clear);
       return handle;
     },

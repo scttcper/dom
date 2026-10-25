@@ -38,8 +38,9 @@
  *   - window.open:            https://html.spec.whatwg.org/#dom-open
  *   - customElements:         https://html.spec.whatwg.org/#dom-window-customelements
  */
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createWindow } from "@ctrl/dom";
+import { trackGlobalTimers } from "@ctrl/dom/internal";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let win: any;
@@ -83,6 +84,44 @@ describe("timers — https://html.spec.whatwg.org/#timers", () => {
     win.setTimeout(() => got.push("nan"), Number.NaN);
     await delay(10);
     expect(got).toEqual([1, "x", "nan"]);
+  });
+
+  test("the host's setTimeout/setInterval get the timeout as a WebIDL long with negatives as 0, so Node never warns (https://webidl.spec.whatwg.org/#es-long)", async () => {
+    const warnings: string[] = [];
+    const onWarning = (warning: Error) => warnings.push(warning.name);
+    process.on("warning", onWarning);
+    const hostTimeout = vi.spyOn(globalThis, "setTimeout");
+    const hostInterval = vi.spyOn(globalThis, "setInterval");
+    for (const timeout of [-5, Number.NaN, 2 ** 32 + 5, 2 ** 31, -1.5, 2.9, "7", "x", Number.POSITIVE_INFINITY])
+      win.clearTimeout(win.setTimeout(() => {}, timeout));
+    win.clearInterval(win.setInterval(() => {}, -100));
+    const timeouts = hostTimeout.mock.calls.map((call) => call[1]);
+    const intervals = hostInterval.mock.calls.map((call) => call[1]);
+    hostTimeout.mockRestore();
+    hostInterval.mockRestore();
+    // Node emits its warnings on the next tick.
+    await new Promise((resolve) => process.nextTick(resolve));
+    process.off("warning", onWarning);
+    expect(timeouts).toEqual([0, 0, 5, 0, 0, 2, 7, 0, 0]);
+    expect(intervals).toEqual([0]);
+    expect(warnings).toEqual([]);
+  });
+
+  test("a test file global's setTimeout/setInterval wrapped by trackGlobalTimers convert the timeout the same way", () => {
+    const timeouts: unknown[] = [];
+    const target: Record<string, any> = {
+      setTimeout: (_handler: unknown, timeout: unknown) => timeouts.push(timeout),
+      clearTimeout: () => {},
+      setInterval: (_handler: unknown, timeout: unknown) => timeouts.push(timeout),
+      clearInterval: () => {},
+    };
+    const restore = trackGlobalTimers(win, target);
+    target.setTimeout(() => {}, -5);
+    target.setTimeout(() => {}, 2 ** 32 + 5);
+    target.setInterval(() => {}, Number.NaN);
+    target.setTimeout(() => {});
+    restore();
+    expect(timeouts).toEqual([0, 5, 0, 0]);
   });
 
   test("clearing an unknown, already-fired or non-numeric handle is a no-op", async () => {
