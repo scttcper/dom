@@ -5,7 +5,11 @@
  * (https://develop.sentry.dev/sdk/overview/#parsing-the-dsn), stack frames, and delivery to a DSN
  * and to Spotlight, checked against a fake Sentry server.
  */
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vitest";
 import { parseDsn, parseStack, sendEnvelope, serializeEnvelope, toSentryFrames, type Envelope } from "../src/envelope.ts";
 import { Delivery } from "../src/delivery.ts";
@@ -152,7 +156,9 @@ describe("buildReport: an issue per failing test", () => {
       ["outer", "node_modules/x/index.js", false],
       ["inner", "src/a.ts", true],
     ]);
-    expect(event.breadcrumbs.values.map((b: any) => b.message)).toEqual(["render(<Signup />)", "waitFor(() => …)", 'getByText("Done")']);
+    // The details are in the message: Spotlight shows a breadcrumb's data instead of its message.
+    expect(event.breadcrumbs.values.map((b: any) => b.message)).toEqual(["render(<Signup />) (10.0 ms)", "waitFor(() => …) (200 ms, 3 checks)", 'getByText("Done") (10.0 ms)']);
+    expect(event.breadcrumbs.values.every((b: any) => b.data === undefined)).toBe(true);
     expect(errorEnvelope.items.filter((i) => i.type === "attachment").map((i: any) => [i.filename, i.contentType, i.payload])).toEqual([
       ["accessibility-snapshot.txt", "text/plain", '- button "Save"'],
       ["page.html", "text/html", "<html></html>"],
@@ -220,10 +226,8 @@ describe("buildReport: an issue per flaky test", () => {
     expect(event.level).toBe("warning");
     expect(event.fingerprint).toEqual(["ctrl-dom.flaky-test", "src/signup.test.tsx", "Signup > submits"]);
     expect(event.tags).toMatchObject({ flaky: "true", retries: "1" });
-    expect(event.exception.values.map((v: any) => [v.type, v.value])).toEqual([
-      ["Error", "timed out"],
-      ["FlakyTest", "Signup > submits (passed on retry 1)"],
-    ]);
+    // One exception, so every UI titles the issue as flaky.
+    expect(event.exception.values.map((v: any) => [v.type, v.value])).toEqual([["FlakyTest", "Signup > submits failed, then passed on retry 1. The failed attempt:\n\nError: timed out"]]);
   });
 });
 
@@ -248,13 +252,15 @@ describe("envelopes and DSNs", () => {
     expect(lines[4]).toBe("é");
   });
 
-  test("V8 stack lines become frames, oldest first, with source context for local files", () => {
-    const error = new Error("here");
-    const frames = toSentryFrames(parseStack(error.stack), process.cwd());
-    const self = frames.findLast((f) => f.abs_path.endsWith("report.test.ts"))!;
-    expect(self.in_app).toBe(true);
-    expect(self.context_line).toContain('new Error("here")');
-    expect(self.pre_context!.length).toBeGreaterThan(0);
+  test("V8 stack lines become frames, oldest first, with source context; @ctrl/dom's own frames are not in app", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ctrl-dom-frames-"));
+    const testFile = join(dir, "signup.test.tsx");
+    writeFileSync(testFile, ["import x from 'y';", "", "test('a', async () => {", "  await screen.findByRole('option');", "});"].join("\n"));
+    const [own, test] = toSentryFrames([{ method: "find", file: fileURLToPath(import.meta.url), line: 1, column: 1 }, { method: "Object.findByRole", file: testFile, line: 4, column: 3 }], dir);
+    // This file lives in the workspace's packages/, which is @ctrl/dom's own code.
+    expect(own.in_app).toBe(false);
+    expect(test).toMatchObject({ filename: "signup.test.tsx", in_app: true, context_line: "  await screen.findByRole('option');", pre_context: ["import x from 'y';", "", "test('a', async () => {"] });
+    rmSync(dir, { recursive: true, force: true });
     expect(parseStack("Error: x\n    at fn (/a/b.js:1:2)\n    at async run (file:///c/d.js:3:4)\n    at /e/f.js:5:6")).toEqual([
       { method: undefined, file: "/e/f.js", line: 5, column: 6 },
       { method: "run", file: "file:///c/d.js", line: 3, column: 4 },

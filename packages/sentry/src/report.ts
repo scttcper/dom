@@ -211,13 +211,12 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
     const context = failures.at(-1);
     const error = failed ? (test.errors[0] ?? failures.at(-1)?.error) : (failures[0]?.error ?? test.errors[0]);
     const pageAttached = options.snapshots && (context?.aria !== undefined || context?.html !== undefined);
-    const exception = [toException(error ?? { message: "Test failed" }, report.root, pageAttached)];
+    const exception = toException(error ?? { message: "Test failed" }, report.root, pageAttached);
+    // A flaky test's issue reads as one in every UI: the failed attempt's error under a FlakyTest
+    // title (a chained exception would be titled by its first or last link depending on the UI).
     if (!failed) {
-      exception.push({
-        type: "FlakyTest",
-        value: `${test.name} (passed on retry ${test.retries})`,
-        mechanism: { type: "chained", handled: true, source: "cause" },
-      } as never);
+      exception.value = `${test.name} failed, then passed on retry ${test.retries}. The failed attempt:\n\n${exception.type}: ${exception.value}`;
+      exception.type = "FlakyTest";
     }
     const eventId = uuid();
     const items: EnvelopeItem[] = [
@@ -231,7 +230,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
           logger: `${report.runner}.test`,
           transaction: `${file} > ${test.name}`,
           fingerprint: [failed ? "ctrl-dom.test-failure" : "ctrl-dom.flaky-test", file, test.name],
-          exception: { values: exception },
+          exception: { values: [exception] },
           tags: { ...tags, "test.name": tag(test.name), flaky: String(test.flaky), retries: String(test.retries) },
           contexts: {
             ...base.contexts,
@@ -291,7 +290,7 @@ const ANSI = /\u001b\[[0-9;]*m/g;
  */
 const PAGE_DUMP = /\n\n(?:Ignored nodes: |Here are the accessible roles:|Accessibility snapshot of <body>|DOM of <body>|<body)/;
 
-function toException(error: ErrorInfo, root: string, pageAttached = false): Record<string, unknown> {
+function toException(error: ErrorInfo, root: string, pageAttached = false): { type: string; value: string; [key: string]: unknown } {
   let text = error.message.replace(ANSI, "");
   const dump = pageAttached ? PAGE_DUMP.exec(text) : null;
   if (dump !== null) text = `${text.slice(0, dump.index)}\n\n(The page when the test failed is attached: accessibility-snapshot.txt, page.html.)`;
@@ -309,13 +308,14 @@ function toException(error: ErrorInfo, root: string, pageAttached = false): Reco
 /** What the test did and printed before it failed, oldest first: the issue page's breadcrumb timeline. */
 function breadcrumbs(spans: readonly CollectedSpan[], output: readonly ConsoleEntry[]): Record<string, unknown>[] {
   const crumbs = [
+    // The details go in the message, not `data`: Spotlight shows a breadcrumb's data instead of
+    // its message, and Sentry shows both.
     ...spans.map((s) => ({
       type: "default",
       category: s.op,
-      message: s.description,
+      message: `${s.description} (${spanDetails(s)})`,
       timestamp: s.start_timestamp,
       level: s.status === "ok" ? "info" : "error",
-      data: { duration_ms: Math.round((s.timestamp - s.start_timestamp) * 1e6) / 1e3, ...s.data },
     })),
     ...output.map((c) => ({
       type: "default",
@@ -326,6 +326,18 @@ function breadcrumbs(spans: readonly CollectedSpan[], output: readonly ConsoleEn
     })),
   ];
   return crumbs.sort((a, b) => a.timestamp - b.timestamp).slice(-MAX_BREADCRUMBS);
+}
+
+/** `10.4 ms, 40 checks, 0 matches, 1994 ms skipped` */
+function spanDetails(span: CollectedSpan): string {
+  const ms = (span.timestamp - span.start_timestamp) * 1000;
+  const parts = [`${ms < 10 ? ms.toFixed(1) : Math.round(ms)} ms`];
+  const { checks, matches } = span.data;
+  if (typeof checks === "number") parts.push(`${checks} ${checks === 1 ? "check" : "checks"}`);
+  if (typeof matches === "number") parts.push(`${matches} ${matches === 1 ? "match" : "matches"}`);
+  const skipped = span.data["clock.skipped_ms"];
+  if (typeof skipped === "number") parts.push(`${Math.round(skipped)} ms skipped`);
+  return parts.join(", ");
 }
 
 function attachments(context: FailureContext): EnvelopeItem[] {

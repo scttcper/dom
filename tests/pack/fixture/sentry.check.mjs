@@ -84,7 +84,8 @@ const flaky = events.filter((e) => e.items[0].payload.fingerprint[0] === "ctrl-d
 check(flaky.length === 1, `${flaky.length} flaky events, expected 1`);
 if (flaky[0]) {
   check(flaky[0].level === "warning" && flaky[0].fingerprint[2] === "passes on the retry", `flaky event ${flaky[0].level} ${flaky[0].fingerprint}`);
-  check(flaky[0].exception.values.some((v) => v.value === "first attempt fails"), "flaky event lacks the first attempt's error");
+  const [exception] = flaky[0].exception.values;
+  check(exception.type === "FlakyTest" && exception.value.endsWith("Error: first attempt fails"), `flaky event's exception ${exception.type}: ${exception.value}`);
 }
 check(output.includes(`@ctrl/dom/sentry: 1 trace, 2 failed tests, 1 flaky test → 127.0.0.1:${port}`), "no summary line in the output");
 

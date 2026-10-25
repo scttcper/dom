@@ -157,15 +157,33 @@ function sourceLines(path: string): string[] | null {
 const CONTEXT_LINES = 5;
 
 /**
+ * Where @ctrl/dom's own code lives: dist/ of the installed package (this module is in
+ * dist/sentry/), or the workspace's packages/ (it is in packages/sentry/src/). Its frames (query
+ * wrappers, the tracing channel) are library code even when not under node_modules: a workspace
+ * link, a monorepo consuming the source.
+ */
+const OWN_CODE = ownCode();
+
+function ownCode(): string | null {
+  try {
+    return fileURLToPath(new URL("../../", import.meta.url));
+  } catch {
+    // Not loaded from a file (a test runner's module runner): every local frame outside
+    // node_modules counts as the test's.
+    return null;
+  }
+}
+
+/**
  * Sentry frames from parsed ones, oldest first: paths relative to `root`, the test's own code in
- * app (not node_modules or Node's internals), with source context read from disk (Sentry cannot
- * fetch a local file).
+ * app (not node_modules, Node's internals or @ctrl/dom itself), with source context read from disk
+ * (Sentry cannot fetch a local file).
  */
 export function toSentryFrames(frames: readonly ParsedFrame[], root: string): Frame[] {
   return frames.map((f) => {
     const absPath = f.file.startsWith("file://") ? fileURLToPath(f.file) : f.file;
     const local = isAbsolute(absPath);
-    const inApp = local && !absPath.includes("/node_modules/");
+    const inApp = local && !absPath.includes("/node_modules/") && (OWN_CODE === null || !absPath.startsWith(OWN_CODE));
     const frame: Frame = {
       filename: local ? relative(root, absPath) : absPath,
       abs_path: absPath,
