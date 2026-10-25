@@ -344,7 +344,7 @@ export const scenarios: Record<string, Scenario> = {
     t.log("hook after rerender", result.current.n);
   },
 
-  "act-warnings"(t, { render }) {
+  async "act-warnings"(t, { render }) {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       function Late() {
@@ -356,6 +356,8 @@ export const scenarios: Record<string, Scenario> = {
       }
       render(<Late />);
       t.log("console.error before flush", spy.mock.calls.length);
+      // React warns from the effect's promise callback: keep console.error mocked until it ran.
+      await new Promise((resolve) => setTimeout(resolve, 0));
     } finally {
       spy.mockRestore();
     }

@@ -23,6 +23,24 @@ import { differential, differentialAsync, type AnyWindow } from "../../src/harne
 
 const tick = (w: AnyWindow, ms = 10) => new Promise<void>((resolve) => w.setTimeout(resolve, ms));
 
+/**
+ * The window's next `type` event, or nothing after 1 s (the comparison then shows it missing).
+ * Traversal and fragment navigation finish in queued tasks — jsdom applies a traversal in two
+ * nested `setImmediate`s — so a fixed delay raced them: on a loaded CI runner the timers phase ran
+ * a 10 ms tick before jsdom's second task, and the oracle recorded the pushState that followed
+ * as happening before the traversal.
+ */
+const next = (w: AnyWindow, type: "popstate" | "hashchange") =>
+  new Promise<void>((resolve) => {
+    const done = () => {
+      w.clearTimeout(timer);
+      w.removeEventListener(type, done);
+      resolve();
+    };
+    const timer = w.setTimeout(done, 1000);
+    w.addEventListener(type, done);
+  });
+
 function where(w: AnyWindow) {
   return { href: w.location.href, length: w.history.length, state: w.history.state };
 }
@@ -128,7 +146,7 @@ describe("traversal — https://html.spec.whatwg.org/#update-document-for-histor
     w.history.pushState({ page: 2 }, "", "/two");
     w.history.back();
     const sync = log.length;
-    await tick(w);
+    await next(w, "popstate");
     return { sync, log, ...where(w) };
   });
 
@@ -136,10 +154,10 @@ describe("traversal — https://html.spec.whatwg.org/#update-document-for-histor
     w.history.pushState("a", "", "/a");
     w.history.pushState("b", "", "/b");
     w.history.go(-2);
-    await tick(w);
+    await next(w, "popstate");
     const first = where(w);
     w.history.forward();
-    await tick(w);
+    await next(w, "popstate");
     return { first, second: where(w) };
   });
 
@@ -156,7 +174,7 @@ describe("traversal — https://html.spec.whatwg.org/#update-document-for-histor
     w.history.pushState(1, "", "/1");
     w.history.pushState(2, "", "/2");
     w.history.back();
-    await tick(w);
+    await next(w, "popstate");
     w.history.pushState(3, "", "/3");
     const after = where(w);
     w.history.forward();
@@ -168,7 +186,7 @@ describe("traversal — https://html.spec.whatwg.org/#update-document-for-histor
     w.history.pushState("x", "", "#x");
     const log = recordNavigationEvents(w);
     w.history.back();
-    await tick(w);
+    await next(w, "hashchange");
     return { log, ...where(w) };
   });
 });
@@ -180,7 +198,7 @@ describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-frag
       const log = recordNavigationEvents(w);
       w.location.hash = "section";
       const sync = { log: log.length, ...where(w) };
-      await tick(w);
+      await next(w, "hashchange");
       return { sync, log, after: where(w) };
     },
     {
@@ -196,7 +214,7 @@ describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-frag
     "location.hash setter step 7: setting the same fragment does nothing",
     async (w) => {
       w.location.hash = "same";
-      await tick(w);
+      await next(w, "hashchange");
       const log = recordNavigationEvents(w);
       w.location.hash = "#same";
       await tick(w);
@@ -210,7 +228,7 @@ describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-frag
     async (w) => {
       const log = recordNavigationEvents(w);
       w.location.href = "#frag";
-      await tick(w);
+      await next(w, "hashchange");
       return { log, ...where(w) };
     },
     { jsdomFix: FRAGMENT_STATE },
@@ -221,7 +239,7 @@ describe("navigate to a fragment — https://html.spec.whatwg.org/#navigate-frag
     async (w) => {
       const log = recordNavigationEvents(w);
       w.location.replace("#r");
-      await tick(w);
+      await next(w, "hashchange");
       return { log, ...where(w) };
     },
     { jsdomFix: FRAGMENT_STATE },

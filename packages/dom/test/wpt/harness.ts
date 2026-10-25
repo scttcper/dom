@@ -17,17 +17,41 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Script, createContext } from "node:vm";
+import { setFlagsFromString } from "node:v8";
+import { Script, createContext, runInNewContext } from "node:vm";
 import { describe, test as vitestTest } from "vitest";
 import * as dom from "@ctrl/dom";
 import { $mode } from "../../src/keys.ts";
 import { fireAnEvent } from "../../src/events/fire.ts";
+import { setUncaughtExceptionHandler } from "../../src/events/report.ts";
+import { setNotImplementedHandler } from "../../src/window/not-implemented.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** Vendored fixtures; `WPT_ROOT=<wpt checkout>` points surveys at a full upstream checkout instead. */
 export const FIXTURES = process.env.WPT_ROOT ?? join(here, "fixtures");
 
 const requireFromJsdom = createRequire(createRequire(import.meta.url).resolve("jsdom"));
+
+// Pages throw from listeners on purpose (dom/events/Event-dispatch-throwing.html) and call what
+// jsdom profiles report as not implemented (window.focus()). testharness sees the exceptions
+// through the window's error event; printing each one, or forwarding the diagnostics to the
+// test's console as the environments do, is only noise in the test output.
+setUncaughtExceptionHandler(() => {});
+setNotImplementedHandler(null);
+
+/**
+ * V8's full GC for WPT's `TestUtils.gc()` (https://testutils.spec.whatwg.org/#dom-testutils-gc),
+ * which common/gc.js prefers; without it the page warns and only churns allocations. Exposed for
+ * one throwaway context, as jest-leak-detector does, then hidden again.
+ */
+const collectGarbage: () => void = (() => {
+  const own = (globalThis as { gc?: () => void }).gc;
+  if (typeof own === "function") return own;
+  setFlagsFromString("--expose-gc");
+  const gc = runInNewContext("gc") as () => void;
+  setFlagsFromString("--no-expose-gc");
+  return gc;
+})();
 const parse5 = requireFromJsdom("parse5") as {
   parse(html: string, opts?: object): P5Node;
 };
@@ -763,6 +787,7 @@ function loadDocument(fileWithQuery: string, harness: Record<string, unknown> | 
     setInterval: windowTimers.setInterval.bind(window),
     clearInterval: windowTimers.clearInterval.bind(window),
     queueMicrotask,
+    TestUtils: { gc: async () => collectGarbage() },
   });
   windowOfProxy.set(windowProxy, window);
   // `event` (https://dom.spec.whatwg.org/#ref-for-dom-window-event) is live, not a snapshot.

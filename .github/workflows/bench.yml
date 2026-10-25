@@ -36,7 +36,7 @@ jobs:
         with:
           path: base
           ref: ${{ github.event.pull_request.base.sha || inputs.base }}
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: head/package.json
       - uses: actions/setup-node@v5
@@ -54,7 +54,7 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm build
       - name: Compare
         run: node head/bench/compare.ts --base base --head head --samples 9 --json bench-compare.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: bench-compare

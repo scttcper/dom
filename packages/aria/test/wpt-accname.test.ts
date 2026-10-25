@@ -66,6 +66,6 @@ describe("WPT accname — https://w3c.github.io/accname/#computation-steps", () 
     const failing = [...specResults].filter(([, ok]) => !ok).map(([f]) => f);
     // Not asserted against a fixed list: upstream's failures are the oracle's, not ours.
     expect(specResults.size).toBeGreaterThan(0);
-    console.info(`WPT accname: ${specResults.size - failing.length}/${specResults.size} match the spec expectation`);
+    if (process.env.WPT_REPORT) console.info(`WPT accname: ${specResults.size - failing.length}/${specResults.size} match the spec expectation`);
   });
 });

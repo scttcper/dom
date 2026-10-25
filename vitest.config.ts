@@ -8,5 +8,8 @@ export default defineConfig({
     // The tests load @ctrl/dom's TypeScript sources in every worker: keep the stripped code and V8
     // code across workers (@ctrl/dom/vitest-environment's compileCache option; ~7% faster here).
     env: { CTRL_DOM_COMPILE_CACHE: "1" },
+    // Vitest's end-of-run hints suggest `isolate: false` and VM pools; a fresh module graph and
+    // environment per test file is what these tests check, so the hints are noise here.
+    experimental: { diagnostics: false },
   },
 });

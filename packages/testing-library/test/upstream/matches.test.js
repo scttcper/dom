@@ -21,7 +21,9 @@ test('matchers accept regex', () => {
 // https://stackoverflow.com/questions/1520800/why-does-a-regexp-with-global-flag-give-wrong-results
 test('a regex with the global flag consistently (re-)finds a match', () => {
   const regex = /ABC/g
-  const spy = vi.spyOn(console, 'warn').mockImplementation()
+  // Upstream's jest.spyOn(...).mockImplementation() silences the warning; Vitest's needs an
+  // implementation, or it calls through and prints.
+  const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
   expect(matches('ABC', node, regex, normalizer)).toBe(true)
   expect(fuzzyMatches('ABC', node, regex, normalizer)).toBe(true)

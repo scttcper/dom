@@ -7,6 +7,25 @@ import {render} from './helpers/test-utils.js'
 
 // eslint-disable-next-line max-lines-per-function
 describe('.toHaveErrorMessage', () => {
+  // Not upstream: the matcher is deprecated and warns on every call (utils.ts deprecate()), which
+  // upstream's Jest run prints too. Silenced here; one test below pins the warning.
+  let warn
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    warn.mockRestore()
+  })
+
+  test('warns that it is deprecated in favor of toHaveAccessibleErrorMessage (not upstream)', () => {
+    const {queryByTestId} = render(`<input data-testid="x" aria-invalid="true">`)
+    expect(queryByTestId('x')).not.toHaveErrorMessage()
+    expect(warn).toHaveBeenCalledWith(
+      'Warning: toHaveErrorMessage has been deprecated and will be removed in future updates.',
+      'Please use toHaveAccessibleErrorMessage.',
+    )
+  })
+
   test('resolves for object with correct aria-errormessage reference', () => {
     const {queryByTestId} = render(`
     <label for="startTime"> Please enter a start time for the meeting: </label>
