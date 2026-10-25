@@ -27,6 +27,7 @@ import { isDisabledImpl } from "./states.ts";
 import * as S from "./states.ts";
 import { implOf } from "./tree.ts";
 import { isInaccessible, isSubtreeInaccessible } from "./hidden.ts";
+import { quote, setNodeDescriber } from "@rtd/dom/internal";
 
 export type { ComputeTextAlternativeOptions, GetComputedStyle, StyleLike } from "./accname.ts";
 export type { IsInaccessibleOptions, IsSubtreeInaccessibleOptions } from "./hidden.ts";
@@ -64,6 +65,15 @@ export function computeAccessibleDescription(root: Element, options?: ComputeTex
 export function getRole(element: Element): string | null {
   return daaGetRole(implOf(element), 5);
 }
+
+// Ours: span descriptions (@rtd/dom trace.ts) name elements the way queries find them, by role
+// and accessible name: `button "Save"`, `option "Apple"`. Called only while tracing.
+setNodeDescriber((node) => {
+  const role = getRole(node as Element);
+  if (role === null || role === "generic" || role === "presentation" || role === "none") return null;
+  const name = computeAccessibleName(node as Element);
+  return name === "" ? role : `${role} ${quote(name)}`;
+});
 
 /** dom-accessibility-api@0.6 `isDisabled`. */
 export function isDisabled(element: Element): boolean {

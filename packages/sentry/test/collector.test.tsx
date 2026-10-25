@@ -4,7 +4,7 @@
  * and what collector.ts records from them for one test, plus the page it captures on failure.
  */
 import { afterEach, describe, expect, test } from "vitest";
-import { useState } from "react";
+import { createContext, StrictMode, useState, type ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@rtd/react";
 import userEvent from "@rtd/user-event";
 import { tracing } from "@rtd/dom/internal";
@@ -50,8 +50,9 @@ describe("collector: spans from the tracing channel", () => {
     const lines = collected.spans.map(line);
     expect(lines).toContain("react.render render(<Save />)");
     expect(lines).toContain('testing-library.query getByRole("textbox", { name: "Name" })');
-    expect(lines).toContain('user-event.type user.type(<input>, "Ada")');
-    expect(lines).toContain('user-event.click user.click(<button "Save">)');
+    // Elements are named the way queries find them: role and accessible name (@rtd/aria).
+    expect(lines).toContain('user-event.type user.type(textbox "Name", "Ada")');
+    expect(lines).toContain('user-event.click user.click(button "Save")');
     const find = collected.spans.find((s) => s.description === 'findByText("Saved")')!;
     expect(find.op).toBe("testing-library.query");
     expect(find.data.matches).toBe(1);
@@ -72,13 +73,45 @@ describe("collector: spans from the tracing channel", () => {
     collector.stop();
 
     const wait = spans.find((s) => s.op === "testing-library.wait_for")!;
-    expect(wait.description).toMatch(/^waitFor\(\(\) => expect\(screen\.getByText\("Saved"\)\)/);
+    expect(wait.description).toBe('waitFor(() => expect(screen.getByText("Saved")).toBeTruthy())');
     const children = spans.filter((s) => s.parent_span_id === wait.span_id);
     expect(children.length).toBeGreaterThan(0);
     expect(children.every((s) => s.description === 'getByText("Saved")')).toBe(true);
     // Retries that threw are errored spans; the last one found the text.
     expect(children.at(-1)!.status).toBe("ok");
-    expect(spans.find((s) => s.op === "testing-library.fire_event")?.description).toBe('fireEvent.click(<button "Save">)');
+    expect(spans.find((s) => s.op === "testing-library.fire_event")?.description).toBe('fireEvent.click(button "Save")');
+  });
+
+  test("descriptions name what the test wrote: the component inside test-helper wrappers, CommonJS callback source cleaned up, <body> alone", async () => {
+    const Theme = createContext("light");
+    const AllTheProviders = ({ children }: { children: ReactNode }) => <Theme value="dark">{children}</Theme>;
+    // A bundler-renamed router provider, as test helpers wrap the UI in: `RouterProvider$1`.
+    const RouterProvider = ({ router }: { router: { routes: Array<{ element: ReactNode; children?: Array<{ element: ReactNode }> }> } }) => <>{router.routes[0].children?.[0]?.element}</>;
+    Object.defineProperty(RouterProvider, "name", { value: "RouterProvider$1" });
+    const collector = startCollecting();
+    collector.beginTest();
+    // An anonymous wrapper from a factory, under a layout route's <Outlet />.
+    const makeProviders = () => ({ children }: { children: ReactNode }) => <AllTheProviders>{children}</AllTheProviders>;
+    const Providers = makeProviders();
+    const Outlet = () => null;
+    render(<RouterProvider router={{ routes: [{ element: <Outlet />, children: [{ element: <Providers><StrictMode><Save /></StrictMode></Providers> }] }] } as never} />);
+    // Babel/SWC CommonJS output: an interop object and a braced single statement.
+    const babelStyle = new Function("_reactTestingLibrary", "expect", "return ()=>{ expect(_reactTestingLibrary.screen.getByText('Name')).toBeTruthy(); }")({ screen }, expect);
+    await waitFor(babelStyle);
+    fireEvent.click(document.body);
+    render(<div><Save /></div>);
+    render(<div><Save /><Save /></div>);
+    const { spans } = collector.endTest()!;
+    collector.stop();
+    expect(spans.map(line)).toEqual(
+      expect.arrayContaining([
+        "react.render render(<Save />)",
+        "testing-library.wait_for waitFor(() => expect(screen.getByText('Name')).toBeTruthy())",
+        "testing-library.fire_event fireEvent.click(<body>)",
+        "react.render render(<div><Save /></div>)",
+        "react.render render(<div>…</div>)",
+      ]),
+    );
   });
 
   test("captureFailure records the error, the accessibility snapshot, the HTML and the clock", () => {

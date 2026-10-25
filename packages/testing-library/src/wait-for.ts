@@ -218,15 +218,19 @@ export function waitForInSpan<T>(callback: () => T | Promise<T>, options: WaitFo
 
 /**
  * A callback's source on one line, shortened: `() => expect(screen.getByText("Done")).toBeVisible()`.
- * Undoes what transforms do to imported names: Vite's `__vite_ssr_import_0__.screen` and the
- * `(0, expect)(…)` call form (Vite, Babel).
+ * Undoes what transforms do to imported names: Vite's `__vite_ssr_import_0__.screen`, the
+ * `(0, expect)(…)` call form (Vite, Babel) and CommonJS interop objects (`_reactTestingLibrary.screen`,
+ * Babel and SWC), and drops the braces around a single statement.
  */
 function describeCallback(callback: unknown): string {
   if (typeof callback !== "function") return String(callback);
-  const source = Function.prototype.toString
+  let source = Function.prototype.toString
     .call(callback)
     .replace(/\s+/g, " ")
     .replace(/__vite_ssr_import_\d+__\./g, "")
-    .replace(/\(0, ?([\w$.]+)\)/g, "$1");
+    .replace(/\(0, ?([\w$.]+)\)/g, "$1")
+    .replace(/(?<![\w$.])_[a-z][\w$]*\.(?=[\w$])/g, "");
+  const block = /^(async )?\(\) ?=> ?\{ ?(?:return )?(.*?);? ?\}$/.exec(source);
+  if (block !== null && !block[2].includes(";")) source = `${block[1] ?? ""}() => ${block[2]}`;
   return source.length > 120 ? `${source.slice(0, 119)}…` : source;
 }

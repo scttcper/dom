@@ -78,13 +78,37 @@ function describeValue(value: unknown, depth: number): string {
   return `{ ${entries.map(([k, v]) => `${k}: ${describeValue(v, depth + 1)}`).join(", ")} }`;
 }
 
-/** `<button>`, with the attribute or text most likely to identify it: `<button "Save">`. */
+let nodeDescriber: ((node: unknown) => string | null) | null = null;
+
+/**
+ * Lets a higher layer name elements in span descriptions: @rtd/aria registers role and accessible
+ * name (`button "Save"`), the way queries find them. Called only while tracing.
+ */
+export function setNodeDescriber(describer: ((node: unknown) => string | null) | null): void {
+  nodeDescriber = describer;
+}
+
+/** An element as a span description shows it: `button "Save"` (see setNodeDescriber), else `<input "Email">`. */
 export function describeNode(node: unknown): string {
   const n = node as { nodeType?: number; localName?: string; getAttribute?: (name: string) => string | null; textContent?: string | null };
   if (n.nodeType === 9) return "document";
   if (n.nodeType !== 1 || typeof n.localName !== "string") return n.nodeType === 3 ? "#text" : "node";
-  const label = n.getAttribute?.("aria-label") ?? n.getAttribute?.("name") ?? n.getAttribute?.("id") ?? n.getAttribute?.("placeholder");
-  const text = label ?? n.textContent?.trim().replace(/\s+/g, " ") ?? "";
-  if (text === "") return `<${n.localName}>`;
-  return `<${n.localName} ${JSON.stringify(text.length > 30 ? `${text.slice(0, 29)}…` : text)}>`;
+  if (nodeDescriber !== null) {
+    try {
+      const described = nodeDescriber(node);
+      if (described) return described;
+    } catch {
+      // A description must never break the traced call.
+    }
+  }
+  // The page's roots: their text is the whole page.
+  if (n.localName === "body" || n.localName === "html") return `<${n.localName}>`;
+  // Not ids: libraries generate them (`react-aria-_r_2_`, `base-ui-_r_0_`).
+  const label = n.getAttribute?.("aria-label") || n.textContent?.trim().replace(/\s+/g, " ") || n.getAttribute?.("placeholder") || n.getAttribute?.("name") || "";
+  return label === "" ? `<${n.localName}>` : `<${n.localName} ${quote(label)}>`;
+}
+
+/** A short JSON string: names and labels in descriptions stay under ~40 characters. */
+export function quote(text: string): string {
+  return JSON.stringify(text.length > 40 ? `${text.slice(0, 39)}…` : text);
 }
