@@ -1,11 +1,13 @@
 // Bench configurations: which DOM and which testing-library stack a worker process loads.
 //
-//   jsdom          jsdom (via Vitest's own jsdom environment setup) + stock @testing-library/*
-//   happy-dom      happy-dom (via Vitest's own happy-dom environment setup) + stock @testing-library/*
-//   ctrl-dom        @ctrl/dom (via @ctrl/dom/vitest-environment) + stock @testing-library/*  (DOM swap only)
-//   ctrl-dom            @ctrl/dom + @ctrl/dom/testing-library + @ctrl/dom/react + @ctrl/dom/user-event + @ctrl/dom/jest-dom
-//   ctrl-dom-dist   ctrl-dom, but every @ctrl/dom import resolves to the bundled packages/*/dist
-//   ctrl-dom-dist       ctrl-dom, bundled
+//   jsdom               jsdom (via Vitest's own jsdom environment setup) + stock @testing-library/*
+//   happy-dom           happy-dom (via Vitest's own happy-dom environment setup) + stock @testing-library/*
+//   ctrl-dom            @ctrl/dom (via @ctrl/dom/vitest-environment) + stock @testing-library/*  (DOM swap only)
+//   ctrl-dom-full       @ctrl/dom + its Testing Library, React, user-event and jest-dom
+//   ctrl-dom-dist       ctrl-dom, with every @ctrl/dom import resolved to the bundled packages/*/dist
+//   ctrl-dom-full-dist  ctrl-dom-full, bundled
+//
+// bench/compare.ts maps these by position onto an older checkout's names: keep the order.
 //
 // Nothing here statically imports a DOM or testing library: a worker must install the DOM
 // globals before React / testing-library modules evaluate, and startup workloads time imports.
@@ -17,7 +19,7 @@ export type ConfigName = (typeof CONFIGS)[number];
 
 /** Configurations run by default for non-startup workloads. */
 export const DEFAULT_CONFIGS: ConfigName[] = ["jsdom", "happy-dom", "ctrl-dom", "ctrl-dom-full"];
-/** For DOM-only workloads the testing-library stack is irrelevant: ctrl-dom === ctrl-dom. */
+/** For DOM-only workloads the testing-library stack is irrelevant: ctrl-dom-full === ctrl-dom. */
 export const DOM_CONFIGS: ConfigName[] = ["jsdom", "happy-dom", "ctrl-dom"];
 
 export function isConfig(name: string): name is ConfigName {

@@ -15,7 +15,7 @@
 // reported next to them. Exits 1 on any regression or failed sample.
 
 import { spawn } from "node:child_process";
-import { appendFileSync, existsSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import type { SampleResult } from "./worker.ts";
@@ -46,6 +46,20 @@ type Side = keyof typeof sides;
 for (const [side, dir] of Object.entries(sides)) {
   if (!existsSync(join(dir, "bench/worker.ts"))) throw new Error(`--${side} ${dir} is not a checkout of this repository`);
 }
+
+/**
+ * Each checkout's configuration names (bench/lib/configs.ts CONFIGS). A checkout from before a
+ * rename lists the same configurations in the same order, so the plan's names (the head's) map to
+ * the base's by position.
+ */
+const configNames: Record<Side, string[]> = { base: configsOf(sides.base), head: configsOf(sides.head) };
+function configsOf(dir: string): string[] {
+  const list = /export const CONFIGS = \[([^\]]*)\]/.exec(readFileSync(join(dir, "bench/lib/configs.ts"), "utf8"))?.[1];
+  if (list === undefined) throw new Error(`${dir}: no CONFIGS in bench/lib/configs.ts`);
+  return [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+}
+if (configNames.base.length !== configNames.head.length) throw new Error(`base and head list different configurations: ${configNames.base} vs ${configNames.head}`);
+const configOf = (side: Side, config: string): string => configNames[side][configNames.head.indexOf(config)];
 
 /** Workload → configuration measured: our full stack for React rows, the DOM alone otherwise; startup from the bundles users load. */
 const PLAN: Array<[workload: string, config: string]> = [
@@ -91,7 +105,7 @@ const timeoutMs = Number(flags.timeout) * 1000;
 function runSample(side: Side, workload: string, config: string): Promise<SampleResult> {
   const dir = sides[side];
   return new Promise((done) => {
-    const child = spawn(process.execPath, ["--expose-gc", "--no-warnings", join(dir, "bench/worker.ts"), workload, config], {
+    const child = spawn(process.execPath, ["--expose-gc", "--no-warnings", join(dir, "bench/worker.ts"), workload, configOf(side, config)], {
       cwd: join(dir, "bench"),
       stdio: ["ignore", "pipe", "pipe"],
     });
