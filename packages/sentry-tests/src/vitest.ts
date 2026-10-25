@@ -1,18 +1,59 @@
-// Vitest reporter: one trace per test file, an issue per failing test, an issue per flaky test
-// (report.ts). The ctrlDom() plugin registers it, with the setup file that collects each test's
-// spans and failure snapshot in the worker (vitest-setup.ts), when its `sentry` option is on:
+// Vitest: one trace per test file, an issue per failing test, an issue per flaky test (report.ts).
 //
-//   plugins: [ctrlDom({ sentry: true })]   // SENTRY_DSN and/or SENTRY_SPOTLIGHT
+//   // vitest.config.ts
+//   import { sentryTests } from "@ctrl/sentry-tests/vitest";
+//   export default defineConfig({ plugins: [sentryTests()] });   // SENTRY_DSN and/or SENTRY_SPOTLIGHT
+//
+// With somewhere to send, the plugin makes the project's runner the one that records each file's
+// spans in the worker (vitest-runner.ts) and adds the reporter, which builds and sends the events
+// in the main process as each file finishes. With nowhere to send, it changes nothing.
 
+import { fileURLToPath } from "node:url";
 import type { Reporter, TestCase, TestModule, Vitest } from "vitest/node";
+import type { Plugin } from "vitest/config";
 import type { UserConsoleLog } from "vitest";
 import { sendEnvelope } from "./envelope.ts";
-import { resolveOptions, type CtrlDomSentryOptions, type ResolvedOptions } from "./options.ts";
+import { resolveOptions, type SentryTestsOptions, type ResolvedOptions } from "./options.ts";
 import { buildReport, type ConsoleEntry, type ErrorInfo, type TestCaseReport } from "./report.ts";
 import { Delivery } from "./delivery.ts";
+// TaskMeta.sentryTests
+import type {} from "./vitest-runner.ts";
 
-export type { CtrlDomSentryOptions } from "./options.ts";
+export type { SentryTestsOptions } from "./options.ts";
 
+// Next to this module: src/*.ts in the workspace, dist/*.js published.
+const RUNNER = fileURLToPath(new URL(import.meta.url.endsWith(".ts") ? "./vitest-runner.ts" : "./vitest-runner.js", import.meta.url));
+/** Vitest instances the reporter was added to (configureVitest runs once per project). */
+const registered = new WeakSet<Vitest>();
+
+/** The Vitest plugin: spans from the runner, events from the reporter, when there is somewhere to send them. */
+export function sentryTests(options: SentryTestsOptions = {}): Plugin {
+  const resolved = resolveOptions(options);
+  return {
+    name: "@ctrl/sentry-tests",
+    config(config) {
+      if (resolved === null) return;
+      const own = (config as { test?: { runner?: string } }).test?.runner;
+      if (own !== undefined && own !== RUNNER) {
+        console.warn(`@ctrl/sentry-tests: the project has its own runner (${own}), so tests are reported without describe, hook and test function spans. Build it with withSentry() from "@ctrl/sentry-tests/vitest-runner" to get them.`);
+        return;
+      }
+      return { test: { runner: RUNNER } };
+    },
+    // Vitest builds its reporters after this hook, so this one can still join them.
+    configureVitest({ vitest }) {
+      if (resolved === null || registered.has(vitest)) return;
+      registered.add(vitest);
+      vitest.config.reporters.push(new SentryReporter(options) as never);
+    },
+  };
+}
+
+
+/**
+ * The reporter alone, which the plugin adds: also `reporters: ["default", "@ctrl/sentry-tests/vitest"]`
+ * (each test is then one span, without the runner's).
+ */
 export class SentryReporter implements Reporter {
   readonly options: ResolvedOptions | null;
   #root = process.cwd();
@@ -21,7 +62,7 @@ export class SentryReporter implements Reporter {
   /** Each test's console output, by task id, until its file is reported. */
   #console = new Map<string, ConsoleEntry[]>();
 
-  constructor(options: CtrlDomSentryOptions = {}) {
+  constructor(options: SentryTestsOptions = {}) {
     this.options = resolveOptions(options);
     this.#delivery = this.options === null ? null : new Delivery(this.options, sendEnvelope);
   }
@@ -58,6 +99,7 @@ export class SentryReporter implements Reporter {
           file: module.moduleId,
           ...(project ? { project } : {}),
           tests,
+          collected: module.meta().sentryTests ?? null,
           environmentSetupMs: module.diagnostic().environmentSetupDuration,
           fileErrors: module.errors().map(toErrorInfo),
         },
@@ -73,12 +115,11 @@ export class SentryReporter implements Reporter {
   }
 }
 
-export default SentryReporter;
-
 function toTestCaseReport(test: TestCase): TestCaseReport {
   const result = test.result();
   const diagnostic = test.diagnostic();
   return {
+    key: test.id,
     name: test.fullName,
     state: result.state === "passed" ? "pass" : result.state === "failed" ? "fail" : "skip",
     startedAt: (diagnostic?.startTime ?? Date.now()) / 1000,
@@ -86,7 +127,6 @@ function toTestCaseReport(test: TestCase): TestCaseReport {
     retries: diagnostic?.retryCount ?? 0,
     flaky: diagnostic?.flaky ?? false,
     errors: (result.errors ?? []).map(toErrorInfo),
-    collected: test.meta().ctrlDomSentry ?? null,
   };
 }
 
@@ -99,3 +139,5 @@ function toErrorInfo(e: { name?: string; message: string; stack?: string; stacks
     ...(e.stacks ? { frames: e.stacks.map((s) => ({ method: s.method, file: s.file, line: s.line, column: s.column })) } : {}),
   };
 }
+
+export default SentryReporter;

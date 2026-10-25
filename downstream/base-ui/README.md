@@ -27,8 +27,9 @@ node downstream/base-ui/run.ts --files packages/react/src/tabs/list/TabsList.tes
 | `--triage` | apply the workarounds in `rtd-environment.ts` (workarounds for blockers already filed in `TRIAGE.md`) to see the failures behind them. Reports are written as `results/<date>-<preset>-triage.md` and labelled; they are **not** compatibility results |
 | `--no-report` | skip `results/*.md` (raw output is still written) |
 
-`RTD_SENTRY_REPORTER=1` adds @ctrl/dom/sentry's collector and Vitest reporter (rtd modes),
-sending to `SENTRY_DSN` / `SENTRY_SPOTLIGHT` ([docs/sentry.md](../../docs/sentry.md#development)).
+`RTD_SENTRY_REPORTER=1` adds @ctrl/sentry-tests' runner and Vitest reporter (rtd modes),
+sending to `SENTRY_DSN` / `SENTRY_SPOTLIGHT`
+([its README](../../packages/sentry-tests/README.md#development)).
 
 ## What it does
 

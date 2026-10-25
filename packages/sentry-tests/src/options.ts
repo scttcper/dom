@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { parseDsn, type Target } from "./envelope.ts";
 
-export interface CtrlDomSentryOptions {
+export interface SentryTestsOptions {
   /** Project DSN. Default: `SENTRY_DSN`. */
   dsn?: string;
   /**
@@ -17,7 +17,7 @@ export interface CtrlDomSentryOptions {
   environment?: string;
   /** Default: `SENTRY_RELEASE`, else `GITHUB_SHA`, else the checkout's commit. */
   release?: string;
-  /** One trace per test file, a span per test and per traced call (default true). */
+  /** One trace per test file: spans for describe blocks, tests, hooks and traced calls (default true). */
   traces?: boolean;
   /**
    * Fraction of test files sent as traces, for suites big enough to matter for span quota.
@@ -28,8 +28,11 @@ export interface CtrlDomSentryOptions {
   failures?: boolean;
   /** An issue per test that failed and then passed on a retry (default true). */
   flaky?: boolean;
-  /** Attach the page's accessibility snapshot and HTML to failure events (default true). */
-  snapshots?: boolean;
+  /**
+   * Attach the page when a test failed (its HTML, and with @ctrl/dom its accessibility snapshot)
+   * and whatever "sentry-tests:failure" subscribers add, to failure events (default true).
+   */
+  attachments?: boolean;
   /** Extra tags on every event. */
   tags?: Record<string, string>;
 }
@@ -42,14 +45,14 @@ export interface ResolvedOptions {
   tracesSampleRate: number;
   failures: boolean;
   flaky: boolean;
-  snapshots: boolean;
+  attachments: boolean;
   tags: Record<string, string>;
 }
 
 const SPOTLIGHT_DEFAULT = "http://localhost:8969/stream";
 
 /** Where reports go and what they contain, or null when there is nowhere to send them. */
-export function resolveOptions(options: CtrlDomSentryOptions = {}, env: NodeJS.ProcessEnv = process.env): ResolvedOptions | null {
+export function resolveOptions(options: SentryTestsOptions = {}, env: NodeJS.ProcessEnv = process.env): ResolvedOptions | null {
   const targets: Target[] = [];
   const dsn = options.dsn ?? env.SENTRY_DSN;
   if (dsn) {
@@ -67,7 +70,7 @@ export function resolveOptions(options: CtrlDomSentryOptions = {}, env: NodeJS.P
     tracesSampleRate: sampleRate(options.tracesSampleRate ?? env.SENTRY_TRACES_SAMPLE_RATE),
     failures: options.failures ?? true,
     flaky: options.flaky ?? true,
-    snapshots: options.snapshots ?? true,
+    attachments: options.attachments ?? true,
     tags: options.tags ?? {},
   };
 }

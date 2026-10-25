@@ -12,7 +12,7 @@ Library stack, for testing React components on Node.js:
 @ctrl/dom                     replaces jsdom / happy-dom                   nodes, parser, selectors, css, events, window
 @ctrl/dom/vitest-environment  installs the DOM as Vitest's test globals (@ctrl/dom-jest-environment: Jest's)
 @ctrl/dom/register            the same for node:test / bun test (no environment)
-@ctrl/dom/sentry              test runs in Sentry: traces, failing and flaky tests (docs/sentry.md)
+@ctrl/sentry-tests            test runs in Sentry for Vitest and Jest, any DOM (its own package)
 bench/                        benchmarks vs jsdom and happy-dom
 ```
 

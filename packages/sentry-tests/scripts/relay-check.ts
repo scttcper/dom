@@ -1,15 +1,15 @@
-// Checks what @ctrl/dom/sentry sends against Relay, Sentry's ingestion layer, rather than a fake:
+// Checks what @ctrl/sentry-tests sends against Relay, Sentry's ingestion layer, rather than a fake:
 // runs Relay (Docker image getsentry/relay) in static mode with full normalization and a local
 // project config, sends the envelopes report.ts builds for a file with a passing, a failing and a
 // flaky test, and inspects what Relay forwards upstream. Relay rejects malformed envelopes with an
 // HTTP error and records fields it had to drop or fix in the event's `errors` and `_meta`, so a
 // clean pass means Sentry will keep what the reporter sends.
 //
-//   node packages/sentry/scripts/relay-check.ts [--image getsentry/relay:nightly] [--keep]
-//   node packages/sentry/scripts/relay-check.ts --run "pnpm exec vitest run" --cwd <dir>
+//   node packages/sentry-tests/scripts/relay-check.ts [--image getsentry/relay:nightly] [--keep]
+//   node packages/sentry-tests/scripts/relay-check.ts --run "pnpm exec vitest run" --cwd <dir>
 //
 // With --run, the command runs with SENTRY_DSN pointing at Relay instead (a real suite with
-// @ctrl/dom/sentry turned on), and every item Relay forwards must come through without errors.
+// @ctrl/sentry-tests turned on), and every item Relay forwards must come through without errors.
 //
 // Needs Docker (OrbStack on macOS).
 
@@ -18,13 +18,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { gunzipSync, zstdDecompressSync } from "node:zlib";
 import { buildReport, type TestFileReport } from "../src/report.ts";
 import { resolveOptions } from "../src/options.ts";
 import { sendEnvelope, type Envelope } from "../src/envelope.ts";
-import type { CollectedTest } from "../src/collector.ts";
+import type { CollectedFile, CollectedSpan } from "../src/collector.ts";
 
 const { values: flags } = parseArgs({
   options: {
@@ -36,7 +35,6 @@ const { values: flags } = parseArgs({
 });
 const PROJECT_ID = 42;
 const KEY = "a".repeat(32);
-const here = fileURLToPath(import.meta.url);
 
 // ── a fake upstream: what Relay forwards ──────────────────────────────────────────────────────
 const forwarded: Array<{ path: string; body: Buffer }> = [];
@@ -56,7 +54,7 @@ await new Promise<void>((resolve) => upstream.listen(0, "0.0.0.0", resolve));
 const upstreamPort = (upstream.address() as { port: number }).port;
 
 // ── Relay in static mode ──────────────────────────────────────────────────────────────────────
-const config = mkdtempSync(join(tmpdir(), "ctrl-dom-relay-"));
+const config = mkdtempSync(join(tmpdir(), "sentry-tests-relay-"));
 mkdirSync(join(config, "projects"));
 writeFileSync(
   join(config, "config.yml"),
@@ -77,7 +75,7 @@ writeFileSync(
   join(config, "projects", `${PROJECT_ID}.json`),
   JSON.stringify({
     projectId: PROJECT_ID,
-    slug: "ctrl-dom",
+    slug: "sentry-tests",
     organizationId: 1,
     disabled: false,
     lastChange: new Date().toISOString(),
@@ -133,18 +131,20 @@ try {
   if (tx !== undefined) {
     check(tx.spans.length === sentTx.spans.length, `transaction: ${tx.spans.length} of ${sentTx.spans.length} spans kept`);
     check(tx.contexts.trace.op === "test.file" && tx.transaction === "src/signup.test.tsx", `transaction: ${tx.transaction} ${tx.contexts.trace.op}`);
+    const ops = new Set(tx.spans.map((s: { op: string }) => s.op));
+    check(["test.suite", "test.case", "test.hook", "test.fn"].every((op) => ops.has(op)), `transaction: structure spans kept: ${[...ops]}`);
     check(tx.spans.some((s: { op: string; data?: Record<string, unknown> }) => s.op === "testing-library.query" && s.data?.checks === 4), "transaction: the findBy span lost its data");
   }
   if (failure !== undefined) {
     const frames = failure.exception.values[0].stacktrace?.frames ?? [];
     const own = frames.find((f: { in_app?: boolean }) => f.in_app);
     check(own?.context_line !== undefined && own.pre_context?.length > 0, "failure: the in-app frame lost its source context");
-    check(failure.breadcrumbs?.values?.length === 3, `failure: ${failure.breadcrumbs?.values?.length} breadcrumbs kept`);
-    check(JSON.stringify(failure.fingerprint) === JSON.stringify(["ctrl-dom.test-failure", "src/signup.test.tsx", "Signup > shows an error"]), `failure: fingerprint ${failure.fingerprint}`);
+    check(failure.breadcrumbs?.values?.length === 4, `failure: ${failure.breadcrumbs?.values?.length} breadcrumbs kept`);
+    check(JSON.stringify(failure.fingerprint) === JSON.stringify(["sentry-tests.test-failure", "src/signup.test.tsx", "Signup > shows an error"]), `failure: fingerprint ${failure.fingerprint}`);
     check(failure.contexts?.trace?.trace_id === tx?.contexts.trace.trace_id, "failure: trace link lost");
     check(failure.contexts?.clock?.skipped_ms === 120, "failure: clock context lost");
   }
-  if (flaky !== undefined) check(flaky.exception.values.length === 2, `flaky: ${flaky.exception.values.length} exceptions kept`);
+  if (flaky !== undefined) check(flaky.exception.values.length === 1 && flaky.exception.values[0].type === "FlakyTest", `flaky: ${flaky.exception.values.map((v: { type: string }) => v.type)} kept`);
   check(attachments.includes("accessibility-snapshot.txt") && attachments.includes("page.html"), `attachments forwarded: ${attachments}`);
 
   if (problems.length > 0) {
@@ -176,7 +176,7 @@ async function checkRun(relay: string, port: string): Promise<void> {
     env: { ...process.env, SENTRY_DSN: `http://${KEY}@127.0.0.1:${port}/${PROJECT_ID}`, SENTRY_SPOTLIGHT: "", SENTRY_RELEASE: "relay-check" },
     maxBuffer: 256 * 1024 * 1024,
   });
-  const summary = (proc.stdout + proc.stderr).split("\n").filter((l) => l.includes("@ctrl/dom/sentry:")).at(-1) ?? "(no @ctrl/dom/sentry summary line)";
+  const summary = (proc.stdout + proc.stderr).split("\n").filter((l) => l.includes("@ctrl/sentry-tests:")).at(-1) ?? "(no @ctrl/sentry-tests summary line)";
   // What the reporter says it sent: Relay must forward all of it (it answers 200 even for items it
   // then drops, so a short count is how a silent drop shows).
   const stated = /(\d+) traces?, (\d+) failed tests?, (\d+) flaky tests?/.exec(summary);
@@ -192,7 +192,7 @@ async function checkRun(relay: string, port: string): Promise<void> {
     for (const m of metaErrors(payload._meta)) problems.push(`${where}: ${m}`);
   }
   const counts = (type: string) => new Set(items.filter((i) => i.header.type === type).map((i) => i.payload?.event_id ?? Math.random())).size;
-  if (expected === null) problems.push("no @ctrl/dom/sentry summary line in the command's output");
+  if (expected === null) problems.push("no @ctrl/sentry-tests summary line in the command's output");
   else if (counts("transaction") < expected.transactions || counts("event") < expected.events) {
     problems.push(`Relay forwarded ${counts("transaction")}/${expected.transactions} transactions and ${counts("event")}/${expected.events} events: it dropped the rest`);
   }
@@ -267,31 +267,72 @@ function metaErrors(meta: unknown, path = ""): string[] {
 
 function sampleFile(): TestFileReport {
   const now = Date.now() / 1000;
-  const spans = (offset: number): CollectedTest["spans"] => [
-    { span_id: "a000000000000001", op: "react.render", description: "render(<Signup />)", start_timestamp: now + offset, timestamp: now + offset + 0.004, status: "ok", data: {} },
-    { span_id: "a000000000000002", op: "user-event.type", description: 'user.type(<input "email">, "ada@example.com")', start_timestamp: now + offset + 0.005, timestamp: now + offset + 0.012, status: "ok", data: {} },
-    { span_id: "a000000000000003", op: "testing-library.query", description: 'findByText("Saved")', start_timestamp: now + offset + 0.013, timestamp: now + offset + 0.02, status: "internal_error", data: { checks: 4, matches: 0, "clock.skipped_ms": 120 } },
+  // A frame of "the test" outside this repository: the packages here are library code to the reporter.
+  const testFile = join(config, "signup.test.tsx");
+  writeFileSync(testFile, ["import { screen } from '@testing-library/react';", "", "test('shows an error', async () => {", "  await screen.findByText('Saved');", "});"].join("\n"));
+  const span = (id: string, op: string, description: string, start: number, end: number, parent?: string, data: CollectedSpan["data"] = {}): CollectedSpan => ({
+    span_id: id,
+    ...(parent ? { parent_span_id: parent } : {}),
+    op,
+    description,
+    start_timestamp: now + start,
+    timestamp: now + end,
+    status: op === "testing-library.query" ? "internal_error" : "ok",
+    data,
+  });
+  // describe("Signup") with three tests, each a beforeEach hook and a test function rendering, typing and finding.
+  const test = (n: number, name: string, offset: number) => [
+    span(`c00000000000000${n}`, "test.case", `Signup > ${name}`, offset, offset + 0.03, "9000000000000001"),
+    span(`e00000000000000${n}`, "test.hook", "beforeEach", offset, offset + 0.002, `c00000000000000${n}`),
+    span(`f00000000000000${n}`, "test.fn", name, offset + 0.002, offset + 0.025, `c00000000000000${n}`),
+    span(`a00000000000000${n}`, "react.render", "render(<Signup />)", offset + 0.003, offset + 0.007, `f00000000000000${n}`),
+    span(`b00000000000000${n}`, "user-event.type", 'user.type(textbox "Email", "ada@example.com")', offset + 0.008, offset + 0.015, `f00000000000000${n}`),
+    span(`d00000000000000${n}`, "testing-library.query", 'findByText("Saved")', offset + 0.016, offset + 0.024, `f00000000000000${n}`, { checks: 4, matches: 0, "clock.skipped_ms": 120 }),
   ];
-  const collected = (offset: number, failures: CollectedTest["failures"] = []): CollectedTest => ({ startedAt: now + offset, endedAt: now + offset + 0.03, spans: spans(offset), droppedSpans: 0, failures });
-  const failureError = new Error('Unable to find an element with the text: Saved');
+  const failureError = new Error("Unable to find an element with the text: Saved");
+  const collected: CollectedFile = {
+    startedAt: now - 0.01,
+    endedAt: now + 0.14,
+    droppedSpans: 0,
+    spans: [span("9000000000000001", "test.suite", "Signup", 0, 0.135), ...test(1, "submits", 0), ...test(2, "shows an error", 0.05), ...test(3, "retries", 0.1)],
+    tests: {
+      t1: { spanIds: ["c000000000000001"], droppedSpans: 0, failures: [] },
+      t2: {
+        spanIds: ["c000000000000002"],
+        droppedSpans: 0,
+        failures: [
+          {
+            error: { message: failureError.message },
+            attachments: [
+              { filename: "page.html", contentType: "text/html", data: "<body>\n  <form>\n    <button>Save</button>\n  </form>\n</body>" },
+              { filename: "accessibility-snapshot.txt", contentType: "text/plain", data: '- textbox "Email"\n- button "Save"' },
+            ],
+            contexts: { clock: { skipped_ms: 120, pending_timers: 1 } },
+          },
+        ],
+      },
+      t3: { spanIds: ["c000000000000003"], droppedSpans: 0, failures: [{ error: { name: "Error", message: "first attempt fails" }, attachments: [], contexts: {} }] },
+    },
+  };
   return {
     runner: "vitest",
     root: "/repo",
     file: "/repo/src/signup.test.tsx",
     environmentSetupMs: 2.5,
+    collected,
     tests: [
-      { name: "Signup > submits", state: "pass", startedAt: now, duration: 30, retries: 0, flaky: false, errors: [], collected: collected(0) },
+      { key: "t1", name: "Signup > submits", state: "pass", startedAt: now, duration: 30, retries: 0, flaky: false, errors: [] },
       {
+        key: "t2",
         name: "Signup > shows an error",
         state: "fail",
         startedAt: now + 0.05,
         duration: 30,
         retries: 0,
         flaky: false,
-        errors: [{ name: "TestingLibraryElementError", message: failureError.message, frames: [{ method: "check", file: here, line: 3, column: 1 }] }],
-        collected: collected(0.05, [{ error: { message: failureError.message }, aria: '- textbox "Email"\n- button "Save"', html: "<html><body><form><button>Save</button></form></body></html>", clock: { skippedMs: 120, pendingTimers: 1 } }]),
+        errors: [{ name: "TestingLibraryElementError", message: failureError.message, frames: [{ method: "check", file: testFile, line: 4, column: 3 }] }],
       },
-      { name: "Signup > retries", state: "pass", startedAt: now + 0.1, duration: 30, retries: 1, flaky: true, errors: [], collected: collected(0.1, [{ error: { name: "Error", message: "first attempt fails" } }]) },
+      { key: "t3", name: "Signup > retries", state: "pass", startedAt: now + 0.1, duration: 30, retries: 1, flaky: true, errors: [] },
     ],
   };
 }

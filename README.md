@@ -61,18 +61,19 @@ Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
 
 ### Failing and flaky tests in Sentry
 
-`@ctrl/dom/sentry` turns each failing test into a Sentry issue with the failing line, what the
-test did as breadcrumbs (`render(<CompactSelect />)`, `user.click(button "Option One")`,
-`findByRole("option", …)` …) and the page when it failed attached; each flaky test into a
-`FlakyTest` issue; and each test file into a trace.
+[`@ctrl/sentry-tests`](packages/sentry-tests/README.md), its own package, works with any DOM: each
+failing test becomes a Sentry issue with the failing line, what the test did as breadcrumbs and the
+page when it failed attached; each flaky test a `FlakyTest` issue; and each test file a trace with
+a span per describe block, test, hook and test function. On @ctrl/dom the traces also hold every
+query, `waitFor`, user-event action and render (`findByRole("option", …) (40 checks)`), and
+failures get an accessibility snapshot.
 
 ```ts
-plugins: [ctrlDom({ sentry: true })]               // Vitest
-reporters: ["default", "@ctrl/dom/sentry/jest"]    // Jest, with the preset
+plugins: [ctrlDom(), sentryTests()]                // Vitest
+reporters: ["default", "@ctrl/sentry-tests/jest"], testRunner: "@ctrl/sentry-tests/jest-runner"   // Jest
 ```
 
-Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` locally. Setup and what it looks like:
-[docs/sentry.md](docs/sentry.md).
+Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` locally.
 
 ## Performance
 

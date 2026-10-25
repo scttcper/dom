@@ -4,10 +4,12 @@
 //   release/ctrl-dom                     @ctrl/dom: packages/dom at the root, the other runtime
 //                                        packages under subpaths (@ctrl/dom/react, /user-event,
 //                                        /jest-dom, /testing-library, /aria, /vitest-environment,
-//                                        /register, /sentry),
+//                                        /register),
 //                                        plus the Jest preset and the Vitest plugin (publish/ctrl-dom)
 //   release/dom-jest-environment         @ctrl/dom-jest-environment: packages/jest-environment
 //                                        (Jest's dependencies stay out of @ctrl/dom for Vitest users)
+//   release/sentry-tests                 @ctrl/sentry-tests: packages/sentry-tests, standalone (it
+//                                        works with any DOM, and needs nothing from @ctrl/dom)
 //
 // Every published package is under @ctrl. Vitest has no separate environment package: it can only
 // look a custom environment up by name as an unscoped `vitest-environment-<name>` package, so the
@@ -39,7 +41,6 @@ const SUBPATHS: Record<string, string> = {
   "@rtd/jest-dom": "jest-dom",
   "vitest-environment-rtd": "vitest-environment",
   "@rtd/register": "register",
-  "@rtd/sentry": "sentry",
 };
 
 /** packages/<dir> for each @ctrl/dom member, in SUBPATHS order. */
@@ -52,7 +53,6 @@ const MEMBER_DIRS: Record<string, string> = {
   "@rtd/jest-dom": "jest-dom",
   "vitest-environment-rtd": "vitest-environment",
   "@rtd/register": "register",
-  "@rtd/sentry": "sentry",
 };
 
 /** Peer ranges where members disagree (jest-dom alone allows older Vitest/Jest than the environments). */
@@ -61,7 +61,7 @@ const PEER_OVERRIDES: Record<string, string> = { vitest: ">=5.0.0", jest: ">=30.
 /** Rewrite workspace package names to the published ones (specifiers, messages, docs). */
 export function rewriteNames(text: string): string {
   return text
-    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom|register|sentry)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
+    .replace(/@rtd\/(dom|aria|testing-library|react|user-event|jest-dom|register)(?![\w-])((?:\/[\w.-]+)*)/g, (_, pkg: string, rest: string) => {
       const sub = SUBPATHS[`@rtd/${pkg}`];
       return `@ctrl/dom${sub ? `/${sub}` : ""}${rest}`;
     })
@@ -255,7 +255,24 @@ export async function assembleRelease(): Promise<string[]> {
     peerDependencies: { "@ctrl/dom": `^${version}`, jest: PEER_OVERRIDES.jest },
   });
 
-  return [ctrlDom, jestEnv];
+  // ── @ctrl/sentry-tests ──
+  // Its workspace name is its published name and it imports no workspace package, so its build
+  // ships as is, with publishConfig's exports.
+  const sentryTests = join(releaseDir, "sentry-tests");
+  const sentryPkg = readJson(join(repoRoot, "packages/sentry-tests/package.json"));
+  copyTree(join(repoRoot, "packages/sentry-tests/dist"), join(sentryTests, "dist"));
+  cpSync(join(repoRoot, "packages/sentry-tests/README.md"), join(sentryTests, "README.md"));
+  copyPublishFiles("sentry-tests", sentryTests, []);
+  const { publishConfig, devDependencies: _dev, exports: _exports, ...sentryFields } = sentryPkg;
+  const { access, ...sentryPublished } = publishConfig;
+  writeJson(join(sentryTests, "package.json"), {
+    ...sentryFields,
+    ...sentryPublished,
+    files: ["dist", "README.md", "NOTICE", "LICENSE"],
+    publishConfig: { access },
+  });
+
+  return [ctrlDom, jestEnv, sentryTests];
 }
 
 if (import.meta.main) {

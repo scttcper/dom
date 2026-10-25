@@ -1,6 +1,6 @@
 // Sentry's wire format, written directly rather than through an SDK: the reporters only send a few
 // events per test file from the main process, so a DSN, an envelope serializer and `fetch` are all
-// they need, and @ctrl/dom keeps no Sentry dependency.
+// they need, and the package has no dependencies.
 //
 // https://develop.sentry.dev/sdk/data-model/envelopes/
 // https://develop.sentry.dev/sdk/overview/#parsing-the-dsn
@@ -25,17 +25,17 @@ export function parseDsn(dsn: string): Dsn {
   try {
     parsed = new URL(dsn);
   } catch {
-    throw new Error(`@ctrl/dom/sentry: invalid DSN ${JSON.stringify(dsn)}`);
+    throw new Error(`@ctrl/sentry-tests: invalid DSN ${JSON.stringify(dsn)}`);
   }
   const segments = parsed.pathname.split("/").filter(Boolean);
   const projectId = segments.pop();
-  if (!parsed.username || projectId === undefined) throw new Error(`@ctrl/dom/sentry: invalid DSN ${JSON.stringify(dsn)} (expected https://<key>@<host>/<project>)`);
+  if (!parsed.username || projectId === undefined) throw new Error(`@ctrl/sentry-tests: invalid DSN ${JSON.stringify(dsn)} (expected https://<key>@<host>/<project>)`);
   const prefix = segments.length > 0 ? `/${segments.join("/")}` : "";
   const query = new URLSearchParams({ sentry_key: parsed.username, sentry_version: "7", sentry_client: `${SDK.name}/${SDK.version}` });
   return { dsn, url: `${parsed.protocol}//${parsed.host}${prefix}/api/${projectId}/envelope/?${query}`, host: parsed.host, projectId };
 }
 
-export const SDK = { name: "ctrl-dom.test-reporter", version: "0.0.0" };
+export const SDK = { name: "ctrl.sentry-tests", version: "0.0.0" };
 
 /** 32 hex characters (event and trace ids). */
 export const uuid = (): string => randomUUID().replaceAll("-", "");
@@ -157,10 +157,9 @@ function sourceLines(path: string): string[] | null {
 const CONTEXT_LINES = 5;
 
 /**
- * Where @ctrl/dom's own code lives: dist/ of the installed package (this module is in
- * dist/sentry/), or the workspace's packages/ (it is in packages/sentry/src/). Its frames (query
- * wrappers, the tracing channel) are library code even when not under node_modules: a workspace
- * link, a monorepo consuming the source.
+ * Library code outside node_modules: the directory holding this package (node_modules/@ctrl/ when
+ * installed, the workspace's packages/ here, where @ctrl/dom's packages sit next to it). Frames
+ * there (query wrappers, tracing channels, the runner) are not the test's even when linked.
  */
 const OWN_CODE = ownCode();
 
@@ -176,8 +175,8 @@ function ownCode(): string | null {
 
 /**
  * Sentry frames from parsed ones, oldest first: paths relative to `root`, the test's own code in
- * app (not node_modules, Node's internals or @ctrl/dom itself), with source context read from disk
- * (Sentry cannot fetch a local file).
+ * app (not node_modules, Node's internals or the packages next to this one), with source context
+ * read from disk (Sentry cannot fetch a local file).
  */
 export function toSentryFrames(frames: readonly ParsedFrame[], root: string): Frame[] {
   return frames.map((f) => {

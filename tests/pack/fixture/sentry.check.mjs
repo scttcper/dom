@@ -1,9 +1,10 @@
-// (s1) / (s2): @ctrl/dom/sentry end to end. `node sentry.check.mjs vitest|jest` runs the runner on
+// (s1) / (s2): @ctrl/sentry-tests end to end. `node sentry.check.mjs vitest|jest` runs the runner on
 // the sentry fixtures with SENTRY_DSN pointing at a fake Sentry server, then checks the envelopes
-// it received: one trace with spans for the tests (a nested describe's included) and their Testing
-// Library and user-event calls, an issue for the failing test with the page attached and linked to
-// the trace (and, under Vitest, its console output), an issue for the file that fails to load, and
-// a flaky-test issue.
+// it received: one trace with spans for the describe block, the tests, their hooks and test
+// functions and, under them, @ctrl/dom's Testing Library and user-event calls; an issue for the
+// failing test with the page attached (its HTML, and @ctrl/dom's accessibility snapshot and clock)
+// and linked to the trace (and, under Vitest, its console output); an issue for the file that
+// fails to load; and a flaky-test issue.
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 
@@ -57,16 +58,26 @@ const transactions = envelopes.flatMap((e) => e.items).filter((i) => i.header.ty
 check(transactions.length === 1, `${transactions.length} transactions, expected 1`);
 const tx = transactions[0] ?? { spans: [], contexts: { trace: {} } };
 check(tx.transaction === file && tx.release === "pack-check", `transaction ${tx.transaction} release ${tx.release}`);
-const tests = tx.spans.filter((s) => s.op === "test.case").map((s) => s.description).sort();
+// Jest reports each attempt of the flaky test as a span of its own; Vitest's one span holds both.
+const tests = [...new Set(tx.spans.filter((s) => s.op === "test.case").map((s) => s.description))].sort();
 check(JSON.stringify(tests) === JSON.stringify(["Signup > types a name", "greets before signing up", "passes on the retry", "signs up"]), `test spans: ${tests}`);
+const byId = new Map(tx.spans.map((s) => [s.span_id, s]));
+const ancestors = (span) => {
+  const out = [];
+  for (let p = byId.get(span.parent_span_id); p !== undefined; p = byId.get(p.parent_span_id)) out.push(p);
+  return out;
+};
+const suite = tx.spans.find((s) => s.op === "test.suite" && s.description === "Signup");
 const nested = tx.spans.find((s) => s.op === "test.case" && s.description === "Signup > types a name");
-check(nested !== undefined && tx.spans.some((s) => s.parent_span_id === nested.span_id && s.op === "user-event.type"), "the nested describe's test has no user-event.type span under it");
+check(suite !== undefined && nested?.parent_span_id === suite.span_id, "the describe block's test is not under its test.suite span");
+check(tx.spans.some((s) => s.op === "user-event.type" && ancestors(s).some((a) => a === nested) && ancestors(s)[0]?.op === "test.fn"), "the describe block's test has no user-event.type span under its test function");
+check(tx.spans.some((s) => s.op === "test.hook" && s.description === "afterEach" && byId.get(s.parent_span_id)?.op === "test.case"), "no afterEach hook span under a test (Testing Library's cleanup)");
 const ops = new Set(tx.spans.map((s) => s.op));
-for (const op of ["react.render", "user-event.type", "user-event.click", "testing-library.query"]) check(ops.has(op), `no ${op} span (ops: ${[...ops]})`);
+for (const op of ["test.collect", "test.fn", "react.render", "user-event.type", "user-event.click", "testing-library.query"]) check(ops.has(op), `no ${op} span (ops: ${[...ops]})`);
 check(tx.spans.some((s) => s.description === 'findByRole("status")' && s.data.matches === 1), "no findByRole(\"status\") span with one match");
 
 const events = envelopes.filter((e) => e.items[0].header.type === "event");
-const failures = events.filter((e) => e.items[0].payload.fingerprint[0] === "ctrl-dom.test-failure");
+const failures = events.filter((e) => e.items[0].payload.fingerprint[0] === "sentry-tests.test-failure");
 const failure = failures.filter((e) => e.items[0].payload.fingerprint[1] === file);
 check(failure.length === 1, `${failure.length} failure events for ${file}, expected 1`);
 const broken = failures.filter((e) => e.items[0].payload.fingerprint[1] !== file);
@@ -78,16 +89,19 @@ if (failure[0]) {
   check(event.contexts.trace.trace_id === tx.contexts.trace.trace_id, "failure event not linked to the trace");
   const snapshot = failure[0].items.find((i) => i.header.filename === "accessibility-snapshot.txt");
   check(snapshot !== undefined && snapshot.payload.includes('button "Sign up"'), `snapshot attachment: ${snapshot?.payload.slice(0, 200)}`);
+  const page = failure[0].items.find((i) => i.header.filename === "page.html");
+  check(page !== undefined && page.payload.includes(">Sign up</button>"), `page.html attachment: ${page?.payload.slice(0, 200)}`);
+  check(typeof event.contexts.clock?.skipped_ms === "number", `no clock context: ${JSON.stringify(event.contexts.clock)}`);
   if (runner === "vitest") check(event.breadcrumbs.values.some((b) => b.category === "console" && b.message === "about to look for the greeting"), "no console breadcrumb");
 }
-const flaky = events.filter((e) => e.items[0].payload.fingerprint[0] === "ctrl-dom.flaky-test").map((e) => e.items[0].payload);
+const flaky = events.filter((e) => e.items[0].payload.fingerprint[0] === "sentry-tests.flaky-test").map((e) => e.items[0].payload);
 check(flaky.length === 1, `${flaky.length} flaky events, expected 1`);
 if (flaky[0]) {
   check(flaky[0].level === "warning" && flaky[0].fingerprint[2] === "passes on the retry", `flaky event ${flaky[0].level} ${flaky[0].fingerprint}`);
   const [exception] = flaky[0].exception.values;
   check(exception.type === "FlakyTest" && exception.value.endsWith("Error: first attempt fails"), `flaky event's exception ${exception.type}: ${exception.value}`);
 }
-check(output.includes(`@ctrl/dom/sentry: 1 trace, 2 failed tests, 1 flaky test → 127.0.0.1:${port}`), "no summary line in the output");
+check(output.includes(`@ctrl/sentry-tests: 1 trace, 2 failed tests, 1 flaky test → 127.0.0.1:${port}`), "no summary line in the output");
 
 if (problems.length > 0) {
   console.log(`${problems.join("\n")}\n\n${output}`);

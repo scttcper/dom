@@ -1,4 +1,4 @@
-// (s2) @ctrl/dom/sentry with Jest's reporter: a passing, a failing and a flaky test.
+// (s2) @ctrl/sentry-tests under Jest: a passing, a failing and a flaky test, one in a describe block.
 // sentry.check.mjs runs this file against a fake Sentry server and checks what arrives.
 "use strict";
 const { render, screen } = require("@testing-library/react");

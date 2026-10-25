@@ -1,4 +1,4 @@
-// (s1) @ctrl/dom/sentry under `ctrlDom({ sentry: true })`: a passing, a failing and a flaky test.
+// (s1) @ctrl/sentry-tests under Vitest: a passing, a failing and a flaky test, one in a describe block.
 // sentry.check.mjs runs this file against a fake Sentry server and checks what arrives.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

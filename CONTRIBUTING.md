@@ -19,7 +19,7 @@ pnpm downstream:base-ui --preset all   # Base UI's own tests in jsdom / rtd-dom 
 node downstream/track.ts  # compare the latest downstream runs with downstream/baseline.json
 pnpm docs:compat          # regenerate docs/deviations.md's compat profile table
 pnpm docs:spec            # regenerate docs/spec-coverage.md
-node packages/sentry/scripts/relay-check.ts   # @ctrl/dom/sentry's envelopes through Relay (Docker)
+node packages/sentry-tests/scripts/relay-check.ts   # @ctrl/sentry-tests' envelopes through Relay (Docker)
 ```
 
 ## Packages
@@ -44,8 +44,8 @@ What each import is and where its source lives:
 | `@ctrl/dom/jest-dom` | [packages/jest-dom](packages/jest-dom) | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
 | `@ctrl/dom/vitest-environment` | [packages/vitest-environment](packages/vitest-environment) | Vitest's jsdom environment | |
 | `@ctrl/dom/register` | [packages/register](packages/register) | `@happy-dom/global-registrator` | DOM globals for `node --test` and `bun test` |
-| `@ctrl/dom/sentry` | [packages/sentry](packages/sentry) | | test runs in Sentry: traces, failing and flaky tests ([docs/sentry.md](docs/sentry.md)) |
 | `@ctrl/dom-jest-environment` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
+| `@ctrl/sentry-tests` | [packages/sentry-tests](packages/sentry-tests) | @sentry/jest-environment | test runs in Sentry for Vitest and Jest, any DOM: traces, failing and flaky tests |
 
 Inside the repository each directory under `packages/` is a workspace package named after it
 (`packages/react` is `@rtd/react`, the environments are `vitest-environment-rtd` and

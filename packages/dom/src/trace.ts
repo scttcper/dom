@@ -1,12 +1,15 @@
-// Spans for test observability: Testing Library queries and waitFor, user-event actions and React's
-// render publish start/end events on one `node:diagnostics_channel` tracing channel, which
-// @ctrl/dom/sentry (or anything else) can subscribe to. Nothing is formatted, measured or allocated
-// unless something subscribes: call sites check `tracing()` before building a span.
+// Test observability: Testing Library queries and waitFor, user-event actions and React's render
+// publish start/end events on one `node:diagnostics_channel` tracing channel, which
+// @ctrl/sentry-tests (or anything else) can subscribe to. Nothing is formatted, measured or
+// allocated unless something subscribes: call sites check `tracing()` before building a span.
+// And when @ctrl/sentry-tests reports a failed test, the environments attach the page's
+// accessibility snapshot and the virtual clock to it (subscribeTestFailures).
 //
 // https://nodejs.org/api/diagnostics_channel.html#class-tracingchannel
 
 import * as diagnosticsChannel from "node:diagnostics_channel";
 import { $impl } from "./keys.ts";
+import { clockStats } from "./window/clock.ts";
 
 /** The context object a span's start/end/asyncStart/asyncEnd/error events carry. */
 export interface SpanContext {
@@ -14,7 +17,10 @@ export interface SpanContext {
   op: string;
   /** What ran, as the test wrote it: `getByRole("button", { name: "Save" })`. */
   description: string;
-  /** Filled in by the traced code before the span ends (match counts, waitFor checks). */
+  /**
+   * Filled in by the traced code before the span ends (match counts, waitFor checks), and with
+   * `clock.skipped_ms` when the virtual clock skipped idle time during it.
+   */
   data: Record<string, string | number | boolean>;
   /** True for promise-returning work: the span ends at asyncEnd rather than end. */
   async: boolean;
@@ -43,13 +49,33 @@ export function tracing(): boolean {
 /** Run `fn` as a span. Call only when `tracing()` is true. */
 export function traceSync<T>(op: string, description: string, fn: (span: SpanContext) => T): T {
   const span: SpanContext = { op, description, data: {}, async: false };
-  return channel!.traceSync(fn, span, undefined, span);
+  const skipped = clockStats()?.skippedMs ?? 0;
+  return channel!.traceSync(
+    (s: SpanContext) => {
+      try {
+        return fn(s);
+      } finally {
+        recordSkipped(s, skipped);
+      }
+    },
+    span,
+    undefined,
+    span,
+  );
 }
 
 /** Run promise-returning `fn` as a span that ends when the promise settles. Call only when `tracing()` is true. */
 export function tracePromise<T>(op: string, description: string, fn: (span: SpanContext) => Promise<T>): Promise<T> {
   const span: SpanContext = { op, description, data: {}, async: true };
-  return channel!.tracePromise(fn, span, undefined, span);
+  const skipped = clockStats()?.skippedMs ?? 0;
+  // The tracing channel's asyncEnd waits for the promise returned here, so the data is in place.
+  return channel!.tracePromise((s: SpanContext) => fn(s).finally(() => recordSkipped(s, skipped)), span, undefined, span);
+}
+
+/** How much idle time the virtual clock skipped while the span ran (a findBy's timeout, a debounce). */
+function recordSkipped(span: SpanContext, before: number): void {
+  const skipped = (clockStats()?.skippedMs ?? 0) - before;
+  if (skipped > 0) span.data["clock.skipped_ms"] = Math.round(skipped);
 }
 
 const MAX_DESCRIPTION = 160;
@@ -111,4 +137,49 @@ export function describeNode(node: unknown): string {
 /** A short JSON string: names and labels in descriptions stay under ~40 characters. */
 export function quote(text: string): string {
   return JSON.stringify(text.length > 40 ? `${text.slice(0, 39)}…` : text);
+}
+
+// --- failed tests (@ctrl/sentry-tests) -------------------------------------------------------
+
+/** What @ctrl/sentry-tests publishes on "sentry-tests:failure" (its channels.ts), as read here. */
+interface FailureMessage {
+  document: unknown;
+  attachments: Array<{ filename: string; contentType: string; data: string }>;
+  contexts: Record<string, Record<string, unknown>>;
+}
+
+export const FAILURE_CHANNEL = "sentry-tests:failure";
+
+let failureSnapshot: ((body: unknown) => string) | null = null;
+
+/**
+ * Lets a higher layer describe the page of a failed test: @rtd/testing-library registers its
+ * accessibility snapshot. Called only when a test fails with @ctrl/sentry-tests reporting.
+ */
+export function setFailureSnapshot(snapshot: ((body: unknown) => string) | null): void {
+  failureSnapshot = snapshot;
+}
+
+/**
+ * While an environment runs, add the page's accessibility snapshot and the virtual clock to the
+ * failures @ctrl/sentry-tests reports from it (only those of `getDocument()`'s document: another
+ * environment's subscriber may be listening in the same process). Returns the unsubscribe.
+ */
+export function subscribeTestFailures(getDocument: () => unknown): () => void {
+  const failures = diagnosticsChannel.channel(FAILURE_CHANNEL);
+  const onFailure = (message: unknown): void => {
+    const m = message as FailureMessage;
+    const document = getDocument() as { body?: unknown } | null | undefined;
+    if (document == null || m.document !== document) return;
+    const clock = clockStats();
+    if (clock !== null) m.contexts.clock = { skipped_ms: Math.round(clock.skippedMs), pending_timers: clock.pendingTimers };
+    if (failureSnapshot === null || document.body == null) return;
+    try {
+      m.attachments.push({ filename: "accessibility-snapshot.txt", contentType: "text/plain", data: failureSnapshot(document.body) });
+    } catch {
+      // A snapshot must never turn a test failure into a crash.
+    }
+  };
+  failures.subscribe(onFailure);
+  return () => failures.unsubscribe(onFailure);
 }

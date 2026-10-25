@@ -40,7 +40,7 @@ export class Delivery {
     const what = [plural(traces, "trace"), plural(failures, "failed test"), plural(flaky, "flaky test")].join(", ");
     const where = this.#options.targets.map((t) => t.label).join(" and ");
     const problems = errors.length > 0 ? `; not delivered: ${errors.join("; ")}` : "";
-    return `@ctrl/dom/sentry: ${what} → ${where}${problems}`;
+    return `@ctrl/sentry-tests: ${what} → ${where}${problems}`;
   }
 
   #pump(): void {

@@ -171,7 +171,7 @@ const environment: Environment = {
   async setup(global, options) {
     await load(options);
     const { createWindow, installGlobals } = dom!;
-    const { setUncaughtExceptionHandler, setNotImplementedHandler, installClock, VirtualClock } = internal!;
+    const { setUncaughtExceptionHandler, setNotImplementedHandler, installClock, VirtualClock, subscribeTestFailures } = internal!;
     const window = createWindow(windowOptions(options));
     const uninstall = installGlobals(window, global);
     publishModules(global);
@@ -183,8 +183,11 @@ const environment: Environment = {
     // shares this window, as with jsdom's environment.
     setUncaughtExceptionHandler(reportToHost);
     setNotImplementedHandler(forwardNotImplemented(global as Record<PropertyKey, unknown>));
+    // @ctrl/sentry-tests' failure reports get the accessibility snapshot and the clock.
+    const unsubscribeFailures = subscribeTestFailures(() => window.document);
     return {
       teardown() {
+        unsubscribeFailures();
         setUncaughtExceptionHandler(null);
         setNotImplementedHandler(null);
         clock.uninstall();
@@ -198,7 +201,7 @@ const environment: Environment = {
   async setupVM(options) {
     await load(options);
     const { createWindow, installGlobals } = dom!;
-    const { setUncaughtExceptionHandler, setNotImplementedHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock } = internal!;
+    const { setUncaughtExceptionHandler, setNotImplementedHandler, captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces, installClock, VirtualClock, subscribeTestFailures } = internal!;
     const window = createWindow(windowOptions(options));
     // https://nodejs.org/api/vm.html#vmconstantsdont_contextify: the new realm's own global object
     // (usable wherever a contextified object is), so global lookups in test and app code are
@@ -223,11 +226,13 @@ const environment: Environment = {
     guardInterfaceDefinitions(context as never);
     setUncaughtExceptionHandler(reportToHost);
     setNotImplementedHandler(forwardNotImplemented(context as Record<PropertyKey, unknown>));
+    const unsubscribeFailures = subscribeTestFailures(() => window.document);
     return {
       getVmContext() {
         return context;
       },
       teardown() {
+        unsubscribeFailures();
         setUncaughtExceptionHandler(null);
         setNotImplementedHandler(null);
         clock.clock.dispose();

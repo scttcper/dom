@@ -2,7 +2,7 @@
 // into release/<dir>; a commit releases a package only if it touches one of its paths (and its
 // conventional commit type calls for a release), so each package keeps its own version.
 
-const MEMBERS = ["dom", "aria", "testing-library", "react", "user-event", "jest-dom", "vitest-environment", "register", "sentry"];
+const MEMBERS = ["dom", "aria", "testing-library", "react", "user-event", "jest-dom", "vitest-environment", "register"];
 const member = (dir: string) => [`packages/${dir}/src`, `packages/${dir}/types`, `packages/${dir}/package.json`];
 
 export interface ReleasePackage {
@@ -28,6 +28,12 @@ export const PACKAGES: ReleasePackage[] = [
     pkgRoot: "release/dom-jest-environment",
     paths: [...member("jest-environment"), "publish/dom-jest-environment"],
     peersOnCtrlDom: true,
+  },
+  {
+    name: "@ctrl/sentry-tests",
+    pkgRoot: "release/sentry-tests",
+    paths: [...member("sentry-tests"), "packages/sentry-tests/README.md"],
+    peersOnCtrlDom: false,
   },
 ];
 

@@ -29,7 +29,7 @@
 // `{ hidden: true }`, a `- role … (+N more)` line for collapsed sibling runs and `# …`
 // comments for truncation.
 
-import { $impl, DOCUMENT_FRAGMENT_NODE, DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, attr, type NodeImpl } from "@rtd/dom/internal";
+import { $impl, DOCUMENT_FRAGMENT_NODE, DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, TEXT_NODE, T, attr, setFailureSnapshot, type NodeImpl } from "@rtd/dom/internal";
 import { roleSupportsProp } from "@rtd/aria";
 import {
   ariaCheckedState,
@@ -99,6 +99,10 @@ export function ariaSnapshot(container?: any, options: AriaSnapshotOptions = {})
   if (empty !== null) return header + empty;
   return header + budgetLines(lines, options.maxLines ?? envMaxLines() ?? DEFAULT_MAX_LINES).join("\n");
 }
+
+// The page of a test @ctrl/sentry-tests reports as failed, as its accessibility-snapshot.txt
+// attachment (@rtd/dom's subscribeTestFailures).
+setFailureSnapshot((body) => ariaSnapshot(body, { maxLines: 2000 }));
 
 interface BuiltTree {
   root: NodeImpl;

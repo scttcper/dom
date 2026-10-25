@@ -1,0 +1,95 @@
+{
+  "name": "@ctrl/sentry-tests",
+  "version": "0.0.0",
+  "description": "Test runs in Sentry for Vitest and Jest: each test file as a trace with spans for describe blocks, tests, hooks and test functions, failing tests as issues with the page attached, flaky tests as issues. No Sentry SDK.",
+  "keywords": [
+    "sentry",
+    "vitest",
+    "jest",
+    "tracing",
+    "flaky-tests",
+    "test-observability",
+    "spotlight"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/scttcper/dom/tree/main/packages/sentry-tests#readme",
+  "bugs": {
+    "url": "https://github.com/scttcper/dom/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scttcper/dom.git",
+    "directory": "packages/sentry-tests"
+  },
+  "author": "Scott Cooper <scttcper@gmail.com>",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./vitest": "./src/vitest.ts",
+    "./vitest-runner": "./src/vitest-runner.ts",
+    "./jest": "./src/jest.ts",
+    "./jest-runner": "./src/jest-runner.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./vitest": {
+        "types": "./dist/types/vitest.d.ts",
+        "default": "./dist/vitest.js"
+      },
+      "./vitest-runner": {
+        "types": "./dist/types/vitest-runner.d.ts",
+        "default": "./dist/vitest-runner.js"
+      },
+      "./jest": {
+        "types": "./dist/types/jest.d.ts",
+        "default": "./dist/jest.js"
+      },
+      "./jest-runner": {
+        "types": "./dist/types/jest-runner.d.ts",
+        "default": "./dist/jest-runner.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "devDependencies": {
+    "@rtd/dom": "workspace:*",
+    "@rtd/react": "workspace:*",
+    "@rtd/testing-library": "workspace:*",
+    "@rtd/user-event": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "jest": "30.4.2",
+    "jest-environment-rtd": "workspace:*",
+    "jsdom": "30.1.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "vitest-environment-rtd": "workspace:*"
+  },
+  "peerDependencies": {
+    "jest": ">=30.0.0",
+    "vitest": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "jest": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  }
+}

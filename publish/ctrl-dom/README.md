@@ -309,20 +309,19 @@ Details: [docs/agent-debugging.md](https://github.com/scttcper/dom/blob/main/doc
 
 ## Sentry
 
-Failing tests can become Sentry issues: titled by the error, with the failing line, what the test
-did as breadcrumbs (`render(<CompactSelect />)`, `user.click(button "Option One")`,
-`findByRole("option", …) (40 checks)`) and the page when it failed attached as an accessibility
-snapshot and HTML. Tests that pass only on a retry become `FlakyTest` issues, and each test file
-becomes a trace.
+[`@ctrl/sentry-tests`](https://www.npmjs.com/package/@ctrl/sentry-tests) puts test runs in Sentry:
+failing tests as issues with the failing line, what the test did as breadcrumbs and the page
+attached, flaky tests as `FlakyTest` issues, and each test file as a trace of its describe blocks,
+tests, hooks and test functions. On @ctrl/dom the traces also hold every Testing Library query,
+`waitFor`, user-event action and render (`findByRole("option", …) (40 checks)`), and failures get
+an accessibility snapshot of the page.
 
 ```ts
-plugins: [ctrlDom({ sentry: true })]               // Vitest
-reporters: ["default", "@ctrl/dom/sentry/jest"]    // Jest, with the preset
+plugins: [ctrlDom(), sentryTests()]                // Vitest, sentryTests from @ctrl/sentry-tests/vitest
 ```
 
-Set `SENTRY_DSN` (a project for your tests) in CI, or `SENTRY_SPOTLIGHT=1` to see it locally in
-Spotlight. With neither, nothing is collected. Setup, options and what it looks like:
-[docs/sentry.md](https://github.com/scttcper/dom/blob/main/docs/sentry.md).
+Setup for Vitest and Jest:
+[its README](https://github.com/scttcper/dom/blob/main/packages/sentry-tests/README.md).
 
 ## Differences from jsdom
 

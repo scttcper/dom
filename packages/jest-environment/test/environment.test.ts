@@ -14,15 +14,12 @@
  *   XMLHttpRequest Standard — https://xhr.spec.whatwg.org/#the-send()-method (jsdom's window
  *     has XMLHttpRequest; axios's browser build, which the "browser" export condition selects,
  *     needs it since fetch is absent)
- *   jest-circus's event handlers (https://jestjs.io/docs/configuration#testenvironment-string,
- *     handleTestEvent) for @ctrl/dom/sentry's collector
+ *   node:diagnostics_channel (https://nodejs.org/api/diagnostics_channel.html), the channel
+ *     @ctrl/sentry-tests publishes failed tests on
  */
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { channel } from "node:diagnostics_channel";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { jestDataFile } from "@rtd/sentry/jest-collector";
 import RtdEnvironment from "../src/index.ts";
 
 type AnyGlobal = Record<string, any>;
@@ -213,41 +210,26 @@ describe("interface isolation — definitions on shared interface objects stay u
   });
 });
 
-describe("@ctrl/dom/sentry's collector (CTRL_DOM_SENTRY_DIR set by its Jest reporter)", () => {
-  test("a subclass's own handleTestEvent method keeps its `this` and gets jest-circus's state; teardown writes the file's data", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "rtd-sentry-"));
-    const previous = process.env.CTRL_DOM_SENTRY_DIR;
-    process.env.CTRL_DOM_SENTRY_DIR = dir;
-    try {
-      // As @sentry/jest-environment does: a subclass whose handler is a method using `this`.
-      const seen: unknown[] = [];
-      class Subclass extends RtdEnvironment {
-        marker = "subclass";
-      }
-      (Subclass.prototype as AnyGlobal).handleTestEvent = async function (this: AnyGlobal, event: { name: string }, state: unknown) {
-        seen.push([this.marker, event.name, state]);
-      };
-      const env = new Subclass(
-        { globalConfig: {}, projectConfig: { testEnvironmentOptions: {}, globals: {}, fakeTimers: {}, testPath: "x.test.js" } } as never,
-        { console, docblockPragmas: {}, testPath: "/repo/x.test.js" } as never,
-      );
-      await env.setup();
-      const test = { name: "renders", parent: { name: "Form", parent: { name: "ROOT_DESCRIBE_BLOCK" } } };
-      const state = { unhandledErrors: [] };
-      await env.handleTestEvent!({ name: "test_start", test } as never, state as never);
-      await env.handleTestEvent!({ name: "test_done", test } as never, state as never);
-      await env.teardown();
-      expect(seen).toEqual([
-        ["subclass", "test_start", state],
-        ["subclass", "test_done", state],
-      ]);
-      const data = JSON.parse(readFileSync(jestDataFile(dir, "/repo/x.test.js"), "utf8"));
-      expect(Object.keys(data.tests)).toEqual(["Form > renders"]);
-      expect(data.tests["Form > renders"].endedAt).toBeGreaterThanOrEqual(data.tests["Form > renders"].startedAt);
-    } finally {
-      if (previous === undefined) delete process.env.CTRL_DOM_SENTRY_DIR;
-      else process.env.CTRL_DOM_SENTRY_DIR = previous;
-      rmSync(dir, { recursive: true, force: true });
-    }
+describe("@ctrl/sentry-tests' failure reports (its \"sentry-tests:failure\" channel)", () => {
+  test("a failure in this environment's document gets the accessibility snapshot and the clock; another document's, and any after teardown, get nothing", async () => {
+    const env = environment();
+    await env.setup();
+    const global = env.global as AnyGlobal;
+    // As the Testing Library a test file loads does, against the environment's DOM instance.
+    await import("@rtd/testing-library");
+    global.document.body.innerHTML = "<button>Save</button>";
+    const publish = (document: unknown) => {
+      const message = { test: "saves", error: new Error("no"), document, attachments: [] as Array<{ filename: string; data: string }>, contexts: {} as Record<string, unknown>, waitUntil() {} };
+      channel("sentry-tests:failure").publish(message);
+      return message;
+    };
+    const ours = publish(global.document);
+    expect(ours.attachments.map((a) => a.filename)).toEqual(["accessibility-snapshot.txt"]);
+    expect(ours.attachments[0].data).toContain('button "Save"');
+    expect(ours.contexts.clock).toEqual({ skipped_ms: 0, pending_timers: 0 });
+    expect(publish({ body: {} }).attachments).toEqual([]);
+    const document = global.document;
+    await env.teardown();
+    expect(publish(document).attachments).toEqual([]);
   });
 });

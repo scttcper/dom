@@ -12,20 +12,6 @@ const environment = fileURLToPath(new URL("./dist/vitest-environment/index.js", 
 const failureSnapshot = fileURLToPath(new URL("./dist/vitest-environment/failure-snapshot.js", import.meta.url));
 const DEBUG_FORMATS = new Set(["aria", "compact", "html"]);
 const ENVIRONMENT_PACKAGE = "vitest-environment-ctrl-dom";
-// @ctrl/dom/sentry (docs/sentry.md): the worker-side collector and the main-process reporter.
-const sentrySetup = fileURLToPath(new URL("./dist/sentry/vitest-setup.js", import.meta.url));
-const sentryReporter = new URL("./dist/sentry/vitest.js", import.meta.url).href;
-/** Vitest instances the Sentry reporter was added to (configureVitest runs once per project). */
-const sentryRegistered = new WeakSet();
-
-/** The `sentry` option's settings, or null when it is off or has nowhere to send (no DSN, no Spotlight). */
-function sentrySettings(sentry, env = process.env) {
-  if (sentry === undefined || sentry === false) return null;
-  const settings = sentry === true ? {} : sentry;
-  const spotlight = settings.spotlight ?? env.SENTRY_SPOTLIGHT;
-  const hasSpotlight = spotlight === true || (typeof spotlight === "string" && spotlight !== "" && spotlight !== "0" && spotlight.toLowerCase() !== "false");
-  return settings.dsn || env.SENTRY_DSN || hasSpotlight ? settings : null;
-}
 
 const TESTING_LIBRARY = [
   { find: /^@testing-library\/react(\/.*)?$/, replacement: "@ctrl/dom/react$1" },
@@ -63,7 +49,7 @@ export function workerExecArgv({ compileCache = false }) {
  * @returns {import("vitest/config").Plugin}
  */
 export function ctrlDom(options = {}) {
-  const { testingLibrary = true, debug, sentry, ...rest } = options;
+  const { testingLibrary = true, debug, ...rest } = options;
   // The compile cache pays off for @ctrl/dom's few large bundles, not for stock Testing Library's
   // many small files (CtrlDomEnvironmentOptions.compileCache).
   const environmentOptions = { compileCache: testingLibrary, ...rest };
@@ -71,7 +57,6 @@ export function ctrlDom(options = {}) {
   // how `npx ctrl-dom debug` turns it on).
   const shellDebug = process.env.CTRL_DOM_DEBUG;
   const agentMode = DEBUG_FORMATS.has(String(shellDebug ?? debug ?? "").trim().toLowerCase());
-  const sentryOptions = sentrySettings(sentry);
   return {
     name: "@ctrl/dom",
     // Before Vite's own resolver, which would look for the package in node_modules.
@@ -89,22 +74,16 @@ export function ctrlDom(options = {}) {
           environmentOptions: { "ctrl-dom": environmentOptions },
           ...(debug && shellDebug === undefined ? { env: { CTRL_DOM_DEBUG: debug } } : {}),
           // Added after the project's own setup files, so the afterEach hooks they register run first.
-          ...(agentMode || sentryOptions ? { setupFiles: [...(agentMode ? [failureSnapshot] : []), ...(sentryOptions ? [sentrySetup] : [])] } : {}),
+          ...(agentMode ? { setupFiles: [failureSnapshot] } : {}),
         },
       };
     },
     // Worker flags go on the resolved project config (a CLI `--pool` included), known only here.
-    async configureVitest({ project, vitest }) {
+    configureVitest({ project }) {
       const config = project.config;
       if (config.browser?.enabled) return;
       const flags = workerExecArgv({ pool: config.pool, execArgv: config.execArgv, compileCache: environmentOptions.compileCache === true });
       if (flags.length > 0) config.execArgv = [...(config.execArgv ?? []), ...flags];
-      // Vitest builds its reporters after this hook, so the Sentry reporter can still join them.
-      if (sentryOptions && !sentryRegistered.has(vitest)) {
-        sentryRegistered.add(vitest);
-        const { SentryReporter } = await import(sentryReporter);
-        vitest.config.reporters.push(new SentryReporter(sentryOptions));
-      }
     },
   };
 }
