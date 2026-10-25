@@ -13,6 +13,7 @@
 // https://develop.sentry.dev/sdk/data-model/event-payloads/transaction/
 
 import { relative } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import type { CollectedFile, CollectedSpan, FailureContext } from "./collector.ts";
 import { parseStack, SDK, spanId, toSentryFrames, uuid, type Envelope, type EnvelopeItem, type ParsedFrame } from "./envelope.ts";
 import type { ResolvedOptions } from "./options.ts";
@@ -109,15 +110,16 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
 
   // The file's spans in start order, so a span always follows its parent. The result of a test
   // belongs on its last attempt's span (Jest has one per attempt).
-  const spans = [...(report.collected?.spans ?? [])].sort((a, b) => a.start_timestamp - b.start_timestamp);
+  const collected = report.collected;
+  const spans = [...(collected?.spans ?? [])].sort((a, b) => a.start_timestamp - b.start_timestamp);
   const byId = new Map(spans.map((s) => [s.span_id, s]));
   for (const test of tests) {
-    const collected = report.collected?.tests[test.key];
-    const last = collected?.spanIds.at(-1);
-    if (last === undefined) continue;
+    const record = collected?.tests[test.key];
+    const last = record?.spanIds.at(-1);
+    if (record === undefined || last === undefined) continue;
     const span = byId.get(last)!;
     span.status = test.state === "pass" ? "ok" : "internal_error";
-    span.data = { ...span.data, "test.retries": test.retries, "test.flaky": test.flaky, ...(collected!.droppedSpans ? { "spans.dropped": collected!.droppedSpans } : {}) };
+    span.data = { ...span.data, "test.retries": test.retries, "test.flaky": test.flaky, ...(record.droppedSpans ? { "spans.dropped": record.droppedSpans } : {}) };
   }
 
   // Each span belongs to the test whose "test.case" span it is under, if any.
@@ -145,7 +147,7 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   // A transaction holds at most 1000 spans. A file with more is split by whole tests into further
   // transactions in the same trace, each a child of the file's, so no test loses its spans. The
   // first holds the describe blocks and file-level hooks; a test in a later one hangs off its root.
-  let dropped = Math.max(0, fileLevel.length - MAX_SPANS) + (report.collected?.droppedSpans ?? 0);
+  let dropped = Math.max(0, fileLevel.length - MAX_SPANS) + (collected?.droppedSpans ?? 0);
   const chunks: CollectedSpan[][] = [fileLevel.slice(0, MAX_SPANS)];
   for (const group of groups.values()) {
     const kept = group.slice(0, MAX_SPANS);
@@ -157,7 +159,6 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   const sentParent = new Map<string, string>();
 
   // Sampled per file: a file's trace is whole or absent, and its issues link to it only when sent.
-  const collected = report.collected;
   const traced = collected !== null && spans.length > 0 && options.traces && (options.tracesSampleRate >= 1 || Math.random() < options.tracesSampleRate);
   if (traced) {
     chunks.forEach((chunk, index) => {
@@ -210,11 +211,11 @@ export function buildReport(report: TestFileReport, options: ResolvedOptions): B
   for (const test of tests) {
     const failed = test.state === "fail";
     if (!(failed ? options.failures : test.flaky && options.flaky)) continue;
-    const collectedTest = report.collected?.tests[test.key];
+    const record = collected?.tests[test.key];
     // A failing test's issue shows its last attempt; a flaky test's, the attempt that failed (its
     // first span under Jest, the one span holding every attempt under Vitest).
-    const context: FailureContext | undefined = failed ? collectedTest?.failures.at(-1) : collectedTest?.failures[0];
-    const attempt = failed ? collectedTest?.spanIds.at(-1) : collectedTest?.spanIds[0];
+    const context: FailureContext | undefined = failed ? record?.failures.at(-1) : record?.failures[0];
+    const attempt = failed ? record?.spanIds.at(-1) : record?.spanIds[0];
     // The worker's capture has the error object itself: Jest's results can lose its name
     // (`TestingLibraryElementError` arrives as a plain Error).
     const reported = failed ? (test.errors[0] ?? context?.error) : (context?.error ?? test.errors[0]);
@@ -302,9 +303,6 @@ function tag(value: string): string {
   return value.length > MAX_TAG ? `${value.slice(0, MAX_TAG - 1)}…` : value;
 }
 
-/** Terminal colors (Testing Library highlights the DOM in its messages under Jest). */
-const ANSI = /\u001b\[[0-9;]*m/g;
-
 /**
  * Where a Testing Library message starts dumping the page: the DOM (`Ignored nodes: …` then the
  * markup), the role listing, or @ctrl/dom's agent mode snapshot. Redundant once the page is attached.
@@ -312,7 +310,8 @@ const ANSI = /\u001b\[[0-9;]*m/g;
 const PAGE_DUMP = /\n\n(?:Ignored nodes: |Here are the accessible roles:|Accessibility snapshot of <body>|DOM of <body>|<body)/;
 
 function toException(error: ErrorInfo, root: string, attachments: readonly string[] = []): { type: string; value: string; [key: string]: unknown } {
-  let text = error.message.replace(ANSI, "");
+  // Without terminal colors: Testing Library highlights the DOM in its messages under Jest.
+  let text = stripVTControlCharacters(error.message);
   const dump = attachments.length > 0 ? PAGE_DUMP.exec(text) : null;
   if (dump !== null) text = `${text.slice(0, dump.index)}\n\n(The page when the test failed is attached: ${attachments.join(", ")}.)`;
   const message = text.length > MAX_MESSAGE ? `${text.slice(0, MAX_MESSAGE - 1)}…` : text;

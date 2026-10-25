@@ -41,7 +41,7 @@ export default defineProject({
       impl === "stock"
         ? ["test/upstream/**/*.test.{ts,tsx}"]
         : ["test/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-    environment: stack === "ctrl-dom" ? "ctrl-dom" : stack,
+    environment: stack,
     globals: true,
     setupFiles: ["./test/_setup.ts"],
     // Keep @ctrl/dom and the environment out of Vite's module graph so tests share the single

@@ -95,7 +95,7 @@ export function createJestCollector(options: { dir: string; testPath: string; ge
           push(collector.open("test.collect", "collect"));
           break;
         case "run_start":
-          if (stack.at(-1)?.span.op === "test.collect") pop();
+          pop();
           break;
         case "run_describe_start":
           if (event.describeBlock?.parent !== undefined) push(collector.open("test.suite", circusTestName(event.describeBlock)));

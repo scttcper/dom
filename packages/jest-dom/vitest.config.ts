@@ -22,7 +22,7 @@ export default defineProject({
     // the environment natively instead of letting Vite inline a second copy. Other workspace
     // sources stay inlined so vi.mock still reaches their imports.
     server: { deps: { external: [/\/packages\/(dom|vitest-environment)\/src\//] } },
-    environment: stack === "ctrl-dom" ? "ctrl-dom" : "jsdom",
+    environment: stack,
     setupFiles: [impl === "stock" ? "./test/setup-stock.ts" : "./test/setup-ctrl-dom.ts"],
     // Failure messages are compared as text (inline snapshots, oracle files): no colors, though
     // CI's environment turns them on in Vitest's workers (an agent's turns them off).
