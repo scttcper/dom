@@ -309,18 +309,20 @@ Details: [docs/agent-debugging.md](https://github.com/scttcper/dom/blob/main/doc
 
 ## Sentry
 
-Test runs can be reported to Sentry: each test file as a trace, with spans for the tests and for
-every Testing Library query, `waitFor`, user-event action and render; each failing test as an
-issue with the page's accessibility snapshot and HTML attached; each test that passed only on a
-retry as a flaky-test issue.
+Failing tests can become Sentry issues: titled by the error, with the failing line, what the test
+did as breadcrumbs (`render(<CompactSelect />)`, `user.click(button "Option One")`,
+`findByRole("option", …) (40 checks)`) and the page when it failed attached as an accessibility
+snapshot and HTML. Tests that pass only on a retry become `FlakyTest` issues, and each test file
+becomes a trace.
 
 ```ts
 plugins: [ctrlDom({ sentry: true })]               // Vitest
 reporters: ["default", "@ctrl/dom/sentry/jest"]    // Jest, with the preset
 ```
 
-Set `SENTRY_DSN`, or `SENTRY_SPOTLIGHT=1` to see it locally in Spotlight. With neither, nothing
-is collected. Options: [docs/sentry.md](https://github.com/scttcper/dom/blob/main/docs/sentry.md).
+Set `SENTRY_DSN` (a project for your tests) in CI, or `SENTRY_SPOTLIGHT=1` to see it locally in
+Spotlight. With neither, nothing is collected. Setup, options and what it looks like:
+[docs/sentry.md](https://github.com/scttcper/dom/blob/main/docs/sentry.md).
 
 ## Differences from jsdom
 

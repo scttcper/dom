@@ -59,8 +59,19 @@ Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
 (node:test, Bun) and agent-friendly debug output are in the
 [package README](publish/ctrl-dom/README.md).
 
-To see test runs in Sentry, with each test file as a trace and failing and flaky tests as issues
-with the page attached, turn on `ctrlDom({ sentry: true })` or the Jest reporter:
+### Failing and flaky tests in Sentry
+
+`@ctrl/dom/sentry` turns each failing test into a Sentry issue with the failing line, what the
+test did as breadcrumbs (`render(<CompactSelect />)`, `user.click(button "Option One")`,
+`findByRole("option", …)` …) and the page when it failed attached; each flaky test into a
+`FlakyTest` issue; and each test file into a trace.
+
+```ts
+plugins: [ctrlDom({ sentry: true })]               // Vitest
+reporters: ["default", "@ctrl/dom/sentry/jest"]    // Jest, with the preset
+```
+
+Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` locally. Setup and what it looks like:
 [docs/sentry.md](docs/sentry.md).
 
 ## Performance

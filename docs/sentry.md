@@ -1,26 +1,55 @@
 # Sentry
 
-`@ctrl/dom/sentry` reports test runs to Sentry:
+`@ctrl/dom/sentry` sends test runs to Sentry, so failing and flaky tests show up as issues you
+can triage, with everything needed to see what went wrong:
 
-- **Each test file becomes a trace.** There's a span per test, and under each test a span per
-  Testing Library query, `waitFor`, `fireEvent`, user-event action and React render, in the order
-  they ran. A `findBy*` or `waitFor` span says how many times its callback ran and how much idle
-  time the virtual clock skipped.
 - **Each failing test becomes an issue**, grouped by file and test name, so the same test failing
-  again lands in the same issue. The event links to the test's span in the trace, lists what the
-  test did (and, under Vitest, what it printed) as breadcrumbs, points at the failing line with
-  the source around it, and attaches the page as it was when the test failed (its accessibility
-  snapshot and HTML), captured before Testing Library's cleanup emptied it. A file that fails to
-  load is an issue too.
-- **Each flaky test becomes an issue**: a test that failed and then passed on a retry, with the
-  failed attempt's error.
+  again lands in the same issue (and a fixed one that breaks again is a regression).
+- **Each flaky test becomes an issue**: a test that failed and then passed on a retry, titled
+  `FlakyTest`, with the failed attempt's error.
+- **Each test file becomes a trace**: a span per test, and under it a span per Testing Library
+  query, `waitFor`, `fireEvent`, user-event action and React render.
 
-It can send to a project (a DSN) or to [Spotlight](https://spotlightjs.com), Sentry's local
-debugging UI, which needs no account.
+It can send to a project or to [Spotlight](https://spotlightjs.com), Sentry's local UI, which
+needs no account.
+
+## What a failing test looks like
+
+A test that opens a select and looks for an option that isn't there becomes an issue titled
+`TestingLibraryElementError: Unable to find role="option" and name "Option Three"`, with:
+
+- **the failing line**, the top in-app frame, with its source;
+- **breadcrumbs**, what the test did, in order:
+  ```
+  render(<CompactSelect />) (20 ms)
+  getByRole("button", { name: "Option One" }) (0.8 ms, 1 match)
+  user.click(button "Option One") (24 ms)
+  findByRole("option", { name: "Option Three" }) (11 ms, 40 checks, 1994 ms skipped)
+  ```
+  (the `findByRole` checked 40 times while the virtual clock skipped its 2 s timeout); under
+  Vitest the test's console output too;
+- **the page when it failed**, captured before Testing Library's cleanup emptied it, as
+  `accessibility-snapshot.txt`
+  ```
+  - button "Option One" [expanded]:
+  - listbox "Option One":
+    - option "Option One" [active] [selected]
+    - option "Option Two"
+  ```
+  and `page.html` (the body's markup);
+- **tags** `test.file`, `test.name`, `runner`, `flaky`, `retries` to search and alert on, and
+  `test` and `clock` contexts;
+- **a link to the test's span** in the file's trace.
+
+A file that fails to load (an import or syntax error) is an issue too.
 
 ## Setup
 
-Vitest, with the `ctrlDom()` plugin:
+**1. A project for the tests.** Create one in Sentry for test runs, separate from your app's, so
+test failures don't mix with production issues (the platform doesn't matter; Node.js is closest).
+Its DSN is under Settings → Projects → (the project) → Client Keys (DSN).
+
+**2. Turn it on.** Vitest, with the `ctrlDom()` plugin:
 
 ```ts
 // vitest.config.ts
@@ -40,15 +69,27 @@ module.exports = {
 };
 ```
 
-Then set `SENTRY_DSN` (in CI, say) or `SENTRY_SPOTLIGHT=1` (locally, with Spotlight running:
-`npx @spotlightjs/spotlight`). With neither, nothing is collected or sent. The run ends with
-one line saying what was sent where:
+Flaky-test issues need retries: Vitest's `retry` (above), or `jest.retryTimes(1)` in a setup file.
+
+**3. Give it the DSN**, in CI:
+
+```yaml
+# .github/workflows/test.yml
+- run: pnpm test
+  env:
+    SENTRY_DSN: ${{ secrets.SENTRY_TESTS_DSN }}
+```
+
+The release defaults to `GITHUB_SHA`, so issues say which commit broke a test. Without a DSN
+(or Spotlight) nothing is collected or sent, so local runs and forks are unaffected. The run
+ends with one line saying what was sent where:
 
 ```
 @ctrl/dom/sentry: 12 traces, 1 failed test, 2 flaky tests → o123.ingest.sentry.io
 ```
 
-Flaky-test issues need retries: Vitest's `retry`, or `jest.retryTimes()` in a test file.
+**Locally**, start Spotlight (`npx @spotlightjs/spotlight`, then open http://localhost:8969) and
+run the tests with `SENTRY_SPOTLIGHT=1`.
 
 ## Options
 
