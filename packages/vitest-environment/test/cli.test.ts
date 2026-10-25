@@ -46,7 +46,8 @@ describe("ctrl-dom debug with Vitest", () => {
     expect(out).toContain("Console output:\nstdout | passes\n  rendered the checkout\n");
     expect(out).toMatch(/\n4 failed, 1 passed · vitest · test\/failure-snapshot\/checkout\.fixture\.tsx · [\d.]+ s\n$/);
     // No ANSI colors, no stack traces beyond the one frame.
-    expect(out).not.toMatch(/\u001b\[|\n\s+at .*node_modules/);
+    expect(out).not.toContain("\u001b[");
+    expect(out).not.toMatch(/\n\s+at .*node_modules/);
   });
 
   test("-t runs one test; a passing run exits 0", { timeout: 60_000 }, () => {

@@ -18,7 +18,7 @@ import { createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rm
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { parseArgs, stripVTControlCharacters } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
@@ -560,8 +560,7 @@ try {
 
 /** Normalized first line of a failure: the error signature used for clustering. */
 export function signature(message: string): string {
-  const lines = message
-    .replace(/\u001b\[[0-9;]*m/g, "")
+  const lines = stripVTControlCharacters(message)
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);

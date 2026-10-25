@@ -13,7 +13,6 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { isInaccessible, isSubtreeInaccessible } from "@ctrl/dom/aria";
 import type { Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
-import { $version } from "@ctrl/dom/internal";
 
 const { document, renderIntoDocument, cleanup } = makeDocument();
 

@@ -68,7 +68,7 @@ export function detectRunner(root, files, config) {
   if (config !== undefined) {
     const name = config.split(/[\\/]/).pop();
     if (/^(vitest|vite)\./.test(name)) return "vitest";
-    if (/^jest\./.test(name)) return "jest";
+    if (name.startsWith('jest.')) return "jest";
   }
   for (const file of files) {
     let source = "";

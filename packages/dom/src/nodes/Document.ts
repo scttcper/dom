@@ -8,8 +8,6 @@ import {
   ELEMENT_NODE,
   HTML_NS,
   SVG_NS,
-  XMLNS_NS,
-  XML_NS,
   DOCUMENT_TYPE_NODE,
   F_CONNECTED,
 } from "./constants.ts";

@@ -154,7 +154,7 @@ function runChecks(): void {
   for (const doc of docs) {
     const set = byDocument.get(doc);
     if (set === undefined) continue;
-    for (const observer of [...set]) {
+    for (const observer of Array.from(set)) {
       const map = observations.get(observer);
       if (map === undefined || map.size === 0) {
         set.delete(observer);

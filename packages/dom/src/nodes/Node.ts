@@ -30,7 +30,7 @@ import { EventTarget } from "../events/EventTarget.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { NodeImpl } from "./NodeImpl.ts";
-import { indexOf, nextInTree, treeRoot } from "./traverse.ts";
+import { nextInTree, treeRoot } from "./traverse.ts";
 import { preInsert, preRemove, replace, replaceAll } from "./tree.ts";
 import { cloneNode, isEqualNode } from "./clone.ts";
 import { NodeList } from "../collections/NodeList.ts";

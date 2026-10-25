@@ -28,7 +28,7 @@ import {
   KEY_TAG,
   KEY_NONE,
 } from "../../src/selectors/internal.ts";
-import { $impl, $version } from "../../src/keys.ts";
+import { $impl } from "../../src/keys.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyEl = any;

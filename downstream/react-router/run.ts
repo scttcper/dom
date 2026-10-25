@@ -20,7 +20,7 @@ import { copyFileSync, createWriteStream, existsSync, mkdirSync, readFileSync, r
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { parseArgs, stripVTControlCharacters } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
@@ -492,7 +492,7 @@ try {
         r.files = report.testResults.length;
         r.suiteErrors = report.testResults
           .filter((f: any) => f.status === "failed" && (f.assertionResults?.length ?? 0) === 0)
-          .map((f: any) => ({ file: relative(checkout, f.name), message: String(f.message ?? "").replace(/\u001b\[[0-9;]*m/g, "").trim().split("\n").slice(0, 8).join("\n") }));
+          .map((f: any) => ({ file: relative(checkout, f.name), message: stripVTControlCharacters(String(f.message ?? "")).trim().split("\n").slice(0, 8).join("\n") }));
       }
       const receipts = readJsonl(join(modeOut, "environments.jsonl"));
       r.receipts = receipts.length;
@@ -528,14 +528,13 @@ try {
 
 /** Normalized first line of a failure: the error signature used for clustering. */
 function signature(message: string): string {
-  const lines = message
-    .replace(/\u001b\[[0-9;]*m/g, "")
+  const lines = stripVTControlCharacters(message)
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
   let line = lines[0] ?? "(no message)";
   // Jest's matcher failures start with `expect(x).toY()`; the next lines carry the substance.
-  if (/^expect\(/.test(line) && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
+  if (line.startsWith('expect(') && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
   if (line.length > 180) line = line.slice(0, 180);
   return line
     .replace(/\b\d+(\.\d+)?(px|ms)?\b/g, "N")

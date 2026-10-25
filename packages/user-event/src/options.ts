@@ -1,7 +1,7 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/options.ts
 
-import type {Clipboard, Document} from './dom-types.ts'
+import type { Document } from './dom-types.ts'
 import {type keyboardKey} from './system/keyboard.ts'
 import {type pointerKey} from './system/pointer/index.ts'
 

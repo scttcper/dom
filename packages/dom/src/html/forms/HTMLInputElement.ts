@@ -64,7 +64,6 @@ import {
 import {
   isValidAbsoluteURL,
   isValidDateString,
-  isValidFloatString,
   isValidMonthString,
   isValidWeekString,
   normalizeLocalDateTime,

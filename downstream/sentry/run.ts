@@ -20,7 +20,7 @@ import { createHash } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { parseArgs, stripVTControlCharacters } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
@@ -465,7 +465,7 @@ for (let iteration = 1; iteration <= repeat; iteration++) {
       r.files = report.testResults.length;
       r.suiteErrors = report.testResults
         .filter((f: any) => f.status === "failed" && (f.assertionResults?.length ?? 0) === 0)
-        .map((f: any) => ({ file: relative(checkout, f.name), message: String(f.message ?? "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").slice(0, 12).join("\n") }));
+        .map((f: any) => ({ file: relative(checkout, f.name), message: stripVTControlCharacters(String(f.message ?? "")).split("\n").slice(0, 12).join("\n") }));
     }
     const receiptsPath = join(modeOut, "environments.jsonl");
     if (existsSync(receiptsPath)) {
@@ -499,15 +499,14 @@ for (let iteration = 1; iteration <= repeat; iteration++) {
 
 /** Normalized first line of a failure: the error signature used for clustering. */
 function signature(message: string): string {
-  const lines = message
-    .replace(/\u001b\[[0-9;]*m/g, "")
+  const lines = stripVTControlCharacters(message)
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
   let line = lines[0] ?? "(no message)";
   // jest-fail-on-console: the interesting part is the logged message.
-  if (/^Error: Expected test not to call console/.test(line) && lines[2]) line = `console.* : ${lines[2]}`;
-  if (/^expect\(/.test(line) && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
+  if (line.startsWith('Error: Expected test not to call console') && lines[2]) line = `console.* : ${lines[2]}`;
+  if (line.startsWith('expect(') && lines[1]) line = `${line} ${lines.slice(1, 3).join(" ")}`;
   return line
     .slice(0, 180)
     .replace(/\b\d+(\.\d+)?(px|ms)?\b/g, "N")

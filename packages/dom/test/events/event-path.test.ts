@@ -127,6 +127,7 @@ describe("event listeners — https://dom.spec.whatwg.org/#concept-event-listene
     t.dispatchEvent(new w.Event("y"));
     t.addEventListener("z", cb);
     t.removeEventListener("Z", cb);
+    // oxlint-disable-next-line unicorn/no-invalid-remove-event-listener -- a listener never added: removing it does nothing
     t.removeEventListener("z", () => {});
     t.removeEventListener("z", null as never);
     t.dispatchEvent(new w.Event("z"));

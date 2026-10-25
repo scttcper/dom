@@ -9,7 +9,7 @@
 
 import { createFileList, type FileList } from "../html/forms/FileList.ts";
 import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
-import { $data, $dropEffect, $effectAllowed, $file, $files, $items, $kind, $owner, $type, $types, $x, $y } from "../keys.ts";
+import { $data, $dropEffect, $effectAllowed, $file, $files, $items, $kind, $owner, $type, $types } from "../keys.ts";
 
 const DROP_EFFECTS = new Set(["none", "copy", "link", "move"]);
 const EFFECT_ALLOWED = new Set(["none", "copy", "copyLink", "copyMove", "link", "linkMove", "move", "all", "uninitialized"]);

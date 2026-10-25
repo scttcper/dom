@@ -40,7 +40,7 @@ function PressCheckbox({onPress, log}: {onPress: () => void; log: string[]}) {
         if (e.key !== ' ') return
         log.push(`keydown trusted=${e.nativeEvent.isTrusted}`)
         state.current.isPressed = true
-        const up = (ev: KeyboardEvent) => {
+        const up = () => {
           log.push('keyup(document)')
           state.current.isPressed = false
           onPress()

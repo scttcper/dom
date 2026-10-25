@@ -23,7 +23,7 @@ import { installConstraintValidation, V_CUSTOM_ERROR, type ConstraintValidation,
 import { formOwner } from "./forms/form-associated.ts";
 import { currentDocument } from "../window/current.ts";
 import type { HTMLCollection } from "../collections/HTMLCollection.ts";
-import { $customValidity, $impl, $options, $validity } from "../keys.ts";
+import { $customValidity, $impl, $validity } from "../keys.ts";
 import { queueElementTask } from "./events.ts";
 
 /** Lazily created, per-element [SameObject] value stored under a non-enumerable symbol. */

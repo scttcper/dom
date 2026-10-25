@@ -18,7 +18,6 @@
 // speculative parsing, script execution and document.write.
 
 import {
-  S_DATA,
   S_PLAINTEXT,
   S_RAWTEXT,
   S_RCDATA,
@@ -238,6 +237,7 @@ export class TreeSink {
    * -1). `attrNs` holds ANS_* codes when `hasNs` (foreign elements), in which case `names`
    * are local names.
    */
+  /* oxlint-disable no-unused-vars -- no-op defaults: the parameters document the sink interface */
   createElement(
     name: string,
     ns: number,
@@ -289,6 +289,7 @@ export class TreeSink {
   /** https://html.spec.whatwg.org/#create-an-element-for-the-token form owner association. */
   associateForm(element: number, form: number): void {}
   setDocumentMode(mode: number): void {}
+  /* oxlint-enable no-unused-vars */
 }
 
 /** Per-parse options. */
@@ -1705,7 +1706,6 @@ export class TreeBuilder {
 
   /** https://html.spec.whatwg.org/#parsing-main-inbody */
   private inBody(): void {
-    const tok = this.tok;
     switch (this.ttype) {
       case TK_CHARS:
         this.bodyChars(this.restChars());

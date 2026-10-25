@@ -288,7 +288,7 @@ function getFormValue(container: DOMNode, name: string): unknown {
 
 // Strips the `[]` suffix off a form value name
 function getPureName(name: string): string {
-  return /\[\]$/.test(name) ? name.slice(0, -2) : name;
+  return name.endsWith('[]') ? name.slice(0, -2) : name;
 }
 
 function getAllFormValues(container: DOMNode): Record<string, unknown> {

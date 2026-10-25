@@ -12,7 +12,7 @@ import { Element } from "../nodes/Element.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { asciiLowercase, removeAttribute, setAttribute } from "../nodes/attributes.ts";
-import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, F_CUSTOM, F_FACE, HTML_NS } from "../nodes/constants.ts";
+import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CUSTOM, F_FACE, HTML_NS } from "../nodes/constants.ts";
 import {
   faceStateMaybeChanged,
   internalsCheckValidity,

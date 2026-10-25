@@ -11,6 +11,7 @@
  *
  * Runs on @ctrl/dom with our matchers only (the stock jest-dom oracle has no counterpart).
  */
+import { stripVTControlCharacters } from "node:util";
 import { describe, expect, test } from "vitest";
 import { ariaSnapshot } from "@ctrl/dom/testing-library";
 
@@ -26,7 +27,7 @@ function failure(fn: () => void): string {
   try {
     fn();
   } catch (error) {
-    return (error as Error).message.replace(/\u001b\[\d+m/g, "");
+    return stripVTControlCharacters((error as Error).message);
   }
   throw new Error("expected the assertion to fail");
 }

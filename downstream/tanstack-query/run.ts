@@ -26,7 +26,7 @@ import { createRequire } from "node:module";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { parseArgs, stripVTControlCharacters } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
@@ -543,7 +543,7 @@ try {
         r.stockTestingLibrary = [
           ...new Set(
             res
-              .filter((x) => /^@testing-library\//.test(x.source) && !ADDONS.test(x.source) && x.id && !x.id.startsWith(join(repo, "packages") + "/"))
+              .filter((x) => x.source.startsWith('@testing-library/') && !ADDONS.test(x.source) && x.id && !x.id.startsWith(join(repo, "packages") + "/"))
               .map((x) => `${x.source} <- ${x.importer}`),
           ),
         ];
@@ -578,8 +578,7 @@ try {
 
 /** Normalized first line of a failure: the error signature used for clustering. */
 function signature(message: string): string {
-  const lines = message
-    .replace(/\u001b\[[0-9;]*m/g, "")
+  const lines = stripVTControlCharacters(message)
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);

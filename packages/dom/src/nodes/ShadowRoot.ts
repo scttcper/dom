@@ -12,7 +12,7 @@ import { DocumentFragment } from "./DocumentFragment.ts";
 import { treeRoot } from "./traverse.ts";
 import { parseFragment, setHTMLUnsafe } from "../parser/index.ts";
 import { getHTML, serializeChildren, type GetHTMLOptions } from "../serializer/index.ts";
-import { $availableToElementInternals, $clonable, $declarative, $delegatesFocus, $focused, $host, $impl, $mode, $serializable, $slotAssignment, $y } from "../keys.ts";
+import { $availableToElementInternals, $clonable, $declarative, $delegatesFocus, $focused, $host, $impl, $mode, $serializable, $slotAssignment } from "../keys.ts";
 
 export type ShadowRootMode = "open" | "closed";
 export type SlotAssignmentMode = "manual" | "named";

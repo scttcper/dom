@@ -186,7 +186,7 @@ describe("contained and partially contained — https://dom.spec.whatwg.org/#con
   });
 
   differential("extractContents: partially contained ancestors are cloned shallow into the fragment, contained nodes moved (https://dom.spec.whatwg.org/#dom-range-extractcontents)", (w) => {
-    const { d, root, a, b, c, r } = setup(w);
+    const { d, root, b, c, r } = setup(w);
     r.setStart(b.firstChild, 1);
     r.setEnd(c.firstChild, 1);
     const frag = r.extractContents();

@@ -55,6 +55,7 @@ export function captureInterfaceBaseline(): void {
 /** A realm that lives as long as the process (see ownObjectCreateMaps). */
 let mapOwner: ((prototypes: object[]) => unknown[]) | null = null;
 /** Objects it made: they keep the maps it owns alive (V8 holds the cache weakly). */
+// oxlint-disable-next-line no-unused-vars -- held, never read
 let ownedObjects: unknown[] = [];
 
 /**

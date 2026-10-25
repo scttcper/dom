@@ -1,0 +1,58 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    // WebIDL interfaces are classes merged with interfaces of the same name (mixins, partial
+    // interfaces): docs/ARCHITECTURE.md.
+    "typescript/no-unsafe-declaration-merging": "off",
+    // Small arrays are allocated at their exact size on hot paths: the first push onto [] starts
+    // a 17-slot backing store (docs/ARCHITECTURE.md).
+    "unicorn/no-new-array": "off",
+    // Tree walks start from `this` (`for (let n = this; n !== null; n = n.parent)`).
+    "typescript/no-this-alias": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    // Vendored web-platform-tests files, kept byte-for-byte.
+    "packages/dom/test/wpt/fixtures/**",
+    "packages/dom/test/html/wpt/**",
+    "packages/dom/test/selectors/wpt/**",
+    // Generated data tables.
+    "**/*.generated.ts",
+    // Hand-maintained typings identical to the upstream packages'.
+    "packages/jest-dom/types/**"
+  ],
+  "overrides": [
+    {
+      // Ported upstream tests keep upstream's code unchanged (CLAUDE.md, "Tests").
+      "files": ["packages/*/test/upstream/**"],
+      "rules": {
+        "no-unused-vars": "off",
+        "no-unused-expressions": "off",
+        "unicorn/no-thenable": "off",
+        "unicorn/no-unnecessary-await": "off"
+      }
+    },
+    {
+      // Tests read properties for their side effects and assign a property to itself to run its
+      // setter.
+      "files": ["**/test/**", "tests/**"],
+      "rules": {
+        "no-unused-expressions": "off",
+        "no-self-assign": "off"
+      }
+    },
+    {
+      // Deliberate thenables: act()'s result (React's contract) and user-event's value interceptor.
+      "files": ["packages/react/src/act-compat.ts", "packages/user-event/src/document/interceptor.ts"],
+      "rules": {
+        "unicorn/no-thenable": "off"
+      }
+    }
+  ]
+}

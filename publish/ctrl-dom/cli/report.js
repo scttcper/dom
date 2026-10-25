@@ -3,10 +3,11 @@
 // stack traces cut to the first frame in the project, console output budgeted.
 
 import { relative, sep } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 
 /** Strip ANSI escape sequences. */
 export function stripAnsi(text) {
-  return String(text).replace(/\u001b\[[0-9;]*[A-Za-z]/g, "");
+  return stripVTControlCharacters(String(text));
 }
 
 const FRAME = /^\s*at (?:(.*?) \()?(?:file:\/\/)?(\/[^():]+|[A-Za-z]:\\[^():]+):(\d+):(\d+)\)?\s*$/;

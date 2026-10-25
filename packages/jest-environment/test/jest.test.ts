@@ -7,6 +7,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 import { describe, expect, test } from "vitest";
 
 const pkg = fileURLToPath(new URL("..", import.meta.url));
@@ -59,7 +60,7 @@ describe("failure snapshots under CTRL_DOM_DEBUG (handleTestEvent, test_fn_failu
   test("a failed expect and a thrown error get the body as it was before cleanup appended", { timeout: 60_000 }, () => {
     const result = jestWith({ CTRL_DOM_DEBUG: "aria", CTRL_DOM_DEBUG_LINES: undefined }, "--testMatch", "<rootDir>/failure-snapshot.fixture.cjs");
     expect(result.numFailedTests).toBe(2);
-    const [expectFailure, thrown] = result.testResults[0].assertionResults.filter((a) => a.status === "failed").map((a) => a.failureMessages.join("\n").replace(/\u001b\[\d+m/g, ""));
+    const [expectFailure, thrown] = result.testResults[0].assertionResults.filter((a) => a.status === "failed").map((a) => stripVTControlCharacters(a.failureMessages.join("\n")));
     expect(expectFailure).toContain(`Received: "Checkout"\n\n${SNAPSHOT}\n    at `);
     expect(thrown).toContain(`Error: boom\n\n${SNAPSHOT}\n    at `);
   });

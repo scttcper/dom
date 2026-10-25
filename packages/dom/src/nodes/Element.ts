@@ -52,7 +52,7 @@ import { _shadowRootAttached, assignedSlot as slotOf, assignedSlotForEventPath, 
 import { setAssignedSlotLookup } from "../events/dispatch.ts";
 import type { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
 import type { ShadowRootInit } from "../webidl.ts";
-import { $attributes, $children, $classList, $dataset, $declarative, $impl, $isHTML, $mode, $shadowRoot, $style, $value } from "../keys.ts";
+import { $attributes, $children, $classList, $dataset, $declarative, $impl, $isHTML, $mode, $shadowRoot, $style } from "../keys.ts";
 
 /** Valid custom element name test (fast path: must contain "-" and start with a-z). */
 function isPotentialCustomElementName(name: string): boolean {

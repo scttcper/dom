@@ -41,7 +41,7 @@ import { clockSkipping } from "./clock.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { type LayoutMode, enableLayout } from "../css/layout-mode.ts";
 import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
-import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $frameTime, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport, $y } from "../keys.ts";
+import { $aboutBase, $childWindows, $closed, $cookieJar, $customElements, $devicePixelRatio, $frameCallbacks, $frameElement, $frameId, $frameTask, $frameTime, $globalObject, $history, $host, $idleCallbacks, $idleId, $impl, $innerHeight, $innerWidth, $localStorage, $location, $mediaQueryLists, $navigator, $options, $parentWindow, $runningFrame, $screen, $scrollX, $scrollY, $sessionStorage, $shed, $tasks, $timers, $url, $visualViewport } from "../keys.ts";
 
 export interface WindowOptions {
   /** Document URL. Default "http://localhost/". */

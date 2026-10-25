@@ -52,7 +52,7 @@ import { DeclBlock, parseDeclBlock } from "./declarations.ts";
 import { evaluateMediaQueryList, type MediaEnvironment, DEFAULT_MEDIA_ENV } from "./media.ts";
 import { mediaEnvironment } from "../window/media.ts";
 import { isCustomPropertyName, propertyInfo } from "./properties.ts";
-import { cascadeLonghandsOf, expandCascadeShorthand, expandShorthand, isCascadeOnlyShorthand, isExpandedShorthand, longhandsOf, pendingLonghandsMap, serializeCascadeShorthand, serializeShorthand, MULTI_LAYER } from "./shorthands.ts";
+import { cascadeLonghandsOf, expandCascadeShorthand, expandShorthand, isCascadeOnlyShorthand, pendingLonghandsMap, serializeCascadeShorthand, serializeShorthand, MULTI_LAYER } from "./shorthands.ts";
 import { computeColor } from "./colors.ts";
 import { containsVar, formatNumber, grammarFor, G_COLOR, isCSSWideKeyword, normalizeLonghand, splitComponents, TK_DIMENSION, TK_IDENT, TK_PERCENTAGE, TK_STRING, TK_FUNCTION, TK_DELIM, COMP_SPACE } from "./values.ts";
 import { CSSTokenizer, TK_EOF, TK_FUNCTION as TOK_FUNCTION, TK_LPAREN, TK_RPAREN, TK_COMMA, TK_LBRACKET, TK_RBRACKET } from "./tokenizer.ts";

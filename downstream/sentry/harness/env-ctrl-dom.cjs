@@ -56,6 +56,7 @@ function withDirectContext(fn) {
 }
 
 class CtrlDomSentryEnvironment extends CtrlDomEnvironment {
+  // oxlint-disable-next-line constructor-super, no-this-before-super -- super() runs inside withDirectContext's callback
   constructor(config, context) {
     withDirectContext(() => super(config, context));
     if (TRIAGE) this.global[Symbol.for('ctrl-dom.sentry.triage')] = triageApplied;

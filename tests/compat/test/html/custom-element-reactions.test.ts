@@ -76,6 +76,7 @@ describe("the construction stack — https://html.spec.whatwg.org/#concept-custo
     w.customElements.define(
       "x-up",
       class extends w.HTMLElement {
+        // oxlint-disable-next-line constructor-super -- super() is called: its result is the element being upgraded
         constructor() {
           const self = super();
           log.push(self === existing);

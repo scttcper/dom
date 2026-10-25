@@ -145,7 +145,7 @@ async function runWorkload(w: Workload, config: ConfigName, iterations: number, 
       costs.push(gcCosts(profile?.statistics ?? [], usedStart, usedEnd));
     }
   }
-  const extra: Record<string, number> = { ...((await inst.extra?.()) ?? {}) };
+  const extra: Record<string, number> = { ...(await inst.extra?.()) };
   // Medians per timed iteration (see gcCosts).
   extra.allocMB = median(costs.map((c) => c.allocMB));
   extra.gcMs = median(costs.map((c) => c.gcMs));

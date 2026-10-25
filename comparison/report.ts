@@ -185,7 +185,7 @@ export function report(options: { readme?: boolean } = {}): void {
     const all = new Map<string, BenchRow>();
     for (const rows of bench.values()) for (const [name, row] of rows) if (!all.has(name)) all.set(name, row);
     const ordered = [...all.values()].sort((a, b) => a.order.localeCompare(b.order));
-    for (const file of [...new Set(ordered.map((r) => r.file))]) {
+    for (const file of new Set(ordered.map((r) => r.file))) {
       const rows = ordered.filter((r) => r.file === file);
       const dom = file.startsWith("dom");
       const cs = contenders.filter((c) => bench.has(c.id) && (!dom || c.sameDomAs === undefined));
