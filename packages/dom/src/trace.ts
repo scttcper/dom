@@ -9,7 +9,7 @@
 
 import * as diagnosticsChannel from "node:diagnostics_channel";
 import { $impl } from "./keys.ts";
-import { clockStats } from "./window/clock.ts";
+import { clockSkipped, clockStats } from "./window/clock.ts";
 
 /** The context object a span's start/end/asyncStart/asyncEnd/error events carry. */
 export interface SpanContext {
@@ -49,7 +49,7 @@ export function tracing(): boolean {
 /** Run `fn` as a span. Call only when `tracing()` is true. */
 export function traceSync<T>(op: string, description: string, fn: (span: SpanContext) => T): T {
   const span: SpanContext = { op, description, data: {}, async: false };
-  const skipped = clockStats()?.skippedMs ?? 0;
+  const skipped = clockSkipped();
   return channel!.traceSync(
     (s: SpanContext) => {
       try {
@@ -67,14 +67,14 @@ export function traceSync<T>(op: string, description: string, fn: (span: SpanCon
 /** Run promise-returning `fn` as a span that ends when the promise settles. Call only when `tracing()` is true. */
 export function tracePromise<T>(op: string, description: string, fn: (span: SpanContext) => Promise<T>): Promise<T> {
   const span: SpanContext = { op, description, data: {}, async: true };
-  const skipped = clockStats()?.skippedMs ?? 0;
+  const skipped = clockSkipped();
   // The tracing channel's asyncEnd waits for the promise returned here, so the data is in place.
   return channel!.tracePromise((s: SpanContext) => fn(s).finally(() => recordSkipped(s, skipped)), span, undefined, span);
 }
 
 /** How much idle time the virtual clock skipped while the span ran (a findBy's timeout, a debounce). */
 function recordSkipped(span: SpanContext, before: number): void {
-  const skipped = (clockStats()?.skippedMs ?? 0) - before;
+  const skipped = clockSkipped() - before;
   if (skipped > 0) span.data["clock.skipped_ms"] = Math.round(skipped);
 }
 

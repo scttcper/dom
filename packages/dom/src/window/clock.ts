@@ -525,6 +525,11 @@ export function clockNow(): number {
   return activeClock === null ? realNow() : activeClock.now();
 }
 
+/** Milliseconds the active clock has skipped (0 without one): what a traced span reads at start and end. */
+export function clockSkipped(): number {
+  return activeClock === null ? 0 : activeClock.skipped;
+}
+
 /** The active clock's skipped time and pending timers (for test observability), or null without one. */
 export function clockStats(): { skippedMs: number; pendingTimers: number } | null {
   return activeClock === null ? null : { skippedMs: activeClock.skipped, pendingTimers: activeClock.size };
