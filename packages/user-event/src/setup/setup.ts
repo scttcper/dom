@@ -189,20 +189,40 @@ const API_TEMPLATE: Record<string, unknown> = {
   setup: undefined,
 }
 
+const $system = Symbol('system')
+
+/**
+ * Ours: the instance's prototype. The API implementations (which call each other through `this`)
+ * are inherited from `userEventApi` instead of copied onto every instance, and the System is
+ * created on first use: test renderers call setup() for every render, and many tests never
+ * interact.
+ */
+const instanceProto: object = Object.create(userEventApi, {
+  system: {
+    get(this: {[$system]: System | undefined}): System {
+      return (this[$system] ??= new System())
+    },
+    set(this: {[$system]: System | undefined}, system: System) {
+      this[$system] = system
+    },
+    configurable: true,
+  },
+})
+
 export function createInstance(
   config: Config,
-  system: System = new System(),
+  system?: System,
 ): {
   instance: Instance
   api: UserEvent
 } {
-  // Ours: the API implementations (which call each other through `this`) are inherited instead of
-  // copied onto every instance.
-  const instance = Object.create(userEventApi) as Instance
+  const instance = Object.create(instanceProto) as Instance & {
+    [$system]: System | undefined
+  }
   instance.config = config
   instance.dispatchEvent = dispatchEvent.bind(instance)
   instance.dispatchUIEvent = dispatchUIEvent.bind(instance)
-  instance.system = system
+  instance[$system] = system
   instance.levelRefs = {}
 
   const api = {...API_TEMPLATE}
