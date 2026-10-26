@@ -168,6 +168,17 @@ triggers the load; only assignment and `delete` do not, and both lose the lazy p
 `fetch` wrapper loads undici only when called, and no public synchronous path returns undici's
 classes. It is also the one part a startup snapshot cannot hold (below).
 
+Two more things tie it in place. Our `FormData` gets undici's class from the original read here:
+without that read, ours would have to be a standalone class, which `fetch` and `Request` do not
+send as multipart (React Router hands FormData straight to `new Request()` for multipart
+submissions; its default urlencoded path converts it to `URLSearchParams` first). And Vitest's
+own jsdom environment (4 and 5) reads Node's `FormData` and `Request` during setup for its fetch
+compatibility layer, so jsdom users pay the same load. Who touches these APIs, from a static scan
+of the downstream checkouts' test files (2026-10-26): `fetch`, `Request`, `Response`, WebSocket
+and EventSource appear in none of Base UI's, Radix's or React Aria's and in 1 of Sentry's 2,493;
+FormData in a handful of form tests per suite; React Router's in 74 of 243, and its data routers
+build `Request`s internally.
+
 **The rest of a full-mode test file.** Measured 2026-10-26 at 92076ba with `release/ctrl-dom`
 installed next to React 19.3.1: one fresh process per sample, medians of 11, from a scratch
 script rather than a bench workload.
