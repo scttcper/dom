@@ -329,20 +329,30 @@ function createConcurrentRoot(
   };
 }
 
-// Queries bound to a base element, computed once per element. `document.body` is the base
-// element of nearly every render in a test file, so this turns ~120 `bind` calls per render
-// into a property copy.
-const defaultBoundQueries = new WeakMap<object, Record<string, unknown>>();
+/**
+ * A render result with the default queries bound to a base element, in upstream's key order (the
+ * six render fields, then the queries), built once per element. `document.body` is the base
+ * element of nearly every render in a test file: each render clones it (`{ ...template }` copies a
+ * fast object wholesale, ~50 ns) instead of binding ~50 queries and adding them to a fresh object
+ * one by one (~4 µs), then fills in the six fields.
+ */
+const resultTemplates = new WeakMap<object, Record<string, unknown>>();
 
-function boundQueriesFor(baseElement: any, customQueries: Queries | undefined): Record<string, unknown> {
-  if (customQueries !== undefined)
-    return getQueriesForElement(baseElement, customQueries as any) as Record<string, unknown>;
-  let bound = defaultBoundQueries.get(baseElement);
-  if (bound === undefined) {
-    bound = getQueriesForElement(baseElement) as Record<string, unknown>;
-    defaultBoundQueries.set(baseElement, bound);
+function resultTemplateFor(baseElement: any): Record<string, unknown> {
+  let template = resultTemplates.get(baseElement);
+  if (template === undefined) {
+    template = {
+      container: undefined,
+      baseElement: undefined,
+      debug: undefined,
+      unmount: undefined,
+      rerender: undefined,
+      asFragment: undefined,
+      ...(getQueriesForElement(baseElement) as Record<string, unknown>),
+    };
+    resultTemplates.set(baseElement, template);
   }
-  return bound;
+  return template;
 }
 
 interface RenderRootOptions {
@@ -377,40 +387,54 @@ function renderRoot(
 ): RenderResult<any, any, any> {
   actRender(ui, root, hydrate, WrapperComponent, reactStrictMode);
 
-  return {
-    container,
-    baseElement,
-    debug: (el: unknown = baseElement, maxLength?: number, options?: PrettyDOMOptions) =>
-      Array.isArray(el)
-        ? // eslint-disable-next-line no-console
-          el.forEach((e) => console.log(prettyDOM(e, maxLength, options)))
-        : // eslint-disable-next-line no-console
-          console.log(prettyDOM(el as any, maxLength, options)),
-    unmount: () => {
-      act(() => {
-        root.unmount();
-      });
-    },
-    rerender: (rerenderUi: React.ReactNode) => {
-      // Upstream calls renderRoot here and drops the result; building it copies every bound query.
-      const rerender = () => actRender(rerenderUi, root, false, WrapperComponent, reactStrictMode);
-      // Ours: a span when something subscribes to @ctrl/dom's tracing channel.
-      if (tracing()) traceSync("react.rerender", `rerender(${describeElement(rerenderUi)})`, rerender);
-      else rerender();
-      // Intentionally do not return anything to avoid unnecessarily complicating the API.
-      // folks can use all the same utilities we return in the first place that are bound to
-      // the container
-    },
-    asFragment: () => {
-      if (typeof document.createRange === "function") {
-        return document.createRange().createContextualFragment(container.innerHTML);
-      }
-      const template = document.createElement("template");
-      template.innerHTML = container.innerHTML;
-      return template.content;
-    },
-    ...boundQueriesFor(baseElement, queries),
-  } as RenderResult<any, any, any>;
+  const debug = (el: unknown = baseElement, maxLength?: number, options?: PrettyDOMOptions) =>
+    Array.isArray(el)
+      ? // eslint-disable-next-line no-console
+        el.forEach((e) => console.log(prettyDOM(e, maxLength, options)))
+      : // eslint-disable-next-line no-console
+        console.log(prettyDOM(el as any, maxLength, options));
+  const unmount = () => {
+    act(() => {
+      root.unmount();
+    });
+  };
+  const rerender = (rerenderUi: React.ReactNode) => {
+    // Upstream calls renderRoot here and drops the result; building it copies every bound query.
+    const rerender = () => actRender(rerenderUi, root, false, WrapperComponent, reactStrictMode);
+    // Ours: a span when something subscribes to @ctrl/dom's tracing channel.
+    if (tracing()) traceSync("react.rerender", `rerender(${describeElement(rerenderUi)})`, rerender);
+    else rerender();
+    // Intentionally do not return anything to avoid unnecessarily complicating the API.
+    // folks can use all the same utilities we return in the first place that are bound to
+    // the container
+  };
+  const asFragment = () => {
+    if (typeof document.createRange === "function") {
+      return document.createRange().createContextualFragment(container.innerHTML);
+    }
+    const template = document.createElement("template");
+    template.innerHTML = container.innerHTML;
+    return template.content;
+  };
+  if (queries !== undefined) {
+    return {
+      container,
+      baseElement,
+      debug,
+      unmount,
+      rerender,
+      asFragment,
+      ...getQueriesForElement(baseElement, queries as any),
+    } as RenderResult<any, any, any>;
+  }
+  const result = { ...resultTemplateFor(baseElement) };
+  result.container = container;
+  result.baseElement = baseElement;
+  result.debug = debug;
+  result.unmount = unmount;
+  result.rerender = rerender;
+  result.asFragment = asFragment;
+  return result as RenderResult<any, any, any>;
 }
 
 function legacyRootError(callee: Function): Error {

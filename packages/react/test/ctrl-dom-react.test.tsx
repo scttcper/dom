@@ -56,6 +56,18 @@ describe("render result", () => {
     expect(a.getByText("two")).toBe(b.container.firstChild);
   });
 
+  test("keeps upstream's key order (render fields, then the queries), and each render its own fields", () => {
+    const a = main.render(<p>one</p>);
+    const b = main.render(<p>two</p>);
+    expect(Object.keys(a).slice(0, 6)).toEqual(["container", "baseElement", "debug", "unmount", "rerender", "asFragment"]);
+    expect(Object.keys(a)).toEqual(Object.keys(b));
+    expect(Object.keys(a)).toHaveLength(6 + Object.keys(main.queries).length);
+    expect(a.container).not.toBe(b.container);
+    expect(a.unmount).not.toBe(b.unmount);
+    const copy = { ...a };
+    expect(copy.getByText("one")).toBe(a.container.firstChild);
+  });
+
   test("custom queries are bound per render and replace the defaults", () => {
     const queryAllByFoo = (container: any) => Array.from(container.querySelectorAll("[data-foo]"));
     const queries = { getByFoo: (container: any) => queryAllByFoo(container)[0] };
