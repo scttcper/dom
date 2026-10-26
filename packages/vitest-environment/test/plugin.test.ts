@@ -1,5 +1,5 @@
 /**
- * The ctrlDom() Vitest plugin (publish/ctrl-dom/vitest.js, published as `@ctrl/dom/vitest`):
+ * The ctrlDom() Vitest plugin (src/plugin.ts, published as `@ctrl/dom/vitest`):
  * the worker flags it adds per resolved pool.
  *
  * Spec: Node.js CLI options — https://nodejs.org/api/cli.html#--importmodule (the compile-cache
@@ -8,7 +8,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { ctrlDom, workerExecArgv } from "../../../publish/ctrl-dom/vitest.js";
+import { ctrlDom, workerExecArgv } from "../src/plugin.ts";
 
 const isCompileCacheImport = (arg: string) =>
   arg.startsWith("--import=data:text/javascript,") && arg.includes("enableCompileCache");

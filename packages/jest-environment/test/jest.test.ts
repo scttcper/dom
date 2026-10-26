@@ -92,7 +92,7 @@ describe("failure snapshots under CTRL_DOM_DEBUG (handleTestEvent, test_fn_failu
   });
 
   test("`ctrl-dom debug` runs the file with Jest and prints the compact report", { timeout: 60_000 }, () => {
-    const cli = fileURLToPath(new URL("../../../publish/ctrl-dom/cli/ctrl-dom.js", import.meta.url));
+    const cli = fileURLToPath(new URL("../../cli/src/ctrl-dom.ts", import.meta.url));
     const env: Record<string, string | undefined> = { ...process.env };
     delete env.CTRL_DOM_DEBUG;
     const run = spawnSync(

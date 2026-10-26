@@ -1,10 +1,10 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 // The ported suites run on @ctrl/dom (@ctrl/dom/vitest-environment) with @ctrl/dom/jest-dom matchers.
 // test/differential/stock.test.tsx opts into jsdom per file (the stock oracle).
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   test: {
     name: "@ctrl/dom/react",
     include: ["test/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],

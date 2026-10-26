@@ -1,9 +1,9 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 import { include, ourTestingLibrary } from "./vitest.react.shared.ts";
 
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   resolve: { alias: ourTestingLibrary, dedupe: ["react", "react-dom"] },
   test: {
     // Load @ctrl/dom and the environment natively (Node strips types) so the environment and the

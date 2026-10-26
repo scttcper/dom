@@ -13,7 +13,7 @@ import { existsSync, statSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { distMapEnv, workspacePackages, repoRoot } from "../../bench/lib/packages.ts";
-import { workerExecArgv } from "../../publish/ctrl-dom/vitest.js";
+import { workerExecArgv } from "@ctrl/dom/vitest";
 import type { Contender } from "./types.ts";
 
 const dist = new Map(workspacePackages().flatMap((p) => p.exports.map((e) => [e.specifier, e.dist] as const)));

@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 // Which DOM the ported upstream suite (test/upstream/**) and the React tests run on:
 //   CTRL_DOM_STACK=ctrl-dom    -> @ctrl/dom/vitest-environment (@ctrl/dom)          (the target, default)
@@ -16,7 +16,7 @@ const impl = process.env.CTRL_DOM_UE_IMPL ?? "ctrl-dom";
 const stockDist = fileURLToPath(new URL("./node_modules/@testing-library/user-event/dist/esm/", import.meta.url));
 
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   resolve: {
     alias:
       impl === "stock"

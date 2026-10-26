@@ -1,11 +1,11 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 // Layout-lite integration (docs/layout.md): React virtualizers and positioning code on @ctrl/dom
 // with `environmentOptions["ctrl-dom"].layout = "lite"`. jsdom has no layout, so unlike
 // react/**/*.test.tsx these files run on @ctrl/dom only.
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   resolve: { dedupe: ["react", "react-dom"] },
   test: {
     // One @ctrl/dom module instance for the environment and the tests (see vitest.react-ctrl-dom.config.ts).

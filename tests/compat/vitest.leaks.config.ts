@@ -1,11 +1,11 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 // Leak suite: proves windows, documents, nodes, React roots and testing-library state are
 // collectable after the user-facing cleanup (window.close(), cleanup(), environment teardown),
 // and that heap-after-GC stays flat over thousands of cycles. Needs --expose-gc.
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   test: {
     name: "compat:leaks",
     include: ["test/leaks/**/*.test.{ts,tsx}"],

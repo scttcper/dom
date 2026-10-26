@@ -46,6 +46,7 @@
     },
     "./vitest-environment": "./packages/vitest-environment/src/index.ts",
     "./vitest-environment/failure-snapshot": "./packages/vitest-environment/src/failure-snapshot.ts",
+    "./vitest": "./packages/vitest-environment/src/plugin.ts",
     "./register": "./packages/register/src/index.ts",
     "./register/pure": "./packages/register/src/pure.ts",
     "./package.json": "./package.json"

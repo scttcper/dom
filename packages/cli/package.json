@@ -1,0 +1,24 @@
+{
+  "version": "0.0.0",
+  "private": true,
+  "description": "`ctrl-dom debug <test file>`: one component test run the way a coding agent wants to read it. Published as @ctrl/dom's `ctrl-dom` bin.",
+  "type": "module",
+  "bin": {
+    "ctrl-dom": "./src/ctrl-dom.ts"
+  },
+  "exports": {
+    "./vitest-reporter": "./src/vitest-reporter.ts",
+    "./jest-reporter": "./src/jest-reporter.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "publishConfig": {
+    "bin": {
+      "ctrl-dom": "./dist/ctrl-dom.js"
+    }
+  }
+}

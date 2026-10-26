@@ -44,7 +44,8 @@ What each import is and where its source lives:
 | `@ctrl/dom/react` | [packages/react](packages/react) | `@testing-library/react` 16.3 | `render`, `renderHook`, `act`, cleanup |
 | `@ctrl/dom/user-event` | [packages/user-event](packages/user-event) | `@testing-library/user-event` 14.6 | pointer/keyboard simulation |
 | `@ctrl/dom/jest-dom` | [packages/jest-dom](packages/jest-dom) | `@testing-library/jest-dom` 7.0 | all 49 matchers, vitest + jest entries |
-| `@ctrl/dom/vitest-environment` | [packages/vitest-environment](packages/vitest-environment) | Vitest's jsdom environment | |
+| `@ctrl/dom/vitest-environment` | [packages/vitest-environment](packages/vitest-environment) | Vitest's jsdom environment | also the `ctrlDom()` plugin, `@ctrl/dom/vitest` |
+| `ctrl-dom` (bin) | [packages/cli](packages/cli) | | `ctrl-dom debug <test file>`: one test run with an agent-readable report |
 | `@ctrl/dom/register` | [packages/register](packages/register) | `@happy-dom/global-registrator` | DOM globals for `node --test` and `bun test` |
 | `@ctrl/dom-jest-environment` | [packages/jest-environment](packages/jest-environment) | jest-environment-jsdom | |
 | `@ctrl/sentry-tests` | [packages/sentry-tests](packages/sentry-tests) | @sentry/jest-environment | test runs in Sentry for Vitest and Jest, any DOM: traces, failing and flaky tests |
@@ -54,7 +55,8 @@ its `exports` send each subpath to a member's sources (`@ctrl/dom/react` → `pa
 and every package that imports one depends on it with `"@ctrl/dom": "workspace:*"`. @ctrl/dom's
 members have no name of their own; `packages/jest-environment` and `packages/sentry-tests` are
 `@ctrl/dom-jest-environment` and `@ctrl/sentry-tests`, published as they are. A new subpath goes
-in the member's `exports` and the root's.
+in the member's `exports` and the root's. `packages/cli` adds no subpath: its `bin` and the
+reporters it passes to the test runners ship in @ctrl/dom's `dist/cli/`.
 
 ## CI and releases
 

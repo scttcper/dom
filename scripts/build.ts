@@ -184,9 +184,10 @@ function copyDeclarations(emitRoot: string, pkg: WorkspacePackage): void {
 }
 
 const selected = workspacePackages().filter(
-  (p) => p.exports.length > 0 && (!flags.filter || p.name.includes(flags.filter)),
+  (p) => p.entries.length > 0 && (!flags.filter || p.name.includes(flags.filter)),
 );
-const dtsPackages = flags["no-dts"] ? [] : selected.filter((p) => !shipsOwnTypes(p));
+// A command (packages/cli) has nothing to import, so no declarations.
+const dtsPackages = flags["no-dts"] ? [] : selected.filter((p) => p.exports.length > 0 && !shipsOwnTypes(p));
 
 let failed = 0;
 let emitRoot: string | undefined;
@@ -207,7 +208,7 @@ const notices = ["NOTICE", "LICENSE"].map((f) => join(repoRoot, f)).filter((f) =
 
 for (const pkg of selected) {
   const input: Record<string, string> = {};
-  for (const e of pkg.exports) input[e.entryName] = e.source;
+  for (const e of pkg.entries) input[e.entryName] = e.source;
   const outDir = join(pkg.dir, "dist");
   rmSync(outDir, { recursive: true, force: true });
   const t0 = performance.now();

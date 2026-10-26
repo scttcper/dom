@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./plugin": "./src/plugin.ts",
     "./failure-snapshot": "./src/failure-snapshot.ts"
   },
   "files": [
@@ -21,6 +22,10 @@
       ".": {
         "types": "./dist/types/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./plugin": {
+        "types": "./dist/types/plugin.d.ts",
+        "default": "./dist/plugin.js"
       },
       "./failure-snapshot": {
         "types": "./dist/types/failure-snapshot.d.ts",

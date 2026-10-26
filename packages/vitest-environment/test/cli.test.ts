@@ -1,5 +1,5 @@
 /**
- * `ctrl-dom debug` (publish/ctrl-dom/cli/ctrl-dom.js) on a Vitest project: runs one test file with
+ * `ctrl-dom debug` (packages/cli) on a Vitest project: runs one test file with
  * CTRL_DOM_DEBUG=aria through its own reporter and exits with the run's status. An @ctrl/dom
  * addition (docs/agent-debugging.md); no spec. The Jest side is in
  * packages/jest-environment/test/jest.test.ts, the published package in tests/pack.
@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
 const pkg = fileURLToPath(new URL("..", import.meta.url));
-const cli = fileURLToPath(new URL("../../../publish/ctrl-dom/cli/ctrl-dom.js", import.meta.url));
+const cli = fileURLToPath(new URL("../../cli/src/ctrl-dom.ts", import.meta.url));
 
 function ctrlDom(...args: string[]) {
   const env: Record<string, string | undefined> = { ...process.env };

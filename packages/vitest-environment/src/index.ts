@@ -1,5 +1,5 @@
 // Vitest environment for @ctrl/dom, published as `@ctrl/dom/vitest-environment` and loaded by path
-// by the `ctrlDom()` plugin (publish/ctrl-dom/vitest.js), which also answers for the name
+// by the `ctrlDom()` plugin (./plugin.ts, `@ctrl/dom/vitest`), which also answers for the name
 // "ctrl-dom":
 //
 //   // vitest.config.ts

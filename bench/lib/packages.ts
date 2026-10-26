@@ -24,6 +24,8 @@ export interface WorkspacePackage {
   name: string;
   dir: string;
   exports: WorkspaceExport[];
+  /** Every module the build bundles: the exports, plus a command's `bin` and the modules it hands other programs by path. */
+  entries: { entryName: string; source: string }[];
 }
 
 /** A string target, or the `import`/`default` branch of a conditional export. */
@@ -34,6 +36,20 @@ function resolveTarget(raw: unknown): string | undefined {
     return resolveTarget(o.import) ?? resolveTarget(o.node) ?? resolveTarget(o.default);
   }
   return undefined;
+}
+
+/**
+ * A command's member (one with a `bin`, packages/cli) ships inside @ctrl/dom without adding
+ * subpaths: its `exports` are the modules it passes to other programs by path (the test runners'
+ * reporters), bundled next to the `bin` entry.
+ */
+function commandEntries(dir: string, pkg: Record<string, any>): { entryName: string; source: string }[] {
+  const targets = [...Object.values<unknown>(pkg.bin ?? {}), ...Object.values<unknown>(pkg.exports ?? {})];
+  return targets.map(resolveTarget).flatMap((target) => {
+    if (target === undefined) return [];
+    const source = join(dir, target);
+    return [{ entryName: relative(join(dir, "src"), source).replace(/\.ts$/, ""), source }];
+  });
 }
 
 /**
@@ -59,6 +75,10 @@ export function workspacePackages(): WorkspacePackage[] {
     const pkgPath = join(dir, "package.json");
     if (!existsSync(pkgPath)) continue;
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+    if (pkg.bin !== undefined) {
+      out.push({ name: entry.name, dir, exports: [], entries: commandEntries(dir, pkg) });
+      continue;
+    }
     const exportsField: Record<string, unknown> =
       typeof pkg.exports === "string" ? { ".": pkg.exports } : (pkg.exports ?? {});
     const exports: WorkspaceExport[] = [];
@@ -82,6 +102,7 @@ export function workspacePackages(): WorkspacePackage[] {
       name: pkg.name ?? exports.find((e) => e.entryName === "index")?.specifier ?? exports[0]?.specifier ?? entry.name,
       dir,
       exports,
+      entries: exports.map(({ entryName, source }) => ({ entryName, source })),
     });
   }
   return out;

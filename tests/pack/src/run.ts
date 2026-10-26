@@ -210,7 +210,7 @@ const checks: Check[] = [
     title: "Vitest, ctrlDom({ testingLibrary: false }) + stock @testing-library/*",
     cmd: ["vitest", "run", "--config", "vitest.stock.config.ts"],
     mustLoad: [
-      "@ctrl/dom/vitest.js",
+      "@ctrl/dom/dist/vitest-environment/plugin.js",
       "@ctrl/dom/dist/vitest-environment/index.js",
       "@ctrl/dom/dist/dom/index.js",
       "@testing-library/react/",
@@ -242,7 +242,7 @@ const checks: Check[] = [
     title: "Vitest, ctrlDom() plugin + the stock test file",
     cmd: ["vitest", "run", "--config", "vitest.plugin.config.ts"],
     mustLoad: [
-      "@ctrl/dom/vitest.js",
+      "@ctrl/dom/dist/vitest-environment/plugin.js",
       "@ctrl/dom/dist/vitest-environment/index.js",
       "@ctrl/dom/dist/react/index.js",
       "@ctrl/dom/dist/user-event/index.js",
@@ -254,7 +254,11 @@ const checks: Check[] = [
     id: "cv",
     title: "(c) under --pool vmThreads",
     cmd: ["vitest", "run", "--config", "vitest.plugin.config.ts", "--pool", "vmThreads"],
-    mustLoad: ["@ctrl/dom/vitest.js", "@ctrl/dom/dist/vitest-environment/index.js", "@ctrl/dom/dist/dom/index.js"],
+    mustLoad: [
+      "@ctrl/dom/dist/vitest-environment/plugin.js",
+      "@ctrl/dom/dist/vitest-environment/index.js",
+      "@ctrl/dom/dist/dom/index.js",
+    ],
   },
   {
     id: "d1",
@@ -319,8 +323,8 @@ const checks: Check[] = [
     title: "`ctrl-dom debug` (bin) on a failing Vitest test, ctrlDom() plugin",
     cmd: ["ctrl-dom", "debug", "debug.vitest.fixture.tsx", "--config", "vitest.debug.config.ts"],
     mustLoad: [
-      "@ctrl/dom/cli/ctrl-dom.js",
-      "@ctrl/dom/cli/vitest-reporter.js",
+      "@ctrl/dom/dist/cli/ctrl-dom.js",
+      "@ctrl/dom/dist/cli/vitest-reporter.js",
       "@ctrl/dom/dist/vitest-environment/failure-snapshot.js",
     ],
     status: 1,
@@ -335,8 +339,8 @@ const checks: Check[] = [
     title: "`ctrl-dom debug` (bin) on a failing Jest test, preset",
     cmd: ["ctrl-dom", "debug", "debug.jest.fixture.cjs", "--config", "jest.debug.config.cjs"],
     mustLoad: [
-      "@ctrl/dom/cli/ctrl-dom.js",
-      "@ctrl/dom/cli/jest-reporter.js",
+      "@ctrl/dom/dist/cli/ctrl-dom.js",
+      "@ctrl/dom/dist/cli/jest-reporter.js",
       "@ctrl/dom/dist/testing-library/agent.js",
     ],
     status: 1,
@@ -377,7 +381,7 @@ const checks: Check[] = [
 ];
 
 const OURS = /\/node_modules\/(@ctrl\/dom-jest-environment|@ctrl\/dom)\/(.*)$/;
-const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|cli\/[\w-]+\.js|jest-preset\.cjs|vitest\.js|package\.json)$/;
+const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|jest-preset\.cjs|package\.json)$/;
 
 function verifyLoads(check: Check, log: string): string[] {
   const problems: string[] = [];

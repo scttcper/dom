@@ -9,7 +9,6 @@
 
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
 import { distMapEnv, workspacePackages } from "../lib/packages.ts";
 
 const benchEnv = process.env.BENCH_ENV ?? "jsdom";
@@ -26,6 +25,11 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 // resolution hook (keyed on bare specifiers) would never see.
 const distEntry = new Map(workspacePackages().flatMap((p) => p.exports.map((e) => [e.specifier, e.dist] as const)));
 const target = (specifier: string) => (dist ? distEntry.get(specifier)! : specifier);
+// *-dist: the plugin's bundle, which loads the environment's bundle next to it, as users installing the
+// packages get them.
+const { ctrlDom } = (await import(
+  dist ? distEntry.get("@ctrl/dom/vitest")! : "@ctrl/dom/vitest"
+)) as typeof import("@ctrl/dom/vitest");
 const fullStackAliases = [
   { find: /^@testing-library\/react$/, replacement: target("@ctrl/dom/react") },
   { find: /^@testing-library\/dom$/, replacement: target("@ctrl/dom/testing-library") },
@@ -34,8 +38,7 @@ const fullStackAliases = [
 ];
 
 export default defineConfig({
-  // *-dist: the environment's bundle too, as users installing the packages load it.
-  plugins: [ctrlDomEnvironment(dist ? distEntry.get("@ctrl/dom/vitest-environment") : undefined)],
+  plugins: [ctrlDom({ testingLibrary: false })],
   root,
   resolve: { alias: env === "ctrl-dom-full" ? fullStackAliases : [] },
   test: {

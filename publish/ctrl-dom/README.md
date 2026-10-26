@@ -52,6 +52,7 @@ export default defineConfig({ plugins: [ctrlDom({ testingLibrary: false })] });
 
 Options go to the plugin: `ctrlDom({ url: "http://localhost:3000/", width: 1280 })`. With the
 plugin installed, a file can also pick the environment itself: `// @vitest-environment ctrl-dom`.
+An `environment` you set in the config other than `"ctrl-dom"` stays the project's default.
 
 The plugin also adds a Node flag to Vitest's workers, since the default pool starts one per test
 file: with its Testing Library it turns the compile cache on as each worker starts, so Vitest's

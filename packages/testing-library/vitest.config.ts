@@ -1,8 +1,8 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   test: {
     name: "@ctrl/dom/testing-library",
     // Ported upstream tests stay JavaScript (test/upstream/*.test.js) to keep them diffable

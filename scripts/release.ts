@@ -4,8 +4,8 @@
 //   release/ctrl-dom                     @ctrl/dom: packages/dom at the root, the other runtime
 //                                        packages under subpaths (@ctrl/dom/react, /user-event,
 //                                        /jest-dom, /testing-library, /aria, /vitest-environment,
-//                                        /register),
-//                                        plus the Jest preset and the Vitest plugin (publish/ctrl-dom)
+//                                        /register), the Vitest plugin (@ctrl/dom/vitest), the
+//                                        `ctrl-dom` bin (packages/cli) and a generated Jest preset
 //   release/dom-jest-environment         @ctrl/dom-jest-environment: packages/jest-environment
 //                                        (Jest's dependencies stay out of @ctrl/dom for Vitest users)
 //   release/sentry-tests                 @ctrl/sentry-tests: packages/sentry-tests, standalone (it
@@ -21,8 +21,8 @@
 // those imports as bare specifiers (scripts/build.ts), which inside the published @ctrl/dom are
 // self-references, so each member still exists exactly once. `@ctrl/dom` and `@ctrl/dom/internal`
 // themselves resolve to generated bridges (writeBridges) that hand every importer the DOM
-// instance the running environment loaded. Hand-written files (READMEs, manifests' static fields,
-// the Jest preset, the Vitest plugin) live in publish/<package>/.
+// instance the running environment loaded. Static files (READMEs, manifests' static fields) live
+// in publish/<package>/.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -43,6 +43,9 @@ const MEMBERS: Record<string, string> = {
   "vitest-environment": "vitest-environment",
   register: "register",
 };
+
+/** Member exports published under another subpath. */
+const RENAMED: Record<string, string> = { "./vitest-environment/plugin": "./vitest" };
 
 /** Peer ranges where members disagree (jest-dom alone allows older Vitest/Jest than the environments). */
 const PEER_OVERRIDES: Record<string, string> = { vitest: ">=5.0.0", jest: ">=30.0.0", "@jest/globals": ">=30.0.0" };
@@ -75,7 +78,7 @@ function memberExports(pkg: Json, sub: string, distDir: string): Json {
   for (const [key, value] of Object.entries(pkg.publishConfig?.exports ?? {})) {
     if (key === "./package.json") continue;
     const published = key === "." ? (sub ? `./${sub}` : ".") : sub ? `./${sub}/${key.slice(2)}` : key;
-    out[published] = move(value);
+    out[RENAMED[published] ?? published] = move(value);
   }
   return out;
 }
@@ -160,14 +163,58 @@ function pinEnvironmentDom(ctrlDom: string, member = "vitest-environment"): void
     if (!e.isFile() || !e.name.endsWith(".js")) continue;
     const path = join(e.parentPath, e.name);
     const text = readFileSync(path, "utf8").replace(
-      /(["'])@ctrl\/dom(\/internal)?\1/g,
-      (_, quote: string, internal?: string) => {
+      // Import specifiers only: the plugin's own name is "@ctrl/dom" too.
+      /((?:from|import)\s*\(?\s*)(["'])@ctrl\/dom(\/internal)?\2/g,
+      (_, head: string, quote: string, internal?: string) => {
         const target = relative(e.parentPath, join(ctrlDom, "dist", "dom", internal ? "internal.js" : "index.js"));
-        return `${quote}${target.startsWith(".") ? target : `./${target}`}${quote}`;
+        return `${head}${quote}${target.startsWith(".") ? target : `./${target}`}${quote}`;
       },
     );
     writeFileSync(path, text);
   }
+}
+
+/**
+ * `preset: "@ctrl/dom"`: the ctrl-dom Jest environment (@ctrl/dom-jest-environment, installed next
+ * to @ctrl/dom) with every stock Testing Library import routed to @ctrl/dom's CommonJS builds, so
+ * existing tests run on the whole stack unchanged. CommonJS because Jest can only `require()` ES
+ * modules under `--experimental-vm-modules`; absolute paths because a mapped name would be
+ * resolved from each requiring file's directory. `@ctrl/dom` itself needs no mapping: its
+ * CommonJS entry is the bridge to the environment's instance. Setup files are resolved without
+ * moduleNameMapper, so they name "@ctrl/dom/jest-dom" (publish/ctrl-dom/README.md).
+ */
+const JEST_PRESET_MAPPING: Record<string, string> = {
+  "@testing-library/dom": "testing-library/index.cjs",
+  "@testing-library/react": "react/index.cjs",
+  "@testing-library/react/pure": "react/pure.cjs",
+  "@testing-library/react/dont-cleanup-after-each": "react/dont-cleanup-after-each.cjs",
+  "@testing-library/user-event": "user-event/index.cjs",
+  "@testing-library/jest-dom": "jest-dom/index.cjs",
+  "@testing-library/jest-dom/matchers": "jest-dom/matchers.cjs",
+  "@testing-library/jest-dom/jest-globals": "jest-dom/jest-globals.cjs",
+};
+
+function writeJestPreset(ctrlDom: string): void {
+  const lines = Object.entries(JEST_PRESET_MAPPING).map(([from, file]) => {
+    if (!existsSync(join(ctrlDom, "dist", file))) throw new Error(`jest-preset.cjs: missing dist/${file}`);
+    return `    ${JSON.stringify(`^${from}$`)}: dist(${JSON.stringify(file)}),`;
+  });
+  writeFileSync(
+    join(ctrlDom, "jest-preset.cjs"),
+    [
+      '// Generated by scripts/release.ts (writeJestPreset): `preset: "@ctrl/dom"`.',
+      '"use strict";',
+      'const path = require("node:path");',
+      'const dist = (file) => path.join(__dirname, "dist", file);',
+      "module.exports = {",
+      '  testEnvironment: "@ctrl/dom-jest-environment",',
+      "  moduleNameMapper: {",
+      ...lines,
+      "  },",
+      "};",
+      "",
+    ].join("\n"),
+  );
 }
 
 function sorted<T>(record: Record<string, T>): Record<string, T> {
@@ -211,19 +258,27 @@ export async function assembleRelease(): Promise<string[]> {
       default: `./dist/bridge/${entry}.js`,
     };
   }
-  exportsMap["./vitest"] = { types: "./vitest.d.ts", default: "./vitest.js" };
   exportsMap["./jest-preset"] = "./jest-preset.cjs";
   exportsMap["./package.json"] = "./package.json";
   const { dependencies, peerDependencies } = mergeDependencies(members);
-  // cli/: `npx ctrl-dom debug <test file>` and its reporters (docs/agent-debugging.md).
-  copyPublishFiles("ctrl-dom", ctrlDom, ["README.md", "jest-preset.cjs", "vitest.js", "vitest.d.ts", "cli"]);
+  writeJestPreset(ctrlDom);
+  // The `ctrl-dom` bin (`npx ctrl-dom debug <test file>`, docs/agent-debugging.md) and the
+  // reporters it hands the test runners by path.
+  const cliPkg = readJson(join(repoRoot, "packages/cli/package.json"));
+  copyTree(join(repoRoot, "packages/cli/dist"), join(ctrlDom, "dist", "cli"));
+  copyPublishFiles("ctrl-dom", ctrlDom, ["README.md"]);
   writeJson(join(ctrlDom, "package.json"), {
     ...templates["ctrl-dom"],
     main: "./dist/bridge/index.js",
     types: "./dist/dom/types/index.d.ts",
-    bin: { "ctrl-dom": "./cli/ctrl-dom.js" },
+    bin: Object.fromEntries(
+      Object.entries<string>(cliPkg.publishConfig.bin).map(([name, path]) => [
+        name,
+        path.replace("./dist/", "./dist/cli/"),
+      ]),
+    ),
     exports: exportsMap,
-    files: ["dist", "cli", "jest-preset.cjs", "vitest.js", "vitest.d.ts", "README.md", "NOTICE", "LICENSE"],
+    files: ["dist", "jest-preset.cjs", "README.md", "NOTICE", "LICENSE"],
     dependencies: sorted(dependencies),
     // Nothing is required to use the DOM alone: React for @ctrl/dom/react, Vitest or Jest for theirs.
     peerDependencies: sorted(peerDependencies),

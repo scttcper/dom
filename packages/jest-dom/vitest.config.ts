@@ -1,5 +1,5 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 // Two independent switches:
 //   JEST_DOM_IMPL=ctrl-dom   -> matchers from @ctrl/dom/jest-dom (default)
@@ -11,7 +11,7 @@ const impl = process.env.JEST_DOM_IMPL ?? "ctrl-dom";
 const stack = process.env.CTRL_DOM_STACK ?? "ctrl-dom";
 
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   test: {
     name: "@ctrl/dom/jest-dom",
     include: ["test/**/*.test.{js,ts,tsx}", "src/**/*.test.{ts,tsx}"],

@@ -1,4 +1,4 @@
-// Shared formatting for the `ctrl-dom debug` reporters (./vitest-reporter.js, ./jest-reporter.js).
+// Shared formatting for the `ctrl-dom debug` reporters (./vitest-reporter.ts, ./jest-reporter.ts).
 // Node built-ins only. The report is plain text for coding agents: no ANSI colors, failures first,
 // stack traces cut to the first frame in the project, console output budgeted.
 
@@ -6,7 +6,7 @@ import { relative, sep } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
 /** Strip ANSI escape sequences. */
-export function stripAnsi(text) {
+export function stripAnsi(text: unknown): string {
   return stripVTControlCharacters(String(text));
 }
 
@@ -16,8 +16,8 @@ const FRAME = /^\s*at (?:(.*?) \()?(?:file:\/\/)?(\/[^():]+|[A-Za-z]:\\[^():]+):
  * `file:line:column`, relative to `root`, of the first stack frame in `testFile`, else of the first
  * frame outside node_modules and Node internals.
  */
-export function firstProjectFrame(stack, root, testFile) {
-  let fallback = null;
+export function firstProjectFrame(stack: unknown, root: string, testFile?: string): string | null {
+  let fallback: string | null = null;
   for (const line of String(stack ?? "").split("\n")) {
     const m = FRAME.exec(line);
     if (m === null) continue;
@@ -31,15 +31,15 @@ export function firstProjectFrame(stack, root, testFile) {
 }
 
 /** An error message without its stack frames (`    at …` lines). */
-export function messageWithoutFrames(text) {
+export function messageWithoutFrames(text: unknown): string {
   const lines = stripAnsi(text).split("\n");
-  const out = [];
+  const out: string[] = [];
   for (const line of lines) if (!/^\s*at .+(:\d+:\d+\)?|\(<anonymous>\)|native\))\s*$/.test(line)) out.push(line);
   while (out.length > 0 && out[out.length - 1].trim() === "") out.pop();
   return out.join("\n");
 }
 
-export function indent(text, prefix = "  ") {
+export function indent(text: string, prefix = "  "): string {
   return text
     .split("\n")
     .map((line) => (line === "" ? line : prefix + line))
@@ -47,7 +47,7 @@ export function indent(text, prefix = "  ") {
 }
 
 /** Keep at most `max` lines, noting how many were cut. */
-export function budget(text, max) {
+export function budget(text: string, max: number): string {
   const lines = text.split("\n");
   if (lines.length <= max) return text;
   return `${lines.slice(0, max).join("\n")}\n… ${lines.length - max} more lines`;
@@ -57,21 +57,29 @@ const CONSOLE_MAX_LINES =
   Number(process.env.CTRL_DOM_DEBUG_CONSOLE_LINES) > 0 ? Number(process.env.CTRL_DOM_DEBUG_CONSOLE_LINES) : 150;
 const FAILURE_MAX_LINES = 400;
 
-/**
- * The report.
- * @param {{
- *   runner: string,
- *   root: string,
- *   failures: Array<{ name: string, message: string, at: string | null }>,
- *   logs: Array<{ name: string, type: string, content: string }>,
- *   errors: Array<{ name: string, message: string, at: string | null }>,
- *   passed: number, failed: number, skipped: number,
- *   files: string[],
- *   durationMs: number,
- * }} r
- */
-export function formatReport(r) {
-  const out = [];
+/** A failed test or a load error: its message and where it was thrown, relative to the root. */
+export interface Failure {
+  name: string;
+  message: string;
+  at: string | null;
+}
+
+export interface Report {
+  runner: "vitest" | "jest";
+  root: string;
+  failures: Failure[];
+  errors: Failure[];
+  logs: { name: string; type: string; content: string }[];
+  passed: number;
+  failed: number;
+  skipped: number;
+  files: string[];
+  durationMs: number;
+}
+
+/** The report. */
+export function formatReport(r: Report): string {
+  const out: string[] = [];
   for (const f of r.errors) {
     out.push(`ERROR  ${f.name}`, indent(budget(f.message, FAILURE_MAX_LINES)));
     if (f.at) out.push("", `  at ${f.at}`);
@@ -85,7 +93,7 @@ export function formatReport(r) {
   if (r.logs.length > 0) {
     let used = 0;
     let cut = 0;
-    const parts = [];
+    const parts: string[] = [];
     for (const log of r.logs) {
       const content = stripAnsi(log.content).replace(/\n$/, "");
       const lines = content.split("\n").length + 1;
@@ -111,7 +119,7 @@ export function formatReport(r) {
 }
 
 /** A hint when failures came without the snapshot a failure should carry in agent mode. */
-export function missingSnapshotHint(failures, runner) {
+export function missingSnapshotHint(failures: Failure[], runner: Report["runner"]): string {
   if (failures.length === 0 || process.env.CTRL_DOM_DEBUG === undefined) return "";
   if (failures.some((f) => f.message.includes("when the test failed"))) return "";
   if (runner === "vitest") {

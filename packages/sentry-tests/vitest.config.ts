@@ -1,11 +1,11 @@
 import { defineProject } from "vitest/config";
-import { ctrlDomEnvironment } from "../../vitest.environment.ts";
+import { ctrlDom } from "@ctrl/dom/vitest";
 
 // The collector tests run on @ctrl/dom's environment: they drive its React, Testing Library and
 // user-event packages, whose spans arrive on the "ctrl-dom:span" tracing channel. The runner tests
 // start Vitest and Jest themselves on test/fixtures.
 export default defineProject({
-  plugins: [ctrlDomEnvironment()],
+  plugins: [ctrlDom({ testingLibrary: false })],
   test: {
     name: "@ctrl/sentry-tests",
     include: ["test/**/*.test.{ts,tsx}"],

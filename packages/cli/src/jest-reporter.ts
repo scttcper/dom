@@ -1,20 +1,32 @@
-// Jest reporter for `ctrl-dom debug` (passed as `--reporters=<this file>`): prints ./report.js's
+// Jest reporter for `ctrl-dom debug` (passed as `--reporters=<this file>`): prints ./report.ts's
 // compact report once the run ends. https://jestjs.io/docs/configuration#custom-reporters
 import { relative } from "node:path";
-import { firstProjectFrame, formatReport, messageWithoutFrames, missingSnapshotHint } from "./report.js";
+import { type Failure, firstProjectFrame, formatReport, messageWithoutFrames, missingSnapshotHint } from "./report.ts";
+
+/** The fields of Jest's AggregatedResult (@jest/test-result) the report reads. */
+interface AggregatedResult {
+  numPassedTests: number;
+  numFailedTests: number;
+  numPendingTests: number;
+  numTodoTests: number;
+  testResults: {
+    testFilePath: string;
+    testExecError?: { message?: string; stack?: string | null };
+    testResults: { status: string; fullName: string; failureMessages: string[] }[];
+    console?: { type: string; message: string }[] | null;
+  }[];
+}
 
 export default class CtrlDomDebugReporter {
-  constructor() {
-    // Paths relative to where `ctrl-dom debug` ran, which is where the agent reads them from.
-    this.root = process.cwd();
-    this.start = performance.now();
-  }
+  // Paths relative to where `ctrl-dom debug` ran, which is where the agent reads them from.
+  root = process.cwd();
+  start = performance.now();
 
-  onRunComplete(_testContexts, results) {
-    const failures = [];
-    const errors = [];
-    const logs = [];
-    const files = [];
+  onRunComplete(_testContexts: unknown, results: AggregatedResult): void {
+    const failures: Failure[] = [];
+    const errors: Failure[] = [];
+    const logs: { name: string; type: string; content: string }[] = [];
+    const files: string[] = [];
     for (const file of results.testResults) {
       const name = relative(this.root, file.testFilePath) || file.testFilePath;
       files.push(name);

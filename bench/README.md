@@ -240,7 +240,7 @@ The young generation flag is not shipped: −6% worker CPU did not show up as wa
 runs, and +13 MB RSS per worker (+11%) works against the memory half of priority 1. Pass
 `--min-semi-space-size=16` in your own `execArgv` if CPU matters more than memory for you.
 comparison/'s `ctrl-dom-stack` contender mirrors the plugin (`workerExecArgv` from
-publish/ctrl-dom/vitest.js).
+packages/vitest-environment/src/plugin.ts).
 
 ## Regression check (`compare.ts`)
 

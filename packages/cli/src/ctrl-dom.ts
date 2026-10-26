@@ -3,7 +3,7 @@
 // to read it. Detects Vitest or Jest in the project, runs just that file with CTRL_DOM_DEBUG=aria
 // (accessibility snapshots instead of HTML dumps, closest matches on failed queries, a snapshot of
 // the page when a test fails) and prints a compact plain-text report through its own reporter
-// (./vitest-reporter.js, ./jest-reporter.js). Exits with the test run's status.
+// (./vitest-reporter.ts, ./jest-reporter.ts). Exits with the test run's status.
 //
 // A thin wrapper: Node built-ins only, and the test runner is the project's own.
 // See docs/agent-debugging.md in the repository.
@@ -16,6 +16,9 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 const here = dirname(fileURLToPath(import.meta.url));
+// The reporters next to this module and in its form: TypeScript sources in the workspace, the
+// bundles once published.
+const extension = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
 
 const USAGE = `Usage: ctrl-dom debug <test file>... [options] [-- <runner args>]
 
@@ -37,12 +40,12 @@ Example:
   npx ctrl-dom debug src/Checkout.test.tsx -t "submits the form"
 `;
 
-function fail(message) {
+function fail(message: string): never {
   process.stderr.write(`ctrl-dom: ${message}\n`);
   process.exit(2);
 }
 
-function readJson(path) {
+function readJson(path: string): Record<string, any> | null {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
   } catch {
@@ -51,14 +54,16 @@ function readJson(path) {
 }
 
 /** The nearest directory at or above `from` with a package.json. */
-function projectRoot(from) {
+function projectRoot(from: string): string {
   for (let dir = resolve(from); ; dir = dirname(dir)) {
     if (existsSync(join(dir, "package.json"))) return dir;
     if (dirname(dir) === dir) return resolve(from);
   }
 }
 
-const CONFIGS = {
+type Runner = "vitest" | "jest";
+
+const CONFIGS: Record<Runner, string[]> = {
   vitest: [
     "vitest.config.ts",
     "vitest.config.mts",
@@ -79,9 +84,9 @@ const CONFIGS = {
 };
 
 /** Vitest or Jest: from --config's name, the test files' imports, config files, then dependencies. */
-export function detectRunner(root, files, config) {
+export function detectRunner(root: string, files: string[], config: string | undefined): Runner | null {
   if (config !== undefined) {
-    const name = config.split(/[\\/]/).pop();
+    const name = config.split(/[\\/]/).pop()!;
     if (/^(vitest|vite)\./.test(name)) return "vitest";
     if (name.startsWith("jest.")) return "jest";
   }
@@ -94,7 +99,7 @@ export function detectRunner(root, files, config) {
     if (/from\s+["']@jest\/globals["']|require\(["']@jest\/globals["']\)/.test(source)) return "jest";
   }
   const pkg = readJson(join(root, "package.json")) ?? {};
-  const hasConfig = (runner) =>
+  const hasConfig = (runner: Runner) =>
     CONFIGS[runner].some((name) => existsSync(join(root, name))) || (runner === "jest" && pkg.jest !== undefined);
   if (hasConfig("vitest") && !hasConfig("jest")) return "vitest";
   if (hasConfig("jest") && !hasConfig("vitest")) return "jest";
@@ -108,21 +113,39 @@ export function detectRunner(root, files, config) {
 }
 
 /** The runner's CLI script, resolved from the project (its `bin` entry). */
-function runnerBin(root, runner) {
+function runnerBin(root: string, runner: Runner): string {
   const require = createRequire(join(root, "package.json"));
-  let pkgPath;
+  let pkgPath = "";
   try {
     pkgPath = require.resolve(`${runner}/package.json`);
   } catch {
     fail(`${runner} is not installed in ${root}`);
   }
-  const pkg = readJson(pkgPath);
+  const pkg = readJson(pkgPath) ?? {};
   const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.[runner];
   if (!bin) fail(`cannot find ${runner}'s CLI in ${pkgPath}`);
   return join(dirname(pkgPath), bin);
 }
 
-export function main(argv) {
+const OPTIONS = {
+  "test-name": { type: "string", short: "t" },
+  runner: { type: "string" },
+  config: { type: "string" },
+  format: { type: "string", default: "aria" },
+  lines: { type: "string" },
+  raw: { type: "boolean", default: false },
+  help: { type: "boolean", short: "h", default: false },
+} as const;
+
+function parseOptions(args: string[]) {
+  try {
+    return parseArgs({ args, allowPositionals: true, options: OPTIONS });
+  } catch (error) {
+    fail(`${(error as Error).message}\n\n${USAGE}`);
+  }
+}
+
+export function main(argv: string[]): number {
   const [command, ...rest] = argv;
   if (command === undefined || command === "-h" || command === "--help" || command === "help") {
     process.stdout.write(USAGE);
@@ -132,25 +155,7 @@ export function main(argv) {
   const dashDash = rest.indexOf("--");
   const own = dashDash < 0 ? rest : rest.slice(0, dashDash);
   const passthrough = dashDash < 0 ? [] : rest.slice(dashDash + 1);
-  let parsed;
-  try {
-    parsed = parseArgs({
-      args: own,
-      allowPositionals: true,
-      options: {
-        "test-name": { type: "string", short: "t" },
-        runner: { type: "string" },
-        config: { type: "string" },
-        format: { type: "string", default: "aria" },
-        lines: { type: "string" },
-        raw: { type: "boolean", default: false },
-        help: { type: "boolean", short: "h", default: false },
-      },
-    });
-  } catch (error) {
-    fail(`${error.message}\n\n${USAGE}`);
-  }
-  const { values, positionals: files } = parsed;
+  const { values, positionals: files } = parseOptions(own);
   if (values.help) {
     process.stdout.write(USAGE);
     return 0;
@@ -167,17 +172,17 @@ export function main(argv) {
     args.push("run", ...files);
     if (values.config) args.push("--config", values.config);
     if (values["test-name"] !== undefined) args.push("-t", values["test-name"]);
-    if (!values.raw) args.push(`--reporter=${join(here, "vitest-reporter.js")}`);
+    if (!values.raw) args.push(`--reporter=${join(here, `vitest-reporter${extension}`)}`);
   } else {
     // Exact paths rather than Jest's default path regexes (`[id].test.tsx` stays a path).
     args.push("--runTestsByPath", ...files.map((file) => resolve(file)), "--ci");
     if (values.config) args.push("--config", values.config);
     if (values["test-name"] !== undefined) args.push("-t", values["test-name"]);
-    if (!values.raw) args.push(`--reporters=${join(here, "jest-reporter.js")}`);
+    if (!values.raw) args.push(`--reporters=${join(here, `jest-reporter${extension}`)}`);
   }
   args.push(...passthrough);
 
-  const env = { ...process.env, CTRL_DOM_DEBUG: values.format, FORCE_COLOR: "0", NO_COLOR: "1" };
+  const env: NodeJS.ProcessEnv = { ...process.env, CTRL_DOM_DEBUG: values.format, FORCE_COLOR: "0", NO_COLOR: "1" };
   if (values.lines !== undefined) env.CTRL_DOM_DEBUG_LINES = values.lines;
   process.stdout.write(
     `ctrl-dom debug: ${runner} ${files.join(" ")}${values["test-name"] !== undefined ? ` -t ${JSON.stringify(values["test-name"])}` : ""} (CTRL_DOM_DEBUG=${values.format})\n\n`,
