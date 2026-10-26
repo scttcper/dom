@@ -389,7 +389,8 @@ export const domWorkloads: Workload[] = [
           }
           return round - 1;
         },
-        verify(k) {
+        verify(last) {
+          const k = last as number;
           for (const el of els) {
             eq(el.style.left, `${k % 7}px`, "left");
             eq(el.style.width, `${k % 4}0px`, "width");
