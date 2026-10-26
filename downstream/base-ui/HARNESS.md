@@ -29,8 +29,9 @@ node downstream/base-ui/run.ts --files packages/react/src/tabs/list/TabsList.tes
 | `--triage` | apply the workarounds in `ctrl-dom-environment.ts` (workarounds for blockers already filed in `TRIAGE.md`) to see the failures behind them. Reports are written as `results/<date>-<preset>-triage.md` and labelled; they are **not** compatibility results |
 | `--no-report` | skip `results/*.md` (raw output is still written) |
 
-`CTRL_DOM_VITEST_ARGS` appends Vitest CLI arguments, e.g. `CTRL_DOM_VITEST_ARGS="--execArgv=--cpu-prof --execArgv=--cpu-prof-dir=/tmp/prof"`
-to profile the workers.
+`CTRL_DOM_VITEST_ARGS` appends Vitest CLI arguments (space-separated). `CTRL_DOM_DOWNSTREAM_PROFILE=dir`
+writes a CPU profile per worker (ctrl-dom modes), from environment setup to teardown, into `dir`:
+Vitest ends its workers before `--cpu-prof` would write one.
 
 `CTRL_DOM_SENTRY_REPORTER=1` adds @ctrl/sentry-tests' runner and Vitest reporter (ctrl-dom modes),
 sending to `SENTRY_DSN` / `SENTRY_SPOTLIGHT`

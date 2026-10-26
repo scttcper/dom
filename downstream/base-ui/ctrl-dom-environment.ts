@@ -19,6 +19,9 @@
 // the runner verifies identical discovered/skipped counts. It measures jsdom replacement, not a
 // claim of layout-capable browser behaviour.
 
+import { writeFileSync } from "node:fs";
+import { Session } from "node:inspector/promises";
+import { join } from "node:path";
 import * as dom from "../../packages/dom/src/index.ts";
 import stock from "../../packages/vitest-environment/src/index.ts";
 
@@ -80,6 +83,16 @@ export default {
   prewarmModules: false,
 
   async setup(global: Global, options: EnvironmentOptions) {
+    // CTRL_DOM_DOWNSTREAM_PROFILE=dir: a CPU profile of each worker from environment setup to
+    // teardown (Vitest ends its workers before --cpu-prof would write one).
+    const profileDir = process.env.CTRL_DOM_DOWNSTREAM_PROFILE;
+    const profiler = profileDir ? new Session() : null;
+    if (profiler !== null) {
+      profiler.connect();
+      await profiler.post("Profiler.enable");
+      await profiler.post("Profiler.setSamplingInterval", { interval: 250 });
+      await profiler.post("Profiler.start");
+    }
     const { triage, ...ctrlDom } = (options?.["ctrl-dom"] ?? {}) as Record<string, unknown>;
     const environment = await stock.setup(
       global as never,
@@ -109,6 +122,11 @@ export default {
         delete global.__ctrlDomDownstream;
         for (const restore of triageRestores) restore();
         await environment.teardown(global as never);
+        if (profiler !== null) {
+          const { profile } = await profiler.post("Profiler.stop");
+          writeFileSync(join(profileDir!, `${process.pid}-${Date.now()}.cpuprofile`), JSON.stringify(profile));
+          profiler.disconnect();
+        }
       },
     };
   },
