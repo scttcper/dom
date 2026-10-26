@@ -124,12 +124,21 @@ export function hasAttr(el: NodeImpl, lowerName: string): boolean {
   return attr(el, lowerName) !== null;
 }
 
+// Only strings are retained: repeated property setting reuses validated, normalized names.
+const attributeNames = new Map<string, string>();
+
 /** setAttribute(qualifiedName, value) — https://dom.spec.whatwg.org/#dom-element-setattribute */
 export function setAttribute(el: NodeImpl, qualifiedName: string, value: string): void {
-  if (!isValidAttributeLocalName(qualifiedName)) {
-    throw new DOMException(`"${qualifiedName}" is not a valid attribute name.`, "InvalidCharacterError");
+  let lower = attributeNames.get(qualifiedName);
+  if (lower === undefined) {
+    if (!isValidAttributeLocalName(qualifiedName)) {
+      throw new DOMException(`"${qualifiedName}" is not a valid attribute name.`, "InvalidCharacterError");
+    }
+    lower = asciiLowercase(qualifiedName);
+    if (attributeNames.size === 1024) attributeNames.clear();
+    attributeNames.set(qualifiedName, lower);
   }
-  const name = (el.flags & F_HTML) !== 0 ? asciiLowercase(qualifiedName) : qualifiedName;
+  const name = (el.flags & F_HTML) !== 0 ? lower : qualifiedName;
   const existing = findAttributeByName(el, name);
   if (existing === null) appendAttribute(el, new AttrRecord(name, value, null, null));
   else changeAttribute(el, existing, value);

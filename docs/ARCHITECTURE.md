@@ -229,7 +229,8 @@ document. Intentionally retained:
   are cleared or the window closes (`close()` clears the ones created through the window's, or
   under @ctrl/dom-jest-environment / Vitest VM pools the file global's, setTimeout/setInterval);
 - process-wide, bounded string caches (compiled selectors ≤ 2048, inline style blocks ≤ 2000,
-  media query lists ≤ 500, `pattern` regexps ≤ 256, uppercase tag names ≤ 1024) and per-process
+  media query lists ≤ 500, `pattern` regexps ≤ 256, uppercase tag names ≤ 1024,
+  validated attribute names with their ASCII-lowercase forms ≤ 1024) and per-process
   interface objects;
 - the host originals `installGlobals` captured (Node's own classes, not ours).
 

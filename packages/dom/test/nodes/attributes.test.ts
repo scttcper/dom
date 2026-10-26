@@ -47,6 +47,22 @@ const tryName = (f: () => unknown) => {
 };
 
 describe("attribute list algorithms — https://dom.spec.whatwg.org/#concept-element-attributes-change", () => {
+  differential("reusing a qualified name respects each element's namespace and its document after adoption", (w) => {
+    const d = w.document;
+    const html = d.createElement("div");
+    const svg = d.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const xml = d.implementation.createDocument(null, "root", null);
+    const mo = watch(w, html);
+    html.setAttribute("DATA-Ç", "html");
+    svg.setAttribute("DATA-Ç", "svg");
+    xml.adoptNode(html);
+    html.setAttribute("DATA-Ç", "xml");
+    d.adoptNode(html);
+    html.setAttribute("DATA-Ç", "html-again");
+    html.setAttribute("DATA-Ç", "html-again");
+    return { html: list(html), svg: list(svg), records: attrRecords(mo) };
+  });
+
   differential(
     "append adds at the end; change keeps the position; remove closes the gap (https://dom.spec.whatwg.org/#concept-element-attributes-append)",
     (w) => {
