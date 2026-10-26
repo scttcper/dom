@@ -1,10 +1,10 @@
 name: Release
 
-# semantic-release, one version line per published package (tools/release): on every push to
-# main, each of @ctrl/dom and @ctrl/dom-jest-environment is released when
+# semantic-release, one version line per published package (tools/release): once CI passes on a
+# push to main, each of @ctrl/dom and @ctrl/dom-jest-environment is released when
 # conventional commits since its last tag touch the files it is built from (feat → minor;
 # fix, perf, deps → patch; breaking change → major). Run it by hand to release one package or to
-# preview (dry run).
+# preview (dry run); a manual run checks the commit with CI first.
 #
 # npm: trusted publishing only (OIDC, no token). Each package's trusted publisher on npmjs.com
 # names this repository and the workflow file `release.yml`; npm requires the package to exist
@@ -12,7 +12,10 @@ name: Release
 # is generated automatically (public repository and package).
 
 on:
-  push:
+  # After the CI workflow's run for a push to main, instead of running the same checks again.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -37,11 +40,20 @@ permissions:
   contents: read
 
 jobs:
+  # Manual runs only: pushes reach this workflow after CI has run on them.
   verify:
+    if: github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/ci.yml
 
   release:
     needs: verify
+    # always(): a skipped verify (a CI run triggered this) must not skip the release. Only CI runs
+    # that passed on a push release; a pull request's run never does, even from a branch named main.
+    if: >-
+      always() && (
+        (github.event_name == 'workflow_dispatch' && needs.verify.result == 'success') ||
+        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -53,6 +65,9 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # semantic-release reads every tag and commit since the last release
+          # The commit CI passed. If main has moved on since, semantic-release releases nothing and
+          # the next CI run's release picks it up.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:

@@ -66,7 +66,8 @@ in the member's `exports` and the root's.
   [docs/compatibility.md](docs/compatibility.md#real-world-test-suites), compared with the pass
   counts and failing tests in `downstream/baseline.json`. Fixes show up as "fixed": update the
   baseline (`node downstream/track.ts --update`, then `--readme`) in the PR that makes them.
-- `Release` (every push to main, or by hand for one package or a dry run): semantic-release
+- `Release` (once `CI` passes on a push to main, without running the checks again; or by hand for
+  one package or a dry run, which runs `CI` first): semantic-release
   with one version line per published package (`tools/release`). A package is released only when
   conventional commits since its last tag (`@ctrl/dom@1.2.0`, `@ctrl/dom-jest-environment@1.0.3`)
   touch the files it is built from: `feat` → minor; `fix`, `perf`, `deps` → patch; a breaking
