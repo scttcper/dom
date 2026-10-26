@@ -34,6 +34,9 @@ const repo = resolve(here, "../..");
 // CTRL_DOM_SENTRY_REPORTER=1 (opt in, so a SENTRY_DSN in the shell never reports harness runs by
 // accident): @ctrl/sentry-tests' runner and reporter, sending to SENTRY_DSN / SENTRY_SPOTLIGHT.
 const SENTRY_REPORTER = process.env.CTRL_DOM_SENTRY_REPORTER === "1";
+// Extra Vitest CLI arguments (space-separated), e.g. to profile workers:
+// CTRL_DOM_VITEST_ARGS="--execArgv=--cpu-prof --execArgv=--cpu-prof-dir=/tmp/prof".
+const EXTRA_VITEST_ARGS = process.env.CTRL_DOM_VITEST_ARGS?.split(" ").filter(Boolean) ?? [];
 const manifest = JSON.parse(readFileSync(join(here, "manifest.json"), "utf8")) as {
   repository: string;
   branch: string;
@@ -518,6 +521,7 @@ try {
       "json",
       "--outputFile",
       jsonPath,
+      ...EXTRA_VITEST_ARGS,
     ];
     console.log(`\n=== Base UI ${preset}: ${mode} (unmodified upstream tests, ${workers} workers) ===`);
     const before = mode === "jsdom" ? null : sourceFingerprint();

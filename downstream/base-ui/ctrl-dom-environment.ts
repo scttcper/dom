@@ -1,18 +1,16 @@
 // Vitest environment adapter used by the Base UI downstream runner for the `ctrl-dom` and
 // `ctrl-dom-full` modes.
 //
-// Upstream Base UI pins Vitest 5.0.x, the same major as our `@ctrl/dom/vitest-environment`, so this
-// adapter implements the same `Environment` contract (`name`, `viteEnvironment`, `setup()` ->
-// `{ teardown }`). It is kept separate (instead of pointing upstream at `@ctrl/dom/vitest-environment`
-// directly) so the runner can:
+// It runs the stock `@ctrl/dom/vitest-environment` (Base UI pins Vitest 5.0.x, its major), so the
+// window, globals, virtual clock and error forwarding are what users get, and adds only what the
+// runner needs on top:
 //
-//   - pin the window options that make both engines take the same headless code paths (see
-//     the userAgent note below), and use upstream's own `url: 'http://localhost'`;
-//   - keep working while `@ctrl/dom`'s window/global-install layer is still being built: if
-//     `installGlobals` is missing it falls back to a minimal local installer;
-//   - publish `globalThis.__ctrlDomDownstream` so the runner's identity probe can prove that the
-//     DOM in the test realm really is the @ctrl/dom instance this adapter created (and not a
-//     second copy of the module graph; see run.ts `server.deps.external`).
+//   - upstream's own `url: 'http://localhost'` and a userAgent that keeps both engines on the same
+//     headless code paths (see the userAgent note below);
+//   - `globalThis.__ctrlDomDownstream`, so the runner's identity probe can prove that the DOM in
+//     the test realm really is the @ctrl/dom instance the environment created (and not a second
+//     copy of the module graph; see run.ts `server.deps.external`);
+//   - the `--triage` shims.
 //
 // userAgent: Base UI (and `@mui/internal-test-utils`) branch on `/jsdom/.test(navigator.userAgent)`
 // to skip tests that need real layout and to install a headless requestAnimationFrame shim
@@ -22,6 +20,7 @@
 // claim of layout-capable browser behaviour.
 
 import * as dom from "../../packages/dom/src/index.ts";
+import stock from "../../packages/vitest-environment/src/index.ts";
 
 export const CTRL_DOM_DOWNSTREAM_USER_AGENT = "Mozilla/5.0 (darwin) ctrl-dom (jsdom-compatible headless)";
 
@@ -31,45 +30,6 @@ interface EnvironmentOptions {
 }
 
 type Global = Record<PropertyKey, unknown>;
-
-/** Minimal installer used only when @ctrl/dom does not export installGlobals yet. */
-function fallbackInstall(window: Record<PropertyKey, unknown>, target: Global): () => void {
-  const saved = new Map<PropertyKey, PropertyDescriptor | undefined>();
-  const define = (key: PropertyKey, descriptor: PropertyDescriptor): void => {
-    const existing = Object.getOwnPropertyDescriptor(target, key);
-    if (existing !== undefined && !existing.configurable) return;
-    if (!saved.has(key)) saved.set(key, existing);
-    Object.defineProperty(target, key, descriptor);
-  };
-  const keys = new Set<PropertyKey>();
-  for (let o: object | null = window; o !== null && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
-    for (const key of Reflect.ownKeys(o)) if (key !== "constructor") keys.add(key);
-  }
-  for (const key of keys) {
-    if (typeof key === "string" && key.startsWith("_")) continue;
-    let value: unknown;
-    try {
-      value = window[key];
-    } catch {
-      continue;
-    }
-    define(key, {
-      value: typeof value === "function" && !/^[A-Z]/.test(String(key)) ? (value as Function).bind(window) : value,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
-  }
-  for (const key of ["window", "self", "top", "parent", "frames"]) {
-    define(key, { value: target, writable: true, enumerable: true, configurable: true });
-  }
-  return () => {
-    for (const [key, descriptor] of saved) {
-      if (descriptor === undefined) delete target[key];
-      else Object.defineProperty(target, key, descriptor);
-    }
-  };
-}
 
 // Triage-only shims (run.ts --triage): work around known blockers that are already filed in
 // TRIAGE.md (each with a repro), to see the failures behind them. Every shim reports what it
@@ -117,43 +77,38 @@ const TRIAGE_SHIMS: Record<string, (global: Global, document: any) => { patched:
 export default {
   name: "ctrl-dom-downstream",
   viteEnvironment: "client",
+  prewarmModules: false,
 
-  setup(global: Global, options: EnvironmentOptions) {
+  async setup(global: Global, options: EnvironmentOptions) {
     const { triage, ...ctrlDom } = (options?.["ctrl-dom"] ?? {}) as Record<string, unknown>;
-    const window = dom.createWindow({
-      url: "http://localhost",
-      userAgent: CTRL_DOM_DOWNSTREAM_USER_AGENT,
-      ...ctrlDom,
-    } as never) as unknown as Record<PropertyKey, unknown> & { close?: () => void; document: unknown };
-    const install = (dom as Record<string, unknown>).installGlobals as
-      | ((w: unknown, target: Global) => () => void)
-      | undefined;
-    const installer = typeof install === "function" ? "installGlobals" : "fallback";
-    const uninstall = installer === "installGlobals" ? install!(window, global) : fallbackInstall(window, global);
+    const environment = await stock.setup(
+      global as never,
+      {
+        ...options,
+        "ctrl-dom": { url: "http://localhost", userAgent: CTRL_DOM_DOWNSTREAM_USER_AGENT, ...ctrlDom },
+      } as never,
+    );
+    const document = global.document as { createElement(tag: string): unknown };
     const triageAdded: string[] = [];
     const triageRestores: Array<() => void> = [];
     if (triage) {
       for (const [name, shim] of Object.entries(TRIAGE_SHIMS)) {
-        const { patched, restore } = shim(global, window.document);
+        const { patched, restore } = shim(global, document);
         if (patched.length) triageAdded.push(`${name}(${patched.length})`);
         triageRestores.push(restore);
       }
     }
     Object.defineProperty(global, "__ctrlDomDownstream", {
-      value: { window, document: window.document, Document: dom.Document, installer, triageAdded },
+      value: { document, Document: dom.Document, installer: "@ctrl/dom/vitest-environment", triageAdded },
       configurable: true,
       enumerable: false,
       writable: true,
     });
     return {
-      teardown() {
+      async teardown() {
         delete global.__ctrlDomDownstream;
         for (const restore of triageRestores) restore();
-        try {
-          window.close?.();
-        } finally {
-          uninstall();
-        }
+        await environment.teardown(global as never);
       },
     };
   },

@@ -29,6 +29,9 @@ node downstream/base-ui/run.ts --files packages/react/src/tabs/list/TabsList.tes
 | `--triage` | apply the workarounds in `ctrl-dom-environment.ts` (workarounds for blockers already filed in `TRIAGE.md`) to see the failures behind them. Reports are written as `results/<date>-<preset>-triage.md` and labelled; they are **not** compatibility results |
 | `--no-report` | skip `results/*.md` (raw output is still written) |
 
+`CTRL_DOM_VITEST_ARGS` appends Vitest CLI arguments, e.g. `CTRL_DOM_VITEST_ARGS="--execArgv=--cpu-prof --execArgv=--cpu-prof-dir=/tmp/prof"`
+to profile the workers.
+
 `CTRL_DOM_SENTRY_REPORTER=1` adds @ctrl/sentry-tests' runner and Vitest reporter (ctrl-dom modes),
 sending to `SENTRY_DSN` / `SENTRY_SPOTLIGHT`
 ([its README](../../packages/sentry-tests/README.md#development)).
@@ -76,12 +79,13 @@ sending to `SENTRY_DSN` / `SENTRY_SPOTLIGHT`
 | mode | DOM environment | Testing Library packages |
 | --- | --- | --- |
 | `jsdom` | upstream's own config, unchanged (`jsdom` 27 with `pretendToBeVisual`, `url: http://localhost`) | stock, from upstream's lockfile |
-| `ctrl-dom` | `ctrl-dom-environment.ts` → `@ctrl/dom` `createWindow` + `installGlobals` | stock, from upstream's lockfile |
+| `ctrl-dom` | `ctrl-dom-environment.ts` → the stock `@ctrl/dom/vitest-environment` (default options plus `url` and `userAgent`) | stock, from upstream's lockfile |
 | `ctrl-dom-full` | same as ctrl-dom | `@testing-library/react` (+`/pure`) → `packages/react`, `@testing-library/dom` → `packages/testing-library`, `@testing-library/user-event` → `packages/user-event`, `@testing-library/jest-dom` (+`/vitest`, `/matchers`) → `packages/jest-dom` |
 
 `ctrl-dom-environment.ts` implements Vitest 5's `Environment` interface (upstream pins Vitest 5.0.x,
-the same major as `@ctrl/dom/vitest-environment`). It uses `installGlobals` from `@ctrl/dom` and keeps a
-minimal fallback installer for when that is unavailable.
+the same major as `@ctrl/dom/vitest-environment`). It runs the stock environment, so the window, the
+virtual clock (idle time skipping) and error forwarding are what users get, and adds the identity
+probe's `globalThis.__ctrlDomDownstream` and the `--triage` shims.
 
 ## Caveats
 
