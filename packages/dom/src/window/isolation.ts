@@ -13,7 +13,13 @@
 import { constants as vmConstants, createContext, runInContext } from "node:vm";
 import { windowInterfaces, Window } from "./Window.ts";
 
-type Snapshot = Map<object, Map<PropertyKey, PropertyDescriptor>>;
+type InterfaceSnapshot = {
+  target: object;
+  keys: PropertyKey[];
+  descriptors: Array<PropertyDescriptor | null>;
+  keySet: Set<PropertyKey> | null;
+};
+type Snapshot = InterfaceSnapshot[];
 
 let baseline: Snapshot | null = null;
 
@@ -31,10 +37,14 @@ function targets(): object[] {
   return [...out];
 }
 
-function snapshot(target: object): Map<PropertyKey, PropertyDescriptor> {
-  const map = new Map<PropertyKey, PropertyDescriptor>();
-  for (const key of Reflect.ownKeys(target)) map.set(key, Object.getOwnPropertyDescriptor(target, key)!);
-  return map;
+function snapshot(target: object): InterfaceSnapshot {
+  const keys = Reflect.ownKeys(target);
+  const descriptors = new Array<PropertyDescriptor | null>(keys.length);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    descriptors[i] = isArrayIndex(key) ? null : Object.getOwnPropertyDescriptor(target, key)!;
+  }
+  return { target, keys, descriptors, keySet: null };
 }
 
 /** The objects in the baseline (interface objects and their prototypes). */
@@ -43,10 +53,10 @@ let guarded: WeakSet<object> | null = null;
 /** Record the pristine interface state (first call wins; later calls are no-ops). */
 export function captureInterfaceBaseline(): void {
   if (baseline !== null) return;
-  baseline = new Map();
+  baseline = [];
   guarded = new WeakSet();
   for (const t of targets()) {
-    baseline.set(t, snapshot(t));
+    baseline.push(snapshot(t));
     guarded.add(t);
   }
   ownObjectCreateMaps();
@@ -75,7 +85,10 @@ function ownObjectCreateMaps(): void {
     createContext(vmConstants.DONT_CONTEXTIFY),
   ) as (prototypes: object[]) => unknown[]);
   const prototypes: object[] = [Object.prototype];
-  for (const target of baseline.keys()) if (typeof target !== "function") prototypes.push(target);
+  for (let i = 0; i < baseline.length; i++) {
+    const target = baseline[i].target;
+    if (typeof target !== "function") prototypes.push(target);
+  }
   ownedObjects = owner(prototypes);
 }
 
@@ -168,17 +181,23 @@ function sameDescriptor(a: PropertyDescriptor, b: PropertyDescriptor): boolean {
 export function restoreInterfaces(): number {
   if (baseline === null) return 0;
   let restored = 0;
-  for (const [target, original] of baseline) {
+  for (let i = 0; i < baseline.length; i++) {
+    const original = baseline[i];
+    const target = original.target;
     const keys = Reflect.ownKeys(target);
     // Added properties. Array-index keys are ours: collections/indexed.ts grows index getters on
     // collection prototypes on demand and remembers the bound, so deleting them would leave
     // `list[i]` undefined for every later file in the worker. Tests don't patch index keys.
-    for (const key of keys) {
-      if (original.has(key) || isArrayIndex(key)) continue;
+    for (let j = 0; j < keys.length; j++) {
+      const key = keys[j];
+      if (key === original.keys[j] || (original.keySet ??= new Set(original.keys)).has(key) || isArrayIndex(key))
+        continue;
       if (Reflect.deleteProperty(target, key)) restored++;
     }
-    for (const [key, desc] of original) {
-      if (isArrayIndex(key)) continue;
+    for (let j = 0; j < original.keys.length; j++) {
+      const key = original.keys[j];
+      const desc = original.descriptors[j];
+      if (desc === null) continue;
       const current = Object.getOwnPropertyDescriptor(target, key);
       if (current !== undefined && sameDescriptor(current, desc)) continue;
       // Changed or removed.

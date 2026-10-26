@@ -43,6 +43,28 @@ describe("restoreInterfaces", () => {
     expect("scrollIntoViewPatched" in HTMLElement.prototype).toBe(false);
   });
 
+  test("restores removed and reordered keys even when the own-key count is unchanged", () => {
+    captureInterfaceBaseline();
+    const window = createWindow();
+    const HTMLElement = (window as unknown as { HTMLElement: { prototype: Record<PropertyKey, unknown> } }).HTMLElement;
+    const proto = HTMLElement.prototype;
+    const focus = Object.getOwnPropertyDescriptor(proto, "focus")!;
+    const hidden = Object.getOwnPropertyDescriptor(proto, "hidden")!;
+    const added = Symbol("added by a test file");
+    const count = Reflect.ownKeys(proto).length;
+    delete proto.focus;
+    Object.defineProperty(proto, "focus", { ...focus, value: () => {} });
+    delete proto.hidden;
+    proto[added] = () => {};
+    expect(Reflect.ownKeys(proto)).toHaveLength(count);
+    window.close();
+    restoreInterfaces();
+    expect(Object.getOwnPropertyDescriptor(proto, "focus")).toEqual(focus);
+    expect(Object.getOwnPropertyDescriptor(proto, "hidden")).toEqual(hidden);
+    expect(Object.hasOwn(proto, added)).toBe(false);
+    expect(restoreInterfaces()).toBe(0);
+  });
+
   test("definitions made through a guarded realm stay configurable, so they are undone (downstream/react-aria TRIAGE)", () => {
     captureInterfaceBaseline();
     // A test file's own realm, as the environments create it.
