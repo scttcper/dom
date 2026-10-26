@@ -28,17 +28,20 @@ import {type DirectOptions} from './directApi.ts'
 import {describeCall, tracePromise, tracing} from '@ctrl/dom/internal'
 
 /**
+ * Option defaults; `document` is left out. Upstream captures `globalThis.document` at import time,
+ * which misses environments that install the document after importing user-event (or replace it
+ * per test): getDocument() reads it per call instead. Plain data, so createConfig's spread stays
+ * on V8's fast object-clone path (a `document` getter here was ~30% of a warm setup()).
+ */
+type Defaults = Omit<Config, 'document'> & {document?: Document}
+
+/**
  * Default options applied when API is called per `userEvent.anyApi()`
  */
-const defaultOptionsDirect: Required<Options> = {
+const defaultOptionsDirect: Defaults = {
   applyAccept: true,
   autoModify: true,
   delay: 0,
-  // Upstream captures `globalThis.document` at import time. Environments that install the
-  // document after importing user-event (or replace it per test) are served by the getter below.
-  get document() {
-    return (globalThis as {document?: Document}).document as Document
-  },
   keyboardMap: defaultKeyboardMap,
   pointerMap: defaultPointerMap,
   pointerEventsCheck: PointerEventsCheckLevel.EachApiCall,
@@ -52,15 +55,10 @@ const defaultOptionsDirect: Required<Options> = {
 /**
  * Default options applied when API is called per `userEvent().anyApi()`
  */
-const defaultOptionsSetup: Required<Options> = {
+const defaultOptionsSetup: Defaults = {
   ...defaultOptionsDirect,
   writeToClipboard: true,
 }
-// The spread above evaluated the getter once; keep it lazy.
-Object.defineProperty(defaultOptionsSetup, 'document', {
-  get: () => (globalThis as {document?: Document}).document,
-  enumerable: true,
-})
 
 export type UserEventApi = typeof userEventApi
 
@@ -84,7 +82,7 @@ export type Config = Required<Options>
 
 export function createConfig(
   options: Options = {},
-  defaults: Required<Options> = defaultOptionsSetup,
+  defaults: Defaults = defaultOptionsSetup,
   node?: Node,
 ): Config {
   const document = getDocument(options, node, defaults)
@@ -183,8 +181,8 @@ function wrapAndBindImpl<
  * The API's names in upstream's key order (`{...apis, setup}`), and a template each setup()
  * clones. The implementations are read at each setup(), as upstream's spread of `userEventApi` does.
  * The methods stay eager, bound per setup(): they are own enumerable properties, so destructuring,
- * spreading and Object.keys see them (prototype getters would not). Most of the ~3.4 µs a warm
- * setup() costs.
+ * spreading and Object.keys see them (prototype getters would not). They are most of the ~2.3 µs a
+ * warm setup() costs.
  */
 const API_NAMES = Object.keys(userEventApi)
 const API_TEMPLATE: Record<string, unknown> = {
@@ -248,9 +246,12 @@ export function createInstance(
 function getDocument(
   options: Partial<Config>,
   node: Node | undefined,
-  defaults: Required<Options>,
-) {
+  defaults: Defaults,
+): Document {
   return (
-    options.document ?? (node && getDocumentFromNode(node)) ?? defaults.document
+    options.document ??
+    (node && getDocumentFromNode(node)) ??
+    defaults.document ??
+    ((globalThis as {document?: Document}).document as Document)
   )
 }
