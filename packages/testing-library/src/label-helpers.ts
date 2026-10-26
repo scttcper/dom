@@ -1,10 +1,9 @@
 // Port of @testing-library/dom src/label-helpers.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/label-helpers.ts
 //
-// Upstream asks every element for `element.labels`, which in jsdom/happy-dom scans the
-// document per element. Here one pass over the tree root builds a control → labels map
-// (https://html.spec.whatwg.org/#labeled-control) that a whole query shares
-// (`LabelContext`), and aria-labelledby ids resolve through a lazily built id map.
+// Label associations (https://html.spec.whatwg.org/#labeled-control) share aria's
+// version-stamped index, dropped on removal so it cannot retain a removed subtree.
+// aria-labelledby ids remain container-scoped through LabelContext's lazy id map.
 
 import {
   asciiLowercase,
@@ -14,9 +13,9 @@ import {
   nextInTree,
   T,
   TEXT_NODE,
-  treeRoot,
   type NodeImpl,
 } from "@ctrl/dom/internal";
+import { labelsOf as ariaLabelsOf } from "@ctrl/dom/aria/internal";
 import { matchesSelector } from "./selectors.ts";
 import { implOf } from "./helpers.ts";
 
@@ -55,20 +54,6 @@ function isLabelledNodeName(impl: NodeImpl): boolean {
   return false;
 }
 
-/** https://html.spec.whatwg.org/#labeled-control */
-function labelControl(label: NodeImpl, ids: () => Map<string, NodeImpl>): NodeImpl | null {
-  const htmlFor = attr(label, "for");
-  if (htmlFor !== null) {
-    if (htmlFor === "") return null;
-    const el = ids().get(htmlFor) ?? null;
-    return el !== null && isLabelable(el) ? el : null;
-  }
-  for (let n = label.first; n !== null; n = nextInTree(n, label)) {
-    if (isLabelable(n)) return n;
-  }
-  return null;
-}
-
 /** First element (tree order) per id in `root`'s subtree, root excluded unless `inclusive`. */
 function buildIdMap(root: NodeImpl, inclusive: boolean): Map<string, NodeImpl> {
   const ids = new Map<string, NodeImpl>();
@@ -79,24 +64,19 @@ function buildIdMap(root: NodeImpl, inclusive: boolean): Map<string, NodeImpl> {
   return ids;
 }
 
-/** Per-query memo: label associations of the container's tree and container-scoped id lookups. */
+/** Per-query container-scoped id lookups; label associations share aria's tree index. */
 export class LabelContext {
   container: NodeImpl;
-  labelsByControl: Map<NodeImpl, NodeImpl[]> | null;
   containerIds: Map<string, NodeImpl> | null;
 
   constructor(container: NodeImpl) {
     this.container = container;
-    this.labelsByControl = null;
     this.containerIds = null;
   }
 
   /** `element.labels` (empty for non-labelable elements) — label elements in tree order. */
   labelsOf(el: NodeImpl): NodeImpl[] {
-    if (!isLabelable(el)) return EMPTY;
-    let map = this.labelsByControl;
-    if (map === null) map = this.labelsByControl = buildLabelMap(treeRoot(el));
-    return map.get(el) ?? EMPTY;
+    return ariaLabelsOf(el) ?? EMPTY;
   }
 
   /** `container.querySelector('[id="…"]')` */
@@ -108,21 +88,6 @@ export class LabelContext {
 }
 
 const EMPTY: NodeImpl[] = [];
-
-function buildLabelMap(root: NodeImpl): Map<NodeImpl, NodeImpl[]> {
-  const map = new Map<NodeImpl, NodeImpl[]>();
-  let ids: Map<string, NodeImpl> | null = null;
-  const getIds = () => (ids ??= buildIdMap(root, true));
-  for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
-    if (n.type !== ELEMENT_NODE || n.tag !== T.label || n.ns !== HTML_NS) continue;
-    const control = labelControl(n, getIds);
-    if (control === null) continue;
-    const list = map.get(control);
-    if (list === undefined) map.set(control, [n]);
-    else list.push(n);
-  }
-  return map;
-}
 
 function getTextContent(node: NodeImpl): string {
   if (node.type === ELEMENT_NODE && isLabelledNodeName(node)) return "";

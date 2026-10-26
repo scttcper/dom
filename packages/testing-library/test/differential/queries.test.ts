@@ -133,6 +133,53 @@ describe("ByText", () => {
 
 describe("ByLabelText", () => {
   differential([
+    {
+      name: "label associations follow retargeting, input type changes, and removal between queries",
+      html: `<label for="a">Name</label><input id="a"><input id="b">`,
+      run: (l, c) => {
+        const snapshots: string[][] = [];
+        const read = () => snapshots.push(l.queryAllByLabelText(c, "Name").map((node) => node.id));
+        read();
+        c.querySelector("label").htmlFor = "b";
+        read();
+        c.querySelector("#b").type = "hidden";
+        read();
+        c.querySelector("#b").type = "text";
+        read();
+        c.querySelector("label").remove();
+        read();
+        return snapshots;
+      },
+    },
+    {
+      name: "single-label matching preserves custom matcher and normalizer calls",
+      html: `<label> One <input id="a"></label><label for="b"></label><input id="b"><span id="title">Two</span><input id="c" aria-labelledby="title">`,
+      run: (l, c) => {
+        const calls: unknown[] = [];
+        const found = l.queryAllByLabelText(
+          c,
+          (text, node) => {
+            calls.push([text, node?.id]);
+            return text === "One";
+          },
+          {
+            normalizer: (text) => {
+              calls.push(text);
+              return text.trim();
+            },
+          },
+        );
+        return { calls, found };
+      },
+    },
+    {
+      name: "aria-labelledby content preserves join's string coercion",
+      html: `<span id="title">Fallback</span><input aria-labelledby="title">`,
+      run: (l, c) => {
+        c.querySelector("span").value = 7;
+        return l.getByLabelText(c, "7");
+      },
+    },
     { name: "for/id", html: FORM, run: (l, c) => l.getByLabelText(c, "First name") },
     { name: "wrapping label", html: FORM, run: (l, c) => l.getByLabelText(c, "Last name") },
     { name: "aria-labelledby", html: FORM, run: (l, c) => l.getByLabelText(c, "Email") },

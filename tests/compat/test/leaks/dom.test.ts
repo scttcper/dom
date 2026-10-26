@@ -11,6 +11,7 @@
 import { describe, expect, test } from "vitest";
 import { createWindow, currentWindowOrNull, installGlobals, type ShadowRoot, type Window } from "@ctrl/dom";
 import { $css } from "@ctrl/dom/internal";
+import { queryAllByLabelText } from "@ctrl/dom/testing-library";
 import { Tracker, collectGarbage, heapSlope } from "./gc.ts";
 
 const HTML = `<!doctype html><html><head><style>.a { color: red } @media (min-width: 10px) { .b { display: none } }</style></head>
@@ -151,6 +152,8 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
       d.querySelectorAll(".f");
       d.body!.querySelector("p.f");
       void (d.getElementById("e") as unknown as { labels: { length: number } }).labels.length;
+      queryAllByLabelText(d.body as any, "First");
+      queryAllByLabelText(d.body as any, "E");
       w.getComputedStyle(box.querySelector("p")!).color;
       // Live collections and form caches snapshot their members (version-stamped).
       void d.body!.children.length;

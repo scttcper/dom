@@ -1,8 +1,7 @@
 // Port of @testing-library/dom src/queries/label-text.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/queries/label-text.ts
 //
-// Same matching semantics as upstream; label associations are computed once per query
-// (see LabelContext) instead of once per element.
+// Same matching semantics as upstream; LabelContext shares aria's version-stamped label index.
 
 import { attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { getConfig } from "../config.ts";
@@ -87,6 +86,17 @@ function collectLabelled(
   labelledElements: any[],
 ): void {
   const labelList = getLabelsImpl(ctx, labelledElement, selector);
+  if (labelList.length === 1) {
+    const label = labelList[0];
+    if (label.formControl && matcher(label.content, label.formControl.node, text, matchNormalizer)) {
+      labelledElements.push(label.formControl.node);
+    }
+    // Keep join's coercion for aria-labelledby nodes with an overridden value.
+    if (matcher(`${label.content || ""}`, labelledElement.node, text, matchNormalizer)) {
+      labelledElements.push(labelledElement.node);
+    }
+    return;
+  }
   for (const label of labelList) {
     if (!label.formControl) continue;
     const formControl = label.formControl.node;
