@@ -355,10 +355,13 @@ interface RenderRootOptions {
   reactStrictMode: boolean | undefined;
 }
 
-function renderRoot(
+function actRender(
   ui: React.ReactNode,
-  { baseElement, container, hydrate, queries, root, wrapper: WrapperComponent, reactStrictMode }: RenderRootOptions,
-): RenderResult<any, any, any> {
+  root: RootHandle,
+  hydrate: boolean | undefined,
+  WrapperComponent: RenderOptions["wrapper"],
+  reactStrictMode: boolean | undefined,
+): void {
   act(() => {
     if (hydrate) {
       root.hydrate();
@@ -366,6 +369,13 @@ function renderRoot(
       root.render(strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode));
     }
   });
+}
+
+function renderRoot(
+  ui: React.ReactNode,
+  { baseElement, container, hydrate, queries, root, wrapper: WrapperComponent, reactStrictMode }: RenderRootOptions,
+): RenderResult<any, any, any> {
+  actRender(ui, root, hydrate, WrapperComponent, reactStrictMode);
 
   return {
     container,
@@ -382,14 +392,8 @@ function renderRoot(
       });
     },
     rerender: (rerenderUi: React.ReactNode) => {
-      const rerender = () =>
-        renderRoot(rerenderUi, {
-          container,
-          baseElement,
-          root,
-          wrapper: WrapperComponent,
-          reactStrictMode,
-        });
+      // Upstream calls renderRoot here and drops the result; building it copies every bound query.
+      const rerender = () => actRender(rerenderUi, root, false, WrapperComponent, reactStrictMode);
       // Ours: a span when something subscribes to @ctrl/dom's tracing channel.
       if (tracing()) traceSync("react.rerender", `rerender(${describeElement(rerenderUi)})`, rerender);
       else rerender();
