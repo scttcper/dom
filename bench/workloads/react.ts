@@ -438,8 +438,9 @@ const churn: Workload = {
         eq(button.type, "submit", "Save button");
       },
       afterEach() {
-        view.unmount();
-        view.container.remove();
+        // What auto-cleanup does after each test: render() keeps every container (and its React
+        // root) in Testing Library's mounted set until cleanup(), which would read as growth.
+        rtl.cleanup();
         view = null;
         done++;
         if (done % 20 === 0 && gc) {

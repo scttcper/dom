@@ -69,8 +69,8 @@ React + testing-library (unmodified development React 19; unmount and resets unt
 - `react/findby-waitfor`: `findByRole` after an async load, then 5 click → `waitFor` async
   saves, then `findByText`. Real timers: a DOM whose MutationObserver doesn't drive `waitFor`
   pays the 50 ms polling interval, which is a real cost users feel.
-- `react/mount-unmount-churn`: 200 mount/unmount cycles; extra `heapSlopeKBPerMount` is the
-  least-squares slope of heap-after-GC sampled every 20 cycles (≈0 when nothing leaks).
+- `react/mount-unmount-churn`: 200 render → `cleanup()` cycles; extra `heapSlopeKBPerMount` is
+  the least-squares slope of heap-after-GC sampled every 20 cycles (≈0 when nothing leaks).
 
 DOM micro workloads, ported from `~/gh/dom-bench` and `~/gh/vibedom/bench/dom-bench`:
 create 4,000 elements, build 1,000 attributed rows, 4×4 attribute revisions on 1,000 elements,
