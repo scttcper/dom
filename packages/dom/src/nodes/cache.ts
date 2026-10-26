@@ -31,6 +31,8 @@ export class NodeCache {
   styleSheetVersion: number;
   /** Opaque computed-style record owned by src/css. */
   style: object | null;
+  /** The live `getComputedStyle()` declaration for the element (src/css/computed.ts); never stale. */
+  computedStyle: object | null;
 
   // --- @ctrl/dom/aria (appended by the aria agent) ---
   /** `Document._styleVersion` at which `name` was computed (paired with `nameVersion`). */
@@ -51,6 +53,7 @@ export class NodeCache {
     this.styleVersion = -1;
     this.styleSheetVersion = -1;
     this.style = null;
+    this.computedStyle = null;
     this.ariaNameStyleVersion = -1;
     this.ariaHiddenVersion = -1;
     this.ariaHiddenStyleVersion = -1;

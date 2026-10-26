@@ -4,6 +4,7 @@
 
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { nodeCache } from "../nodes/cache.ts";
 import { CSSStyleDeclaration } from "./CSSStyleDeclaration.ts";
 import { computedValue, customPropertyNames } from "./cascade.ts";
 import { computedPropertyNames, isCustomPropertyName } from "./properties.ts";
@@ -77,8 +78,6 @@ function customNames(el: NodeImpl, pseudo: string | null): string[] {
   return customPropertyNames(el, pseudo);
 }
 
-const cache = new WeakMap<NodeImpl, CSSComputedStyleDeclaration>();
-
 /** https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle — the declaration object is reused per element (it is live). */
 export function getComputedStyle(element: Element, pseudoElement?: string | null): CSSStyleDeclaration {
   const impl = element[$impl];
@@ -90,9 +89,8 @@ export function getComputedStyle(element: Element, pseudoElement?: string | null
     else if (lower !== "::before" && lower !== "::after" && lower !== ":before" && lower !== ":after") pseudo = INVALID;
   }
   if (pseudo === null) {
-    let d = cache.get(impl);
-    if (d === undefined) cache.set(impl, (d = new CSSComputedStyleDeclaration(impl, null)));
-    return d;
+    const c = nodeCache(impl);
+    return (c.computedStyle ??= new CSSComputedStyleDeclaration(impl, null)) as CSSComputedStyleDeclaration;
   }
   return new CSSComputedStyleDeclaration(impl, pseudo);
 }
