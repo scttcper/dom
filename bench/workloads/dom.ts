@@ -307,6 +307,54 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    // getComputedStyle (and the accessibility tree's display/visibility checks) after a mutation:
+    // every element's style is recomputed under rules scoped by ancestor classes.
+    id: "dom/computed-style-mutation",
+    title: "Attribute mutation + computed display/visibility/color on 200 elements, 200 ancestor rules",
+    kind: "dom",
+    iterations: 30,
+    warmup: 5,
+    setup({ document, window }) {
+      const sheet = document.createElement("style");
+      sheet.textContent =
+        Array.from(
+          { length: 200 },
+          (_, i) => `.scope-${i} > .item { color: rgb(${i % 255}, 10, 20); padding: ${i % 8}px; }`,
+        ).join("\n") + "\n.item { display: flex } .item:hover { color: blue }";
+      document.head.append(sheet);
+      const container = document.createElement("main");
+      container.innerHTML = Array.from(
+        { length: 20 },
+        (_, i) => `<section class="scope-${i}">${'<span class="item"></span>'.repeat(10)}</section>`,
+      ).join("");
+      document.body.append(container);
+      const items = container.querySelectorAll(".item");
+      return {
+        run() {
+          container.toggleAttribute("data-revision");
+          let correct = 0;
+          for (let i = 0; i < items.length; i++) {
+            const style = window.getComputedStyle(items[i]);
+            if (
+              style.display === "flex" &&
+              style.visibility === "visible" &&
+              style.color === `rgb(${Math.floor(i / 10)}, 10, 20)`
+            )
+              correct++;
+          }
+          return correct;
+        },
+        verify(n) {
+          eq(n, 200, "computed styles after mutation");
+        },
+        close() {
+          container.remove();
+          sheet.remove();
+        },
+      };
+    },
+  },
+  {
     id: "dom/event-propagation-30",
     title: "Event propagation, capture + bubble, 30 levels (10 dispatches)",
     kind: "dom",

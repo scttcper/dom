@@ -667,9 +667,73 @@ class Matched {
  * over its tree walk and random-access getComputedStyle cannot.
  */
 let filterFor: NodeImpl | null = null;
+/** Ancestor hashes the filter holds for `filterFor` (selectors/filter.ts scratch storage). */
+let filterHashes: number[] = [];
 /** Candidate rules with ancestor hashes seen in this computeRecord. */
 let hashedSeen = 0;
 const FILTER_AFTER = 2;
+
+function buildFilter(el: NodeImpl): void {
+  filterHashes = buildAncestorFilter(el);
+  filterFor = el;
+  survivors = null;
+}
+
+function resetFilter(): void {
+  filterFor = null;
+  survivors = null;
+}
+
+/**
+ * The rules of one bucket that pass the ancestor filter, for the children of one parent: every
+ * child has the same ancestors, so siblings, and the same element recomputed after a mutation
+ * elsewhere, skip rejecting the same rules again. Valid while the parent's ancestor hashes (the
+ * filter's whole input) are unchanged; survivors are still matched in full. Weak keys release
+ * removed trees (parents) and replaced rule indexes (bucket arrays).
+ */
+class Survivors {
+  hashes: number[];
+  lists: WeakMap<IndexedRule[], IndexedRule[]>;
+  constructor(hashes: number[]) {
+    this.hashes = hashes;
+    this.lists = new WeakMap();
+  }
+}
+
+const survivorsByParent = new WeakMap<NodeImpl, Survivors>();
+/** Survivors of `filterFor`'s parent, checked against its hashes in this computeRecord, or null. */
+let survivors: Survivors | null = null;
+/** Smaller buckets are filtered rule by rule: the lookup would cost more than it saves. */
+const SURVIVORS_MIN = 16;
+
+function sameHashes(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function filterSurvivors(list: IndexedRule[], el: NodeImpl, parent: NodeImpl): IndexedRule[] {
+  if (filterFor !== el) buildFilter(el);
+  let s = survivors;
+  if (s === null) {
+    s = survivorsByParent.get(parent) ?? null;
+    if (s === null || !sameHashes(s.hashes, filterHashes)) {
+      s = new Survivors(filterHashes.slice());
+      survivorsByParent.set(parent, s);
+    }
+    survivors = s;
+  }
+  let out = s.lists.get(list);
+  if (out === undefined) {
+    out = [];
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i];
+      if (mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) out.push(r);
+    }
+    s.lists.set(list, out);
+  }
+  return out;
+}
 
 function testRules(
   list: IndexedRule[] | undefined,
@@ -681,14 +745,15 @@ function testRules(
   out: Matched[],
 ): void {
   if (list === undefined) return;
+  if (filter && list.length >= SURVIVORS_MIN && el.parent !== null) {
+    list = filterSurvivors(list, el, el.parent);
+    filter = false;
+  }
   for (let i = 0; i < list.length; i++) {
     const r = list[i];
     if (filter && r.h0 >= 0) {
       // WebKit SelectorFilter fast reject (https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/SelectorFilter.h).
-      if (filterFor !== el && ++hashedSeen > FILTER_AFTER) {
-        buildAncestorFilter(el);
-        filterFor = el;
-      }
+      if (filterFor !== el && ++hashedSeen > FILTER_AFTER) buildFilter(el);
       if (filterFor === el && !mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) continue;
     }
     if (opts === undefined ? matchesSelectorDirect(r.sel, el, pseudo) : matchesSelector(r.sel, el, pseudo, opts))
@@ -883,10 +948,10 @@ function effectiveValue(rec: StyleRecord, prop: string, v: string): string | nul
 function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
   const el = rec.el;
   const matched: Matched[] = [];
-  filterFor = null;
+  resetFilter();
   hashedSeen = 0;
   collectAuthor(el, rec.pseudo, rec.root, currentStyleVersion(el.doc), matched);
-  filterFor = null;
+  resetFilter();
   matched.sort(normalOrder);
   const important = matched.slice().sort(importantOrder);
   const inline = rec.pseudo === PSEUDO_NONE ? inlineBlock(el) : null;
@@ -914,7 +979,7 @@ function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
 }
 
 function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): StyleRecord {
-  filterFor = null;
+  resetFilter();
   hashedSeen = 0;
   const rec = new StyleRecord(el, pseudo);
   const rs = rootOf(el);
@@ -939,7 +1004,7 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
   }
   // Module state must not keep the element: through its document and window it would keep a
   // finished test file's whole realm alive in a reused worker.
-  filterFor = null;
+  resetFilter();
   return rec;
 }
 

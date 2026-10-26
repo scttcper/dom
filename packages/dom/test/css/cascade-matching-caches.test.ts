@@ -43,7 +43,7 @@ describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/s
   const filler = ["span", "b", "em", "i"]
     .map(
       (t) =>
-        Array.from({ length: 6 }, (_, k) => `.no${k} ${t}, #no${k} > ${t}`).join(", ") + " { color: rgb(0, 0, 99) }",
+        Array.from({ length: 10 }, (_, k) => `.no${k} ${t}, #no${k} > ${t}`).join(", ") + " { color: rgb(0, 0, 99) }",
     )
     .join("\n");
 
@@ -73,6 +73,37 @@ describe("ancestor filter (WebKit SelectorFilter) — https://drafts.csswg.org/s
     expect(color("s")).toBe("rgb(9, 0, 0)");
     document.getElementById("p")!.className = "";
     expect(color("s")).not.toBe("rgb(9, 0, 0)");
+  });
+
+  test("cached candidates still test each subject and volatile state after unrelated mutations", () => {
+    setup(
+      `${filler}\n.on span { color: rgb(1, 0, 0) } .on span[data-active] { color: rgb(2, 0, 0) } .on span:hover { color: rgb(3, 0, 0) }`,
+      `<div class=on><span id=a></span><span id=b data-active></span></div>`,
+    );
+    const a = document.getElementById("a")!;
+    expect(color("a")).toBe("rgb(1, 0, 0)");
+    expect(color("b")).toBe("rgb(2, 0, 0)");
+    document.body!.toggleAttribute("data-unrelated");
+    a.setAttribute("data-active", "");
+    expect(color("a")).toBe("rgb(2, 0, 0)");
+    setHoverTarget(a[$impl]);
+    try {
+      expect(color("a")).toBe("rgb(3, 0, 0)");
+    } finally {
+      setHoverTarget(null);
+    }
+    expect(color("a")).toBe("rgb(2, 0, 0)");
+    document.body!.append(a);
+    expect(color("a")).toBe("rgb(0, 0, 0)");
+  });
+
+  test("cached ancestor rejections follow id changes and replacement stylesheet indexes", () => {
+    setup(`${filler}\n#on span { color: rgb(1, 0, 0) }`, `<div id=off><span id=s></span></div>`);
+    expect(color("s")).toBe("rgb(0, 0, 0)");
+    document.getElementById("off")!.id = "on";
+    expect(color("s")).toBe("rgb(1, 0, 0)");
+    document.querySelector("style")!.textContent = `${filler}\n#on span { color: rgb(2, 0, 0) }`;
+    expect(color("s")).toBe("rgb(2, 0, 0)");
   });
 
   test("type selectors on mixed-case non-HTML ancestors (foreignObject)", () => {

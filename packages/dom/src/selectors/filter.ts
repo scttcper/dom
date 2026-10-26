@@ -65,6 +65,8 @@ function elementTagHash(el: NodeImpl): number {
 /** The set of ancestor hashes for one element (allocated on first use: no cost without style sheets). */
 let slots = new Int32Array(0);
 let generation = 0;
+/** The hashes of the last build, in insertion order (returned by buildAncestorFilter). */
+const hashes: number[] = [];
 
 /**
  * Fill the set with the tag, id and classes of every element ancestor of `el` (the parent chain
@@ -72,25 +74,40 @@ let generation = 0;
  * into a featureless shadow host, whose compound carries no hashes).
  * Not for quirks-mode documents (their ids and classes match case-insensitively).
  *
- * Not reused across elements: keeping the last parent to reuse the set for its siblings needs a
- * reference to it, and a WeakRef keeps its target alive until the end of the current job (every
+ * Returns the hashes it inserted, in ancestor order: scratch storage that the next build
+ * overwrites. The cascade compares them to reuse filter results between elements with the same
+ * ancestors (css/cascade.ts Survivors). Nothing here keeps the last element to skip rebuilding for
+ * its siblings: even a WeakRef keeps its target alive until the end of the current job (every
  * tree a test file renders, measured +5.8 MB heap on react/styled-form-rerender).
  */
-export function buildAncestorFilter(el: NodeImpl): void {
+export function buildAncestorFilter(el: NodeImpl): number[] {
   if (++generation === 0x7fffffff || slots.length === 0) {
     if (slots.length === 0) slots = new Int32Array(SIZE);
     else slots.fill(0);
     generation = 1;
   }
   const g = generation;
+  let count = 0;
   for (let p = el.parent; p !== null && p.type === ELEMENT_NODE; p = p.parent) {
-    slots[elementTagHash(p)] = g;
-    if (p.id !== "") slots[idHash(p.id)] = g;
+    const tag = elementTagHash(p);
+    slots[tag] = g;
+    hashes[count++] = tag;
+    if (p.id !== "") {
+      const id = idHash(p.id);
+      slots[id] = g;
+      hashes[count++] = id;
+    }
     if (p.attrs !== null) {
       const cls = classTokens(p);
-      for (let i = 0; i < cls.length; i++) slots[classHash(cls[i])] = g;
+      for (let i = 0; i < cls.length; i++) {
+        const hash = classHash(cls[i]);
+        slots[hash] = g;
+        hashes[count++] = hash;
+      }
     }
   }
+  hashes.length = count;
+  return hashes;
 }
 
 /**
