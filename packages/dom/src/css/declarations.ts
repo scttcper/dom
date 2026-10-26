@@ -29,12 +29,18 @@ export class DeclBlock {
   important: boolean[];
   /** Set by put()/removeOne() when they change the block (setProperty's "updated" flag). */
   dirty: boolean;
+  /**
+   * Set whenever `names` changes (not when only a value does), so the CSSStyleDeclaration's
+   * indexed properties are re-synced only then: most style writes update a value in place.
+   */
+  namesChanged: boolean;
 
   constructor() {
     this.names = [];
     this.values = [];
     this.important = [];
     this.dirty = false;
+    this.namesChanged = false;
   }
 
   get length(): number {
@@ -48,6 +54,7 @@ export class DeclBlock {
   }
 
   clear(): void {
+    if (this.names.length !== 0) this.namesChanged = true;
     this.names.length = 0;
     this.values.length = 0;
     this.important.length = 0;
@@ -61,6 +68,7 @@ export class DeclBlock {
       this.values.push(value);
       this.important.push(important);
       this.dirty = true;
+      this.namesChanged = true;
     } else if (this.values[i] !== value || this.important[i] !== important) {
       this.values[i] = value;
       this.important[i] = important;
@@ -80,6 +88,7 @@ export class DeclBlock {
     this.names.push(name);
     this.values.push(value);
     this.important.push(important);
+    this.namesChanged = true;
   }
 
   /** Removes `name`; returns true if it was present. */
@@ -90,6 +99,7 @@ export class DeclBlock {
     this.values.splice(i, 1);
     this.important.splice(i, 1);
     this.dirty = true;
+    this.namesChanged = true;
     return true;
   }
 
@@ -215,8 +225,9 @@ export class DeclBlock {
         for (let s = 0; s < shorthands.length && !emitted; s++) {
           const sh = shorthands[s];
           const longhands = longhandsOf(sh)!;
-          // Usually some longhand is missing: check before collecting values.
-          let ok = true;
+          // Usually some longhand is missing: check before collecting values (fewer declarations
+          // than longhands rules it out without a lookup).
+          let ok = longhands.length <= n;
           for (let k = 0; k < longhands.length && ok; k++) {
             const j = this.indexOf(longhands[k]);
             ok = j !== -1 && this.important[j] === this.important[i] && (done === null || !done.has(longhands[k]));

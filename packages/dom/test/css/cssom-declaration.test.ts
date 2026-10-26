@@ -191,6 +191,20 @@ describe("length / item — https://drafts.csswg.org/cssom/#dom-cssstyledeclarat
     s.cssText = "padding: 1px; color: red";
     expect([s.length, s.item(0), s.item(4), s.item(5), s.item(-1)]).toEqual([5, "padding-top", "color", "", ""]);
   });
+
+  test("indexed properties follow additions, removals and style attribute changes; a value-only update keeps them", () => {
+    const el = document.createElement("div") as any;
+    const s = el.style;
+    s.color = "red";
+    s.width = "1px";
+    expect([s[0], s[1], s[2]]).toEqual(["color", "width", undefined]);
+    s.color = "blue";
+    expect([s[0], s[1], s.length]).toEqual(["color", "width", 2]);
+    s.removeProperty("color");
+    expect([s[0], s[1], s.length]).toEqual(["width", undefined, 1]);
+    el.setAttribute("style", "top: 1px; left: 2px");
+    expect([s[0], s[1], s[2]]).toEqual(["top", "left", undefined]);
+  });
 });
 
 describe("parentRule — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule", () => {

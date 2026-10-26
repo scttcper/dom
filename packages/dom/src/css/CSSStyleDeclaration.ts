@@ -88,7 +88,10 @@ export class CSSStyleDeclaration {
   }
 
   _syncIndices(): void {
-    const names = this[$block].names;
+    const block = this[$block];
+    if (!block.namesChanged) return;
+    block.namesChanged = false;
+    const names = block.names;
     const self = this as unknown as Record<number, string>;
     const n = names.length;
     for (let i = 0; i < n; i++) if (self[i] !== names[i]) self[i] = names[i];
@@ -220,23 +223,26 @@ function installAccessors(): void {
   accessorsInstalled = true;
   const proto = CSSStyleDeclaration.prototype;
   const holder = Object.create(null) as object;
-  const define = (key: string, property: string): void => {
+  const define = (key: string, descriptor: PropertyDescriptor): void => {
     if (Object.hasOwn(holder, key) || Object.hasOwn(proto, key)) return;
-    Object.defineProperty(holder, key, {
+    Object.defineProperty(holder, key, descriptor);
+  };
+  for (const name of allPropertyNames()) {
+    // One getter/setter pair per property, shared by its dashed, camel-cased and webkit-cased names.
+    const descriptor: PropertyDescriptor = {
       get(this: CSSStyleDeclaration): string {
-        return this.getPropertyValue(property);
+        return this.getPropertyValue(name);
       },
       set(this: CSSStyleDeclaration, value: unknown) {
-        this._setNamed(property, value);
+        this._setNamed(name, value);
       },
       enumerable: true,
       configurable: true,
-    });
-  };
-  for (const name of allPropertyNames()) {
-    define(name, name);
-    define(cssPropertyToIDLAttribute(name, false), name);
-    if (name.startsWith("-webkit-")) define(cssPropertyToIDLAttribute(name, true), name);
+    };
+    define(name, descriptor);
+    if (name.indexOf("-") === -1) continue;
+    define(cssPropertyToIDLAttribute(name, false), descriptor);
+    if (name.startsWith("-webkit-")) define(cssPropertyToIDLAttribute(name, true), descriptor);
   }
   Object.setPrototypeOf(holder, Object.getPrototypeOf(proto));
   Object.setPrototypeOf(proto, holder);
