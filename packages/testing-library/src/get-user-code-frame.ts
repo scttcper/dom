@@ -1,8 +1,8 @@
 // Port of @testing-library/dom src/get-user-code-frame.js (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/get-user-code-frame.js
 //
-// Upstream loads @babel/code-frame and picocolors at import time; here they load on the
-// first call (only `logDOM`/`screen.debug` use this).
+// Upstream loads @babel/code-frame and picocolors at import time; here @babel/code-frame loads
+// on the first call (only `logDOM`/`screen.debug` use this) and picocolors' `dim` is inlined.
 
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -11,26 +11,27 @@ import { createRequire } from "node:module";
 // package is not under node_modules, so frames from this package's directory are skipped too.
 const OWN_DIR = new URL("./", import.meta.url).pathname;
 
-let deps: { codeFrameColumns: any; picocolors: any } | null | undefined;
+let codeFrameColumns: any = null;
 
-function loadDeps() {
-  if (deps !== undefined) return deps;
-  try {
-    const req = createRequire(import.meta.url);
-    deps = {
-      codeFrameColumns: req("@babel/code-frame").codeFrameColumns,
-      picocolors: req("picocolors"),
-    };
-  } catch {
-    // We're in a browser environment
-    deps = null;
-  }
-  return deps;
+// picocolors@1.1.1 `dim` (ISC, Oleksii Raspopov, Kostiantyn Denysov, Anton Verinov; NOTICE), with
+// its color detection. A file location never contains the close code, so no re-opening.
+const env = process.env;
+const argv = process.argv;
+const isColorSupported =
+  !(!!env.NO_COLOR || argv.includes("--no-color")) &&
+  (!!env.FORCE_COLOR ||
+    argv.includes("--color") ||
+    process.platform === "win32" ||
+    (process.stdout?.isTTY && env.TERM !== "dumb") ||
+    !!env.CI);
+
+function dim(input: string): string {
+  return isColorSupported ? `\x1b[2m${input}\x1b[22m` : input;
 }
 
 // frame has the form "at myMethod (location/to/my/file.js:10:2)"
 function getCodeFrame(frame: string): string {
-  const { codeFrameColumns, picocolors } = loadDeps()!;
+  codeFrameColumns ??= createRequire(import.meta.url)("@babel/code-frame").codeFrameColumns;
   const locationStart = frame.indexOf("(") + 1;
   const locationEnd = frame.indexOf(")");
   const frameLocation = frame.slice(locationStart, locationEnd);
@@ -55,15 +56,10 @@ function getCodeFrame(frame: string): string {
     { start: { line, column: column - 1 } },
     { highlightCode: true, linesBelow: 0 },
   );
-  return `${picocolors.dim(frameLocation)}\n${codeFrame}\n`;
+  return `${dim(frameLocation)}\n${codeFrame}\n`;
 }
 
 export function getUserCodeFrame(): string {
-  // If we couldn't load dependencies, we can't generate the user trace
-  const d = loadDeps();
-  if (!d || !readFileSync || !d.codeFrameColumns) {
-    return "";
-  }
   const err = new Error();
   const firstClientCodeFrame = err
     .stack!.split("\n")

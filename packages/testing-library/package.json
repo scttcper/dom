@@ -40,8 +40,7 @@
   },
   "dependencies": {
     "@babel/code-frame": "^8.0.6",
-    "@ctrl/dom": "workspace:*",
-    "picocolors": "^1.1.1"
+    "@ctrl/dom": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.2",

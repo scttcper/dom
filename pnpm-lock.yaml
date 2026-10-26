@@ -491,9 +491,6 @@ importers:
       '@ctrl/dom':
         specifier: workspace:*
         version: link:../..
-      picocolors:
-        specifier: ^1.1.1
-        version: 1.1.1
     devDependencies:
       '@testing-library/dom':
         specifier: 10.4.2
