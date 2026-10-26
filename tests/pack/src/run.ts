@@ -161,6 +161,8 @@ writeFileSync(
     ...[...packed.keys()].map((name) => `  "${name}": "${fileRef(name)}"`),
     "allowBuilds:",
     "  unrs-resolver: false",
+    // Jest 30.5's optional native file watcher; the checks never watch.
+    '  "@parcel/watcher": false',
     "",
   ].join("\n"),
 );

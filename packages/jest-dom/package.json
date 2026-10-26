@@ -58,9 +58,9 @@
     }
   },
   "dependencies": {
-    "@adobe/css-tools": "4.5.0",
+    "@adobe/css-tools": "^4.4.0",
     "@ctrl/dom": "workspace:*",
-    "dom-accessibility-api": "0.6.3"
+    "dom-accessibility-api": "^0.7.1"
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.2",

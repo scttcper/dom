@@ -49,9 +49,10 @@ function getCodeFrame(frame: string): string {
     return "";
   }
 
+  // Stack columns count from 1, @babel/code-frame 8's from 0 (upstream's 7 took them as is).
   const codeFrame = codeFrameColumns(
     rawFileContents,
-    { start: { line, column } },
+    { start: { line, column: column - 1 } },
     { highlightCode: true, linesBelow: 0 },
   );
   return `${picocolors.dim(frameLocation)}\n${codeFrame}\n`;
