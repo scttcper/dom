@@ -2,6 +2,7 @@
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/misc/isElementType.ts
 
 import type {Element, HTMLElementTagNameMap} from '../../dom-types.ts'
+import {implOf} from '../../ctrl-dom.ts'
 type tag = keyof HTMLElementTagNameMap
 
 const XHTML_NS = 'http://www.w3.org/1999/xhtml'
@@ -37,12 +38,18 @@ export function isElementType<
 ): element is P extends undefined
   ? HTMLElementTagNameMap[T]
   : HTMLElementTagNameMap[T] & P {
-  if (element.namespaceURI && element.namespaceURI !== XHTML_NS) {
-    return false
+  const impl = implOf(element)
+  let name: string
+  if (impl !== null && impl.tag !== 0 && impl.prefix === null) {
+    // Known HTML tags already have a lowercase, unprefixed name on the shared node record.
+    name = impl.name
+  } else {
+    if (element.namespaceURI && element.namespaceURI !== XHTML_NS) {
+      return false
+    }
+    name = lowerTagName(element)
   }
 
-  // tagName is uppercase in HTMLDocument and lowercase in XMLDocument
-  const name = lowerTagName(element)
   if (typeof tag === 'string' ? name !== tag : !tag.includes(name as T)) {
     return false
   }
