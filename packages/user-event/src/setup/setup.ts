@@ -182,6 +182,9 @@ function wrapAndBindImpl<
 /**
  * The API's names in upstream's key order (`{...apis, setup}`), and a template each setup()
  * clones. The implementations are read at each setup(), as upstream's spread of `userEventApi` does.
+ * The methods stay eager, bound per setup(): they are own enumerable properties, so destructuring,
+ * spreading and Object.keys see them (prototype getters would not). Most of the ~3.4 µs a warm
+ * setup() costs.
  */
 const API_NAMES = Object.keys(userEventApi)
 const API_TEMPLATE: Record<string, unknown> = {
