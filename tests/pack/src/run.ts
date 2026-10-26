@@ -383,6 +383,8 @@ const checks: Check[] = [
 ];
 
 const OURS = /\/node_modules\/(@ctrl\/dom-jest-environment|@ctrl\/dom)\/(.*)$/;
+const ENVIRONMENT = /\/node_modules\/@ctrl\/dom\/dist\/(vitest-environment|register)\//;
+const BRIDGE = /\/node_modules\/@ctrl\/dom\/dist\/bridge\//;
 const ALLOWED = /^(dist\/.*\.(?:c?js|d\.ts)|jest-preset\.cjs|package\.json)$/;
 
 function verifyLoads(check: Check, log: string): string[] {
@@ -391,7 +393,14 @@ function verifyLoads(check: Check, log: string): string[] {
   const seen = new Set<string>();
   for (const line of existsSync(log) ? readFileSync(log, "utf8").split("\n") : []) {
     if (!line) continue;
-    const [, , raw] = line.split("\t");
+    const [, kind, raw, parent] = line.split("\t");
+    // The environments load the DOM themselves, so they import its entries directly (release
+    // assembly pins them, scripts/release.ts pinEnvironmentDom): through a bridge they would pay
+    // its require(esm) fallback in every worker.
+    if (kind === "edge" && ENVIRONMENT.test(parent ?? "") && BRIDGE.test(raw)) {
+      const short = (url: string) => url.slice(url.lastIndexOf("/node_modules/") + "/node_modules/".length);
+      problems.push(`${short(parent!)} imports the DOM through the bridge (${short(raw)})`);
+    }
     if (!raw.startsWith("file:") && !raw.startsWith("/")) continue;
     let path = raw.startsWith("file:") ? fileURLToPath(raw.split("?")[0]) : raw.split("?")[0];
     try {
