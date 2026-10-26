@@ -140,6 +140,12 @@ file. Measured 2026-10-23 at e68c6fc (Apple M4 Max, Node 26.12.1, shared machine
 fresh, interleaved processes; profiles aggregated over 100 workers of comparison/'s suite with
 `COMPARE_EXEC_ARGV="--cpu-prof ..."`).
 
+These are the published bundles. The downstream suites (`downstream/*`) load @ctrl/dom from its
+TypeScript sources instead, which costs ~150 ms more per file (Node strips the DOM's types in
+every worker) and in `ctrl-dom-full` ~90 ms more (Vite transforms our Testing Library's
+sources). Their per-file costs, and full vs ctrl-dom comparisons on suites of many short files,
+are not what users get (downstream/tanstack-query/HARNESS.md).
+
 Our environment's `setup()` is ~22 ms per file with @ctrl/dom's Testing Library (the compile
 cache on) and ~32 ms with stock Testing Library (off). It splits into:
 
@@ -161,6 +167,24 @@ those globals are V8 lazy data properties (reading their value or descriptor, or
 triggers the load; only assignment and `delete` do not, and both lose the lazy property), Node's
 `fetch` wrapper loads undici only when called, and no public synchronous path returns undici's
 classes. It is also the one part a startup snapshot cannot hold (below).
+
+**The rest of a full-mode test file.** Measured 2026-10-26 at 92076ba with `release/ctrl-dom`
+installed next to React 19.3.1: one fresh process per sample, medians of 11, from a scratch
+script rather than a bench workload.
+
+| step | ms, warm compile cache | ms, no cache |
+| --- | ---: | ---: |
+| environment `setup()`: DOM import + window, undici included | 20.0 | 29.9 |
+| `react` + `react-dom/client` | 11.4 | 16.2 |
+| `@ctrl/dom/react` (with testing-library and aria) | 4.7 | 6.0 |
+| `@ctrl/dom/user-event` | 0.9 | 1.6 |
+| `@ctrl/dom/jest-dom/matchers` | 1.3 | 1.7 |
+| first `render()` + `getByRole` (mostly react-dom compiling on first call) | 6.1 | 6.4 |
+| total | 45 | 63 |
+
+About 30 ms of the warm total is ours, ~9 ms of it undici; no other step of ours is above
+~5 ms. The DOM's bundle is 854 KB minified, and its top-level evaluation is still ~3–4 ms of the
+import.
 
 ### V8 startup snapshot: works, does not pay
 
@@ -228,7 +252,11 @@ the change: whole stack 3.92 → 3.73 s wall (ctrl-dom with stock Testing Librar
 - **Compile cache from process start.** With @ctrl/dom's Testing Library the environment already
   enables Node's compile cache before importing the DOM; enabling it as the worker starts (an
   `--import=data:` preload) also caches Vitest's runner, chai and the module runner, which every
-  worker loads before the environment.
+  worker loads before the environment. Vitest 5 writes the cache before stopping each worker
+  (`module.flushCompileCache()`). Vitest 4 stops forks with SIGTERM, so Node never writes it and
+  every worker misses on every module: on TanStack Query's suite (Vitest 4, published bundles)
+  full mode took 3.54 s with the preload and 3.17 s without. Not worked around: the peer range
+  is vitest >=5.
 - **`--min-semi-space-size=16`.** A worker lives for one file and most of what it allocates while
   loading modules and rendering dies young; starting the young generation at 16 MB instead of
   growing it from 1 MB skips most scavenges. Only for forked pools (`forks`, `vmForks`): worker

@@ -33,7 +33,14 @@ let internal: Internal | null = null;
  * the bundles across workers. Once on, it stays on for every module the worker loads after it,
  * which only pays off for large files: deserializing hundreds of tiny ones (aria-query's roles,
  * stock user-event) is slower than compiling them (comparison/: +6% wall time over 100 files with
- * stock Testing Library, -11% with @ctrl/dom's).
+ * stock Testing Library, -11% with @ctrl/dom's). Vitest 4 never writes it (COMPILE_CACHE_IMPORT
+ * in ./plugin.ts).
+ *
+ * A test file's fixed cost has been profiled several times; bench/README.md "Worker startup" has
+ * the numbers and what was tried. In short: this import is ~8 ms with the cache, ~16 ms without;
+ * setup adds ~13 ms, ~9 ms of it Node loading undici (window/globals.ts, deliberate); a
+ * full-mode file then spends more on React (~11 ms) than on all of our Testing Library bundles
+ * (~7 ms). Nothing large is left in our own startup code.
  */
 async function load(options: Record<string, unknown>): Promise<void> {
   if (dom !== null) return;

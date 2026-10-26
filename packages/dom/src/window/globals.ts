@@ -28,7 +28,10 @@
 // installed, the first fetch()/Response/WebSocket use in a test would make Node's MessageEvent,
 // CloseEvent, ErrorEvent, WebSocket and EventSource extend @ctrl/dom's classes for the rest of the
 // process. (FormData/MessageEvent/CloseEvent could be re-fetched synchronously at uninstall via
-// node:http and Response#formData; ErrorEvent has no synchronous public path.)
+// node:http and Response#formData; ErrorEvent has no synchronous public path.) It is the largest
+// fixed cost of a test file's environment setup (~9 of ~13 ms in a fresh process), so it keeps
+// getting re-investigated: the measurements and every alternative ruled out so far (deferring,
+// re-fetching, a startup snapshot) are in bench/README.md "Worker startup".
 
 import { installedWindowMethods, recordHostOriginal } from "./host-originals.ts";
 import { Window, windowInterfaces, HOST_DELEGATES, installedWindows } from "./Window.ts";

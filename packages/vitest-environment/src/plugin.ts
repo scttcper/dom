@@ -52,6 +52,11 @@ const TESTING_LIBRARY = [
  * load, rather than at environment setup (CtrlDomEnvironmentOptions.compileCache): Vitest's
  * runner, chai and the module runner then load from it too. A `data:` URL, so there is no file to
  * resolve. Node ignores it under NODE_DISABLE_COMPILE_CACHE (Vitest's v8 coverage sets that).
+ *
+ * Node writes the cache at a normal exit or on `module.flushCompileCache()`. Vitest 5 flushes
+ * before stopping a fork worker; Vitest 4 SIGTERMs it, so there every worker misses on every
+ * module and the cache only costs time (TanStack Query's suite on Vitest 4: 3.54 s with it, 3.17 s
+ * without). Not worked around: the peer range is vitest >=5.
  */
 const COMPILE_CACHE_IMPORT =
   '--import=data:text/javascript,import{enableCompileCache}from"node:module";enableCompileCache?.()';

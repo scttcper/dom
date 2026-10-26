@@ -53,6 +53,25 @@ median wall/RSS, tests that change status between rounds), `--latest` (upstream 
   `react-dom` (see guards) and inlines `@testing-library/react-render-stream`.
 - Vitest runs with this process's Node (26), not the checkout's `.nvmrc` (24).
 
+## Startup costs (read before comparing modes)
+
+The 26 files spend ~1 s in their tests, so per-file loading decides the wall time:
+
+- The ctrl-dom modes load @ctrl/dom from its TypeScript sources (`packages/*/src`, natively, with
+  types stripped in every worker): Vitest's `environment` phase is ~4.6 s summed over the files,
+  against ~0.9 s with the published bundles.
+- ctrl-dom-full also aliases our Testing Library to its sources, which Vite transforms and runs
+  through its module runner: `transform` 3.6 s vs 1.3 s, and `setup` +2.4 s summed (~90 ms per
+  file).
+- With the published package installed in the checkout instead (`release/ctrl-dom` and the stock
+  `ctrlDom()` plugin; 2026-10-26, 5 interleaved rounds), ctrl-dom took 3.63 s and ctrl-dom-full
+  3.52 s, against 4.77 s and 5.31 s here. ctrl-dom-full being slower than ctrl-dom in this
+  harness's results comes from loading the sources, not from the library: the tests themselves
+  run faster on ours (0.97 s vs 1.06 s summed).
+- Every mode loads jsdom: `@testing-library/react-render-stream`, which react-query's
+  `test-setup.ts` imports in every file, imports it statically (~400 CommonJS files per file).
+- `ctrlDom()`'s compile cache does not help on Vitest 4 (bench/README.md "Worker startup").
+
 ## Guards (every run; any failure makes the exit code 1)
 
 - one `react` module id and one `react-dom` copy (inside the checkout) per mode, from the
