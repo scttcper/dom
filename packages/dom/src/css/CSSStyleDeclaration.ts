@@ -62,7 +62,16 @@ export class CSSStyleDeclaration {
     this._syncIndices();
   }
 
-  /** https://drafts.csswg.org/cssom/#update-style-attribute-for */
+  /**
+   * https://drafts.csswg.org/cssom/#update-style-attribute-for
+   *
+   * Eager: every inline style write re-serializes the whole block into the style attribute.
+   * Base UI's interaction tests (floating-ui writes positions on every render) spend ~0.5 s of
+   * 72.5 s CPU in inline-style writes (bench/README.md "Where real suites spend their time").
+   * Serializing when the attribute is read, as Blink does, would save part of that, but every
+   * attribute read path (getAttribute, attribute iteration, serialization, MutationObserver old
+   * values) would then have to check for a stale style attribute.
+   */
   _changed(): void {
     this._syncIndices();
     const owner = this[$owner];

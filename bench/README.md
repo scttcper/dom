@@ -270,6 +270,44 @@ runs, and +13 MB RSS per worker (+11%) works against the memory half of priority
 comparison/'s `ctrl-dom-stack` contender mirrors the plugin (`workerExecArgv` from
 packages/vitest-environment/src/plugin.ts).
 
+## Where real suites spend their time
+
+Check a subsystem's share in a downstream profile before optimizing it: bench/ workloads
+exaggerate the DOM's part.
+
+**Base UI, `interactions` preset, ctrl-dom-full** (2026-10-26 at 92076ba).
+`CTRL_DOM_DOWNSTREAM_PROFILE=<dir> node downstream/base-ui/run.ts --preset interactions --modes
+ctrl-dom-full --workers 4` writes one `.cpuprofile` per worker (Vitest kills its workers before
+`--cpu-prof` would write). Self time over 153 workers, 72.5 s of non-idle CPU:
+
+| where | share |
+| --- | ---: |
+| Node internals (module loading; includes stripping our TypeScript sources, which only the harness pays) | 23.1% |
+| Vitest | 14.1% |
+| Base UI's own source | 14.1% |
+| native (V8 builtins, bindings) | 13.4% |
+| react-dom | 11.9% |
+| @ctrl/dom's DOM | 7.3% |
+| react | 4.4% |
+| vite (module runner) | 2.9% |
+| GC | 2.1% |
+| @ctrl/dom/user-event | 1.4% |
+| @ctrl/dom/testing-library | 0.8% |
+| @ctrl/dom/react, aria, jest-dom and the environment | 0.8% |
+
+Ours is ~10% and flat: the top function, `addEventListener` (React adds 142 listeners to every
+root container), is 0.2%. The largest clusters are inline-style writes at ~0.5 s (re-serializing
+the style attribute: `_changed` in css/CSSStyleDeclaration.ts), event dispatch at ~0.45 s, the
+virtual clock at ~0.15 s, and per-file window setup with CSS accessor installation at ~0.3 s.
+
+**Sentry, three of its slowest spec files, ctrl-dom-full** (2026-10-26, after the CSS survivors
+cache). Jest leaves one profile with `NODE_OPTIONS=--cpu-prof node downstream/sentry/run.ts
+--files ... --workers 1`; 15.7 s sampled. react-dom ~15%, Jest's resolver and file reads ~13%,
+emotion ~8%, GC ~5%, @ctrl/dom's own self time ~3%. The whole CSS cascade was ~40 ms (0.2%) and
+Testing Library queries ~20 ms. Two traps: `defineProperty` in window/isolation.ts (~1 s self) is
+React's dev-mode work charged to our guard wrapper, and the native `now` (~250 ms) is the host
+`performance.now()` that React's scheduler reads through our virtual clock.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

@@ -120,6 +120,9 @@ export function guardInterfaceDefinitions(realm: RealmGlobal): void {
   const defineProperty = O.defineProperty;
   const defineProperties = O.defineProperties;
   const reflectDefineProperty = R.defineProperty;
+  // CPU profiles charge the native defineProperty's work to these wrappers: in Sentry's suite
+  // `defineProperty` here showed ~1 s of self time, which was React's dev-mode defineProperty
+  // calls on every element. Turning the guard off changed neither wall time nor CPU time.
   const wrappers = {
     defineProperty<T>(o: T, key: PropertyKey, desc: PropertyDescriptor & ThisType<unknown>): T {
       return defineProperty(o, key, set.has(o as object) ? configurableDescriptor(desc) : desc);

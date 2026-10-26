@@ -219,7 +219,11 @@ export class VirtualClock {
     }
   }
 
-  /** Monotonic ms (performance.now() origin) including skipped time. */
+  /**
+   * Monotonic ms (performance.now() origin) including skipped time. React's scheduler reads
+   * performance.now() constantly: in Sentry's suite profile ~250 ms sat in the host `now` under
+   * this, a cost jsdom's performance.now() has too.
+   */
   now(): number {
     return realNow() + this.skipped;
   }

@@ -160,7 +160,14 @@ function checkCallback(callback: unknown, method: string): void {
   }
 }
 
-/** https://dom.spec.whatwg.org/#add-an-event-listener */
+/**
+ * https://dom.spec.whatwg.org/#add-an-event-listener
+ *
+ * The most-called DOM entry point in component suites: React adds 142 listeners to every root
+ * container, so each render() in a test makes 142 calls. It is our top function by self time in
+ * Base UI's interaction tests and still only 0.2% of their CPU (~0.2 µs a call; bench/README.md
+ * "Where real suites spend their time").
+ */
 export function addEventListener(
   target: EventTarget,
   type: string,
