@@ -495,8 +495,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1
       pretty-format:
-        specifier: ^30.5.1
-        version: 30.5.1
+        specifier: ^27.0.2
+        version: 27.5.1
     devDependencies:
       '@testing-library/dom':
         specifier: 10.4.2

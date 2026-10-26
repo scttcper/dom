@@ -42,7 +42,7 @@
     "@babel/code-frame": "^8.0.6",
     "@ctrl/dom": "workspace:*",
     "picocolors": "^1.1.1",
-    "pretty-format": "^30.5.1"
+    "pretty-format": "^27.0.2"
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.2",
