@@ -74,45 +74,59 @@ type ClipboardStubControlInstance = {
   detachClipboardStub: () => void
 }
 
+// Ours: the stub class is defined once per window (upstream defines it on every create and on
+// every per-test reset). Keyed by the window: its methods close over it, and @ctrl/dom's
+// EventTarget is shared by every window.
+const clipboardClasses = new WeakMap<
+  Window,
+  ReturnType<typeof defineClipboardClass>
+>()
+
 function createClipboardStub(
   window: Window,
   control: ClipboardStubControlInstance,
 ) {
-  return Object.assign(
-    new (class Clipboard extends window.EventTarget {
-      private items: ClipboardItem[] = []
+  let Clipboard = clipboardClasses.get(window)
+  if (Clipboard === undefined) {
+    Clipboard = defineClipboardClass(window)
+    clipboardClasses.set(window, Clipboard)
+  }
+  return Object.assign(new Clipboard(), {
+    [ClipboardStubControl]: control,
+  })
+}
 
-      async read() {
-        return Array.from(this.items)
-      }
+function defineClipboardClass(window: Window) {
+  return class Clipboard extends window.EventTarget {
+    private items: ClipboardItem[] = []
 
-      async readText() {
-        let text = ''
-        for (const item of this.items) {
-          const type = item.types.includes('text/plain')
-            ? 'text/plain'
-            : item.types.find(t => t.startsWith('text/'))
-          if (type) {
-            text += await item
-              .getType(type)
-              .then(b => readBlobText(b, window.FileReader))
-          }
+    async read() {
+      return Array.from(this.items)
+    }
+
+    async readText() {
+      let text = ''
+      for (const item of this.items) {
+        const type = item.types.includes('text/plain')
+          ? 'text/plain'
+          : item.types.find(t => t.startsWith('text/'))
+        if (type) {
+          text += await item
+            .getType(type)
+            .then(b => readBlobText(b, window.FileReader))
         }
-        return text
       }
+      return text
+    }
 
-      async write(data: ClipboardItem[]) {
-        this.items = data
-      }
+    async write(data: ClipboardItem[]) {
+      this.items = data
+    }
 
-      async writeText(text: string) {
-        this.items = [createClipboardItem(window, text)]
-      }
-    })(),
-    {
-      [ClipboardStubControl]: control,
-    },
-  )
+    async writeText(text: string) {
+      this.items = [createClipboardItem(window, text)]
+    }
+  }
 }
 type ClipboardStub = ReturnType<typeof createClipboardStub>
 

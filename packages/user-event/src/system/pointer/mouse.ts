@@ -21,6 +21,43 @@ import {
 /**
  * This object is the single "virtual" mouse that might be controlled by multiple different pointer devices.
  */
+// Ours: a module-level class (upstream defines it inline, a new class per instance).
+class ClickCount {
+  private down: Record<number, number | undefined> = {}
+  private count: Record<number, number | undefined> = {}
+
+  incOnClick(button: number) {
+    const current =
+      this.down[button] === undefined
+        ? undefined
+        : Number(this.down[button]) + 1
+
+    this.count =
+      this.count[button] === undefined
+        ? {}
+        : {[button]: Number(this.count[button]) + 1}
+
+    return current
+  }
+
+  getOnDown(button: number) {
+    this.down = {[button]: this.count[button] ?? 0}
+    this.count = {[button]: this.count[button] ?? 0}
+
+    return Number(this.count[button]) + 1
+  }
+
+  getOnUp(button: number) {
+    return this.down[button] === undefined
+      ? undefined
+      : Number(this.down[button]) + 1
+  }
+
+  reset() {
+    this.count = {}
+  }
+}
+
 export class Mouse {
   position: PointerPosition = {}
   private readonly buttons = new Buttons()
@@ -37,41 +74,7 @@ export class Mouse {
   // If there is a delay while a button is pressed,
   // the `mouseup` and `click` are normal, but a following `mousedown` starts a new click count.
   // We'll follow the minimal implementation of Webkit.
-  private readonly clickCount = new (class {
-    private down: Record<number, number | undefined> = {}
-    private count: Record<number, number | undefined> = {}
-
-    incOnClick(button: number) {
-      const current =
-        this.down[button] === undefined
-          ? undefined
-          : Number(this.down[button]) + 1
-
-      this.count =
-        this.count[button] === undefined
-          ? {}
-          : {[button]: Number(this.count[button]) + 1}
-
-      return current
-    }
-
-    getOnDown(button: number) {
-      this.down = {[button]: this.count[button] ?? 0}
-      this.count = {[button]: this.count[button] ?? 0}
-
-      return Number(this.count[button]) + 1
-    }
-
-    getOnUp(button: number) {
-      return this.down[button] === undefined
-        ? undefined
-        : Number(this.down[button]) + 1
-    }
-
-    reset() {
-      this.count = {}
-    }
-  })()
+  private readonly clickCount = new ClickCount()
 
   move(
     instance: Instance,

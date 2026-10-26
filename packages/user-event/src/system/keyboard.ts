@@ -51,6 +51,42 @@ function isModifierLock(key?: string): key is ModififierLockKey {
   return modifierLocks.includes(key as ModififierLockKey)
 }
 
+// Ours: a module-level class (upstream defines it inline, a new class per instance).
+class PressedKeys {
+  registry: {
+    [k in string]?: {
+      keyDef: keyboardKey
+      unpreventedDefault: boolean
+    }
+  } = {}
+  add(code: string, keyDef: keyboardKey) {
+    this.registry[code] ??= {
+      keyDef,
+      unpreventedDefault: false,
+    }
+  }
+  has(code: string) {
+    return !!this.registry[code]
+  }
+  setUnprevented(code: string) {
+    const o = this.registry[code]
+    if (o) {
+      o.unpreventedDefault = true
+    }
+  }
+  isUnprevented(code: string) {
+    return !!this.registry[code]?.unpreventedDefault
+  }
+  delete(code: string) {
+    delete this.registry[code]
+  }
+  values() {
+    return Object.values(this.registry) as NonNullable<
+      (typeof this.registry)[string]
+    >[]
+  }
+}
+
 export class KeyboardHost {
   readonly system: System
 
@@ -71,40 +107,7 @@ export class KeyboardHost {
     Symbol: false,
     SymbolLock: false,
   }
-  private readonly pressed = new (class {
-    registry: {
-      [k in string]?: {
-        keyDef: keyboardKey
-        unpreventedDefault: boolean
-      }
-    } = {}
-    add(code: string, keyDef: keyboardKey) {
-      this.registry[code] ??= {
-        keyDef,
-        unpreventedDefault: false,
-      }
-    }
-    has(code: string) {
-      return !!this.registry[code]
-    }
-    setUnprevented(code: string) {
-      const o = this.registry[code]
-      if (o) {
-        o.unpreventedDefault = true
-      }
-    }
-    isUnprevented(code: string) {
-      return !!this.registry[code]?.unpreventedDefault
-    }
-    delete(code: string) {
-      delete this.registry[code]
-    }
-    values() {
-      return Object.values(this.registry) as NonNullable<
-        (typeof this.registry)[string]
-      >[]
-    }
-  })()
+  private readonly pressed = new PressedKeys()
   carryChar = ''
   private lastKeydownTarget: Element | undefined = undefined
   private readonly modifierLockStart: Record<string, boolean> = {}

@@ -11,6 +11,61 @@ import {type pointerKey, type PointerPosition} from './shared.ts'
 
 export type {pointerKey, PointerPosition} from './shared.ts'
 
+// Ours: a module-level class (upstream defines it inline, a new class per instance).
+class DeviceRegistry {
+  private registry: {[k in string]?: Device} = {}
+
+  get(k: string) {
+    return (this.registry[k] ??= new Device())
+  }
+}
+
+// Ours: a module-level class (upstream defines it inline, a new class per instance).
+class PointerRegistry {
+  private registry: Record<string, Pointer> = {}
+  private nextId = 1
+
+  new(pointerName: string, pointerType: string, buttons: Buttons) {
+    const isPrimary =
+      pointerType !== 'touch' ||
+      !Object.values(this.registry).some(
+        p => p.pointerType === 'touch' && !p.isCancelled,
+      )
+
+    if (!isPrimary) {
+      Object.values(this.registry).forEach(p => {
+        if (p.pointerType === pointerType && !p.isCancelled) {
+          p.isMultitouch = true
+        }
+      })
+    }
+
+    this.registry[pointerName] = new Pointer(
+      {
+        pointerId: this.nextId++,
+        pointerType,
+        isPrimary,
+      },
+      buttons,
+    )
+
+    return this.registry[pointerName]
+  }
+
+  get(pointerName: string) {
+    if (!this.has(pointerName)) {
+      throw new Error(
+        `Trying to access pointer "${pointerName}" which does not exist.`,
+      )
+    }
+    return this.registry[pointerName]
+  }
+
+  has(pointerName: string) {
+    return pointerName in this.registry
+  }
+}
+
 export class PointerHost {
   readonly system: System
 
@@ -23,58 +78,9 @@ export class PointerHost {
   private readonly mouse
   private readonly buttons
 
-  private readonly devices = new (class {
-    private registry: {[k in string]?: Device} = {}
+  private readonly devices = new DeviceRegistry()
 
-    get(k: string) {
-      return (this.registry[k] ??= new Device())
-    }
-  })()
-
-  private readonly pointers = new (class {
-    private registry: Record<string, Pointer> = {}
-    private nextId = 1
-
-    new(pointerName: string, pointerType: string, buttons: Buttons) {
-      const isPrimary =
-        pointerType !== 'touch' ||
-        !Object.values(this.registry).some(
-          p => p.pointerType === 'touch' && !p.isCancelled,
-        )
-
-      if (!isPrimary) {
-        Object.values(this.registry).forEach(p => {
-          if (p.pointerType === pointerType && !p.isCancelled) {
-            p.isMultitouch = true
-          }
-        })
-      }
-
-      this.registry[pointerName] = new Pointer(
-        {
-          pointerId: this.nextId++,
-          pointerType,
-          isPrimary,
-        },
-        buttons,
-      )
-
-      return this.registry[pointerName]
-    }
-
-    get(pointerName: string) {
-      if (!this.has(pointerName)) {
-        throw new Error(
-          `Trying to access pointer "${pointerName}" which does not exist.`,
-        )
-      }
-      return this.registry[pointerName]
-    }
-
-    has(pointerName: string) {
-      return pointerName in this.registry
-    }
-  })()
+  private readonly pointers = new PointerRegistry()
 
   isKeyPressed(keyDef: pointerKey) {
     return this.devices.get(keyDef.pointerType).isPressed(keyDef)

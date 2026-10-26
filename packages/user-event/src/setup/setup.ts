@@ -147,33 +147,46 @@ function wrapAndBindImpl<
   Args extends unknown[],
   Impl extends (this: Instance, ...args: Args) => Promise<unknown>,
 >(instance: Instance, impl: Impl, name: string = impl.name) {
-  function method(...args: Args) {
-    setLevelRef(instance, ApiLevel.Call)
+  // Upstream gives `method` impl's name with a `name` getter; a computed key names the function
+  // as it is created (one defineProperty per API per setup() was most of setup's cost).
+  const method = {
+    [impl.name]: function (...args: Args) {
+      setLevelRef(instance, ApiLevel.Call)
 
-    const run = () =>
-      wrapAsync(() => {
-        markTimers(instance.config)
-        return impl.apply(instance, args).then(async ret => {
-          // Upstream: `await wait(instance.config)`. Same semantics unless no timer could run
-          // during that wait (see utils/misc/wait.ts).
-          await yieldBetweenActions(instance.config)
-          return ret
+      const run = () =>
+        wrapAsync(() => {
+          markTimers(instance.config)
+          return impl.apply(instance, args).then(async ret => {
+            // Upstream: `await wait(instance.config)`. Same semantics unless no timer could run
+            // during that wait (see utils/misc/wait.ts).
+            await yieldBetweenActions(instance.config)
+            return ret
+          })
         })
-      })
-    // Mixed setups (stock RTL + this package) resolve the config source once (see dtl.ts).
-    const pending = resolveConfigSource()
-    const go = () => (pending === undefined ? run() : pending.then(run))
-    // Ours: a span per action when something subscribes to @ctrl/dom's tracing channel.
-    if (!tracing()) return go()
-    return tracePromise(
-      `user-event.${name}`,
-      describeCall(`user.${name}`, args),
-      go,
-    )
-  }
-  Object.defineProperty(method, 'name', {get: () => impl.name})
+      // Mixed setups (stock RTL + this package) resolve the config source once (see dtl.ts).
+      const pending = resolveConfigSource()
+      const go = () => (pending === undefined ? run() : pending.then(run))
+      // Ours: a span per action when something subscribes to @ctrl/dom's tracing channel.
+      if (!tracing()) return go()
+      return tracePromise(
+        `user-event.${name}`,
+        describeCall(`user.${name}`, args),
+        go,
+      )
+    },
+  }[impl.name]!
 
   return method
+}
+
+/**
+ * The API's names in upstream's key order (`{...apis, setup}`), and a template each setup()
+ * clones. The implementations are read at each setup(), as upstream's spread of `userEventApi` does.
+ */
+const API_NAMES = Object.keys(userEventApi)
+const API_TEMPLATE: Record<string, unknown> = {
+  ...Object.fromEntries(API_NAMES.map(name => [name, undefined])),
+  setup: undefined,
 }
 
 export function createInstance(
@@ -183,33 +196,30 @@ export function createInstance(
   instance: Instance
   api: UserEvent
 } {
-  const instance = {} as Instance
-  Object.assign(instance, {
-    config,
-    dispatchEvent: dispatchEvent.bind(instance),
-    dispatchUIEvent: dispatchUIEvent.bind(instance),
-    system,
-    levelRefs: {},
-    ...userEventApi,
-  })
+  // Ours: the API implementations (which call each other through `this`) are inherited instead of
+  // copied onto every instance.
+  const instance = Object.create(userEventApi) as Instance
+  instance.config = config
+  instance.dispatchEvent = dispatchEvent.bind(instance)
+  instance.dispatchUIEvent = dispatchUIEvent.bind(instance)
+  instance.system = system
+  instance.levelRefs = {}
 
-  return {
-    instance,
-    api: {
-      ...(Object.fromEntries(
-        Object.entries(userEventApi).map(([name, api]) => [
-          name,
-          // Ours: the API's name for its span (bundlers may rename the function: `type$1`).
-          wrapAndBindImpl(
-            instance,
-            api as (this: Instance, ...args: unknown[]) => Promise<unknown>,
-            name,
-          ),
-        ]),
-      ) as unknown as UserEventApi),
-      setup: setupSub.bind(instance),
-    } as unknown as UserEvent,
+  const api = {...API_TEMPLATE}
+  for (let i = 0; i < API_NAMES.length; i++) {
+    const name = API_NAMES[i]
+    const impl = (
+      userEventApi as unknown as Record<
+        string,
+        (this: Instance, ...args: unknown[]) => Promise<unknown>
+      >
+    )[name]
+    // Ours: the API's name for its span (bundlers may rename the function: `type$1`).
+    api[name] = wrapAndBindImpl(instance, impl, name)
   }
+  api.setup = setupSub.bind(instance)
+
+  return {instance, api: api as unknown as UserEvent}
 }
 
 function getDocument(
