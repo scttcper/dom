@@ -374,6 +374,31 @@ describe("idle time skipping: robustness", () => {
     }
   });
 
+  test("stdin opened after install (the first import of node:process) does not stop skipping", async () => {
+    // A fresh process with stdin on a pipe, so nothing has imported node:process yet: install the
+    // clock, then import it (its ESM namespace reads every process property, opening stdin).
+    const clockUrl = new URL("../../src/window/clock.ts", import.meta.url).href;
+    const script = `
+      const { VirtualClock, installClock } = await import(${JSON.stringify(clockUrl)});
+      const g = { Date, performance };
+      const installed = installClock(new VirtualClock({ skip: true }), g);
+      await import("node:process");
+      const start = performance.now();
+      await new Promise((resolve) => g.setTimeout(resolve, 5000));
+      console.log(Math.round(performance.now() - start));
+      installed.uninstall();
+      process.exit(0);
+    `;
+    const { spawn } = await import("node:child_process");
+    const child = spawn(process.execPath, ["--input-type=module", "-e", script], {
+      stdio: ["pipe", "pipe", "inherit"],
+    });
+    let out = "";
+    child.stdout.on("data", (chunk) => (out += chunk));
+    await new Promise((resolve) => child.on("exit", resolve));
+    expect(Number(out.trim())).toBeLessThan(1_000);
+  });
+
   test("dispose() without uninstall (VM pools) leaves no active clock behind", async () => {
     const { clockSkipping } = await import("../../src/window/clock.ts");
     setup(true);

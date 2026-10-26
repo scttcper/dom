@@ -205,8 +205,11 @@ export class VirtualClock {
     if (this.skip) {
       // Node opens stdout/stderr lazily, on first access. A clock installed before anything has
       // logged (a --import preload, a setup file) would otherwise count the reporter's first
-      // write as pending I/O and stop skipping for the rest of the run.
+      // write as pending I/O and stop skipping for the rest of the run. stdin too: the first
+      // `import ... from "node:process"` builds that module's namespace from every process
+      // property, which opens it (Base UI's suite does this after environment setup).
       if (typeof process === "object") {
+        void process.stdin;
         void process.stdout;
         void process.stderr;
       }
