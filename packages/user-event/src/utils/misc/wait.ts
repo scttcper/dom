@@ -258,17 +258,20 @@ export function markTimers(config: Instance['config']) {
   }
 }
 
-function canYieldWithImmediate(config: Instance['config']): boolean {
+/** `delay: 0`, the default `advanceTimers`, and real timers: nothing replaced or faked. */
+function realTimersAtZeroDelay(config: Instance['config']): boolean {
   if (config.delay !== 0 || config.advanceTimers !== defaultAdvanceTimers)
     return false
   const setImmediate = globalThis.setImmediate as TimerFn | undefined
-  if (
-    typeof setImmediate !== 'function' ||
-    isFaked(setImmediate) ||
-    !timerGlobalsObserved()
-  ) {
-    return false
-  }
+  return (
+    typeof setImmediate === 'function' &&
+    !isFaked(setImmediate) &&
+    timerGlobalsObserved()
+  )
+}
+
+function canYieldWithImmediate(config: Instance['config']): boolean {
+  if (!realTimersAtZeroDelay(config)) return false
   if (trackedTimerDueSoon()) return false
   const untracked = untrackedTimeouts()
   if (
@@ -293,10 +296,7 @@ export async function yieldBetweenActions(config: Instance['config']) {
     if (timerGlobalsObserved()) untrackedBaseline = untrackedTimeouts()
   }
   // After either wait: upstream's 1 ms timer can also fire before a busy render's continuation.
-  if (
-    config.delay === 0 &&
-    !isFaked(globalThis.setImmediate as TimerFn | undefined)
-  ) {
+  if (realTimersAtZeroDelay(config)) {
     for (let hop = 0; hop < MAX_YIELD_HOPS && immediatesPending(); hop++) {
       await new Promise<void>(resolveOnImmediate)
     }
