@@ -39,10 +39,7 @@ const hostClearTimeout = globalThis.clearTimeout;
 const hostSetImmediate = globalThis.setImmediate;
 const hostPerformance = globalThis.performance;
 const realNow = hostPerformance.now.bind(hostPerformance);
-const getActiveResourcesInfo =
-  typeof process === "object" && typeof process.getActiveResourcesInfo === "function"
-    ? process.getActiveResourcesInfo.bind(process)
-    : null;
+const getActiveResourcesInfo = process.getActiveResourcesInfo.bind(process);
 
 /** Resource types that never block skipping: timers (the clock's own host timer, the test runner's) and immediates (checked separately). */
 const NON_IO = new Set(["Timeout", "Immediate"]);
@@ -517,7 +514,6 @@ export class VirtualClock {
 
   /** null when idle; "immediate" when immediates are pending; "io" when I/O beyond the baseline is. */
   busy(): "immediate" | "io" | null {
-    if (getActiveResourcesInfo === null) return "io"; // cannot tell: never skip
     const counts = this.ioCounts;
     counts.clear();
     const resources = getActiveResourcesInfo();
@@ -604,7 +600,6 @@ export class VirtualClock {
 /** Counts of I/O resource types right now (the baseline skipping compares against). */
 function countIO(): Map<string, number> {
   const counts = new Map<string, number>();
-  if (getActiveResourcesInfo === null) return counts;
   for (const type of getActiveResourcesInfo()) {
     if (NON_IO.has(type)) continue;
     counts.set(type, (counts.get(type) ?? 0) + 1);
@@ -647,10 +642,9 @@ export function skipIdleTime(ms: number): boolean {
 /**
  * Whether immediates other than the active clock's own are queued: work that still has to run
  * before the event loop goes idle, such as React's scheduler continuing a render that ran past its
- * 5 ms slice. Without a clock every queued immediate counts; null when the host cannot tell.
+ * 5 ms slice. Without a clock every queued immediate counts.
  */
-export function foreignImmediatesPending(): boolean | null {
-  if (getActiveResourcesInfo === null) return null;
+export function foreignImmediatesPending(): boolean {
   const resources = getActiveResourcesInfo();
   let immediates = 0;
   for (let i = 0; i < resources.length; i++) if (resources[i] === "Immediate") immediates++;

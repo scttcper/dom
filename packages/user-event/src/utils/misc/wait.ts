@@ -64,16 +64,9 @@ function resolveOnImmediate(resolve: () => void) {
   globalThis.setImmediate(resolve)
 }
 
-const getActiveResourcesInfo =
-  typeof process === 'object' &&
-  typeof process.getActiveResourcesInfo === 'function'
-    ? process.getActiveResourcesInfo.bind(process)
-    : null
-
-/** Active (ref'ed) timeouts and intervals in this process, or -1 when unknown (not Node). */
+/** Active (ref'ed) timeouts and intervals in this process. */
 function countTimeouts(): number {
-  if (getActiveResourcesInfo === null) return -1
-  const resources = getActiveResourcesInfo()
+  const resources = process.getActiveResourcesInfo()
   let n = 0
   for (let i = 0; i < resources.length; i++) {
     if (resources[i] === 'Timeout') n++
@@ -233,7 +226,6 @@ let untrackedBaseline = -1
 
 function untrackedTimeouts(): number {
   const live = countTimeouts()
-  if (live === -1) return -1
   let trackedRefed = 0
   for (const handle of timerByHandle.keys()) {
     if (
@@ -274,12 +266,7 @@ function canYieldWithImmediate(config: Instance['config']): boolean {
   if (!realTimersAtZeroDelay(config)) return false
   if (trackedTimerDueSoon()) return false
   const untracked = untrackedTimeouts()
-  if (
-    untracked === -1 ||
-    untrackedBaseline === -1 ||
-    untracked > untrackedBaseline
-  )
-    return false
+  if (untrackedBaseline === -1 || untracked > untrackedBaseline) return false
   if (!skipIdleTime(1)) return false
   untrackedBaseline = untracked
   return true

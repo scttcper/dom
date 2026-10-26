@@ -109,21 +109,17 @@ export function skipIdleTime(ms: number): boolean {
 }
 
 const foreignImmediates = internal?.foreignImmediatesPending as
-  | (() => boolean | null)
+  | (() => boolean)
   | undefined
 
 /**
  * Whether immediates other than @ctrl/dom's clock's own are queued (src/window/clock.ts); on
- * another DOM, any queued immediate. False when Node cannot tell.
+ * another DOM, any queued immediate.
  */
 export function immediatesPending(): boolean {
-  if (foreignImmediates !== undefined) return foreignImmediates() === true
-  if (
-    typeof process !== 'object' ||
-    typeof process.getActiveResourcesInfo !== 'function'
-  )
-    return false
-  return process.getActiveResourcesInfo().includes('Immediate')
+  return foreignImmediates !== undefined
+    ? foreignImmediates()
+    : process.getActiveResourcesInfo().includes('Immediate')
 }
 
 const NodeImplClass = (internal?.NodeImpl ?? null) as
