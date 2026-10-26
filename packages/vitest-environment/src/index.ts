@@ -229,14 +229,22 @@ const environment: Environment = {
     const context: Context = createContext(vmConstants.DONT_CONTEXTIFY);
     const host = globalThis as unknown as Record<string, unknown>;
     for (const name of VM_HOST_GLOBALS) {
-      if (host[name] !== undefined) {
-        Object.defineProperty(context, name, {
-          value: host[name],
-          writable: true,
-          enumerable: false,
-          configurable: true,
-        });
-      }
+      // Forwarded on first read: in Node 26 most of these (fetch, Request, FormData, the streams,
+      // crypto, MessageChannel...) are lazy, and reading one builds it (undici alone is ~130
+      // modules). Most files never touch them, and the window replaces several right below.
+      if (!Object.hasOwn(host, name)) continue;
+      const settle = (value: unknown) =>
+        Object.defineProperty(context, name, { value, writable: true, enumerable: false, configurable: true });
+      Object.defineProperty(context, name, {
+        get() {
+          const value = host[name];
+          settle(value);
+          return value;
+        },
+        set: settle,
+        enumerable: false,
+        configurable: true,
+      });
     }
     // VM pools call setupVM per file in a long-lived worker, and the interface objects are shared
     // module classes: snapshot once (before the compat profile adjusts prototype members) and
