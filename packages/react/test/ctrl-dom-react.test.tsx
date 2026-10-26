@@ -59,7 +59,14 @@ describe("render result", () => {
   test("keeps upstream's key order (render fields, then the queries), and each render its own fields", () => {
     const a = main.render(<p>one</p>);
     const b = main.render(<p>two</p>);
-    expect(Object.keys(a).slice(0, 6)).toEqual(["container", "baseElement", "debug", "unmount", "rerender", "asFragment"]);
+    expect(Object.keys(a).slice(0, 6)).toEqual([
+      "container",
+      "baseElement",
+      "debug",
+      "unmount",
+      "rerender",
+      "asFragment",
+    ]);
     expect(Object.keys(a)).toEqual(Object.keys(b));
     expect(Object.keys(a)).toHaveLength(6 + Object.keys(main.queries).length);
     expect(a.container).not.toBe(b.container);
