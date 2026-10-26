@@ -6,8 +6,9 @@
 //
 //   node downstream/track.ts [--suites base-ui,radix,...] [--markdown out.md]
 //   node downstream/track.ts --update [--suites ...]    rewrite the baseline from the latest runs
-//   node downstream/track.ts --readme                   regenerate the pass-count tables in README.md
-//                                                       and docs/compatibility.md from the baseline
+//   node downstream/track.ts --readme                   regenerate the pass-count tables in README.md and
+//                                                       docs/compatibility.md, and each suite README's
+//                                                       results, from the baseline
 //
 // Exits 1 when a test that passed in the baseline no longer passes (in any mode: a jsdom
 // regression means the upstream run itself is broken), when a mode the baseline tracks has no
@@ -86,10 +87,15 @@ interface ModeCounts {
   failing: string[];
   /** Tests known to be intermittent in this mode: ignored when diffing. */
   flaky?: string[];
+  /** Wall time and peak RSS (largest process: the runner or a worker) of the recorded run. */
+  wallMs?: number;
+  peakRssBytes?: number;
 }
 interface SuiteBaseline {
   preset: string;
   commit: string;
+  /** Day the recorded runs started (YYYY-MM-DD). */
+  date?: string;
   modes: Record<string, ModeCounts>;
 }
 type Baseline = Record<string, SuiteBaseline>;
@@ -98,6 +104,8 @@ interface Run {
   preset: string;
   commit: string;
   counts: ModeCounts;
+  /** When the run started (the JSON reporter's startTime, ms). */
+  startTime: number;
 }
 
 /** A mode's latest run, from its runner's report.json (Vitest and Jest JSON share this shape) and summary.json. */
@@ -109,6 +117,7 @@ function readRun(suite: string, mode: string): Run | null {
     ? JSON.parse(readFileSync(join(dir, "summary.json"), "utf8"))
     : {};
   const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
+    startTime: number;
     testResults: Array<{
       name: string;
       status?: string;
@@ -132,7 +141,9 @@ function readRun(suite: string, mode: string): Run | null {
     }
   }
   counts.failing.sort();
-  return { preset: summary.preset ?? "?", commit: summary.commit ?? "?", counts };
+  if (typeof summary.wallMs === "number") counts.wallMs = summary.wallMs;
+  if (typeof summary.peakRssBytes === "number") counts.peakRssBytes = summary.peakRssBytes;
+  return { preset: summary.preset ?? "?", commit: summary.commit ?? "?", counts, startTime: report.startTime };
 }
 
 const baseline: Baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, "utf8")) : {};
@@ -173,11 +184,12 @@ if (flags.readme) {
     };
     const total = n(jsdom.passed + jsdom.failed);
     short.push(
-      `| [${meta.title}](downstream/${suite}/TRIAGE.md) | ${total} | ${cell("jsdom", false)} | ${cell("ctrl-dom", false)} | ${cell("ctrl-dom-full", false)} |`,
+      `| [${meta.title}](downstream/${suite}/README.md) | ${total} | ${cell("jsdom", false)} | ${cell("ctrl-dom", false)} | ${cell("ctrl-dom-full", false)} |`,
     );
     detailed.push(
-      `| [${meta.title}](../downstream/${suite}/TRIAGE.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom", true)} | ${cell("ctrl-dom", true)} | ${cell("ctrl-dom-full", true)} |`,
+      `| [${meta.title}](../downstream/${suite}/README.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom", true)} | ${cell("ctrl-dom", true)} | ${cell("ctrl-dom-full", true)} |`,
     );
+    writeSection(join(here, suite, "README.md"), suiteResults(tracked, repoUrl, slug));
   }
   writeSection(
     join(here, "../README.md"),
@@ -188,13 +200,71 @@ if (flags.readme) {
   writeSection(
     join(here, "../docs/compatibility.md"),
     [
-      "Each suite is the project's own unmodified tests at a pinned commit, run three ways: on **jsdom** (the project's own setup), on the **ctrl-dom environment** (only the test environment swapped; stock Testing Library), and on **ctrl-dom + its Testing Library** (`@testing-library/*` replaced by ours too). Columns count passing tests; skipped tests are left out. Each suite's TRIAGE.md (linked from its name) says what still differs and why.",
+      "Each suite is the project's own unmodified tests at a pinned commit, run three ways: on **jsdom** (the project's own setup), on the **ctrl-dom environment** (only the test environment swapped; stock Testing Library), and on **ctrl-dom + its Testing Library** (`@testing-library/*` replaced by ours too). Columns count passing tests; skipped tests are left out. Each suite's README (linked from its name) says how to run it and has its full results; its TRIAGE.md says what still differs and why.",
       "",
       ...detailed,
       "",
     ].join("\n"),
   );
   process.exit(0);
+}
+
+/**
+ * A suite README's results: per mode the tracked preset's counts, wall time and peak RSS (with the
+ * change against jsdom), then the failing tests.
+ */
+function suiteResults(tracked: SuiteBaseline, repoUrl: string, slug: string): string {
+  const n = (x: number) => x.toLocaleString("en-US");
+  const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
+  const memory = (bytes: number) =>
+    bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GiB` : `${Math.round(bytes / 1024 ** 2)} MiB`;
+  const jsdom = tracked.modes.jsdom;
+  const measure = (value: number | undefined, base: number | undefined, format: (v: number) => string) => {
+    if (value === undefined) return "—";
+    if (base === undefined || value === base) return format(value);
+    const percent = Math.round(((value - base) / base) * 100);
+    return percent === 0 ? format(value) : `${format(value)} (${percent > 0 ? "+" : "−"}${Math.abs(percent)}%)`;
+  };
+  const lines = [
+    `\`${tracked.preset}\` preset at [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit})${tracked.date === undefined ? "" : `, run ${tracked.date}`}:`,
+    "",
+    "| mode | passed | failed | skipped | wall time | peak RSS |",
+    "| --- | --: | --: | --: | --: | --: |",
+  ];
+  const failing: string[] = [];
+  for (const mode of MODES) {
+    const c = tracked.modes[mode];
+    if (c === undefined) continue;
+    const base = mode === "jsdom" ? undefined : jsdom;
+    lines.push(
+      `| ${mode} | ${n(c.passed)} | ${n(c.failed)} | ${n(c.skipped)} | ${measure(c.wallMs, base?.wallMs, seconds)} | ${measure(c.peakRssBytes, base?.peakRssBytes, memory)} |`,
+    );
+    const flaky = new Set(c.flaky ?? []);
+    for (const key of c.failing) {
+      const at = key.indexOf("::");
+      failing.push(
+        `- ${mode}: \`${key.slice(0, at)}\` › ${escapeMarkdown(key.slice(at + 2))}${flaky.has(key) ? " (intermittent)" : ""}`,
+      );
+    }
+  }
+  lines.push(
+    "",
+    "**jsdom**: the project's own setup. **ctrl-dom**: `@ctrl/dom` as the test environment, the project's Testing Library packages unchanged. **ctrl-dom-full**: `@ctrl/dom` with its own Testing Library, user-event and jest-dom.",
+  );
+  if (failing.length !== 0)
+    lines.push("", `<details><summary>Failing tests (${failing.length})</summary>`, "", ...failing, "", "</details>");
+  return [...lines, ""].join("\n");
+}
+
+/** Test names as Markdown text: `<Popover.Root />` would otherwise be taken for an HTML tag. */
+function escapeMarkdown(text: string): string {
+  return text.replace(/[\\`*_<>[\]|]/g, (c) => (c === "<" ? "&lt;" : c === ">" ? "&gt;" : `\\${c}`));
+}
+
+/** `YYYY-MM-DD` of `ms` in the local time zone. */
+function localDate(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** Replace what is between a file's downstream:start and downstream:end markers. */
@@ -216,6 +286,7 @@ if (flags.update) {
   for (const suite of suites) {
     const previous = baseline[suite];
     const next: SuiteBaseline = { preset: SUITES[suite].preset, commit: "", modes: {} };
+    let started = Infinity;
     for (const mode of MODES) {
       const run = readRun(suite, mode);
       if (run === null) continue;
@@ -225,7 +296,9 @@ if (flags.update) {
         throw new Error(`${suite}: modes ran on different upstream commits (${next.commit} vs ${run.commit})`);
       next.commit = run.commit;
       next.modes[mode] = { ...run.counts, flaky: previous?.modes[mode]?.flaky ?? [] };
+      started = Math.min(started, run.startTime);
     }
+    if (Number.isFinite(started)) next.date = localDate(started);
     if (Object.keys(next.modes).length === 0)
       throw new Error(`${suite}: no reports under ${relative(process.cwd(), SUITES[suite].output("<mode>"))}`);
     baseline[suite] = next;

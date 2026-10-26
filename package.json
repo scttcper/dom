@@ -73,7 +73,10 @@
     "downstream:base-ui": "node downstream/base-ui/run.ts",
     "downstream:radix": "node downstream/radix/run.ts",
     "downstream:sentry": "node downstream/sentry/run.ts",
-    "downstream:react-aria": "node downstream/react-aria/run.ts"
+    "downstream:react-aria": "node downstream/react-aria/run.ts",
+    "downstream:react-hook-form": "node downstream/react-hook-form/run.ts",
+    "downstream:react-router": "node downstream/react-router/run.ts",
+    "downstream:tanstack-query": "node downstream/tanstack-query/run.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.5",
