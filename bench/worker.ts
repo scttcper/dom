@@ -4,7 +4,16 @@
 //   node --expose-gc bench/worker.ts <workload-id> <config> [iterations] [warmup]
 
 import { GCProfiler, getHeapStatistics } from "node:v8";
-import { isConfig, prepare, installDom, loadEnv, domSpecifier, dynamicImport, type ConfigName } from "./lib/configs.ts";
+import {
+  isConfig,
+  prepare,
+  installDom,
+  loadEnv,
+  domSpecifier,
+  dynamicImport,
+  hostNow,
+  type ConfigName,
+} from "./lib/configs.ts";
 import { findWorkload } from "./workloads/index.ts";
 import type { Workload, StartupWorkload } from "./workloads/types.ts";
 
@@ -56,34 +65,34 @@ async function runStartup(
 ): Promise<Omit<SampleResult, keyof ReturnType<typeof memory>>> {
   await prepare(config);
   if (w.id === "startup/import") {
-    const t = performance.now();
+    const t = hostNow();
     const mod = await dynamicImport(domSpecifier(config));
-    const ms = performance.now() - t;
+    const ms = hostNow() - t;
     if (Object.keys(mod).length === 0) throw new Error("verify: DOM module has no exports");
     return { ok: true, workload: w.id, config, times: [ms], medianMs: ms, meanMs: ms, extra: {} };
   }
-  const t0 = performance.now();
+  const t0 = hostNow();
   const phases = await installDom(config);
   const extra: Record<string, number> = { importMs: phases.importMs, setupMs: phases.setupMs };
   if (w.id === "startup/first-render") {
-    const t1 = performance.now();
+    const t1 = hostNow();
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     const full = config === "ctrl-dom-full" || config === "ctrl-dom-full-dist";
     const React = await import("react");
     const rtl: any = await import(full ? "@ctrl/dom/react" : "@testing-library/react");
     await import(full ? "@ctrl/dom/user-event" : "@testing-library/user-event");
     await import(full ? "@ctrl/dom/jest-dom/matchers" : "@testing-library/jest-dom/matchers");
-    const t2 = performance.now();
+    const t2 = hostNow();
     const view = rtl.render(React.createElement("button", { type: "button" }, "Hello"));
     const button = rtl.screen.getByRole("button", { name: "Hello" });
-    const t3 = performance.now();
+    const t3 = hostNow();
     if (button.textContent !== "Hello" || !view.container.contains(button)) {
       throw new Error("verify: first render did not produce the button");
     }
     extra.stackImportMs = t2 - t1;
     extra.renderQueryMs = t3 - t2;
   }
-  const total = performance.now() - t0;
+  const total = hostNow() - t0;
   return {
     ok: true,
     workload: w.id,
@@ -136,9 +145,9 @@ async function runWorkload(w: Workload, config: ConfigName, iterations: number, 
     const profiler = new GCProfiler();
     const usedStart = getHeapStatistics().used_heap_size;
     profiler.start();
-    const t0 = performance.now();
+    const t0 = hostNow();
     const result = await inst.run();
-    const dt = performance.now() - t0;
+    const dt = hostNow() - t0;
     const profile = profiler.stop() as { statistics: GCStat[] } | undefined;
     const usedEnd = getHeapStatistics().used_heap_size;
     await inst.verify(result);

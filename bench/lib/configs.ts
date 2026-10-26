@@ -14,6 +14,13 @@
 
 import { installDistResolution } from "./dist-hooks.ts";
 
+/**
+ * The host's clock. The ctrl-dom environment replaces `globalThis.performance` with its virtual
+ * clock's (time skipping), whose now() includes skipped idle time: a workload that waits on timers
+ * (user-event's yields, waitFor) would be timed in skipped virtual milliseconds, not real ones.
+ */
+export const hostNow: () => number = performance.now.bind(performance);
+
 export const CONFIGS = [
   "jsdom",
   "happy-dom",
@@ -93,9 +100,9 @@ export async function prepare(c: ConfigName): Promise<void> {
  * Vitest environment does. Returns phase timings. Call `prepare()` first.
  */
 export async function installDom(c: ConfigName): Promise<StartupTimings> {
-  const t0 = performance.now();
+  const t0 = hostNow();
   await import(domSpecifier(c));
-  const t1 = performance.now();
+  const t1 = hostNow();
   let setupPath: string;
   if (!isCtrlDom(c)) {
     const env = vitestRuntime.builtinEnvironments[c];
@@ -104,7 +111,7 @@ export async function installDom(c: ConfigName): Promise<StartupTimings> {
   } else {
     setupPath = await installCtrlDom();
   }
-  const t2 = performance.now();
+  const t2 = hostNow();
   return { importMs: t1 - t0, setupMs: t2 - t1, totalMs: t2 - t0, setupPath };
 }
 
