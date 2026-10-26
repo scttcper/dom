@@ -1,10 +1,14 @@
 /**
  * The fast DOM printer in src/pretty-dom.ts must produce byte-identical output to upstream's
  * `prettyFormat.format(dom, {plugins: [DOMElementFilter(filterNode), DOMCollection], ...})`
- * (https://github.com/testing-library/dom-testing-library/blob/main/src/pretty-dom.js). This
- * runs both on the same @ctrl/dom nodes over many fixtures and option combinations.
+ * (https://github.com/testing-library/dom-testing-library/blob/main/src/pretty-dom.js), without
+ * pretty-format, which @ctrl/dom does not install. This runs both on the same nodes (@ctrl/dom's,
+ * jsdom's and happy-dom's) over many fixtures and option combinations, themes included, and
+ * checks invalid options throw pretty-format 27's exact errors.
  */
 
+import { Window as HappyWindow } from "happy-dom";
+import { JSDOM } from "jsdom";
 import { describe, expect, test } from "vitest";
 import {
   formatWithFastPrinter,
@@ -74,10 +78,93 @@ describe("fast DOM printer ≡ pretty-format + DOMElementFilter", () => {
     );
   });
 
-  test("custom theme / plugins delegate", () => {
-    const div = document.createElement("div");
-    expect(formatWithFastPrinter(div, undefined, { theme: { tag: "red" } })).toBeNull();
-    expect(formatWithFastPrinter(div, undefined, { plugins: [] })).toBeNull();
-    expect(formatWithFastPrinter(div, undefined, { bogus: 1 })).toBeNull();
+  test("only a custom plugins option still needs pretty-format (it replaces the DOM plugins)", () => {
+    expect(formatWithFastPrinter(document.createElement("div"), undefined, { plugins: [] })).toBeNull();
   });
 });
+
+const THEMED = `<div id="a"><!-- c --><p class="x">text</p></div>`;
+
+describe("themes ≡ pretty-format 27's getColorsHighlight (ansi-styles 5 names)", () => {
+  const THEMES: Record<string, Record<string, unknown>> = {
+    partial: { tag: "red" },
+    full: { comment: "bgBlue", content: "bold", prop: "magentaBright", tag: "underline", value: "grey" },
+    empty: {},
+  };
+  for (const [name, theme] of Object.entries(THEMES)) {
+    for (const highlight of [true, false]) {
+      test(`${name} theme, highlight ${highlight}`, () => {
+        const container = document.createElement("div");
+        container.innerHTML = THEMED;
+        const options = { printFunctionName: false, highlight, theme };
+        const filter = () => true;
+        expect(formatWithFastPrinter(container, filter, options)).toBe(
+          formatWithPrettyFormat(container, filter, options),
+        );
+      });
+    }
+  }
+});
+
+describe("invalid options throw pretty-format 27's validateOptions / theme errors verbatim", () => {
+  const INVALID: Record<string, Record<string, unknown>> = {
+    unknownOption: { bogus: 1 },
+    minWithIndent: { min: true, indent: 2 },
+    nullTheme: { theme: null },
+    stringTheme: { theme: "red" },
+    unknownColor: { highlight: true, theme: { tag: "nope" } },
+    emptyColor: { highlight: true, theme: { tag: "" } },
+    inheritedName: { highlight: true, theme: { tag: "toString" } },
+  };
+  for (const [name, options] of Object.entries(INVALID)) {
+    test(name, () => {
+      const div = document.createElement("div");
+      let expected = "";
+      try {
+        formatWithPrettyFormat(div, filterCommentsAndDefaultIgnoreTagsTags, options);
+      } catch (error) {
+        expected = (error as Error).message;
+      }
+      expect(expected).toMatch(/^pretty-format: /);
+      expect(() => formatWithFastPrinter(div, undefined, options)).toThrow(expected);
+    });
+  }
+});
+
+// Another DOM's nodes (a jsdom or happy-dom file under the ctrlDom() plugin) print through the
+// public DOM API.
+const FOREIGN: Record<string, () => { document: any; close(): void }> = {
+  jsdom: () => {
+    const dom = new JSDOM("<!doctype html><body></body>");
+    return { document: dom.window.document, close: () => dom.window.close() };
+  },
+  "happy-dom": () => {
+    const window = new HappyWindow();
+    return { document: window.document, close: () => void window.happyDOM.close() };
+  },
+};
+
+for (const [domName, open] of Object.entries(FOREIGN)) {
+  describe(`${domName} nodes: printer ≡ pretty-format + DOMElementFilter`, () => {
+    for (const [fixture, html] of Object.entries(FIXTURES)) {
+      test(fixture, () => {
+        const { document: foreign, close } = open();
+        try {
+          const container = foreign.createElement("div");
+          container.innerHTML = html;
+          for (const options of Object.values(OPTIONS)) {
+            for (const filter of Object.values(FILTERS)) {
+              const fast = formatWithFastPrinter(container, filter, options);
+              expect(fast).not.toBeNull();
+              expect(fast).toBe(
+                formatWithPrettyFormat(container, filter ?? filterCommentsAndDefaultIgnoreTagsTags, options),
+              );
+            }
+          }
+        } finally {
+          close();
+        }
+      });
+    }
+  });
+}

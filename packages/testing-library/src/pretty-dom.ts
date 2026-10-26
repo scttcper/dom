@@ -6,10 +6,11 @@
 //
 // prettyDOM output must be byte-identical to upstream's `prettyFormat.format(dom, {plugins:
 // [DOMElementFilter(filterNode), DOMCollection], printFunctionName: false, highlight, ...})`.
-// This module reimplements exactly that formatting over NodeImpl, without loading
-// pretty-format. Anything outside that fast path (a custom `plugins` or `theme` option, a
-// node the DOMElement plugin would not handle) is delegated to the real pretty-format,
-// loaded lazily, so output stays identical in every case.
+// This module reimplements exactly that formatting, with pretty-format's option validation and
+// themes, over NodeImpl and, for nodes of another DOM, over the public DOM API. @ctrl/dom does
+// not install pretty-format: only what is pretty-format proper (upstream's `prettyFormat`
+// re-export, a custom `plugins` option, nodes the DOMElement plugin would not handle) loads it,
+// from the project, when one is used.
 
 import { createRequire } from "node:module";
 import {
@@ -30,27 +31,37 @@ import { envDebugFormat, type DebugFormat } from "./agent-debug.ts";
 
 declare const process: any;
 
-// --- lazy pretty-format ---
+// --- pretty-format, an optional peer ---
 
 let prettyFormatModule: any = null;
-function loadPrettyFormat(): any {
-  return (prettyFormatModule ??= createRequire(import.meta.url)("pretty-format"));
+function loadPrettyFormat(feature: string): any {
+  if (prettyFormatModule !== null) return prettyFormatModule;
+  try {
+    return (prettyFormatModule = createRequire(import.meta.url)("pretty-format"));
+  } catch (cause) {
+    throw new Error(
+      `${feature} needs pretty-format, which @ctrl/dom does not install: add pretty-format@27 to the project's devDependencies.`,
+      { cause },
+    );
+  }
 }
 
 /**
- * Upstream re-exports pretty-format's module namespace as `prettyFormat`. Same keys here, but
- * the module is only loaded when one of them is first read (keeps import time low).
+ * Upstream re-exports pretty-format's module namespace as `prettyFormat`. Same keys here; the
+ * module loads (from the project) when one of them is first read.
  */
+const PRETTY_FORMAT_EXPORT = "The prettyFormat export";
+
 export const prettyFormat: {
   readonly format: (val: unknown, options?: any) => string;
   readonly default: (val: unknown, options?: any) => string;
   readonly plugins: Record<string, any>;
   readonly DEFAULT_OPTIONS: Record<string, any>;
 } = Object.defineProperties({} as any, {
-  format: { enumerable: true, get: () => loadPrettyFormat().format },
-  default: { enumerable: true, get: () => loadPrettyFormat().default },
-  plugins: { enumerable: true, get: () => loadPrettyFormat().plugins },
-  DEFAULT_OPTIONS: { enumerable: true, get: () => loadPrettyFormat().DEFAULT_OPTIONS },
+  format: { enumerable: true, get: () => loadPrettyFormat(PRETTY_FORMAT_EXPORT).format },
+  default: { enumerable: true, get: () => loadPrettyFormat(PRETTY_FORMAT_EXPORT).default },
+  plugins: { enumerable: true, get: () => loadPrettyFormat(PRETTY_FORMAT_EXPORT).plugins },
+  DEFAULT_OPTIONS: { enumerable: true, get: () => loadPrettyFormat(PRETTY_FORMAT_EXPORT).DEFAULT_OPTIONS },
 });
 
 const shouldHighlight = (): boolean => {
@@ -118,15 +129,80 @@ interface PrintConfig {
 
 const NO_COLOR: Color = { open: "", close: "" };
 const EMPTY_COLORS: Colors = { comment: NO_COLOR, content: NO_COLOR, prop: NO_COLOR, tag: NO_COLOR, value: NO_COLOR };
-// ansi-styles values for pretty-format's DEFAULT_THEME (comment: gray, content: reset,
-// prop: yellow, tag: cyan, value: green).
-const HIGHLIGHT_COLORS: Colors = {
-  comment: { open: "\u001b[90m", close: "\u001b[39m" },
-  content: { open: "\u001b[0m", close: "\u001b[0m" },
-  prop: { open: "\u001b[33m", close: "\u001b[39m" },
-  tag: { open: "\u001b[36m", close: "\u001b[39m" },
-  value: { open: "\u001b[32m", close: "\u001b[39m" },
+// ansi-styles 5 (pretty-format 27's): every named style as its [open, close] SGR codes.
+const ANSI_STYLES: Record<string, readonly [number, number]> = {
+  reset: [0, 0],
+  bold: [1, 22],
+  dim: [2, 22],
+  italic: [3, 23],
+  underline: [4, 24],
+  overline: [53, 55],
+  inverse: [7, 27],
+  hidden: [8, 28],
+  strikethrough: [9, 29],
+  black: [30, 39],
+  red: [31, 39],
+  green: [32, 39],
+  yellow: [33, 39],
+  blue: [34, 39],
+  magenta: [35, 39],
+  cyan: [36, 39],
+  white: [37, 39],
+  blackBright: [90, 39],
+  redBright: [91, 39],
+  greenBright: [92, 39],
+  yellowBright: [93, 39],
+  blueBright: [94, 39],
+  magentaBright: [95, 39],
+  cyanBright: [96, 39],
+  whiteBright: [97, 39],
+  gray: [90, 39],
+  grey: [90, 39],
+  bgBlack: [40, 49],
+  bgRed: [41, 49],
+  bgGreen: [42, 49],
+  bgYellow: [43, 49],
+  bgBlue: [44, 49],
+  bgMagenta: [45, 49],
+  bgCyan: [46, 49],
+  bgWhite: [47, 49],
+  bgBlackBright: [100, 49],
+  bgRedBright: [101, 49],
+  bgGreenBright: [102, 49],
+  bgYellowBright: [103, 49],
+  bgBlueBright: [104, 49],
+  bgMagentaBright: [105, 49],
+  bgCyanBright: [106, 49],
+  bgWhiteBright: [107, 49],
+  bgGray: [100, 49],
+  bgGrey: [100, 49],
 };
+
+const DEFAULT_THEME: Record<keyof Colors, string> = {
+  comment: "gray",
+  content: "reset",
+  prop: "yellow",
+  tag: "cyan",
+  value: "green",
+};
+
+/** pretty-format's getColorsHighlight: the theme over DEFAULT_THEME, each name an ansi-styles style. */
+function highlightColors(theme: Record<string, unknown> | undefined): Colors {
+  const colors = {} as Colors;
+  for (const key of Object.keys(DEFAULT_THEME) as (keyof Colors)[]) {
+    const value = theme !== undefined && theme[key] !== undefined ? theme[key] : DEFAULT_THEME[key];
+    const codes = typeof value === "string" && Object.hasOwn(ANSI_STYLES, value) ? ANSI_STYLES[value] : undefined;
+    if (codes === undefined) {
+      throw new Error(
+        `pretty-format: Option "theme" has a key "${key}" whose value "${value}" is undefined in ansi-styles.`,
+      );
+    }
+    colors[key] = { open: `\u001b[${codes[0]}m`, close: `\u001b[${codes[1]}m` };
+  }
+  return colors;
+}
+
+const HIGHLIGHT_COLORS = highlightColors(undefined);
 
 // pretty-format 27 DEFAULT_OPTIONS keys (validateOptions rejects anything else).
 const KNOWN_OPTIONS = new Set([
@@ -144,7 +220,7 @@ const KNOWN_OPTIONS = new Set([
   "theme",
 ]);
 
-/** Thrown when the fast printer meets something only pretty-format itself prints identically. */
+/** Thrown when the printer meets a node only pretty-format itself prints identically. */
 const DELEGATE = Symbol("delegate");
 
 const ELEMENT_REGEXP = /^((HTML|SVG)\w*)?Element$/;
@@ -256,6 +332,28 @@ function printChildren(impl: NodeImpl, config: PrintConfig, indentation: string,
   return out;
 }
 
+/** pretty-format's markup printElement. */
+function printElement(
+  type: string,
+  printedProps: string,
+  printedChildren: string,
+  config: PrintConfig,
+  indentation: string,
+): string {
+  const tagColor = config.colors.tag;
+  return (
+    tagColor.open +
+    "<" +
+    type +
+    (printedProps && tagColor.close + printedProps + config.spacingOuter + indentation + tagColor.open) +
+    (printedChildren
+      ? ">" + tagColor.close + printedChildren + config.spacingOuter + indentation + tagColor.open + "</" + type
+      : (printedProps && !config.min ? "" : " ") + "/") +
+    ">" +
+    tagColor.close
+  );
+}
+
 function printNode(impl: NodeImpl, config: PrintConfig, indentation: string, depth: number): string {
   if (!pluginHandles(impl)) throw DELEGATE;
   if (impl.type === TEXT_NODE) {
@@ -278,36 +376,112 @@ function printNode(impl: NodeImpl, config: PrintConfig, indentation: string, dep
 
   const childIndentation = indentation + config.indent;
   const printedProps = impl.type === DOCUMENT_FRAGMENT_NODE ? "" : printProps(impl, config, childIndentation);
-  const printedChildren = printChildren(impl, config, childIndentation, depth);
-
-  return (
-    tagColor.open +
-    "<" +
-    type +
-    (printedProps && tagColor.close + printedProps + config.spacingOuter + indentation + tagColor.open) +
-    (printedChildren
-      ? ">" + tagColor.close + printedChildren + config.spacingOuter + indentation + tagColor.open + "</" + type
-      : (printedProps && !config.min ? "" : " ") + "/") +
-    ">" +
-    tagColor.close
-  );
+  return printElement(type, printedProps, printChildren(impl, config, childIndentation, depth), config, indentation);
 }
 
-/** pretty-format's option validation + config construction for the fast path; null = delegate. */
+/**
+ * The same printing over the public DOM API, for nodes of another DOM (a jsdom or happy-dom file
+ * under the ctrlDom() plugin): upstream's DOMElementFilter reads only nodeType, data, tagName,
+ * attributes and childNodes.
+ */
+function printForeignNode(
+  node: any,
+  config: PrintConfig,
+  filterNode: (node: any) => boolean,
+  indentation: string,
+  depth: number,
+): string {
+  if (!foreignHandles(node)) throw DELEGATE;
+  if (node.nodeType === TEXT_NODE)
+    return config.colors.content.open + escapeHTML(node.data) + config.colors.content.close;
+  if (node.nodeType === COMMENT_NODE) {
+    return config.colors.comment.open + "<!--" + escapeHTML(node.data) + "-->" + config.colors.comment.close;
+  }
+  const isFragment = node.nodeType === DOCUMENT_FRAGMENT_NODE;
+  const type = isFragment ? "DocumentFragment" : node.tagName.toLowerCase();
+  const tagColor = config.colors.tag;
+  if (++depth > config.maxDepth) {
+    return tagColor.open + "<" + type + tagColor.close + " …" + tagColor.open + " />" + tagColor.close;
+  }
+  const childIndentation = indentation + config.indent;
+  let printedProps = "";
+  if (!isFragment) {
+    const attrs = Array.from(node.attributes as ArrayLike<{ name: string; value: string }>);
+    attrs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const { name, value } of attrs) {
+      printedProps +=
+        config.spacingInner +
+        childIndentation +
+        config.colors.prop.open +
+        name +
+        config.colors.prop.close +
+        "=" +
+        config.colors.value.open +
+        printString(value, config) +
+        config.colors.value.close;
+    }
+  }
+  let printedChildren = "";
+  const children = node.childNodes || node.children;
+  for (let i = 0; i < children.length; i++) {
+    if (!filterNode(children[i])) continue;
+    printedChildren +=
+      config.spacingOuter +
+      childIndentation +
+      printForeignNode(children[i], config, filterNode, childIndentation, depth);
+  }
+  return printElement(type, printedProps, printedChildren, config, indentation);
+}
+
+/** DOMElementFilter `test()` for a node of another DOM. */
+function foreignHandles(val: any): boolean {
+  const name = val?.constructor?.name;
+  if (!name && !isCustomElement(val)) return false;
+  switch (val.nodeType) {
+    case ELEMENT_NODE:
+      return ELEMENT_REGEXP.test(name) || isCustomElement(val);
+    case TEXT_NODE:
+      return name === "Text";
+    case COMMENT_NODE:
+      return name === "Comment";
+    case DOCUMENT_FRAGMENT_NODE:
+      return name === "DocumentFragment";
+  }
+  return false;
+}
+
+/**
+ * pretty-format 27's validateOptions (messages verbatim) and config; null for a custom `plugins`
+ * option, which replaces upstream's DOM plugins and so is pretty-format proper.
+ */
 function makePrintConfig(
   options: Record<string, any>,
   filterNode: ((node: any) => boolean) | null,
 ): PrintConfig | null {
   for (const key of Object.keys(options)) {
-    if (!KNOWN_OPTIONS.has(key)) return null; // pretty-format throws `Unknown option`
+    if (!KNOWN_OPTIONS.has(key)) throw new Error(`pretty-format: Unknown option "${key}".`);
   }
-  if (options.plugins !== undefined || options.theme !== undefined) return null;
-  if (options.min && options.indent !== undefined && options.indent !== 0) return null; // throws
+  if (options.min && options.indent !== undefined && options.indent !== 0) {
+    throw new Error('pretty-format: Options "min" and "indent" cannot be used together.');
+  }
+  if (options.theme !== undefined) {
+    if (options.theme === null) throw new Error('pretty-format: Option "theme" must not be null.');
+    if (typeof options.theme !== "object") {
+      throw new Error(
+        `pretty-format: Option "theme" must be of type "object" but instead received "${typeof options.theme}".`,
+      );
+    }
+  }
+  if (options.plugins !== undefined) return null;
   const min = Boolean(options.min);
   const indentWidth = options.indent !== undefined ? options.indent : 2;
   const defaultIgnore = getConfig().defaultIgnore;
   return {
-    colors: options.highlight ? HIGHLIGHT_COLORS : EMPTY_COLORS,
+    colors: !options.highlight
+      ? EMPTY_COLORS
+      : options.theme === undefined
+        ? HIGHLIGHT_COLORS
+        : highlightColors(options.theme),
     escapeString: options.escapeString !== undefined ? options.escapeString : true,
     indent: min ? "" : new Array(indentWidth + 1).join(" "),
     maxDepth: options.maxDepth !== undefined ? options.maxDepth : Infinity,
@@ -328,20 +502,24 @@ function formatDOM(
   compact = false,
 ): string {
   const allOptions = { printFunctionName: false, highlight: shouldHighlight(), ...prettyFormatOptions };
-  const impl: NodeImpl | undefined = dom[$impl];
   const effectiveFilter = filterNode ?? filterCommentsAndDefaultIgnoreTagsTags;
-  if (impl !== undefined) {
-    const config = makePrintConfig(allOptions, filterNode === undefined ? null : filterNode);
-    if (config !== null) {
-      config.compact = compact;
-      try {
-        return printNode(impl, config, "", 0);
-      } catch (e) {
-        if (e !== DELEGATE) throw e;
-      }
-    }
+  const config = makePrintConfig(allOptions, filterNode === undefined ? null : filterNode);
+  if (config === null) {
+    return formatWithPrettyFormat(dom, effectiveFilter, allOptions, 'The "plugins" option of prettyDOM');
   }
-  return formatWithPrettyFormat(dom, effectiveFilter, allOptions);
+  config.compact = compact;
+  const impl: NodeImpl | undefined = dom[$impl];
+  try {
+    return impl !== undefined ? printNode(impl, config, "", 0) : printForeignNode(dom, config, effectiveFilter, "", 0);
+  } catch (e) {
+    if (e !== DELEGATE) throw e;
+  }
+  return formatWithPrettyFormat(
+    dom,
+    effectiveFilter,
+    allOptions,
+    "Printing a node other than an element, text, comment or fragment",
+  );
 }
 
 /** Upstream's exact formatting call (also the oracle for the fast printer's tests). */
@@ -349,15 +527,16 @@ export function formatWithPrettyFormat(
   dom: any,
   filterNode: (node: any) => boolean,
   options: Record<string, any>,
+  feature = "pretty-format's own printing",
 ): string {
-  const pf = loadPrettyFormat();
+  const pf = loadPrettyFormat(feature);
   return pf.format(dom, {
     plugins: [createDOMElementFilter(filterNode), pf.plugins.DOMCollection],
     ...options,
   });
 }
 
-/** The fast printer alone (null when it would delegate); for tests. */
+/** The printer alone, for our nodes or another DOM's (null when it would delegate); for tests. */
 export function formatWithFastPrinter(
   dom: any,
   filterNode: ((node: any) => boolean) | undefined,
@@ -365,8 +544,11 @@ export function formatWithFastPrinter(
 ): string | null {
   const config = makePrintConfig(options, filterNode ?? null);
   if (config === null) return null;
+  const impl: NodeImpl | undefined = dom[$impl];
   try {
-    return printNode(dom[$impl], config, "", 0);
+    return impl !== undefined
+      ? printNode(impl, config, "", 0)
+      : printForeignNode(dom, config, filterNode ?? filterCommentsAndDefaultIgnoreTagsTags, "", 0);
   } catch (e) {
     if (e === DELEGATE) return null;
     throw e;
@@ -453,7 +635,7 @@ export const logDOM = (...args: [any?, any?, any?]): void => {
   }
 };
 
-// --- delegation: the upstream DOMElementFilter plugin, verbatim, for pretty-format itself ---
+// --- the upstream DOMElementFilter plugin, verbatim, for pretty-format itself (plugins option, tests) ---
 
 function createDOMElementFilter(filterNode: (node: any) => boolean): any {
   const printPropsPF = (
@@ -512,26 +694,6 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
         return config.spacingOuter + indentation + printedChild;
       })
       .join("");
-  const printElement = (
-    type: string,
-    printedProps: string,
-    printedChildren: string,
-    config: any,
-    indentation: string,
-  ): string => {
-    const tagColor = config.colors.tag;
-    return (
-      tagColor.open +
-      "<" +
-      type +
-      (printedProps && tagColor.close + printedProps + config.spacingOuter + indentation + tagColor.open) +
-      (printedChildren
-        ? ">" + tagColor.close + printedChildren + config.spacingOuter + indentation + tagColor.open + "</" + type
-        : (printedProps && !config.min ? "" : " ") + "/") +
-      ">" +
-      tagColor.close
-    );
-  };
   const testNode = (val: any) => {
     const constructorName = val.constructor.name;
     const { nodeType } = val;

@@ -1,4 +1,5 @@
-import * as prettyFormat from 'pretty-format'
+// Difference: upstream imports these from pretty-format, which @ctrl/dom does not install (./pretty-format.d.ts).
+import * as prettyFormat from './pretty-format.js'
 import {AriaSnapshotOptions} from './aria-snapshot.js'
 
 export interface PrettyDOMOptions extends prettyFormat.OptionsReceived {

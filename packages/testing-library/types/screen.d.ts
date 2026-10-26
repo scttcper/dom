@@ -1,4 +1,5 @@
-import {OptionsReceived} from 'pretty-format'
+// Difference: upstream imports these from pretty-format, which @ctrl/dom does not install (./pretty-format.d.ts).
+import {OptionsReceived} from './pretty-format.js'
 import {BoundFunctions, Queries} from './get-queries-for-element.js'
 import * as queries from './queries.js'
 import {AriaSnapshotOptions} from './aria-snapshot.js'
