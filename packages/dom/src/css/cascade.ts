@@ -143,12 +143,27 @@ export class IndexedRule {
   }
 }
 
+/** The rules that share one subject key. */
+export class Bucket {
+  rules: IndexedRule[];
+  /** How many have ancestor hashes (`h0 >= 0`): the ones the ancestor filter can reject. */
+  hashed: number;
+  constructor() {
+    this.rules = [];
+    this.hashed = 0;
+  }
+  push(r: IndexedRule): void {
+    this.rules.push(r);
+    if (r.h0 >= 0) this.hashed++;
+  }
+}
+
 /** Rules bucketed by subject key. */
 export class RuleBuckets {
-  ids: Map<string, IndexedRule[]>;
-  classes: Map<string, IndexedRule[]>;
-  tags: Map<string, IndexedRule[]>;
-  universal: IndexedRule[];
+  ids: Map<string, Bucket>;
+  classes: Map<string, Bucket>;
+  tags: Map<string, Bucket>;
+  universal: Bucket;
   size: number;
   /**
    * Quirks-mode document: id and class keys are ASCII-lowercased on both sides
@@ -160,7 +175,7 @@ export class RuleBuckets {
     this.ids = new Map();
     this.classes = new Map();
     this.tags = new Map();
-    this.universal = [];
+    this.universal = new Bucket();
     this.size = 0;
     this.quirks = quirks;
   }
@@ -169,7 +184,7 @@ export class RuleBuckets {
     this.size++;
     const kind = r.sel.keyKind;
     const key = this.quirks && (kind === KEY_ID || kind === KEY_CLASS) ? asciiLowercase(r.sel.key) : r.sel.key;
-    let map: Map<string, IndexedRule[]> | null = null;
+    let map: Map<string, Bucket> | null = null;
     if (kind === KEY_ID) map = this.ids;
     else if (kind === KEY_CLASS) map = this.classes;
     else if (kind === KEY_TAG) map = this.tags;
@@ -177,9 +192,9 @@ export class RuleBuckets {
       this.universal.push(r);
       return;
     }
-    let list = map.get(key);
-    if (list === undefined) map.set(key, (list = []));
-    list.push(r);
+    let bucket = map.get(key);
+    if (bucket === undefined) map.set(key, (bucket = new Bucket()));
+    bucket.push(r);
   }
 }
 
@@ -689,11 +704,11 @@ function resetFilter(): void {
  * child has the same ancestors, so siblings, and the same element recomputed after a mutation
  * elsewhere, skip rejecting the same rules again. Valid while the parent's ancestor hashes (the
  * filter's whole input) are unchanged; survivors are still matched in full. Weak keys release
- * removed trees (parents) and replaced rule indexes (bucket arrays).
+ * removed trees (parents) and replaced rule indexes (buckets).
  */
 class Survivors {
   hashes: number[];
-  lists: WeakMap<IndexedRule[], IndexedRule[]>;
+  lists: WeakMap<Bucket, IndexedRule[]>;
   constructor(hashes: number[]) {
     this.hashes = hashes;
     this.lists = new WeakMap();
@@ -703,7 +718,7 @@ class Survivors {
 const survivorsByParent = new WeakMap<NodeImpl, Survivors>();
 /** Survivors of `filterFor`'s parent, checked against its hashes in this computeRecord, or null. */
 let survivors: Survivors | null = null;
-/** Smaller buckets are filtered rule by rule: the lookup would cost more than it saves. */
+/** Buckets with fewer rules the filter can reject are filtered rule by rule: a lookup costs more. */
 const SURVIVORS_MIN = 16;
 
 function sameHashes(a: number[], b: number[]): boolean {
@@ -712,7 +727,7 @@ function sameHashes(a: number[], b: number[]): boolean {
   return true;
 }
 
-function filterSurvivors(list: IndexedRule[], el: NodeImpl, parent: NodeImpl): IndexedRule[] {
+function filterSurvivors(bucket: Bucket, el: NodeImpl, parent: NodeImpl): IndexedRule[] {
   if (filterFor !== el) buildFilter(el);
   let s = survivors;
   if (s === null) {
@@ -723,20 +738,21 @@ function filterSurvivors(list: IndexedRule[], el: NodeImpl, parent: NodeImpl): I
     }
     survivors = s;
   }
-  let out = s.lists.get(list);
+  let out = s.lists.get(bucket);
   if (out === undefined) {
     out = [];
-    for (let i = 0; i < list.length; i++) {
-      const r = list[i];
+    const rules = bucket.rules;
+    for (let i = 0; i < rules.length; i++) {
+      const r = rules[i];
       if (mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) out.push(r);
     }
-    s.lists.set(list, out);
+    s.lists.set(bucket, out);
   }
   return out;
 }
 
 function testRules(
-  list: IndexedRule[] | undefined,
+  bucket: Bucket | undefined,
   el: NodeImpl,
   pseudo: string,
   opts: MatchOptions | undefined,
@@ -744,9 +760,10 @@ function testRules(
   context: number,
   out: Matched[],
 ): void {
-  if (list === undefined) return;
-  if (filter && list.length >= SURVIVORS_MIN && el.parent !== null) {
-    list = filterSurvivors(list, el, el.parent);
+  if (bucket === undefined) return;
+  let list = bucket.rules;
+  if (filter && bucket.hashed >= SURVIVORS_MIN && el.parent !== null) {
+    list = filterSurvivors(bucket, el, el.parent);
     filter = false;
   }
   for (let i = 0; i < list.length; i++) {
