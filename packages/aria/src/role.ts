@@ -24,7 +24,17 @@
 //   https://w3c.github.io/aria/#document-handling_author-errors_roles
 //   https://w3c.github.io/aria/#conflict_resolution_presentation_none
 
-import { ELEMENT_NODE, HTML_NS, T, attr, tagId, type NodeImpl } from "@ctrl/dom/internal";
+import {
+  $version,
+  ELEMENT_NODE,
+  HTML_NS,
+  T,
+  attr,
+  nodeCache,
+  tagId,
+  type NodeCache,
+  type NodeImpl,
+} from "@ctrl/dom/internal";
 import { inputType, selectSize } from "./forms.ts";
 
 /** Tag id by local name for any namespace (type selectors / `localName` checks are namespace-agnostic). */
@@ -52,7 +62,23 @@ function eqCI(v: string | null, lower: string): boolean {
  * exactly one role, so the list form always has at most one element.
  */
 export function implicitRole(impl: NodeImpl): string {
-  return implicitRoleImpl(impl, false);
+  return impl.type === ELEMENT_NODE ? roleCache(impl).role : "";
+}
+
+/**
+ * The element's cache with its `role` attribute and Testing Library implicit role current: every
+ * ByRole query asks for them for every element in the container, and both depend only on the tag
+ * and attributes, so they are kept per document version.
+ */
+export function roleCache(impl: NodeImpl): NodeCache {
+  const version = impl.doc[$version];
+  const c = impl.cache as NodeCache | null;
+  if (c !== null && c.roleVersion === version) return c;
+  const cache = c ?? nodeCache(impl);
+  cache.roleAttr = attr(impl, "role");
+  cache.role = implicitRoleImpl(impl, false);
+  cache.roleVersion = version;
+  return cache;
 }
 
 /** jest-dom@7's `getImplicitAriaRoles` variant (see module comment). */
@@ -264,12 +290,14 @@ export function getImplicitRoles(impl: NodeImpl): string[] {
  * role ("" for none).
  */
 export function tlRole(impl: NodeImpl): string {
-  const role = attr(impl, "role");
+  if (impl.type !== ELEMENT_NODE) return "";
+  const c = roleCache(impl);
+  const role = c.roleAttr;
   if (role !== null) {
     const sp = role.indexOf(" ");
     return sp === -1 ? role : role.slice(0, sp);
   }
-  return implicitRole(impl);
+  return c.role;
 }
 
 // -----------------------------------------------------------------------------------------

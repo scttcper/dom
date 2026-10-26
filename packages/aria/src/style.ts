@@ -26,10 +26,10 @@
 import {
   T,
   attr,
-  computedDisplay,
   computedValue,
   computedVisibility,
   pseudoContent,
+  styledDisplay,
   tagId,
   uaDisplay,
   type NodeImpl,
@@ -135,15 +135,15 @@ function jsdomUaKind(impl: NodeImpl): number {
 
 /** Computed `display` is `none` (the element itself; `display` is not inherited). */
 export function isDisplayNone(impl: NodeImpl): boolean {
-  const d = computedDisplay(impl);
-  if (d !== uaDisplay(impl)) return d === "none"; // author / inline style decides
+  const d = styledDisplay(impl);
+  if (d !== null && d !== uaDisplay(impl)) return d === "none"; // author / inline style decides
   return jsdomUaKind(impl) === K_NONE;
 }
 
 /** Computed `display` is exactly `inline` (accname: inline children are not space-separated). */
 export function isDisplayInline(impl: NodeImpl): boolean {
-  const d = computedDisplay(impl);
-  if (d !== uaDisplay(impl)) return d === "inline";
+  const d = styledDisplay(impl);
+  if (d !== null && d !== uaDisplay(impl)) return d === "inline";
   return jsdomUaKind(impl) === K_INLINE;
 }
 

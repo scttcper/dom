@@ -11,6 +11,7 @@ export {
   isDisplayNone,
   isDisplayNoneInclusive,
   computedDisplay,
+  styledDisplay,
   computedVisibility,
   isVisibilityHidden,
   pointerEvents,

@@ -1580,6 +1580,11 @@ export function computedDisplay(el: NodeImpl): string {
   return computeDisplay(styleRecord(el));
 }
 
+/** Computed `display` when author or inline styles could set it, else null (it is `uaDisplay(el)`). */
+export function styledDisplay(el: NodeImpl): string | null {
+  return plain(el) ? null : computeDisplay(styleRecord(el));
+}
+
 /** https://drafts.csswg.org/css-display-3/#valdef-display-none — own computed display is none. */
 export function isDisplayNone(el: NodeImpl): boolean {
   if (plain(el)) return uaDisplay(el) === "none";

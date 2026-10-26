@@ -48,8 +48,8 @@ export { labelsOf, inputType, isLabelable } from "./forms.ts";
 export { isDisplayNone, isVisibilityHidden, isDisplayInline } from "./style.ts";
 export { implOf, queryIdRefs } from "./tree.ts";
 
-import { attr, type NodeImpl } from "@ctrl/dom/internal";
-import { implicitRole } from "./role.ts";
+import type { NodeImpl } from "@ctrl/dom/internal";
+import { roleCache } from "./role.ts";
 
 /**
  * Testing Library's role filter for one element: with a `role` attribute, its first " "-token
@@ -57,7 +57,8 @@ import { implicitRole } from "./role.ts";
  * role must.
  */
 export function tlRoleMatches(impl: NodeImpl, role: string, queryFallbacks: boolean): boolean {
-  const value = attr(impl, "role");
+  const c = roleCache(impl);
+  const value = c.roleAttr;
   if (value !== null) {
     if (!queryFallbacks) {
       const sp = value.indexOf(" ");
@@ -73,5 +74,5 @@ export function tlRoleMatches(impl: NodeImpl, role: string, queryFallbacks: bool
     }
     return false;
   }
-  return implicitRole(impl) === role;
+  return c.role === role;
 }
