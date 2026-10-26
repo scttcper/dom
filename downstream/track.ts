@@ -5,7 +5,10 @@
 // on demand and calls this).
 //
 //   node downstream/track.ts [--suites base-ui,radix,...] [--markdown out.md]
-//   node downstream/track.ts --update [--suites ...]    rewrite the baseline from the latest runs
+//   node downstream/track.ts --update [--suites ...] [--modes ...]
+//                                                       rewrite the baseline from the latest runs; modes
+//                                                       left out of --modes keep their recorded entry
+//                                                       (e.g. refresh ctrl-dom numbers without rerunning jsdom)
 //   node downstream/track.ts --readme                   regenerate the pass-count tables in README.md and
 //                                                       docs/compatibility.md, and each suite README's
 //                                                       results, from the baseline
@@ -73,6 +76,7 @@ const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full"];
 const { values: flags } = parseArgs({
   options: {
     suites: { type: "string", default: Object.keys(SUITES).join(",") },
+    modes: { type: "string", default: MODES.join(",") },
     update: { type: "boolean", default: false },
     readme: { type: "boolean", default: false },
     markdown: { type: "string" },
@@ -90,6 +94,8 @@ interface ModeCounts {
   /** Wall time and peak RSS (largest process: the runner or a worker) of the recorded run. */
   wallMs?: number;
   peakRssBytes?: number;
+  /** Day this mode's recorded run started (YYYY-MM-DD); modes can be refreshed separately. */
+  date?: string;
 }
 interface SuiteBaseline {
   preset: string;
@@ -225,8 +231,13 @@ function suiteResults(tracked: SuiteBaseline, repoUrl: string, slug: string): st
     const percent = Math.round(((value - base) / base) * 100);
     return percent === 0 ? format(value) : `${format(value)} (${percent > 0 ? "+" : "−"}${Math.abs(percent)}%)`;
   };
+  // Modes refreshed on different days (track.ts --update --modes) name their own day.
+  const otherDays = MODES.filter((m) => tracked.modes[m]?.date !== undefined && tracked.modes[m].date !== tracked.date)
+    .map((m) => `${m} ${tracked.modes[m].date}`)
+    .join(", ");
+  const ran = tracked.date === undefined ? "" : `, run ${tracked.date}${otherDays === "" ? "" : ` (${otherDays})`}`;
   const lines = [
-    `\`${tracked.preset}\` preset at [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit})${tracked.date === undefined ? "" : `, run ${tracked.date}`}:`,
+    `\`${tracked.preset}\` preset at [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit})${ran}:`,
     "",
     "| mode | passed | failed | skipped | wall time | peak RSS |",
     "| --- | --: | --: | --: | --: | --: |",
@@ -283,11 +294,23 @@ function writeSection(path: string, body: string): void {
 }
 
 if (flags.update) {
+  const refresh = new Set(flags.modes.split(",").filter(Boolean));
+  for (const mode of refresh)
+    if (!MODES.includes(mode)) throw new Error(`unknown mode ${mode} (have: ${MODES.join(", ")})`);
   for (const suite of suites) {
     const previous = baseline[suite];
     const next: SuiteBaseline = { preset: SUITES[suite].preset, commit: "", modes: {} };
     let started = Infinity;
     for (const mode of MODES) {
+      if (!refresh.has(mode)) {
+        // Not refreshed: keep the recorded entry. The new runs must then be on its upstream commit.
+        const kept = previous?.modes[mode];
+        if (kept !== undefined) {
+          next.modes[mode] = { ...kept, date: kept.date ?? previous!.date };
+          next.commit = previous!.commit;
+        }
+        continue;
+      }
       const run = readRun(suite, mode);
       if (run === null) continue;
       if (run.preset !== next.preset)
@@ -295,7 +318,7 @@ if (flags.update) {
       if (next.commit !== "" && run.commit !== next.commit)
         throw new Error(`${suite}: modes ran on different upstream commits (${next.commit} vs ${run.commit})`);
       next.commit = run.commit;
-      next.modes[mode] = { ...run.counts, flaky: previous?.modes[mode]?.flaky ?? [] };
+      next.modes[mode] = { ...run.counts, flaky: previous?.modes[mode]?.flaky ?? [], date: localDate(run.startTime) };
       started = Math.min(started, run.startTime);
     }
     if (Number.isFinite(started)) next.date = localDate(started);
