@@ -13,20 +13,35 @@ export interface DOMPointInit {
 }
 
 import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
-import { $height, $is2D, $m, $rects, $w, $width, $x, $y, $z } from "../keys.ts";
+import { $is2D, $m, $rects } from "../keys.ts";
+
+// The coordinates are private fields: invisible to spreads, `Object.keys` and Jest's
+// symbol-aware equality, like jsdom's internal slots, without hiding symbol-keyed fields on every
+// construction (getBoundingClientRect builds a DOMRect per call). The writable subclasses set
+// them through these functions, captured in each base class's static block.
+let setPoint: (p: DOMPointReadOnly, i: number, v: number) => void;
+let setRect: (r: DOMRectReadOnly, i: number, v: number) => void;
 
 export class DOMPointReadOnly {
-  [$x]: number;
-  [$y]: number;
-  [$z]: number;
-  [$w]: number;
+  #x: number;
+  #y: number;
+  #z: number;
+  #w: number;
+
+  static {
+    setPoint = (p, i, v) => {
+      if (i === 0) p.#x = v;
+      else if (i === 1) p.#y = v;
+      else if (i === 2) p.#z = v;
+      else p.#w = v;
+    };
+  }
 
   constructor(x = 0, y = 0, z = 0, w = 1) {
-    this[$x] = Number(x);
-    this[$y] = Number(y);
-    this[$z] = Number(z);
-    this[$w] = Number(w);
-    hideInternals(this);
+    this.#x = Number(x);
+    this.#y = Number(y);
+    this.#z = Number(z);
+    this.#w = Number(w);
   }
 
   static fromPoint(other: DOMPointInit = {}): DOMPointReadOnly {
@@ -34,21 +49,24 @@ export class DOMPointReadOnly {
   }
 
   get x(): number {
-    return this[$x];
+    return this.#x;
   }
   get y(): number {
-    return this[$y];
+    return this.#y;
   }
   get z(): number {
-    return this[$z];
+    return this.#z;
   }
   get w(): number {
-    return this[$w];
+    return this.#w;
   }
 
   matrixTransform(matrix: DOMMatrixReadOnly): DOMPoint {
     const m = matrix[$m];
-    const { [$x]: x, [$y]: y, [$z]: z, [$w]: w } = this;
+    const x = this.#x;
+    const y = this.#y;
+    const z = this.#z;
+    const w = this.#w;
     return new DOMPoint(
       m[0] * x + m[4] * y + m[8] * z + m[12] * w,
       m[1] * x + m[5] * y + m[9] * z + m[13] * w,
@@ -58,7 +76,7 @@ export class DOMPointReadOnly {
   }
 
   toJSON(): Required<DOMPointInit> {
-    return { x: this[$x], y: this[$y], z: this[$z], w: this[$w] };
+    return { x: this.#x, y: this.#y, z: this.#z, w: this.#w };
   }
 }
 
@@ -67,28 +85,28 @@ export class DOMPoint extends DOMPointReadOnly {
     return new DOMPoint(other.x, other.y, other.z, other.w);
   }
   override get x(): number {
-    return this[$x];
+    return super.x;
   }
   set x(v: number) {
-    this[$x] = Number(v);
+    setPoint(this, 0, Number(v));
   }
   override get y(): number {
-    return this[$y];
+    return super.y;
   }
   set y(v: number) {
-    this[$y] = Number(v);
+    setPoint(this, 1, Number(v));
   }
   override get z(): number {
-    return this[$z];
+    return super.z;
   }
   set z(v: number) {
-    this[$z] = Number(v);
+    setPoint(this, 2, Number(v));
   }
   override get w(): number {
-    return this[$w];
+    return super.w;
   }
   set w(v: number) {
-    this[$w] = Number(v);
+    setPoint(this, 3, Number(v));
   }
 }
 
@@ -100,17 +118,25 @@ export interface DOMRectInit {
 }
 
 export class DOMRectReadOnly {
-  [$x]: number;
-  [$y]: number;
-  [$width]: number;
-  [$height]: number;
+  #x: number;
+  #y: number;
+  #width: number;
+  #height: number;
+
+  static {
+    setRect = (r, i, v) => {
+      if (i === 0) r.#x = v;
+      else if (i === 1) r.#y = v;
+      else if (i === 2) r.#width = v;
+      else r.#height = v;
+    };
+  }
 
   constructor(x = 0, y = 0, width = 0, height = 0) {
-    this[$x] = Number(x);
-    this[$y] = Number(y);
-    this[$width] = Number(width);
-    this[$height] = Number(height);
-    hideInternals(this);
+    this.#x = Number(x);
+    this.#y = Number(y);
+    this.#width = Number(width);
+    this.#height = Number(height);
   }
 
   static fromRect(other: DOMRectInit = {}): DOMRectReadOnly {
@@ -118,36 +144,36 @@ export class DOMRectReadOnly {
   }
 
   get x(): number {
-    return this[$x];
+    return this.#x;
   }
   get y(): number {
-    return this[$y];
+    return this.#y;
   }
   get width(): number {
-    return this[$width];
+    return this.#width;
   }
   get height(): number {
-    return this[$height];
+    return this.#height;
   }
   get top(): number {
-    return Math.min(this[$y], this[$y] + this[$height]);
+    return Math.min(this.#y, this.#y + this.#height);
   }
   get right(): number {
-    return Math.max(this[$x], this[$x] + this[$width]);
+    return Math.max(this.#x, this.#x + this.#width);
   }
   get bottom(): number {
-    return Math.max(this[$y], this[$y] + this[$height]);
+    return Math.max(this.#y, this.#y + this.#height);
   }
   get left(): number {
-    return Math.min(this[$x], this[$x] + this[$width]);
+    return Math.min(this.#x, this.#x + this.#width);
   }
 
   toJSON(): Record<string, number> {
     return {
-      x: this[$x],
-      y: this[$y],
-      width: this[$width],
-      height: this[$height],
+      x: this.#x,
+      y: this.#y,
+      width: this.#width,
+      height: this.#height,
       top: this.top,
       right: this.right,
       bottom: this.bottom,
@@ -161,28 +187,28 @@ export class DOMRect extends DOMRectReadOnly {
     return new DOMRect(other.x, other.y, other.width, other.height);
   }
   override get x(): number {
-    return this[$x];
+    return super.x;
   }
   set x(v: number) {
-    this[$x] = Number(v);
+    setRect(this, 0, Number(v));
   }
   override get y(): number {
-    return this[$y];
+    return super.y;
   }
   set y(v: number) {
-    this[$y] = Number(v);
+    setRect(this, 1, Number(v));
   }
   override get width(): number {
-    return this[$width];
+    return super.width;
   }
   set width(v: number) {
-    this[$width] = Number(v);
+    setRect(this, 2, Number(v));
   }
   override get height(): number {
-    return this[$height];
+    return super.height;
   }
   set height(v: number) {
-    this[$height] = Number(v);
+    setRect(this, 3, Number(v));
   }
 }
 
