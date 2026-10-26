@@ -29,6 +29,7 @@
 // steps after a timeout). Node's Timeout object API (ref/unref/hasRef/refresh/close,
 // Symbol.toPrimitive): https://nodejs.org/api/timers.html#class-timeout.
 
+import { AsyncResource } from "node:async_hooks";
 import { setTimeout as nodeSetTimeout } from "node:timers";
 
 type Callback = (...args: unknown[]) => unknown;
@@ -65,6 +66,13 @@ class TimerRecord {
   realDue: number;
   /** Cleared (or its clock disposed): Node's refresh() then does nothing. */
   cleared: boolean;
+  /**
+   * The async context setTimeout was called in (https://nodejs.org/api/async_context.html):
+   * Node runs a timer's callback in it, while this clock fires from its own host timer or driver.
+   * An AsyncResource, as Node's own Timeout is: ~0.015 µs to capture, 30x less than
+   * AsyncLocalStorage.snapshot()'s bound closure.
+   */
+  context: AsyncResource;
 
   constructor(
     id: number,
@@ -88,6 +96,7 @@ class TimerRecord {
     this.real = null;
     this.realDue = 0;
     this.cleared = false;
+    this.context = new AsyncResource("Timeout");
   }
 }
 
@@ -317,7 +326,7 @@ export class VirtualClock {
     if (this.disposed || !this.byId.has(record.id)) return;
     if (record.repeat) this.toRealTrack(record, record.delay);
     else this.byId.delete(record.id);
-    record.callback.apply(record.handle, record.args);
+    record.context.runInAsyncScope(Reflect.apply, null, record.callback, record.handle, record.args);
   }
 
   _refresh(record: TimerRecord): void {
@@ -445,7 +454,7 @@ export class VirtualClock {
     }
     // Last, so a throwing callback (reported by Node as an uncaught exception, as before)
     // leaves the clock consistent.
-    first.callback.apply(first.handle, first.args);
+    first.context.runInAsyncScope(Reflect.apply, null, first.callback, first.handle, first.args);
   }
 
   // --- skipping -----------------------------------------------------------------------------

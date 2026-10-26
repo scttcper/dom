@@ -395,3 +395,45 @@ describe("idle time skipping: robustness", () => {
     performance.clearMeasures("ctrl-dom-span");
   });
 });
+
+describe("async context — https://nodejs.org/api/async_context.html#class-asynclocalstorage", () => {
+  test("a timer callback runs in the async context it was scheduled in, as Node's timers do", async () => {
+    const { AsyncLocalStorage } = await import("node:async_hooks");
+    for (const skip of [false, true]) {
+      const g = setup(skip);
+      const store = new AsyncLocalStorage<string>();
+      const seen: (string | undefined)[] = [];
+      await new Promise<void>((resolve) => {
+        store.run("A", () => g.setTimeout(() => seen.push(store.getStore()), 5));
+        store.run("B", () => g.setTimeout(() => seen.push(store.getStore()), 5));
+        g.setTimeout(() => resolve(), 10);
+      });
+      expect(seen).toEqual(["A", "B"]);
+      installed!.uninstall();
+      installed = null;
+    }
+  });
+
+  test("an interval keeps its scheduling context on every run; an unref'd timer while skipping (real time) too", async () => {
+    const { AsyncLocalStorage } = await import("node:async_hooks");
+    const g = setup(true);
+    const store = new AsyncLocalStorage<string>();
+    const seen: (string | undefined)[] = [];
+    await new Promise<void>((resolve) => {
+      store.run("interval", () => {
+        const i = g.setInterval(() => {
+          seen.push(store.getStore());
+          if (seen.length === 2) g.clearInterval(i);
+        }, 5);
+      });
+      store.run("unref", () => {
+        const h = g.setTimeout(() => {
+          seen.push(store.getStore());
+          resolve();
+        }, 20);
+        h.unref();
+      });
+    });
+    expect(seen).toEqual(["interval", "interval", "unref"]);
+  });
+});
