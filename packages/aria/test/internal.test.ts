@@ -18,7 +18,7 @@ import {
   getRoles,
 } from "@ctrl/dom/aria";
 import { tlRoleMatches, tlRole } from "@ctrl/dom/aria/internal";
-import type { Element } from "@ctrl/dom";
+import { createWindow, type Element } from "@ctrl/dom";
 import { makeDocument } from "./helpers.ts";
 import { $impl } from "@ctrl/dom/internal";
 
@@ -104,6 +104,33 @@ describe("Testing Library role filter — https://w3c.github.io/aria/#document-h
     expect(tlRoleMatches(impl($("#b")), "button", false)).toBe(false);
     expect(tlRoleMatches(impl($("#c")), "button", false)).toBe(true);
     expect(getImplicitRole($("#c"))).toBe("button");
+  });
+});
+
+describe("caches across documents — https://dom.spec.whatwg.org/#concept-node-adopt", () => {
+  // Two windows build the same initial tree, so per-document mutation counts would line up: a
+  // cache stamp taken in one document must never match the other document's version.
+  test("a role cached in one document is recomputed after the element moves to another", () => {
+    const a = createWindow().document;
+    const b = createWindow().document;
+    const el = a.createElement("input");
+    el.setAttribute("type", "text");
+    expect(getImplicitRole(el)).toBe("textbox");
+    el.setAttribute("type", "checkbox");
+    b.body!.append(el);
+    expect(getImplicitRole(el)).toBe("checkbox");
+    expect(tlRoleMatches(impl(el), "checkbox", false)).toBe(true);
+  });
+
+  test("a name cached in one document is recomputed after the element moves to another", () => {
+    const a = createWindow().document;
+    const b = createWindow().document;
+    const el = a.createElement("button");
+    el.setAttribute("aria-label", "Old");
+    expect(computeAccessibleName(el)).toBe("Old");
+    el.setAttribute("aria-label", "New");
+    b.body!.append(el);
+    expect(computeAccessibleName(el)).toBe("New");
   });
 });
 

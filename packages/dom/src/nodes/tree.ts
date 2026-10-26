@@ -589,6 +589,10 @@ export function adopt(node: NodeImpl, doc: Document): void {
   const oldDoc = node.doc;
   if (node.parent !== null) remove(node, false);
   if (oldDoc !== doc) {
+    // Per-node caches (style, roles, names, hidden bits) are stamped with the node document's
+    // version. Versions only grow, so moving past the old document's means no entry stamped
+    // there can ever match one of this document's.
+    if (doc[$version] <= oldDoc[$version]) doc[$version] = oldDoc[$version] + 1;
     const html = doc[$isHTML];
     for (let n: NodeImpl | null = node; n !== null; n = nextInTree(n, node)) {
       n.doc = doc;

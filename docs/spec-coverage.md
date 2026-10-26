@@ -993,7 +993,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-live-range](https://dom.spec.whatwg.org/#concept-live-range) | `dom/traversal/live.ts` | `dom/traversal/range.test.ts`, `dom/traversal/selection.test.ts`, `dom/traversal/wpt-ranges.test.ts` |
 | [concept-mo-callback](https://dom.spec.whatwg.org/#concept-mo-callback) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
 | [concept-mo-queue](https://dom.spec.whatwg.org/#concept-mo-queue) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
-| [concept-node-adopt](https://dom.spec.whatwg.org/#concept-node-adopt) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/nodes/tree.ts` | `dom/nodes/element-node-misc.test.ts`; WPT: `dom/nodes/node-realm-adoption-after-frame-removal.html`, `dom/nodes/node-realm-mixed-across-adoption.html` +2 |
+| [concept-node-adopt](https://dom.spec.whatwg.org/#concept-node-adopt) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/nodes/tree.ts` | `aria/internal.test.ts`, `dom/nodes/element-node-misc.test.ts`; WPT: `dom/nodes/node-realm-adoption-after-frame-removal.html`, `dom/nodes/node-realm-mixed-across-adoption.html` +2 |
 | [concept-node-adopt-ext](https://dom.spec.whatwg.org/#concept-node-adopt-ext) | `dom/nodes/Element.ts`, `dom/nodes/constants.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [concept-node-append](https://dom.spec.whatwg.org/#concept-node-append) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [concept-node-children-changed-ext](https://dom.spec.whatwg.org/#concept-node-children-changed-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
