@@ -40,6 +40,7 @@
     "@ctrl/dom": "workspace:*",
     "@jest/environment": "30.4.1",
     "@jest/fake-timers": "30.4.1",
+    "@jest/types": "30.4.1",
     "jest-mock": "30.4.1",
     "jest-util": "30.4.1"
   },
@@ -47,7 +48,6 @@
     "jest": ">=30.0.0"
   },
   "devDependencies": {
-    "@jest/types": "30.4.1",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "jest": "30.4.2",

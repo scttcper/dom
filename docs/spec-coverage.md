@@ -89,11 +89,12 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: pointerlock](#w3c-pointerlock) | 1 | 0 | 0 | 1 |
 | [W3C: requestidlecallback](#w3c-requestidlecallback) | 1 | 1 | 0 | 0 |
 | [W3C: svg-aam](#w3c-svg-aam) | 1 | 1 | 0 | 0 |
+| [W3C: user-timing](#w3c-user-timing) | 1 | 1 | 0 | 0 |
 | [W3C: webappsec-referrer-policy](#w3c-webappsec-referrer-policy) | 1 | 1 | 0 | 0 |
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1583 | 1072 | 120 | 391 |
+| **All** | 1584 | 1073 | 120 | 391 |
 
 ## Web-platform-tests fixtures
 
@@ -2199,6 +2200,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [mapping_additional_nd](https://w3c.github.io/svg-aam/#mapping_additional_nd) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
+
+## W3C: user-timing
+
+<https://w3c.github.io/user-timing/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [dom-performance-mark](https://w3c.github.io/user-timing/#dom-performance-mark) | `dom/window/clock.ts` | `dom/window/clock.test.ts` |
 
 ## W3C: webappsec-referrer-policy
 

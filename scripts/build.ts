@@ -233,7 +233,8 @@ for (const pkg of selected) {
         external,
         treeshake: true,
         plugins: [crossRealmInterop],
-        output: { dir: outDir, minify: flags.minify, sourcemap: false, ...format },
+        // keepNames: constructor names are observable (`[object HTMLBodyElement]`, prettyDOM).
+        output: { dir: outDir, minify: flags.minify, keepNames: flags.minify, sourcemap: false, ...format },
       });
     }
     if (emitRoot && dtsPackages.includes(pkg)) copyDeclarations(emitRoot, pkg);

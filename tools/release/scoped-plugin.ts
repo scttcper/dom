@@ -25,7 +25,10 @@ const toolsDir = fileURLToPath(new URL(".", import.meta.url));
 // Conventional commits as this repository writes them (`feat(dom): …`, `deps(react): …`).
 const COMMITS = {
   preset: "conventionalcommits",
+  // A matching custom rule replaces the analyzer's defaults, so breaking changes come first:
+  // `deps(react)!:` is a major, not a patch.
   releaseRules: [
+    { breaking: true, release: "major" },
     { type: "deps", release: "patch" },
     { type: "revert", release: "patch" },
   ],

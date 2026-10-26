@@ -119,7 +119,7 @@ export {
   type ElementFilter,
 } from "./collections/HTMLCollection.ts";
 export { indexGetterTable, ensureIndexGetters, type IndexGetterTable } from "./collections/indexed.ts";
-export { notifyMutationObservers, activeObservers } from "./observers/queue.ts";
+export { notifyMutationObservers } from "./observers/queue.ts";
 export { compareBoundaryPoints, nodeLength } from "./traversal/Range.ts";
 export {
   findSlot,

@@ -10,7 +10,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, MutationObserver, MutationRecord, type Document, type Element } from "@ctrl/dom";
-import { activeObservers } from "@ctrl/dom/internal";
+import { activeObservers } from "../../src/observers/queue.ts";
 
 let document: Document;
 

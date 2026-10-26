@@ -367,6 +367,9 @@ importers:
       '@jest/fake-timers':
         specifier: 30.4.1
         version: 30.4.1
+      '@jest/types':
+        specifier: 30.4.1
+        version: 30.4.1
       jest-mock:
         specifier: 30.4.1
         version: 30.4.1
@@ -374,9 +377,6 @@ importers:
         specifier: 30.4.1
         version: 30.4.1
     devDependencies:
-      '@jest/types':
-        specifier: 30.4.1
-        version: 30.4.1
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2

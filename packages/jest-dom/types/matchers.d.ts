@@ -1,8 +1,10 @@
 // Copied from @testing-library/jest-dom@7.0.1 types/matchers.d.ts (MIT) — the public types of this drop-in.
 // https://github.com/testing-library/jest-dom/blob/v7.0.1/types/matchers.d.ts
-import {type ARIARole} from 'aria-query'
+// Difference: upstream takes ARIARole from aria-query, which @ctrl/dom does not depend on (it
+// replaces it); ByRoleMatcher is the same `ARIARole | (string & {})` union.
 import {
   type AllByBoundAttribute,
+  type ByRoleMatcher,
   type AllByRole,
   type AllByText,
 } from '@ctrl/dom/testing-library'
@@ -642,7 +644,7 @@ declare namespace matchers {
     toHaveRole(
       // Get autocomplete for ARIARole union types, while still supporting another string
       // Ref: https://github.com/microsoft/TypeScript/issues/29729#issuecomment-567871939
-      role: ARIARole | (string & {}),
+      role: ByRoleMatcher,
     ): R
     /**
      * @description

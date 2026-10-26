@@ -123,7 +123,8 @@ function copyPublishFiles(name: string, to: string, files: string[]): void {
  * other pools the bridge returns what Node's module cache would. With no environment running
  * (an environment's own import, or plain Node) it loads the DOM itself: `require(esm)` keeps that
  * synchronous and shares Node's ES module instance. ES modules need their export names
- * statically, so they are read from the built entries.
+ * statically, so they are read from the built entries. Each is copied once, so an exported `let`
+ * would go stale behind the bridge: the entries export none.
  */
 async function writeBridges(ctrlDom: string): Promise<void> {
   const out = join(ctrlDom, "dist", "bridge");
@@ -274,7 +275,7 @@ export async function assembleRelease(): Promise<string[]> {
     bin: Object.fromEntries(
       Object.entries<string>(cliPkg.publishConfig.bin).map(([name, path]) => [
         name,
-        path.replace("./dist/", "./dist/cli/"),
+        path.replace("./dist/", "dist/cli/"),
       ]),
     ),
     exports: exportsMap,

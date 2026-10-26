@@ -266,3 +266,132 @@ describe("idle time skipping (timeSkip: true)", () => {
     expect(fired).toBe(false);
   });
 });
+
+describe("Node's Timeout semantics — https://nodejs.org/api/timers.html#class-timeout", () => {
+  test("the host timer is ref'd while any pending timer is, also when that timer is not the earliest", () => {
+    const g = setup(false);
+    const host = () => installed!.clock.hostTimer as unknown as { hasRef(): boolean };
+    const early = g.setTimeout(() => {}, 20).unref();
+    const late = g.setTimeout(() => {}, 40);
+    expect(host().hasRef()).toBe(true); // the process waits for `late`
+    g.clearTimeout(late);
+    expect(host().hasRef()).toBe(false); // only the unref'd one is left: the process may exit
+    g.clearTimeout(early);
+  });
+
+  test("refresh() does nothing on a cleared timer or after the clock is disposed", async () => {
+    const g = setup(false);
+    let fired = 0;
+    const h = g.setTimeout(() => fired++, 1);
+    g.clearTimeout(h);
+    h.refresh();
+    await new Promise((r) => setTimeout(r, 15));
+    expect(fired).toBe(0);
+    installed!.clock.dispose();
+    h.refresh();
+    expect(installed!.clock.size).toBe(0);
+  });
+
+  test("refresh() on a fired unref'd timer keeps it on real time while skipping", async () => {
+    const g = setup(true);
+    let fired = 0;
+    const h = g.setTimeout(() => fired++, 30);
+    h.unref();
+    await new Promise((r) => setTimeout(r, 45));
+    expect(fired).toBe(1);
+    const start = performance.now();
+    h.refresh();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fired).toBe(1); // not skipped to: 30 real ms have not passed
+    await new Promise((r) => setTimeout(r, 35));
+    expect(fired).toBe(2);
+    expect(performance.now() - start).toBeGreaterThanOrEqual(25);
+  });
+
+  test("_destroyed is true once a one-shot ran or a timer was cleared (window timer tracking sweeps on it)", async () => {
+    const g = setup(true);
+    const a = g.setTimeout(() => {}, 5) as unknown as { _destroyed: boolean };
+    const b = g.setTimeout(() => {}, 50_000) as unknown as { _destroyed: boolean };
+    expect(a._destroyed).toBe(false);
+    await sleep(g, 10);
+    expect(a._destroyed).toBe(true);
+    g.clearTimeout(b);
+    expect(b._destroyed).toBe(true);
+  });
+
+  test("real time: a chain of 1 ms timers is not run early (each hop waits its millisecond)", async () => {
+    const g = setup(false);
+    const start = performance.now();
+    await new Promise<void>((resolve) => {
+      let hops = 0;
+      const hop = () => {
+        if (++hops === 200) return resolve();
+        g.setTimeout(hop, 1);
+        g.setTimeout(() => {}, 1); // a sibling due with the next hop
+      };
+      g.setTimeout(hop, 1);
+      g.setTimeout(() => {}, 1);
+    });
+    expect(performance.now() - start).toBeGreaterThanOrEqual(150);
+  });
+
+  test("an interval delayed by a stalled callback re-arms one period after it ran, not back to back", async () => {
+    const g = setup(false);
+    const runs: number[] = [];
+    await new Promise<void>((resolve) => {
+      const i = g.setInterval(() => {
+        runs.push(performance.now());
+        if (runs.length === 1) {
+          const until = performance.now() + 60;
+          while (performance.now() < until); // stall past two periods
+        }
+        if (runs.length === 3) {
+          g.clearInterval(i);
+          resolve();
+        }
+      }, 20);
+    });
+    expect(runs[2] - runs[1]).toBeGreaterThanOrEqual(15);
+  });
+});
+
+describe("idle time skipping: robustness", () => {
+  test("a callback that throws does not stop skipping to the next timer", async () => {
+    const g = setup(true);
+    const errors: unknown[] = [];
+    const onError = (error: unknown) => errors.push(error);
+    process.on("uncaughtException", onError);
+    try {
+      g.setTimeout(() => {
+        throw new Error("boom");
+      }, 100);
+      const start = performance.now();
+      await sleep(g, 5_000);
+      expect(errors).toHaveLength(1);
+      expect(performance.now() - start).toBeLessThan(1_000);
+    } finally {
+      process.off("uncaughtException", onError);
+    }
+  });
+
+  test("dispose() without uninstall (VM pools) leaves no active clock behind", async () => {
+    const { clockSkipping } = await import("../../src/window/clock.ts");
+    setup(true);
+    expect(clockSkipping()).toBe(true);
+    installed!.clock.dispose();
+    expect(clockSkipping()).toBe(false);
+  });
+
+  test("performance.mark() and measure() use the virtual now: marks follow skipped time, measures are not negative (https://w3c.github.io/user-timing/#dom-performance-mark)", async () => {
+    const g = setup(true);
+    await sleep(g, 10_000);
+    const now = g.performance.now();
+    const mark = g.performance.mark("ctrl-dom-after-skip") as unknown as { startTime: number };
+    expect(mark.startTime).toBeGreaterThanOrEqual(now);
+    const measure = g.performance.measure("ctrl-dom-span", { start: now }) as unknown as { duration: number };
+    expect(measure.duration).toBeGreaterThanOrEqual(0);
+    expect(measure.duration).toBeLessThan(1_000);
+    performance.clearMarks("ctrl-dom-after-skip");
+    performance.clearMeasures("ctrl-dom-span");
+  });
+});

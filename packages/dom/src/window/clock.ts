@@ -63,6 +63,8 @@ class TimerRecord {
   real: ReturnType<typeof setTimeout> | null;
   /** realNow() at which `real` fires. */
   realDue: number;
+  /** Cleared (or its clock disposed): Node's refresh() then does nothing. */
+  cleared: boolean;
 
   constructor(
     id: number,
@@ -85,6 +87,7 @@ class TimerRecord {
     this.handle = null;
     this.real = null;
     this.realDue = 0;
+    this.cleared = false;
   }
 }
 
@@ -110,6 +113,11 @@ export class VirtualTimeout {
 
   hasRef(): boolean {
     return this.#record.ref;
+  }
+
+  /** Node's flag for a one-shot that ran or any cleared timer (window/timers.ts sweeps on it). */
+  get _destroyed(): boolean {
+    return !this.#clock.byId.has(this.#record.id);
   }
 
   /** Restart the timer with its original delay from now. */
@@ -158,6 +166,8 @@ export class VirtualClock {
   refCount: number;
   hostTimer: ReturnType<typeof setTimeout> | null;
   hostDue: number;
+  /** Whether hostTimer is ref'd (a new host timer starts ref'd), so updateHostRef calls Node only on a change. */
+  hostRefd: boolean;
   continuation: boolean;
   driverScheduled: boolean;
   /** The driver's next turn is a queued immediate (not the 1 ms timer it waits on during I/O). */
@@ -165,6 +175,8 @@ export class VirtualClock {
   idleTurns: number;
   disposed: boolean;
   baseline: Map<string, number> | null;
+  /** busy()'s per-probe I/O counts, reused. */
+  ioCounts: Map<string, number>;
 
   constructor(options: VirtualClockOptions = {}) {
     this.skipped = 0;
@@ -177,11 +189,13 @@ export class VirtualClock {
     this.refCount = 0;
     this.hostTimer = null;
     this.hostDue = Infinity;
+    this.hostRefd = true;
     this.continuation = false;
     this.driverScheduled = false;
     this.driverImmediate = false;
     this.idleTurns = 0;
     this.disposed = false;
+    this.ioCounts = new Map();
     if (this.skip) {
       // Node opens stdout/stderr lazily, on first access. A clock installed before anything has
       // logged (a --import preload, a setup file) would otherwise count the reporter's first
@@ -235,6 +249,7 @@ export class VirtualClock {
     const record = this.byId.get(id);
     if (record === undefined) return false;
     this.byId.delete(id);
+    record.cleared = true;
     if (record.ref) this.refCount--;
     if (record.real !== null) {
       hostClearTimeout(record.real);
@@ -306,6 +321,7 @@ export class VirtualClock {
   }
 
   _refresh(record: TimerRecord): void {
+    if (record.cleared || this.disposed) return;
     if (record.real !== null) {
       hostClearTimeout(record.real);
       record.real = null;
@@ -316,6 +332,11 @@ export class VirtualClock {
       // Node: refresh() on a fired one-shot reschedules it.
       this.byId.set(record.id, record);
       if (record.ref) this.refCount++;
+      else if (this.skip) {
+        // Unref'd timers stay on real time while skipping (see _setRef).
+        this.toRealTrack(record, record.delay);
+        return;
+      }
     } else if (record.index !== -1) {
       this.remove(record);
     }
@@ -331,12 +352,15 @@ export class VirtualClock {
     for (const record of this.byId.values()) {
       if (record.real !== null) hostClearTimeout(record.real);
       record.real = null;
+      record.cleared = true;
     }
     if (this.hostTimer !== null) hostClearTimeout(this.hostTimer);
     this.hostTimer = null;
     this.heap.length = 0;
     this.byId.clear();
     this.refCount = 0;
+    // VM pools dispose without uninstalling: the next file must not see this clock as active.
+    if (activeClock === this) activeClock = null;
   }
 
   // --- firing -------------------------------------------------------------------------------
@@ -351,19 +375,30 @@ export class VirtualClock {
       this.hostDue = Infinity;
       return;
     }
-    if (this.hostTimer !== null && this.hostDue === first.due) return;
+    if (this.hostTimer !== null && this.hostDue === first.due) {
+      // Same deadline, but a ref'd timer may have been added or cleared behind it.
+      this.updateHostRef();
+      return;
+    }
     if (this.hostTimer !== null) hostClearTimeout(this.hostTimer);
     this.hostDue = first.due;
     this.hostTimer = hostSetTimeout(this.onHostTimer, Math.max(0, first.due - this.now()));
+    this.hostRefd = true;
     this.updateHostRef();
   }
 
   updateHostRef(): void {
     const timer = this.hostTimer as unknown as { ref?(): void; unref?(): void } | null;
-    if (timer === null) return;
-    if (this.refCount > 0) timer.ref?.();
+    const ref = this.refCount > 0;
+    if (timer === null || ref === this.hostRefd) return;
+    this.hostRefd = ref;
+    if (ref) timer.ref?.();
     else timer.unref?.();
   }
+
+  fireContinuation = (): void => {
+    this.fireNext();
+  };
 
   onHostTimer = (): void => {
     this.hostTimer = null;
@@ -390,7 +425,9 @@ export class VirtualClock {
     if (this.skip && first.due > this.now()) this.skipped += first.due - this.now();
     this.pop();
     if (first.repeat) {
-      first.due = Math.max(first.due + first.delay, this.now());
+      // Node re-arms an interval one period after this run, not after its missed deadline: a
+      // stalled interval does not fire back to back to catch up.
+      first.due = this.now() + first.delay;
       first.seq = this.seq++;
       this.push(first);
     } else {
@@ -398,9 +435,11 @@ export class VirtualClock {
       if (first.ref) this.refCount--;
     }
     const next = this.heap[0];
-    if (next !== undefined && next.due <= this.now() + 1) {
+    // Only a skipping clock runs the next timer up to 1 ms early: in real time that would
+    // shorten every hop of a chain of 1 ms timers.
+    if (next !== undefined && next.due <= this.now() + (this.skip ? 1 : 0)) {
       this.continuation = true;
-      hostSetImmediate(() => this.fireNext());
+      hostSetImmediate(this.fireContinuation);
     } else {
       this.armHost();
     }
@@ -459,14 +498,19 @@ export class VirtualClock {
     if (this.hostTimer !== null) hostClearTimeout(this.hostTimer);
     this.hostTimer = null;
     this.hostDue = Infinity;
-    this.fireNext();
-    this.kickDriver();
+    try {
+      this.fireNext();
+    } finally {
+      // A throwing callback (an uncaught exception for Node) must not stop the skipping.
+      this.kickDriver();
+    }
   };
 
   /** null when idle; "immediate" when immediates are pending; "io" when I/O beyond the baseline is. */
   busy(): "immediate" | "io" | null {
     if (getActiveResourcesInfo === null) return "io"; // cannot tell: never skip
-    const counts = new Map<string, number>();
+    const counts = this.ioCounts;
+    counts.clear();
     const resources = getActiveResourcesInfo();
     for (let i = 0; i < resources.length; i++) {
       const type = resources[i];
@@ -661,6 +705,38 @@ export function virtualPerformance(clock: VirtualClock, native: Performance): Pe
   }
   Object.defineProperty(perf, "now", {
     value: () => clock.now(),
+    writable: true,
+    configurable: true,
+    enumerable: true,
+  });
+  // Marks and measures default to "now" (https://w3c.github.io/user-timing/#dom-performance-mark,
+  // #dom-performance-measure): the virtual now, or they would sit before the skipped time and a
+  // measure from performance.now() would come out negative.
+  type MarkOptions = { startTime?: number; detail?: unknown };
+  type MeasureOptions = { start?: string | number; end?: string | number; duration?: number; detail?: unknown };
+  const mark = native.mark.bind(native) as (name: string, options?: MarkOptions) => unknown;
+  const measure = native.measure.bind(native) as (
+    name: string,
+    start?: string | MeasureOptions,
+    end?: string,
+  ) => unknown;
+  Object.defineProperty(perf, "mark", {
+    value: (name: string, options?: MarkOptions) =>
+      mark(name, options?.startTime === undefined ? { ...options, startTime: clock.now() } : options),
+    writable: true,
+    configurable: true,
+    enumerable: true,
+  });
+  Object.defineProperty(perf, "measure", {
+    value: (name: string, start?: string | MeasureOptions, end?: string) => {
+      if (typeof start === "object" && start !== null) {
+        // Without end or duration it ends now; a lone duration stays the TypeError it is.
+        const open = start.end === undefined && start.duration === undefined;
+        return measure(name, open ? { ...start, end: clock.now() } : start);
+      }
+      if (end !== undefined) return measure(name, start, end);
+      return measure(name, start === undefined ? { end: clock.now() } : { start, end: clock.now() });
+    },
     writable: true,
     configurable: true,
     enumerable: true,
