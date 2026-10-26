@@ -44,7 +44,7 @@ export {
   ariaPressedState,
   isDisabledImpl,
 } from "./states.ts";
-export { labelsOf, inputType, isLabelable } from "./forms.ts";
+export { labelsOf, labelMapForTree, inputType, isLabelable } from "./forms.ts";
 export { isDisplayNone, isVisibilityHidden, isDisplayInline } from "./style.ts";
 export { implOf, queryIdRefs } from "./tree.ts";
 

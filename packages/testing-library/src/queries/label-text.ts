@@ -57,7 +57,7 @@ function queryAllByLabelText(
   const matchNormalizer: NormalizerFn = makeNormalizer({ collapseWhitespace, trim, normalizer });
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
-  const ctx = new LabelContext(root);
+  const ctx = new LabelContext(root, true);
   const labelledElements: any[] = [];
 
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {

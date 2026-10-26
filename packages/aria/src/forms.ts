@@ -286,6 +286,14 @@ function labeledControl(label: NodeImpl, docRoot: NodeImpl | null, ids: Map<stri
  */
 export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
   if (!isLabelable(impl)) return null;
+  return labelMapForTree(impl).get(impl) ?? EMPTY;
+}
+
+/**
+ * The label associations of `impl`'s tree (labelable control → its labels in tree order), current
+ * for the document version: `labelsOf` for many elements of one tree resolves it once.
+ */
+export function labelMapForTree(impl: NodeImpl): Map<NodeImpl, NodeImpl[]> {
   const root = treeRoot(impl);
   const version = impl.doc[$version];
   const labelIndexes = derivedCache(impl.doc, LABEL_INDEXES, newLabelIndexes);
@@ -294,5 +302,5 @@ export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
     index = buildLabelIndex(root, version);
     labelIndexes.set(root, index);
   }
-  return index.map.get(impl) ?? EMPTY;
+  return index.map;
 }

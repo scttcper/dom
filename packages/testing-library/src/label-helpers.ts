@@ -16,7 +16,7 @@ import {
   TEXT_NODE,
   type NodeImpl,
 } from "@ctrl/dom/internal";
-import { labelsOf as ariaLabelsOf } from "@ctrl/dom/aria/internal";
+import { labelMapForTree, labelsOf as ariaLabelsOf } from "@ctrl/dom/aria/internal";
 import { matchesSelector } from "./selectors.ts";
 import { implOf } from "./helpers.ts";
 
@@ -69,15 +69,26 @@ function buildIdMap(root: NodeImpl, inclusive: boolean): Map<string, NodeImpl> {
 export class LabelContext {
   container: NodeImpl;
   containerIds: Map<string, NodeImpl> | null;
+  /**
+   * Every element asked about is in the container's tree (a query walking the container): label
+   * lookups then use aria's index for that tree, resolved once (`labelMap`).
+   */
+  sameTree: boolean;
+  labelMap: Map<NodeImpl, NodeImpl[]> | null;
 
-  constructor(container: NodeImpl) {
+  constructor(container: NodeImpl, sameTree = false) {
     this.container = container;
     this.containerIds = null;
+    this.sameTree = sameTree;
+    this.labelMap = null;
   }
 
   /** `element.labels` (empty for non-labelable elements) — label elements in tree order. */
   labelsOf(el: NodeImpl): NodeImpl[] {
-    return ariaLabelsOf(el) ?? EMPTY;
+    if (!this.sameTree) return ariaLabelsOf(el) ?? EMPTY;
+    if (!isLabelable(el)) return EMPTY;
+    const map = (this.labelMap ??= labelMapForTree(this.container));
+    return map.get(el) ?? EMPTY;
   }
 
   /** `container.querySelector('[id="…"]')` */
