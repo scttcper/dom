@@ -13,10 +13,10 @@ import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { treeRoot } from "../nodes/traverse.ts";
 import { fireAnEvent } from "../events/fire.ts";
-// Node's own timer, not the (possibly faked or spied-on) global one: like jsdom's internal task
-// queue, user-agent selectionchange tasks are invisible to fake timers and setTimeout spies
-// (user-event's "do not call setTimeout with delay `null`" relies on that).
-import { setTimeout as hostSetTimeout } from "node:timers";
+// A user agent task on Node's own timer, not the (possibly faked or spied-on) global one: like
+// jsdom's internal task queue, selectionchange tasks are invisible to fake timers and setTimeout
+// spies (user-event's "do not call setTimeout with delay `null`" relies on that).
+import { queueUserAgentTask } from "../window/clock.ts";
 import type { EventTarget } from "../events/EventTarget.ts";
 import { Range, StaticRange, compareBoundaryPoints, nodeLength } from "./Range.ts";
 import { $ec, $eo, $host, $impl, $sc, $so } from "../keys.ts";
@@ -99,7 +99,7 @@ export class Selection {
     // 2. Set target's has scheduled selectionchange event to true.
     this.#scheduled = true;
     // 3. Queue a task on the user interaction task source to fire a selectionchange event.
-    hostSetTimeout(() => {
+    queueUserAgentTask(() => {
       // https://w3c.github.io/selection-api/#firing-selectionhange-event
       // 1. Set target's has scheduled selectionchange event to false.
       this.#scheduled = false;
@@ -108,7 +108,7 @@ export class Selection {
       if (win === null || win.closed === true) return;
       // 2. Fire an event named selectionchange at target (document: does not bubble, like jsdom).
       fireAnEvent("selectionchange", this.#doc as unknown as EventTarget);
-    }, 0);
+    });
   }
 
   get anchorNode(): Node | null {

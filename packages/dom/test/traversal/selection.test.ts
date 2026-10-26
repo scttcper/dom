@@ -8,7 +8,8 @@
  *   - createContextualFragment — https://html.spec.whatwg.org/#dom-range-createcontextualfragment
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, Range, StaticRange, type Document } from "@ctrl/dom";
+import { createWindow, installGlobals, Range, StaticRange, type Document } from "@ctrl/dom";
+import { VirtualClock, installClock } from "@ctrl/dom/internal";
 import { liveRangeCount } from "../../src/traversal/live.ts";
 
 let document: Document;
@@ -18,6 +19,36 @@ beforeEach(() => {
 });
 
 describe("Selection — https://w3c.github.io/selection-api/#selection-interface", () => {
+  test("selectionchange is a task that runs before a 0 ms timer set after the change, also on a clock that skips idle time (https://w3c.github.io/selection-api/#scheduling-selectionhange-event)", async () => {
+    for (const skip of [false, true]) {
+      const window = createWindow();
+      // A scratch global with the window installed and its timers on the clock, as in the environments.
+      const g = { Date, performance } as unknown as Record<PropertyKey, unknown>;
+      const uninstallGlobals = installGlobals(window, g);
+      const clock = installClock(new VirtualClock({ skip }), g);
+      const setTimeout = g.setTimeout as (callback: () => void, ms: number) => unknown;
+      try {
+        const doc = window.document;
+        const log: string[] = [];
+        doc.addEventListener("selectionchange", () => log.push("selectionchange"));
+        doc.body!.innerHTML = "<p>hi</p>";
+        // A few rounds (each a change: select, then clear): on the skipping clock a real timer lost
+        // this race only some of the time.
+        for (let round = 0; round < 5; round++) {
+          if (round % 2 === 0) doc.getSelection()!.selectAllChildren(doc.body!);
+          else doc.getSelection()!.removeAllRanges();
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          log.push("timer");
+        }
+        expect({ skip, log }).toEqual({ skip, log: Array(5).fill(["selectionchange", "timer"]).flat() });
+      } finally {
+        clock.uninstall();
+        uninstallGlobals();
+        window.close();
+      }
+    }
+  });
+
   test("getSelection() returns one Selection per document, initially empty", () => {
     const sel = document.getSelection()!;
     expect(sel).toBe(document.getSelection());

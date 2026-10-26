@@ -22,7 +22,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 785 | 605 | 54 | 126 |
+| [HTML Standard](#html-standard) | 786 | 606 | 54 | 126 |
 | [DOM Standard](#dom-standard) | 273 | 237 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 73 | 37 | 22 | 14 |
 | [Web IDL](#web-idl) | 34 | 22 | 0 | 12 |
@@ -30,7 +30,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
 | [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
 | [CSS: selectors](#css-selectors) | 29 | 13 | 4 | 12 |
-| [W3C: selection-api](#w3c-selection-api) | 21 | 5 | 1 | 15 |
+| [W3C: selection-api](#w3c-selection-api) | 21 | 6 | 1 | 14 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
 | [CSS: css-color](#css-css-color) | 16 | 12 | 1 | 3 |
@@ -93,7 +93,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1582 | 1070 | 120 | 392 |
+| **All** | 1583 | 1072 | 120 | 391 |
 
 ## Web-platform-tests fixtures
 
@@ -154,7 +154,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 785 sections implemented, 605 tested, 54 by WPT only, 126 untested.
+<https://html.spec.whatwg.org/> — 786 sections implemented, 606 tested, 54 by WPT only, 126 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -731,6 +731,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [queue-a-details-toggle-event-task](https://html.spec.whatwg.org/#queue-a-details-toggle-event-task) | `dom/html/interactive.ts` | `dom/html/element-tasks.test.ts` |
 | [queue-a-dialog-toggle-event-task](https://html.spec.whatwg.org/#queue-a-dialog-toggle-event-task) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
 | [queue-a-popover-toggle-event-task](https://html.spec.whatwg.org/#queue-a-popover-toggle-event-task) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/element-tasks.test.ts` |
+| [queue-a-task](https://html.spec.whatwg.org/#queue-a-task) | `dom/window/clock.ts` | `dom/window/clock.test.ts` |
 | [queue-an-element-task](https://html.spec.whatwg.org/#queue-an-element-task) | `dom/html/events.ts` | `dom/html/element-tasks.test.ts` |
 | [radio-button-group](https://html.spec.whatwg.org/#radio-button-group) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/checkedness.test.ts`; WPT: `html/semantics/forms/the-input-element/radio-groupname-case.html` |
 | [radionodelist](https://html.spec.whatwg.org/#radionodelist) | `dom/html/forms/collections.ts` | `compat/forms/form-owner.test.ts` |
@@ -1501,7 +1502,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## W3C: selection-api
 
-<https://w3c.github.io/selection-api/> — 21 sections implemented, 5 tested, 1 by WPT only, 15 untested.
+<https://w3c.github.io/selection-api/> — 21 sections implemented, 6 tested, 1 by WPT only, 14 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1523,7 +1524,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-window-getselection](https://w3c.github.io/selection-api/#dom-window-getselection) | `dom/window/Window.ts` | **untested** |
 | [extensions-to-globaleventhandlers-interface](https://w3c.github.io/selection-api/#extensions-to-globaleventhandlers-interface) | `dom/events/handlers.ts` | **untested** |
 | [firing-selectionhange-event](https://w3c.github.io/selection-api/#firing-selectionhange-event) | `dom/traversal/Selection.ts` | **untested** |
-| [scheduling-selectionhange-event](https://w3c.github.io/selection-api/#scheduling-selectionhange-event) | `dom/traversal/Selection.ts` | **untested** |
+| [scheduling-selectionhange-event](https://w3c.github.io/selection-api/#scheduling-selectionhange-event) | `dom/traversal/Selection.ts` | `dom/traversal/selection.test.ts` |
 | [selection-interface](https://w3c.github.io/selection-api/#selection-interface) | `dom/traversal/Selection.ts` | `dom/traversal/selection.test.ts`, `dom/traversal/wpt-selection.test.ts` |
 | [selectionchange-event](https://w3c.github.io/selection-api/#selectionchange-event) | `dom/traversal/Selection.ts` | `dom/traversal/wpt-selection.test.ts`; WPT: `selection/document-selectionchange.html`, `selection/onselectionchange-on-document.html` |
 

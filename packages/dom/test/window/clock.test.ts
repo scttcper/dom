@@ -14,6 +14,7 @@
  */
 import { afterEach, describe, expect, test } from "vitest";
 import { VirtualClock, installClock, type InstalledClock } from "@ctrl/dom/internal";
+import { queueUserAgentTask } from "../../src/window/clock.ts";
 
 type G = {
   setTimeout: (
@@ -184,6 +185,23 @@ describe("idle time skipping (timeSkip: true)", () => {
     g.setTimeout(() => order.push("timer"), 1_000);
     await sleep(g, 2_000);
     expect(order).toEqual(["immediate0", "immediate1", "immediate2", "immediate3", "immediate4", "timer"]);
+  });
+
+  test("a user agent task (selectionchange) runs before a 0 ms timer set after it, also when that timer would run as a continuation of one due with it (https://html.spec.whatwg.org/#queue-a-task)", async () => {
+    const g = setup(true);
+    const order: string[] = [];
+    await new Promise<void>((resolve) => {
+      // Two timers due together: the second runs right after the first, which queues the task.
+      g.setTimeout(() => {
+        queueUserAgentTask(() => order.push("task"));
+        g.setTimeout(() => {
+          order.push("timer");
+          resolve();
+        }, 0);
+      }, 50);
+      g.setTimeout(() => order.push("sibling"), 50);
+    });
+    expect(order).toEqual(["sibling", "task", "timer"]);
   });
 
   test("microtasks drain between timers that become due together", async () => {

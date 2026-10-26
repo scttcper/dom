@@ -29,6 +29,8 @@
 // steps after a timeout). Node's Timeout object API (ref/unref/hasRef/refresh/close,
 // Symbol.toPrimitive): https://nodejs.org/api/timers.html#class-timeout.
 
+import { setTimeout as nodeSetTimeout } from "node:timers";
+
 type Callback = (...args: unknown[]) => unknown;
 
 const hostSetTimeout = globalThis.setTimeout;
@@ -554,6 +556,19 @@ let activeClock: VirtualClock | null = null;
 /** performance.now() of the active clock (event.timeStamp, https://dom.spec.whatwg.org/#dom-event-timestamp). */
 export function clockNow(): number {
   return activeClock === null ? realNow() : activeClock.now();
+}
+
+/**
+ * https://html.spec.whatwg.org/#queue-a-task for a task the user agent queues itself
+ * (selectionchange), never through the global timer functions: like jsdom's internal task queue,
+ * fake timers and setTimeout spies do not see it. A 0 ms timer on Node's own timers, in order with
+ * the page's timers (Node runs timers of the same duration first in, first out); with a clock that
+ * skips idle time active, a 0 ms timer on that clock instead, so it keeps its place among the
+ * page's timers there and skipping goes on.
+ */
+export function queueUserAgentTask(task: () => void): void {
+  if (activeClock !== null) activeClock.schedule(task, 0, [], false);
+  else nodeSetTimeout(task, 0);
 }
 
 /** Whether a clock that skips idle time is active (the test file's timers run on it). */
