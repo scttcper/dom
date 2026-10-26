@@ -733,11 +733,31 @@ const SPECIAL: Record<string, Special> = {
 };
 
 /**
+ * normalizeLonghand results per property, then per value: it is a pure function, and inline
+ * styles set the same values over and over (React style props, positioning libraries writing
+ * left/top on every update). A property's map is dropped once it holds 256 values.
+ */
+const normalizedValues = new Map<string, Map<string, string | null>>();
+
+/**
  * Parses and normalizes a longhand value. Returns the specified-value serialization or null
  * if the value is invalid for the property. `name` must be a lowercase property name (or a
  * custom property).
  */
 export function normalizeLonghand(name: string, value: string): string | null {
+  let byValue = normalizedValues.get(name);
+  if (byValue === undefined) normalizedValues.set(name, (byValue = new Map()));
+  else {
+    const hit = byValue.get(value);
+    if (hit !== undefined) return hit;
+  }
+  const result = normalizeLonghandValue(name, value);
+  if (byValue.size === 256) byValue.clear();
+  byValue.set(value, result);
+  return result;
+}
+
+function normalizeLonghandValue(name: string, value: string): string | null {
   const v = value.trim();
   if (v === "") return null;
   const comps = splitComponents(v);

@@ -215,17 +215,15 @@ export class DeclBlock {
         for (let s = 0; s < shorthands.length && !emitted; s++) {
           const sh = shorthands[s];
           const longhands = longhandsOf(sh)!;
-          const vals: string[] = [];
+          // Usually some longhand is missing: check before collecting values.
           let ok = true;
-          for (const l of longhands) {
-            const j = this.indexOf(l);
-            if (j === -1 || this.important[j] !== this.important[i] || (done !== null && done.has(l))) {
-              ok = false;
-              break;
-            }
-            vals.push(this.values[j]);
+          for (let k = 0; k < longhands.length && ok; k++) {
+            const j = this.indexOf(longhands[k]);
+            ok = j !== -1 && this.important[j] === this.important[i] && (done === null || !done.has(longhands[k]));
           }
           if (!ok) continue;
+          const vals: string[] = new Array(longhands.length);
+          for (let k = 0; k < longhands.length; k++) vals[k] = this.values[this.indexOf(longhands[k])];
           const v = serializeShorthand(sh, vals, false);
           if (v === "") continue;
           if (done === null) done = new Set();

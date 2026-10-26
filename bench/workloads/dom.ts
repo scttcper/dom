@@ -355,6 +355,55 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    // Inline style churn: positioning libraries (Floating UI) assign left/top/transform on every
+    // update, React sets style props one by one. Each write updates the style attribute.
+    id: "dom/inline-style-churn",
+    title: "Inline style writes: 6 properties at a time on 50 elements, 2 patterns (10 rounds)",
+    kind: "dom",
+    iterations: 30,
+    warmup: 5,
+    setup({ document }) {
+      const els: any[] = [];
+      for (let i = 0; i < 50; i++) els.push(document.body.appendChild(document.createElement("div")));
+      let round = 0;
+      return {
+        run() {
+          for (let r = 0; r < 10; r++) {
+            const k = round++;
+            for (let i = 0; i < els.length; i++) {
+              const s = els[i].style;
+              Object.assign(s, {
+                position: "absolute",
+                left: `${k % 7}px`,
+                top: `${(k * 3) % 5}px`,
+                transform: `translate(${k % 3}px, 0px)`,
+                minWidth: "120px",
+                visibility: k % 2 ? "visible" : "hidden",
+              });
+              s.display = k % 3 ? "flex" : "block";
+              s.width = `${k % 4}0px`;
+              s.opacity = String((k % 10) / 10);
+              s.marginTop = "4px";
+              s.setProperty("--offset", `${k % 5}px`);
+            }
+          }
+          return round - 1;
+        },
+        verify(k) {
+          for (const el of els) {
+            eq(el.style.left, `${k % 7}px`, "left");
+            eq(el.style.width, `${k % 4}0px`, "width");
+            eq(el.style.getPropertyValue("--offset"), `${k % 5}px`, "custom property");
+            check(el.getAttribute("style").includes("min-width: 120px"), "style attribute");
+          }
+        },
+        close() {
+          for (const el of els) el.remove();
+        },
+      };
+    },
+  },
+  {
     id: "dom/event-propagation-30",
     title: "Event propagation, capture + bubble, 30 levels (10 dispatches)",
     kind: "dom",
