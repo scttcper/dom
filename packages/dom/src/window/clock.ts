@@ -160,6 +160,8 @@ export class VirtualClock {
   hostDue: number;
   continuation: boolean;
   driverScheduled: boolean;
+  /** The driver's next turn is a queued immediate (not the 1 ms timer it waits on during I/O). */
+  driverImmediate: boolean;
   idleTurns: number;
   disposed: boolean;
   baseline: Map<string, number> | null;
@@ -177,6 +179,7 @@ export class VirtualClock {
     this.hostDue = Infinity;
     this.continuation = false;
     this.driverScheduled = false;
+    this.driverImmediate = false;
     this.idleTurns = 0;
     this.disposed = false;
     if (this.skip) {
@@ -411,7 +414,13 @@ export class VirtualClock {
   kickDriver(): void {
     if (!this.skip || this.driverScheduled || this.disposed) return;
     this.driverScheduled = true;
+    this.driverImmediate = true;
     hostSetImmediate(this.driverTurn);
+  }
+
+  /** Immediates this clock has queued itself: the driver's next turn and a due-timer continuation. */
+  get ownImmediates(): number {
+    return (this.driverImmediate ? 1 : 0) + (this.continuation ? 1 : 0);
   }
 
   /**
@@ -420,6 +429,7 @@ export class VirtualClock {
    */
   driverTurn = (): void => {
     this.driverScheduled = false;
+    this.driverImmediate = false;
     if (this.disposed || this.heap.length === 0) {
       this.idleTurns = 0;
       return;
@@ -579,6 +589,19 @@ export function clockSkipping(): boolean {
 /** The active skipping clock's skipIdle(ms); true without one (there is no clock to move). */
 export function skipIdleTime(ms: number): boolean {
   return activeClock === null || activeClock.skipIdle(ms);
+}
+
+/**
+ * Whether immediates other than the active clock's own are queued: work that still has to run
+ * before the event loop goes idle, such as React's scheduler continuing a render that ran past its
+ * 5 ms slice. Without a clock every queued immediate counts; null when the host cannot tell.
+ */
+export function foreignImmediatesPending(): boolean | null {
+  if (getActiveResourcesInfo === null) return null;
+  const resources = getActiveResourcesInfo();
+  let immediates = 0;
+  for (let i = 0; i < resources.length; i++) if (resources[i] === "Immediate") immediates++;
+  return immediates > (activeClock === null ? 0 : activeClock.ownImmediates);
 }
 
 /** Milliseconds the active clock has skipped (0 without one): what a traced span reads at start and end. */

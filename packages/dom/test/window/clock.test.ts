@@ -14,7 +14,7 @@
  */
 import { afterEach, describe, expect, test } from "vitest";
 import { VirtualClock, installClock, type InstalledClock } from "@ctrl/dom/internal";
-import { queueUserAgentTask } from "../../src/window/clock.ts";
+import { foreignImmediatesPending, queueUserAgentTask } from "../../src/window/clock.ts";
 
 type G = {
   setTimeout: (
@@ -185,6 +185,19 @@ describe("idle time skipping (timeSkip: true)", () => {
     g.setTimeout(() => order.push("timer"), 1_000);
     await sleep(g, 2_000);
     expect(order).toEqual(["immediate0", "immediate1", "immediate2", "immediate3", "immediate4", "timer"]);
+  });
+
+  test("foreignImmediatesPending counts queued immediates except the clock's own driver turn (user-event yields until React's continue)", async () => {
+    const g = setup(true);
+    g.setTimeout(() => {}, 1_000);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    // The driver's next turn is queued, waiting for the loop to go idle: not someone else's work.
+    expect(process.getActiveResourcesInfo()).toContain("Immediate");
+    expect(foreignImmediatesPending()).toBe(false);
+    const other = setImmediate(() => {});
+    expect(foreignImmediatesPending()).toBe(true);
+    clearImmediate(other);
+    expect(foreignImmediatesPending()).toBe(false);
   });
 
   test("a user agent task (selectionchange) runs before a 0 ms timer set after it, also when that timer would run as a continuation of one due with it (https://html.spec.whatwg.org/#queue-a-task)", async () => {

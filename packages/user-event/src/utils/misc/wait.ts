@@ -24,9 +24,12 @@
 // So every timer callback upstream's wait would run still runs before the next action and
 // before `await user.click()` resolves.
 // `setImmediate` is still a macrotask boundary: microtasks, React's scheduler tasks (React
-// schedules with `setImmediate` in Node) and their effects run between actions as before.
+// schedules with `setImmediate` in Node) and their effects run between actions as before. A
+// render that runs past React's 5 ms slice (a busy machine) continues in an immediate queued
+// behind ours, so after either wait user-event yields again while immediates other than the
+// clock's own are queued, up to MAX_YIELD_HOPS (upstream's 1 ms timer can lose that race too).
 
-import {skipIdleTime} from '../../ctrl-dom.ts'
+import {immediatesPending, skipIdleTime} from '../../ctrl-dom.ts'
 import {type Instance} from '../../setup/index.ts'
 
 type TimerFn = ((...args: never[]) => unknown) & {
@@ -279,11 +282,23 @@ function canYieldWithImmediate(config: Instance['config']): boolean {
   return true
 }
 
+/** Bound on repeated yields while other immediates are queued (a self-rescheduling immediate never settles). */
+const MAX_YIELD_HOPS = 20
+
 export async function yieldBetweenActions(config: Instance['config']) {
   if (canYieldWithImmediate(config)) {
     await new Promise<void>(resolveOnImmediate)
   } else {
     await wait(config)
     if (timerGlobalsObserved()) untrackedBaseline = untrackedTimeouts()
+  }
+  // After either wait: upstream's 1 ms timer can also fire before a busy render's continuation.
+  if (
+    config.delay === 0 &&
+    !isFaked(globalThis.setImmediate as TimerFn | undefined)
+  ) {
+    for (let hop = 0; hop < MAX_YIELD_HOPS && immediatesPending(); hop++) {
+      await new Promise<void>(resolveOnImmediate)
+    }
   }
 }

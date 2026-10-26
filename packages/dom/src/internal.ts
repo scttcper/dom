@@ -65,6 +65,7 @@ export {
   installClock,
   clockNow,
   clockStats,
+  foreignImmediatesPending,
   skipIdleTime,
   virtualDate,
   virtualPerformance,

@@ -33,7 +33,7 @@ const impls: Array<[name: string, userEvent: UE, rtl: RTL]> = [
   ['@testing-library/user-event', stockUserEvent, stockRTL],
 ]
 
-describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
+describe.each(impls)('%s', (name, userEvent, {render, screen, cleanup}) => {
   afterEach(() => cleanup())
 
   describe('controlled inputs', () => {
@@ -685,138 +685,186 @@ describe.each(impls)('%s', (_name, userEvent, {render, screen, cleanup}) => {
     })
   })
 
-  describe('React work between actions', () => {
-    test('effects and the renders they trigger flush before the next keystroke', async () => {
-      const seenOnKeyDown: number[] = []
-      function Input() {
-        const [value, setValue] = useState('')
-        const [length, setLength] = useState(0)
-        useEffect(() => {
-          setLength(value.length)
-        }, [value])
-        return (
-          <input
-            value={value}
-            onKeyDown={() => seenOnKeyDown.push(length)}
-            onChange={e => setValue(e.target.value)}
-          />
-        )
-      }
-      render(<Input />)
-      const user = userEvent.setup()
-
-      await user.type(screen.getByRole('textbox'), 'abcd')
-
-      expect(seenOnKeyDown).toEqual([0, 1, 2, 3])
-    })
-
-    test('state set in a promise callback is visible to the next keystroke', async () => {
-      const seen: string[] = []
-      function Input() {
-        const [value, setValue] = useState('')
-        const [echo, setEcho] = useState('')
-        return (
-          <input
-            value={value}
-            onKeyDown={() => seen.push(echo)}
-            onChange={e => {
-              const next = e.target.value
-              setValue(next)
-              void Promise.resolve().then(() => setEcho(next))
-            }}
-          />
-        )
-      }
-      render(<Input />)
-      const user = userEvent.setup()
-
-      await user.type(screen.getByRole('textbox'), 'xyz')
-
-      expect(seen).toEqual(['', 'x', 'xy'])
-    })
-
-    test('setTimeout(0) callbacks scheduled during an API call ran when it resolves', async () => {
-      function Button() {
-        const [label, setLabel] = useState('idle')
-        return (
-          <button onClick={() => setTimeout(() => setLabel('done'), 0)}>
-            {label}
-          </button>
-        )
-      }
-      render(<Button />)
-      const user = userEvent.setup()
-
-      await user.click(screen.getByRole('button'))
-
-      expect(screen.getByRole('button')).toHaveTextContent('done')
-    })
-
-    test('an animation frame requested during a click has run a few clicks later', async () => {
-      // Downstream regression (Sentry's notificationActionManager.spec): React Aria restores focus
-      // in requestAnimationFrame after a menu closes, and the click after next must not land
-      // before it. Every wait between actions takes at least 1 ms on jsdom (Node's setTimeout
-      // minimum); under idle time skipping it must advance the clock by as much.
-      let frameRan = false
-      function Buttons() {
-        return (
-          <>
-            <button
-              onClick={() => requestAnimationFrame(() => (frameRan = true))}
-            >
-              open
-            </button>
-            <button>next</button>
-          </>
-        )
-      }
-      render(<Buttons />)
-      const user = userEvent.setup()
-      await user.click(screen.getByRole('button', {name: 'open'}))
-      let clicks = 0
-      while (!frameRan && clicks < 100) {
-        await user.click(screen.getByRole('button', {name: 'next'}))
-        clicks++
-      }
-      expect(clicks).toBeLessThanOrEqual(8)
-    })
-
-    test('fake timers with advanceTimers keep working', async () => {
-      // RTL's asyncWrapper drains with `setTimeout(0)` and only advances fake timers when a
-      // global `jest` exists; the usual vitest workaround provides it.
-      const g = globalThis as {jest?: unknown}
-      g.jest = {advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms)}
-      vi.useFakeTimers()
-      try {
-        function Debounced() {
+  // Stock user-event waits `setTimeout(0)` (1 ms in Node) between actions. On a loaded machine a
+  // render that overruns React's 5 ms slice continues in a setImmediate, which Node runs after
+  // that due timer, so the next keystroke can come first (on jsdom too). The stock row is the
+  // oracle here, not the target: it gets retries; @ctrl/dom/user-event yields until React's
+  // immediates settle (src/utils/misc/wait.ts) and gets none.
+  describe(
+    'React work between actions',
+    {
+      retry: name === '@testing-library/user-event' ? 3 : 0,
+    },
+    () => {
+      test('effects and the renders they trigger flush before the next keystroke', async () => {
+        const seenOnKeyDown: number[] = []
+        function Input() {
           const [value, setValue] = useState('')
-          const [committed, setCommitted] = useState('')
+          const [length, setLength] = useState(0)
           useEffect(() => {
-            const t = setTimeout(() => setCommitted(value), 300)
-            return () => clearTimeout(t)
+            setLength(value.length)
           }, [value])
           return (
+            <input
+              value={value}
+              onKeyDown={() => seenOnKeyDown.push(length)}
+              onChange={e => setValue(e.target.value)}
+            />
+          )
+        }
+        render(<Input />)
+        const user = userEvent.setup()
+
+        await user.type(screen.getByRole('textbox'), 'abcd')
+
+        expect(seenOnKeyDown).toEqual([0, 1, 2, 3])
+      })
+
+      test('state set in a promise callback is visible to the next keystroke', async () => {
+        const seen: string[] = []
+        function Input() {
+          const [value, setValue] = useState('')
+          const [echo, setEcho] = useState('')
+          return (
+            <input
+              value={value}
+              onKeyDown={() => seen.push(echo)}
+              onChange={e => {
+                const next = e.target.value
+                setValue(next)
+                void Promise.resolve().then(() => setEcho(next))
+              }}
+            />
+          )
+        }
+        render(<Input />)
+        const user = userEvent.setup()
+
+        await user.type(screen.getByRole('textbox'), 'xyz')
+
+        expect(seen).toEqual(['', 'x', 'xy'])
+      })
+
+      // Only @ctrl/dom/user-event promises this: stock's 1 ms wait loses to three chained
+      // immediates often enough under load that retries don't cover it.
+      test.skipIf(name === '@testing-library/user-event')(
+        'state set after a chain of immediates (React continuing a render past its 5 ms slice) is visible to the next keystroke',
+        async () => {
+          const seen: string[] = []
+          // React's scheduler continues a render that overran its time slice in a new setImmediate,
+          // queued behind whatever immediate was already waiting: three such continuations.
+          const later = (hops: number, fn: () => void): void => {
+            if (hops === 0) fn()
+            else setImmediate(() => later(hops - 1, fn))
+          }
+          function Input() {
+            const [value, setValue] = useState('')
+            const [echo, setEcho] = useState('')
+            return (
+              <input
+                value={value}
+                onKeyDown={() => seen.push(echo)}
+                onChange={e => {
+                  const next = e.target.value
+                  setValue(next)
+                  later(3, () => setEcho(next))
+                }}
+              />
+            )
+          }
+          render(<Input />)
+          const user = userEvent.setup()
+
+          await user.type(screen.getByRole('textbox'), 'xyz')
+          expect(seen).toEqual(['', 'x', 'xy'])
+        },
+      )
+
+      test('setTimeout(0) callbacks scheduled during an API call ran when it resolves', async () => {
+        function Button() {
+          const [label, setLabel] = useState('idle')
+          return (
+            <button onClick={() => setTimeout(() => setLabel('done'), 0)}>
+              {label}
+            </button>
+          )
+        }
+        render(<Button />)
+        const user = userEvent.setup()
+
+        await user.click(screen.getByRole('button'))
+
+        expect(screen.getByRole('button')).toHaveTextContent('done')
+      })
+
+      test('an animation frame requested during a click has run a few clicks later', async () => {
+        // Downstream regression (Sentry's notificationActionManager.spec): React Aria restores focus
+        // in requestAnimationFrame after a menu closes, and the click after next must not land
+        // before it. Every wait between actions takes at least 1 ms on jsdom (Node's setTimeout
+        // minimum); under idle time skipping it must advance the clock by as much.
+        let frameRan = false
+        function Buttons() {
+          return (
             <>
-              <input value={value} onChange={e => setValue(e.target.value)} />
-              <output>{committed}</output>
+              <button
+                onClick={() => requestAnimationFrame(() => (frameRan = true))}
+              >
+                open
+              </button>
+              <button>next</button>
             </>
           )
         }
-        render(<Debounced />)
-        const user = userEvent.setup({
-          advanceTimers: vi.advanceTimersByTime,
-          delay: 100,
-        })
+        render(<Buttons />)
+        const user = userEvent.setup()
+        await user.click(screen.getByRole('button', {name: 'open'}))
+        let clicks = 0
+        while (!frameRan && clicks < 100) {
+          await user.click(screen.getByRole('button', {name: 'next'}))
+          clicks++
+        }
+        expect(clicks).toBeLessThanOrEqual(8)
+      })
 
-        await user.type(screen.getByRole('textbox'), 'abc')
-        expect(screen.getByRole('status')).toHaveTextContent('')
-        await user.keyboard('d')
-        await stockRTL.act(() => vi.advanceTimersByTime(300))
-        expect(screen.getByRole('status')).toHaveTextContent('abcd')
-      } finally {
-        vi.useRealTimers()
-        delete g.jest
-      }
-    })
-  })
+      test('fake timers with advanceTimers keep working', async () => {
+        // RTL's asyncWrapper drains with `setTimeout(0)` and only advances fake timers when a
+        // global `jest` exists; the usual vitest workaround provides it.
+        const g = globalThis as {jest?: unknown}
+        g.jest = {
+          advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms),
+        }
+        vi.useFakeTimers()
+        try {
+          function Debounced() {
+            const [value, setValue] = useState('')
+            const [committed, setCommitted] = useState('')
+            useEffect(() => {
+              const t = setTimeout(() => setCommitted(value), 300)
+              return () => clearTimeout(t)
+            }, [value])
+            return (
+              <>
+                <input value={value} onChange={e => setValue(e.target.value)} />
+                <output>{committed}</output>
+              </>
+            )
+          }
+          render(<Debounced />)
+          const user = userEvent.setup({
+            advanceTimers: vi.advanceTimersByTime,
+            delay: 100,
+          })
+
+          await user.type(screen.getByRole('textbox'), 'abc')
+          expect(screen.getByRole('status')).toHaveTextContent('')
+          await user.keyboard('d')
+          await stockRTL.act(() => vi.advanceTimersByTime(300))
+          expect(screen.getByRole('status')).toHaveTextContent('abcd')
+        } finally {
+          vi.useRealTimers()
+          delete g.jest
+        }
+      })
+    },
+  )
 })
