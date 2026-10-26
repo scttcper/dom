@@ -92,20 +92,61 @@ const NODE_GLOBAL_DENY = new Set([
   "sessionStorage",
 ]);
 
-// Node 26 defines these as lazy data properties: reading their value or descriptor loads undici
-// (~10-60 ms). Their shape is fixed (writable, configurable; only fetch enumerable), so they are
-// installed as lazy getters without ever reading them until a test does.
-const LAZY_NODE_GLOBALS = new Map([
-  ["fetch", true],
-  ["Request", false],
-  ["Response", false],
-  ["Headers", false],
-  ["FormData", false],
-  ["WebSocket", false],
-  ["EventSource", false],
-  ["MessageEvent", false],
-  ["CloseEvent", false],
-]);
+// Node 26 defines these as lazy data properties: reading their value or descriptor builds them
+// (undici's ~130 modules for fetch, FormData and the WebSocket events; web streams ~25, crypto ~27,
+// perf_hooks ~11). All share one shape (writable, configurable, non-enumerable; only fetch is
+// enumerable), so they are installed as lazy getters without ever reading them until a test does.
+// EventSource exists only behind --experimental-eventsource.
+const LAZY_NODE_GLOBALS = new Map<string, boolean>([["fetch", true]]);
+for (const name of [
+  "Request",
+  "Response",
+  "Headers",
+  "FormData",
+  "WebSocket",
+  "EventSource",
+  "MessageEvent",
+  "CloseEvent",
+  "ErrorEvent",
+  "ReadableStream",
+  "ReadableStreamDefaultReader",
+  "ReadableStreamBYOBReader",
+  "ReadableStreamBYOBRequest",
+  "ReadableByteStreamController",
+  "ReadableStreamDefaultController",
+  "TransformStream",
+  "TransformStreamDefaultController",
+  "WritableStream",
+  "WritableStreamDefaultWriter",
+  "WritableStreamDefaultController",
+  "ByteLengthQueuingStrategy",
+  "CountQueuingStrategy",
+  "TextEncoderStream",
+  "TextDecoderStream",
+  "CompressionStream",
+  "DecompressionStream",
+  "Crypto",
+  "CryptoKey",
+  "SubtleCrypto",
+  "MessageChannel",
+  "MessagePort",
+  "BroadcastChannel",
+  "Performance",
+  "PerformanceEntry",
+  "PerformanceMark",
+  "PerformanceMeasure",
+  "PerformanceObserver",
+  "PerformanceObserverEntryList",
+  "PerformanceResourceTiming",
+  "Storage",
+  "Navigator",
+  "QuotaExceededError",
+  "File",
+  "AbortController",
+  "AbortSignal",
+]) {
+  LAZY_NODE_GLOBALS.set(name, false);
+}
 
 let nodeGlobals: [string, PropertyDescriptor | null][] | null = null;
 
