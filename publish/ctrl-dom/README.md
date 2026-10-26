@@ -9,13 +9,18 @@ stack against 14.4 s on jsdom and 9.3 s on happy-dom, in less memory than either
   `/user-event` and `/jest-dom`. Swap only the DOM, or the whole stack, without touching tests.
 - **Fast.** Queries like `getByRole` take microseconds instead of milliseconds, user-event
   doesn't wait on timers between keystrokes, and idle time in `findBy*`, `waitFor` and app
-  debounces is skipped on a virtual clock instead of waited out.
+  debounces is skipped on a virtual clock instead of waited out ([turning it off](#time-skipping)).
 - **Built for component tests.** No layout, no script execution, no navigation, no network;
   everything else a React component touches behaves like a browser, or like jsdom where test
   suites depend on it.
 
-Requires Node 26+, React 19 for `@ctrl/dom/react`, and Vitest 5+, Jest 30+, node:test or Bun
-(see [Other test runners](#other-test-runners)).
+| | Supported |
+| --- | --- |
+| Node | 26+ |
+| Test runner | Vitest 5+, Jest 30+, node:test, Bun |
+| React | 19 (`@ctrl/dom/react` uses `React.act`) |
+
+node:test and Bun: [Other test runners](#other-test-runners).
 
 ## Vitest
 
@@ -201,6 +206,28 @@ does not remove it, so a later test in the same file sees both (duplicate `id`s 
 lookups). Where test hooks are global (Jest, Bun, node:test with the register), importing
 Testing Library's React entry turns React's act environment on, and React then warns about `play`
 functions' state updates outside `act(...)`; the tests still pass.
+
+## Time skipping
+
+Timers run on a virtual clock. Whenever a test has nothing left to do but wait (no pending
+promises, `setImmediate` callbacks or I/O), the clock jumps to the next timer, and `Date`,
+`performance.now()` and event timestamps move with it. A `findBy*` waiting out an 800 ms debounce
+returns in microseconds; timers still fire in order, and fake timers (`vi.useFakeTimers()`,
+`jest.useFakeTimers()`) take over as usual.
+
+Turn it off when a test needs real time to pass: a timer from `node:timers`, or from a library
+that grabbed `setTimeout` before the environment started, racing the page's timers; or a test
+measuring time against a clock outside the process. Real I/O (sockets, files, child processes)
+already holds the clock, so a real server's latency is never skipped.
+
+| Scope | How |
+| --- | --- |
+| Vitest, every file | `ctrlDom({ timeSkip: false })` |
+| Vitest, one file | `// @vitest-environment-options {"timeSkip": false}` as its first line |
+| Jest, every file | `testEnvironmentOptions: { timeSkip: false }` |
+| Jest, one file | `/** @jest-environment-options {"timeSkip": false} */` at the top |
+| node:test, Bun | `register({ timeSkip: false })` from `@ctrl/dom/register/pure` |
+| Any runner, one run | `CTRL_DOM_TIME_SKIP=0`, which overrides the option |
 
 ## Direct imports
 

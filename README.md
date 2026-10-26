@@ -15,6 +15,12 @@ stock Testing Library, or swap the whole stack for the biggest speedup;
 Not published yet. `pnpm build` assembles the publishable packages under `release/`, and
 `pnpm test:pack` installs their tarballs into a fresh project and runs every setup below.
 
+| | Supported |
+| --- | --- |
+| Node | 26+ |
+| Test runner | Vitest 5+, Jest 30+, node:test, Bun |
+| React | 19 (`@ctrl/dom/react` uses `React.act`) |
+
 Vitest (>= 5) needs only `pnpm add -D @ctrl/dom`. Whole stack: the environment plus your
 `@testing-library/*` imports routed to `@ctrl/dom`:
 
@@ -137,6 +143,8 @@ and from jsdom is in [docs/deviations.md](docs/deviations.md).
   and tag shortcuts and an ancestor Bloom filter; style rules are bucketed and matched rules reused.
 - **Timers don't wait.** The test environments run timers on a virtual clock that jumps ahead
   when nothing else is pending, so `findBy*`, `waitFor` and user-event delays cost microseconds.
+  A test that needs real time can turn it off, per project or per file:
+  [Time skipping](publish/ctrl-dom/README.md#time-skipping).
 
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the details.
 
