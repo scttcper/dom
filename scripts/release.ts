@@ -160,19 +160,25 @@ async function writeBridges(ctrlDom: string): Promise<void> {
  */
 function pinEnvironmentDom(ctrlDom: string, member = "vitest-environment"): void {
   const envDir = join(ctrlDom, "dist", member);
+  let pinned = 0;
   for (const e of readdirSync(envDir, { withFileTypes: true, recursive: true })) {
     if (!e.isFile() || !e.name.endsWith(".js")) continue;
     const path = join(e.parentPath, e.name);
     const text = readFileSync(path, "utf8").replace(
-      // Import specifiers only: the plugin's own name is "@ctrl/dom" too.
-      /((?:from|import)\s*\(?\s*)(["'])@ctrl\/dom(\/internal)?\2/g,
+      // Import specifiers only (the plugin's own name is "@ctrl/dom" too), in any quotes: the
+      // minifier writes dynamic imports as import(`@ctrl/dom`).
+      /((?:from|import)\s*\(?\s*)(["'`])@ctrl\/dom(\/internal)?\2/g,
       (_, head: string, quote: string, internal?: string) => {
+        pinned++;
         const target = relative(e.parentPath, join(ctrlDom, "dist", "dom", internal ? "internal.js" : "index.js"));
         return `${head}${quote}${target.startsWith(".") ? target : `./${target}`}${quote}`;
       },
     );
     writeFileSync(path, text);
   }
+  // Both load the DOM themselves: none found means the bundle's import syntax changed and the
+  // environment would quietly go through the bridge again.
+  if (pinned === 0) throw new Error(`pinEnvironmentDom: no @ctrl/dom import found in dist/${member}`);
 }
 
 /**
