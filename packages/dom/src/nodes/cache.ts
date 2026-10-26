@@ -15,7 +15,7 @@ export class NodeCache {
   // --- @ctrl/dom/aria ---
   /** `Document._version` at which `role` was computed. */
   roleVersion: number;
-  /** Testing Library's implicit role (aria/src/role.ts implicitRole), "" for none. */
+  /** Testing Library's implicit role (aria/src/role.ts implicitRole), "" for none, "\0" not computed yet. */
   role: string;
   /** The `role` attribute at `roleVersion`, null when absent. */
   roleAttr: string | null;

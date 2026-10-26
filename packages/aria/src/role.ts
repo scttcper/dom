@@ -62,21 +62,29 @@ function eqCI(v: string | null, lower: string): boolean {
  * exactly one role, so the list form always has at most one element.
  */
 export function implicitRole(impl: NodeImpl): string {
-  return impl.type === ELEMENT_NODE ? roleCache(impl).role : "";
+  if (impl.type !== ELEMENT_NODE) return "";
+  const c = roleCache(impl);
+  if (c.role === NOT_COMPUTED) c.role = implicitRoleImpl(impl, false);
+  return c.role;
 }
 
+/** NodeCache.role of an element with a `role` attribute until something asks for the implicit role. */
+const NOT_COMPUTED = "\0";
+
 /**
- * The element's cache with its `role` attribute and Testing Library implicit role current: every
- * ByRole query asks for them for every element in the container, and both depend only on the tag
- * and attributes, so they are kept per document version.
+ * The element's cache with its `role` attribute current, and its Testing Library implicit role
+ * when it has no `role` attribute (else NOT_COMPUTED: ByRole matches against the attribute then):
+ * every ByRole query asks for them for every element in the container, and both depend only on
+ * the tag and attributes, so they are kept per document version.
  */
 export function roleCache(impl: NodeImpl): NodeCache {
   const version = impl.doc[$version];
   const c = impl.cache as NodeCache | null;
   if (c !== null && c.roleVersion === version) return c;
   const cache = c ?? nodeCache(impl);
-  cache.roleAttr = attr(impl, "role");
-  cache.role = implicitRoleImpl(impl, false);
+  const roleAttr = attr(impl, "role");
+  cache.roleAttr = roleAttr;
+  cache.role = roleAttr === null ? implicitRoleImpl(impl, false) : NOT_COMPUTED;
   cache.roleVersion = version;
   return cache;
 }

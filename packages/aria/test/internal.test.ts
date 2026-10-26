@@ -105,6 +105,12 @@ describe("Testing Library role filter — https://w3c.github.io/aria/#document-h
     expect(tlRoleMatches(impl($("#c")), "button", false)).toBe(true);
     expect(getImplicitRole($("#c"))).toBe("button");
   });
+
+  test("an element with a role attribute still answers its implicit role", () => {
+    renderIntoDocument('<input id="s" role="switch" type="checkbox">');
+    expect(tlRoleMatches(impl($("#s")), "switch", false)).toBe(true);
+    expect(getImplicitRole($("#s"))).toBe("checkbox");
+  });
 });
 
 describe("caches across documents — https://dom.spec.whatwg.org/#concept-node-adopt", () => {
