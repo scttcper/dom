@@ -21,14 +21,26 @@ jobs:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
+        id: node
         with:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Vitest's transformed modules (fsModuleCache) and Node's compile cache, saved by the first
+      # passing run with this lockfile and Node: entries are checked against file contents, so a
+      # stale one only misses. Without them every run transforms and compiles everything again.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            node_modules/.vitest-cache
+            ${{ runner.temp }}/node-compile-cache
+          key: test-${{ runner.os }}-node${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm fmt:check
       - run: pnpm test
+        env:
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
       # Builds every package and assembles release/ (scripts/release.ts), then installs the three
       # tarballs into a fresh project and runs every documented setup against them.
       - run: pnpm build
