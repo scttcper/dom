@@ -19,7 +19,10 @@
 // src/*.ts; `publishConfig` (applied by `pnpm pack` / `pnpm publish`) points them at dist/.
 // The bench's "*-dist" configurations read the same layout (bench/lib/packages.ts).
 //
-// Flags: --minify, --filter <substring>, --no-dts, --no-cjs.
+// Minified (constructor names kept): a cold import of the DOM is ~10% faster and the tarball 25%
+// smaller; with Node's compile cache warm it makes no difference.
+//
+// Flags: --no-minify (readable bundles for debugging), --filter <substring>, --no-dts, --no-cjs.
 
 import {
   rmSync,
@@ -41,7 +44,7 @@ import { workspacePackages, repoRoot, type WorkspacePackage } from "../bench/lib
 
 const { values: flags } = parseArgs({
   options: {
-    minify: { type: "boolean", default: false },
+    "no-minify": { type: "boolean", default: false },
     filter: { type: "string" },
     "no-dts": { type: "boolean", default: false },
     "no-cjs": { type: "boolean", default: false },
@@ -234,7 +237,7 @@ for (const pkg of selected) {
         treeshake: true,
         plugins: [crossRealmInterop],
         // keepNames: constructor names are observable (`[object HTMLBodyElement]`, prettyDOM).
-        output: { dir: outDir, minify: flags.minify, keepNames: flags.minify, sourcemap: false, ...format },
+        output: { dir: outDir, minify: !flags["no-minify"], keepNames: true, sourcemap: false, ...format },
       });
     }
     if (emitRoot && dtsPackages.includes(pkg)) copyDeclarations(emitRoot, pkg);

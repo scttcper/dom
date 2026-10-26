@@ -258,7 +258,7 @@ peak RSS are reported next to them. CI runs it on pull requests with 9 samples
 ## Bundling (`pnpm build`, `scripts/build.ts`)
 
 One rolldown build per package from its `exports` entries into `packages/<pkg>/dist/`
-(`--minify` optional; see `scripts/build.ts` for the CJS builds and declarations it also writes). Bare specifiers stay external, so `@ctrl/dom/react`'s bundle imports
+(minified; `--no-minify` for readable bundles; see `scripts/build.ts` for the CJS builds and declarations it also writes). Bare specifiers stay external, so `@ctrl/dom/react`'s bundle imports
 `@ctrl/dom` rather than embedding a second DOM; packages with several entries
 (`@ctrl/dom` + `@ctrl/dom/internal`) share chunks.
 
