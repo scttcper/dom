@@ -1,12 +1,12 @@
 // Vitest setup for @ctrl/dom/user-event's tests.
 //
 // Mirrors upstream's test environment (https://github.com/testing-library/user-event/tree/v14.6.8/testenv):
-// jest-dom matchers, and upstream's own `toMatchInlineSnapshot` /
+// jest-dom matchers (@ctrl/dom's drop-in: a third of the stock package's import cost per file), and upstream's own `toMatchInlineSnapshot` /
 // `toThrowErrorMatchingInlineSnapshot` (testenv/modules/inlineSnapshot.js), which compare
 // against the `.snapshot` string of the listener helpers with indentation stripped instead of
 // serializing with pretty-format. Keeping them lets the ported assertions stay verbatim.
 
-import '@testing-library/jest-dom/vitest'
+import '@ctrl/dom/jest-dom/vitest'
 import {expect} from 'vitest'
 
 type MatcherThis = {

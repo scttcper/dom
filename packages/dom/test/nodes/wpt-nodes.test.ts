@@ -25,7 +25,6 @@ defineWPTDirectory(
   "dom/nodes",
   {
     "DOMImplementation-createHTMLDocument-with-saved-implementation.html": IFRAMES,
-    "Element-getElementsByTagName-change-document-HTMLNess.html": IFRAMES,
     "Node-appendChild.html": IFRAMES,
     "Node-isConnected.html": IFRAMES,
     "Node-removeChild.html": IFRAMES,
@@ -48,6 +47,7 @@ defineWPTDirectory(
   },
   {
     "Comment-constructor.html": "registered below with a short timeout",
+    "Element-getElementsByTagName-change-document-HTMLNess.html": "registered below with a short timeout",
     "Text-constructor.html": "registered below with a short timeout",
     "Document-characterSet-normalization-1.html":
       "loads documents in many encodings through iframes (out of scope: no network/encodings)",
@@ -70,6 +70,8 @@ defineWPTDirectory(
 
 for (const f of ["Comment-constructor.html", "Text-constructor.html"])
   defineWPT(`dom/nodes/${f}`, SHARED_INTERFACES, { timeout: 300 });
+// Its iframe never loads: the subtest waiting for it times out either way.
+defineWPT("dom/nodes/Element-getElementsByTagName-change-document-HTMLNess.html", IFRAMES, { timeout: 300 });
 
 // .window.js tests (wptFiles() only lists .html).
 defineWPT("dom/nodes/adoption.window.js");

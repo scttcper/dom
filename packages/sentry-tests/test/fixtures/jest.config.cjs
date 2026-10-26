@@ -6,6 +6,8 @@ module.exports = {
   testMatch: ["<rootDir>/cart.jest.cjs"],
   testEnvironment: "node",
   transform: {},
+  // A handful of files: crawling them beats a watchman query (~0.4 s per run where watchman runs).
+  watchman: false,
   reporters: ["<rootDir>/../../src/jest.ts"],
   testRunner: "<rootDir>/../../src/jest-runner.ts",
 };

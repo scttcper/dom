@@ -8,5 +8,7 @@ module.exports = {
   preset: path.join(__dirname, "../jest-preset.cjs"),
   testMatch: ["<rootDir>/**/*.test.cjs"],
   transform: {},
+  // A handful of files: crawling them beats a watchman query (~0.4 s per run where watchman runs).
+  watchman: false,
   testEnvironmentOptions: { url: "http://localhost:3000/start", width: 1280 },
 };

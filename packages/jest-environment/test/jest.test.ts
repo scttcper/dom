@@ -6,11 +6,15 @@
  *   Reporting exceptions https://html.spec.whatwg.org/#report-an-exception
  */
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 import { describe, expect, test } from "vitest";
 
 const pkg = fileURLToPath(new URL("..", import.meta.url));
+// Jest's bin run by Node directly: `pnpm exec jest` starts pnpm first on every run.
+const jestBin = join(dirname(createRequire(import.meta.url).resolve("jest/package.json")), "bin/jest.js");
 
 interface JestJson {
   numPassedTests: number;
@@ -28,7 +32,7 @@ function jest(...args: string[]): JestJson {
 function jestWith(env: Record<string, string | undefined>, ...args: string[]): JestJson {
   const merged: Record<string, string | undefined> = { ...process.env, ...env };
   for (const key of Object.keys(env)) if (env[key] === undefined) delete merged[key];
-  const run = spawnSync("pnpm", ["exec", "jest", "--config", "jest/jest.config.cjs", "--json", ...args], {
+  const run = spawnSync(process.execPath, [jestBin, "--config", "jest/jest.config.cjs", "--json", ...args], {
     cwd: pkg,
     encoding: "utf8",
     env: merged,

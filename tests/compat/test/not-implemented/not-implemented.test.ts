@@ -38,7 +38,16 @@ const HTML = `<!doctype html><body>
 <form id=canceled><button id=submit-canceled>Go</button></form>
 <audio id=audio></audio><div id=box></div></body>`;
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
+/**
+ * Lets the tasks a scenario queued run: jsdom 30 queues a task with setImmediate, jsdom 26 and
+ * @ctrl/dom with a 0 ms timer (following a hyperlink, javascript: URLs), and a task may queue another.
+ */
+async function settle(): Promise<void> {
+  for (let round = 0; round < 2; round++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+}
 
 async function onJsdom(profile: Profile, scenario: Scenario): Promise<Reported[]> {
   const { JSDOM, VirtualConsole } = ORACLES[profile];

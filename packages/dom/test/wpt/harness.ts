@@ -25,6 +25,7 @@ import { $mode } from "../../src/keys.ts";
 import { fireAnEvent } from "../../src/events/fire.ts";
 import { setUncaughtExceptionHandler } from "../../src/events/report.ts";
 import { setNotImplementedHandler } from "../../src/window/not-implemented.ts";
+import { VirtualClock, installClock } from "../../src/window/clock.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** Vendored fixtures; `WPT_ROOT=<wpt checkout>` points surveys at a full upstream checkout instead. */
@@ -1167,8 +1168,24 @@ function instrumentIframes(doc: dom.Document, file: string, owner?: FrameOwner):
   } as typeof doc.createElement;
 }
 
-/** Run one vendored WPT .html file and return its subtest results. */
+/**
+ * Run one vendored WPT .html file and return its subtest results.
+ *
+ * On a virtual clock that skips idle time (window/clock.ts, what @ctrl/dom's test environments
+ * use): pages wait on timers to see that nothing happens (`step_timeout(() => t.done(), 500)`),
+ * on animation frames, and the harness waits out subtests that never finish. Those waits then
+ * cost no wall time; timers still fire in order and performance.now() advances with them.
+ */
 export async function runWPT(file: string, options: RunOptions = {}): Promise<SubtestResult[]> {
+  const clock = installClock(new VirtualClock({ skip: true }), globalThis as never);
+  try {
+    return await runOnClock(file, options);
+  } finally {
+    clock.uninstall();
+  }
+}
+
+async function runOnClock(file: string, options: RunOptions): Promise<SubtestResult[]> {
   const results: Test[] = [];
   const pending: Promise<void>[] = [];
   const harness = createHarness(results, pending);
