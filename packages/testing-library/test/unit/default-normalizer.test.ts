@@ -1,7 +1,8 @@
 /**
  * The default text normalizer (packages/testing-library/src/matches.ts `getDefaultNormalizer`)
  * returns its input unchanged when trimming and collapsing whitespace would not change it, and
- * otherwise matches upstream exactly.
+ * otherwise matches upstream exactly. `textMatcher` (the per-query matcher, ours) rejects
+ * candidates before normalizing them and must agree with `matches` / `fuzzyMatches`.
  *
  * Upstream: https://github.com/testing-library/dom-testing-library/blob/main/src/matches.ts
  * (`text.trim()`, `text.replace(/\s+/g, ' ')`); `\s` and `String.prototype.trim` share one
@@ -10,6 +11,7 @@
  */
 import { describe, expect, test } from "vitest";
 import { getDefaultNormalizer } from "../../src/index.ts";
+import { fuzzyMatches, matches, makeNormalizer, textMatcher } from "../../src/matches.ts";
 
 function upstream(text: string, trim: boolean, collapseWhitespace: boolean): string {
   let normalizedText = text;
@@ -47,4 +49,33 @@ describe("getDefaultNormalizer — fast path returns the input when nothing chan
       });
     }
   }
+});
+
+describe("textMatcher — same answers as matches / fuzzyMatches", () => {
+  const matchers = [...SAMPLES, "Row", "label", "Row 12", "tab here", "new line", 12, 0];
+  const texts = [...SAMPLES, null, "Row 12", " Row 12 ", "Row\t12", "Row  12\n", "12", " 12", "xRow 12", "Row 12x"];
+  for (const exact of [true, false]) {
+    for (const [label, options] of [
+      ["the default normalizer", {}],
+      ["trim: false", { trim: false }],
+      ["a custom normalizer", { normalizer: (t: string) => t.toUpperCase() }],
+    ] as const) {
+      test(`exact=${exact}, ${label}`, () => {
+        const normalizer = makeNormalizer(options);
+        for (const m of matchers) {
+          const match = textMatcher(exact, m, normalizer);
+          for (const t of texts) {
+            const expected = (exact ? matches : fuzzyMatches)(t, null, m, normalizer);
+            expect(match(t, null), `${JSON.stringify(m)} vs ${JSON.stringify(t)}`).toBe(expected);
+          }
+        }
+      });
+    }
+  }
+
+  test("a null matcher still throws only once there is a text to match", () => {
+    const match = textMatcher(true, null as never, makeNormalizer({}));
+    expect(match(null, null)).toBe(false);
+    expect(() => match("text", null)).toThrow("It looks like null was passed instead of a matcher");
+  });
 });

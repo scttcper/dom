@@ -17,7 +17,7 @@ import {
   type SpanContext,
 } from "@ctrl/dom/internal";
 import { getSuggestedQuery, type Variant } from "./suggestions.ts";
-import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "./matches.ts";
+import { makeNormalizer, textMatcher, type Matcher, type MatcherOptions } from "./matches.ts";
 import { waitForInSpan } from "./wait-for.ts";
 import { getConfig } from "./config.ts";
 import { implOf } from "./helpers.ts";
@@ -43,15 +43,15 @@ export function queryAllByAttribute(
   text: Matcher,
   { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {},
 ): any[] {
-  const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const lower = asciiLowercase(attribute);
   const out: any[] = [];
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type !== ELEMENT_NODE || n.attrs === null) continue;
     const value = attr(n, (n.flags & F_HTML) !== 0 ? lower : attribute);
-    if (value !== null && matcher(value, n.node, text, matchNormalizer)) out.push(n.node);
+    if (value !== null && match(value, n.node)) out.push(n.node);
   }
   return out;
 }

@@ -139,6 +139,39 @@ export function getDefaultNormalizer({
 const defaultNormalizer = getDefaultNormalizer();
 
 /**
+ * `matches` (or `fuzzyMatches` when not `exact`) bound to one query's matcher and normalizer.
+ * Ours: queries call it for every candidate element, so the common case, an exact string matcher
+ * with the default normalizer, rejects most candidates without normalizing them. Normalizing only
+ * removes whitespace (trims, then collapses each run to one space), so a text shorter than the
+ * matcher cannot match, nor one whose first or last character is not whitespace and differs from
+ * the matcher's; and a matcher the normalizer would change matches nothing.
+ */
+export function textMatcher(
+  exact: boolean,
+  matcher: Matcher,
+  normalizer: NormalizerFn,
+): (textToMatch: string | null, node: any) => boolean {
+  if (!exact) return (textToMatch, node) => fuzzyMatches(textToMatch, node, matcher, normalizer);
+  if (normalizer !== defaultNormalizer || (typeof matcher !== "string" && typeof matcher !== "number"))
+    return (textToMatch, node) => matches(textToMatch, node, matcher, normalizer);
+  const m = String(matcher);
+  if (changedByNormalizing(m, true, true)) return () => false;
+  const length = m.length;
+  const first = m.charCodeAt(0);
+  const last = m.charCodeAt(length - 1);
+  return (textToMatch) => {
+    if (typeof textToMatch !== "string" || textToMatch.length < length) return false;
+    if (length !== 0) {
+      const c0 = textToMatch.charCodeAt(0);
+      if (c0 !== first && !isRegExpWhitespace(c0)) return false;
+      const cl = textToMatch.charCodeAt(textToMatch.length - 1);
+      if (cl !== last && !isRegExpWhitespace(cl)) return false;
+    }
+    return defaultNormalizer(textToMatch) === m;
+  };
+}
+
+/**
  * Constructs a normalizer to pass to functions in matches.ts
  * @param trim The user-specified value for `trim`, without any defaulting having been applied
  * @param collapseWhitespace The user-specified value for `collapseWhitespace`, without any defaulting having been applied

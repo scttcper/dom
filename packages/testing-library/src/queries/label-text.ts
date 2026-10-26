@@ -7,7 +7,7 @@ import { attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/interna
 import { getConfig } from "../config.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext } from "../label-helpers.ts";
-import { fuzzyMatches, matches, makeNormalizer, type Matcher, type NormalizerFn } from "../matches.ts";
+import { makeNormalizer, textMatcher, type Matcher, type NormalizerFn } from "../matches.ts";
 import {
   queryAllByAttribute,
   makeFindQuery,
@@ -39,14 +39,12 @@ function queryAllLabelsByText(
   text: Matcher,
   { exact = true, trim, collapseWhitespace, normalizer }: SelectorMatcherOptions = {},
 ): any[] {
-  const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const match = textMatcher(exact, text, matchNormalizer);
 
   const textToMatchByLabels = queryAllLabels(container);
 
-  return textToMatchByLabels
-    .filter(({ node, textToMatch }) => matcher(textToMatch, node, text, matchNormalizer))
-    .map(({ node }) => node);
+  return textToMatchByLabels.filter(({ node, textToMatch }) => match(textToMatch, node)).map(({ node }) => node);
 }
 
 function queryAllByLabelText(
@@ -56,8 +54,8 @@ function queryAllByLabelText(
 ): any[] {
   checkContainerType(container);
 
-  const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer: NormalizerFn = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const ctx = new LabelContext(root);
   const labelledElements: any[] = [];
@@ -66,7 +64,7 @@ function queryAllByLabelText(
     if (n.type !== ELEMENT_NODE) continue;
     // `getRealLabels(element).length || element.hasAttribute('aria-labelledby')`
     if (attr(n, "aria-labelledby") === null && ctx.labelsOf(n).length === 0) continue;
-    collectLabelled(ctx, n, selector, matcher, text, matchNormalizer, labelledElements);
+    collectLabelled(ctx, n, selector, match, labelledElements);
   }
 
   const ariaLabelled = queryAllByAttribute("aria-label", container, text, { exact, normalizer: matchNormalizer });
@@ -80,19 +78,17 @@ function collectLabelled(
   ctx: LabelContext,
   labelledElement: NodeImpl,
   selector: string,
-  matcher: typeof matches,
-  text: Matcher,
-  matchNormalizer: NormalizerFn,
+  match: (textToMatch: string | null, node: any) => boolean,
   labelledElements: any[],
 ): void {
   const labelList = getLabelsImpl(ctx, labelledElement, selector);
   if (labelList.length === 1) {
     const label = labelList[0];
-    if (label.formControl && matcher(label.content, label.formControl.node, text, matchNormalizer)) {
+    if (label.formControl && match(label.content, label.formControl.node)) {
       labelledElements.push(label.formControl.node);
     }
     // Keep join's coercion for aria-labelledby nodes with an overridden value.
-    if (matcher(`${label.content || ""}`, labelledElement.node, text, matchNormalizer)) {
+    if (match(`${label.content || ""}`, labelledElement.node)) {
       labelledElements.push(labelledElement.node);
     }
     return;
@@ -100,16 +96,16 @@ function collectLabelled(
   for (const label of labelList) {
     if (!label.formControl) continue;
     const formControl = label.formControl.node;
-    if (matcher(label.content, formControl, text, matchNormalizer)) labelledElements.push(formControl);
+    if (match(label.content, formControl)) labelledElements.push(formControl);
   }
   const labelsValue = labelList.filter((label) => Boolean(label.content)).map((label) => label.content as string);
   const node = labelledElement.node;
-  if (matcher(labelsValue.join(" "), node, text, matchNormalizer)) {
+  if (match(labelsValue.join(" "), node)) {
     labelledElements.push(node);
   }
   if (labelsValue.length > 1) {
     labelsValue.forEach((labelValue, index) => {
-      if (matcher(labelValue, node, text, matchNormalizer)) {
+      if (match(labelValue, node)) {
         labelledElements.push(node);
       }
 
@@ -117,7 +113,7 @@ function collectLabelled(
       labelsFiltered.splice(index, 1);
 
       if (labelsFiltered.length > 1) {
-        if (matcher(labelsFiltered.join(" "), node, text, matchNormalizer)) {
+        if (match(labelsFiltered.join(" "), node)) {
           labelledElements.push(node);
         }
       }

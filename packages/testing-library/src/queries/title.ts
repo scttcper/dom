@@ -4,7 +4,7 @@
 import { asciiLowercase, attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
-import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "../matches.ts";
+import { makeNormalizer, textMatcher, type Matcher, type MatcherOptions } from "../matches.ts";
 import { getNodeTextImpl } from "../get-node-text.ts";
 
 /** `node.tagName.toLowerCase() === 'title' && node.parentElement?.tagName.toLowerCase() === 'svg'` */
@@ -24,8 +24,8 @@ function queryAllByTitle(
   { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {},
 ): any[] {
   checkContainerType(container);
-  const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const out: any[] = [];
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
@@ -35,10 +35,7 @@ function queryAllByTitle(
     const svgTitle =
       n.name === "title" && n.parent !== null && n.parent.type === ELEMENT_NODE && n.parent.name === "svg";
     if (title === null && !svgTitle) continue;
-    if (
-      matcher(title, n.node, text, matchNormalizer) ||
-      (isSvgTitle(n) && matcher(getNodeTextImpl(n), n.node, text, matchNormalizer))
-    ) {
+    if (match(title, n.node) || (isSvgTitle(n) && match(getNodeTextImpl(n), n.node))) {
       out.push(n.node);
     }
   }

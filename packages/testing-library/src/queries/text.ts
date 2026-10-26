@@ -7,7 +7,7 @@
 import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
-import { fuzzyMatches, matches, makeNormalizer, type Matcher } from "../matches.ts";
+import { makeNormalizer, textMatcher, type Matcher } from "../matches.ts";
 import { getNodeTextImpl } from "../get-node-text.ts";
 import { getConfig } from "../config.ts";
 import { matchesSelector } from "../selectors.ts";
@@ -48,8 +48,8 @@ function queryAllByText(
   }: SelectorMatcherOptions = {},
 ): any[] {
   checkContainerType(container);
-  const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const anySelector = selector === "*";
   const fastIgnore = isScriptStyleIgnore(ignore);
@@ -60,7 +60,7 @@ function queryAllByText(
     if (ignore) {
       if (fastIgnore ? isScriptOrStyle(n) : matchesSelector(n, ignore as string)) return;
     }
-    if (matcher(getNodeTextImpl(n), n.node, text, matchNormalizer)) out.push(n.node);
+    if (match(getNodeTextImpl(n), n.node)) out.push(n.node);
   };
 
   // `container.matches(selector)`: the container itself is a candidate when it is an element.

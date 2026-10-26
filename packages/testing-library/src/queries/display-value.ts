@@ -4,7 +4,7 @@
 import { ELEMENT_NODE, HTML_NS, nextInTree, T } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
-import { fuzzyMatches, matches, makeNormalizer, type Matcher, type MatcherOptions } from "../matches.ts";
+import { makeNormalizer, textMatcher, type Matcher, type MatcherOptions } from "../matches.ts";
 import { getNodeTextImpl } from "../get-node-text.ts";
 import { $impl } from "@ctrl/dom/internal";
 
@@ -14,8 +14,8 @@ function queryAllByDisplayValue(
   { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {},
 ): any[] {
   checkContainerType(container);
-  const matcher = exact ? matches : fuzzyMatches;
   const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const match = textMatcher(exact, value, matchNormalizer);
   const root = implOf(container);
   const out: any[] = [];
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
@@ -30,13 +30,13 @@ function queryAllByDisplayValue(
       let found = false;
       for (let i = 0; i < options.length; i++) {
         const option = options[i];
-        if (option.selected && matcher(getNodeTextImpl(option[$impl]), option, value, matchNormalizer)) {
+        if (option.selected && match(getNodeTextImpl(option[$impl]), option)) {
           found = true;
           break;
         }
       }
       if (found) out.push(node);
-    } else if (matcher(node.value, node, value, matchNormalizer)) {
+    } else if (match(node.value, node)) {
       out.push(node);
     }
   }
