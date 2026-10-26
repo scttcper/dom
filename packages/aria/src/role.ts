@@ -29,6 +29,7 @@ import {
   ELEMENT_NODE,
   HTML_NS,
   T,
+  ariaAttr,
   attr,
   nodeCache,
   tagId,
@@ -115,8 +116,8 @@ function implicitRoleImpl(impl: NodeImpl, jd: boolean): string {
       return "complementary";
     case T.form:
       if (jd) {
-        return attr(impl, "aria-label") !== null ||
-          attr(impl, "aria-labelledby") !== null ||
+        return ariaAttr(impl, "aria-label") !== null ||
+          ariaAttr(impl, "aria-labelledby") !== null ||
           attr(impl, "name") !== null
           ? "form"
           : "";
@@ -132,7 +133,10 @@ function implicitRoleImpl(impl: NodeImpl, jd: boolean): string {
       if (jd) return attr(impl, "href") !== null ? "link" : "generic";
       return isSet(impl, "href") ? "link" : "generic";
     case T.section:
-      if (jd) return attr(impl, "aria-label") !== null || attr(impl, "aria-labelledby") !== null ? "region" : "generic";
+      if (jd)
+        return ariaAttr(impl, "aria-label") !== null || ariaAttr(impl, "aria-labelledby") !== null
+          ? "region"
+          : "generic";
       return isSet(impl, "aria-label") || isSet(impl, "aria-labelledby") ? "region" : "generic";
     case T.article:
       return "article";

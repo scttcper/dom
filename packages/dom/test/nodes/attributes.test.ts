@@ -17,6 +17,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@ctrl/dom";
+import { $impl, F_ARIA_ATTRS, F_DATA_ATTRS } from "@ctrl/dom/internal";
 import { differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 let document: Document;
@@ -390,5 +391,54 @@ describe("valid names — https://dom.spec.whatwg.org/#valid-element-local-name"
         throws(() => document.implementation.createDocumentType(bad, "", "")),
         JSON.stringify(bad),
       ).toBe(true);
+  });
+});
+
+describe("attribute name flags (ours) — https://dom.spec.whatwg.org/#concept-element-attributes-append", () => {
+  // F_ARIA_ATTRS / F_DATA_ATTRS let lookups of aria-* / data-* names skip elements without one:
+  // a flag that is missing while such an attribute exists would hide it from those lookups.
+  const flags = (el: unknown) => {
+    const impl = (el as Record<symbol, { flags: number }>)[$impl];
+    return { aria: (impl.flags & F_ARIA_ATTRS) !== 0, data: (impl.flags & F_DATA_ATTRS) !== 0 };
+  };
+
+  test("set by the parser, setAttribute, setAttributeNS, toggleAttribute and setAttributeNode", () => {
+    const host = document.createElement("div");
+    host.innerHTML = '<span aria-label="x" data-testid="t"></span><b class="c"></b>';
+    expect(flags(host.firstChild)).toEqual({ aria: true, data: true });
+    expect(flags(host.lastChild)).toEqual({ aria: false, data: false });
+    const a = document.createElement("i");
+    a.setAttribute("ARIA-HIDDEN", "true");
+    expect(flags(a)).toEqual({ aria: true, data: false });
+    const b = document.createElement("i");
+    b.setAttributeNS(null, "data-x", "1");
+    expect(flags(b)).toEqual({ aria: false, data: true });
+    const c = document.createElement("i");
+    c.toggleAttribute("aria-busy");
+    expect(flags(c)).toEqual({ aria: true, data: false });
+    const d = document.createElement("i");
+    const node = document.createAttribute("data-y");
+    d.setAttributeNode(node);
+    expect(flags(d)).toEqual({ aria: false, data: true });
+  });
+
+  test("kept while another attribute with the prefix remains, cleared with the last one", () => {
+    const el = document.createElement("div");
+    el.setAttribute("aria-label", "a");
+    el.setAttribute("aria-describedby", "b");
+    el.setAttribute("data-a", "1");
+    el.removeAttribute("aria-label");
+    expect(flags(el)).toEqual({ aria: true, data: true });
+    el.removeAttributeNode(el.getAttributeNode("aria-describedby")!);
+    expect(flags(el)).toEqual({ aria: false, data: true });
+    el.toggleAttribute("data-a");
+    expect(flags(el)).toEqual({ aria: false, data: false });
+  });
+
+  test("copied by cloneNode", () => {
+    const el = document.createElement("div");
+    el.setAttribute("aria-label", "a");
+    el.setAttribute("data-a", "1");
+    expect(flags(el.cloneNode(false))).toEqual({ aria: true, data: true });
   });
 });

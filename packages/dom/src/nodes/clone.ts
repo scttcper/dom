@@ -11,7 +11,10 @@ import {
   PROCESSING_INSTRUCTION_NODE,
   TEXT_NODE,
   ATTRIBUTE_NODE,
+  F_ARIA_ATTRS,
+  F_DATA_ATTRS,
   F_HAS_SHADOW,
+  F_HAS_STYLE_ATTR,
 } from "./constants.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import type { Document } from "./Document.ts";
@@ -82,7 +85,7 @@ function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
         }
         el.attrs = copied;
         el.id = node.id;
-        el.flags |= node.flags & 0x40; // F_HAS_STYLE_ATTR
+        el.flags |= node.flags & (F_HAS_STYLE_ATTR | F_ARIA_ATTRS | F_DATA_ATTRS);
       }
       // Element-specific cloning steps (input value/checkedness, template contents, ...).
       (node.node as Element)._cloningSteps(el.node as Element, deep); // `deep` = the spec's subtree flag (template contents)

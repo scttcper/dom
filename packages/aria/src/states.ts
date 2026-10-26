@@ -13,12 +13,12 @@
 //   https://www.w3.org/TR/wai-aria-1.2/#aria-valuenow
 //   https://www.w3.org/TR/wai-aria-1.2/#aria-disabled
 
-import { HTML_NS, T, attr, type NodeImpl } from "@ctrl/dom/internal";
+import { HTML_NS, T, ariaAttr, attr, type NodeImpl } from "@ctrl/dom/internal";
 import { checkedness, indeterminate, optionSelected } from "./forms.ts";
 import { anyTag } from "./role.ts";
 
 function checkBooleanAttribute(impl: NodeImpl, name: string): boolean | undefined {
-  const v = attr(impl, name);
+  const v = ariaAttr(impl, name);
   if (v === "true") return true;
   if (v === "false") return false;
   return undefined;
@@ -36,7 +36,7 @@ export function computeAriaSelected(impl: NodeImpl): boolean | undefined {
 }
 
 export function computeAriaBusy(impl: NodeImpl): boolean {
-  return attr(impl, "aria-busy") === "true";
+  return ariaAttr(impl, "aria-busy") === "true";
 }
 
 /**
@@ -59,7 +59,7 @@ export function ariaCheckedState(impl: NodeImpl): boolean | "mixed" | undefined 
     if (indeterminate(impl)) return "mixed";
     return checkedness(impl);
   }
-  const v = attr(impl, "aria-checked");
+  const v = ariaAttr(impl, "aria-checked");
   if (v === "true") return true;
   if (v === "false") return false;
   if (v === "mixed") return "mixed";
@@ -72,7 +72,7 @@ export function computeAriaPressed(impl: NodeImpl): boolean | undefined {
 
 /** Tri-state pressed: true / false / "mixed" / undefined. */
 export function ariaPressedState(impl: NodeImpl): boolean | "mixed" | undefined {
-  const v = attr(impl, "aria-pressed");
+  const v = ariaAttr(impl, "aria-pressed");
   if (v === "true") return true;
   if (v === "false") return false;
   if (v === "mixed") return "mixed";
@@ -80,7 +80,7 @@ export function ariaPressedState(impl: NodeImpl): boolean | "mixed" | undefined 
 }
 
 export function computeAriaCurrent(impl: NodeImpl): boolean | string {
-  return checkBooleanAttribute(impl, "aria-current") ?? attr(impl, "aria-current") ?? false;
+  return checkBooleanAttribute(impl, "aria-current") ?? ariaAttr(impl, "aria-current") ?? false;
 }
 
 export function computeAriaExpanded(impl: NodeImpl): boolean | undefined {
@@ -90,7 +90,7 @@ export function computeAriaExpanded(impl: NodeImpl): boolean | undefined {
 /** Explicit `aria-level` (if truthy as a Number) or the h1–h6 level; undefined otherwise. */
 export function computeHeadingLevel(impl: NodeImpl): number | undefined {
   // https://w3c.github.io/html-aam/#el-h1-h6
-  const ariaLevel = attr(impl, "aria-level");
+  const ariaLevel = ariaAttr(impl, "aria-level");
   if (ariaLevel !== null && ariaLevel !== "") {
     const n = Number(ariaLevel);
     if (n) return n;
@@ -115,22 +115,22 @@ export function computeHeadingLevel(impl: NodeImpl): number | undefined {
 }
 
 export function computeAriaValueNow(impl: NodeImpl): number | undefined {
-  const v = attr(impl, "aria-valuenow");
+  const v = ariaAttr(impl, "aria-valuenow");
   return v === null ? undefined : +v;
 }
 
 export function computeAriaValueMax(impl: NodeImpl): number | undefined {
-  const v = attr(impl, "aria-valuemax");
+  const v = ariaAttr(impl, "aria-valuemax");
   return v === null ? undefined : +v;
 }
 
 export function computeAriaValueMin(impl: NodeImpl): number | undefined {
-  const v = attr(impl, "aria-valuemin");
+  const v = ariaAttr(impl, "aria-valuemin");
   return v === null ? undefined : +v;
 }
 
 export function computeAriaValueText(impl: NodeImpl): string | undefined {
-  return attr(impl, "aria-valuetext") ?? undefined;
+  return ariaAttr(impl, "aria-valuetext") ?? undefined;
 }
 
 /**
@@ -149,5 +149,5 @@ export function isDisabledImpl(impl: NodeImpl): boolean {
     case T.textarea:
       if (attr(impl, "disabled") !== null) return true;
   }
-  return attr(impl, "aria-disabled") === "true";
+  return ariaAttr(impl, "aria-disabled") === "true";
 }

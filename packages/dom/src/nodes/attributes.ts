@@ -1,7 +1,7 @@
 // Element attribute algorithms over NodeImpl.attrs.
 // https://dom.spec.whatwg.org/#concept-element-attribute
 
-import { F_ATTR_HOOK, F_CONNECTED, F_HAS_STYLE_ATTR, F_HTML } from "./constants.ts";
+import { F_ARIA_ATTRS, F_ATTR_HOOK, F_CONNECTED, F_DATA_ATTRS, F_HAS_STYLE_ATTR, F_HTML } from "./constants.ts";
 import type { Element } from "./Element.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import { noteInlineStyle } from "../css/inline-count.ts";
@@ -104,6 +104,21 @@ export function getAttribute(el: NodeImpl, qualifiedName: string): string | null
   return null;
 }
 
+/** F_ARIA_ATTRS / F_DATA_ATTRS for an attribute local name starting with `aria-` / `data-`, else 0. */
+export function prefixFlag(localName: string): number {
+  if (localName.length < 5 || localName.charCodeAt(4) !== 0x2d) return 0;
+  const c = localName.charCodeAt(0);
+  if (c === 0x61)
+    return localName.charCodeAt(1) === 0x72 && localName.charCodeAt(2) === 0x69 && localName.charCodeAt(3) === 0x61
+      ? F_ARIA_ATTRS
+      : 0;
+  if (c === 0x64)
+    return localName.charCodeAt(1) === 0x61 && localName.charCodeAt(2) === 0x74 && localName.charCodeAt(3) === 0x61
+      ? F_DATA_ATTRS
+      : 0;
+  return 0;
+}
+
 /**
  * Hot-path read for internal callers that pass an already-lowercase, no-namespace name
  * literal (e.g. "role", "aria-label", "type"). Skips normalization.
@@ -118,6 +133,11 @@ export function attr(el: NodeImpl, lowerName: string): string | null {
     if (r === null ? a.localName === lowerName : r.ns === null && r.name === lowerName) return a.value;
   }
   return null;
+}
+
+/** `attr` for an `aria-*` name: null without a scan when the element has no aria-* attribute (F_ARIA_ATTRS). */
+export function ariaAttr(el: NodeImpl, lowerName: string): string | null {
+  return (el.flags & F_ARIA_ATTRS) === 0 ? null : attr(el, lowerName);
 }
 
 export function hasAttr(el: NodeImpl, lowerName: string): boolean {
@@ -160,6 +180,8 @@ export function changeAttribute(el: NodeImpl, a: AttrRecord, value: string): voi
  * (rare) fall back to push.
  */
 function addRecord(el: NodeImpl, a: AttrRecord): void {
+  const flag = prefixFlag(a.localName);
+  if (flag !== 0) el.flags |= flag;
   const attrs = el.attrs;
   if (attrs === null) {
     const list: AttrRecord[] = new Array(1);
@@ -189,6 +211,12 @@ export function removeAttributeRecord(el: NodeImpl, a: AttrRecord): void {
   const attrs = el.attrs!;
   const i = attrs.indexOf(a);
   attrs.splice(i, 1);
+  const flag = prefixFlag(a.localName);
+  if (flag !== 0) {
+    let still = false;
+    for (let j = 0; j < attrs.length && !still; j++) still = prefixFlag(attrs[j].localName) === flag;
+    if (!still) el.flags &= ~flag;
+  }
   // A materialized Attr node keeps its value but loses its element.
   if (a.attr !== null) a.attr._detach();
   handleAttributeChanges(el, a, a.value, null);

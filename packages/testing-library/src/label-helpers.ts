@@ -7,6 +7,7 @@
 
 import {
   asciiLowercase,
+  ariaAttr,
   attr,
   ELEMENT_NODE,
   HTML_NS,
@@ -125,7 +126,7 @@ function labelledFormControl(label: NodeImpl, selector: string): NodeImpl | unde
 }
 
 export function getLabelsImpl(ctx: LabelContext, element: NodeImpl, selector = "*"): LabelEntry[] {
-  const ariaLabelledBy = attr(element, "aria-labelledby");
+  const ariaLabelledBy = ariaAttr(element, "aria-labelledby");
   const labelsId = ariaLabelledBy ? ariaLabelledBy.split(" ") : [];
   if (labelsId.length) {
     return labelsId.map((labelId) => {

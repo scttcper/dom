@@ -16,6 +16,7 @@ import {
   SVG_NS,
   TEXT_NODE,
   T,
+  ariaAttr,
   attr,
   nodeCache,
   type AttrRecord,
@@ -142,7 +143,7 @@ function wrapperOf(n: NodeImpl): Element {
 /** dom-accessibility-api isHidden (2A). */
 function isHidden(ctx: Ctx, n: NodeImpl): boolean {
   if (n.type !== ELEMENT_NODE) return false;
-  if (attr(n, "hidden") !== null || attr(n, "aria-hidden") === "true") return true;
+  if (attr(n, "hidden") !== null || ariaAttr(n, "aria-hidden") === "true") return true;
   const gcs = ctx.gcs;
   if (gcs !== null) {
     const style = gcs(wrapperOf(n));
@@ -221,7 +222,7 @@ function computeMiscTextAlternative(ctx: Ctx, node: NodeImpl, isEmbeddedInLabel:
     for (let c = node.first; c !== null; c = c.next) accumulatedText += childText(ctx, c, isEmbeddedInLabel);
     // FIXME (upstream): including aria-owns is not defined in the spec but required by WPT.
     if (isEl) {
-      const owns = attr(node, "aria-owns");
+      const owns = ariaAttr(node, "aria-owns");
       if (owns !== null) {
         const owned = queryIdRefs(node, owns, []);
         for (let i = 0; i < owned.length; i++) accumulatedText += childText(ctx, owned[i], isEmbeddedInLabel);
@@ -340,7 +341,7 @@ function selectedOptionsOf(ctx: Ctx, listbox: NodeImpl): NodeImpl[] {
 function querySelectorAllSubtree(el: NodeImpl, name: string, value: string | null): NodeImpl[] {
   const out: NodeImpl[] = [];
   collectDescendantsWithAttr(el, name, value, out);
-  const owns = attr(el, "aria-owns");
+  const owns = ariaAttr(el, "aria-owns");
   if (owns !== null) {
     const roots = queryIdRefs(el, owns, []);
     for (let i = 0; i < roots.length; i++) collectDescendantsWithAttr(roots[i], name, value, out);
@@ -423,7 +424,7 @@ function computeTextAlternative(
   // Changed from the spec in anticipation of https://github.com/w3c/accname/issues/64
   const skipToStep2E = recursion && ctx.compute === COMPUTE_NAME && isControl(role);
   if (!skipToStep2E) {
-    const ariaLabel = isEl ? (attr(current, "aria-label") ?? "").trim() : "";
+    const ariaLabel = isEl ? (ariaAttr(current, "aria-label") ?? "").trim() : "";
     if (ariaLabel !== "" && ctx.compute === COMPUTE_NAME) {
       consulted.add(current);
       return ariaLabel;
@@ -466,9 +467,9 @@ function computeTextAlternative(
     }
     if (isRange(role)) {
       consulted.add(current);
-      const valueText = attr(current, "aria-valuetext");
+      const valueText = ariaAttr(current, "aria-valuetext");
       if (valueText !== null) return valueText;
-      const valueNow = attr(current, "aria-valuenow");
+      const valueNow = ariaAttr(current, "aria-valuenow");
       if (valueNow !== null) return valueNow;
       // Otherwise, use the value as specified by a host language attribute.
       return attr(current, "value") || "";
@@ -618,7 +619,7 @@ export function computeAccessibleDescriptionImpl(
 ): string {
   let description = "";
   if (root.type === ELEMENT_NODE) {
-    const describedBy = attr(root, "aria-describedby");
+    const describedBy = ariaAttr(root, "aria-describedby");
     if (describedBy !== null) {
       const refs = queryIdRefs(root, describedBy, []);
       const opts: ComputeTextAlternativeOptions = { ...options, compute: "description" };
@@ -629,7 +630,7 @@ export function computeAccessibleDescriptionImpl(
     }
     // TODO (upstream): technically we need to make sure that node wasn't used for the accessible name.
     // https://w3c.github.io/aria/#aria-description — only when aria-describedby gave nothing (0.6+).
-    if (description === "" && flavor === 6) description = attr(root, "aria-description") ?? "";
+    if (description === "" && flavor === 6) description = ariaAttr(root, "aria-description") ?? "";
     // https://www.w3.org/TR/html-aam-1.0/#accessible-name-and-description-computation
     if (description === "") description = attr(root, "title") ?? "";
   }

@@ -57,3 +57,11 @@ export const F_MO_REGISTERED = 1 << 11;
 export const F_ADOPT_HOOK = 1 << 12;
 /** Element is a form-associated custom element (its definition has `static formAssociated = true`); set by html/custom-elements.ts, read by html/forms. */
 export const F_FACE = 1 << 14;
+/**
+ * Element has an attribute whose local name starts with `aria-` (any namespace, so it may be set
+ * when no null-namespace one exists): lookups of `aria-*` names skip elements without it. Kept
+ * by nodes/attributes.ts (addRecord, removeAttributeRecord) and nodes/clone.ts.
+ */
+export const F_ARIA_ATTRS = 1 << 15;
+/** Same for `data-*` attributes (Testing Library's *ByTestId). */
+export const F_DATA_ATTRS = 1 << 16;

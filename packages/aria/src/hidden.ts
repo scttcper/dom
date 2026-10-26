@@ -6,7 +6,7 @@
 // Ported from @testing-library/dom role-helpers.js and
 // https://github.com/eps1lon/dom-accessibility-api/blob/main/sources/is-inaccessible.ts
 
-import { ELEMENT_NODE, HTML_NS, attr, nodeCache, type NodeCache, type NodeImpl } from "@ctrl/dom/internal";
+import { ELEMENT_NODE, HTML_NS, ariaAttr, attr, nodeCache, type NodeCache, type NodeImpl } from "@ctrl/dom/internal";
 import type { Element } from "@ctrl/dom";
 import { isDisplayNone, isVisibilityHidden } from "./style.ts";
 import type { GetComputedStyle } from "./accname.ts";
@@ -19,7 +19,7 @@ import { $styleVersion, $version, $window, getComputedStyleOverride } from "@ctr
  */
 export function isSubtreeInaccessibleImpl(impl: NodeImpl): boolean {
   if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
-  if (attr(impl, "aria-hidden") === "true") return true;
+  if (ariaAttr(impl, "aria-hidden") === "true") return true;
   return isDisplayNone(impl);
 }
 
@@ -85,7 +85,7 @@ export function isInaccessibleWithStyle(
 /** role-helpers.js `isSubtreeInaccessible` reading `display` through `gcs`. */
 function isSubtreeInaccessibleWithStyle(impl: NodeImpl, gcs: GetComputedStyle): boolean {
   if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
-  if (attr(impl, "aria-hidden") === "true") return true;
+  if (ariaAttr(impl, "aria-hidden") === "true") return true;
   return gcs(impl.node as unknown as Element).display === "none";
 }
 
@@ -127,7 +127,7 @@ export function isSubtreeInaccessible(element: Element, options?: IsSubtreeInacc
   const gcs = checkGetComputedStyle(impl, options);
   if (gcs === null) return isSubtreeInaccessibleImpl(impl);
   if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
-  if (attr(impl, "aria-hidden") === "true") return true;
+  if (ariaAttr(impl, "aria-hidden") === "true") return true;
   return gcs(element).display === "none";
 }
 

@@ -5,7 +5,7 @@
 // visibility checks (`isInaccessible`, `isSubtreeInaccessible`) and ARIA state readers are
 // testing-library's own semantics and are ported here over NodeImpl.
 
-import { attr, ELEMENT_NODE, HTML_NS, T, type NodeImpl } from "@ctrl/dom/internal";
+import { ariaAttr, attr, ELEMENT_NODE, HTML_NS, T, type NodeImpl } from "@ctrl/dom/internal";
 import { aria, isVisibilityHidden, styleOverride } from "./aria.ts";
 import { prettyDOM } from "./pretty-dom.ts";
 import { getConfig } from "./config.ts";
@@ -51,7 +51,7 @@ export function isSubtreeInaccessible(element: any): boolean {
   const gcs = styleOverride(impl);
   if (gcs === null) return isSubtreeInaccessibleImpl(impl);
   if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
-  if (attr(impl, "aria-hidden") === "true") return true;
+  if (ariaAttr(impl, "aria-hidden") === "true") return true;
   return gcs(element).display === "none";
 }
 
@@ -164,7 +164,7 @@ export function computeAriaSelected(element: NodeImpl): boolean | undefined {
 
 export function computeAriaBusy(element: NodeImpl): boolean {
   // https://www.w3.org/TR/wai-aria-1.1/#aria-busy
-  return attr(element, "aria-busy") === "true";
+  return ariaAttr(element, "aria-busy") === "true";
 }
 
 /** false/true if (not)checked, undefined if not checked-able */
@@ -190,7 +190,7 @@ export function computeAriaPressed(element: NodeImpl): boolean | undefined {
 
 export function computeAriaCurrent(element: NodeImpl): boolean | string {
   // https://www.w3.org/TR/wai-aria-1.1/#aria-current
-  return checkBooleanAttribute(element, "aria-current") ?? attr(element, "aria-current") ?? false;
+  return checkBooleanAttribute(element, "aria-current") ?? ariaAttr(element, "aria-current") ?? false;
 }
 
 export function computeAriaExpanded(element: NodeImpl): boolean | undefined {
@@ -202,7 +202,7 @@ export function computeAriaExpanded(element: NodeImpl): boolean | undefined {
 function computeHeadingLevelImpl(element: NodeImpl): number | undefined {
   // https://w3c.github.io/html-aam/#el-h1-h6
   // explicit aria-level value https://www.w3.org/TR/wai-aria-1.2/#aria-level
-  const level = attr(element, "aria-level");
+  const level = ariaAttr(element, "aria-level");
   const ariaLevelAttribute = level && Number(level);
   if (ariaLevelAttribute) return ariaLevelAttribute;
   // `implicitHeadingLevels[element.tagName]`: only HTML h1-h6 have an uppercase tagName.
@@ -231,21 +231,21 @@ export function computeHeadingLevel(element: any): number | undefined {
 }
 
 export function computeAriaValueNow(element: NodeImpl): number | undefined {
-  const valueNow = attr(element, "aria-valuenow");
+  const valueNow = ariaAttr(element, "aria-valuenow");
   return valueNow === null ? undefined : +valueNow;
 }
 
 export function computeAriaValueMax(element: NodeImpl): number | undefined {
-  const valueMax = attr(element, "aria-valuemax");
+  const valueMax = ariaAttr(element, "aria-valuemax");
   return valueMax === null ? undefined : +valueMax;
 }
 
 export function computeAriaValueMin(element: NodeImpl): number | undefined {
-  const valueMin = attr(element, "aria-valuemin");
+  const valueMin = ariaAttr(element, "aria-valuemin");
   return valueMin === null ? undefined : +valueMin;
 }
 
 export function computeAriaValueText(element: NodeImpl): string | undefined {
-  const valueText = attr(element, "aria-valuetext");
+  const valueText = ariaAttr(element, "aria-valuetext");
   return valueText === null ? undefined : valueText;
 }

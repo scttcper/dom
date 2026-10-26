@@ -3,7 +3,7 @@
 //
 // Same matching semantics as upstream; LabelContext shares aria's version-stamped label index.
 
-import { attr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
+import { ariaAttr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { getConfig } from "../config.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext } from "../label-helpers.ts";
@@ -63,7 +63,7 @@ function queryAllByLabelText(
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type !== ELEMENT_NODE) continue;
     // `getRealLabels(element).length || element.hasAttribute('aria-labelledby')`
-    if (attr(n, "aria-labelledby") === null && ctx.labelsOf(n).length === 0) continue;
+    if (ariaAttr(n, "aria-labelledby") === null && ctx.labelsOf(n).length === 0) continue;
     collectLabelled(ctx, n, selector, match, labelledElements);
   }
 

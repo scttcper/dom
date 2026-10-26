@@ -11,6 +11,7 @@ import {
   ELEMENT_NODE,
   F_HTML,
   nextInTree,
+  prefixFlag,
   tracePromise,
   traceSync,
   tracing,
@@ -47,10 +48,16 @@ export function queryAllByAttribute(
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const lower = asciiLowercase(attribute);
+  // Ours: elements without any aria-* / data-* attribute are skipped without a scan.
+  const lowerFlag = prefixFlag(lower);
+  const exactFlag = prefixFlag(attribute);
   const out: any[] = [];
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type !== ELEMENT_NODE || n.attrs === null) continue;
-    const value = attr(n, (n.flags & F_HTML) !== 0 ? lower : attribute);
+    const html = (n.flags & F_HTML) !== 0;
+    const flag = html ? lowerFlag : exactFlag;
+    if (flag !== 0 && (n.flags & flag) === 0) continue;
+    const value = attr(n, html ? lower : attribute);
     if (value !== null && match(value, n.node)) out.push(n.node);
   }
   return out;

@@ -37,6 +37,7 @@ import {
   HTML_NS,
   TEXT_NODE,
   T,
+  ariaAttr,
   attr,
   setFailureSnapshot,
   type NodeImpl,
@@ -271,7 +272,7 @@ export function hiddenReason(impl: NodeImpl): string {
 function hiddenChainReason(impl: NodeImpl): string {
   for (let cur: NodeImpl | null = impl; cur !== null && cur.type === ELEMENT_NODE; cur = cur.parent) {
     if (cur.ns === HTML_NS && attr(cur, "hidden") !== null) return `hidden attribute on ${describeElement(cur)}`;
-    if (attr(cur, "aria-hidden") === "true") return `aria-hidden="true" on ${describeElement(cur)}`;
+    if (ariaAttr(cur, "aria-hidden") === "true") return `aria-hidden="true" on ${describeElement(cur)}`;
     if (isDisplayNone(cur)) return `display: none on ${describeElement(cur)}`;
   }
   return "";
@@ -323,7 +324,7 @@ export function nodeProps(impl: NodeImpl, role: string, active: boolean, hidden:
 }
 
 function levelAttr(impl: NodeImpl): number | undefined {
-  const v = attr(impl, "aria-level");
+  const v = ariaAttr(impl, "aria-level");
   const n = v === null ? NaN : Number(v);
   return n > 0 ? n : undefined;
 }
@@ -343,9 +344,9 @@ const VALUE_ROLES = new Set([
 /** What Playwright prints after the colon for value-bearing widgets. */
 function nodeValue(impl: NodeImpl, role: string): string | null {
   if (!VALUE_ROLES.has(role)) return null;
-  const valueText = attr(impl, "aria-valuetext");
+  const valueText = ariaAttr(impl, "aria-valuetext");
   if (valueText !== null) return valueText;
-  const valueNow = attr(impl, "aria-valuenow");
+  const valueNow = ariaAttr(impl, "aria-valuenow");
   if (valueNow !== null) return valueNow;
   if (impl.ns !== HTML_NS) return null;
   if (impl.tag === T.input || impl.tag === T.textarea) {

@@ -28,6 +28,8 @@ export {
 } from "./nodes/traverse.ts";
 export {
   attr,
+  ariaAttr,
+  prefixFlag,
   hasAttr,
   getAttribute,
   setAttribute,
