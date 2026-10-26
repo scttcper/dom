@@ -311,6 +311,31 @@ root container), is 0.2%. The largest clusters are inline-style writes at ~0.5 s
 the style attribute: `_changed` in css/CSSStyleDeclaration.ts), event dispatch at ~0.45 s, the
 virtual clock at ~0.15 s, and per-file window setup with CSS accessor installation at ~0.3 s.
 
+Two other views of the same profiles. Grouped by where outside code called into us (the innermost
+frame in packages/ whose caller is not), the costliest entry points are React's inline style
+writes (762 ms), floating-ui's `getComputedStyle(el).overflow`-style reads (507 ms), Testing
+Library queries (408 ms), user-event's `pointer` (405 ms, its own work and our dispatch), the
+first `element.style` per worker (244 ms, ~196 ms of it the per-file accessor installation) and
+`userEvent.setup()` (207 ms). Native and Node time charged to the nearest caller of ours: undici
+in `installGlobals` (1.9 s, deliberate, see "Worker startup"), importing the DOM from TypeScript
+sources (0.5 s, a harness cost), the clock's `now()` (289 ms: call volume from React's scheduler;
+the bound `performance.now()` it uses is already the fastest monotonic source on Node 26, 20 ns
+against 24–27 ns for `hrtime` or `Date.now()`) and `armHost`'s host timer re-arming (130 ms).
+
+Looked at and dropped (2026-10-26): caching `CSS.supports` (Base UI calls it once per file, at
+module load: the 68 ms is a cold first call), caching parsed selectors (already cached by string;
+what shows is the first parse in each fresh worker), and serializing the style attribute lazily
+(attribute records are read directly in ~20 files). The clock costs 0.36 µs for Vitest's deadline
+pattern (`setTimeout`, `unref()`, `clearTimeout`) against Node's 0.054 µs, and 27 µs per skipped
+`setTimeout(0)` hop against 1.16 ms of real waiting.
+
+**React Aria (Jest), all, ctrl-dom-full, one worker** (2026-10-26; `NODE_OPTIONS=--cpu-prof`
+with `--workers 1`). 34.1 s of CPU: React Aria's own source 24%, native 20%, react-dom 16%, ours
+~11%. 1.4 s of ours is the `defineProperty` trap below; without it ~6.5%, spread like Base UI's.
+The environment cost ~1.5 ms per test file, ~1 ms of it deleting and restoring the 44 members
+jsdom-26 hides; 8df07dc removed that churn. Peak RSS on one worker: 1,503 MiB against jsdom's
+1,990 MiB (a CPU profile inflates ours to 3.1 GB).
+
 **Sentry, three of its slowest spec files, ctrl-dom-full** (2026-10-26, after the CSS survivors
 cache). Jest leaves one profile with `NODE_OPTIONS=--cpu-prof node downstream/sentry/run.ts
 --files ... --workers 1`; 15.7 s sampled. react-dom ~15%, Jest's resolver and file reads ~13%,
