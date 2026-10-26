@@ -316,10 +316,13 @@ export default class CtrlDomEnvironment implements JestEnvironment<number> {
     });
     this.ctrlDomWindow = window;
     this.dom = createDom(window);
-    // Baseline for undoing interface prototype patches at teardown (they are shared per worker),
-    // taken before the compat profile adjusts prototype members so teardown also undoes that.
-    internal.captureInterfaceBaseline();
     dom.installGlobals(window, global);
+    // Baseline for undoing interface prototype patches at teardown (they are shared per worker),
+    // taken once the compat profile has adjusted the prototypes' members. Files with the same
+    // profile then leave those members alone instead of deleting them at setup and restoring them
+    // at teardown (44 under jsdom-26): 0.81 → 0.55 ms of prototype work per test file. A file with
+    // another profile changes them, and its teardown puts them back.
+    internal.captureInterfaceBaseline();
     Object.defineProperty(global, CTRL_DOM_MODULES, {
       value: { dom, internal },
       configurable: true,

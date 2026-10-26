@@ -317,6 +317,9 @@ export function deferCompatMember(owner: object, iface: string, name: string): v
   deferred.set(`${iface}.${name}`, { owner, descriptor });
 }
 
+/** Members a profile took off their prototype (descriptor kept for a later profile that exposes them). */
+const removed = new Map<string, PropertyDescriptor>();
+
 /** @internal For the surface test: members held back at load. */
 export function deferredCompatMembers(): ReadonlyMap<string, { owner: object; descriptor: PropertyDescriptor }> {
   return deferred;
@@ -348,7 +351,9 @@ function gatedMembers(): GatedMember[] {
 
 /**
  * Add or remove gated interface members on their shared prototypes for `profile`; returns the
- * function that undoes it. `interfaces` maps interface names to interface objects.
+ * function that undoes it. `interfaces` maps interface names to interface objects. Removed
+ * members are remembered, so a later profile can add them back even if nothing restored them in
+ * between (the Jest environment's baseline keeps the first file's profile).
  */
 export function installCompatMembers(profile: CompatProfile, interfaces: Record<string, unknown>): () => void {
   const undo: Array<() => void> = [];
@@ -360,12 +365,13 @@ export function installCompatMembers(profile: CompatProfile, interfaces: Record<
     const want = g.profiles.includes(profile);
     const has = Object.hasOwn(owner, g.member);
     if (want && !has) {
-      const held = deferred.get(g.key);
-      if (held === undefined) continue;
-      Object.defineProperty(owner, g.member, held.descriptor);
+      const descriptor = deferred.get(g.key)?.descriptor ?? removed.get(g.key);
+      if (descriptor === undefined) continue;
+      Object.defineProperty(owner, g.member, descriptor);
       undo.push(() => delete (owner as Record<string, unknown>)[g.member]);
     } else if (!want && has) {
       const descriptor = Object.getOwnPropertyDescriptor(owner, g.member)!;
+      removed.set(g.key, descriptor);
       delete (owner as Record<string, unknown>)[g.member];
       undo.push(() => Object.defineProperty(owner, g.member, descriptor));
     }

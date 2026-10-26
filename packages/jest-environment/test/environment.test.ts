@@ -208,6 +208,21 @@ describe("compat profiles — @ctrl/dom src/window/compat.ts", () => {
       expect("onpointerdown" in global.HTMLElement.prototype).toBe(true);
     });
   });
+
+  test("a later file's profile adds back members an earlier jsdom-26 file removed, and its teardown takes them off again", async () => {
+    await withEnvironment({}, (_env, global) => {
+      expect("onpointerdown" in global.HTMLElement.prototype).toBe(false);
+    });
+    await withEnvironment({ compat: "modern" }, (_env, global) => {
+      expect("inert" in global.HTMLElement.prototype).toBe(true);
+      expect("onpointerdown" in global.HTMLElement.prototype).toBe(true);
+      expect(typeof global.document.body.onpointerdown).toBe("object");
+    });
+    await withEnvironment({}, (_env, global) => {
+      expect("inert" in global.HTMLElement.prototype).toBe(false);
+      expect("onpointerdown" in global.HTMLElement.prototype).toBe(false);
+    });
+  });
 });
 
 describe("interface isolation — definitions on shared interface objects stay undoable", () => {
