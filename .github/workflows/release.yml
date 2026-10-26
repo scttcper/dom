@@ -1,15 +1,16 @@
 name: Release
 
 # semantic-release, one version line per published package (tools/release): once CI passes on a
-# push to main, each of @ctrl/dom and @ctrl/dom-jest-environment is released when
+# push to main, each of @ctrl/dom, @ctrl/dom-jest-environment and @ctrl/sentry-tests is released when
 # conventional commits since its last tag touch the files it is built from (feat → minor;
 # fix, perf, deps → patch; breaking change → major). Run it by hand to release one package or to
 # preview (dry run); a manual run checks the commit with CI first.
 #
 # npm: trusted publishing only (OIDC, no token). Each package's trusted publisher on npmjs.com
 # names this repository and the workflow file `release.yml`; npm requires the package to exist
-# before one can be configured, so a package's very first version is published by hand. Provenance
-# is generated automatically (public repository and package).
+# before one can be configured, so a package's very first version is published by hand.
+# Provenance: npm attaches it to trusted publishes from a public repository on its own;
+# NPM_CONFIG_PROVENANCE makes a publish that cannot carry it fail instead of going out without it.
 
 on:
   # After the CI workflow's run for a push to main, instead of running the same checks again.
@@ -27,6 +28,7 @@ on:
           - all
           - "@ctrl/dom"
           - "@ctrl/dom-jest-environment"
+          - "@ctrl/sentry-tests"
       dry-run:
         description: Only report what would be released
         type: boolean
@@ -85,3 +87,4 @@ jobs:
           PACKAGE: ${{ inputs.package || 'all' }}
           DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
