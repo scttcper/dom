@@ -30,17 +30,21 @@ const ariaRoles = roles as unknown as {
   keys(): string[];
   get(role: string): { props: Record<string, unknown> } | undefined;
 };
-const ROLES_SUPPORTING_CHECKED: string[] = ariaRoles
-  .keys()
-  .filter((role) => ariaRoles.get(role)?.props["aria-checked"] !== undefined);
+// Reading roles expands the complete aria-query table; only checked matchers need this list.
+let rolesSupportingChecked: string[] | null = null;
+function checkedRoles(): string[] {
+  return (rolesSupportingChecked ??= ariaRoles
+    .keys()
+    .filter((role) => ariaRoles.get(role)?.props["aria-checked"] !== undefined));
+}
 
 function roleSupportsChecked(role: string | null): boolean {
-  return role !== null && ROLES_SUPPORTING_CHECKED.includes(role);
+  return role !== null && checkedRoles().includes(role);
 }
 
 function supportedRolesSentence(): string {
   return toSentence(
-    ROLES_SUPPORTING_CHECKED.map((role) => `role="${role}"`),
+    checkedRoles().map((role) => `role="${role}"`),
     { lastWordConnector: " or " },
   );
 }
