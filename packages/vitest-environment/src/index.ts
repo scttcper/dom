@@ -73,11 +73,17 @@ function reportToHost(error: unknown): void {
 /**
  * jsdom's "Not implemented" diagnostics (navigation, window.alert, form submission, ...; only
  * under the jsdom profiles, @ctrl/dom window/not-implemented.ts), forwarded as under Vitest's
- * jsdom environment, whose JSDOM gets jsdom's default virtual console: `console.error(e.stack,
- * e.detail)` on the test's console.
+ * jsdom environment. Its JSDOM gets jsdom's default virtual console, bound to the console of the
+ * moment the environment is set up: Vitest swaps in its per-test console afterwards, so these
+ * reach the worker's stderr, never a test's console spies (vitest-fail-on-console). jsdom 27+
+ * prints the message, jsdom 26 the stack and detail.
+ * https://github.com/jsdom/jsdom/blob/30.1.3/lib/jsdom/virtual-console.js (forwardTo)
  */
-function forwardNotImplemented(global: Record<PropertyKey, unknown>): (error: Error & { detail?: unknown }) => void {
-  return (error) => ((global.console ?? console) as Console).error(error.stack, error.detail);
+function forwardNotImplemented(console: Console): (error: Error & { detail?: unknown }, compat: string) => void {
+  return (error, compat) => {
+    if (compat === "jsdom-26") console.error(error.stack, error.detail);
+    else console.error(error.message);
+  };
 }
 
 export interface CtrlDomEnvironmentOptions extends Omit<WindowOptions, "shareStorageWith"> {
@@ -193,7 +199,7 @@ const environment: Environment = {
     // so a restore at teardown could never sit between two files — every file the worker runs
     // shares this window, as with jsdom's environment.
     setUncaughtExceptionHandler(reportToHost);
-    setNotImplementedHandler(forwardNotImplemented(global as Record<PropertyKey, unknown>));
+    setNotImplementedHandler(forwardNotImplemented((global as { console: Console }).console));
     // @ctrl/sentry-tests' failure reports get the accessibility snapshot and the clock.
     const unsubscribeFailures = subscribeTestFailures(() => window.document);
     return {
@@ -258,7 +264,8 @@ const environment: Environment = {
     // Definitions on interface objects stay configurable, so teardown can undo them.
     guardInterfaceDefinitions(context as never);
     setUncaughtExceptionHandler(reportToHost);
-    setNotImplementedHandler(forwardNotImplemented(context as Record<PropertyKey, unknown>));
+    // Vitest's jsdom setupVM builds its JSDOM in the worker's realm: the host console.
+    setNotImplementedHandler(forwardNotImplemented(console));
     const unsubscribeFailures = subscribeTestFailures(() => window.document);
     return {
       getVmContext() {

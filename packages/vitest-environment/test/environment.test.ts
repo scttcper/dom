@@ -64,6 +64,26 @@ describe("setup(global, options) / teardown", () => {
     await vm.teardown();
   });
 
+  test("jsdom's 'Not implemented' diagnostics go to the console present at setup, as jsdom's default virtual console under Vitest (jsdom 27+: the message)", async () => {
+    const setupConsole = { error: vi.fn() };
+    const global: Record<string, unknown> = { console: setupConsole };
+    let env = await environment.setup(global, {});
+    // Vitest swaps in its per-test console after the environment is set up.
+    const testConsole = { error: vi.fn() };
+    global.console = testConsole;
+    (global.alert as (message: string) => void)("hi");
+    expect(testConsole.error).not.toHaveBeenCalled();
+    expect(setupConsole.error).toHaveBeenCalledWith("Not implemented: Window's alert() method");
+    await env.teardown(global);
+
+    setupConsole.error.mockClear();
+    global.console = setupConsole;
+    env = await environment.setup(global, { "ctrl-dom": { compat: "jsdom-26" } });
+    (global.alert as (message: string) => void)("hi");
+    expect(setupConsole.error.mock.calls[0][0]).toMatch(/^Error: Not implemented: window\.alert\n/);
+    await env.teardown(global);
+  });
+
   test("defaults to Vitest's jsdom/happy-dom URL", async () => {
     const global: Record<string, unknown> = {};
     const env = await environment.setup(global, {});
