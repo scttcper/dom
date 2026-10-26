@@ -324,8 +324,14 @@ against 24–27 ns for `hrtime` or `Date.now()`) and `armHost`'s host timer re-a
 
 Looked at and dropped (2026-10-26): caching `CSS.supports` (Base UI calls it once per file, at
 module load: the 68 ms is a cold first call), caching parsed selectors (already cached by string;
-what shows is the first parse in each fresh worker), and serializing the style attribute lazily
-(attribute records are read directly in ~20 files). The clock costs 0.36 µs for Vitest's deadline
+what shows is the first parse in each fresh worker), serializing the style attribute lazily
+(attribute records are read directly in ~20 files), and hiding `console.createTask` (React 19's
+development build creates a task per element: renders are 19% faster without it in plain Node,
+but Vitest's and Jest's consoles are `new Console()` instances, which lack it, so test runs
+already skip it; only `node:test` and Bun through `@ctrl/dom/register` see Node's global console).
+React Hook Form's and React Router's Jest suites (2026-10-26, one worker) profile like the rest:
+ours ~8% and ~5%, flat; React Router's own tests construct jsdom windows, which shows up as
+`jsdom` (1.6 s) and as `defineProperties` in our guard (below). The clock costs 0.36 µs for Vitest's deadline
 pattern (`setTimeout`, `unref()`, `clearTimeout`) against Node's 0.054 µs, and 27 µs per skipped
 `setTimeout(0)` hop against 1.16 ms of real waiting.
 

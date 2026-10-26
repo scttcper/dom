@@ -197,6 +197,8 @@ export function restoreInterfaces(): number {
         continue;
       if (Reflect.deleteProperty(target, key)) restored++;
     }
+    // Per key on purpose: one getOwnPropertyDescriptors call per target measured twice as slow
+    // (0.5 → 1.0 ms per Jest test file; it also copies the collections' index getters).
     for (let j = 0; j < original.keys.length; j++) {
       const key = original.keys[j];
       const desc = original.descriptors[j];
