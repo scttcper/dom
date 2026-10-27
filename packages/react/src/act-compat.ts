@@ -22,7 +22,7 @@ export function getIsReactActEnvironment(): boolean | undefined {
   return (globalThis as ActGlobal).IS_REACT_ACT_ENVIRONMENT;
 }
 
-// React internals this module reaches into (not public API; same shape since React 18.0):
+// React 19 internals this module reaches into (not public API; checked against 19.3):
 // - `actQueue`: the Scheduler tasks React defers to the open act scope instead of giving them to
 //   its Scheduler; `didUsePromise`, set when a task suspends on data; `thrownErrors`, the errors
 //   act rethrows once the scope ends (packages/react/src/ReactAct.js).
@@ -44,60 +44,56 @@ const reactInternals = (React as unknown as Record<string, ReactInternals>)
 /** Roots created by render()/renderHook(), whose suspended work survives a synchronous act. */
 export const actRoots = new Set<object>();
 
-function fiberRootWithActPlaceholder(root: object): FiberRoot | null {
-  const fiberRoot = (root as { _internalRoot: FiberRoot | null })._internalRoot;
-  const node = fiberRoot?.callbackNode;
-  // A Scheduler task has a `callback`; the act placeholder is an empty object.
-  return node != null && node.callback === undefined ? fiberRoot! : null;
-}
-
-// A component suspended on data (`use(promise)`, `lazy`) inside a synchronous act: React 19
-// commits the fallback, then queues a prerender of the suspended subtree that waits on the same
-// promise. React's flush leaves that task in the act queue and drops the queue when the act
-// returns, but the root keeps the placeholder it got inside act, and React never replaces a
-// placeholder of the same priority: when the promise resolves, the root does not reschedule and
-// the boundary shows its fallback forever (and React logs "the act call was not awaited").
-// React's answer, `await act(...)`, hides the fallback from the test and polls every macrotask
-// until the promise settles (attaching a listener to it each time).
+// Suspending on data (`use`, `lazy`) inside a synchronous act: React commits the fallback and
+// queues a prerender that waits on the promise. React's flushActQueue stops at that task, the act
+// drops the queue when it returns, but the root keeps act's placeholder callbackNode, which React
+// never replaces with one of the same priority, so the boundary never leaves its fallback
+// (react.development.js flushActQueue/act, react-dom-client.development.js
+// scheduleTaskForRootDuringMicrotask). Awaiting the act only helps for data resolved by then.
 //
-// So RTL's own synchronous acts flush the queue themselves before React does, as React's
-// flushActQueue would, but drop the tasks that suspend on data (React would drop them with the
-// queue anyway: nobody awaits these acts) and clear the placeholders on the roots render()
-// created, as React does outside act. The promise's resolution then schedules the retry like in
-// a browser (inside whatever act scope is open then, e.g. waitFor's), and the fallback stays
-// observable until then. React's flush finds the queue empty, so it does not warn. A root created
-// some other way that suspends in one of these acts stays on its fallback, as it does upstream.
-function flushReleasingSuspendedWork(queue: ActTask[]): void {
+// So RTL's own synchronous acts flush the queue first, as flushActQueue does, drop the tasks that
+// suspend on data (React would drop them with the queue: nobody awaits these acts), and clear the
+// placeholder on the roots render() created, so the promise's ping reschedules the retry like in
+// a browser. React then finds an empty queue and does not warn. Roots created some other way stay
+// on their fallback, as upstream, but without React's warning.
+//
+// Returns the errors React recorded (uncaught render errors) or a task threw: React checks
+// `thrownErrors` right after the callback and rethrows without closing its queue, so the caller
+// rethrows them once act has returned. Tasks after a throwing one stay for React's own flush.
+function flushReleasingSuspendedWork(queue: ActTask[]): unknown[] {
   let suspended = false;
   let i = 0;
   try {
     for (; i < queue.length; i++) {
-      let task = queue[i];
-      while (true) {
+      let task: ActTask | null = queue[i];
+      while (task !== null) {
         reactInternals.didUsePromise = false;
-        const continuation = task(false);
-        if (continuation === null) break;
-        if (reactInternals.didUsePromise) {
+        task = task(false);
+        if (task !== null && reactInternals.didUsePromise) {
           suspended = true;
           break;
         }
-        task = continuation;
       }
     }
     queue.length = 0;
   } catch (error) {
-    // As React's flushActQueue: drop what ran, rethrow when the scope ends, leave the rest.
+    // As flushActQueue: drop what ran, the throwing task too.
     queue.splice(0, i + 1);
-    reactInternals.thrownErrors.push(error);
+    // First, as before React's recorded errors.
+    reactInternals.thrownErrors.unshift(error);
   }
-  if (!suspended) return;
-  for (const root of actRoots) {
-    const fiberRoot = fiberRootWithActPlaceholder(root);
-    if (fiberRoot !== null) {
-      fiberRoot.callbackNode = null;
-      fiberRoot.callbackPriority = 0;
+  if (suspended) {
+    for (const root of actRoots) {
+      const fiberRoot = (root as { _internalRoot: FiberRoot | null })._internalRoot;
+      const node = fiberRoot?.callbackNode;
+      // A Scheduler task has a `callback`; act's placeholder is an empty object.
+      if (node != null && node.callback === undefined) {
+        fiberRoot!.callbackNode = null;
+        fiberRoot!.callbackPriority = 0;
+      }
     }
   }
+  return reactInternals.thrownErrors.splice(0);
 }
 
 function isThenable(value: unknown): value is PromiseLike<unknown> {
@@ -160,9 +156,18 @@ export function actReleasingSuspendedWork(callback: () => void): void {
     act(callback);
     return;
   }
-  act(() => {
-    const queue = reactInternals.actQueue!;
-    callback();
-    flushReleasingSuspendedWork(queue);
-  });
+  let errors: unknown[] = [];
+  try {
+    act(() => {
+      const queue = reactInternals.actQueue!;
+      callback();
+      errors = flushReleasingSuspendedWork(queue);
+    });
+  } catch (actError) {
+    // React's flush of the tasks left after a throwing one threw too.
+    errors.push(actError);
+  }
+  // As React's act: one error as is, several aggregated.
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors);
 }

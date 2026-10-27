@@ -204,25 +204,23 @@ export interface HydrateHookOptions<
 declare const jest: any;
 declare const document: any;
 
-function jestFakeTimersAreEnabled(): boolean {
+function advanceFakeTimersIfEnabled(): void {
   if (typeof jest !== "undefined" && jest !== null) {
-    return (
+    if (
       // legacy timers
       (setTimeout as any)._isMockFunction === true ||
       // modern timers
       Object.prototype.hasOwnProperty.call(setTimeout, "clock")
-    );
+    ) {
+      jest.advanceTimersByTime(0);
+    }
+    return;
   }
-  // Divergence (intentional), as in @ctrl/dom/testing-library's helpers.ts: also detect the
+  // Divergence (intentional), as in @ctrl/dom/testing-library's helpers.ts: also advance the
   // @sinonjs/fake-timers clock `vi.useFakeTimers()` installs. Upstream's asyncWrapper waits on a
   // faked `setTimeout(0)` it never advances there, so every waitFor/findBy hangs.
   const clock = (setTimeout as any).clock;
-  return clock != null && typeof clock.tick === "function";
-}
-
-function advanceFakeTimersByTime(ms: number): void {
-  if (typeof jest !== "undefined" && jest !== null) jest.advanceTimersByTime(ms);
-  else (setTimeout as any).clock.tick(ms);
+  if (typeof clock?.tick === "function") clock.tick(0);
 }
 
 let inEventWrapper = false;
@@ -247,9 +245,7 @@ configureDTL({
         setTimeout(() => {
           resolve();
         }, 0);
-        if (jestFakeTimersAreEnabled()) {
-          advanceFakeTimersByTime(0);
-        }
+        advanceFakeTimersIfEnabled();
       });
       return result;
     } finally {
@@ -325,7 +321,7 @@ function createConcurrentRoot(
       });
     } catch (error) {
       // The root never reaches mountedRootEntries, so cleanup() would not unregister it.
-      if (root !== undefined) actRoots.delete(root);
+      actRoots.delete(root);
       throw error;
     }
   } else {

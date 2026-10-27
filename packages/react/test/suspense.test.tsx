@@ -350,4 +350,32 @@ describe("Suspense and the exported act", () => {
     expect(actRoots.size).toBe(before);
     container.remove();
   });
+
+  test("a render that throws during the flush leaves later updates and Suspense working", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    let setText!: (text: string) => void;
+    function Label() {
+      const [text, set] = useState("initial");
+      setText = set;
+      return <p>{text}</p>;
+    }
+    function Throws(): React.ReactNode {
+      throw new Error("render boom");
+    }
+    render(<Label />);
+    expect(() => render(<Throws />)).toThrow("render boom");
+    void Promise.resolve().then(() => setText("updated"));
+    expect(await screen.findByText("updated")).toBeInTheDocument();
+
+    const { promise, resolve } = deferred<string>();
+    render(
+      <Suspense fallback="later fallback">
+        <Reader promise={promise} />
+      </Suspense>,
+    );
+    expect(screen.getByText("later fallback")).toBeInTheDocument();
+    resolve("later content");
+    expect(await screen.findByText("later content")).toBeInTheDocument();
+    error.mockRestore();
+  });
 });
