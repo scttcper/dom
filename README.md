@@ -1,28 +1,23 @@
 # ctrl-dom
 
-`@ctrl/dom` is a faster replacement for jsdom and happy-dom when testing React components with
-Vitest or Jest. It also comes with its own Testing Library (`@testing-library/react`, `/dom`,
-`/user-event` and `/jest-dom`), built on the same DOM, which makes queries and user events
-faster still.
+`@ctrl/dom` replaces jsdom or happy-dom in Vitest and Jest, and runs React component tests
+[several times faster](#performance) with less memory.
 
-It matches what it replaces: jsdom's globals, and Testing Library's exports, behavior, error
-messages and `prettyDOM` output, so existing tests run unchanged. Swap only the DOM and keep
-stock Testing Library, or swap the whole stack for the biggest speedup;
-[Performance](#performance) has the numbers.
+It also includes its own versions of `@testing-library/react`, `/dom`, `/user-event` and
+`/jest-dom`, built on the same DOM. Use them for the biggest speedup, or keep the stock packages
+and swap only the DOM. Either way existing tests run unchanged: the same globals as jsdom, and the
+same exports, behavior, error messages and `prettyDOM` output as Testing Library.
 
-## Use it
+## Setup
 
-Not published yet. `pnpm build` assembles the publishable packages under `release/`, and
-`pnpm test:pack` installs their tarballs into a fresh project and runs every setup below.
+Requires Node 26+, React 19, and Vitest 5+ or Jest 30+ (node:test and Bun work too, see the
+[package README](publish/ctrl-dom/README.md)).
 
-| | Supported |
-| --- | --- |
-| Node | 26+ |
-| Test runner | Vitest 5+, Jest 30+, node:test, Bun |
-| React | 19 (`@ctrl/dom/react` uses `React.act`) |
+### Vitest
 
-Vitest (>= 5) needs only `pnpm add -D @ctrl/dom`. Whole stack: the environment plus your
-`@testing-library/*` imports routed to `@ctrl/dom`:
+```sh
+pnpm add -D @ctrl/dom
+```
 
 ```ts
 // vitest.config.ts
@@ -31,20 +26,19 @@ import { ctrlDom } from "@ctrl/dom/vitest";
 
 export default defineConfig({
   plugins: [ctrlDom()],
-  // Optional and faster: each test file gets a fresh context in a reused worker instead of a
-  // new worker, so per-file setup drops from about 23 ms to about 2 ms.
+  // Optional: reuse workers between test files, cutting per-file setup from ~23 ms to ~2 ms.
   test: { pool: "vmThreads" },
 });
 ```
 
-Vitest, DOM only, with stock Testing Library:
+The plugin also points your `@testing-library/*` imports at ours. To keep the stock packages, use
+`ctrlDom({ testingLibrary: false })`.
 
-```ts
-export default defineConfig({ plugins: [ctrlDom({ testingLibrary: false })] });
+### Jest
+
+```sh
+pnpm add -D @ctrl/dom @ctrl/dom-jest-environment
 ```
-
-Jest (>= 30) also needs the environment: `pnpm add -D @ctrl/dom @ctrl/dom-jest-environment`.
-Whole stack:
 
 ```js
 // jest.config.js
@@ -54,37 +48,44 @@ module.exports = {
 };
 ```
 
-Jest, DOM only:
+To keep the stock Testing Library packages, set `testEnvironment: "@ctrl/dom-jest-environment"`
+instead of the preset.
 
-```js
-module.exports = { testEnvironment: "@ctrl/dom-jest-environment" };
-```
+You can also import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
+`@ctrl/dom/testing-library` and `@ctrl/dom/aria` directly. The
+[package README](publish/ctrl-dom/README.md) covers options and agent-friendly debug output.
 
-Or import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
-`@ctrl/dom/testing-library` and `@ctrl/dom/aria` directly. Node >= 26. Options, other runners
-(node:test, Bun) and agent-friendly debug output are in the
-[package README](publish/ctrl-dom/README.md).
+## Failing and flaky tests in Sentry
 
-### Failing and flaky tests in Sentry
+[`@ctrl/sentry-tests`](packages/sentry-tests/README.md) sends your test runs to Sentry. It's a
+separate package (`pnpm add -D @ctrl/sentry-tests`) and works with any DOM.
 
-[`@ctrl/sentry-tests`](packages/sentry-tests/README.md), its own package, works with any DOM: each
-failing test becomes a Sentry issue with the failing line, what the test did as breadcrumbs and the
-page when it failed attached; each flaky test a `FlakyTest` issue; and each test file a trace with
-a span per describe block, test, hook and test function. On @ctrl/dom the traces also hold every
-query, `waitFor`, user-event action and render (`findByRole("option", …) (40 checks)`), and
+- **Failing tests become issues**, with the failing line, breadcrumbs of what the test did, and
+  the page as it was when it failed.
+- **Flaky tests** (failed, then passed on retry) become `FlakyTest` issues.
+- **Each test file becomes a trace**, with spans for describe blocks, tests and hooks.
+
+With @ctrl/dom, traces also include every query, `waitFor`, user-event action and render, and
 failures get an accessibility snapshot.
 
 ```ts
-plugins: [ctrlDom(), sentryTests()]                // Vitest
-reporters: ["default", "@ctrl/sentry-tests/jest"], testRunner: "@ctrl/sentry-tests/jest-runner"   // Jest
+// vitest.config.ts
+plugins: [ctrlDom(), sentryTests()],
 ```
 
-Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` locally.
+```js
+// jest.config.js
+reporters: ["default", "@ctrl/sentry-tests/jest"],
+testRunner: "@ctrl/sentry-tests/jest-runner",
+```
+
+Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` to view runs locally in
+[Spotlight](https://spotlightjs.com).
 
 ## Performance
 
-The same 100 React test files under Vitest and Jest, and benchmarks of what component tests do,
-on each DOM. [comparison/](comparison/README.md) explains each measurement and has the
+The same 100 React test files run under Vitest and Jest on each DOM, plus benchmarks of common
+test operations. [comparison/](comparison/README.md) explains each measurement and has the
 [full results](comparison/RESULTS.md).
 
 <!-- comparison:start (generated by `pnpm compare --readme`, comparison/report.ts) -->
@@ -102,30 +103,67 @@ on each DOM. [comparison/](comparison/README.md) explains each measurement and h
 <sub>Medians, 2026-10-23, Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.12.1. Suites: 100 files, 3 runs each, 4 workers; other rows: Vitest bench, time per iteration. ¹ Each DOM's Jest environment: jest-environment-jsdom 30.5.2 (jsdom 26.1.0), @happy-dom/jest-environment 21.0.4, @ctrl/dom-jest-environment.</sub>
 <!-- comparison:end -->
 
-## Compatibility
-
-Each package's upstream test suite is ported and passes, along with the html5lib,
-web-platform-tests and CSS tokenizer suites. Seven projects also run their own unmodified test
-suites on it:
+And real projects' own test suites on each DOM:
 
 <!-- downstream:start (generated by `node downstream/track.ts --readme` from downstream/baseline.json) -->
-| Project | Tests | jsdom | ctrl-dom | ctrl-dom + its Testing Library |
-| --- | ---: | ---: | ---: | ---: |
-| [Base UI](downstream/base-ui/README.md) | 9,199 | 9,199 | 9,198\* | 9,199 |
-| [Radix Primitives](downstream/radix/README.md) | 1,134 | 1,134 | 1,134 | 1,134 |
-| [React Aria](downstream/react-aria/README.md) | 2,997 | 2,997 | 2,996 | 2,989 |
-| [Sentry](downstream/sentry/README.md) | 6,429 | 6,429 | 6,428\* | 6,428\* |
-| [TanStack Query](downstream/tanstack-query/README.md) | 477 | 477 | 477 | 477 |
-| [React Hook Form](downstream/react-hook-form/README.md) | 1,729 | 1,729 | 1,728\* | 1,728\* |
-| [React Router](downstream/react-router/README.md) | 2,569 | 2,569 | 2,565 | 2,565 |
+| Project's own tests | jsdom | @ctrl/dom | @ctrl/dom + its Testing Library |
+| --- | ---: | ---: | ---: |
+| [Base UI](downstream/base-ui/README.md) (Vitest, jsdom 27.4.0) | 90.4 s · 508 MiB | 52.7 s · 394 MiB | **48.4 s** · 386 MiB |
+| [Radix Primitives](downstream/radix/README.md) (Vitest, jsdom 29.1.1) | 10.7 s · 260 MiB | **6.3 s** · 256 MiB | 6.7 s · 240 MiB |
+| [React Aria](downstream/react-aria/README.md) (Jest, jsdom 26.1.0) | 15.1 s · 977 MiB | 10.1 s · 869 MiB | **9.5 s** · 896 MiB |
+| [Sentry](downstream/sentry/README.md) (Jest, jsdom 30.1.1) | 52.8 s · 2.2 GiB | 33.1 s · 2.4 GiB | **30.6 s** · 2.0 GiB |
+| [React Hook Form](downstream/react-hook-form/README.md) (Jest, jsdom 26.1.0) | 6.0 s · 478 MiB | 3.8 s · 460 MiB | **2.5 s** · 383 MiB |
+| [React Router](downstream/react-router/README.md) (Jest, jsdom 26.1.0) | 16.2 s · 902 MiB | 9.6 s · 1.0 GiB | **8.1 s** · 905 MiB |
 
-<sub>\* includes tests that fail intermittently.</sub>
+<sub>Wall time · peak memory (RSS) of each project's unmodified test suite at a pinned commit. Each project's page has the details.</sub>
 <!-- downstream:end -->
 
-Counts are passing tests on jsdom, on ctrl-dom with stock Testing Library, and on ctrl-dom with
-its own; each project links to what still differs and why. More in
-[docs/compatibility.md](docs/compatibility.md), and every intentional difference from the specs
-and from jsdom is in [docs/deviations.md](docs/deviations.md).
+## Compatibility
+
+The upstream test suites of every package it replaces are ported and pass, as do the html5lib,
+web-platform-tests and CSS tokenizer suites.
+
+Seven projects also run their own unmodified test suites on it:
+[Base UI](downstream/base-ui/README.md), [Radix Primitives](downstream/radix/README.md),
+[React Aria](downstream/react-aria/README.md), [Sentry](downstream/sentry/README.md),
+[TanStack Query](downstream/tanstack-query/README.md),
+[React Hook Form](downstream/react-hook-form/README.md) and
+[React Router](downstream/react-router/README.md). Out of about 24,500 tests, these still behave
+differently than on jsdom:
+
+- **Timing races.** A few tests schedule work on a 0 ms timer and assume it fires before
+  `render()` resolves. That always happens on jsdom because jsdom renders more slowly. On @ctrl/dom
+  these tests sometimes fail.
+- **Node's own `File` and `AbortSignal`.** We use Node's versions instead of reimplementing them,
+  so tests that deep-compare a `File` or a `Request` see internal fields that jsdom's copies don't
+  have.
+- **Tests written against jsdom's gaps.** For example, a React Aria test only passes because
+  jsdom 26 returns `""` for unset computed styles.
+- **A newer user-event.** Our user-event follows 14.6.8, so a few React Aria tests pinned to
+  14.6.5 see a different number of press events.
+
+Each project's page lists the remaining failures, and [docs/compatibility.md](docs/compatibility.md)
+has the pass counts. [docs/deviations.md](docs/deviations.md) lists every intentional difference
+from the specs and from jsdom.
+
+## When to use jsdom or happy-dom instead
+
+@ctrl/dom is built for testing React components and leaves out what that doesn't need. Stick with
+jsdom or happy-dom if you need any of these:
+
+- **Running scripts.** `<script>` elements never execute and inline handlers like
+  `onclick="..."` aren't compiled.
+- **Loading pages or resources.** No navigation, no `fetch` on the window, and images never load.
+- **Something other than tests**, like scraping or server-side rendering.
+- **Node older than 26, or React older than 19.**
+
+None of the three is a security sandbox. jsdom and happy-dom can run scripts, but those scripts
+can reach Node, so never use any of them to run untrusted code.
+
+None of the three does real layout. @ctrl/dom has an opt-in approximate box model
+([`layout: "lite"`](docs/layout.md)) for virtualizers and positioning libraries, but tests that
+depend on real sizes and positions belong in a browser, for example
+[Vitest browser mode](https://vitest.dev/guide/browser/) or [Playwright](https://playwright.dev).
 
 ## How it is fast
 
@@ -148,10 +186,19 @@ and from jsdom is in [docs/deviations.md](docs/deviations.md).
 
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the details.
 
-## Contributing
+## Inspirations
 
-[CONTRIBUTING.md](CONTRIBUTING.md) covers building, testing, benchmarks, the package layout and
-releases.
+- [jsdom](https://github.com/jsdom/jsdom): the reference our differential tests and compat profiles
+  are checked against.
+- [happy-dom](https://github.com/capricorn86/happy-dom): a lighter, faster test DOM than jsdom,
+  and the other benchmark baseline.
+- WebKit's [SelectorFilter](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/SelectorFilter.h)
+  and [SelectorQuery](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/dom/SelectorQuery.cpp),
+  and Blink's [RuleSet](https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/core/css/rule_set.h):
+  the ancestor Bloom filter, id-rooted queries and rule buckets behind our selector matching and
+  style cascade.
+- [Playwright's aria snapshots](https://playwright.dev/docs/aria-snapshots): the format of our
+  accessibility snapshots and the matching rules for them.
 
 ## Credits
 
@@ -160,13 +207,9 @@ releases.
   [dom-accessibility-api](https://github.com/eps1lon/dom-accessibility-api) and
   [aria-query](https://github.com/A11yance/aria-query), and aria snapshot matching from
   [Playwright](https://github.com/microsoft/playwright).
-- [jsdom](https://github.com/jsdom/jsdom) is the reference the differential tests and compat
-  profiles are checked against; [happy-dom](https://github.com/capricorn86/happy-dom) is the other
-  benchmark baseline.
 - Most spec tests come from [web-platform-tests](https://github.com/web-platform-tests/wpt),
   [html5lib-tests](https://github.com/html5lib/html5lib-tests) and Romain Menke's
-  [css-tokenizer-tests](https://github.com/romainmenke/css-tokenizer-tests). Selector and style
-  matching borrow techniques from WebKit and Blink.
+  [css-tokenizer-tests](https://github.com/romainmenke/css-tokenizer-tests).
 - Base UI, Radix, React Aria, Sentry, TanStack Query, React Hook Form and React Router, whose
   test suites it runs against.
 
