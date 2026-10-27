@@ -5,6 +5,7 @@
 // React 18.0 is dropped (this package peers on react@^19).
 
 import * as React from "react";
+import { releaseSuspendedWorkEnabled } from "./config.ts";
 
 type ActCallback = () => unknown;
 
@@ -151,8 +152,8 @@ export default act;
  * act queue. The exported `act` keeps React's semantics.
  */
 export function actReleasingSuspendedWork(callback: () => void): void {
-  // Only the outermost act flushes; nested ones leave the queue to it.
-  if (reactInternals.actQueue !== null) {
+  // Only the outermost act flushes; nested ones leave the queue to it. Opted out: React's act.
+  if (reactInternals.actQueue !== null || !releaseSuspendedWorkEnabled()) {
     act(callback);
     return;
   }

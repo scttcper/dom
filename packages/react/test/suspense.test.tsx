@@ -17,6 +17,8 @@ import { createRoot } from "react-dom/client";
 import {
   act,
   cleanup,
+  configure,
+  getConfig,
   fireEvent,
   render,
   renderHook,
@@ -377,5 +379,37 @@ describe("Suspense and the exported act", () => {
     resolve("later content");
     expect(await screen.findByText("later content")).toBeInTheDocument();
     error.mockRestore();
+  });
+});
+
+describe("configure({ releaseSuspendedWork: false })", () => {
+  // After every other render in the file: React logs its warning once per module instance.
+  test("behaves like stock @testing-library/react: the boundary stays on its fallback", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    configure({ releaseSuspendedWork: false });
+    try {
+      const { promise, resolve } = deferred<string>();
+      render(
+        <Suspense fallback="fallback">
+          <Reader promise={promise} />
+        </Suspense>,
+      );
+      resolve("resolved");
+      await new Promise((done) => setTimeout(done, 50));
+      expect(screen.getByText("fallback")).toBeInTheDocument();
+      expect(screen.queryByText("resolved")).not.toBeInTheDocument();
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("A component suspended inside an `act` scope"));
+    } finally {
+      configure({ releaseSuspendedWork: true });
+      error.mockRestore();
+    }
+  });
+
+  test("a configure() call that leaves it out keeps the current value", () => {
+    configure({ releaseSuspendedWork: false });
+    configure({ testIdAttribute: "data-testid" });
+    expect(getConfig().releaseSuspendedWork).toBe(false);
+    configure({ releaseSuspendedWork: true });
+    expect(getConfig().releaseSuspendedWork).toBe(true);
   });
 });
