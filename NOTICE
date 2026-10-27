@@ -7,10 +7,6 @@ with ported code names the upstream file it came from in a comment ("Port of ...
 from ..."), and those files have been modified from the originals. Each project's copyright
 notice is listed with its entry; the license texts are at the end of this file.
 
-==================================================================================================
-Included in the published packages
-==================================================================================================
-
 @testing-library/dom 10.4.2 (MIT)
   Copyright (c) 2017 Kent C. Dodds
   https://github.com/testing-library/dom-testing-library
@@ -85,28 +81,6 @@ others), with a link to each section. Quoted text is © its authors; WHATWG spec
 licensed under CC BY 4.0, W3C specifications under the W3C Software and Document License.
 
 ==================================================================================================
-Tests and test data (in the repository only, not in the published packages)
-==================================================================================================
-
-web-platform-tests (BSD-3-Clause)
-  Copyright © web-platform-tests contributors
-  https://github.com/web-platform-tests/wpt
-  Ported dom, html, selectors, css and accname tests (packages/*/test/wpt)
-
-html5lib-tests (MIT)
-  Copyright (c) 2006-2013 James Graham, Geoffrey Sneddon, and other contributors
-  https://github.com/html5lib/html5lib-tests
-  Tokenizer and tree construction suites (packages/dom/test/parser/fixtures/html5lib)
-
-css-tokenizer-tests 1.4.0 (MIT, as its npm package @rmenke/css-tokenizer-tests declares)
-  Copyright (c) Romain Menke
-  https://github.com/romainmenke/css-tokenizer-tests
-  packages/dom/test/css/fixtures/css-tokenizer-tests.json
-
-The test suites of @testing-library/dom, /react, /user-event and /jest-dom, dom-accessibility-api
-and aria-query (copyrights and licenses as above) are ported under packages/*/test/upstream.
-
-==================================================================================================
 License texts
 ==================================================================================================
 
@@ -145,17 +119,6 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-BSD 3-Clause License (web-platform-tests)
------------------------------------------
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Apache License 2.0 (aria-query, Playwright)
 -------------------------------------------
