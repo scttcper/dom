@@ -21,7 +21,12 @@ import {
   type prettyFormat,
   type queries,
 } from "./dtl.ts";
-import act, { getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
+import act, {
+  actReleasingSuspendedWork,
+  actRoots,
+  getIsReactActEnvironment,
+  setReactActEnvironment,
+} from "./act-compat.ts";
 import { traceSync, tracing } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
@@ -199,16 +204,23 @@ export interface HydrateHookOptions<
 declare const jest: any;
 declare const document: any;
 
-function jestFakeTimersAreEnabled(): boolean {
+function advanceFakeTimersIfEnabled(): void {
   if (typeof jest !== "undefined" && jest !== null) {
-    return (
+    if (
       // legacy timers
       (setTimeout as any)._isMockFunction === true ||
       // modern timers
       Object.prototype.hasOwnProperty.call(setTimeout, "clock")
-    );
+    ) {
+      jest.advanceTimersByTime(0);
+    }
+    return;
   }
-  return false;
+  // Divergence (intentional), as in @ctrl/dom/testing-library's helpers.ts: also advance the
+  // @sinonjs/fake-timers clock `vi.useFakeTimers()` installs. Upstream's asyncWrapper waits on a
+  // faked `setTimeout(0)` it never advances there, so every waitFor/findBy hangs.
+  const clock = (setTimeout as any).clock;
+  if (typeof clock?.tick === "function") clock.tick(0);
 }
 
 let inEventWrapper = false;
@@ -233,9 +245,7 @@ configureDTL({
         setTimeout(() => {
           resolve();
         }, 0);
-        if (jestFakeTimersAreEnabled()) {
-          jest.advanceTimersByTime(0);
-        }
+        advanceFakeTimersIfEnabled();
       });
       return result;
     } finally {
@@ -249,7 +259,7 @@ configureDTL({
     inEventWrapper = true;
     try {
       let result: unknown;
-      act(() => {
+      actReleasingSuspendedWork(() => {
         result = cb();
       });
       return result;
@@ -296,21 +306,30 @@ function createConcurrentRoot(
 ): RootHandle {
   let root!: ReactDOMClient.Root;
   if (hydrate) {
-    act(() => {
-      root = ReactDOMClient.hydrateRoot(
-        container,
-        strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode),
-        {
-          onCaughtError,
-          onRecoverableError,
-        } as ReactDOMClient.HydrationOptions,
-      );
-    });
+    try {
+      actReleasingSuspendedWork(() => {
+        root = ReactDOMClient.hydrateRoot(
+          container,
+          strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode),
+          {
+            onCaughtError,
+            onRecoverableError,
+          } as ReactDOMClient.HydrationOptions,
+        );
+        // Registered before the act flushes, so suspended hydration work can be released.
+        actRoots.add(root);
+      });
+    } catch (error) {
+      // The root never reaches mountedRootEntries, so cleanup() would not unregister it.
+      actRoots.delete(root);
+      throw error;
+    }
   } else {
     root = ReactDOMClient.createRoot(container, {
       onCaughtError,
       onRecoverableError,
     } as ReactDOMClient.RootOptions);
+    actRoots.add(root);
   }
 
   return {
@@ -325,6 +344,7 @@ function createConcurrentRoot(
     },
     unmount() {
       root.unmount();
+      actRoots.delete(root);
     },
   };
 }
@@ -372,7 +392,7 @@ function actRender(
   WrapperComponent: RenderOptions["wrapper"],
   reactStrictMode: boolean | undefined,
 ): void {
-  act(() => {
+  actReleasingSuspendedWork(() => {
     if (hydrate) {
       root.hydrate();
     } else {

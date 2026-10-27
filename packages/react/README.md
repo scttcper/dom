@@ -10,6 +10,11 @@ render(<button>Save</button>);
 screen.getByRole("button", { name: "Save" });
 ```
 
+Unlike stock `@testing-library/react` on React 19, a component that suspends on data (`use`,
+`lazy`) during `render()` or an event shows its fallback and then its content once the data
+resolves, without `await act(...)`. This relies on React internals; `configure({
+releaseSuspendedWork: false })` turns it off and behaves exactly like stock.
+
 Requires the ctrl-dom test environment (the `ctrlDom()` Vitest plugin, or `@ctrl/dom-jest-environment` with
 its preset). ESM and CommonJS builds.
 
