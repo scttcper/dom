@@ -13,7 +13,20 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import * as React from "react";
 import { Suspense, lazy, use, useState } from "react";
-import { fireEvent, render, renderHook, screen, waitFor, waitForElementToBeRemoved } from "@ctrl/dom/react";
+import { createRoot } from "react-dom/client";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from "@ctrl/dom/react";
+import { actRoots } from "../src/act-compat.ts";
+
+declare const document: any;
 
 function deferred<T>() {
   return Promise.withResolvers<T>();
@@ -269,5 +282,72 @@ describe("Suspense with fake timers", () => {
     fireEvent.click(screen.getByRole("button", { name: "load" }));
     expect(screen.getByText("fallback")).toBeInTheDocument();
     expect(await screen.findByText("clicked")).toBeInTheDocument();
+  });
+});
+
+describe("Suspense and the exported act", () => {
+  test("a later awaited act still rejects with an error thrown inside it", async () => {
+    const { promise } = deferred<string>();
+    render(
+      <Suspense fallback="fallback">
+        <Reader promise={promise} />
+      </Suspense>,
+    );
+    function Throws(): React.ReactNode {
+      throw new Error("boom");
+    }
+    await expect(
+      act(async () => {
+        render(<Throws />);
+        await new Promise((resolve) => setTimeout(resolve, 30));
+      }),
+    ).rejects.toThrow("boom");
+  });
+
+  // React's own act, untouched: awaiting it flushes the work that suspended on the resolved data.
+  test("an awaited act on a root render() did not create reveals data resolved before the await", async () => {
+    const { promise, resolve } = deferred<string>();
+    const container = document.body.appendChild(document.createElement("div"));
+    const root = createRoot(container);
+    const result = act(() => {
+      root.render(
+        <Suspense fallback="fallback">
+          <Reader promise={promise} />
+        </Suspense>,
+      );
+    });
+    resolve("external");
+    await result;
+    expect(container).toHaveTextContent("external");
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  // Same as stock @testing-library/react on jsdom: the awaited act returns with the fallback
+  // committed, and the content follows once the data arrives.
+  test("render() inside an awaited act shows the fallback, then the content", async () => {
+    const promise = new Promise<string>((resolve) => setTimeout(resolve, 20, "awaited"));
+    await act(async () => {
+      render(
+        <Suspense fallback="fallback">
+          <Reader promise={promise} />
+        </Suspense>,
+      );
+    });
+    expect(screen.getByText("fallback")).toBeInTheDocument();
+    expect(await screen.findByText("awaited")).toBeInTheDocument();
+  });
+
+  test("a hydration that throws does not leave its root registered after cleanup()", () => {
+    const container = document.body.appendChild(document.createElement("div"));
+    container.innerHTML = "<p>server</p>";
+    function Throws(): React.ReactNode {
+      throw new Error("hydration boom");
+    }
+    const before = actRoots.size;
+    expect(() => render(<Throws />, { container, hydrate: true })).toThrow("hydration boom");
+    cleanup();
+    expect(actRoots.size).toBe(before);
+    container.remove();
   });
 });

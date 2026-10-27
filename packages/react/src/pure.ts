@@ -21,7 +21,12 @@ import {
   type prettyFormat,
   type queries,
 } from "./dtl.ts";
-import act, { actRoots, getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
+import act, {
+  actReleasingSuspendedWork,
+  actRoots,
+  getIsReactActEnvironment,
+  setReactActEnvironment,
+} from "./act-compat.ts";
 import { traceSync, tracing } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
@@ -258,7 +263,7 @@ configureDTL({
     inEventWrapper = true;
     try {
       let result: unknown;
-      act(() => {
+      actReleasingSuspendedWork(() => {
         result = cb();
       });
       return result;
@@ -305,17 +310,24 @@ function createConcurrentRoot(
 ): RootHandle {
   let root!: ReactDOMClient.Root;
   if (hydrate) {
-    act(() => {
-      root = ReactDOMClient.hydrateRoot(
-        container,
-        strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode),
-        {
-          onCaughtError,
-          onRecoverableError,
-        } as ReactDOMClient.HydrationOptions,
-      );
-      actRoots.add(root);
-    });
+    try {
+      actReleasingSuspendedWork(() => {
+        root = ReactDOMClient.hydrateRoot(
+          container,
+          strictModeIfNeeded(wrapUiIfNeeded(ui, WrapperComponent), reactStrictMode),
+          {
+            onCaughtError,
+            onRecoverableError,
+          } as ReactDOMClient.HydrationOptions,
+        );
+        // Registered before the act flushes, so suspended hydration work can be released.
+        actRoots.add(root);
+      });
+    } catch (error) {
+      // The root never reaches mountedRootEntries, so cleanup() would not unregister it.
+      if (root !== undefined) actRoots.delete(root);
+      throw error;
+    }
   } else {
     root = ReactDOMClient.createRoot(container, {
       onCaughtError,
@@ -384,7 +396,7 @@ function actRender(
   WrapperComponent: RenderOptions["wrapper"],
   reactStrictMode: boolean | undefined,
 ): void {
-  act(() => {
+  actReleasingSuspendedWork(() => {
     if (hydrate) {
       root.hydrate();
     } else {

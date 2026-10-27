@@ -24,7 +24,8 @@ export function getIsReactActEnvironment(): boolean | undefined {
 
 // React internals this module reaches into (not public API; same shape since React 18.0):
 // - `actQueue`: the Scheduler tasks React defers to the open act scope instead of giving them to
-//   its Scheduler (packages/react/src/ReactAct.js).
+//   its Scheduler; `didUsePromise`, set when a task suspends on data; `thrownErrors`, the errors
+//   act rethrows once the scope ends (packages/react/src/ReactAct.js).
 // - A FiberRoot's `callbackNode`/`callbackPriority`: the root's scheduled task, which inside act
 //   is a placeholder object for a task in `actQueue` (ReactFiberRootScheduler.js).
 type ActTask = (didTimeout: boolean) => ActTask | null;
@@ -32,35 +33,69 @@ interface FiberRoot {
   callbackNode: { callback?: unknown } | null;
   callbackPriority: number;
 }
-const reactInternals = (React as unknown as Record<string, { actQueue: ActTask[] | null }>)
+interface ReactInternals {
+  actQueue: ActTask[] | null;
+  didUsePromise: boolean;
+  thrownErrors: unknown[];
+}
+const reactInternals = (React as unknown as Record<string, ReactInternals>)
   .__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
 /** Roots created by render()/renderHook(), whose suspended work survives a synchronous act. */
 export const actRoots = new Set<object>();
 
-function noop(): void {}
+function fiberRootWithActPlaceholder(root: object): FiberRoot | null {
+  const fiberRoot = (root as { _internalRoot: FiberRoot | null })._internalRoot;
+  const node = fiberRoot?.callbackNode;
+  // A Scheduler task has a `callback`; the act placeholder is an empty object.
+  return node != null && node.callback === undefined ? fiberRoot! : null;
+}
 
 // A component suspended on data (`use(promise)`, `lazy`) inside a synchronous act: React 19
 // commits the fallback, then queues a prerender of the suspended subtree that waits on the same
-// promise and stays in the act queue. The act drops that queue when it returns, but the root keeps
-// the placeholder it got inside act, and React never replaces a placeholder of the same
-// priority: when the promise resolves, the root does not reschedule and the boundary shows its
-// fallback forever. React's answer, `await act(...)`, hides the fallback from the test and polls
-// every macrotask until the promise settles (attaching a listener to it each time).
+// promise. React's flush leaves that task in the act queue and drops the queue when the act
+// returns, but the root keeps the placeholder it got inside act, and React never replaces a
+// placeholder of the same priority: when the promise resolves, the root does not reschedule and
+// the boundary shows its fallback forever (and React logs "the act call was not awaited").
+// React's answer, `await act(...)`, hides the fallback from the test and polls every macrotask
+// until the promise settles (attaching a listener to it each time).
 //
-// Do what React does outside act instead: drop the queued work and its placeholders, so the
-// promise's resolution schedules the retry like in a browser (inside whatever act scope is open
-// then, e.g. waitFor's). The fallback stays observable until then.
-function releaseSuspendedWork(queue: ActTask[]): void {
-  queue.length = 0;
-  reactInternals.actQueue = null;
+// So RTL's own synchronous acts flush the queue themselves before React does, as React's
+// flushActQueue would, but drop the tasks that suspend on data (React would drop them with the
+// queue anyway: nobody awaits these acts) and clear the placeholders on the roots render()
+// created, as React does outside act. The promise's resolution then schedules the retry like in
+// a browser (inside whatever act scope is open then, e.g. waitFor's), and the fallback stays
+// observable until then. React's flush finds the queue empty, so it does not warn. A root created
+// some other way that suspends in one of these acts stays on its fallback, as it does upstream.
+function flushReleasingSuspendedWork(queue: ActTask[]): void {
+  let suspended = false;
+  let i = 0;
+  try {
+    for (; i < queue.length; i++) {
+      let task = queue[i];
+      while (true) {
+        reactInternals.didUsePromise = false;
+        const continuation = task(false);
+        if (continuation === null) break;
+        if (reactInternals.didUsePromise) {
+          suspended = true;
+          break;
+        }
+        task = continuation;
+      }
+    }
+    queue.length = 0;
+  } catch (error) {
+    // As React's flushActQueue: drop what ran, rethrow when the scope ends, leave the rest.
+    queue.splice(0, i + 1);
+    reactInternals.thrownErrors.push(error);
+  }
+  if (!suspended) return;
   for (const root of actRoots) {
-    const fiberRoot = (root as { _internalRoot: FiberRoot | null })._internalRoot;
-    const node = fiberRoot?.callbackNode;
-    // A Scheduler task has a `callback`; the act placeholder is an empty object.
-    if (node != null && node.callback === undefined) {
-      fiberRoot!.callbackNode = null;
-      fiberRoot!.callbackPriority = 0;
+    const fiberRoot = fiberRootWithActPlaceholder(root);
+    if (fiberRoot !== null) {
+      fiberRoot.callbackNode = null;
+      fiberRoot.callbackPriority = 0;
     }
   }
 }
@@ -76,9 +111,7 @@ function withGlobalActEnvironment(actImplementation: typeof reactAct) {
     try {
       // The return value of `act` is always a thenable.
       let callbackNeedsToBeAwaited = false;
-      let queue: ActTask[] | null = null;
       const actResult = actImplementation(() => {
-        queue = reactInternals.actQueue;
         const result = callback();
         if (isThenable(result)) callbackNeedsToBeAwaited = true;
         return result;
@@ -101,14 +134,6 @@ function withGlobalActEnvironment(actImplementation: typeof reactAct) {
         };
       }
       setReactActEnvironment(previousActEnvironment);
-      // Work left in the queue after the outermost act returned waits on a promise.
-      if (queue !== null && (queue as ActTask[]).length !== 0 && reactInternals.actQueue === null) {
-        // Marking the act as awaited silences React's "the act call was not awaited" warning
-        // (the work is handled). It also reopens the queue for React's flush loop; releasing
-        // closes it again, so the loop finds nothing and resolves.
-        (actResult as PromiseLike<unknown>).then(noop, noop);
-        releaseSuspendedWork(queue);
-      }
       return actResult;
     } catch (error) {
       // Can't be a `finally {}` block since we don't know if we have to immediately restore
@@ -123,3 +148,21 @@ function withGlobalActEnvironment(actImplementation: typeof reactAct) {
 const act = withGlobalActEnvironment(reactAct) as typeof React.act;
 
 export default act;
+
+/**
+ * `act` for RTL's own synchronous updates (render, rerender, hydrate, events): work that
+ * suspends on data is handed back to React's normal scheduling instead of being dropped with the
+ * act queue. The exported `act` keeps React's semantics.
+ */
+export function actReleasingSuspendedWork(callback: () => void): void {
+  // Only the outermost act flushes; nested ones leave the queue to it.
+  if (reactInternals.actQueue !== null) {
+    act(callback);
+    return;
+  }
+  act(() => {
+    const queue = reactInternals.actQueue!;
+    callback();
+    flushReleasingSuspendedWork(queue);
+  });
+}
