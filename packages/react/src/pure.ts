@@ -21,7 +21,7 @@ import {
   type prettyFormat,
   type queries,
 } from "./dtl.ts";
-import act, { getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
+import act, { actRoots, getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
 import { traceSync, tracing } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
@@ -208,7 +208,16 @@ function jestFakeTimersAreEnabled(): boolean {
       Object.prototype.hasOwnProperty.call(setTimeout, "clock")
     );
   }
-  return false;
+  // Divergence (intentional), as in @ctrl/dom/testing-library's helpers.ts: also detect the
+  // @sinonjs/fake-timers clock `vi.useFakeTimers()` installs. Upstream's asyncWrapper waits on a
+  // faked `setTimeout(0)` it never advances there, so every waitFor/findBy hangs.
+  const clock = (setTimeout as any).clock;
+  return clock != null && typeof clock.tick === "function";
+}
+
+function advanceFakeTimersByTime(ms: number): void {
+  if (typeof jest !== "undefined" && jest !== null) jest.advanceTimersByTime(ms);
+  else (setTimeout as any).clock.tick(ms);
 }
 
 let inEventWrapper = false;
@@ -234,7 +243,7 @@ configureDTL({
           resolve();
         }, 0);
         if (jestFakeTimersAreEnabled()) {
-          jest.advanceTimersByTime(0);
+          advanceFakeTimersByTime(0);
         }
       });
       return result;
@@ -305,12 +314,14 @@ function createConcurrentRoot(
           onRecoverableError,
         } as ReactDOMClient.HydrationOptions,
       );
+      actRoots.add(root);
     });
   } else {
     root = ReactDOMClient.createRoot(container, {
       onCaughtError,
       onRecoverableError,
     } as ReactDOMClient.RootOptions);
+    actRoots.add(root);
   }
 
   return {
@@ -325,6 +336,7 @@ function createConcurrentRoot(
     },
     unmount() {
       root.unmount();
+      actRoots.delete(root);
     },
   };
 }
