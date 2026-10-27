@@ -9,9 +9,9 @@
 //                                                       rewrite the baseline from the latest runs; modes
 //                                                       left out of --modes keep their recorded entry
 //                                                       (e.g. refresh ctrl-dom numbers without rerunning jsdom)
-//   node downstream/track.ts --readme                   regenerate the pass-count tables in README.md and
-//                                                       docs/compatibility.md, and each suite README's
-//                                                       results, from the baseline
+//   node downstream/track.ts --readme                   regenerate the speed table in README.md, the
+//                                                       pass-count table in docs/compatibility.md and
+//                                                       each suite README's results from the baseline
 //
 // Exits 1 when a test that passed in the baseline no longer passes (in any mode: a jsdom
 // regression means the upstream run itself is broken), when a mode the baseline tracks has no
@@ -72,6 +72,8 @@ const SUITES: Record<string, { preset: string; output: (mode: string) => string;
   },
 };
 const MODES = ["jsdom", "ctrl-dom", "ctrl-dom-full"];
+/** Suites left out of README.md's speed table for now (still tracked, and in docs/compatibility.md). */
+const SPEED_TABLE_SKIPS = new Set(["tanstack-query"]);
 
 const { values: flags } = parseArgs({
   options: {
@@ -96,6 +98,8 @@ interface ModeCounts {
   peakRssBytes?: number;
   /** Day this mode's recorded run started (YYYY-MM-DD); modes can be refreshed separately. */
   date?: string;
+  /** jsdom mode only: the jsdom version the project's own setup ran on (summary.json `versions`). */
+  jsdomVersion?: string;
 }
 interface SuiteBaseline {
   preset: string;
@@ -149,6 +153,7 @@ function readRun(suite: string, mode: string): Run | null {
   counts.failing.sort();
   if (typeof summary.wallMs === "number") counts.wallMs = summary.wallMs;
   if (typeof summary.peakRssBytes === "number") counts.peakRssBytes = summary.peakRssBytes;
+  if (mode === "jsdom" && typeof summary.versions?.jsdom === "string") counts.jsdomVersion = summary.versions.jsdom;
   return { preset: summary.preset ?? "?", commit: summary.commit ?? "?", counts, startTime: report.startTime };
 }
 
@@ -158,20 +163,18 @@ for (const suite of suites)
   if (!(suite in SUITES)) throw new Error(`unknown suite ${suite} (have: ${Object.keys(SUITES).join(", ")})`);
 
 if (flags.readme) {
-  // The pass-count tables, generated from the baseline alone so they always show what the
-  // tracked runs recorded: a short one in README.md and the detailed one (what each suite covers,
-  // its runner and pinned upstream commit) in docs/compatibility.md, each between the
-  // downstream:start/end markers.
+  // Generated from the baseline alone so they always show what the tracked runs recorded, each
+  // between the downstream:start/end markers: the speed table in README.md and the pass-count
+  // table in docs/compatibility.md (what each suite covers, its pinned upstream commit).
   const n = (x: number) => x.toLocaleString("en-US");
-  const short = [
-    "| Project | Tests | jsdom | ctrl-dom | ctrl-dom + its Testing Library |",
-    "| --- | ---: | ---: | ---: | ---: |",
+  const speed = [
+    "| Project's own tests | jsdom | @ctrl/dom | @ctrl/dom + its Testing Library |",
+    "| --- | ---: | ---: | ---: |",
   ];
   const detailed = [
     "| Suite | Upstream | Tests | jsdom | ctrl-dom environment | ctrl-dom + its Testing Library |",
     "| --- | --- | ---: | ---: | ---: | ---: |",
   ];
-  let anyIntermittent = false;
   for (const [suite, meta] of Object.entries(SUITES)) {
     const tracked = baseline[suite];
     if (tracked === undefined) throw new Error(`${suite}: not in downstream/baseline.json (run with --update)`);
@@ -179,29 +182,38 @@ if (flags.readme) {
     const repoUrl = manifest.repository.replace(/\.git$/, "");
     const slug = repoUrl.replace(/^https:\/\/github\.com\//, "");
     const jsdom = tracked.modes.jsdom;
-    const cell = (mode: string, long: boolean): string => {
+    const cell = (mode: string): string => {
       const c = tracked.modes[mode];
       if (c === undefined) return "—";
       const flaky = new Set(c.flaky ?? []);
       const intermittent = c.failing.filter((k) => flaky.has(k)).length;
-      if (intermittent === 0) return n(c.passed);
-      anyIntermittent = true;
-      return n(c.passed) + (long ? ` (${intermittent} intermittent)` : "\\*");
+      return intermittent === 0 ? n(c.passed) : `${n(c.passed)} (${intermittent} intermittent)`;
     };
     const total = n(jsdom.passed + jsdom.failed);
-    short.push(
-      `| [${meta.title}](downstream/${suite}/README.md) | ${total} | ${cell("jsdom", false)} | ${cell("ctrl-dom", false)} | ${cell("ctrl-dom-full", false)} |`,
-    );
+    const fastest = Math.min(...MODES.map((m) => tracked.modes[m]?.wallMs ?? Infinity));
+    const run = (mode: string): string => {
+      const c = tracked.modes[mode];
+      if (c?.wallMs === undefined) return "—";
+      const time = c.wallMs === fastest ? `**${seconds(c.wallMs)}**` : seconds(c.wallMs);
+      return c.peakRssBytes === undefined ? time : `${time} · ${memory(c.peakRssBytes)}`;
+    };
+    if (!SPEED_TABLE_SKIPS.has(suite))
+      speed.push(
+        `| [${meta.title}](downstream/${suite}/README.md) (${[/Vitest|Jest/.exec(meta.scope)?.[0], jsdom.jsdomVersion && `jsdom ${jsdom.jsdomVersion}`].filter(Boolean).join(", ")}) | ${run("jsdom")} | ${run("ctrl-dom")} | ${run("ctrl-dom-full")} |`,
+      );
     detailed.push(
-      `| [${meta.title}](../downstream/${suite}/README.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom", true)} | ${cell("ctrl-dom", true)} | ${cell("ctrl-dom-full", true)} |`,
+      `| [${meta.title}](../downstream/${suite}/README.md) (${meta.scope}) | [${slug}@${tracked.commit.slice(0, 7)}](${repoUrl}/tree/${tracked.commit}) | ${total} | ${cell("jsdom")} | ${cell("ctrl-dom")} | ${cell("ctrl-dom-full")} |`,
     );
     writeSection(join(here, suite, "README.md"), suiteResults(tracked, repoUrl, slug));
   }
   writeSection(
     join(here, "../README.md"),
-    [...short, ...(anyIntermittent ? ["", "<sub>\\* includes tests that fail intermittently.</sub>"] : []), ""].join(
-      "\n",
-    ),
+    [
+      ...speed,
+      "",
+      "<sub>Wall time · peak memory (RSS) of each project's unmodified test suite at a pinned commit. Each project's page has the details.</sub>",
+      "",
+    ].join("\n"),
   );
   writeSection(
     join(here, "../docs/compatibility.md"),
@@ -221,9 +233,6 @@ if (flags.readme) {
  */
 function suiteResults(tracked: SuiteBaseline, repoUrl: string, slug: string): string {
   const n = (x: number) => x.toLocaleString("en-US");
-  const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
-  const memory = (bytes: number) =>
-    bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GiB` : `${Math.round(bytes / 1024 ** 2)} MiB`;
   const jsdom = tracked.modes.jsdom;
   const measure = (value: number | undefined, base: number | undefined, format: (v: number) => string) => {
     if (value === undefined) return "—";
@@ -247,8 +256,9 @@ function suiteResults(tracked: SuiteBaseline, repoUrl: string, slug: string): st
     const c = tracked.modes[mode];
     if (c === undefined) continue;
     const base = mode === "jsdom" ? undefined : jsdom;
+    const label = mode === "jsdom" && c.jsdomVersion !== undefined ? `jsdom ${c.jsdomVersion}` : mode;
     lines.push(
-      `| ${mode} | ${n(c.passed)} | ${n(c.failed)} | ${n(c.skipped)} | ${measure(c.wallMs, base?.wallMs, seconds)} | ${measure(c.peakRssBytes, base?.peakRssBytes, memory)} |`,
+      `| ${label} | ${n(c.passed)} | ${n(c.failed)} | ${n(c.skipped)} | ${measure(c.wallMs, base?.wallMs, seconds)} | ${measure(c.peakRssBytes, base?.peakRssBytes, memory)} |`,
     );
     const flaky = new Set(c.flaky ?? []);
     for (const key of c.failing) {
@@ -265,6 +275,14 @@ function suiteResults(tracked: SuiteBaseline, repoUrl: string, slug: string): st
   if (failing.length !== 0)
     lines.push("", `<details><summary>Failing tests (${failing.length})</summary>`, "", ...failing, "", "</details>");
   return [...lines, ""].join("\n");
+}
+
+function seconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)} s`;
+}
+
+function memory(bytes: number): string {
+  return bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GiB` : `${Math.round(bytes / 1024 ** 2)} MiB`;
 }
 
 /** Test names as Markdown text: `<Popover.Root />` would otherwise be taken for an HTML tag. */
