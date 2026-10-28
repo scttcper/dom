@@ -355,7 +355,12 @@ React Hook Form's and React Router's Jest suites (2026-10-26, one worker) profil
 ours ~8% and ~5%, flat; React Router's own tests construct jsdom windows, which shows up as
 `jsdom` (1.6 s) and as `defineProperties` in our guard (below). The clock costs 0.36 µs for Vitest's deadline
 pattern (`setTimeout`, `unref()`, `clearTimeout`) against Node's 0.054 µs, and 27 µs per skipped
-`setTimeout(0)` hop against 1.16 ms of real waiting.
+`setTimeout(0)` hop against 1.16 ms of real waiting. Nearly all of a hop is the two event loop
+turns the driver waits before skipping (an empty turn is ~12.6 µs here). The idle probe it runs on
+each turn (`busy()`) was the clock's largest self time in Base UI's profiles, ~110 ms over the 153
+files; since 2026-10-28 it no longer tallies resource types into a Map: 0.31 → 0.18 µs warm and
+0.83 → 0.34 µs over a fresh process's first 2,000 probes, ~0.16 µs of it
+`process.getActiveResourcesInfo()` itself. Hops did not get measurably faster: the turns bound them.
 
 **React Aria (Jest), all, ctrl-dom-full, one worker** (2026-10-26; `NODE_OPTIONS=--cpu-prof`
 with `--workers 1`). 34.1 s of CPU: React Aria's own source 24%, native 20%, react-dom 16%, ours

@@ -187,6 +187,55 @@ describe("idle time skipping (timeSkip: true)", () => {
     expect(order).toEqual(["immediate0", "immediate1", "immediate2", "immediate3", "immediate4", "timer"]);
   });
 
+  test("I/O beyond what was active at install (a listening server) blocks skipping: a 50 ms timer waits for real, and skipping resumes once the server closes", async () => {
+    const g = setup(true);
+    const { createServer } = await import("node:net");
+    const server = createServer().listen(0);
+    let start = performance.now();
+    try {
+      await sleep(g, 50);
+      expect(performance.now() - start).toBeGreaterThanOrEqual(40);
+    } finally {
+      server.close();
+    }
+    start = performance.now();
+    await sleep(g, 10_000);
+    expect(performance.now() - start).toBeLessThan(1_000);
+  });
+
+  test("busy(): a queued Immediate first; else I/O when a resource type outnumbers its count at creation (a new type, or one more of a type); Timeouts and unref'd handles never count", async () => {
+    const { createServer, connect } = await import("node:net");
+    await new Promise<void>((resolve) => setImmediate(resolve)); // earlier tests' queued immediates run
+    const first = createServer().listen(0); // one TCPServerWrap in the baseline
+    const second = createServer();
+    let socket: ReturnType<typeof connect> | null = null;
+    try {
+      const clock = new VirtualClock({ skip: true });
+      expect(clock.busy()).toBe(null);
+      const timer = setTimeout(() => {}, 1_000);
+      expect(clock.busy()).toBe(null);
+      clearTimeout(timer);
+      second.listen(0); // two TCPServerWraps
+      expect(clock.busy()).toBe("io");
+      second.unref();
+      expect(clock.busy()).toBe(null);
+      // A type the baseline lacks counts, though there are no more handles in all than at creation.
+      first.unref();
+      socket = connect({ port: (second.address() as { port: number }).port, host: "127.0.0.1" });
+      expect(clock.busy()).toBe("io");
+      // Node lists immediates after handles: the scan goes on past the I/O it found.
+      const immediate = setImmediate(() => {});
+      expect(clock.busy()).toBe("immediate");
+      clearImmediate(immediate);
+      socket.unref();
+      expect(clock.busy()).toBe(null);
+    } finally {
+      socket?.destroy();
+      first.close();
+      second.close();
+    }
+  });
+
   test("foreignImmediatesPending counts queued immediates except the clock's own driver turn (user-event yields until React's continue)", async () => {
     const g = setup(true);
     g.setTimeout(() => {}, 1_000);
