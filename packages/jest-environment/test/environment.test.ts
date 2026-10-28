@@ -7,6 +7,9 @@
  *     https://html.spec.whatwg.org/#timers; closing it: https://html.spec.whatwg.org/#close-a-browsing-context
  *     (jsdom: lib/jsdom/browser/Window.js stopAllTimers(), called by window.close(), which
  *     jest-environment-jsdom's teardown calls)
+ *   HTML Standard — animation frames run from the event loop, not from timers:
+ *     https://html.spec.whatwg.org/#run-the-animation-frame-callbacks (jsdom's frame interval is
+ *     its own realm's setInterval, which fake timers on the window global do not replace)
  *   Fetch Standard — https://fetch.spec.whatwg.org/#fetch-method (jsdom implements none of
  *     fetch/Request/Response; jest-environment-jsdom adds none)
  *   jsdom — JSDOM#reconfigure: https://github.com/jsdom/jsdom#reconfiguring-the-jsdom-with-reconfiguresettings
@@ -146,6 +149,22 @@ describe("timers belong to the window — https://html.spec.whatwg.org/#close-a-
       env.fakeTimers!.useRealTimers();
       expect(global.setTimeout).toBe(real.setTimeout);
       expect(global.setInterval).toBe(real.setInterval);
+    });
+  });
+});
+
+describe("animation frames — https://html.spec.whatwg.org/#run-the-animation-frame-callbacks", () => {
+  test("a frame requested through a requestAnimationFrame captured before fake timers (framer-motion's frame loop) runs on the window's own timers: advancing the fakes does not run it, and it still runs after useRealTimers()", async () => {
+    await withEnvironment({}, async (env, global) => {
+      const requestFrame = global.requestAnimationFrame;
+      env.fakeTimersModern!.useFakeTimers();
+      let frames = 0;
+      requestFrame(() => frames++);
+      env.fakeTimersModern!.advanceTimersByTime(20);
+      expect(frames).toBe(0);
+      env.fakeTimersModern!.useRealTimers();
+      await new Promise((resolve) => global.setTimeout(resolve, 50));
+      expect(frames).toBe(1);
     });
   });
 });

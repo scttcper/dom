@@ -756,7 +756,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [rules-for-parsing-integers](https://html.spec.whatwg.org/#rules-for-parsing-integers) | `dom/html/reflect.ts` | `dom/html/forms/controls-details.test.ts` |
 | [rules-for-parsing-non-negative-integers](https://html.spec.whatwg.org/#rules-for-parsing-non-negative-integers) | `dom/html/reflect.ts`, `dom/selectors/compile.ts` | `dom/selectors/html-state.test.ts` |
 | [run-light-dismiss-activities](https://html.spec.whatwg.org/#run-light-dismiss-activities) | `dom/events/dispatch.ts`, `dom/html/top-layer.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
-| [run-the-animation-frame-callbacks](https://html.spec.whatwg.org/#run-the-animation-frame-callbacks) | `dom/window/Window.ts` | `dom/window/timers.test.ts` |
+| [run-the-animation-frame-callbacks](https://html.spec.whatwg.org/#run-the-animation-frame-callbacks) | `dom/window/Window.ts` | `dom/window/timers.test.ts`, `jest-environment/environment.test.ts` |
 | [script-data-double-escape-start-state](https://html.spec.whatwg.org/#script-data-double-escape-start-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [script-data-double-escaped-less-than-sign-state](https://html.spec.whatwg.org/#script-data-double-escaped-less-than-sign-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [script-data-escaped-less-than-sign-state](https://html.spec.whatwg.org/#script-data-escaped-less-than-sign-state) | `dom/parser/tokenizer.ts` | **untested** |

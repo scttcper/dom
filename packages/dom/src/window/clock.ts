@@ -30,7 +30,7 @@
 // Symbol.toPrimitive): https://nodejs.org/api/timers.html#class-timeout.
 
 import { AsyncResource } from "node:async_hooks";
-import { setTimeout as nodeSetTimeout } from "node:timers";
+import { clearTimeout as nodeClearTimeout, setTimeout as nodeSetTimeout } from "node:timers";
 
 type Callback = (...args: unknown[]) => unknown;
 
@@ -651,6 +651,16 @@ export function queueUserAgentTask(task: () => void): void {
   if (activeClock !== null) activeClock.schedule(task, 0, [], false);
   else nodeSetTimeout(task, 0);
 }
+
+/** setTimeout/clearTimeout for delayed tasks the user agent queues itself, on queueUserAgentTask's timers. */
+export const userAgentTimers = {
+  setTimeout(task: () => void, delay: number): unknown {
+    return activeClock !== null ? activeClock.schedule(task, delay, [], false) : nodeSetTimeout(task, delay);
+  },
+  clearTimeout(handle: unknown): void {
+    if (activeClock === null || !activeClock.clear(handle)) nodeClearTimeout(handle as never);
+  },
+};
 
 /** Whether a clock that skips idle time is active (the test file's timers run on it). */
 export function clockSkipping(): boolean {

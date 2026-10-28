@@ -52,7 +52,7 @@ describe("Jest integration — https://html.spec.whatwg.org/#the-window-object",
     ).toBe("");
     const failures = result.testResults.flatMap((r) => r.assertionResults.filter((a) => a.status !== "passed"));
     expect(failures).toEqual([]);
-    expect(result.numPassedTests).toBe(17);
+    expect(result.numPassedTests).toBe(18);
   });
 
   test(

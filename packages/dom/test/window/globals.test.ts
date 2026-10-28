@@ -227,7 +227,7 @@ describe("methods — https://html.spec.whatwg.org/#the-window-object", () => {
     expect(mql.matches).toBe(true);
   });
 
-  test("requestAnimationFrame is a plain data property; faking setTimeout drives it", () => {
+  test("requestAnimationFrame is a plain data property; on the global of its own realm, faking setTimeout drives it (as jsdom's frames in Vitest)", () => {
     const g = globalThis as unknown as G;
     const window = createWindow();
     const uninstall = installGlobals(window, g);

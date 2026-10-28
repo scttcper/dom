@@ -43,7 +43,7 @@ import "./document.ts";
 import { setNestedWindowFactory } from "./browsing-context.ts";
 import { windowOrigin } from "./origin.ts";
 import { type TimerList, clearTimers, startTimer } from "./timers.ts";
-import { clockSkipping } from "./clock.ts";
+import { clockSkipping, userAgentTimers } from "./clock.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { type LayoutMode, enableLayout } from "../css/layout-mode.ts";
 import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
@@ -181,8 +181,14 @@ export interface NestedBrowsingContext {
 interface PendingTask {
   handle: unknown;
   clear: (handle: never) => void;
-  /** The host setTimeout it was scheduled with (a fake clock's, possibly since uninstalled). */
+  /** The setTimeout it was scheduled with (a fake clock's, possibly since uninstalled). */
   scheduledWith: unknown;
+}
+
+/** A setTimeout/clearTimeout pair window tasks are scheduled on (a host global, userAgentTimers). */
+interface TaskTimers {
+  setTimeout(callback: () => void, delay: number): unknown;
+  clearTimeout(handle: never): void;
 }
 
 interface IdleDeadline {
@@ -664,15 +670,16 @@ export class Window extends EventTarget {
     const self = receiver(this, "requestAnimationFrame");
     const id = ++self[$frameId];
     (self[$frameCallbacks] ??= new Map()).set(id, callback);
-    // One host timer per frame: every callback requested before the frame runs in it with
-    // the same timestamp, like https://html.spec.whatwg.org/#run-the-animation-frame-callbacks.
-    // Self-healing: a frame timer scheduled on a fake clock that has since been uninstalled
-    // (jest.useRealTimers()) never fires; re-arm on the current host timer instead of letting
-    // it wedge every later frame of this window.
+    // One timer per frame: every callback requested before the frame runs in it with the same
+    // timestamp, like https://html.spec.whatwg.org/#run-the-animation-frame-callbacks.
+    // Self-healing: in a shared realm (frameTimers) a frame timer scheduled on a fake clock that
+    // has since been uninstalled (vi.useRealTimers()) never fires; re-arm on the current timers
+    // instead of letting it wedge every later frame of this window.
+    const timers = frameTimers(self);
     const pending = self[$frameTask];
-    if (pending === null || pending.scheduledWith !== self._hostSetTimeout()) {
+    if (pending === null || pending.scheduledWith !== timers.setTimeout) {
       if (pending !== null) self._cancelTask(pending);
-      self[$frameTask] = self._task(runAnimationFrame, nextFrameDelay(self));
+      self[$frameTask] = self._schedule(timers, runAnimationFrame, nextFrameDelay(self));
     }
     return id;
   }
@@ -743,15 +750,15 @@ export class Window extends EventTarget {
    * timers apply). Tracked so close() cancels it. Returns null once the window is closed.
    */
   _task(callback: () => void, delay: number): PendingTask | null {
+    return this._schedule(this._timerHost() as unknown as TaskTimers, callback, delay);
+  }
+
+  /** @internal _task on `timers`. */
+  _schedule(timers: TaskTimers, callback: () => void, delay: number): PendingTask | null {
     if (this[$closed]) return null;
     const tasks = (this[$tasks] ??= new Set());
-    const host = typeof this[$host].setTimeout === "function" ? this[$host] : globalThis;
-    const task: PendingTask = {
-      handle: undefined,
-      clear: host.clearTimeout as PendingTask["clear"],
-      scheduledWith: host.setTimeout,
-    };
-    task.handle = host.setTimeout(() => {
+    const task: PendingTask = { handle: undefined, clear: timers.clearTimeout, scheduledWith: timers.setTimeout };
+    task.handle = timers.setTimeout(() => {
       tasks.delete(task);
       callback.call(this);
     }, delay);
@@ -773,11 +780,6 @@ export class Window extends EventTarget {
   /** @internal Forget a _closeable entry without running it. */
   _releaseCloseable(task: PendingTask): void {
     this[$tasks]?.delete(task);
-  }
-
-  _hostSetTimeout(): unknown {
-    const set = this[$host].setTimeout;
-    return typeof set === "function" ? set : globalThis.setTimeout;
   }
 
   _cancelTask(task: PendingTask): void {
@@ -957,6 +959,20 @@ function nextFrameDelay(window: Window): number {
   if (!clockSkipping() || window[$runningFrame] !== null) return 16;
   const last = window[$frameTime];
   return last !== -1 && (window[$host].performance ?? performance).now() - last < 1 ? 16 : 1;
+}
+
+/**
+ * The timers frames run on: this realm's global ones, looked up at call time, as jsdom's frame
+ * interval calls its realm's `setInterval`. In Vitest's default pools that global is the test's,
+ * so fake timers control frames there as they control jsdom's. Under Jest and in Vitest's VM
+ * contexts the test's global is another realm's, and its fake timers reach neither jsdom's frames
+ * nor these: a frame requested through a requestAnimationFrame captured before
+ * jest.useFakeTimers() (framer-motion's frame loop) still runs after jest.useRealTimers(). On the
+ * fake clock it was lost, and the frame loop, waiting for it, never requested another. The
+ * environment's skipping clock sits on that other global, so there frames go to it directly.
+ */
+function frameTimers(window: Window): TaskTimers {
+  return clockSkipping() && window[$host] !== globalThis ? userAgentTimers : (globalThis as unknown as TaskTimers);
 }
 
 function runAnimationFrame(this: Window): void {
