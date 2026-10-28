@@ -14,6 +14,8 @@ import {
   registeredObserverList,
   removeRegistrations,
   setActiveObservers,
+  setSubtreeObservers,
+  subtreeObservers,
 } from "./queue.ts";
 import { $callback, $hasTransients, $id, $impl, $nodes, $records } from "../keys.ts";
 
@@ -95,12 +97,15 @@ export class MutationObserver {
         const registered = list[i];
         if (registered.observer !== this || registered.source !== null) continue;
         for (const n of this[$nodes]) removeRegistrations(n, (r) => r.source === registered);
+        if (registered.options.subtree !== normalized.subtree)
+          setSubtreeObservers(subtreeObservers + (normalized.subtree ? 1 : -1));
         registered.options = normalized;
         return;
       }
     }
     // Step 8.
     if (this[$nodes].length === 0) setActiveObservers(activeObservers + 1);
+    if (normalized.subtree) setSubtreeObservers(subtreeObservers + 1);
     addRegistration(node, new RegisteredObserver(this, normalized, null));
     this[$nodes].push(node);
   }
@@ -109,7 +114,15 @@ export class MutationObserver {
   disconnect(): void {
     const nodes = this[$nodes];
     if (nodes.length !== 0) {
-      for (let i = 0; i < nodes.length; i++) removeRegistrations(nodes[i], (r) => r.observer === this);
+      // A node listed twice (its own registration and a transient) has nothing left the second time.
+      let subtree = 0;
+      for (let i = 0; i < nodes.length; i++) {
+        const list = registeredObserverList(nodes[i]);
+        if (list !== null)
+          for (const r of list) if (r.observer === this && r.source === null && r.options.subtree) subtree++;
+        removeRegistrations(nodes[i], (r) => r.observer === this);
+      }
+      if (subtree !== 0) setSubtreeObservers(subtreeObservers - subtree);
       this[$nodes] = [];
       setActiveObservers(activeObservers - 1);
     }

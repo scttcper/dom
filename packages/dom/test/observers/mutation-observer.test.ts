@@ -10,7 +10,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, MutationObserver, MutationRecord, type Document, type Element } from "@ctrl/dom";
-import { activeObservers } from "../../src/observers/queue.ts";
+import { activeObservers, subtreeObservers } from "../../src/observers/queue.ts";
 
 let document: Document;
 
@@ -158,5 +158,53 @@ describe("zero cost when unused (activeObservers guard in observers/queue.ts)", 
     await Promise.resolve();
     expect(called).toBe(false);
     expect(mo.takeRecords()).toEqual([]);
+  });
+
+  test("subtreeObservers counts subtree registrations across re-observe and disconnect", () => {
+    const base = subtreeObservers;
+    const mo = new MutationObserver(() => {});
+    mo.observe(document.body!, { childList: true });
+    expect(subtreeObservers).toBe(base);
+    mo.observe(document.body!, { childList: true, subtree: true });
+    mo.observe(document.head!, { attributes: true, subtree: true });
+    expect(subtreeObservers).toBe(base + 2);
+    mo.observe(document.head!, { attributes: true });
+    expect(subtreeObservers).toBe(base + 1);
+    mo.disconnect();
+    expect(subtreeObservers).toBe(base);
+  });
+
+  test("queueing a mutation record: without subtree registrations only the target's own observers see it", () => {
+    const list = document.body!.appendChild(document.createElement("ul"));
+    const item = list.appendChild(document.createElement("li"));
+    const deep = item.appendChild(document.createElement("span"));
+    const mo = new MutationObserver(() => {});
+    mo.observe(list, { childList: true, attributes: true });
+    deep.remove();
+    item.setAttribute("x", "1");
+    list.setAttribute("y", "1");
+    item.remove();
+    expect(mo.takeRecords().map((r) => `${r.type}:${(r.target as Element).localName}`)).toEqual([
+      "attributes:ul",
+      "childList:ul",
+    ]);
+    mo.disconnect();
+  });
+
+  test("transient observers still follow a subtree observer while childList-only observers are connected", () => {
+    const root = document.body!.appendChild(document.createElement("section"));
+    const child = root.appendChild(document.createElement("div"));
+    const listOnly = new MutationObserver(() => {});
+    listOnly.observe(document.body!, { childList: true });
+    const deep = new MutationObserver(() => {});
+    deep.observe(root, { attributes: true, childList: true, subtree: true });
+    child.remove();
+    child.setAttribute("x", "1");
+    expect(deep.takeRecords().map((r) => `${r.type}:${(r.target as Element).localName}`)).toEqual([
+      "childList:section",
+      "attributes:div",
+    ]);
+    deep.disconnect();
+    listOnly.disconnect();
   });
 });

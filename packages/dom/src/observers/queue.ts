@@ -22,6 +22,20 @@ export function setActiveObservers(n: number): void {
   activeObservers = n;
 }
 
+/**
+ * Number of non-transient registrations with `subtree` (a transient one exists only while its
+ * source does: disconnect() and re-observing remove it). With none, a mutation can interest only
+ * observers registered on its target and a removal adds no transient observers, so neither walks
+ * the target's ancestors. Base UI keeps childList- and attribute-only observers connected while
+ * its lists are mounted, and every removal anywhere walked to the root: 145 ms in the
+ * `interactions` preset's profiles, plus 53 ms in queueMutationRecord.
+ */
+export let subtreeObservers = 0;
+
+export function setSubtreeObservers(n: number): void {
+  subtreeObservers = n;
+}
+
 /** https://dom.spec.whatwg.org/#registered-observer (and transient registered observer when `source` is set). */
 export class RegisteredObserver {
   observer: MutationObserver;
@@ -116,7 +130,9 @@ function queueMutationRecord(
   // small arrays beats a Map.
   let observers: MutationObserver[] | null = null;
   let oldValues: (string | null)[] | null = null;
-  for (let node: NodeImpl | null = target; node !== null; node = node.parent) {
+  // Ancestors only matter through subtree registrations.
+  const walk = subtreeObservers !== 0;
+  for (let node: NodeImpl | null = target; node !== null; node = walk ? node.parent : null) {
     if ((node.flags & F_MO_REGISTERED) === 0) continue;
     const list = registrations.get(node);
     if (list === undefined) continue;
@@ -205,6 +221,8 @@ export function queueCharacterDataMutationRecord(target: NodeImpl, oldValue: str
  * algorithm, https://dom.spec.whatwg.org/#concept-node-remove, given node and parent).
  */
 export function addTransientObservers(parent: NodeImpl, node: NodeImpl): void {
+  // Step 1.1 skips every registration without `subtree`.
+  if (subtreeObservers === 0) return;
   // Step 1: for each inclusive ancestor of parent, for each registered observer of it.
   for (let ancestor: NodeImpl | null = parent; ancestor !== null; ancestor = ancestor.parent) {
     if ((ancestor.flags & F_MO_REGISTERED) === 0) continue;
