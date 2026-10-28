@@ -78,6 +78,33 @@ for (const [sh, longhands] of SHORTHANDS) {
 }
 for (const list of SHORTHANDS_OF.values()) list.sort((a, b) => SHORTHANDS.get(b)!.length - SHORTHANDS.get(a)!.length);
 
+/**
+ * Longhand → bit of its shorthand family. Shorthands that share a longhand form a family (border,
+ * border-top, border-width, ...), and declarations of different families never serialize into
+ * one shorthand. Each family here has a shorthand containing all of its longhands, the first
+ * (largest) entry of SHORTHANDS_OF, which names the family.
+ */
+const FAMILY_BIT = new Map<string, number>();
+{
+  const bits = new Map<string, number>();
+  for (const [longhand, list] of SHORTHANDS_OF) {
+    let bit = bits.get(list[0]);
+    if (bit === undefined) bits.set(list[0], (bit = 1 << bits.size));
+    FAMILY_BIT.set(longhand, bit);
+  }
+  // A shorthand whose longhands named different families would join two families.
+  for (const longhands of SHORTHANDS.values()) {
+    for (const l of longhands) {
+      if (FAMILY_BIT.get(l) !== FAMILY_BIT.get(longhands[0])) throw new Error(`shorthand families overlap at ${l}`);
+    }
+  }
+}
+
+/** The bit of the expanded-shorthand family `longhand` belongs to, 0 if none. */
+export function shorthandFamily(longhand: string): number {
+  return FAMILY_BIT.get(longhand) ?? 0;
+}
+
 export function isExpandedShorthand(name: string): boolean {
   return SHORTHANDS.has(name);
 }

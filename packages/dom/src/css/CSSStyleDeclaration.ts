@@ -91,14 +91,15 @@ export class CSSStyleDeclaration {
 
   _syncIndices(): void {
     const block = this[$block];
-    if (!block.namesChanged) return;
-    block.namesChanged = false;
     const names = block.names;
-    const self = this as unknown as Record<number, string>;
     const n = names.length;
-    for (let i = 0; i < n; i++) if (self[i] !== names[i]) self[i] = names[i];
+    const from = block.namesSynced;
+    if (from === n && n === this[$indexed]) return;
+    const self = this as unknown as Record<number, string>;
+    for (let i = from; i < n; i++) self[i] = names[i];
     for (let i = n; i < this[$indexed]; i++) delete self[i];
     this[$indexed] = n;
+    block.namesSynced = n;
   }
 
   _checkWritable(): void {

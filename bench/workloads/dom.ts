@@ -453,6 +453,55 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    id: "dom/inline-style-shorthand-mount",
+    title: "Inline style mount with shorthands: a visually hidden input style on 500 new elements",
+    kind: "dom",
+    iterations: 30,
+    warmup: 5,
+    setup({ document }) {
+      const container = document.createElement("main");
+      document.body.append(container);
+      return {
+        run() {
+          // Base UI's visuallyHiddenInput (packages/utils/src/visuallyHidden.ts) as React writes
+          // it: one property at a time, with border/padding/margin shorthands.
+          const root = document.createElement("div");
+          for (let i = 0; i < 500; i++) {
+            const el = document.createElement("input");
+            const s = el.style;
+            s.clipPath = "inset(50%)";
+            s.overflow = "hidden";
+            s.whiteSpace = "nowrap";
+            s.border = "0";
+            s.padding = "0";
+            s.width = "1px";
+            s.height = "1px";
+            s.margin = "-1px";
+            s.position = "absolute";
+            root.append(el);
+          }
+          container.append(root);
+          return root;
+        },
+        verify(root: any) {
+          eq(root.children.length, 500, "elements");
+          for (let i = 0; i < 500; i++) {
+            const el = root.children[i];
+            eq(el.style.marginTop, "-1px", "margin-top");
+            eq(el.style.width, "1px", "width");
+            check(el.getAttribute("style").includes("white-space: nowrap"), "style attribute");
+          }
+        },
+        afterEach() {
+          container.textContent = "";
+        },
+        close() {
+          container.remove();
+        },
+      };
+    },
+  },
+  {
     id: "dom/event-propagation-30",
     title: "Event propagation, capture + bubble, 30 levels (10 dispatches)",
     kind: "dom",

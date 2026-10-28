@@ -18,6 +18,7 @@ import {
   longhandsOf,
   MULTI_LAYER,
   serializeShorthand,
+  shorthandFamily,
   shorthandsContaining,
 } from "./shorthands.ts";
 
@@ -30,10 +31,11 @@ export class DeclBlock {
   /** Set by put()/removeOne() when they change the block (setProperty's "updated" flag). */
   dirty: boolean;
   /**
-   * Set whenever `names` changes (not when only a value does), so the CSSStyleDeclaration's
-   * indexed properties are re-synced only then: most style writes update a value in place.
+   * How many leading names are unchanged since the CSSStyleDeclaration last synced its indexed
+   * properties (it sets this after syncing): appends keep the prefix, so only new indices are
+   * written, and most style writes update a value in place and sync nothing.
    */
-  namesChanged: boolean;
+  namesSynced: number;
   /**
    * The last serialization and how many leading declarations it covers, or -1 once a declaration
    * was changed in place, moved or removed since. Declarations appended after it are serialized
@@ -41,34 +43,41 @@ export class DeclBlock {
    */
   serialized: string;
   serializedCount: number;
+  /**
+   * Shorthand families (shorthandFamily bits) of the declarations `serialized` covers, or -1 when
+   * not computed yet (only an append with shorthand longhands needs them).
+   */
+  serializedFamilies: number;
 
   constructor() {
     this.names = [];
     this.values = [];
     this.important = [];
     this.dirty = false;
-    this.namesChanged = false;
+    this.namesSynced = 0;
     this.serialized = "";
     this.serializedCount = 0;
+    this.serializedFamilies = 0;
   }
 
   get length(): number {
     return this.names.length;
   }
 
-  indexOf(name: string): number {
+  indexOf(name: string, from = 0): number {
     const names = this.names;
-    for (let i = 0; i < names.length; i++) if (names[i] === name) return i;
+    for (let i = from; i < names.length; i++) if (names[i] === name) return i;
     return -1;
   }
 
   clear(): void {
-    if (this.names.length !== 0) this.namesChanged = true;
     this.names.length = 0;
     this.values.length = 0;
     this.important.length = 0;
+    this.namesSynced = 0;
     this.serialized = "";
     this.serializedCount = 0;
+    this.serializedFamilies = 0;
   }
 
   /** Low-level set: update in place, or append. */
@@ -79,7 +88,6 @@ export class DeclBlock {
       this.values.push(value);
       this.important.push(important);
       this.dirty = true;
-      this.namesChanged = true;
     } else if (this.values[i] !== value || this.important[i] !== important) {
       this.values[i] = value;
       this.important[i] = important;
@@ -96,12 +104,12 @@ export class DeclBlock {
       this.names.splice(i, 1);
       this.values.splice(i, 1);
       this.important.splice(i, 1);
+      if (i < this.namesSynced) this.namesSynced = i;
       this.serializedCount = -1;
     }
     this.names.push(name);
     this.values.push(value);
     this.important.push(important);
-    this.namesChanged = true;
   }
 
   /** Removes `name`; returns true if it was present. */
@@ -112,7 +120,7 @@ export class DeclBlock {
     this.values.splice(i, 1);
     this.important.splice(i, 1);
     this.dirty = true;
-    this.namesChanged = true;
+    if (i < this.namesSynced) this.namesSynced = i;
     this.serializedCount = -1;
     return true;
   }
@@ -131,24 +139,13 @@ export class DeclBlock {
       return true;
     }
     if (isExpandedShorthand(property)) {
+      const vals = longhandValues(property, value);
+      if (vals === null) return false;
       const longhands = longhandsOf(property)!;
-      const trimmed = value.trim();
-      const comps = splitComponents(trimmed);
-      if (comps === null || trimmed === "") return false;
-      if (comps.length === 1 && comps[0].type === TK_IDENT && isCSSWideKeyword(comps[0].lower)) {
-        for (const l of longhands) this.putOrParsed(l, comps[0].lower, important, parsing);
-        this.removeOne(property);
-        return true;
-      }
-      let vals: string[] | null = null;
-      if (!containsVar(trimmed)) {
-        vals = expandShorthand(property, trimmed);
-        if (vals === null) return false;
-      }
-      if (vals === null || vals === MULTI_LAYER) {
+      if (vals === KEEP_SHORTHAND) {
         // Pending-substitution (var()) or unexpandable value: store the shorthand itself.
         for (const l of longhands) this.removeOne(l);
-        this.putOrParsed(property, trimmed, important, parsing);
+        this.putOrParsed(property, value.trim(), important, parsing);
         return true;
       }
       this.removeOne(property);
@@ -229,55 +226,61 @@ export class DeclBlock {
    * React writes inline styles one property at a time on mount, and every write serializes the
    * block into the style attribute (CSSStyleDeclaration._changed), so an element with N inline
    * properties serialized N(N+1)/2 declarations. When the only changes since the last call are
-   * appended declarations, the result is the previous text followed by them: the shorthand loop
-   * regroups earlier longhands only once every longhand of a shorthand is present, so an
-   * appended longhand that completes an expanded shorthand falls back to the full algorithm.
+   * appended declarations, the result is the previous text followed by the appended declarations
+   * serialized on their own. The shorthand loop can only group declarations of one shorthand
+   * family, so that holds unless an appended longhand shares a family with an earlier
+   * declaration; then the whole block is serialized again.
    * bench dom/inline-style-mount (8 properties on 500 elements): 1.18 → 0.80 ms, allocation
-   * 3.8 → 2.0 MB per iteration (Node 26.12, 11 paired samples).
+   * 3.8 → 2.0 MB per iteration; dom/inline-style-shorthand-mount (Base UI's visually hidden
+   * input, with border/padding/margin): 3.0 → 1.5 ms, 7.2 → 2.9 MB (Node 26.12, 11 paired
+   * samples each).
    */
   serialize(): string {
+    const n = this.names.length;
+    const from = this.serializedCount;
+    if (from === n) return this.serialized;
+    if (from < 0 || !this.serializeAppended(from)) {
+      this.serialized = this.serializeAll(0);
+      this.serializedCount = n;
+      this.serializedFamilies = -1;
+    }
+    return this.serialized;
+  }
+
+  /**
+   * serialize() after appends only: extends `serialized` with the declarations from `from` on,
+   * unless one of them shares a shorthand family with an earlier declaration (returns false).
+   */
+  serializeAppended(from: number): boolean {
     const names = this.names;
     const n = names.length;
-    let i = this.serializedCount;
-    if (i === n) return this.serialized;
-    if (i >= 0) {
-      let out = this.serialized;
-      for (; i < n; i++) {
-        const shorthands = shorthandsContaining(names[i]);
-        if (shorthands !== undefined && this.completesShorthand(shorthands)) break;
-        out += (out === "" ? "" : " ") + serializeDeclaration(names[i], this.values[i], this.important[i]);
-      }
-      if (i === n) {
-        this.serialized = out;
-        this.serializedCount = n;
-        return out;
-      }
+    let families = 0;
+    for (let i = from; i < n; i++) families |= shorthandFamily(names[i]);
+    let before = this.serializedFamilies;
+    if (families !== 0 && before === -1) {
+      before = 0;
+      for (let i = 0; i < from; i++) before |= shorthandFamily(names[i]);
     }
-    const out = this.serializeAll();
-    this.serialized = out;
+    if ((families & before) !== 0) return false;
+    const appended = this.serializeAll(from);
+    this.serialized = this.serialized === "" ? appended : this.serialized + " " + appended;
     this.serializedCount = n;
-    return out;
+    this.serializedFamilies = before === -1 ? -1 : before | families;
+    return true;
   }
 
-  /** Whether every longhand of one of `shorthands` is declared (whatever their priorities). */
-  completesShorthand(shorthands: string[]): boolean {
-    for (let s = 0; s < shorthands.length; s++) {
-      const longhands = longhandsOf(shorthands[s])!;
-      let all = true;
-      for (let k = 0; k < longhands.length && all; k++) all = this.indexOf(longhands[k]) !== -1;
-      if (all) return true;
-    }
-    return false;
-  }
-
-  /** https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block over the whole block (no cache). */
-  serializeAll(): string {
+  /**
+   * https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block over the declarations from
+   * `from` on, as if they were the whole block (no cache). serialize() passes a `from` past 0 only
+   * when no shorthand family has declarations on both sides of it.
+   */
+  serializeAll(from = 0): string {
     const names = this.names;
     const n = names.length;
-    if (n === 0) return "";
+    if (n === from) return "";
     let out = "";
     let done: Set<string> | null = null;
-    for (let i = 0; i < n; i++) {
+    for (let i = from; i < n; i++) {
       const name = names[i];
       if (done !== null && done.has(name)) continue;
       const shorthands = shorthandsContaining(name);
@@ -288,14 +291,14 @@ export class DeclBlock {
           const longhands = longhandsOf(sh)!;
           // Usually some longhand is missing: check before collecting values (fewer declarations
           // than longhands rules it out without a lookup).
-          let ok = longhands.length <= n;
+          let ok = longhands.length <= n - from;
           for (let k = 0; k < longhands.length && ok; k++) {
-            const j = this.indexOf(longhands[k]);
+            const j = this.indexOf(longhands[k], from);
             ok = j !== -1 && this.important[j] === this.important[i] && (done === null || !done.has(longhands[k]));
           }
           if (!ok) continue;
           const vals: string[] = new Array(longhands.length);
-          for (let k = 0; k < longhands.length; k++) vals[k] = this.values[this.indexOf(longhands[k])];
+          for (let k = 0; k < longhands.length; k++) vals[k] = this.values[this.indexOf(longhands[k], from)];
           const v = serializeShorthand(sh, vals, false);
           if (v === "") continue;
           if (done === null) done = new Set();
@@ -314,6 +317,38 @@ export class DeclBlock {
 /** https://drafts.csswg.org/cssom/#serialize-a-css-declaration */
 function serializeDeclaration(property: string, value: string, important: boolean): string {
   return property + ": " + value + (important ? " !important;" : ";");
+}
+
+/** longhandValues' answer for var() and multi-layer values: keep the shorthand as one declaration. */
+const KEEP_SHORTHAND = MULTI_LAYER;
+
+const shorthandValues = new Map<string, Map<string, string[] | null>>();
+
+/**
+ * The longhand values (longhandsOf order) an expanded shorthand declaration sets, KEEP_SHORTHAND,
+ * or null if the value is invalid. The result is shared: callers must not modify it. Memoized
+ * per property and value like normalizeLonghand: React writes the same few values on every mount
+ * (Base UI's visually hidden inputs set `border: 0`, `padding: 0` and `margin: -1px`), and each
+ * used to be tokenized twice.
+ */
+function longhandValues(property: string, value: string): string[] | null {
+  let byValue = shorthandValues.get(property);
+  if (byValue === undefined) shorthandValues.set(property, (byValue = new Map()));
+  else {
+    const hit = byValue.get(value);
+    if (hit !== undefined) return hit;
+  }
+  let result: string[] | null = null;
+  const trimmed = value.trim();
+  const comps = trimmed === "" ? null : splitComponents(trimmed);
+  if (comps === null) result = null;
+  else if (comps.length === 1 && comps[0].type === TK_IDENT && isCSSWideKeyword(comps[0].lower))
+    result = new Array(longhandsOf(property)!.length).fill(comps[0].lower);
+  else if (containsVar(trimmed)) result = KEEP_SHORTHAND;
+  else result = expandShorthand(property, trimmed);
+  if (byValue.size === 256) byValue.clear();
+  byValue.set(value, result);
+  return result;
 }
 
 /** Parses a style attribute / declaration list into a fresh block. */

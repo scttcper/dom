@@ -19,7 +19,9 @@ Latest full run: 2026-10-23 (quiet machine), report `results/2026-10-23-all.md`.
 `PopoverRoot.test.tsx` — "… focus management > with focusable elements between the trigger and
 the popup > closes and moves focus before the trigger when tabbing backward from the focused
 trigger" (detached-trigger variants) fails intermittently on @ctrl/dom (≈1 in 3 single-file runs,
-stock user-event too) and never on jsdom.
+stock user-event too) and never on jsdom. As renders got faster it became the usual outcome: on
+2026-10-28, 7 of 8 single-file ctrl-dom-full runs had at least one of the variants failing, both
+before the inline style serialization change (10 failures in all) and after it (14).
 
 Cause, traced with focus-call stacks: the popup's initial focus is scheduled through Base UI's
 test `requestAnimationFrame` shim (`test/setupVitest.ts:47`), i.e. a 0 ms Node `setTimeout`, which

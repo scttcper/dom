@@ -78,7 +78,9 @@ deep clone of 1,000 rows, `innerHTML` parse of 250 rows, warm selector queries, 
 mutation + selector queries, 30-level capture/bubble propagation (10 dispatches),
 MutationObserver streaming of 50 appends. Inline styles: `dom/inline-style-churn` rewrites 11
 properties on 50 connected elements; `dom/inline-style-mount` writes 8 properties one at a time
-on 500 new elements, as React's mount does.
+on 500 new elements, as React's mount does; `dom/inline-style-shorthand-mount` does the same with
+Base UI's visually hidden input style, whose border, padding and margin shorthands expand into
+21 longhands.
 
 Leak workload: `dom/window-churn` creates a window from a 250-row form document, queries,
 focuses, adds a listener and closes it, 10 times per iteration (what a reused test worker does
@@ -313,8 +315,10 @@ root container), is 0.2%. The largest clusters are inline-style writes at ~0.5 s
 the style attribute: `_changed` in css/CSSStyleDeclaration.ts), event dispatch at ~0.45 s, the
 virtual clock at ~0.15 s, and per-file window setup with CSS accessor installation at ~0.3 s.
 Since 2026-10-28 a style write that only adds declarations, as React's mount does, appends to the
-previous serialization (`dom/inline-style-mount` 1.18 → 0.80 ms); a value changed in place still
-re-serializes the block.
+previous serialization (`dom/inline-style-mount` 1.18 → 0.80 ms), shorthands included, and
+expanded shorthand values are cached (`dom/inline-style-shorthand-mount` 3.0 → 1.5 ms); a value
+changed in place still re-serializes the block. In the `interactions` preset's profiles (153
+files), React's style writes took 685 ms after the first of those changes and 406 ms after both.
 
 Two other views of the same profiles. Grouped by where outside code called into us (the innermost
 frame in packages/ whose caller is not), the costliest entry points are React's inline style

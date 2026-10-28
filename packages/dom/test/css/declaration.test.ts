@@ -221,6 +221,30 @@ describe("§6.7.2 serialize a CSS declaration block, incrementally — https://d
     expect(el.getAttribute("style")).toBe("color: red; margin: 1px 2px 3px 4px;");
   });
 
+  test("shorthand loop: an appended shorthand of a family absent from the earlier declarations groups on its own", () => {
+    // Base UI's visually hidden input style, as React writes it.
+    const el = div();
+    el.style.clipPath = "inset(50%)";
+    el.style.overflow = "hidden";
+    el.style.border = "0";
+    expect(el.getAttribute("style")).toBe("clip-path: inset(50%); overflow: hidden; border: 0px;");
+    el.style.padding = "0";
+    el.style.width = "1px";
+    el.style.margin = "-1px";
+    expect(el.getAttribute("style")).toBe(
+      "clip-path: inset(50%); overflow: hidden; border: 0px; padding: 0px; width: 1px; margin: -1px;",
+    );
+  });
+
+  test("shorthand loop: a longhand appended to a family with earlier declarations regroups across them", () => {
+    const el = div();
+    el.style.borderTopWidth = "1px";
+    el.style.color = "red";
+    el.style.borderTopStyle = "solid";
+    el.style.borderTopColor = "blue";
+    expect(el.getAttribute("style")).toBe("border-top: 1px solid blue; color: red;");
+  });
+
   test("a value changed in place or a removal serializes the whole block again", () => {
     const el = div();
     el.style.left = "1px";
@@ -264,8 +288,39 @@ describe("§6.7.2 serialize a CSS declaration block, incrementally — https://d
         if (kind < 9 && attr !== before) expect(attr).toBe(expected);
         expect(el.style.cssText).toBe(expected);
         if (kind < 6 && /(^| )(margin|padding|flex|border-top|font):/.test(expected)) regrouped++;
+        // Indexed properties follow appends, removals and reparses.
+        const style = el.style as unknown as Record<number, string | undefined>;
+        for (let i = 0; i < el.style.length; i++) expect(style[i]).toBe(el.style.item(i));
+        expect(style[el.style.length]).toBeUndefined();
       }
     }
     expect(regrouped).toBeGreaterThan(100);
+  });
+});
+
+describe("§6.6 setProperty with expanded shorthands — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty", () => {
+  test("the same shorthand value on two elements expands independently (shared expansions are not modified)", () => {
+    const a = div();
+    const b = div();
+    a.style.border = "1px solid red";
+    b.style.border = "1px solid red";
+    a.style.borderTopColor = "blue";
+    expect(a.style.borderTopColor).toBe("blue");
+    expect(b.style.borderTopColor).toBe("red");
+    expect(b.getAttribute("style")).toBe("border: 1px solid red;");
+  });
+
+  test("repeated invalid, var() and CSS-wide keyword shorthand values give the same result every time", () => {
+    for (let round = 0; round < 2; round++) {
+      const s = div().style;
+      s.margin = "bogus";
+      expect(s.cssText).toBe("");
+      s.padding = "var(--x) 1px";
+      expect(s.padding).toBe("var(--x) 1px");
+      expect(s.paddingTop).toBe("");
+      s.border = "inherit";
+      expect(s.borderTopColor).toBe("inherit");
+      expect(s.border).toBe("inherit");
+    }
   });
 });
