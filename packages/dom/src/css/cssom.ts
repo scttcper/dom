@@ -65,6 +65,7 @@ import {
   $prefix,
   $prelude,
   $queries,
+  $rebuildVersion,
   $rules,
   $selector,
   $sheet,
@@ -96,11 +97,15 @@ export class CSSRuleList {
     this._sync();
   }
 
-  /** @internal Re-sync own indexed properties after the backing array changed. */
-  _sync(): void {
+  /**
+   * @internal Re-sync own indexed properties after the backing array changed from index `from`
+   * on: emotion appends every rule through `insertRule(rule, sheet.cssRules.length)`, and
+   * re-syncing from 0 made a sheet of n rules cost O(n²).
+   */
+  _sync(from = 0): void {
     const self = this as unknown as Record<number, CSSRule>;
     const rules = this[$rules];
-    for (let i = 0; i < rules.length; i++) self[i] = rules[i];
+    for (let i = from; i < rules.length; i++) self[i] = rules[i];
     for (let i = rules.length; i < this[$indexed]; i++) delete self[i];
     this[$indexed] = rules.length;
   }
@@ -334,6 +339,12 @@ export class CSSStyleSheet extends StyleSheet {
   [$defaultNamespace]: string | null | undefined;
   /** Bumped on every change (rule index cache key). */
   [$version]: number;
+  /**
+   * `$version` at the last change other than appending a rule a rule index can add to itself
+   * (see appendableRule): cascade.ts extends its index over rules appended since, and rebuilds it
+   * after any other change.
+   */
+  [$rebuildVersion]: number;
 
   constructor(options?: CSSStyleSheetInit) {
     const media = options?.media;
@@ -347,6 +358,7 @@ export class CSSStyleSheet extends StyleSheet {
     this[$namespaces] = null;
     this[$defaultNamespace] = undefined;
     this[$version] = 0;
+    this[$rebuildVersion] = 0;
     if (options?.disabled) this[$disabled] = true;
     this[$doc] = (currentWindowOrNull()?.document as Document | undefined) ?? null;
     if (options?.baseURL !== undefined) this[$href] = null;
@@ -366,6 +378,15 @@ export class CSSStyleSheet extends StyleSheet {
   }
 
   override _changed(): void {
+    this[$version]++;
+    this[$rebuildVersion] = this[$version];
+    const doc = this[$doc];
+    if (doc !== null) doc[$styleVersion]++;
+  }
+
+  /** _changed() for a rule inserted at `index`: an appended appendableRule leaves $rebuildVersion. */
+  _inserted(rule: CSSRule, index: number): void {
+    if (index !== this[$rules].length - 1 || !appendableRule(rule)) return this._changed();
     this[$version]++;
     const doc = this[$doc];
     if (doc !== null) doc[$styleVersion]++;
@@ -500,8 +521,8 @@ export class CSSStyleSheet extends StyleSheet {
     }
     created[$sheet] = this;
     this[$rules].splice(i, 0, created);
-    this[$list]?._sync();
-    this._changed();
+    this[$list]?._sync(i);
+    this._inserted(created, i);
     return i;
   }
 
@@ -525,7 +546,7 @@ export class CSSStyleSheet extends StyleSheet {
     }
     const [removed] = this[$rules].splice(i, 1);
     removed[$sheet] = null;
-    this[$list]?._sync();
+    this[$list]?._sync(i);
     this._changed();
   }
 
@@ -720,7 +741,7 @@ export class CSSGroupingRule extends CSSRule {
       throw syntaxError("insertRule", this.constructor.name, text);
     }
     this[$rules].splice(i, 0, created);
-    this[$list]?._sync();
+    this[$list]?._sync(i);
     this._changed();
     return i;
   }
@@ -740,7 +761,7 @@ export class CSSGroupingRule extends CSSRule {
     }
     const [removed] = this[$rules].splice(i, 1);
     removed[$parent] = null;
-    this[$list]?._sync();
+    this[$list]?._sync(i);
     this._changed();
   }
 }
@@ -1287,7 +1308,7 @@ export class CSSKeyframesRule extends CSSRule {
     if (created === null) return;
     created[$parent] = this;
     this[$rules].push(created);
-    this[$list]?._sync();
+    this[$list]?._sync(this[$rules].length - 1);
     this._changed();
   }
 
@@ -1296,7 +1317,7 @@ export class CSSKeyframesRule extends CSSRule {
     if (i === -1) return;
     const [removed] = this[$rules].splice(i, 1);
     removed[$parent] = null;
-    this[$list]?._sync();
+    this[$list]?._sync(i);
     this._changed();
   }
 
@@ -1440,6 +1461,27 @@ function parseImportPrelude(
   let media = "";
   for (; j < rest.length; j++) media += rest[j].text;
   return { href, layer, supports, media: media.trim() };
+}
+
+/**
+ * Whether a rule appended at the end of a sheet can be added to a rule index already built over
+ * the sheet by indexing just the rule (cascade.ts extendIndex): anything but layers, @import and
+ * @namespace, which change the order or meaning of the rules already indexed, also nested in
+ * style rules, @media and @supports.
+ */
+function appendableRule(rule: CSSRule): boolean {
+  if (
+    rule instanceof CSSLayerBlockRule ||
+    rule instanceof CSSLayerStatementRule ||
+    rule instanceof CSSImportRule ||
+    rule instanceof CSSNamespaceRule
+  )
+    return false;
+  if (rule instanceof CSSStyleRule || rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) {
+    const children = rule[$rules];
+    for (let i = 0; i < children.length; i++) if (!appendableRule(children[i])) return false;
+  }
+  return true;
 }
 
 /** https://drafts.csswg.org/cssom/#parse-a-css-rule + CSSOM rule construction. */

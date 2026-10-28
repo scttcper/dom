@@ -105,6 +105,7 @@ import {
   $name,
   $names,
   $queries,
+  $rebuildVersion,
   $rules,
   $shadowRoot,
   $style,
@@ -181,7 +182,11 @@ export class RuleBuckets {
     this.quirks = quirks;
   }
 
-  add(r: IndexedRule): void {
+  /**
+   * `fresh`: add to a copy of the rule's bucket, as extendIndex does. Ancestor-filter survivor
+   * lists are cached per bucket object (Survivors), so a bucket that gains a rule must be a new one.
+   */
+  add(r: IndexedRule, fresh = false): void {
     this.size++;
     const kind = r.sel.keyKind;
     const key = this.quirks && (kind === KEY_ID || kind === KEY_CLASS) ? asciiLowercase(r.sel.key) : r.sel.key;
@@ -190,13 +195,21 @@ export class RuleBuckets {
     else if (kind === KEY_CLASS) map = this.classes;
     else if (kind === KEY_TAG) map = this.tags;
     if (map === null) {
+      if (fresh) this.universal = copyBucket(this.universal);
       this.universal.push(r);
       return;
     }
     let bucket = map.get(key);
     if (bucket === undefined) map.set(key, (bucket = new Bucket()));
+    else if (fresh) map.set(key, (bucket = copyBucket(bucket)));
     bucket.push(r);
   }
+}
+
+function copyBucket(bucket: Bucket): Bucket {
+  const copy = new Bucket();
+  for (let i = 0; i < bucket.rules.length; i++) copy.push(bucket.rules[i]);
+  return copy;
 }
 
 class LayerNode {
@@ -217,12 +230,22 @@ export class RuleIndex {
   /** Any rule depends on state outside Document._version (:hover, :focus, :checked, ...). */
   volatile: boolean;
   styleVersion: number;
+  /** The builder, kept to index rules appended to `sheet` later (extendIndex). */
+  builder: IndexBuilder | null;
+  /** The last sheet indexed, if it applied, with its `$version` and rule count when indexed. */
+  sheet: CSSStyleSheet | null;
+  sheetVersion: number;
+  sheetRules: number;
   constructor(styleVersion: number, quirks = false) {
     this.main = new RuleBuckets(quirks);
     this.before = new RuleBuckets(quirks);
     this.after = new RuleBuckets(quirks);
     this.volatile = false;
     this.styleVersion = styleVersion;
+    this.builder = null;
+    this.sheet = null;
+    this.sheetVersion = 0;
+    this.sheetRules = 0;
   }
 }
 
@@ -233,6 +256,8 @@ class IndexBuilder {
   root: LayerNode;
   anon: number;
   all: IndexedRule[];
+  /** Adding rules to a finished index (extend): buckets that gain a rule are copied. */
+  extending: boolean;
 
   constructor(index: RuleIndex, env: MediaEnvironment) {
     this.index = index;
@@ -241,6 +266,7 @@ class IndexBuilder {
     this.root = new LayerNode("");
     this.anon = 0;
     this.all = [];
+    this.extending = false;
   }
 
   layer(parent: LayerNode, name: string): LayerNode {
@@ -253,10 +279,13 @@ class IndexBuilder {
     return node;
   }
 
-  sheet(sheet: CSSStyleSheet): void {
-    if (sheet[$disabled]) return;
-    if (sheet[$media][$queries].length !== 0 && !evaluateMediaQueryList(sheet[$media][$queries], this.env)) return;
+  /** Indexes a sheet's rules; false when the sheet does not apply (disabled, media not matching). */
+  sheet(sheet: CSSStyleSheet): boolean {
+    if (sheet[$disabled]) return false;
+    if (sheet[$media][$queries].length !== 0 && !evaluateMediaQueryList(sheet[$media][$queries], this.env))
+      return false;
     this.rules(sheet[$rules], this.root, null);
+    return true;
   }
 
   rules(rules: CSSRule[], layer: LayerNode, parentStyle: CSSStyleRule | null): void {
@@ -294,12 +323,24 @@ class IndexBuilder {
       const ir = new IndexedRule(sel, order, block, layer);
       if (sel.volatile) this.index.volatile = true;
       const pe = sel.pseudoElement;
-      if (pe === "") this.index.main.add(ir);
-      else if (pe === "before") this.index.before.add(ir);
-      else if (pe === "after") this.index.after.add(ir);
+      if (pe === "") this.index.main.add(ir, this.extending);
+      else if (pe === "before") this.index.before.add(ir, this.extending);
+      else if (pe === "after") this.index.after.add(ir, this.extending);
       else continue;
       this.all.push(ir);
     }
+  }
+
+  /**
+   * Indexes top-level rules of the last sheet from `from` on, after everything finish() ranked.
+   * They hold no layers (appendableRule), so the layer ranks stand.
+   */
+  extend(rules: CSSRule[], from: number): void {
+    const first = this.all.length;
+    this.extending = true;
+    this.rules(rules.slice(from), this.root, null);
+    this.extending = false;
+    for (let i = first; i < this.all.length; i++) this.all[i].layer = this.all[i].layerNode.rank;
   }
 
   /** Post-order ranks: sub-layers before their parent's own rules; unlayered (root) last. */
@@ -354,15 +395,48 @@ export function ruleIndexFor(rs: RootStyles, doc: Document, styleVersion: number
   if (!rs.hasSheets()) return null;
   let idx = rs.index;
   const quirks = doc[$mode] === "quirks";
-  if (idx !== null && idx.styleVersion === styleVersion && idx.main.quirks === quirks)
+  if (
+    idx !== null &&
+    idx.main.quirks === quirks &&
+    (idx.styleVersion === styleVersion || extendIndex(idx, styleVersion))
+  )
     return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
   idx = new RuleIndex(styleVersion, quirks);
   const b = new IndexBuilder(idx, windowEnv(doc));
-  for (const s of rs.owners) b.sheet(s);
-  for (const s of rs.adopted) if (s instanceof CSSStyleSheet) b.sheet(s);
+  let last: CSSStyleSheet | null = null;
+  for (const s of rs.owners) last = b.sheet(s) ? s : null;
+  for (const s of rs.adopted) if (s instanceof CSSStyleSheet) last = b.sheet(s) ? s : null;
   b.finish();
+  idx.builder = b;
+  if (last !== null) {
+    idx.sheet = last;
+    idx.sheetVersion = last[$version];
+    idx.sheetRules = last[$rules].length;
+  }
   rs.index = idx;
   return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
+}
+
+/**
+ * Brings `idx` up to `styleVersion` when every style change since it was built appended rules to
+ * the end of its last sheet, by indexing just those rules. Emotion and styled-components insert
+ * every rule that way (`insertRule(rule, sheet.cssRules.length)`), and a cascade query between
+ * two inserts rebuilt the whole index: ~100 ms in Sentry's `perf` preset, most of it under
+ * focus() asking whether the element is rendered.
+ */
+function extendIndex(idx: RuleIndex, styleVersion: number): boolean {
+  const sheet = idx.sheet;
+  if (sheet === null) return false;
+  const appended = sheet[$version] - idx.sheetVersion;
+  // Every bump of the document's style version came from this sheet, and only from appends.
+  if (appended !== styleVersion - idx.styleVersion || sheet[$rebuildVersion] > idx.sheetVersion) return false;
+  const rules = sheet[$rules];
+  if (rules.length !== idx.sheetRules + appended) return false;
+  idx.builder!.extend(rules, idx.sheetRules);
+  idx.styleVersion = styleVersion;
+  idx.sheetVersion = sheet[$version];
+  idx.sheetRules = rules.length;
+  return true;
 }
 
 // --- UA defaults -------------------------------------------------------------------------------

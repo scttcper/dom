@@ -36,6 +36,8 @@ function html(markup: string): void {
   document.body!.innerHTML = markup;
 }
 const $ = (sel: string): Element => document.querySelector(sel)!;
+const cssValue = (style: unknown, property: string): string =>
+  (style as { getPropertyValue(p: string): string }).getPropertyValue(property);
 const cs = (sel: string, pseudo?: string) =>
   window.getComputedStyle($(sel), pseudo) as unknown as Record<string, string> & {
     getPropertyValue(p: string): string;
@@ -185,6 +187,56 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
     expect(cs("#e").display).toBe("flex");
     document.getElementById("s")!.remove();
     expect(cs("#e").display).toBe("block");
+  });
+
+  test("rule index: rules appended to the last sheet are indexed on their own; random edits match a fresh window", () => {
+    const markup =
+      '<div class="a" id="r"><p class="b x" id="p"><span class="x c" id="s">t</span></p><i class="c" id="i"></i></div>';
+    html(`<style></style><style></style>${markup}`);
+    const sheets = () =>
+      Array.from(document.querySelectorAll("style"), (el) => (el as unknown as { sheet: CSSStyleSheet }).sheet);
+    const selectors = [".x", ".a .x", "#s", "span", ".b > .x", ".c", "p.b", "*", ".a > *", "#p .c"];
+    // oxfmt-ignore
+    const decls = ["color: red", "color: green", "display: none", "display: flex", "margin-top: 3px", "--v: 1", "--v: 2", "z-index: 4"];
+    const ids = ["r", "p", "s", "i"];
+    const props = ["color", "display", "margin-top", "--v", "z-index"];
+    const read = (doc: Document, win: Window) =>
+      ids
+        .map((id) => props.map((p) => cssValue(win.getComputedStyle(doc.getElementById(id)!), p)).join(","))
+        .join(" | ");
+    let seed = 7;
+    const random = (n: number) => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) >>> 16) % n;
+    for (let op = 0; op < 300; op++) {
+      const all = sheets();
+      const sheet = all[random(all.length)];
+      const n = sheet.cssRules.length;
+      const rule = `${selectors[random(selectors.length)]} { ${decls[random(decls.length)]} }`;
+      const kind = random(10);
+      if (kind < 5) sheet.insertRule(rule, n);
+      else if (kind < 6) sheet.insertRule(`@media (min-width: ${random(2) === 0 ? 1 : 5000}px) { ${rule} }`, n);
+      else if (kind < 7) sheet.insertRule(`@layer l${random(2)} { ${rule} }`, n);
+      else if (kind < 8 && n > 0) sheet.deleteRule(random(n));
+      else if (kind < 9) sheet.insertRule(rule, random(n + 1));
+      else if (n > 0) {
+        const target = sheet.cssRules[random(n)] as unknown as { style?: { color: string } };
+        if (target.style !== undefined) target.style.color = "blue";
+      }
+      if (random(3) !== 0) continue;
+      const fresh = createWindow();
+      fresh.document.body!.innerHTML =
+        all.map((s) => `<style>${Array.from(s.cssRules, (r) => r.cssText).join("\n")}</style>`).join("") + markup;
+      expect(read(document, window), `after op ${op}`).toBe(read(fresh.document, fresh));
+      fresh.close();
+    }
+  });
+
+  test("rule index: a bucket served from cached ancestor-filter survivors picks up an appended rule", () => {
+    const many = Array.from({ length: 20 }, (_, i) => `.p${i} .x { --n: ${i} }`).join("\n");
+    html(`<style id=s>${many}</style><div class="p3"><span class="x" id=e></span></div>`);
+    const sheet = (document.getElementById("s") as unknown as { sheet: CSSStyleSheet }).sheet;
+    expect(cs("#e").getPropertyValue("--n")).toBe("3");
+    sheet.insertRule(".p3 .x { --n: 99 }", sheet.cssRules.length);
+    expect(cs("#e").getPropertyValue("--n")).toBe("99");
   });
 
   test("rule.style edits and selectorText changes apply", () => {
