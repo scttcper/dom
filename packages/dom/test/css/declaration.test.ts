@@ -19,6 +19,8 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
 import { createWindow, type Document } from "@ctrl/dom";
 import { $block, type DeclBlock } from "@ctrl/dom/internal";
+import { fastLonghand, normalizeLonghandValue } from "../../src/css/values.ts";
+import { allPropertyNames } from "../../src/css/properties.ts";
 
 let document: Document;
 beforeEach(() => {
@@ -335,6 +337,43 @@ describe("§6.7.2 serialize a CSS declaration block, incrementally — https://d
       }
     }
     expect(regrouped).toBeGreaterThan(100);
+  });
+});
+
+describe("§6.7.2 serializing CSS values: canonical numbers and keywords without tokenizing — https://drafts.csswg.org/cssom/#serialize-a-css-value", () => {
+  test("the fast path agrees with the full path for every property, number, dimension, percentage and keyword", () => {
+    // oxfmt-ignore
+    const numbers = [
+      "0", "1", "12", "-1", "-12", "0.5", "-0.5", "1.25", "012", "00", "1.50", "1.", ".5", "-0", "+1", "1e3",
+      "0.000001", "0.0000001", "123456789012345", "1234567890123456", "1234567890.12345",
+    ];
+    const units = ["", "px", "%", "em", "vh", "s", "ms", "deg", "turn", "PX", "x", "e", "px%"];
+    // oxfmt-ignore
+    const keywords = [
+      "auto", "none", "inherit", "initial", "unset", "revert", "revert-layer", "flex", "inline-block", "block",
+      "contents", "absolute", "hidden", "visible", "nowrap", "bold", "normal", "red", "transparent",
+      "currentcolor", "foo", "a--b", "Auto", "-webkit-box", "h1",
+    ];
+    const values = [...keywords];
+    for (const num of numbers) for (const unit of units) values.push(num + unit);
+    let accepted = 0;
+    for (const name of allPropertyNames()) {
+      for (const value of values) {
+        const fast = fastLonghand(name, value);
+        if (fast === undefined) continue;
+        accepted++;
+        expect(`${name}: ${fast}`).toBe(`${name}: ${normalizeLonghandValue(name, value)}`);
+      }
+    }
+    expect(accepted).toBeGreaterThan(10_000);
+    expect([
+      fastLonghand("left", "12px"),
+      fastLonghand("opacity", "0.5"),
+      fastLonghand("position", "absolute"),
+      fastLonghand("display", "flex"),
+      fastLonghand("z-index", "10"),
+      fastLonghand("transition-duration", "150ms"),
+    ]).toEqual(["12px", "0.5", "absolute", "flex", "10", "150ms"]);
   });
 });
 

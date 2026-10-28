@@ -80,7 +80,8 @@ MutationObserver streaming of 50 appends. Inline styles: `dom/inline-style-churn
 properties on 50 connected elements; `dom/inline-style-mount` writes 8 properties one at a time
 on 500 new elements, as React's mount does; `dom/inline-style-shorthand-mount` does the same with
 Base UI's visually hidden input style, whose border, padding and margin shorthands expand into
-21 longhands.
+21 longhands; `dom/inline-style-positions` writes left/top/width values not written before, as a
+positioning library with layout or an animation does.
 
 Leak workload: `dom/window-churn` creates a window from a 250-row form document, queries,
 focuses, adds a listener and closes it, 10 times per iteration (what a reused test worker does
@@ -318,7 +319,10 @@ Since 2026-10-28 a style write that only adds declarations, as React's mount doe
 previous serialization (`dom/inline-style-mount` 1.18 → 0.80 ms), shorthands included, and
 expanded shorthand values are cached (`dom/inline-style-shorthand-mount` 3.0 → 1.5 ms), and a
 value changed in place outside every shorthand family is spliced into it
-(`dom/inline-style-churn` 1.69 → 0.96 ms). In the `interactions` preset's profiles (153 files),
+(`dom/inline-style-churn` 1.69 → 0.96 ms). A value the normalization memo has not seen (every
+value, in a fresh worker) skips the tokenizer when it is one canonical number, dimension,
+percentage or keyword (`dom/inline-style-positions` 1.30 → 0.91 ms); checked before the memo, that
+check cost more than the hits it replaced. In the `interactions` preset's profiles (153 files),
 React's style writes took 685 ms after the append change and 406 ms after the shorthand one.
 
 The UA rule index (`uaRuleIndex` in css/cascade.ts) is built on the first full cascade in each

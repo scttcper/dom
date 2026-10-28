@@ -751,13 +751,93 @@ export function normalizeLonghand(name: string, value: string): string | null {
     const hit = byValue.get(value);
     if (hit !== undefined) return hit;
   }
-  const result = normalizeLonghandValue(name, value);
+  // Only on a miss: checked before the memo, fastLonghand's two property lookups cost more than a
+  // hit (dom/inline-style-churn 10% slower), while a miss costs a tokenizer pass.
+  const fast = fastLonghand(name, value);
+  const result = fast !== undefined ? fast : normalizeLonghandValue(name, value);
   if (byValue.size === 256) byValue.clear();
   byValue.set(value, result);
   return result;
 }
 
-function normalizeLonghandValue(name: string, value: string): string | null {
+/**
+ * normalizeLonghand's memo misses for the values React and floating-ui write most: one canonical
+ * number, percentage or dimension (`12px`, `0.5`, `-50%`) or one lowercase ASCII keyword
+ * (`absolute`, `inline-block`), checked against the property's grammar the way
+ * normalizeComponent does, without tokenizing the value. A canonical number is one formatNumber
+ * prints back unchanged: no `+`, no leading or trailing zeros, at most 15 digits, not below 1e-6
+ * and not -0. Undefined means "take the full path"; the value is otherwise the result (or "0px"
+ * for a bare 0 where only lengths are allowed). Base UI's interaction tests spent 61 ms in
+ * normalizing values the memo had not seen, which each worker starts without, and a positioned
+ * element's changing left/top miss it on every write.
+ */
+export function fastLonghand(name: string, value: string): string | undefined {
+  const n = value.length;
+  if (n === 0) return undefined;
+  let c = value.charCodeAt(0);
+  if (c >= 97 && c <= 122) {
+    for (let i = 1; i < n; i++) {
+      c = value.charCodeAt(i);
+      if ((c < 97 || c > 122) && c !== 45) return undefined;
+    }
+    if (isCSSWideKeyword(value)) return value;
+    if (name === "display") return DISPLAY_SINGLE.has(value) ? value : undefined;
+    if (SPECIAL[name] !== undefined) return undefined;
+    const g = grammarFor(name);
+    return g.types === G_ANY || g.keywords.has(value) ? value : undefined;
+  }
+  const negative = c === 45;
+  let i = negative ? 1 : 0;
+  const intStart = i;
+  while (i < n && (c = value.charCodeAt(i)) >= 48 && c <= 57) i++;
+  const intDigits = i - intStart;
+  if (intDigits === 0 || (intDigits > 1 && value.charCodeAt(intStart) === 48)) return undefined;
+  const intIsZero = intDigits === 1 && value.charCodeAt(intStart) === 48;
+  let digits = intDigits;
+  let integer = true;
+  if (i < n && value.charCodeAt(i) === 46) {
+    const fracStart = ++i;
+    while (i < n && (c = value.charCodeAt(i)) >= 48 && c <= 57) i++;
+    if (i === fracStart || value.charCodeAt(i - 1) === 48) return undefined;
+    if (intIsZero) {
+      let zeros = 0;
+      while (value.charCodeAt(fracStart + zeros) === 48) zeros++;
+      if (zeros >= 6) return undefined;
+    }
+    digits += i - fracStart;
+    integer = false;
+  }
+  if (digits > 15 || (negative && intIsZero && integer)) return undefined;
+  if (SPECIAL[name] !== undefined) return undefined;
+  const types = grammarFor(name).types;
+  const unitStart = i;
+  if (unitStart < n) {
+    if (value.charCodeAt(i) === 37) {
+      if (i + 1 !== n) return undefined;
+      if (types === G_ANY) return value;
+      return (types & G_PERCENT) !== 0 && !(negative && (types & G_NONNEG) !== 0) ? value : undefined;
+    }
+    while (i < n && (c = value.charCodeAt(i)) >= 97 && c <= 122) i++;
+    if (i !== n) return undefined;
+    if (types === G_ANY) return value;
+    if (negative && (types & G_NONNEG) !== 0) return undefined;
+    const px = n - unitStart === 2 && value.charCodeAt(unitStart) === 112 && value.charCodeAt(unitStart + 1) === 120;
+    if (px) return (types & G_LENGTH) !== 0 ? value : undefined;
+    const unit = value.slice(unitStart);
+    if ((types & G_LENGTH) !== 0 && LENGTH_UNITS.has(unit)) return value;
+    if ((types & G_TIME) !== 0 && TIME_UNITS.has(unit)) return value;
+    if ((types & G_ANGLE) !== 0 && ANGLE_UNITS.has(unit)) return value;
+    return undefined;
+  }
+  if (types === G_ANY) return value;
+  if (negative && (types & G_NONNEG) !== 0) return undefined;
+  if ((types & G_INTEGER) !== 0 && integer) return value;
+  if ((types & G_NUMBER) !== 0) return value;
+  return intIsZero && integer && (types & G_LENGTH) !== 0 ? "0px" : undefined;
+}
+
+/** The full path of normalizeLonghand (tokenize, then match the grammar); exported for tests. */
+export function normalizeLonghandValue(name: string, value: string): string | null {
   const v = value.trim();
   if (v === "") return null;
   const comps = splitComponents(v);

@@ -453,6 +453,47 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    id: "dom/inline-style-positions",
+    title: "Inline style position updates with new values: left/top/width on 50 elements (20 rounds)",
+    kind: "dom",
+    iterations: 30,
+    warmup: 5,
+    setup({ document }) {
+      const els: any[] = [];
+      for (let i = 0; i < 50; i++) els.push(document.body.appendChild(document.createElement("div")));
+      const left = (k: number, i: number) => `${(k * 37 + i * 11) % 997}.${((k + i) % 9) + 1}px`;
+      const top = (k: number, i: number) => `${(k * 13 + i * 7) % 991}px`;
+      const width = (k: number, i: number) => `${100 + ((k + i) % 300)}px`;
+      let round = 0;
+      return {
+        run() {
+          // A positioning library with layout, or an animation, writes values not written before.
+          for (let r = 0; r < 20; r++) {
+            const k = round++;
+            for (let i = 0; i < els.length; i++) {
+              const s = els[i].style;
+              s.left = left(k, i);
+              s.top = top(k, i);
+              s.width = width(k, i);
+            }
+          }
+          return round - 1;
+        },
+        verify(last) {
+          const k = last as number;
+          for (let i = 0; i < els.length; i++) {
+            eq(els[i].style.left, left(k, i), "left");
+            eq(els[i].style.top, top(k, i), "top");
+            check(els[i].getAttribute("style").includes(`width: ${width(k, i)}`), "style attribute");
+          }
+        },
+        close() {
+          for (const el of els) el.remove();
+        },
+      };
+    },
+  },
+  {
     id: "dom/inline-style-shorthand-mount",
     title: "Inline style mount with shorthands: a visually hidden input style on 500 new elements",
     kind: "dom",
