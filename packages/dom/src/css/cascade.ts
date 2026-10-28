@@ -27,12 +27,14 @@ import {
   KEY_TAG,
   beginStateDeps,
   buildAncestorFilter,
+  compileSelectorList,
   endStateDeps,
   matchesSelector,
   matchesSelectorDirect,
   mayMatchAncestors,
   stateDepsHold,
   type CompiledSelector,
+  type CompiledSelectorList,
   type MatchOptions,
   type StateDeps,
 } from "../selectors/internal.ts";
@@ -95,7 +97,6 @@ import {
   $block,
   $css,
   $disabled,
-  $doc,
   $host,
   $impl,
   $matches,
@@ -282,9 +283,12 @@ class IndexBuilder {
   }
 
   style(rule: CSSStyleRule, block: DeclBlock, layer: LayerNode): void {
-    if (block.names.length === 0) return;
-    const compiled = rule._compile();
-    if (compiled === null) return;
+    if (block.names.length !== 0) this.add(rule._compile(), block, layer);
+  }
+
+  /** Indexes a style rule's selectors with its declarations. */
+  add(compiled: CompiledSelectorList | null, block: DeclBlock, layer: LayerNode): void {
+    if (compiled === null || block.names.length === 0) return;
     const order = this.order++;
     for (const sel of compiled.selectors) {
       const ir = new IndexedRule(sel, order, block, layer);
@@ -506,7 +510,7 @@ function uaDisplayImportant(el: NodeImpl): boolean {
  * :focus-visible, ...): testing one marks the style record volatile and disables its cache.
  * The bidi rules are applied on read instead (uaDirection).
  */
-const UA_CSS = `
+export const UA_CSS = `
 a[href], area[href] { color: rgb(0, 0, 238); text-decoration: underline; cursor: pointer; }
 b, strong, th, h1, h2, h3, h4, h5, h6, optgroup { font-weight: bold; }
 i, em, cite, var, dfn, address { font-style: italic; }
@@ -527,17 +531,39 @@ nobr { white-space: nowrap; }
 colgroup[hidden], col[hidden], thead[hidden], tbody[hidden], tfoot[hidden], tr[hidden] { visibility: collapse; }
 `;
 
+/**
+ * UA_CSS as [selector list, declarations] pairs, split on `}`, `{`, `;` and `:` instead of going
+ * through the CSS parser: the sheet has no strings, comments, nesting or at-rules, and its values
+ * are written already normalized (test/css/cascade.test.ts checks both against the parser).
+ */
+export function uaRules(): Array<[selector: string, block: DeclBlock]> {
+  const rules: Array<[string, DeclBlock]> = [];
+  for (const text of UA_CSS.split("}")) {
+    const open = text.indexOf("{");
+    if (open === -1) continue;
+    const block = new DeclBlock();
+    for (const decl of text.slice(open + 1).split(";")) {
+      const colon = decl.indexOf(":");
+      if (colon !== -1) block.put(decl.slice(0, colon).trim(), decl.slice(colon + 1).trim(), false);
+    }
+    rules.push([text.slice(0, open).trim(), block]);
+  }
+  return rules;
+}
+
 let uaIndex: RuleIndex | null = null;
 
+/**
+ * Built on the first cascade in each process, which is once per test file under Vitest's and
+ * Jest's per-file workers. Going through the CSS parser cost ~1.7 ms per file in Base UI's
+ * profiles, mostly compiling the tokenizer, parser and value normalizer on their first call,
+ * which a test file that never parses a style sheet otherwise never runs.
+ */
 function uaRuleIndex(): RuleIndex {
   if (uaIndex !== null) return uaIndex;
-  const sheet = new CSSStyleSheet();
-  sheet[$doc] = null;
-  sheet._setText(UA_CSS);
-  sheet[$doc] = null;
   uaIndex = new RuleIndex(0);
   const b = new IndexBuilder(uaIndex, DEFAULT_MEDIA_ENV);
-  b.sheet(sheet);
+  for (const [selector, block] of uaRules()) b.add(compileSelectorList(selector), block, b.root);
   b.finish();
   return uaIndex;
 }

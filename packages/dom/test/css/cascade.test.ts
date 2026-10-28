@@ -23,6 +23,7 @@ import {
   NodeCache,
 } from "@ctrl/dom/internal";
 import { $css, $impl, $styleVersion } from "../../src/keys.ts";
+import { UA_CSS, uaRules } from "../../src/css/cascade.ts";
 
 let window: Window;
 let document: Document;
@@ -63,6 +64,27 @@ describe("UA defaults — https://html.spec.whatwg.org/#rendering", () => {
     );
     expect(cs("#p").display).toBe("block");
     expect(cs("#i").display).toBe("none");
+  });
+
+  test("the UA sheet split without the CSS parser gives the parser's rules, with values already normalized", () => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(UA_CSS);
+    type Rule = {
+      selectorText: string;
+      style: { length: number; item(i: number): string; getPropertyValue(p: string): string };
+    };
+    const parsed = Array.from(sheet.cssRules as unknown as ArrayLike<Rule>, (r) => [
+      r.selectorText,
+      Array.from(
+        { length: r.style.length },
+        (_, i) => `${r.style.item(i)}: ${r.style.getPropertyValue(r.style.item(i))}`,
+      ),
+    ]);
+    const split = uaRules().map(([selector, block]) => [
+      selector,
+      block.names.map((n, i) => `${n}: ${block.values[i]}`),
+    ]);
+    expect(split).toEqual(parsed);
   });
 
   test("links get UA color/cursor; initial values compute (font-weight 400, margin 0px)", () => {

@@ -320,6 +320,14 @@ expanded shorthand values are cached (`dom/inline-style-shorthand-mount` 3.0 →
 changed in place still re-serializes the block. In the `interactions` preset's profiles (153
 files), React's style writes took 685 ms after the first of those changes and 406 ms after both.
 
+The UA rule index (`uaRuleIndex` in css/cascade.ts) is built on the first full cascade in each
+worker, so once per test file. Parsing the UA sheet through the CSS parser made that ~2 ms per
+file (315 ms over the `interactions` preset's 153 files), mostly compiling the tokenizer, parser
+and value normalizer on their first call. It now splits the sheet's text directly (its values are
+written normalized; a test checks both against the parser): 135 ms, the rest being the first
+selector compiles and the cascade's own cold start. A fresh process that writes inline styles and
+then reads `display`, `overflow` and `visibility` from `getComputedStyle` went from 3.9 to 2.4 ms.
+
 Two other views of the same profiles. Grouped by where outside code called into us (the innermost
 frame in packages/ whose caller is not), the costliest entry points are React's inline style
 writes (762 ms), floating-ui's `getComputedStyle(el).overflow`-style reads (507 ms), Testing
