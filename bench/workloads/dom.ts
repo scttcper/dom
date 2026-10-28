@@ -405,6 +405,54 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    id: "dom/inline-style-mount",
+    title: "Inline style mount: 8 properties written one at a time on 500 new elements",
+    kind: "dom",
+    iterations: 30,
+    warmup: 5,
+    setup({ document }) {
+      const container = document.createElement("main");
+      document.body.append(container);
+      return {
+        run() {
+          // React's setInitialProperties: one style write per property on a detached element,
+          // then the finished subtree is inserted.
+          const root = document.createElement("div");
+          for (let i = 0; i < 500; i++) {
+            const el = document.createElement("div");
+            const s = el.style;
+            s.position = "absolute";
+            s.left = `${i % 7}px`;
+            s.top = "0px";
+            s.transform = "translate(0px, 0px)";
+            s.zIndex = "10";
+            s.setProperty("--anchor-width", "120px");
+            s.setProperty("--available-height", "768px");
+            s.setProperty("--transform-origin", "center top");
+            root.append(el);
+          }
+          container.append(root);
+          return root;
+        },
+        verify(root: any) {
+          eq(root.children.length, 500, "elements");
+          for (let i = 0; i < 500; i++) {
+            const el = root.children[i];
+            eq(el.style.left, `${i % 7}px`, "left");
+            eq(el.style.getPropertyValue("--transform-origin"), "center top", "custom property");
+            check(el.getAttribute("style").includes("z-index: 10"), "style attribute");
+          }
+        },
+        afterEach() {
+          container.textContent = "";
+        },
+        close() {
+          container.remove();
+        },
+      };
+    },
+  },
+  {
     id: "dom/event-propagation-30",
     title: "Event propagation, capture + bubble, 30 levels (10 dispatches)",
     kind: "dom",

@@ -5,15 +5,20 @@
  *   CSSOM §6.6 CSSStyleDeclaration — https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface
  *   CSSOM §6.6.1 camel-cased attributes — https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-camel-cased-attribute
  *   CSSOM §6.7.2 serializing CSS values — https://drafts.csswg.org/cssom/#serializing-css-values
+ *   CSSOM §6.7.2 serialize a CSS declaration block — https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block
+ *   CSSOM §6.7.2 serialize a CSS declaration — https://drafts.csswg.org/cssom/#serialize-a-css-declaration
  *   CSSOM ElementCSSInlineStyle — https://drafts.csswg.org/cssom/#the-elementcssinlinestyle-mixin
  *
  * Value normalization is differentially tested against jsdom (the oracle Testing Library users
- * wrote their tests against): fixtures/declaration-cases.json is run through both.
+ * wrote their tests against): fixtures/declaration-cases.json is run through both. Incremental
+ * block serialization (DeclBlock.serialize) is differentially tested against the full algorithm
+ * (DeclBlock.serializeAll).
  */
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
 import { createWindow, type Document } from "@ctrl/dom";
+import { $block, type DeclBlock } from "@ctrl/dom/internal";
 
 let document: Document;
 beforeEach(() => {
@@ -190,5 +195,77 @@ describe("ElementCSSInlineStyle — https://drafts.csswg.org/cssom/#the-elementc
     el.setAttribute("style", "color: nope; width: 1px; bogus");
     expect(el.style.cssText).toBe("width: 1px;");
     expect(el.getAttribute("style")).toBe("color: nope; width: 1px; bogus");
+  });
+});
+
+describe("§6.7.2 serialize a CSS declaration block, incrementally — https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block", () => {
+  test("declarations appended one at a time (React's mount writes) serialize onto the previous text", () => {
+    const el = div();
+    el.style.position = "absolute";
+    el.style.left = "0px";
+    el.style.setProperty("--anchor-width", "10px");
+    el.style.transform = "translate(0px, 0px)";
+    expect(el.getAttribute("style")).toBe(
+      "position: absolute; left: 0px; --anchor-width: 10px; transform: translate(0px, 0px);",
+    );
+  });
+
+  test("shorthand loop: an appended longhand that completes an expanded shorthand regroups the earlier longhands", () => {
+    const el = div();
+    el.style.color = "red";
+    el.style.marginTop = "1px";
+    el.style.marginRight = "2px";
+    el.style.marginBottom = "3px";
+    expect(el.getAttribute("style")).toBe("color: red; margin-top: 1px; margin-right: 2px; margin-bottom: 3px;");
+    el.style.marginLeft = "4px";
+    expect(el.getAttribute("style")).toBe("color: red; margin: 1px 2px 3px 4px;");
+  });
+
+  test("a value changed in place or a removal serializes the whole block again", () => {
+    const el = div();
+    el.style.left = "1px";
+    el.style.top = "2px";
+    el.style.left = "3px";
+    expect(el.getAttribute("style")).toBe("left: 3px; top: 2px;");
+    el.style.removeProperty("left");
+    el.style.width = "4px";
+    expect(el.getAttribute("style")).toBe("top: 2px; width: 4px;");
+  });
+
+  test("after random edits the style attribute and cssText equal the full algorithm's result", () => {
+    // Longhands of every expanded shorthand family, so random edits complete and break shorthands.
+    // oxfmt-ignore
+    const props = [
+      "position", "top", "left", "width", "z-index", "opacity", "--a", "--b",
+      "margin-top", "margin-right", "margin-bottom", "margin-left", "margin",
+      "padding-top", "padding-right", "padding-bottom", "padding-left", "padding",
+      "flex-grow", "flex-shrink", "flex-basis", "flex",
+      "border-top-width", "border-top-style", "border-top-color", "border-top",
+      "font-style", "font-variant", "font-weight", "font-size", "line-height", "font-family",
+    ];
+    const values = ["1px", "2px", "auto", "solid", "red", "0", "1", "serif", "normal", "italic", "bold", "10px"];
+    let seed = 1;
+    const random = (n: number) => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) % n;
+    let regrouped = 0;
+    for (let round = 0; round < 1000; round++) {
+      const el = div();
+      const block = (el.style as unknown as Record<symbol, DeclBlock>)[$block];
+      for (let op = 0; op < 25; op++) {
+        const before = el.getAttribute("style");
+        const kind = random(10);
+        const p = props[random(props.length)];
+        if (kind < 6) el.style.setProperty(p, values[random(values.length)], random(8) === 0 ? "important" : "");
+        else if (kind < 8) el.style.removeProperty(p);
+        else if (kind < 9) el.style.cssText = "top: 1px; margin: 2px; --a: x";
+        // Writing the attribute keeps the author's text instead of a serialization.
+        else el.setAttribute("style", "left: 3px; flex: 1");
+        const expected = block.serializeAll();
+        const attr = el.getAttribute("style");
+        if (kind < 9 && attr !== before) expect(attr).toBe(expected);
+        expect(el.style.cssText).toBe(expected);
+        if (kind < 6 && /(^| )(margin|padding|flex|border-top|font):/.test(expected)) regrouped++;
+      }
+    }
+    expect(regrouped).toBeGreaterThan(100);
   });
 });

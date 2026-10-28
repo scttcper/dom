@@ -34,6 +34,13 @@ export class DeclBlock {
    * indexed properties are re-synced only then: most style writes update a value in place.
    */
   namesChanged: boolean;
+  /**
+   * The last serialization and how many leading declarations it covers, or -1 once a declaration
+   * was changed in place, moved or removed since. Declarations appended after it are serialized
+   * onto its end (see serialize()).
+   */
+  serialized: string;
+  serializedCount: number;
 
   constructor() {
     this.names = [];
@@ -41,6 +48,8 @@ export class DeclBlock {
     this.important = [];
     this.dirty = false;
     this.namesChanged = false;
+    this.serialized = "";
+    this.serializedCount = 0;
   }
 
   get length(): number {
@@ -58,6 +67,8 @@ export class DeclBlock {
     this.names.length = 0;
     this.values.length = 0;
     this.important.length = 0;
+    this.serialized = "";
+    this.serializedCount = 0;
   }
 
   /** Low-level set: update in place, or append. */
@@ -73,6 +84,7 @@ export class DeclBlock {
       this.values[i] = value;
       this.important[i] = important;
       this.dirty = true;
+      this.serializedCount = -1;
     }
   }
 
@@ -84,6 +96,7 @@ export class DeclBlock {
       this.names.splice(i, 1);
       this.values.splice(i, 1);
       this.important.splice(i, 1);
+      this.serializedCount = -1;
     }
     this.names.push(name);
     this.values.push(value);
@@ -100,6 +113,7 @@ export class DeclBlock {
     this.important.splice(i, 1);
     this.dirty = true;
     this.namesChanged = true;
+    this.serializedCount = -1;
     return true;
   }
 
@@ -209,8 +223,55 @@ export class DeclBlock {
     return "important";
   }
 
-  /** https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block */
+  /**
+   * https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block, incrementally.
+   *
+   * React writes inline styles one property at a time on mount, and every write serializes the
+   * block into the style attribute (CSSStyleDeclaration._changed), so an element with N inline
+   * properties serialized N(N+1)/2 declarations. When the only changes since the last call are
+   * appended declarations, the result is the previous text followed by them: the shorthand loop
+   * regroups earlier longhands only once every longhand of a shorthand is present, so an
+   * appended longhand that completes an expanded shorthand falls back to the full algorithm.
+   * bench dom/inline-style-mount (8 properties on 500 elements): 1.18 → 0.80 ms, allocation
+   * 3.8 → 2.0 MB per iteration (Node 26.12, 11 paired samples).
+   */
   serialize(): string {
+    const names = this.names;
+    const n = names.length;
+    let i = this.serializedCount;
+    if (i === n) return this.serialized;
+    if (i >= 0) {
+      let out = this.serialized;
+      for (; i < n; i++) {
+        const shorthands = shorthandsContaining(names[i]);
+        if (shorthands !== undefined && this.completesShorthand(shorthands)) break;
+        out += (out === "" ? "" : " ") + serializeDeclaration(names[i], this.values[i], this.important[i]);
+      }
+      if (i === n) {
+        this.serialized = out;
+        this.serializedCount = n;
+        return out;
+      }
+    }
+    const out = this.serializeAll();
+    this.serialized = out;
+    this.serializedCount = n;
+    return out;
+  }
+
+  /** Whether every longhand of one of `shorthands` is declared (whatever their priorities). */
+  completesShorthand(shorthands: string[]): boolean {
+    for (let s = 0; s < shorthands.length; s++) {
+      const longhands = longhandsOf(shorthands[s])!;
+      let all = true;
+      for (let k = 0; k < longhands.length && all; k++) all = this.indexOf(longhands[k]) !== -1;
+      if (all) return true;
+    }
+    return false;
+  }
+
+  /** https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block over the whole block (no cache). */
+  serializeAll(): string {
     const names = this.names;
     const n = names.length;
     if (n === 0) return "";
@@ -239,15 +300,20 @@ export class DeclBlock {
           if (v === "") continue;
           if (done === null) done = new Set();
           for (const l of longhands) done.add(l);
-          out += (out === "" ? "" : " ") + sh + ": " + v + (this.important[i] ? " !important;" : ";");
+          out += (out === "" ? "" : " ") + serializeDeclaration(sh, v, this.important[i]);
           emitted = true;
         }
       }
       if (emitted) continue;
-      out += (out === "" ? "" : " ") + name + ": " + this.values[i] + (this.important[i] ? " !important;" : ";");
+      out += (out === "" ? "" : " ") + serializeDeclaration(name, this.values[i], this.important[i]);
     }
     return out;
   }
+}
+
+/** https://drafts.csswg.org/cssom/#serialize-a-css-declaration */
+function serializeDeclaration(property: string, value: string, important: boolean): string {
+  return property + ": " + value + (important ? " !important;" : ";");
 }
 
 /** Parses a style attribute / declaration list into a fresh block. */

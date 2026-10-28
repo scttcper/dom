@@ -24,7 +24,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | --- | --: | --: | --: | --: |
 | [HTML Standard](#html-standard) | 786 | 606 | 54 | 126 |
 | [DOM Standard](#dom-standard) | 273 | 237 | 28 | 8 |
-| [CSS: cssom](#css-cssom) | 73 | 37 | 22 | 14 |
+| [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
 | [Web IDL](#web-idl) | 34 | 22 | 0 | 12 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
@@ -94,7 +94,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1584 | 1073 | 120 | 391 |
+| **All** | 1585 | 1074 | 120 | 391 |
 
 ## Web-platform-tests fixtures
 
@@ -1228,7 +1228,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: cssom
 
-<https://drafts.csswg.org/cssom/> — 73 sections implemented, 37 tested, 22 by WPT only, 14 untested.
+<https://drafts.csswg.org/cssom/> — 74 sections implemented, 38 tested, 22 by WPT only, 14 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1278,7 +1278,8 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [ref-for-concept-element-attributes-change-ext](https://drafts.csswg.org/cssom/#ref-for-concept-element-attributes-change-ext) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [resolved-values](https://drafts.csswg.org/cssom/#resolved-values) | `dom/css/cascade.ts`, `dom/css/computed.ts` | WPT: `css/cssom/computed-style-001.html`, `css/cssom/getComputedStyle-line-height.html` +4 |
 | [serialize-a-css-component-value](https://drafts.csswg.org/cssom/#serialize-a-css-component-value) | `dom/css/values.ts` | WPT: `css/cssom/serialize-custom-props.html` |
-| [serialize-a-css-declaration-block](https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/font-shorthand-serialization.html`, `css/cssom/shorthand-serialization.html` +1 |
+| [serialize-a-css-declaration](https://drafts.csswg.org/cssom/#serialize-a-css-declaration) | `dom/css/declarations.ts` | `dom/css/declaration.test.ts`; WPT: `css/cssom/serialization-CSSDeclaration-with-important.html` |
+| [serialize-a-css-declaration-block](https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/declaration.test.ts`; WPT: `css/cssom/font-shorthand-serialization.html`, `css/cssom/shorthand-serialization.html` +1 |
 | [serialize-a-css-value](https://drafts.csswg.org/cssom/#serialize-a-css-value) | `dom/css/shorthands.ts`, `dom/css/values.ts` | `dom/css/declaration.test.ts` |
 | [serialize-a-group-of-selectors](https://drafts.csswg.org/cssom/#serialize-a-group-of-selectors) | `dom/selectors/internal.ts`, `dom/selectors/serialize.ts` | **untested** |
 | [serialize-a-media-query](https://drafts.csswg.org/cssom/#serialize-a-media-query) | `dom/css/media.ts` | **untested** |
