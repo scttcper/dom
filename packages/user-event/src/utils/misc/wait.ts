@@ -275,7 +275,21 @@ function canYieldWithImmediate(config: Instance['config']): boolean {
 /** Bound on repeated yields while other immediates are queued (a self-rescheduling immediate never settles). */
 const MAX_YIELD_HOPS = 20
 
-export async function yieldBetweenActions(config: Instance['config']) {
+export function yieldBetweenActions(
+  config: Instance['config'],
+): Promise<unknown> | undefined {
+  // With the shortcut off and nothing to track (fake timers replaced the observed globals), the
+  // very promise upstream awaits: callers resolve after as many microtask turns as upstream's.
+  // Work that settles in promise reactions (a mutation's onSuccess) races them: one async layer
+  // more here, and the setState in onSuccess landed after the call's asyncWrapper had restored
+  // React's act environment (Sentry's passwordReset.spec under jest.useFakeTimers()).
+  if (!realTimersAtZeroDelay(config) && !timerGlobalsObserved()) {
+    return wait(config)
+  }
+  return yieldAndSettle(config)
+}
+
+async function yieldAndSettle(config: Instance['config']) {
   if (canYieldWithImmediate(config)) {
     await new Promise<void>(resolveOnImmediate)
   } else {
