@@ -245,6 +245,40 @@ describe("§6.7.2 serialize a CSS declaration block, incrementally — https://d
     expect(el.getAttribute("style")).toBe("border-top: 1px solid blue; color: red;");
   });
 
+  test("a value changed in place outside every shorthand family is spliced into the previous text", () => {
+    const el = div();
+    el.style.position = "absolute";
+    el.style.left = "0px";
+    el.style.setProperty("--anchor-width", "10px");
+    el.style.left = "12px";
+    expect(el.getAttribute("style")).toBe("position: absolute; left: 12px; --anchor-width: 10px;");
+    el.style.setProperty("left", "3px", "important");
+    expect(el.getAttribute("style")).toBe("position: absolute; left: 3px !important; --anchor-width: 10px;");
+    el.style.setProperty("--anchor-width", "200px");
+    expect(el.getAttribute("style")).toBe("position: absolute; left: 3px !important; --anchor-width: 200px;");
+  });
+
+  test("shorthand loop: a family member's priority changed in place can group its family", () => {
+    const el = div();
+    el.style.marginTop = "1px";
+    el.style.marginRight = "2px";
+    el.style.marginBottom = "3px";
+    el.style.setProperty("margin-left", "4px", "important");
+    expect(el.getAttribute("style")).toBe(
+      "margin-top: 1px; margin-right: 2px; margin-bottom: 3px; margin-left: 4px !important;",
+    );
+    el.style.setProperty("margin-left", "4px");
+    expect(el.getAttribute("style")).toBe("margin: 1px 2px 3px 4px;");
+  });
+
+  test("a value changed in place next to a grouped shorthand serializes the whole block again", () => {
+    const el = div();
+    el.style.border = "0";
+    el.style.left = "1px";
+    el.style.left = "22px";
+    expect(el.getAttribute("style")).toBe("border: 0px; left: 22px;");
+  });
+
   test("a value changed in place or a removal serializes the whole block again", () => {
     const el = div();
     el.style.left = "1px";
@@ -268,17 +302,23 @@ describe("§6.7.2 serialize a CSS declaration block, incrementally — https://d
       "font-style", "font-variant", "font-weight", "font-size", "line-height", "font-family",
     ];
     const values = ["1px", "2px", "auto", "solid", "red", "0", "1", "serif", "normal", "italic", "bold", "10px"];
+    // One family and plain longhands, with priorities flipping often: values and priorities changed
+    // in place that group or ungroup the family.
+    const marginProps = ["margin-top", "margin-right", "margin-bottom", "margin-left", "top", "left"];
     let seed = 1;
-    const random = (n: number) => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) % n;
+    // High bits: the low bits of a power-of-two LCG repeat with tiny periods.
+    const random = (n: number) => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) >>> 16) % n;
     let regrouped = 0;
-    for (let round = 0; round < 1000; round++) {
+    for (let round = 0; round < 1500; round++) {
       const el = div();
       const block = (el.style as unknown as Record<symbol, DeclBlock>)[$block];
+      const focused = round >= 1000;
       for (let op = 0; op < 25; op++) {
         const before = el.getAttribute("style");
         const kind = random(10);
-        const p = props[random(props.length)];
-        if (kind < 6) el.style.setProperty(p, values[random(values.length)], random(8) === 0 ? "important" : "");
+        const p = focused ? marginProps[random(marginProps.length)] : props[random(props.length)];
+        const value = focused ? values[random(2)] : values[random(values.length)];
+        if (kind < 6) el.style.setProperty(p, value, random(focused ? 2 : 8) === 0 ? "important" : "");
         else if (kind < 8) el.style.removeProperty(p);
         else if (kind < 9) el.style.cssText = "top: 1px; margin: 2px; --a: x";
         // Writing the attribute keeps the author's text instead of a serialization.

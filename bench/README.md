@@ -316,9 +316,10 @@ the style attribute: `_changed` in css/CSSStyleDeclaration.ts), event dispatch a
 virtual clock at ~0.15 s, and per-file window setup with CSS accessor installation at ~0.3 s.
 Since 2026-10-28 a style write that only adds declarations, as React's mount does, appends to the
 previous serialization (`dom/inline-style-mount` 1.18 → 0.80 ms), shorthands included, and
-expanded shorthand values are cached (`dom/inline-style-shorthand-mount` 3.0 → 1.5 ms); a value
-changed in place still re-serializes the block. In the `interactions` preset's profiles (153
-files), React's style writes took 685 ms after the first of those changes and 406 ms after both.
+expanded shorthand values are cached (`dom/inline-style-shorthand-mount` 3.0 → 1.5 ms), and a
+value changed in place outside every shorthand family is spliced into it
+(`dom/inline-style-churn` 1.69 → 0.96 ms). In the `interactions` preset's profiles (153 files),
+React's style writes took 685 ms after the append change and 406 ms after the shorthand one.
 
 The UA rule index (`uaRuleIndex` in css/cascade.ts) is built on the first full cascade in each
 worker, so once per test file. Parsing the UA sheet through the CSS parser made that ~2 ms per

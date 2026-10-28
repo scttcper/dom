@@ -39,7 +39,7 @@ export class DeclBlock {
   /**
    * The last serialization and how many leading declarations it covers, or -1 once a declaration
    * was changed in place, moved or removed since. Declarations appended after it are serialized
-   * onto its end (see serialize()).
+   * onto its end (see serialize()), and a value changed in place is spliced into it (put()).
    */
   serialized: string;
   serializedCount: number;
@@ -48,6 +48,8 @@ export class DeclBlock {
    * not computed yet (only an append with shorthand longhands needs them).
    */
   serializedFamilies: number;
+  /** Whether `serialized` has every declaration on its own, in order (no shorthand grouped). */
+  serializedPlain: boolean;
 
   constructor() {
     this.names = [];
@@ -58,6 +60,7 @@ export class DeclBlock {
     this.serialized = "";
     this.serializedCount = 0;
     this.serializedFamilies = 0;
+    this.serializedPlain = true;
   }
 
   get length(): number {
@@ -78,6 +81,7 @@ export class DeclBlock {
     this.serialized = "";
     this.serializedCount = 0;
     this.serializedFamilies = 0;
+    this.serializedPlain = true;
   }
 
   /** Low-level set: update in place, or append. */
@@ -89,11 +93,34 @@ export class DeclBlock {
       this.important.push(important);
       this.dirty = true;
     } else if (this.values[i] !== value || this.important[i] !== important) {
+      // A declaration outside every shorthand family is serialized on its own whatever its value,
+      // so in a plain serialization only its own text changes (floating-ui moving a popup).
+      if (
+        this.serializedCount === this.names.length &&
+        this.serializedPlain &&
+        shorthandsContaining(name) === undefined
+      )
+        this.spliceSerialized(i, value, important);
+      else this.serializedCount = -1;
       this.values[i] = value;
       this.important[i] = important;
       this.dirty = true;
-      this.serializedCount = -1;
     }
+  }
+
+  /**
+   * Replaces declaration `i`'s text in a plain `serialized` (declarations joined by one space,
+   * each `name: value;` or `name: value !important;`), before its value is overwritten.
+   */
+  spliceSerialized(i: number, value: string, important: boolean): void {
+    const names = this.names;
+    const values = this.values;
+    const imp = this.important;
+    let start = 0;
+    for (let j = 0; j < i; j++) start += names[j].length + values[j].length + (imp[j] ? 15 : 4);
+    const end = start + names[i].length + values[i].length + (imp[i] ? 14 : 3);
+    const text = this.serialized;
+    this.serialized = text.slice(0, start) + serializeDeclaration(names[i], value, important) + text.slice(end);
   }
 
   /** Low-level set used while parsing a block: a later declaration moves to the end, but never overrides an important one with a normal one. */
@@ -243,6 +270,7 @@ export class DeclBlock {
       this.serialized = this.serializeAll(0);
       this.serializedCount = n;
       this.serializedFamilies = -1;
+      this.serializedPlain = !lastSerializationGrouped;
     }
     return this.serialized;
   }
@@ -263,6 +291,7 @@ export class DeclBlock {
     }
     if ((families & before) !== 0) return false;
     const appended = this.serializeAll(from);
+    if (lastSerializationGrouped) this.serializedPlain = false;
     this.serialized = this.serialized === "" ? appended : this.serialized + " " + appended;
     this.serializedCount = n;
     this.serializedFamilies = before === -1 ? -1 : before | families;
@@ -277,6 +306,7 @@ export class DeclBlock {
   serializeAll(from = 0): string {
     const names = this.names;
     const n = names.length;
+    lastSerializationGrouped = false;
     if (n === from) return "";
     let out = "";
     let done: Set<string> | null = null;
@@ -310,9 +340,13 @@ export class DeclBlock {
       if (emitted) continue;
       out += (out === "" ? "" : " ") + serializeDeclaration(name, this.values[i], this.important[i]);
     }
+    lastSerializationGrouped = done !== null;
     return out;
   }
 }
+
+/** Whether the last serializeAll() grouped declarations into a shorthand (read right after it). */
+let lastSerializationGrouped = false;
 
 /** https://drafts.csswg.org/cssom/#serialize-a-css-declaration */
 function serializeDeclaration(property: string, value: string, important: boolean): string {
