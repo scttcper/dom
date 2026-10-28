@@ -1,7 +1,17 @@
 // Element attribute algorithms over NodeImpl.attrs.
 // https://dom.spec.whatwg.org/#concept-element-attribute
 
-import { F_ARIA_ATTRS, F_ATTR_HOOK, F_CONNECTED, F_DATA_ATTRS, F_HAS_STYLE_ATTR, F_HTML } from "./constants.ts";
+import {
+  F_ARIA_ATTRS,
+  F_ATTR_HOOK,
+  F_CONNECTED,
+  F_CONTENTEDITABLE_ATTR,
+  F_DATA_ATTRS,
+  F_HAS_STYLE_ATTR,
+  F_HTML,
+  F_INERT_ATTR,
+  F_TABINDEX_ATTR,
+} from "./constants.ts";
 import type { Element } from "./Element.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import { noteInlineStyle } from "../css/inline-count.ts";
@@ -104,8 +114,23 @@ export function getAttribute(el: NodeImpl, qualifiedName: string): string | null
   return null;
 }
 
-/** F_ARIA_ATTRS / F_DATA_ATTRS for an attribute local name starting with `aria-` / `data-`, else 0. */
+/**
+ * The presence bit an attribute local name sets on its element: F_ARIA_ATTRS / F_DATA_ATTRS for
+ * names starting with `aria-` / `data-`, F_TABINDEX_ATTR, F_CONTENTEDITABLE_ATTR or F_INERT_ATTR
+ * for those names, else 0.
+ */
 export function prefixFlag(localName: string): number {
+  switch (localName.length) {
+    case 5:
+      if (localName === "inert") return F_INERT_ATTR;
+      break;
+    case 8:
+      if (localName === "tabindex") return F_TABINDEX_ATTR;
+      break;
+    case 15:
+      if (localName === "contenteditable") return F_CONTENTEDITABLE_ATTR;
+      break;
+  }
   if (localName.length < 5 || localName.charCodeAt(4) !== 0x2d) return 0;
   const c = localName.charCodeAt(0);
   if (c === 0x61)

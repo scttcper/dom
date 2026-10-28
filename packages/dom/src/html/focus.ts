@@ -20,7 +20,9 @@
 import {
   ELEMENT_NODE,
   F_CONNECTED,
+  F_INERT_ATTR,
   F_SHADOW_ROOT,
+  F_TABINDEX_ATTR,
   HTML_NS,
   SVG_NS,
   MATHML_NS,
@@ -45,6 +47,7 @@ import { $focused, $frameElement, $host, $impl, $shadowRoot, $window } from "../
 
 /** Parsed `tabindex` (https://html.spec.whatwg.org/#attr-tabindex), or NaN when absent/invalid. */
 export function tabIndexValue(impl: NodeImpl): number {
+  if ((impl.flags & F_TABINDEX_ATTR) === 0) return NaN;
   const v = contentAttr(impl, "tabindex");
   if (v === null) return NaN;
   const n = parseInteger(v);
@@ -126,7 +129,7 @@ export function defaultTabIndex(impl: NodeImpl): number {
 /** https://html.spec.whatwg.org/#inert — the element or a flat-tree ancestor has `inert`, or a modal dialog blocks it. */
 export function isInert(impl: NodeImpl): boolean {
   for (let n: NodeImpl | null = impl; n !== null; n = parentOrHost(n)) {
-    if (n.type === ELEMENT_NODE && contentAttr(n, "inert") !== null) return true;
+    if ((n.flags & F_INERT_ATTR) !== 0 && n.type === ELEMENT_NODE && contentAttr(n, "inert") !== null) return true;
   }
   return inertByModal(impl);
 }

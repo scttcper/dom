@@ -1,6 +1,6 @@
 // Small predicates shared by src/html modules (focus, innerText, HTMLElement).
 
-import { DOCUMENT_NODE, ELEMENT_NODE, HTML_NS } from "../nodes/constants.ts";
+import { DOCUMENT_NODE, ELEMENT_NODE, F_CONTENTEDITABLE_ATTR, HTML_NS } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { contentAttr } from "./reflect.ts";
 import { asciiLowercase } from "../nodes/attributes.ts";
@@ -31,6 +31,7 @@ const CE_PLAINTEXT = 2;
 
 /** https://html.spec.whatwg.org/#attr-contenteditable state of an element's own attribute. */
 export function contentEditableState(impl: NodeImpl): number {
+  if ((impl.flags & F_CONTENTEDITABLE_ATTR) === 0) return CE_INHERIT;
   const v = contentAttr(impl, "contenteditable");
   if (v === null) return CE_INHERIT;
   switch (asciiLowercase(v)) {

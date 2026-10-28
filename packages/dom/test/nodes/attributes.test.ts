@@ -17,7 +17,14 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@ctrl/dom";
-import { $impl, F_ARIA_ATTRS, F_DATA_ATTRS } from "@ctrl/dom/internal";
+import {
+  $impl,
+  F_ARIA_ATTRS,
+  F_CONTENTEDITABLE_ATTR,
+  F_DATA_ATTRS,
+  F_INERT_ATTR,
+  F_TABINDEX_ATTR,
+} from "@ctrl/dom/internal";
 import { differential, type AnyWindow } from "../../../../tests/compat/src/harness.ts";
 
 let document: Document;
@@ -441,4 +448,53 @@ describe("attribute name flags (ours) — https://dom.spec.whatwg.org/#concept-e
     el.setAttribute("data-a", "1");
     expect(flags(el.cloneNode(false))).toEqual({ aria: true, data: true });
   });
+
+  // F_TABINDEX_ATTR / F_CONTENTEDITABLE_ATTR / F_INERT_ATTR let tabIndex, contentEditable and
+  // inertness skip the attribute scan on elements without the attribute.
+  const exact = (el: unknown) => {
+    const impl = (el as Record<symbol, { flags: number }>)[$impl];
+    return [F_TABINDEX_ATTR, F_CONTENTEDITABLE_ATTR, F_INERT_ATTR].map((f) => (impl.flags & f) !== 0);
+  };
+
+  test("tabindex, contenteditable and inert: set by every write path, cleared with the last one, cloned", () => {
+    const host = document.createElement("div");
+    host.innerHTML = '<span tabindex="2" contenteditable inert></span>';
+    const parsed = host.firstChild as unknown as HTMLElementLike;
+    expect(exact(parsed)).toEqual([true, true, true]);
+    expect(exact(parsed.cloneNode(false))).toEqual([true, true, true]);
+    const el = document.createElement("div") as unknown as HTMLElementLike;
+    el.tabIndex = 3;
+    el.setAttributeNS("urn:x", "x:tabindex", "1");
+    el.toggleAttribute("inert");
+    el.contentEditable = "true";
+    expect(exact(el)).toEqual([true, true, true]);
+    el.removeAttribute("tabindex");
+    expect(exact(el)).toEqual([true, true, true]); // the urn:x one remains
+    el.removeAttributeNS("urn:x", "tabindex");
+    el.contentEditable = "inherit";
+    el.toggleAttribute("inert");
+    expect(exact(el)).toEqual([false, false, false]);
+  });
+
+  test("tabIndex, contentEditable and isContentEditable read the same with and without the attribute", () => {
+    const el = document.createElement("div") as unknown as HTMLElementLike;
+    expect([el.tabIndex, el.contentEditable, el.isContentEditable]).toEqual([-1, "inherit", false]);
+    el.setAttribute("tabindex", "5");
+    el.setAttribute("contenteditable", "");
+    expect([el.tabIndex, el.contentEditable, el.isContentEditable]).toEqual([5, "true", true]);
+    const button = document.createElement("button") as unknown as HTMLElementLike;
+    expect(button.tabIndex).toBe(0);
+  });
 });
+
+interface HTMLElementLike {
+  tabIndex: number;
+  contentEditable: string;
+  readonly isContentEditable: boolean;
+  cloneNode(deep: boolean): unknown;
+  setAttribute(name: string, value: string): void;
+  setAttributeNS(ns: string | null, name: string, value: string): void;
+  removeAttribute(name: string): void;
+  removeAttributeNS(ns: string | null, name: string): void;
+  toggleAttribute(name: string): boolean;
+}

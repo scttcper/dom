@@ -12,7 +12,7 @@ import { Element } from "../nodes/Element.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { asciiLowercase, removeAttribute, setAttribute } from "../nodes/attributes.ts";
-import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CUSTOM, F_FACE, HTML_NS } from "../nodes/constants.ts";
+import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CONTENTEDITABLE_ATTR, F_CUSTOM, F_FACE, HTML_NS } from "../nodes/constants.ts";
 import {
   faceStateMaybeChanged,
   internalsCheckValidity,
@@ -247,7 +247,9 @@ export class HTMLElement extends Element {
 
   /** https://html.spec.whatwg.org/#dom-contenteditable */
   get contentEditable(): string {
-    const v = contentAttr(this[$impl], "contenteditable");
+    const impl = this[$impl];
+    if ((impl.flags & F_CONTENTEDITABLE_ATTR) === 0) return "inherit";
+    const v = contentAttr(impl, "contenteditable");
     if (v === null) return "inherit";
     const k = asciiLowercase(v);
     if (k === "" || k === "true") return "true";

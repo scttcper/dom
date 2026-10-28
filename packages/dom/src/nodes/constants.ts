@@ -65,3 +65,12 @@ export const F_FACE = 1 << 14;
 export const F_ARIA_ATTRS = 1 << 15;
 /** Same for `data-*` attributes (Testing Library's *ByTestId). */
 export const F_DATA_ATTRS = 1 << 16;
+/**
+ * Element has a `tabindex` / `contenteditable` / `inert` attribute (any namespace), kept like
+ * F_ARIA_ATTRS. Focus code reads `tabIndex` on every candidate of a tabbable scan, and most
+ * elements have none of these: in Base UI's interaction tests the attribute scans behind them
+ * were ~140 ms.
+ */
+export const F_TABINDEX_ATTR = 1 << 13;
+export const F_CONTENTEDITABLE_ATTR = 1 << 17;
+export const F_INERT_ATTR = 1 << 18;
