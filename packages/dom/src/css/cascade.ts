@@ -40,6 +40,7 @@ import {
 } from "../selectors/internal.ts";
 import { directionality, inputTypeName, predicates } from "../selectors/state.ts";
 import {
+  appendableRule,
   CSSGroupingRule,
   CSSLayerBlockRule,
   CSSLayerStatementRule,
@@ -119,7 +120,9 @@ import {
 export class IndexedRule {
   sel: CompiledSelector;
   specificity: number;
-  /** Position in cascade order (tree order of rules across sheets). */
+  /** Its sheet's position in cascade order (owner sheets in tree order, then adopted ones). */
+  sheetIndex: number;
+  /** When it was indexed: within a sheet, later rules have higher orders (rules appended later too). */
   order: number;
   /** Layer rank: higher wins for normal declarations; unlayered rules have the highest rank. */
   layer: number;
@@ -131,13 +134,14 @@ export class IndexedRule {
   h2: number;
   h3: number;
 
-  constructor(sel: CompiledSelector, order: number, block: DeclBlock, layerNode: LayerNode) {
+  constructor(sel: CompiledSelector, sheetIndex: number, order: number, block: DeclBlock, layerNode: LayerNode) {
     this.sel = sel;
     this.specificity = sel.specificity;
     this.h0 = sel.h0;
     this.h1 = sel.h1;
     this.h2 = sel.h2;
     this.h3 = sel.h3;
+    this.sheetIndex = sheetIndex;
     this.order = order;
     this.layer = 0;
     this.block = block;
@@ -230,12 +234,10 @@ export class RuleIndex {
   /** Any rule depends on state outside Document._version (:hover, :focus, :checked, ...). */
   volatile: boolean;
   styleVersion: number;
-  /** The builder, kept to index rules appended to `sheet` later (extendIndex). */
+  /** The builder, kept to index rules appended later (extendIndex). */
   builder: IndexBuilder | null;
-  /** The last sheet indexed, if it applied, with its `$version` and rule count when indexed. */
-  sheet: CSSStyleSheet | null;
-  sheetVersion: number;
-  sheetRules: number;
+  /** The tree's sheets in cascade order, as indexed. */
+  sheets: IndexedSheet[];
   constructor(styleVersion: number, quirks = false) {
     this.main = new RuleBuckets(quirks);
     this.before = new RuleBuckets(quirks);
@@ -243,15 +245,31 @@ export class RuleIndex {
     this.volatile = false;
     this.styleVersion = styleVersion;
     this.builder = null;
-    this.sheet = null;
-    this.sheetVersion = 0;
-    this.sheetRules = 0;
+    this.sheets = [];
+  }
+}
+
+/** A sheet as a rule index last saw it. */
+class IndexedSheet {
+  sheet: CSSStyleSheet;
+  /** `$version` and rule count when last indexed. */
+  version: number;
+  rules: number;
+  /** Its rules are in the index (not disabled, media matching). */
+  applied: boolean;
+  constructor(sheet: CSSStyleSheet, applied: boolean) {
+    this.sheet = sheet;
+    this.version = sheet[$version];
+    this.rules = sheet[$rules].length;
+    this.applied = applied;
   }
 }
 
 class IndexBuilder {
   index: RuleIndex;
   env: MediaEnvironment;
+  /** The sheet being indexed (IndexedRule.sheetIndex) and the next rule's order. */
+  sheetIndex: number;
   order: number;
   root: LayerNode;
   anon: number;
@@ -262,6 +280,7 @@ class IndexBuilder {
   constructor(index: RuleIndex, env: MediaEnvironment) {
     this.index = index;
     this.env = env;
+    this.sheetIndex = 0;
     this.order = 0;
     this.root = new LayerNode("");
     this.anon = 0;
@@ -320,7 +339,7 @@ class IndexBuilder {
     if (compiled === null || block.names.length === 0) return;
     const order = this.order++;
     for (const sel of compiled.selectors) {
-      const ir = new IndexedRule(sel, order, block, layer);
+      const ir = new IndexedRule(sel, this.sheetIndex, order, block, layer);
       if (sel.volatile) this.index.volatile = true;
       const pe = sel.pseudoElement;
       if (pe === "") this.index.main.add(ir, this.extending);
@@ -332,15 +351,19 @@ class IndexBuilder {
   }
 
   /**
-   * Indexes top-level rules of the last sheet from `from` on, after everything finish() ranked.
-   * They hold no layers (appendableRule), so the layer ranks stand.
+   * Indexes a sheet's top-level rules from `from` on (from 0: a new sheet, checked like sheet())
+   * into an index finish() already ranked. They hold no layers (appendableRule), so the layer
+   * ranks stand. Returns false for a sheet that does not apply.
    */
-  extend(rules: CSSRule[], from: number): void {
+  extend(sheet: CSSStyleSheet, from: number): boolean {
     const first = this.all.length;
     this.extending = true;
-    this.rules(rules.slice(from), this.root, null);
+    let applied = true;
+    if (from === 0) applied = this.sheet(sheet);
+    else this.rules(sheet[$rules].slice(from), this.root, null);
     this.extending = false;
     for (let i = first; i < this.all.length; i++) this.all[i].layer = this.all[i].layerNode.rank;
+    return applied;
   }
 
   /** Post-order ranks: sub-layers before their parent's own rules; unlayered (root) last. */
@@ -398,45 +421,81 @@ export function ruleIndexFor(rs: RootStyles, doc: Document, styleVersion: number
   if (
     idx !== null &&
     idx.main.quirks === quirks &&
-    (idx.styleVersion === styleVersion || extendIndex(idx, styleVersion))
+    (idx.styleVersion === styleVersion || extendIndex(idx, rs, windowEnv(doc), styleVersion))
   )
     return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
   idx = new RuleIndex(styleVersion, quirks);
   const b = new IndexBuilder(idx, windowEnv(doc));
-  let last: CSSStyleSheet | null = null;
-  for (const s of rs.owners) last = b.sheet(s) ? s : null;
-  for (const s of rs.adopted) if (s instanceof CSSStyleSheet) last = b.sheet(s) ? s : null;
+  const sheets = treeSheets(rs);
+  for (let i = 0; i < sheets.length; i++) {
+    b.sheetIndex = i;
+    idx.sheets.push(new IndexedSheet(sheets[i], b.sheet(sheets[i])));
+  }
   b.finish();
   idx.builder = b;
-  if (last !== null) {
-    idx.sheet = last;
-    idx.sheetVersion = last[$version];
-    idx.sheetRules = last[$rules].length;
-  }
   rs.index = idx;
   return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
 }
 
+/** The sheets that apply to a tree, in cascade order: owner sheets in tree order, then adopted ones. */
+function treeSheets(rs: RootStyles): CSSStyleSheet[] {
+  const sheets = rs.owners.slice();
+  for (const s of rs.adopted) if (s instanceof CSSStyleSheet) sheets.push(s);
+  return sheets;
+}
+
 /**
- * Brings `idx` up to `styleVersion` when every style change since it was built appended rules to
- * the end of its last sheet, by indexing just those rules. Emotion and styled-components insert
- * every rule that way (`insertRule(rule, sheet.cssRules.length)`), and a cascade query between
- * two inserts rebuilt the whole index: ~100 ms in Sentry's `perf` preset, most of it under
- * focus() asking whether the element is rendered.
+ * Brings `idx` up to `styleVersion` when, since it was built, its sheets only had rules appended
+ * and new sheets only came after them, by indexing just the new rules. Emotion inserts every rule
+ * that way: in production (speedy) mode with `insertRule(rule, sheet.cssRules.length)` into one
+ * sheet per cache, in development mode as a new <style> element each. A cascade query between two
+ * inserts rebuilt the whole index: ~100 ms in Sentry's `perf` preset, most of it under focus()
+ * asking whether the element is rendered. Checked against what the index depends on (the sheet
+ * list, each sheet's changes, the media environment), not against the document's style version,
+ * which other trees and replaced <style> sheets also bump.
  */
-function extendIndex(idx: RuleIndex, styleVersion: number): boolean {
-  const sheet = idx.sheet;
-  if (sheet === null) return false;
-  const appended = sheet[$version] - idx.sheetVersion;
-  // Every bump of the document's style version came from this sheet, and only from appends.
-  if (appended !== styleVersion - idx.styleVersion || sheet[$rebuildVersion] > idx.sheetVersion) return false;
-  const rules = sheet[$rules];
-  if (rules.length !== idx.sheetRules + appended) return false;
-  idx.builder!.extend(rules, idx.sheetRules);
+function extendIndex(idx: RuleIndex, rs: RootStyles, env: MediaEnvironment, styleVersion: number): boolean {
+  const b = idx.builder;
+  if (b === null || !sameEnvironment(b.env, env)) return false;
+  const sheets = treeSheets(rs);
+  const indexed = idx.sheets;
+  if (sheets.length < indexed.length) return false;
+  for (let i = 0; i < indexed.length; i++) {
+    const r = indexed[i];
+    const sheet = r.sheet;
+    // Any change but an appended rule (disabled, media, edits) bumps $rebuildVersion (_changed).
+    if (sheets[i] !== sheet || sheet[$rebuildVersion] > r.version) return false;
+  }
+  for (let i = indexed.length; i < sheets.length; i++) {
+    const rules = sheets[i][$rules];
+    for (let k = 0; k < rules.length; k++) if (!appendableRule(rules[k])) return false;
+  }
+  for (let i = 0; i < indexed.length; i++) {
+    const r = indexed[i];
+    const rules = r.sheet[$rules];
+    if (r.applied && rules.length > r.rules) {
+      b.sheetIndex = i;
+      b.extend(r.sheet, r.rules);
+    }
+    r.version = r.sheet[$version];
+    r.rules = rules.length;
+  }
+  for (let i = indexed.length; i < sheets.length; i++) {
+    b.sheetIndex = i;
+    indexed.push(new IndexedSheet(sheets[i], b.extend(sheets[i], 0)));
+  }
   idx.styleVersion = styleVersion;
-  idx.sheetVersion = sheet[$version];
-  idx.sheetRules = rules.length;
   return true;
+}
+
+function sameEnvironment(a: MediaEnvironment, b: MediaEnvironment): boolean {
+  return (
+    a.width === b.width &&
+    a.height === b.height &&
+    a.devicePixelRatio === b.devicePixelRatio &&
+    a.mediaType === b.mediaType &&
+    a.features === b.features
+  );
 }
 
 // --- UA defaults -------------------------------------------------------------------------------
@@ -962,6 +1021,7 @@ function normalOrder(a: Matched, b: Matched): number {
     a.context - b.context ||
     a.rule.layer - b.rule.layer ||
     a.rule.specificity - b.rule.specificity ||
+    a.rule.sheetIndex - b.rule.sheetIndex ||
     a.rule.order - b.rule.order
   );
 }
@@ -972,6 +1032,7 @@ function importantOrder(a: Matched, b: Matched): number {
     b.context - a.context ||
     b.rule.layer - a.rule.layer ||
     a.rule.specificity - b.rule.specificity ||
+    a.rule.sheetIndex - b.rule.sheetIndex ||
     a.rule.order - b.rule.order
   );
 }

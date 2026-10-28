@@ -6,8 +6,9 @@
 // https://drafts.csswg.org/css-nesting-1/#cssom
 //
 // Every mutation (insertRule/deleteRule, replace, media/disabled changes, rule.style edits,
-// selectorText) bumps the owning document's `_styleVersion`, which invalidates the rule
-// index and every cached computed style.
+// selectorText) bumps the owning document's `_styleVersion`, which invalidates every cached
+// computed style and the rule index. The index is rebuilt, except over rules appended to the end
+// of a sheet (`_inserted` leaves `$rebuildVersion`), which extendIndex in css/cascade.ts adds.
 
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
@@ -1469,7 +1470,7 @@ function parseImportPrelude(
  * @namespace, which change the order or meaning of the rules already indexed, also nested in
  * style rules, @media and @supports.
  */
-function appendableRule(rule: CSSRule): boolean {
+export function appendableRule(rule: CSSRule): boolean {
   if (
     rule instanceof CSSLayerBlockRule ||
     rule instanceof CSSLayerStatementRule ||

@@ -385,6 +385,19 @@ writes into the DOM are ~38 ms (0.19%), and upstream replaces `getComputedStyle`
 `el.style`, so the cascade runs only for visibility checks. Our self time is 16%, 6 points of it
 the `defineProperty` trap above.
 
+**Sentry's rule index** (2026-10-28, `perf` preset: 39 files, ctrl-dom-full). Between two emotion
+inserts something often asks the cascade a question (`focus()` checking that the element is
+rendered, Testing Library's visibility checks), and the first question after an insert rebuilt the
+author rule index from every rule: `ruleIndexFor` took 104 ms of one worker's profile. It now
+indexes only the new rules when sheets only had rules appended, or new sheets came after the
+others (`extendIndex` in css/cascade.ts). Emotion's speedy mode does the first, with one sheet per
+cache; its development mode does the second, with a `<style>` per rule. Over the preset, 183
+questions extended the index and 26 rebuilt it (a sheet removed, or one inserted before others).
+`ruleIndexFor` fell to 60 ms, most of it compiling each new rule's selectors, which happens once
+either way. A scratch loop inserting 2,000 rules and reading a computed style after every second
+insert: two caches alternating 64.1 → 11.5 µs per insert (RSS 188 → 146 MB), a `<style>` per rule
+75.3 → 19.5 µs, one sheet 11.5 µs before and after.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

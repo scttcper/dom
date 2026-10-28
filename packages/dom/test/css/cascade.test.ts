@@ -189,7 +189,7 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
     expect(cs("#e").display).toBe("block");
   });
 
-  test("rule index: rules appended to the last sheet are indexed on their own; random edits match a fresh window", () => {
+  test("rule index: random appends, edits, new and removed sheets and viewport changes match a fresh window", () => {
     const markup =
       '<div class="a" id="r"><p class="b x" id="p"><span class="x c" id="s">t</span></p><i class="c" id="i"></i></div>';
     html(`<style></style><style></style>${markup}`);
@@ -206,28 +206,85 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
         .join(" | ");
     let seed = 7;
     const random = (n: number) => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) >>> 16) % n;
-    for (let op = 0; op < 300; op++) {
+    const media = (rule: string) => `@media (min-width: ${[1, 900, 5000][random(3)]}px) { ${rule} }`;
+    const layer = (rule: string) => `@layer l${random(2)} { ${rule} }`;
+    for (let op = 0; op < 400; op++) {
       const all = sheets();
       const sheet = all[random(all.length)];
       const n = sheet.cssRules.length;
       const rule = `${selectors[random(selectors.length)]} { ${decls[random(decls.length)]} }`;
-      const kind = random(10);
+      const kind = random(16);
       if (kind < 5) sheet.insertRule(rule, n);
-      else if (kind < 6) sheet.insertRule(`@media (min-width: ${random(2) === 0 ? 1 : 5000}px) { ${rule} }`, n);
-      else if (kind < 7) sheet.insertRule(`@layer l${random(2)} { ${rule} }`, n);
+      else if (kind < 6) sheet.insertRule(media(rule), n);
+      else if (kind < 7) sheet.insertRule(layer(rule), n);
       else if (kind < 8 && n > 0) sheet.deleteRule(random(n));
       else if (kind < 9) sheet.insertRule(rule, random(n + 1));
-      else if (n > 0) {
+      else if (kind < 10 && n > 0) {
         const target = sheet.cssRules[random(n)] as unknown as { style?: { color: string } };
         if (target.style !== undefined) target.style.color = "blue";
-      }
+      } else if (kind < 12) {
+        // A new <style> after the others (emotion's development mode: one per rule), or first.
+        const style = document.createElement("style");
+        const wrap = random(3);
+        style.textContent = wrap === 0 ? rule : wrap === 1 ? media(rule) : layer(rule);
+        if (random(4) === 0) style.setAttribute("media", "(min-width: 900px)");
+        document.body!.insertBefore(style, kind < 11 ? document.getElementById("r") : document.body!.firstChild);
+      } else if (kind < 13) sheet.disabled = !sheet.disabled;
+      else if (kind < 14 && all.length > 1) {
+        const style = document.querySelectorAll("style")[random(all.length)];
+        style.parentNode!.removeChild(style);
+      } else if (kind < 15) window.innerWidth = window.innerWidth === 1024 ? 800 : 1024;
       if (random(3) !== 0) continue;
       const fresh = createWindow();
+      fresh.innerWidth = window.innerWidth;
       fresh.document.body!.innerHTML =
-        all.map((s) => `<style>${Array.from(s.cssRules, (r) => r.cssText).join("\n")}</style>`).join("") + markup;
+        sheets()
+          .filter((s) => !s.disabled)
+          .map(
+            (s) => `<style media="${s.media.mediaText}">${Array.from(s.cssRules, (r) => r.cssText).join("\n")}</style>`,
+          )
+          .join("") + markup;
       expect(read(document, window), `after op ${op}`).toBe(read(fresh.document, fresh));
       fresh.close();
     }
+  });
+
+  test("rule index: rules appended to any sheet and sheets added after the others extend the index; other changes rebuild it", () => {
+    html(`<style>.x { color: red }</style><style>.x { color: green }</style><p class="x" id="p"></p>`);
+    const index = () => (document[$css] as { main: { index: unknown } }).main.index;
+    const [a, b] = Array.from(
+      document.querySelectorAll("style"),
+      (el) => (el as unknown as { sheet: CSSStyleSheet }).sheet,
+    );
+    expect(cs("#p").color).toBe("green");
+    const built = index();
+    // Appended to the first sheet: after its own rule, still before the second sheet's.
+    a.insertRule(".x { color: blue }", a.cssRules.length);
+    expect(cs("#p").color).toBe("green");
+    b.insertRule(".x { color: blue }", b.cssRules.length);
+    expect(cs("#p").color).toBe("blue");
+    const style = document.createElement("style");
+    style.textContent = ".x { color: red }";
+    document.body!.append(style);
+    expect(cs("#p").color).toBe("red");
+    a.insertRule(".x { color: green }", a.cssRules.length);
+    expect(cs("#p").color).toBe("red");
+    expect(index()).toBe(built);
+    b.deleteRule(0);
+    expect(cs("#p").color).toBe("red");
+    expect(index()).not.toBe(built);
+  });
+
+  test("rule index: an appended @layer rule or a new sheet with one ranks its layer after the earlier ones", () => {
+    html(`<style>@layer a { #p { color: red } } @layer a2 { #p { color: orange } }</style><p id="p"></p>`);
+    const sheet = (document.querySelector("style") as unknown as { sheet: CSSStyleSheet }).sheet;
+    expect(cs("#p").color).toBe("orange");
+    sheet.insertRule("@layer b { #p { color: green } }", sheet.cssRules.length);
+    expect(cs("#p").color).toBe("green");
+    const style = document.createElement("style");
+    style.textContent = "@layer c { #p { color: blue } }";
+    document.body!.append(style);
+    expect(cs("#p").color).toBe("blue");
   });
 
   test("rule index: a bucket served from cached ancestor-filter survivors picks up an appended rule", () => {
