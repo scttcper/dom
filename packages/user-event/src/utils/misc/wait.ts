@@ -29,7 +29,7 @@
 // behind ours, so after either wait user-event yields again while immediates other than the
 // clock's own are queued, up to MAX_YIELD_HOPS (upstream's 1 ms timer can lose that race too).
 
-import {immediatesPending, skipIdleTime} from '../../ctrl-dom.ts'
+import {immediatesPending, isClockTimer, skipIdleTime} from '../../ctrl-dom.ts'
 import {type Instance} from '../../setup/index.ts'
 
 type TimerFn = ((...args: never[]) => unknown) & {
@@ -122,13 +122,15 @@ function wrapSchedule(name: 'setTimeout' | 'setInterval') {
     return
   const original = current as unknown as AnyFn
   const isInterval = name === 'setInterval'
+  // The clock's timers need no tracking: it knows their deadlines (canYieldWithImmediate).
+  const clockOwned = isClockTimer(original)
   const wrapper = function (
     this: unknown,
     callback: unknown,
     delay?: unknown,
     ...args: unknown[]
   ) {
-    if (typeof callback !== 'function') {
+    if (clockOwned || typeof callback !== 'function') {
       return original.call(this, callback, delay, ...args)
     }
     const ms = Math.max(1, Number(delay) || 0)
@@ -264,6 +266,11 @@ function realTimersAtZeroDelay(config: Instance['config']): boolean {
 
 function canYieldWithImmediate(config: Instance['config']): boolean {
   if (!realTimersAtZeroDelay(config)) return false
+  // On @ctrl/dom's idle-skipping clock the observed globals' timers are the clock's: upstream's
+  // wait runs those due within its 1 ms and no other, which skipIdleTime checks against every one
+  // of them. The deadline tracking and the count of Node's Timeouts are for Node's own timers
+  // (where the clock's never show up as Timeouts, so that count misread every fired timer).
+  if (isClockTimer(globalThis.setTimeout)) return skipIdleTime(1)
   if (trackedTimerDueSoon()) return false
   const untracked = untrackedTimeouts()
   if (untrackedBaseline === -1 || untracked > untrackedBaseline) return false
@@ -294,7 +301,8 @@ async function yieldAndSettle(config: Instance['config']) {
     await new Promise<void>(resolveOnImmediate)
   } else {
     await wait(config)
-    if (timerGlobalsObserved()) untrackedBaseline = untrackedTimeouts()
+    if (timerGlobalsObserved() && !isClockTimer(globalThis.setTimeout))
+      untrackedBaseline = untrackedTimeouts()
   }
   // After either wait: upstream's 1 ms timer can also fire before a busy render's continuation.
   if (realTimersAtZeroDelay(config)) {

@@ -22,7 +22,11 @@
 import * as ctrlDomInternal from '@ctrl/dom/internal'
 import type {NodeImpl} from '@ctrl/dom/internal'
 import type {Element, Node} from './dom-types.ts'
-import {$impl} from '@ctrl/dom/internal'
+import {$impl as importedImpl} from '@ctrl/dom/internal'
+
+// Read once: the CommonJS build reads an imported binding through rolldown's interop getter on
+// every access, and implOf runs for most events user-event creates (Sentry's suite profile).
+const $impl: typeof importedImpl = importedImpl
 
 /**
  * @ctrl/dom html-forms UI state (`src/html/forms/ui.ts`, re-exported from `@ctrl/dom/internal`).
@@ -106,6 +110,19 @@ const skipIdle = internal?.skipIdleTime as ((ms: number) => boolean) | undefined
  */
 export function skipIdleTime(ms: number): boolean {
   return skipIdle === undefined || skipIdle(ms)
+}
+
+const clockTimer = internal?.isClockTimer as
+  | ((fn: unknown) => boolean)
+  | undefined
+
+/**
+ * Whether `fn` is the setTimeout/setInterval of @ctrl/dom's active idle-skipping clock, or a copy
+ * of its own properties (src/window/clock.ts): the timers created through it are the clock's.
+ * False on another DOM.
+ */
+export function isClockTimer(fn: unknown): boolean {
+  return clockTimer !== undefined && clockTimer(fn)
 }
 
 const foreignImmediates = internal?.foreignImmediatesPending as
