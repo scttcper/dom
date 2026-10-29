@@ -135,16 +135,16 @@
     "date": "2026-10-28"
   },
   "sentry": {
-    "preset": "components",
+    "preset": "all",
     "commit": "503ad2e4e2a208a87d768a3e91bcfb55a778e7ba",
     "modes": {
       "jsdom": {
-        "passed": 6429,
+        "passed": 23421,
         "failed": 0,
-        "skipped": 3,
+        "skipped": 5,
         "failing": [],
-        "wallMs": 38454,
-        "peakRssBytes": 2186018816,
+        "wallMs": 138148,
+        "peakRssBytes": 2972811264,
         "jsdomVersion": "30.1.1",
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
@@ -153,26 +153,58 @@
         "date": "2026-10-28"
       },
       "ctrl-dom": {
-        "passed": 6429,
-        "failed": 0,
-        "skipped": 3,
-        "failing": [],
-        "wallMs": 27528,
-        "peakRssBytes": 2163916800,
+        "passed": 23406,
+        "failed": 15,
+        "skipped": 5,
+        "failing": [
+          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
+          "static/app/utils/requestError/getRequestErrorUserMessage.spec.tsx::getRequestErrorUserMessage returns message for generic Error instances",
+          "static/app/views/automations/detail.spec.tsx::AutomationDetail displays connected projects and monitors",
+          "static/app/views/dashboards/widgets/textWidget/textWidgetVisualization.spec.tsx::TextWidgetVisualization renders markdown code blocks",
+          "static/app/views/settings/components/settingsBreadcrumb/settingsBreadcrumbSelector.spec.tsx::SettingsBreadcrumbSelector renders a label link and opens the parent menu from its separate icon button",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification builds the payload from the refetched config, not the local one",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification clears a failed manual check when saved settings trigger a new check",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification does not re-run verification for other providers",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification re-runs verification with the saved settings",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification reports the check as running instead of the interim unverified status",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification shows an automatic verification failure and clears it after a successful re-test",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification shows the newly recorded status after a save",
+          "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows a setup error when setup intent creation fails without a detail",
+          "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error if the setupintent creation fails",
+          "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error when confirmSetup fails"
+        ],
+        "wallMs": 102383,
+        "peakRssBytes": 2906898432,
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders",
-          "static/app/components/seer/markdown/embeds/components/replay.spec.tsx::replay embed renders a replay player preview at block level with a timestamp"
+          "static/app/components/seer/markdown/embeds/components/replay.spec.tsx::replay embed renders a replay player preview at block level with a timestamp",
+          "static/app/views/performance/traceDetails/trace.spec.tsx::trace view reveals a hidden vital pill source node on click"
         ],
         "date": "2026-10-28"
       },
       "ctrl-dom-full": {
-        "passed": 6429,
-        "failed": 0,
-        "skipped": 3,
-        "failing": [],
-        "wallMs": 26238,
-        "peakRssBytes": 2347057152,
+        "passed": 23407,
+        "failed": 14,
+        "skipped": 5,
+        "failing": [
+          "static/app/utils/requestError/getRequestErrorUserMessage.spec.tsx::getRequestErrorUserMessage returns message for generic Error instances",
+          "static/app/views/automations/detail.spec.tsx::AutomationDetail displays connected projects and monitors",
+          "static/app/views/dashboards/widgets/textWidget/textWidgetVisualization.spec.tsx::TextWidgetVisualization renders markdown code blocks",
+          "static/app/views/settings/components/settingsBreadcrumb/settingsBreadcrumbSelector.spec.tsx::SettingsBreadcrumbSelector renders a label link and opens the parent menu from its separate icon button",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification builds the payload from the refetched config, not the local one",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification clears a failed manual check when saved settings trigger a new check",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification does not re-run verification for other providers",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification re-runs verification with the saved settings",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification reports the check as running instead of the interim unverified status",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification shows an automatic verification failure and clears it after a successful re-test",
+          "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification shows the newly recorded status after a save",
+          "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows a setup error when setup intent creation fails without a detail",
+          "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error if the setupintent creation fails",
+          "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error when confirmSetup fails"
+        ],
+        "wallMs": 99542,
+        "peakRssBytes": 3123200000,
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"

@@ -39,12 +39,12 @@ Each suite is the project's own unmodified tests at a pinned commit, run three w
 | [Base UI](../downstream/base-ui/README.md) (`@base-ui/react`, Vitest) | [mui/base-ui@205831c](https://github.com/mui/base-ui/tree/205831caa12125f8e81f1af02a013239b27d752a) | 9,199 | 9,199 | 9,199 | 9,198 (1 intermittent) |
 | [Radix Primitives](../downstream/radix/README.md) (`unit` project, Vitest) | [radix-ui/primitives@eb3a2b7](https://github.com/radix-ui/primitives/tree/eb3a2b7091293e27df8f9ba906632d8daa3d81a3) | 1,134 | 1,134 | 1,134 | 1,134 |
 | [React Aria](../downstream/react-aria/README.md) (`react-aria` + `react-aria-components`, Jest) | [adobe/react-spectrum@d5fb723](https://github.com/adobe/react-spectrum/tree/d5fb723a1c192e3a1a25c8cfdd4e26b900995307) | 2,997 | 2,997 | 2,996 | 2,989 |
-| [Sentry](../downstream/sentry/README.md) (`static/app/components`, Jest) | [getsentry/sentry@503ad2e](https://github.com/getsentry/sentry/tree/503ad2e4e2a208a87d768a3e91bcfb55a778e7ba) | 6,429 | 6,429 | 6,429 | 6,429 |
+| [Sentry](../downstream/sentry/README.md) (every spec, Jest) | [getsentry/sentry@503ad2e](https://github.com/getsentry/sentry/tree/503ad2e4e2a208a87d768a3e91bcfb55a778e7ba) | 23,421 | 23,421 | 23,406 (1 intermittent) | 23,407 |
 | [TanStack Query](../downstream/tanstack-query/README.md) (React adapter packages, Vitest) | [TanStack/query@9e42537](https://github.com/TanStack/query/tree/9e4253766f8015d1372bcd515f50103fd067a42d) | 477 | 477 | 477 | 477 |
 | [React Hook Form](../downstream/react-hook-form/README.md) (`Web` project, Jest) | [react-hook-form/react-hook-form@ed9345a](https://github.com/react-hook-form/react-hook-form/tree/ed9345ab9c199cb37afbb6ef73970cf697f4585d) | 1,729 | 1,729 | 1,728 (1 intermittent) | 1,728 (1 intermittent) |
 | [React Router](../downstream/react-router/README.md) (`packages/react-router`, Jest in ESM mode) | [remix-run/react-router@bb7c1f0](https://github.com/remix-run/react-router/tree/bb7c1f021363e96745dd3cfc5d2431e9b80ffe61) | 2,569 | 2,569 | 2,565 | 2,565 |
 <!-- downstream:end -->
 
-Rerun a suite with `node downstream/<suite>/run.ts --install --preset all` (Sentry:
-`--preset components`; each suite's README in [downstream/](../downstream) has the details), then
+Rerun a suite with `node downstream/<suite>/run.ts --install --preset all` (each suite's
+README in [downstream/](../downstream) has the details), then
 compare with the baseline: `node downstream/track.ts --suites <suite>`.

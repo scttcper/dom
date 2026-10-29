@@ -36,12 +36,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Run ${{ matrix.suite }}
-        run: |
-          case "${{ matrix.suite }}" in
-            sentry) preset=components ;;
-            *) preset=all ;;
-          esac
-          node downstream/${{ matrix.suite }}/run.ts --install --preset "$preset" --modes jsdom,ctrl-dom,ctrl-dom-full --workers 4 --no-report
+        run: node downstream/${{ matrix.suite }}/run.ts --install --preset all --modes jsdom,ctrl-dom,ctrl-dom-full --workers 4 --no-report
       - name: Compare with downstream/baseline.json
         if: always()
         run: node downstream/track.ts --suites ${{ matrix.suite }}

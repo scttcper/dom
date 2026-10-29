@@ -47,10 +47,10 @@ const SUITES: Record<string, { preset: string; output: (mode: string) => string;
     scope: "`react-aria` + `react-aria-components`, Jest",
   },
   sentry: {
-    preset: "components",
-    output: (mode) => join(here, "sentry/output/components", mode),
+    preset: "all",
+    output: (mode) => join(here, "sentry/output/all", mode),
     title: "Sentry",
-    scope: "`static/app/components`, Jest",
+    scope: "every spec, Jest",
   },
   "tanstack-query": {
     preset: "all",
