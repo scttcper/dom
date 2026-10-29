@@ -14,7 +14,9 @@
 // it (cancelling its pending animation frames, idle callbacks and tasks) and restores every
 // global it replaced. React's IS_REACT_ACT_ENVIRONMENT is left to the testing library.
 
-import { enableCompileCache } from "node:module";
+import { constants as moduleConstants, enableCompileCache } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { constants as vmConstants, createContext, type Context } from "node:vm";
 import type { Environment } from "vitest/runtime";
@@ -44,8 +46,20 @@ let internal: Internal | null = null;
  */
 async function load(options: Record<string, unknown>): Promise<void> {
   if (dom !== null) return;
-  if (compileCache(options)) enableCompileCache?.();
+  if (compileCache(options)) enableNodeCompileCache();
   [dom, internal] = await Promise.all([import("@ctrl/dom"), import("@ctrl/dom/internal")]);
+}
+
+/**
+ * @internal Node's compile cache in its default directory (NODE_COMPILE_CACHE, else
+ * `<tmpdir>/node-compile-cache`), or in a per-user `node-compile-cache-<uid>` beside it when Node
+ * cannot use that one: GitHub's Ubuntu 26.04 runner images ship a root-owned
+ * /tmp/node-compile-cache. The plugin's worker preload takes the same steps (COMPILE_CACHE_IMPORT
+ * in ./plugin.ts, which has the details).
+ */
+export function enableNodeCompileCache(): void {
+  if (enableCompileCache().status === moduleConstants.compileCacheStatus.FAILED && process.getuid)
+    enableCompileCache(join(tmpdir(), `node-compile-cache-${process.getuid()}`));
 }
 
 /**

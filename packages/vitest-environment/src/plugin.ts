@@ -53,13 +53,22 @@ const TESTING_LIBRARY = [
  * runner, chai and the module runner then load from it too. A `data:` URL, so there is no file to
  * resolve. Node ignores it under NODE_DISABLE_COMPILE_CACHE (Vitest's v8 coverage sets that).
  *
+ * When Node cannot use its default directory (NODE_COMPILE_CACHE, else
+ * `<tmpdir>/node-compile-cache`), a per-user `node-compile-cache-<uid>` beside it. GitHub's Ubuntu
+ * 26.04 runner images ship a root-owned /tmp/node-compile-cache, where the runner user cannot
+ * create its own directory: the image build's software report runs npm, which turns the cache on
+ * for itself, as root after the /tmp cleanup, and /tmp stays on disk since
+ * actions/runner-images#14814. The same steps as enableNodeCompileCache in ./index.ts.
+ *
  * Node writes the cache at a normal exit or on `module.flushCompileCache()`. Vitest 5 flushes
  * before stopping a fork worker; Vitest 4 SIGTERMs it, so there every worker misses on every
  * module and the cache only costs time (TanStack Query's suite on Vitest 4: 3.54 s with it, 3.17 s
  * without). Not worked around: the peer range is vitest >=5.
  */
 const COMPILE_CACHE_IMPORT =
-  '--import=data:text/javascript,import{enableCompileCache}from"node:module";enableCompileCache?.()';
+  '--import=data:text/javascript,import{constants,enableCompileCache}from"node:module";import{tmpdir}from"node:os";' +
+  "if(enableCompileCache().status===constants.compileCacheStatus.FAILED&&process.getuid)" +
+  'enableCompileCache(tmpdir()+"/node-compile-cache-"+process.getuid())';
 
 /**
  * @internal The Node flags the plugin adds to a project's workers: the compile cache from process
