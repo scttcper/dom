@@ -8,47 +8,44 @@
         "failed": 0,
         "skipped": 1578,
         "failing": [],
-        "wallMs": 90441,
-        "peakRssBytes": 532611072,
+        "wallMs": 61413,
+        "peakRssBytes": 568770560,
         "jsdomVersion": "27.4.0",
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
-        "passed": 9197,
-        "failed": 2,
+        "passed": 9199,
+        "failed": 0,
         "skipped": 1578,
-        "failing": [
-          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
-          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
-        ],
-        "wallMs": 52733,
-        "peakRssBytes": 412794880,
+        "failing": [],
+        "wallMs": 39660,
+        "peakRssBytes": 397672448,
         "flaky": [
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 9198,
         "failed": 1,
         "skipped": 1578,
         "failing": [
-          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "wallMs": 48383,
-        "peakRssBytes": 404504576,
+        "wallMs": 35672,
+        "peakRssBytes": 411140096,
         "flaky": [
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   },
   "radix": {
     "preset": "all",
@@ -59,34 +56,34 @@
         "failed": 0,
         "skipped": 9,
         "failing": [],
-        "wallMs": 10719,
-        "peakRssBytes": 272777216,
+        "wallMs": 10680,
+        "peakRssBytes": 272711680,
         "jsdomVersion": "29.1.1",
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
         "passed": 1134,
         "failed": 0,
         "skipped": 9,
         "failing": [],
-        "wallMs": 6274,
-        "peakRssBytes": 267927552,
+        "wallMs": 6470,
+        "peakRssBytes": 260472832,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 1134,
         "failed": 0,
         "skipped": 9,
         "failing": [],
-        "wallMs": 6674,
-        "peakRssBytes": 252149760,
+        "wallMs": 6742,
+        "peakRssBytes": 248610816,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   },
   "react-aria": {
     "preset": "all",
@@ -97,11 +94,11 @@
         "failed": 0,
         "skipped": 9,
         "failing": [],
-        "wallMs": 15082,
-        "peakRssBytes": 1024540672,
+        "wallMs": 15906,
+        "peakRssBytes": 990756864,
         "jsdomVersion": "26.1.0",
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
         "passed": 2996,
@@ -110,10 +107,10 @@
         "failing": [
           "packages/react-aria/test/overlays/useOverlayPosition.test.tsx::useOverlayPosition should position the overlay relative to the trigger at top"
         ],
-        "wallMs": 10114,
-        "peakRssBytes": 911376384,
+        "wallMs": 10780,
+        "peakRssBytes": 932397056,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 2989,
@@ -129,13 +126,13 @@
           "packages/react-aria-components/test/Switch.test.js::SwitchField should support press state with keyboard",
           "packages/react-aria/test/overlays/useOverlayPosition.test.tsx::useOverlayPosition should position the overlay relative to the trigger at top"
         ],
-        "wallMs": 9501,
-        "peakRssBytes": 939196416,
+        "wallMs": 9750,
+        "peakRssBytes": 939999232,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   },
   "sentry": {
     "preset": "components",
@@ -146,44 +143,44 @@
         "failed": 0,
         "skipped": 3,
         "failing": [],
-        "wallMs": 52758,
-        "peakRssBytes": 2372304896,
+        "wallMs": 38454,
+        "peakRssBytes": 2186018816,
         "jsdomVersion": "30.1.1",
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
         "passed": 6429,
         "failed": 0,
         "skipped": 3,
         "failing": [],
-        "wallMs": 33104,
-        "peakRssBytes": 2536259584,
+        "wallMs": 27528,
+        "peakRssBytes": 2163916800,
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders",
           "static/app/components/seer/markdown/embeds/components/replay.spec.tsx::replay embed renders a replay player preview at block level with a timestamp"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 6429,
         "failed": 0,
         "skipped": 3,
         "failing": [],
-        "wallMs": 30632,
-        "peakRssBytes": 2190065664,
+        "wallMs": 26238,
+        "peakRssBytes": 2347057152,
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   },
   "tanstack-query": {
     "preset": "all",
@@ -194,34 +191,34 @@
         "failed": 0,
         "skipped": 0,
         "failing": [],
-        "wallMs": 5539,
-        "peakRssBytes": 283951104,
+        "wallMs": 5622,
+        "peakRssBytes": 254607360,
         "jsdomVersion": "27.4.0",
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
         "passed": 477,
         "failed": 0,
         "skipped": 0,
         "failing": [],
-        "wallMs": 4738,
-        "peakRssBytes": 259424256,
+        "wallMs": 4664,
+        "peakRssBytes": 259981312,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 477,
         "failed": 0,
         "skipped": 0,
         "failing": [],
-        "wallMs": 5403,
-        "peakRssBytes": 320929792,
+        "wallMs": 5440,
+        "peakRssBytes": 336936960,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   },
   "react-hook-form": {
     "preset": "all",
@@ -232,11 +229,11 @@
         "failed": 0,
         "skipped": 0,
         "failing": [],
-        "wallMs": 5961,
-        "peakRssBytes": 501284864,
+        "wallMs": 6025,
+        "peakRssBytes": 492404736,
         "jsdomVersion": "26.1.0",
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
         "passed": 1728,
@@ -245,13 +242,13 @@
         "failing": [
           "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
         ],
-        "wallMs": 3766,
-        "peakRssBytes": 482721792,
+        "wallMs": 3781,
+        "peakRssBytes": 489029632,
         "flaky": [
           "src/__tests__/useFieldArray.test.tsx::not corrupt parent state when remove is called with values prop",
           "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 1728,
@@ -260,16 +257,16 @@
         "failing": [
           "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
         ],
-        "wallMs": 2459,
-        "peakRssBytes": 401620992,
+        "wallMs": 2397,
+        "peakRssBytes": 407109632,
         "flaky": [
           "src/__tests__/useFieldArray.test.tsx::not corrupt parent state when remove is called with values prop",
           "src/__tests__/useForm/getValues.test.tsx::getValues return defaultValues deep merge with form values"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   },
   "react-router": {
     "preset": "all",
@@ -280,11 +277,11 @@
         "failed": 0,
         "skipped": 15,
         "failing": [],
-        "wallMs": 16222,
-        "peakRssBytes": 945438720,
+        "wallMs": 16280,
+        "peakRssBytes": 1012269056,
         "jsdomVersion": "26.1.0",
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom": {
         "passed": 2565,
@@ -296,10 +293,10 @@
           "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher states loader submission fetch",
           "packages/react-router/__tests__/router/router-test.ts::a router data loading (new) sends proper arguments to loaders"
         ],
-        "wallMs": 9553,
-        "peakRssBytes": 1089323008,
+        "wallMs": 9656,
+        "peakRssBytes": 1189232640,
         "flaky": [],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       },
       "ctrl-dom-full": {
         "passed": 2565,
@@ -311,14 +308,14 @@
           "packages/react-router/__tests__/router/fetchers-test.ts::fetchers fetcher states loader submission fetch",
           "packages/react-router/__tests__/router/router-test.ts::a router data loading (new) sends proper arguments to loaders"
         ],
-        "wallMs": 8110,
-        "peakRssBytes": 948600832,
+        "wallMs": 8293,
+        "peakRssBytes": 1032945664,
         "flaky": [
           "packages/react-router/__tests__/data-memory-router-test.tsx::createMemoryRouter defer freezes the UI for aborted deferreds"
         ],
-        "date": "2026-10-26"
+        "date": "2026-10-28"
       }
     },
-    "date": "2026-10-26"
+    "date": "2026-10-28"
   }
 }

@@ -1,0 +1,1014 @@
+# Sentry downstream: `components` (2026-10-28)
+
+- upstream: https://github.com/getsentry/sentry @ `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba` (2026-10-23T13:58:39Z) — fix(agents): Avoid repeated user turns during tool continuations (#128645)
+- pinned: `503ad2e4e2a208a87d768a3e91bcfb55a778e7ba`
+- selection: `static/app/components/`
+- node v26.12.1, Jest workers 6 (same for every mode), runs per mode 1, CI=true (upstream's CI code paths), no forced GC
+- upstream versions: jest@30.5.1, jsdom@30.1.1, react@19.3.0, react-dom@19.3.0, @swc/jest@0.2.39, @testing-library/react@16.3.2, @testing-library/dom@10.4.1, @testing-library/user-event@14.6.7, @testing-library/jest-dom@7.0.1, @sentry/jest-environment@8.1.0, @floating-ui/react-dom@2.1.9
+- ctrl-dom-full substitutes: @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom (packages/*/dist/*.cjs)
+- ctrl-dom-nohacks is an **experiment**: ctrl-dom-full plus harness/nohacks.ts undoing upstream's getComputedStyle / Floating UI / matchMedia / IntersectionObserver hacks.
+
+## Per-mode results
+
+| mode | passed | failed | skipped | total | files | suite errors | exit | wall | CPU | peak tree RSS | peak process RSS | env setup / file (median, p95) | receipts | notes |
+| --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --- |
+| jsdom | 6429 | 0 | 3 | 6432 | 653 | 0 | 0 | 38.5s | 255.4s | 9896 MiB | 2085 MiB | 6 ms, 8 ms | 653/653 | RTL: stock |
+| ctrl-dom | 6429 | 0 | 3 | 6432 | 653 | 0 | 0 | 27.5s | 236.1s | 10022 MiB | 2064 MiB | 5 ms, 6 ms | 653/653 | 1 React; RTL: stock |
+| ctrl-dom-full | 6429 | 0 | 3 | 6432 | 653 | 0 | 0 | 26.2s | 225.4s | 11058 MiB | 2238 MiB | 5 ms, 6 ms | 653/653 | 1 React |
+| ctrl-dom-nohacks | 0 | 0 | 0 | 0 | 653 | 653 | 1 | 6.6s | 42.6s | 7241 MiB | 1256 MiB | 4 ms, 5 ms | 653/653 | 1 React |
+
+## Jest worker memory across files
+
+Sampled after each test file's environment teardown in every worker (no forced GC, so heap numbers include garbage). Slope = least-squares growth per file over each worker's files (first file excluded), median across workers. Upstream sets no `workerIdleMemoryLimit`.
+
+| mode | workers | files/worker | heap after 1st file | heap after last file | heap growth/file | RSS growth/file | RSS after last file | max worker RSS |
+| --- | --: | --: | --: | --: | --: | --: | --: | --: |
+| jsdom | 6 | 117.5 | 219 MiB | 1036 MiB | 1.29 MiB | 5.10 MiB | 1488 MiB | 2071 MiB |
+| ctrl-dom | 6 | 119.5 | 241 MiB | 589 MiB | -1.08 MiB | 4.53 MiB | 1374 MiB | 2058 MiB |
+| ctrl-dom-full | 6 | 120.5 | 279 MiB | 857 MiB | -1.61 MiB | 5.39 MiB | 1337 MiB | 2218 MiB |
+| ctrl-dom-nohacks | 6 | 109 | 71 MiB | 989 MiB | 8.04 MiB | 9.34 MiB | 1238 MiB | 1252 MiB |
+
+## jsdom
+
+No failing tests.
+
+## ctrl-dom
+
+Compared with jsdom: **0 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
+
+No failing tests.
+
+## ctrl-dom-full
+
+Compared with jsdom: **0 pass on jsdom but fail here**, 0 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
+
+No failing tests.
+
+## ctrl-dom-nohacks
+
+### Suite errors (file failed outside a test)
+
+- `static/app/components/pipeline/integrationJira/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationSlack/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationVsts/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/badge/groupPriority.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationBitbucket/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationDiscord/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationMsTeams/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationCursorOrigin/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationOpsgenie/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationCursor/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/shared/oauthLoginStep.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationPerforce/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationAwsLambda/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationClaudeCode/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationVercel/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationGitHub/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationGcp/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationGitHubEnterprise/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationPagerDuty/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationJiraServer/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationGitLab/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationDatadog/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/modal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/integrationBitbucketServer/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pipeline/usePipeline.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/ai/toolDetails/toolOutput.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/ai/toolDetails/toolOutputData.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/ai/chat/collapsibleContent.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/ai/toolDetails/codeModeDetails.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/ai/toolDetails/codeModeInput.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/sentryAppExternalIssueModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/externalIssuesList/linkedPullRequests.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/externalIssuesList/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/issueSeerBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/assigneeSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/issueReplayCount.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/group/sentryAppExternalIssueForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/utils/useCurrentProjectState.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/deprecatedPlatformInfo.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/utils/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/selectedCodeTabContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/docsFlowAnalytics.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/onboardingCodeSnippet.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/onboardingLayout.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/sdkDocumentation.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/gettingStartedDoc/onboardingCopyMarkdownButton.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmMessagingProviderRow/msTeamsConnection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmMessagingProviderRow/subtitle.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmMessagingProviderRow/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmMessagingProviderRow/action.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmAlertFrequencySection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmProjectName.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmCollapsibleSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmPlatformDetection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmFeatureSelectionCards.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmIntegrationSelect.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmFeatureSelectionPanel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmMessagingChannelPicker.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmIntegrationConnect.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmProjectDetails.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmMessagingIntegrationAlertRule.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmProviders.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmPlatformFeaturesCore.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmProviderPills.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmProjectCreation.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmProjectDetailsCore.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmPlatformHelpers.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmVirtualizedMenuList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmMessagingProviders.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmRepoSelection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/scmRepoSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/scm/useScmRepos.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/utils/stepsToMarkdown.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/agenticProgress/useAgenticSetupRun.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/agenticProgress/useAgenticProgressInit.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/agenticProgress/agenticProgressList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/useCreateProject.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/agenticProgress/useAgenticProgress.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/captureProjectCreationFailure.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/createSampleEventButton.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/frameworkSuggestionModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/onboardingContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/productSelection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/platformOptionsControl.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboarding/useMutateOnboardingTasks.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/acl/access.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/acl/demoModeDisabled.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/acl/feature.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/acl/featureDisabled.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/acl/useRole.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/acl/featureDisabledModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/workflowEngine/gridCell/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/workflowEngine/form/environmentSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/workflowEngine/form/useFormField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/workflowEngine/getWorkflowEngineResponseErrorMessage.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/band/useDroppedDataBand.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/band/bucketTooltip.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/band/severityColor.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/drawer/droppedDataOutcomeList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/drawer/droppedDataChart.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/drawer/outcomeSections.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/drawer/useDroppedDataDrawer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/useDroppedData.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/droppedDataLayerControl.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/duration/duration.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/buckets.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/droppedData/outcomes.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchSyntax/mutableSearch.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchSyntax/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchSyntax/regexPatternValidator.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchSyntax/renderer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchSyntax/evaluator.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchSyntax/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/issues/groupList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/contentSliderDiff/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stream/group.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/projectBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tours/components.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tours/tourContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/memberBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/organizationBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/userBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/baseBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/teamBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/idBadge/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/performance/waterfall/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/performance/searchBar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/structuredEventData/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/preprod/snapshotStatusBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/preprod/preprodSearchBar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/preprod/preprodBuildsTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/groupPreviewTooltip/stackTracePreview.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/groupPreviewTooltip/evidencePreview.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/groupPreviewTooltip/spanEvidencePreview.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/breadcrumbs/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/exception/banners/stacktraceBanners.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/csp/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/exception/relatedExceptions.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/exception/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/exception/stackTrace.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/exception/content.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/stackTrace/nativeContent.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/exception/mechanism.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/stackTrace/rawContent.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/crashContent/stackTrace/content.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/spanEvidence.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/anrRootCause.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/eventTraceView.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/slowDBQuerySpan.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/traceLinkedIssues.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/performance/spanEvidenceKeyValueList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/request/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/frameRegisters/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/frameRegisters/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/stacktraceLinkModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/openInContextLine.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/deprecatedLine.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/context.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/usePrismTokensSourceContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/useSourceContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/frame/stacktraceLink.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/debugMeta/debugImageDetails/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/debugMeta/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/debugMeta/proguardSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/debugMeta/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/spans/spanProfileDetails.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/searchBarAction.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/template.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/stackTraceContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/message.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/sourceMapsDebuggerModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/threads.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/interfaces/analyzeFrames.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventTagsAndScreenshot/screenshot/modal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/breadcrumbs/copyBreadcrumbs.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventTagsAndScreenshot/screenshot/screenshotDataSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/breadcrumbs/breadcrumbsDrawer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/breadcrumbs/breadcrumbItemContent.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/breadcrumbs/breadcrumbsDataSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/featureFlags/eventFeatureFlagDrawer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/viewHierarchy/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/featureFlags/eventFeatureFlagSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/viewHierarchy/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/viewHierarchy/detailsPanel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventTags/eventTagsTree.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventTags/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/utils.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/warnings.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/autofixCards.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/nextStep.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/useResetAutofixStep.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/seerEnableNotifications.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/useAutoTriggerAutofix.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/header.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/autofixEvidence.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/prIterationFeedbackForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/claudeCodeIntegrationCta.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/content.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/v3/autofixPreviews.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/useRefreshAutofixProgressQueries.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/autofixCursorGithubAccessModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/useExplorerAutofix.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/autofixGithubAppPermissionsModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/pullRequests.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/cursorIntegrationCta.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/autofix/types.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/highlights/util.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/highlights/highlightsDataSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/highlights/editHighlightsModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventReplay/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/highlights/highlightsSettingsForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/highlights/highlightsIconSummary.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventReplay/replayInlineOnboardingPanel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventReplay/replayClipPreview.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/ourlogs/useEventLogsUrl.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/ourlogs/ourlogsSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/groupingInfo/groupingComponent.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/groupingInfo/groupingVariant.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/groupingInfo/groupingInfo.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/flamegraphAttachment/utils.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/attachmentViewers/logFileViewer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/wer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/meta/annotatedText/annotatedTextErrors.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/attachmentViewers/jsonViewer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/browser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/user.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/app.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/os.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/reactNativeContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/flutterContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/profile.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/runtime.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/culture.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/missingInstrumentation.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/state.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/trace.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/replay.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/cloudResource.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/threadPoolInfo.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/art.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/accessibility.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/gpu.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/device.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/dartContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/platformContext/laravel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/platformContext/unity.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/platformContext/react.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/knownContext/memoryInfo.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/platformContext/spring.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/index.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/contextIcon.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/contextCard.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventExtraData/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/contexts/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventStackTrace.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/metrics/metricsSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventAttachments.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventViewHierarchy.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/suspectCommits.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventSdk.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/suspectCommitFeedback.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/packageData.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/userFeedback.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventEvidence.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventFlamegraph.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventProcessingErrors.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/profileEventEvidence.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/events/eventMessage.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/frame/getJsonFrameVariables.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/frame/frameVariablesGrid.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/frame/getStructuredDataConfig.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/frame/frameVariablesTree.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/issueStackTrace/sharedIssueStackTrace.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/issueStackTrace/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/exceptionGroup.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/exceptionHeader.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/getRows.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/stackTrace/stackTrace.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandPalette/ui/collection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandPalette/ui/commandPalette.modal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.navFilter.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandPalette/ui/featureFlagCommandPaletteActions.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/issueDiff/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/errors/detailedError.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/fields/accessibility.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/fields/sentryMemberTeamSelectorField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/fields/booleanField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/fields/sentryProjectSelectorField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/fields/choiceMapperField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/controls/radioGroup.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/fields/tableField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/controls/rangeSlider/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/controls/multipleCheckbox.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/formField/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/guidedSteps/guidedSteps.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/forms/useFormEagerValidation.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/actions/resolve.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/actions/archive.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/flamegraphDrawer/flamegraphTreeTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/flamegraphOverlays/FlamegraphWarnings.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/aggregateFlamegraphTreeTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/flamegraphToolbar/profileChunkAttachmentsButton.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/flamegraphToolbar/flamegraphThreadSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/flamegraph.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/arrayLinks.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraph/flamegraphPreview.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/flamegraphSearch.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/profileEventsTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/profiling/profileHeader.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboardingWizard/filterSupportedTasks.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/onboardingWizard/content.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/keyValueTree/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/featureFeedback/feedbackModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/featureFeedback/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/backendJsonFormAdapter/backendJsonAutoSaveForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/backendJsonFormAdapter/backendJsonSubmitForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/backendJsonFormAdapter/tableAdapter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/backendJsonFormAdapter/choiceMapperAdapter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/header/configureReplayMenuItem.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/backendJsonFormAdapter/projectMapperAdapter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/player/replayLoadingState.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/breadcrumbs/breadcrumbItem.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/bulkDelete/replayBulkDeleteAuditLog.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/breadcrumbs/breadcrumbIssueLink.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/breadcrumbs/selectorList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/breadcrumbs/replayTimelineEvents.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/table/replayTableHeader.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/table/replayBulkViewedActions.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/replayTagsTableRow.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/table/deleteReplays.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/replayAccess.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/videoReplayer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/usePlaylistQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/canvasReplayerPlugin.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/replayContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/replayLiveIndicator.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/replayPlatformIcon.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/replays/unmaskAlert.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchBar/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/projectDetails/autofixAgent.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/projectTable/seerProjectTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/projectAddRepoModal/projectAddRepoModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/conversation/conversation.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/event/event.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/log/log.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/monitor/monitor.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/alert/alert.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/profile/profile.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/issue.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/trace.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/replaysQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/traceWaterfall.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/user.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/savedQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/dashboard.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/spansQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/savedIssueView.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/resourceLink.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/conversationsQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/timestamp.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/chart.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/errorsQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/dsn.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/replay.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/logsQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/seerEmbedBlock.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/schemas.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/release.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/issuesQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/components/metricsQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/invalidEmbedReport.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/renderTracking.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/embeds/localWidgetLegendSelectionState.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/profileEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/savedIssueViewEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/embedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/eventEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/traceEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/conversationEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/alertEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/__stories__/logEmbedStory.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/markdown/markdownText.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/repoTable/seerRepoTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/repoTable/seerRepoTableHeader.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/container/accordion.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/seer/autofixChatContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/connectRepository/pathMapping.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/connectRepository/connectRepositoryModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/connectRepository/normalization.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/attributes/attributeDetailsTooltip.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/selectMembers/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/connectRepository/pathMappingList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/brandPageLayout/animatedIllustration.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/brandPageLayout/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/summaryCategories/feedbackCategories.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/exports/downloadRows.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/exports/useDataExport.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/exports/generateExportRowCountOptions.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/list/feedbackList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/feedbackItem/feedbackItemSection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/feedbackItem/feedbackAssignedTo.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/feedbackItem/replaySection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/feedbackItem/feedbackUrl.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/feedbackItem/feedbackActivitySection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/feedbackItem/feedbackItemUsername.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/conditionalFilter/conditionalFilter.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/notificationActions/notificationActionManager.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/conditionalFilter/conditionalFilterAutocomplete.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/feedback/useDeleteFeedback.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/validator.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/tokenizer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/action.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticBuilder/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/valueSuggestions/severity/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/parsers/percentage/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/highlightedRegexPattern.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/parsers/duration/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/parsers/string/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/parsers/size/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/parsers/date/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filterKeyListBox/keyDescription.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/valueCombobox.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/filter/replaceCommaSeparatedValue.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/askSeerCombobox/askSeerPollingComboBox.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/tokens/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/askSeerCombobox/utils.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/askSeerCombobox/askSeerLoadingStatus.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/askSeerCombobox/askSeerComboBox.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/askSeerCombobox/useSeerComboBoxSetup.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/formattedQuery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/hooks/useQueryBuilderState.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/askSeerCombobox/askSeerStepUtils.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/assistant/guideAnchor.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/debugFileCustomRepository/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/searchQueryBuilder/hooks.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/inviteMissingMembersModal/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/widgetBuilder/addToDashboardModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/inviteMembersModal/inviteMembersFooter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/inviteMembersModal/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/inviteMembersModal/inviteRowControl.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/sentryAppPublishRequestModal/sentryAppPublishRequestModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/explore/saveQueryModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/redirectToProject.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/sudoModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/createNewIntegrationModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/demoEndModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/diffModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/dashboardWidgetQuerySelectorModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/emailVerificationModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/featureTourModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/reprocessEventModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/createTeamModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/navigateToExternalLinkModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/sentryAppDetailsModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/recoveryOptionsModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/teamAccessRequestModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/modals/textWidgetViewerModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/slider/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/discover/transactionsList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/discover/quickContextCommitRow.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/components/xAxis.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/chartWidgetLoader.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/baseChart.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/chartLegend.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/baseChartHeightResize.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/eventsAreaChart.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/eventsRequest.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/useChartZoom.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/optionSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/intervalSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/releaseSeries.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/projects/missingProjectMembership.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/projects/canCreateProject.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/charts/useChartXRangeSelection.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/projects/bookmarkStar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/externalIssues/externalIssueForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/keyValueTable/keyValueTable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/dataGrid/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/useColumnResize.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/simpleTable/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/columnLabel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/useVirtualRows.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/getNextSort.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tables/sortableHeaderCell.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/arithmeticInput/parser.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/activity/note/mentionComposer/mentionComposer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/environment/environmentPageFilter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/date/datePageFilter.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/actions.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/container.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/parse.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/store.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/pageFilters/useStagedCompactSelect.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/sentryDocumentTitle/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/loading/loadingContainer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/timeRangeSelector/utils.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/badge/alertBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/badge/deployBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/timeRangeSelector/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/splitPanel/splitPanel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/toast/toast.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/entityHeader/entityHeader.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/breadcrumbList/breadcrumbList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/menu/item.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/modal/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/drawer/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/avatarList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/avatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/imageAvatar/imageAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/actorAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/letterAvatar/letterAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/useAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/teamAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/userAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatarButton/avatarButton.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatar/sentryAppAvatar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/table/table.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/avatarButton/avatarImageAnalysis.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/markdown/extensions/tag.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/button/button.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/markdown/markdown.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/markdown/marked.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/textarea/textarea.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/dragHandle/useDragSeparator.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/dragHandle/useDragMove.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/composer/dom.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/composer/matching.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/composer/model.spec.ts`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/composer/composer.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/relativeTime/relativeTime.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/pictureInPicture/pictureInPicture.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/compactSelect/listBox/index.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/compactSelect/highlightText.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/compactSelect/composite.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/compactSelect/compactSelect.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/input/useAutosizeInput.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/dropdownMenu/dropdownMenu.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/input/otpInput.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/input/inputGroup.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/input/numberInput.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/input/input.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/chat/thinkingBlock.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/chat/toolCall.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/checkboxField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/checkboxGroupField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/passwordField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/textAreaField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/baseField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/compactSelectField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/radioField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/inputField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/switchField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/rangeField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/field/selectField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/autoSaveForm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/displayField.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/tabs/tabs.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/pagination/pagination.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/form/setFieldErrors.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/overlayTrigger.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/core/scraps.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/messagingIntegrations/setupMessagingIntegrationButton.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/messagingIntegrations/messagingIntegrationModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/messagingIntegrations/addIntegrationRow.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tokenizedInput/token/comboBox.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/avatarChooser/avatarCropper.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/tokenizedInput/token/deletableToken.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/utils/getConfigFromTimeRange.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/utils/getAggregateStatus.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/utils/mergeBuckets.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/utils/isStatsBucketEmpty.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/utils/mergeStats.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/checkInTooltip.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/timelineZoom.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/checkInTimeline/timelineCursor.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/ansiText.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/clippedBox.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/queryCount.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/collapsePanel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commitRow.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/hovercard.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/scoreBar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/inspector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/sticky.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/highlight.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/platformList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/frontendVersionContext.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/groupMetaRow.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/narrowLayout.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/gcpVerificationResults.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/splitDiff.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/circleIndicator.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/assigneeBadge.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/groupHeaderRow.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/versionHoverCard.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/groupTitle.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/createAlertButton.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/waitingForEvents.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/initialLoadingIndicator.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/projectList.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/featureShowcase.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/resultGrid.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/version.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/lastCommit.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/lazyLoad.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/customResolutionModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/userMisery.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/notAvailable.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/noProjectMessage.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/banner.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/confirm.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/override.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/analyticsArea.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/assigneeSelectorDropdown.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/collapsible.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/carousel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/breadcrumbs.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/percentChange.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/overrideOrDefault.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/commandLine.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/platformPicker.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/confirmDelete.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/progressBar.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/scrollCarousel.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/contextPickerModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/deviceName.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/editableText.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/timeSince.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/updatedEmptyState.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/unixTimestamp.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/similarSpectrum.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/dateTime.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/errorBoundary.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/textCopyInput.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/teamSelector.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/similarScoreCard.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+- `static/app/components/customCommitsResolutionModal.spec.tsx`: TypeError: Cannot redefine property: matchMedia
+
+Compared with jsdom: **0 pass on jsdom but fail here**, 6432 missing (e.g. suite errors), 0 added, 0 fail on jsdom but pass here.
+
+<details><summary>missing vs jsdom (6432)</summary>
+
+- `static/app/components/checkInTimeline/utils/mergeBuckets.spec.tsx :: mergeBucketsWithStats does not generate ticks less than 3px width`
+- `static/app/components/checkInTimeline/utils/mergeBuckets.spec.tsx :: mergeBucketsWithStats generates adjacent ticks without border radius`
+- `static/app/components/checkInTimeline/utils/mergeBuckets.spec.tsx :: mergeBucketsWithStats does not generate a separate tick if the next generated tick would be the same status`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should render the Ticket Rule modal`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should save the modal data when "Apply Changes" is clicked with valid data`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should reload fields when an "updatesForm" field changes`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule preserves options after reloading and searching again`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should ignore error checking when default is empty array`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should persist single select values when the modal is reopened`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should persist multi select values when the modal is reopened`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should keep available multi select values when saved values are partially unavailable`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should not persist value when unavailable in new choices`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should persist non-choice value when the modal is reopened`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should persist async select saved value when modal is reopened`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should get async options from URL`
+- `static/app/components/externalIssues/ticketRuleModal.spec.tsx :: ProjectAlerts -> TicketRuleModal Create Rule should persist async search choices in fieldOptionsCache on submit`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed polling refreshes the page behind it when the step result lands`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed polling leaves the page alone while the step is still running`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed polling refreshes again when a pr_iteration embed swaps onto the PR section`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate root_cause embeds offers the next action from every copy until it starts`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate root_cause embeds offers it from no copy once the run holds that work`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate root_cause embeds disables every copy while the agent is working`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate root_cause embeds keeps every copy disabled until the post-agent refetch lands`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate solution embeds offers the next action from every copy until it starts`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate solution embeds offers it from no copy once the run holds that work`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate solution embeds disables every copy while the agent is working`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate solution embeds keeps every copy disabled until the post-agent refetch lands`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate code_changes embeds offers the next action from every copy until it starts`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate code_changes embeds offers it from no copy once the run holds that work`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate code_changes embeds disables every copy while the agent is working`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed duplicate code_changes embeds keeps every copy disabled until the post-agent refetch lands`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed offers the pull request again from every copy after a failed create`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed offers the pull request from no copy while one is being created`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed keeps a retry of a failed root_cause step in sync across copies`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed keeps a retry of a failed solution step in sync across copies`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed keeps a retry of a failed code_changes step in sync across copies`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: AutofixRef embed offers only the untaken action across a conversation spanning every step`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: autofix embed renders in the shared block shell`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: autofix embed renders the root cause sections a live run shows`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: autofix embed renders long plan content across multiple list items`
+- `static/app/components/seer/markdown/embeds/components/autofix.spec.tsx :: autofix embed renders the summary alone when no structured detail is sent`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph renders the downloaded attachment with independent tree selection`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph accepts string JSON downloads`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph renders nothing when there is no flamegraph attachment`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph renders nothing when the attachments list fails`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph does not fetch attachments when the feature is disabled`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph offers an explicit retry when downloading fails`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph shows an unsupported-version message without rendering a graph`
+- `static/app/components/events/eventFlamegraph.spec.tsx :: Event flamegraph keeps multiple flamegraph attachments separate`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token focuses the last input when clicking empty space in the field`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText renders default place holder`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allow selecting function using mouse`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allow selecting function using keyboard`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText fills in filter-first arguments when selecting avg_if`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allows selecting function with no arguments using mouse`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allows selecting function with no arguments using keyboard`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allows selecting parenthesis using mouse`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allows selecting parenthesis using keyboard`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes function token when they reach the open parenthesis`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes function token when they reach the open parenthesis even if there is more text`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes function token with no arguments when they reach the open parenthesis`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes addition`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes subtract`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes multiply`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes divide`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes open parenthesis`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText autocompletes close parenthesis`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText allows selecting reference using mouse`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFreeText automatically replaces freetext token with reference when typing a match`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction allow changing attribute on click`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction allows changing attribute using combo box`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction allows changing attribute using enter key`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction maps key to suggested key on enter`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction doesnt change argument on enter if input is empty`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction can delete function tokens with the delete button`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction filters only compatible number attributes for some functions`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction filters only compatible string attributes for some functions`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows "spans" placeholder for count argument input`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows "span.duration" placeholder for avg argument input`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows "spans" as the dropdown label for count argument`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction resolves typed "spans" to "span.duration" for count`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction dispatches span.duration when selecting dropdown option for count`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows "span.duration" as the dropdown label for avg argument`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction skips input when function has no arguments`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction renders multi-argument function and allows navigating between arguments`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction keeps filter text when focusing an _if filter argument`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction autocompletes attribute keys in an _if filter argument`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction switches to value suggestions after selecting a filter key`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction autocompletes tag values in an _if filter argument`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction continues value autocomplete inside an unclosed quoted value`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows key autocomplete after a completed value and trailing space`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction autocompletes keys after a boolean operator in a compound filter`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction does not show a values dropdown when there are no matching values`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows filter key suggestions when editing an existing _if filter`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction shows filter value suggestions when the cursor is after the colon`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction does not open filter autocomplete when clicking the function name`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction renders filter-first avg_if arguments and allows navigating between them`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction commits _if filter on blur when leaving the equation`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction clears _if filter on blur when the filter input is emptied`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction clears _if filter on Enter when the filter input is emptied`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction does not delete the function when Backspace clears a selected filter`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction does not rewrite the function when moving from filter to another argument`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction flushes pending filter edits when leaving the arguments grid`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction keeps Discover-style avg_if arguments editable`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction suggests attributes for each argument of avg_if`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenFunction suggests column attributes for filter-first avg_if`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token shifts focus between args correctly`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token shifts focus between filter-first avg_if args correctly`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal 1`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal 1.`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal 1.0`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal +1`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal +1.`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal +1.0`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal -1`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal -1.`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral renders literal -1.0`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with space`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with enter`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with escape`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with token +`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with token -`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with token *`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with token /`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with token (`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal with token )`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenLiteral completes literal on blur`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator keeps mid-expression empty free text clickable after deleting an operator`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator focuses trailing free text when clicking grid padding near the end`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator focuses leading free text when clicking grid padding near the start`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator renders addition operator`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator renders subtract operator`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator renders multiply operator`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenOperator renders divide operator`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenParenthesis renders left parenthesis`
+- `static/app/components/arithmeticBuilder/token/index.spec.tsx :: token ArithmeticTokenParenthesis renders right parenthesis`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette clicking a link item navigates and closes modal`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette ArrowDown to a link item then Enter navigates and closes modal`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette does not reset focus to the first item after mouse leave`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette ArrowUp from the first item wraps to the last selectable item`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette ArrowDown from the last selectable item wraps to the first item`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette shift-enter on an internal link opens in a new tab and closes modal`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette shows internal and external trailing link indicators for link actions`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette renders both a custom trailingItem and the link indicator for a link action`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette clicking action with children shows sub-items, backspace returns`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette clicking child sub-item runs onAction and closes modal`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette onAction that opens a modal leaves the new modal open`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search typing a query filters results to matching items only`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search non-matching items are not shown`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search waits for search to settle before showing the Seer fallback`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search clearing the query restores all top-level items`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search child actions are not shown when query is empty`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search child actions are directly searchable without drilling into the group`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search preserves spaces in typed query`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search search is case-insensitive`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search actions are ranked by match quality — better matches appear first`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search top-level actions rank before child actions when both match the query`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search actions with matching keywords are included in results`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search searching within a drilled-in group filters that group's children`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette search shows a group preview when the group label matches but its children do not`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette action with onAction and children invokes callback, keeps modal open, and then shows children for secondary selection`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit limits async resource results to 4 by default`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit limits static children when limit prop is set`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit does not limit static children when limit prop is not set`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit items beyond the limit are still searchable`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit limit is applied after search — only top matches up to the limit are shown`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit grandchildren do not resurface individually when their parent nested group matches the search query`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit limit is applied after search for async resource results`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit respects a custom limit prop`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit clicking see more drills into the full limited group in browse mode`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit clicking see more drills into the full limited group in search mode`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit clicking see more preserves the active query in the expanded group`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit clicking see more does not inherit the parent callback`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit clicking see more does not inherit the parent link indicator`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit keeps expanded search results sorted by match quality after clicking see more`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource limit breaks equal search scores by shorter label length`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette lazy resources does not create a query until a disabled resource is selected`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette prompt actions a top-level prompt action is not filtered out in browse mode`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette prompt actions a prompt action appearing as a direct top-level child after drilling into its parent group is visible`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette prompt actions clicking a prompt action pushes onto the nav stack instead of closing`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette prompt actions shows the prompt as the input placeholder when inside a prompt action context`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette prompt actions clears the input query when entering a prompt action context`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette prompt actions backspace from prompt context restores the previous query`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette query restoration drilling into a group clears the active query`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette query restoration Backspace from a drilled group restores the query that was active before drilling in`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette query restoration clicking the back button from a drilled group restores the query that was active before drilling in`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette deferred reset on close does not reset items immediately when a leaf action is triggered`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette deferred reset on close resets action and query when the component unmounts after triggering an action`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette deferred reset on close preserves state when closed without triggering an action`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette reset on open preserves state when toggled closed and open without navigating`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette reset on open resets state on the next open if the route changes while CMDK is closed`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering task slot action is displayed in the palette`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering task slot action triggers its callback when selected`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering page slot action is displayed in the palette`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering page slot action triggers its callback when selected`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering page slot actions are rendered before global actions`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering task < page < global ordering when all three slots are populated`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering actions registered via a slot consumer are not duplicated`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering a group with no children is omitted from the list`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette slot rendering direct CMDKAction registrations outside slots are not duplicated`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource action with 0 results is omitted from browse mode at the top level`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource action with 0 results is omitted from browse mode when nested inside a group`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource action with 0 results group whose only children are empty resource nodes is omitted entirely in browse mode`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource action with 0 results is omitted from search mode when nested inside a group whose label matches the query`
+- `static/app/components/commandPalette/ui/commandPalette.spec.tsx :: CommandPalette resource action with 0 results is omitted from search mode even when the label matches the query`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter renders & handles single selection`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter handles multiple selection`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter renders keyboard-accessible trailing items`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter handles reset`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter responds to page filter changes, async e.g. from back button nav`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter keeps selected environments when they are available in the newly selected project`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter removes selected environments when they are not available in the newly selected project`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter clicking My Projects when All Projects is active selects only non-member projects`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter clicking My Projects while All Projects is staged selects only non-member projects`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter All Projects toggles all projects on; clicking again deselects everything`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter unchecking all project checkboxes from All Projects leaves everything unchecked`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter My Projects toggles member projects on; clicking again deselects everything`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter does not show All Projects separator when My Projects is visible`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter hides special project options when search is active`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter does not show All Projects or My Projects options when only one project exists`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter shows selection limit warning when all projects are selected explicitly`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter does not show selection limit warning when loaded with All Projects sentinel`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter keeps All Projects sentinel in URL when opening and closing the menu`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter shows selection limit warning when clicking All Projects then unchecking a single project`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter shows selection limit warning when My Projects is active and a single project is unchecked`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter shows selection limit warning when All Projects is active and a single project is unchecked`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter shows selection limit warning after editing All Projects sentinel selection`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter sorts projects with bookmarked appearing before non-bookmarked`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter sorts bookmarked non-member projects above unbookmarked member projects`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter maintains stable sort when bookmarking, then applies new sort on menu reopen`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter deselecting My Projects does not select All Projects in the URL`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter closed-membership org defaults shows My Projects (not All Projects) as the default in closed orgs`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter closed-membership org defaults correctly round-trips My Projects selection in closed orgs`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter closed-membership org defaults selecting All Projects in a closed org writes project=-1 to the URL`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter closed-membership org defaults resetting in a closed org navigates to My Projects (no project param)`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter single-project org label shows the project name when the org has one member project auto-selected`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter single-project org label shows the project name when the org has one non-member project auto-selected`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter edge case: user with no member projects shows "All Projects" label when URL has -1 and user has no member projects`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter edge case: user with no member projects expands to "All Projects" when empty URL and user has no member projects`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter create project button is shown to members when member project creation is allowed`
+- `static/app/components/pageFilters/project/projectPageFilter.spec.tsx :: ProjectPageFilter create project button is disabled with an explanation when member project creation is not allowed`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders Edit and Open buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders updated table columns and orderby`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget applies the dashboard filters to the widget query when provided`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders area chart`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders description`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget redirects user to Explore when clicking Open in Explore`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget zooms into the selected time range`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders multiquery label and selector`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget updates selected query when selected in the query dropdown`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders the first query if the query index is invalid`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders the correct discover query link when there are multiple queries in a widget`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders highlighted query text and multiple queries in select dropdown`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget includes group by in widget viewer table`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget includes order by in widget viewer table if not explicitly selected`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget includes a custom equation order by in widget viewer table if not explicitly selected`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Area Chart Widget renders transaction summary link`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets TopN Chart Widget renders pagination buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets TopN Chart Widget does not render pagination buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets TopN Chart Widget paginates to the next page`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets TopN Chart Widget appends the orderby to the query if it is not already selected as an aggregate`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Errors Widgets Table Widget makes events requests when table is paginated`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget renders widget title`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget renders Edit and Open buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget renders events, status, async and title table columns`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget renders Issue table widget viewer`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget redirects user to Issues when clicking Open in Issues`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget sorts table when a sortable column header is clicked`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget renders pagination buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget paginates to the next page`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget displays with correct table column widths`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Issue Table Widget makes issues requests on render`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets does a sessions query`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets renders widget title`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets renders Edit and Open in Releases buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets Open in Releases button redirects browser`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets renders table header and body`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets renders Release widget viewer`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets renders pagination buttons`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets does not render pagination buttons when sorting by release`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets makes a new sessions request after sorting by a table column`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets should add release column and call metrics API with groupBy release`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Release Health Widgets does not add a release grouping to the table if a group by is set`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Span Widgets displays table data with units correctly`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Span Widgets renders the Open in Explore button`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Span Widgets does not make an events-timeseries request with an arbitrary table sort as a y-axis`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Span Widgets links to the spans page when "View span samples" is clicked in the context menu`
+- `static/app/components/modals/dataWidgetViewerModal.spec.tsx :: Modals -> DataWidgetViewerModal Span Widgets does not show "View span samples" without visibility-explore-view`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering shows a "Current Project" tag on the active project entry`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering places the current route project first when on a :projectId route`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering does not duplicate the current project in the list`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering places the project first when identified by a single ?project= query param`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering highlights all projects when multiple ?project= params are set`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering shows all projects without priority when not on a :projectId route`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - project settings ordering places starred projects before other projects`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - search recall finds expected actions for auth tok`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - search recall finds expected actions for SENTRY_AUTH_TOKEN`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - search recall finds expected actions for api key`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - search recall finds expected actions for source map`
+- `static/app/components/commandPalette/ui/commandPaletteGlobalActions.spec.tsx :: GlobalCommandPaletteActions - search recall finds expected actions for codeowners`
+
+</details>
+
+No failing tests.
+
+Raw Jest JSON, logs, worker samples and receipts: `downstream/sentry/output/components/<mode>/` (gitignored).

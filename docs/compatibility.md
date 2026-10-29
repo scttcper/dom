@@ -36,7 +36,7 @@ Each suite is the project's own unmodified tests at a pinned commit, run three w
 
 | Suite | Upstream | Tests | jsdom | ctrl-dom environment | ctrl-dom + its Testing Library |
 | --- | --- | ---: | ---: | ---: | ---: |
-| [Base UI](../downstream/base-ui/README.md) (`@base-ui/react`, Vitest) | [mui/base-ui@205831c](https://github.com/mui/base-ui/tree/205831caa12125f8e81f1af02a013239b27d752a) | 9,199 | 9,199 | 9,197 (2 intermittent) | 9,198 (1 intermittent) |
+| [Base UI](../downstream/base-ui/README.md) (`@base-ui/react`, Vitest) | [mui/base-ui@205831c](https://github.com/mui/base-ui/tree/205831caa12125f8e81f1af02a013239b27d752a) | 9,199 | 9,199 | 9,199 | 9,198 (1 intermittent) |
 | [Radix Primitives](../downstream/radix/README.md) (`unit` project, Vitest) | [radix-ui/primitives@eb3a2b7](https://github.com/radix-ui/primitives/tree/eb3a2b7091293e27df8f9ba906632d8daa3d81a3) | 1,134 | 1,134 | 1,134 | 1,134 |
 | [React Aria](../downstream/react-aria/README.md) (`react-aria` + `react-aria-components`, Jest) | [adobe/react-spectrum@d5fb723](https://github.com/adobe/react-spectrum/tree/d5fb723a1c192e3a1a25c8cfdd4e26b900995307) | 2,997 | 2,997 | 2,996 | 2,989 |
 | [Sentry](../downstream/sentry/README.md) (`static/app/components`, Jest) | [getsentry/sentry@503ad2e](https://github.com/getsentry/sentry/tree/503ad2e4e2a208a87d768a3e91bcfb55a778e7ba) | 6,429 | 6,429 | 6,429 | 6,429 |
