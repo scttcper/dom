@@ -117,6 +117,51 @@ describe("act environment", () => {
     expect(g.IS_REACT_ACT_ENVIRONMENT).toBe(true);
   });
 
+  test("asyncWrapper's drain on the idle-skipping clock: one event-loop turn without a 0 ms timer when nothing is due, and a timer due within the millisecond still runs before it resolves", async () => {
+    const { getConfig } = await import("../src/dtl.ts");
+    const original = globalThis.setTimeout;
+    let calls = 0;
+    // Counts calls and copies the clock's own properties, as user-event's timer observer does.
+    const counting = function (this: unknown, ...args: unknown[]) {
+      calls++;
+      return (original as (...a: unknown[]) => unknown).apply(this, args);
+    };
+    Object.defineProperties(counting, Object.getOwnPropertyDescriptors(original));
+    globalThis.setTimeout = counting as unknown as typeof setTimeout;
+    try {
+      // Work earlier tests left queued (React's scheduler) settles first.
+      for (let i = 0; i < 3; i++) await new Promise<void>((resolve) => setImmediate(resolve));
+      const start = performance.now();
+      await getConfig().asyncWrapper(async () => {});
+      expect(calls).toBe(0);
+      // The millisecond the 0 ms timer would have waited still passes on the clock.
+      expect(performance.now() - start).toBeGreaterThanOrEqual(1);
+      const order: string[] = [];
+      setTimeout(() => order.push("timer"), 0);
+      await getConfig().asyncWrapper(async () => {});
+      order.push("drained");
+      expect(order).toEqual(["timer", "drained"]);
+      // The app's timer and the drain's own 0 ms timer.
+      expect(calls).toBe(2);
+    } finally {
+      globalThis.setTimeout = original;
+    }
+  });
+
+  test("asyncWrapper's drain: work that microtasks queued behind it schedule (React's scheduler, through setImmediate) runs before it resolves, as with the 0 ms timer", async () => {
+    // Downstream: React Hook Form's useFieldArray "not corrupt parent state when remove is called
+    // with values prop" read its update log before React's effects ran when the drain decided
+    // from a microtask that it could take one turn.
+    const { getConfig } = await import("../src/dtl.ts");
+    for (let i = 0; i < 3; i++) await new Promise<void>((resolve) => setImmediate(resolve));
+    const order: string[] = [];
+    await getConfig().asyncWrapper(async () => {
+      queueMicrotask(() => queueMicrotask(() => setImmediate(() => order.push("scheduled work"))));
+    });
+    order.push("drained");
+    expect(order).toEqual(["scheduled work", "drained"]);
+  });
+
   test("nested eventWrapper calls run inside a single act", () => {
     const spy = vi.fn();
     function Clicker() {

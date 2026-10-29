@@ -14,7 +14,12 @@
  */
 import { afterEach, describe, expect, test } from "vitest";
 import { VirtualClock, installClock, type InstalledClock } from "@ctrl/dom/internal";
-import { foreignImmediatesPending, queueUserAgentTask } from "../../src/window/clock.ts";
+import {
+  canSkipZeroDelayWait,
+  foreignImmediatesPending,
+  queueUserAgentTask,
+  skipZeroDelayWait,
+} from "../../src/window/clock.ts";
 
 type G = {
   setTimeout: (
@@ -247,6 +252,63 @@ describe("idle time skipping (timeSkip: true)", () => {
     expect(foreignImmediatesPending()).toBe(true);
     clearImmediate(other);
     expect(foreignImmediatesPending()).toBe(false);
+  });
+
+  test("skipZeroDelayWait: on an idle loop the millisecond a 0 ms timer waits passes at once, so the caller yields one event-loop turn instead of the driver's two idle turns (Testing Library's asyncWrapper drain)", async () => {
+    // Earlier tests' leftovers (an uninstalled clock's queued driver turn, a closing server) settle first.
+    for (let i = 0; i < 3; i++) await new Promise<void>((resolve) => setImmediate(resolve));
+    const g = setup(true) as G & Record<PropertyKey, unknown>;
+    g.setImmediate = setImmediate;
+    const clock = installed!.clock;
+    // The first look, from a microtask, lets no time pass.
+    expect(canSkipZeroDelayWait(g)).toBe(true);
+    expect(clock.skipped).toBe(0);
+    expect(skipZeroDelayWait(g)).toBe(true);
+    expect(clock.skipped).toBe(1);
+    // With only the driver's own turn queued (a far timer is pending), the loop still counts as idle.
+    g.setTimeout(() => {}, 1_000);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(process.getActiveResourcesInfo()).toContain("Immediate");
+    expect(skipZeroDelayWait(g)).toBe(true);
+    expect(clock.skipped).toBe(2);
+    // user-event's timer observer wraps setTimeout and copies its own properties: still the clock's.
+    const original = g.setTimeout;
+    const observer = function (this: unknown, ...args: Parameters<G["setTimeout"]>) {
+      return original.apply(this, args);
+    };
+    Object.defineProperties(observer, Object.getOwnPropertyDescriptors(original));
+    g.setTimeout = observer as G["setTimeout"];
+    expect(skipZeroDelayWait(g)).toBe(true);
+    expect(clock.skipped).toBe(3);
+  });
+
+  test("skipZeroDelayWait: false, letting no time pass, when a timer falls due within the millisecond, someone else's immediate is queued, or setTimeout/setImmediate are not the clock's and Node's (fake timers, spies)", () => {
+    const g = setup(true) as G & Record<PropertyKey, unknown>;
+    g.setImmediate = setImmediate;
+    const clock = installed!.clock;
+    const due = g.setTimeout(() => {}, 0);
+    expect(skipZeroDelayWait(g)).toBe(false);
+    g.clearTimeout(due);
+    const other = setImmediate(() => {});
+    expect(skipZeroDelayWait(g)).toBe(false);
+    clearImmediate(other);
+    const timeout = g.setTimeout;
+    g.setTimeout = Object.assign(() => ({}) as never, { clock: {} });
+    expect(skipZeroDelayWait(g)).toBe(false);
+    g.setTimeout = timeout;
+    g.setImmediate = Object.assign(() => {}, { clock: {} });
+    expect(skipZeroDelayWait(g)).toBe(false);
+    g.setImmediate = Object.assign(() => {}, { _isMockFunction: true });
+    expect(skipZeroDelayWait(g)).toBe(false);
+    g.setImmediate = undefined;
+    expect(skipZeroDelayWait(g)).toBe(false);
+    expect(clock.skipped).toBe(0);
+  });
+
+  test("skipZeroDelayWait: false without a clock that skips idle time (the 0 ms timer waits for real)", () => {
+    const g = setup(false) as G & Record<PropertyKey, unknown>;
+    g.setImmediate = setImmediate;
+    expect(skipZeroDelayWait(g)).toBe(false);
   });
 
   test("a user agent task (selectionchange) runs before a 0 ms timer set after it, also when that timer would run as a continuation of one due with it (https://html.spec.whatwg.org/#queue-a-task)", async () => {

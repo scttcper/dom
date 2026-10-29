@@ -40,6 +40,8 @@ const hostSetImmediate = globalThis.setImmediate;
 const hostPerformance = globalThis.performance;
 const realNow = hostPerformance.now.bind(hostPerformance);
 const getActiveResourcesInfo = process.getActiveResourcesInfo.bind(process);
+/** On the setTimeout/setInterval installClock puts on a global: its clock. Copies of the functions' own properties keep it. */
+const $clock = Symbol("ctrl-dom.clock");
 
 /** One pending timer. */
 class TimerRecord {
@@ -526,18 +528,23 @@ export class VirtualClock {
    * Timeouts never block skipping: the clock's own host timer, the test runner's. On a Vitest
    * worker's resources (four pipes and a timer) a probe takes ~0.18 µs warm and ~0.34 µs over a
    * fresh process's first 2,000, ~0.16 µs of it Node building the list; tallying into a Map took
-   * 0.31 and 0.83 µs.
+   * 0.31 and 0.83 µs. `ownImmediates` queued immediates are disregarded: the clock's own, for a
+   * caller outside the driver's turn (skipZeroDelayWait).
    */
-  busy(): "immediate" | "io" | null {
+  busy(ownImmediates = 0): "immediate" | "io" | null {
     const resources = getActiveResourcesInfo();
     const types = this.ioTypes;
     const baseline = this.ioBaseline;
     const counts = this.ioCounts;
     for (let k = 0; k < counts.length; k++) counts[k] = 0;
     let io = false;
+    let immediates = 0;
     for (let i = 0; i < resources.length; i++) {
       const type = resources[i];
-      if (type === "Immediate") return "immediate";
+      if (type === "Immediate") {
+        if (++immediates > ownImmediates) return "immediate";
+        continue;
+      }
       // Once I/O is found only an Immediate further on changes the answer.
       if (io || type === "Timeout") continue;
       let k = 0;
@@ -670,6 +677,49 @@ export function clockSkipping(): boolean {
 /** The active skipping clock's skipIdle(ms); true without one (there is no clock to move). */
 export function skipIdleTime(ms: number): boolean {
   return activeClock === null || activeClock.skipIdle(ms);
+}
+
+/**
+ * Whether a wait done with `setTimeout(resolve, 0)` (Testing Library's asyncWrapper drain) can
+ * take one event-loop turn instead of the two idle turns the driver waits before firing that
+ * timer (driverTurn). True when the active clock skips idle time, `global.setTimeout` is still its
+ * own (fake timers and spies replace it; user-event's timer observer copies its marker),
+ * `global.setImmediate` is not faked, and the loop is idle as the driver sees it (no immediates
+ * but the clock's own, no I/O beyond the baseline) with no timer due within 1 ms.
+ *
+ * From a microtask this is only a first look: microtasks still queued behind the caller can
+ * schedule work (React's scheduler, through setImmediate) that the 0 ms timer would wait for. The
+ * caller yields one turn and decides with skipZeroDelayWait there.
+ */
+export function canSkipZeroDelayWait(global: Global): boolean {
+  const clock = activeClock;
+  if (clock === null || !isClockTimer(global.setTimeout)) return false;
+  const immediate = global.setImmediate as (Callback & { clock?: unknown; _isMockFunction?: boolean }) | undefined;
+  if (typeof immediate !== "function" || immediate.clock !== undefined || immediate._isMockFunction === true)
+    return false;
+  if (clock.busy(clock.ownImmediates) !== null) return false;
+  const first = clock.heap[0];
+  return first === undefined || first.due > clock.now() + 1;
+}
+
+/**
+ * canSkipZeroDelayWait, then that millisecond passes at once, as it would on the driver's second
+ * idle turn. Called from the turn the caller yielded (a check-phase immediate): every microtask
+ * queued before has run, and any immediate they scheduled shows as pending.
+ */
+export function skipZeroDelayWait(global: Global): boolean {
+  return canSkipZeroDelayWait(global) && activeClock!.skipIdle(1);
+}
+
+/**
+ * Whether `fn` is the setTimeout or setInterval installClock put on a global for the active
+ * idle-skipping clock, or a function that copied its own properties (user-event's timer
+ * observer): the timers it creates are the clock's, which knows every deadline.
+ */
+export function isClockTimer(fn: unknown): boolean {
+  return (
+    activeClock !== null && typeof fn === "function" && (fn as { [$clock]?: VirtualClock })[$clock] === activeClock
+  );
 }
 
 /**
@@ -825,6 +875,8 @@ export function installClock(clock: VirtualClock, global: Global): InstalledCloc
     value: (delay?: number, value?: unknown) =>
       new Promise((resolve) => clock.schedule(resolve as Callback, delay, [value], false)),
   });
+  Object.defineProperty(timers.setTimeout, $clock, { value: clock });
+  Object.defineProperty(timers.setInterval, $clock, { value: clock });
   for (const name of ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] as const)
     define(name, timers[name]);
   if (clock.skip) {

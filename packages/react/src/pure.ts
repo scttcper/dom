@@ -27,7 +27,7 @@ import act, {
   getIsReactActEnvironment,
   setReactActEnvironment,
 } from "./act-compat.ts";
-import { traceSync, tracing } from "@ctrl/dom/internal";
+import { canSkipZeroDelayWait, skipZeroDelayWait, traceSync, tracing } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
 
@@ -223,6 +223,13 @@ function advanceFakeTimersIfEnabled(): void {
   if (typeof clock?.tick === "function") clock.tick(0);
 }
 
+function drainWithTimer(resolve: () => void): void {
+  setTimeout(() => {
+    resolve();
+  }, 0);
+  advanceFakeTimersIfEnabled();
+}
+
 let inEventWrapper = false;
 
 configureDTL({
@@ -242,10 +249,15 @@ configureDTL({
       // `waitFor` call. The caller would have no chance to wrap the in-flight Promises in
       // `act()`.
       await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 0);
-        advanceFakeTimersIfEnabled();
+        // Ours: on @ctrl/dom's idle-skipping clock with real timers, an idle loop and nothing due
+        // within the timer's 1 ms, the same wait in one event-loop turn instead of two. The check
+        // is repeated in that turn, after the microtasks still queued now: work they schedule
+        // (React's, through setImmediate) gets the 0 ms timer's wait, as upstream.
+        if (canSkipZeroDelayWait(globalThis)) {
+          setImmediate(() => (skipZeroDelayWait(globalThis) ? resolve() : drainWithTimer(resolve)));
+          return;
+        }
+        drainWithTimer(resolve);
       });
       return result;
     } finally {
