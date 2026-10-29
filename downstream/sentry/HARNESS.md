@@ -19,7 +19,8 @@ pnpm downstream:sentry --install             # first time: clone the pinned comm
 pnpm downstream:sentry --preset smoke        # 15 component-heavy files, all four modes
 pnpm downstream:sentry --preset components   # static/app/components/** (~650 files)
 pnpm downstream:sentry --preset views        # 9 representative static/app/views/** areas (~250 files)
-pnpm downstream:sentry --preset all          # every spec of upstream's root config (~2,300 files; long)
+pnpm downstream:sentry --preset all          # every spec of upstream's root config (~2,400 files, ~2 min/mode):
+                                             # what downstream/baseline.json tracks
 node downstream/sentry/run.ts --files static/app/components/core/tabs/tabs.spec.tsx --modes ctrl-dom-full --grep overflow
 ```
 
