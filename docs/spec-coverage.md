@@ -649,7 +649,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [interactively-validate-the-constraints](https://html.spec.whatwg.org/#interactively-validate-the-constraints) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
 | [invoke-custom-element-reactions](https://html.spec.whatwg.org/#invoke-custom-element-reactions) | `dom/html/custom-elements.ts` | WPT: `custom-elements/reaction-timing.html` |
 | [is-modal](https://html.spec.whatwg.org/#is-modal) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
-| [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `compat/forms/form-algorithms.test.ts` |
+| [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `aria/internal.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-algorithms.test.ts` |
 | [language](https://html.spec.whatwg.org/#language) | `dom/html/innerText.ts`, `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `compat/html/activation.test.ts` |
 | [light-dismiss-open-dialogs](https://html.spec.whatwg.org/#light-dismiss-open-dialogs) | `dom/html/interactive.ts` | `dom/html/top-layer.test.ts` |

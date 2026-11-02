@@ -1,6 +1,6 @@
 // Per-document derived caches.
 //
-// Caches computed from a document's trees (selector results per root, aria's label index, ...)
+// Caches computed from a document's trees (selector results per root, ...)
 // are version-stamped (Document[$version]) and so stay correct without invalidation walks. But a
 // stale entry for a long-lived root (the document, body) would otherwise keep a removed subtree
 // alive until that root is queried again — after Testing Library's cleanup() that is the whole

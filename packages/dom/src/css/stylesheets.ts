@@ -10,6 +10,7 @@ import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { DOCUMENT_NODE, F_SHADOW_ROOT } from "../nodes/constants.ts";
+import { compareTreeOrder } from "../nodes/traverse.ts";
 import { CSSStyleSheet, StyleSheetList } from "./cssom.ts";
 import type { RuleIndex } from "./cascade.ts";
 import { $constructed, $css, $doc, $impl, $ownerNode, $styleVersion } from "../keys.ts";
@@ -166,33 +167,6 @@ export function treeTop(n: NodeImpl): NodeImpl {
 /** Is `top` a tree root whose sheets apply (a document, or a shadow root)? */
 export function isStyleRoot(top: NodeImpl): boolean {
   return top.type === DOCUMENT_NODE || (top.flags & F_SHADOW_ROOT) !== 0;
-}
-
-// --- tree order ------------------------------------------------------------------------------
-
-function ancestors(n: NodeImpl): NodeImpl[] {
-  const out: NodeImpl[] = [];
-  for (let p: NodeImpl | null = n; p !== null; p = p.parent) out.push(p);
-  return out;
-}
-
-/** Negative if a precedes b in tree order. */
-export function compareTreeOrder(a: NodeImpl, b: NodeImpl): number {
-  if (a === b) return 0;
-  const pa = ancestors(a);
-  const pb = ancestors(b);
-  let i = pa.length - 1;
-  let j = pb.length - 1;
-  while (i >= 0 && j >= 0 && pa[i] === pb[j]) {
-    i--;
-    j--;
-  }
-  if (i < 0) return -1; // a is an ancestor of b
-  if (j < 0) return 1;
-  const ca = pa[i];
-  const cb = pb[j];
-  for (let s = ca.next; s !== null; s = s.next) if (s === cb) return -1;
-  return 1;
 }
 
 function syncList(rs: RootStyles): void {

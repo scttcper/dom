@@ -81,6 +81,7 @@ export const $filter: unique symbol = Symbol.for("ctrl-dom.filter");
 export const $firingSubmissionEvents: unique symbol = Symbol.for("ctrl-dom.firingSubmissionEvents");
 export const $focused: unique symbol = Symbol.for("ctrl-dom.focused");
 export const $form: unique symbol = Symbol.for("ctrl-dom.form");
+export const $forLabels: unique symbol = Symbol.for("ctrl-dom.forLabels");
 export const $forms: unique symbol = Symbol.for("ctrl-dom.forms");
 export const $frameCallbacks: unique symbol = Symbol.for("ctrl-dom.frameCallbacks");
 export const $frameElement: unique symbol = Symbol.for("ctrl-dom.frameElement");

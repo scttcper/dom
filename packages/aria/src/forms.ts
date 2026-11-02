@@ -17,14 +17,16 @@
 import {
   ELEMENT_NODE,
   DOCUMENT_NODE,
+  F_CONNECTED,
   HTML_NS,
   T,
   attr,
+  compareTreeOrder,
+  nextInTree,
   treeRoot,
   type NodeImpl,
-  derivedCache,
 } from "@ctrl/dom/internal";
-import { $impl, $version } from "@ctrl/dom/internal";
+import { $forLabels, $impl } from "@ctrl/dom/internal";
 
 /** Canonical `type` IDL value of an HTML input: https://html.spec.whatwg.org/multipage/input.html#attr-input-type */
 // oxfmt-ignore
@@ -173,26 +175,11 @@ export function isLabelable(impl: NodeImpl): boolean {
   return false;
 }
 
-class LabelIndex {
-  version: number;
-  map: Map<NodeImpl, NodeImpl[]>;
-  constructor(version: number) {
-    this.version = version;
-    this.map = new Map();
-  }
-}
-
-/**
- * Label associations per tree root, rebuilt when the document version changes (jsdom memoizes
- * the same way). Held in the document's derived caches (dropped on node removal) so a stale index
- * never keeps a removed tree alive.
- */
-const LABEL_INDEXES = {};
-const newLabelIndexes = (): WeakMap<NodeImpl, LabelIndex> => new WeakMap();
 const EMPTY: NodeImpl[] = [];
 
-function buildLabelIndex(root: NodeImpl, version: number): LabelIndex {
-  const index = new LabelIndex(version);
+/** Every label association of the tree of `root`: labelable control → its labels in tree order. */
+function buildLabelMap(root: NodeImpl): Map<NodeImpl, NodeImpl[]> {
+  const map = new Map<NodeImpl, NodeImpl[]>();
   const labels: NodeImpl[] = [];
   let ids: Map<string, NodeImpl> | null = null;
   const useDocIds = root.type === DOCUMENT_NODE;
@@ -219,7 +206,7 @@ function buildLabelIndex(root: NodeImpl, version: number): LabelIndex {
       }
     }
   }
-  if (labels.length === 0) return index;
+  if (labels.length === 0) return map;
   if (anyFor && !useDocIds) {
     ids = new Map();
     for (let n: NodeImpl | null = root; n !== null;) {
@@ -241,11 +228,11 @@ function buildLabelIndex(root: NodeImpl, version: number): LabelIndex {
   for (const label of labels) {
     const control = labeledControl(label, useDocIds ? root : null, ids);
     if (control === null) continue;
-    const list = index.map.get(control);
-    if (list === undefined) index.map.set(control, [label]);
+    const list = map.get(control);
+    if (list === undefined) map.set(control, [label]);
     else list.push(label);
   }
-  return index;
+  return map;
 }
 
 /** https://html.spec.whatwg.org/multipage/forms.html#labeled-control */
@@ -283,24 +270,57 @@ function labeledControl(label: NodeImpl, docRoot: NodeImpl | null, ids: Map<stri
 /**
  * `element.labels` as jsdom computes it: null for non-labelable elements, otherwise the
  * label elements (tree order, same tree) whose labeled control is the element.
+ *
+ * A label names the element by `for` (only when it has an ID), or is an ancestor without `for`
+ * whose first labelable descendant it is. Ancestors are O(depth), and the document lists its
+ * connected labels with `for` (Document[$forLabels], kept by @ctrl/dom's HTMLLabelElement), so
+ * only a detached control with an ID walks its tree.
  */
 export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
   if (!isLabelable(impl)) return null;
-  return labelMapForTree(impl).get(impl) ?? EMPTY;
+  const id = impl.id;
+  if (id !== "" && (impl.flags & F_CONNECTED) === 0) return buildLabelMap(treeRoot(impl)).get(impl) ?? EMPTY;
+  let out = EMPTY;
+  // Walking up meets the innermost label first; tree order is outermost first.
+  for (let p = impl.parent; p !== null; p = p.parent) {
+    if (p.type !== ELEMENT_NODE || p.tag !== T.label || p.ns !== HTML_NS || attr(p, "for") !== null) continue;
+    if (labeledControl(p, null, null) !== impl) continue;
+    if (out === EMPTY) out = [p];
+    else out.unshift(p);
+  }
+  const forLabels =
+    id === ""
+      ? undefined
+      : (impl.doc as unknown as { [$forLabels]: Map<string, NodeImpl[]> | null })[$forLabels]?.get(id);
+  if (forLabels === undefined) return out;
+  // A label's control is the first element with the ID in the label's tree.
+  const root = treeRoot(impl);
+  if (firstWithId(root, id) !== impl) return out;
+  const ancestors = out.length;
+  for (let i = 0; i < forLabels.length; i++) {
+    const label = forLabels[i];
+    if (treeRoot(label) !== root) continue;
+    if (out === EMPTY) out = [];
+    out.push(label);
+  }
+  if (out.length > ancestors && out.length > 1) out.sort(compareTreeOrder);
+  return out;
+}
+
+/** The first element in tree order with ID `id` in the tree of `root` (labeledControl's lookup). */
+function firstWithId(root: NodeImpl, id: string): NodeImpl | null {
+  if (root.type === DOCUMENT_NODE)
+    return (root.node as unknown as { _idLookup(id: string): NodeImpl | null })._idLookup(id);
+  for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root))
+    if (n.type === ELEMENT_NODE && n.id === id) return n;
+  return null;
 }
 
 /**
- * The label associations of `impl`'s tree (labelable control → its labels in tree order), current
- * for the document version: `labelsOf` for many elements of one tree resolves it once.
+ * The label associations of `impl`'s tree (labelable control → its labels in tree order), for
+ * resolving `labelsOf` for many elements of one tree with a single walk (Testing Library's
+ * ByLabelText builds it once per query).
  */
 export function labelMapForTree(impl: NodeImpl): Map<NodeImpl, NodeImpl[]> {
-  const root = treeRoot(impl);
-  const version = impl.doc[$version];
-  const labelIndexes = derivedCache(impl.doc, LABEL_INDEXES, newLabelIndexes);
-  let index = labelIndexes.get(root);
-  if (index === undefined || index.version !== version) {
-    index = buildLabelIndex(root, version);
-    labelIndexes.set(root, index);
-  }
-  return index.map;
+  return buildLabelMap(treeRoot(impl));
 }

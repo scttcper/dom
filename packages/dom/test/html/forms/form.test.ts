@@ -337,4 +337,77 @@ describe("labels — https://html.spec.whatwg.org/#dom-lfe-labels", () => {
     expect($("h").labels).toBeNull();
     expect($("l").control).toBeNull();
   });
+
+  // https://html.spec.whatwg.org/#labeled-control: without an ID only an ancestor label can be
+  // the control's (labelsFor walks the ancestors instead of the tree).
+  test("a control without an ID is labelled only by ancestor labels whose first labelable descendant it is", () => {
+    document.body!.innerHTML =
+      "<label id=o>Outer <label id=n>Inner <button id=a></button></label></label>" +
+      "<label id=f for=t><button id=b></button></label><input id=t>" +
+      "<label id=w><input type=hidden><output id=c></output><meter id=d></meter></label>";
+    for (const id of ["a", "b", "c", "d"]) $(id).removeAttribute("id");
+    const [a, b] = document.querySelectorAll("button");
+    const [c, d] = [document.querySelector("output"), document.querySelector("meter")];
+    expect([...(a as any).labels]).toEqual([$("o"), $("n")]);
+    expect([...(b as any).labels]).toEqual([]);
+    expect([...(c as any).labels]).toEqual([$("w")]);
+    expect([...(d as any).labels]).toEqual([]);
+    expect([...$("t").labels]).toEqual([$("f")]);
+  });
+
+  // Connected labels with `for` are listed per document (Document[$forLabels]) by the label's
+  // connected, disconnected and attribute change steps; every step below must keep `labels` equal
+  // to the labels whose control is the element.
+  test("labels track for= labels through insertion, removal, for/id changes and moves", () => {
+    const check = () => {
+      const labels = [...document.querySelectorAll("label")] as any[];
+      for (const el of document.querySelectorAll("input, button") as any)
+        expect([...el.labels]).toEqual(labels.filter((l) => l.control === el));
+    };
+    document.body!.innerHTML = "<div id=box><input id=x><button id=y></button></div><label id=a for=x>A</label>";
+    check();
+    const b = document.createElement("label") as any;
+    b.htmlFor = "x";
+    document.body!.prepend(b);
+    check();
+    $("a").htmlFor = "y";
+    check();
+    $("a").removeAttribute("for");
+    check();
+    $("a").append($("x"));
+    check();
+    b.setAttribute("for", "y");
+    $("y").id = "x";
+    check();
+    const twin = document.createElement("input");
+    twin.id = "y";
+    document.body!.prepend(twin);
+    check();
+    b.remove();
+    check();
+    document.body!.append(b);
+    check();
+    $("box").moveBefore(b, null);
+    check();
+    document.body!.append($("box"));
+    check();
+  });
+
+  test("a for= label in a shadow tree names only controls of that tree", () => {
+    document.body!.innerHTML = "<input id=x><div id=host></div>";
+    const shadow = $("host").attachShadow({ mode: "open" });
+    shadow.innerHTML = "<label for=x>S</label><input id=x>";
+    expect([...$("x").labels]).toEqual([]);
+    expect([...shadow.getElementById("x").labels]).toEqual([shadow.querySelector("label")]);
+  });
+
+  test("labels of an ID-less control match every label's control", () => {
+    document.body!.innerHTML =
+      "<label>A <input><input></label><label for=x>B <button></button></label><select id=x></select>" +
+      "<label>C <span><textarea></textarea></span></label><label><label for=''>D <meter></meter></label></label>";
+    const labels = [...document.querySelectorAll("label")] as any[];
+    for (const el of document.querySelectorAll("input, button, select, textarea, meter") as any) {
+      expect([...el.labels]).toEqual(labels.filter((l) => l.control === el));
+    }
+  });
 });

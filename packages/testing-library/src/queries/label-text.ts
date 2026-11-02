@@ -1,7 +1,7 @@
 // Port of @testing-library/dom src/queries/label-text.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/queries/label-text.ts
 //
-// Same matching semantics as upstream; LabelContext shares aria's version-stamped label index.
+// Same matching semantics as upstream; LabelContext resolves labels with one walk of the tree per query (aria's labelMapForTree).
 
 import { ariaAttr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { getConfig } from "../config.ts";

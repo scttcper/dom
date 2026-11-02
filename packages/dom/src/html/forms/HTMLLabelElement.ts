@@ -4,10 +4,12 @@ import { HTMLElement } from "../HTMLElement.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Event } from "../../events/Event.ts";
-import { ELEMENT_NODE } from "../../nodes/constants.ts";
+import type { Document } from "../../nodes/Document.ts";
+import { ELEMENT_NODE, F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED } from "../../nodes/constants.ts";
+import { attr } from "../../nodes/attributes.ts";
 import { T } from "../../nodes/tags.ts";
 import { contentAttr, str } from "../reflect.ts";
-import { formOwner, isActuallyDisabled, labeledControl } from "./form-associated.ts";
+import { addForLabel, formOwner, isActuallyDisabled, labeledControl, removeForLabel } from "./form-associated.ts";
 import { I_HIDDEN, inputType } from "./input-type.ts";
 import { syntheticClick } from "./form-submission.ts";
 import { $impl } from "../../keys.ts";
@@ -38,6 +40,39 @@ export function isInteractiveContent(el: NodeImpl): boolean {
 
 export class HTMLLabelElement extends HTMLElement {
   declare htmlFor: string;
+
+  /** @internal Use Document.createElement. */
+  constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
+    super(doc, localName, ns, prefix);
+    this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
+  }
+
+  // Keep Document[$forLabels] (form-associated.ts labelsFor) to the connected labels with `for`.
+
+  override _connectedSteps(): void {
+    super._connectedSteps();
+    const forValue = attr(this[$impl], "for");
+    if (forValue !== null) addForLabel(this[$impl], forValue);
+  }
+
+  override _disconnectedSteps(): void {
+    super._disconnectedSteps();
+    const forValue = attr(this[$impl], "for");
+    if (forValue !== null) removeForLabel(this[$impl], forValue);
+  }
+
+  override _attributeChangedSteps(
+    localName: string,
+    oldValue: string | null,
+    value: string | null,
+    namespace: string | null,
+  ): void {
+    super._attributeChangedSteps(localName, oldValue, value, namespace);
+    if (localName !== "for" || namespace !== null || (this[$impl].flags & F_CONNECTED) === 0) return;
+    if (oldValue === value) return;
+    if (oldValue !== null) removeForLabel(this[$impl], oldValue);
+    if (value !== null) addForLabel(this[$impl], value);
+  }
 
   /** https://html.spec.whatwg.org/#dom-label-control */
   get control(): Element | null {

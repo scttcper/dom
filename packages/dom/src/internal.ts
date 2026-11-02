@@ -25,6 +25,7 @@ export {
   isInclusiveAncestor,
   indexOf,
   childAt,
+  compareTreeOrder,
 } from "./nodes/traverse.ts";
 export {
   attr,

@@ -14,9 +14,9 @@ import { ELEMENT_NODE, F_CONNECTED, F_CONNECT_HOOK, F_FACE, DOCUMENT_NODE } from
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import { T } from "../../nodes/tags.ts";
 import { attr } from "../../nodes/attributes.ts";
-import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
+import { compareTreeOrder, nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
 import { I_HIDDEN, I_IMAGE, inputType } from "./input-type.ts";
-import { $assocGen } from "../../keys.ts";
+import { $assocGen, $forLabels } from "../../keys.ts";
 
 // --- categories ---------------------------------------------------------------------------
 
@@ -253,8 +253,44 @@ export function labeledControl(label: NodeImpl): NodeImpl | null {
   return null;
 }
 
+/** HTMLLabelElement: a connected `label` has `for` attribute value `forValue` (Document[$forLabels]). */
+export function addForLabel(label: NodeImpl, forValue: string): void {
+  const map = (label.doc[$forLabels] ??= new Map());
+  const list = map.get(forValue);
+  if (list === undefined) map.set(forValue, [label]);
+  else list.push(label);
+}
+
+/** HTMLLabelElement: `label` was disconnected, or its `for` attribute changed from `forValue`. */
+export function removeForLabel(label: NodeImpl, forValue: string): void {
+  const map = label.doc[$forLabels]!;
+  const list = map.get(forValue)!;
+  if (list.length === 1) map.delete(forValue);
+  else list.splice(list.indexOf(label), 1);
+}
+
 /** Label elements whose labeled control is `el`, in tree order. https://html.spec.whatwg.org/#dom-lfe-labels */
 export function labelsFor(el: NodeImpl, out: NodeImpl[]): NodeImpl[] {
+  // A label names `el` by `for` (only when `el` has an ID), or is an ancestor without `for` whose
+  // first labelable descendant is `el`. Ancestors are O(depth), and the document lists its
+  // connected labels with `for` (Document[$forLabels]), so only a detached control with an ID
+  // walks its tree.
+  if (el.id === "" || (el.flags & F_CONNECTED) !== 0) {
+    // Walking up meets the innermost label first; tree order is outermost first.
+    const start = out.length;
+    for (let p = el.parent; p !== null; p = p.parent)
+      if (p.tag === T.label && attr(p, "for") === null && labeledControl(p) === el) out.splice(start, 0, p);
+    const forLabels = el.id === "" ? undefined : el.doc[$forLabels]?.get(el.id);
+    if (forLabels !== undefined) {
+      const ancestors = out.length;
+      for (let i = 0; i < forLabels.length; i++) {
+        // labeledControl resolves `for` in the label's own tree, so a match shares el's tree.
+        if (labeledControl(forLabels[i]) === el) out.push(forLabels[i]);
+      }
+      if (out.length > ancestors && out.length - start > 1) out.push(...out.splice(start).sort(compareTreeOrder));
+    }
+    return out;
+  }
   const root = treeRoot(el);
   for (
     let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);

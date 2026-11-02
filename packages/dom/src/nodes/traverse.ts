@@ -102,3 +102,28 @@ export function childAt(parent: NodeImpl, index: number): NodeImpl | null {
   for (let i = count - 1; i > index; i--) c = c!.prev;
   return c;
 }
+
+function ancestors(n: NodeImpl): NodeImpl[] {
+  const out: NodeImpl[] = [];
+  for (let p: NodeImpl | null = n; p !== null; p = p.parent) out.push(p);
+  return out;
+}
+
+/** Negative if a precedes b in tree order (https://dom.spec.whatwg.org/#concept-tree-order). */
+export function compareTreeOrder(a: NodeImpl, b: NodeImpl): number {
+  if (a === b) return 0;
+  const pa = ancestors(a);
+  const pb = ancestors(b);
+  let i = pa.length - 1;
+  let j = pb.length - 1;
+  while (i >= 0 && j >= 0 && pa[i] === pb[j]) {
+    i--;
+    j--;
+  }
+  if (i < 0) return -1; // a is an ancestor of b
+  if (j < 0) return 1;
+  const ca = pa[i];
+  const cb = pb[j];
+  for (let s = ca.next; s !== null; s = s.next) if (s === cb) return -1;
+  return 1;
+}

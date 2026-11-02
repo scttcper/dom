@@ -47,6 +47,7 @@ import {
   $derived,
   $doc,
   $focused,
+  $forLabels,
   $forms,
   $ids,
   $impl,
@@ -87,11 +88,17 @@ export class Document extends Node {
   /** Live ranges whose boundary points are in this document (traversal/live.ts); null when none. */
   [$ranges]: WeakRef<object>[] | null;
   /**
-   * Derived per-document caches (selector results, label index, ...) keyed by owner token; see
+   * Derived per-document caches (selector results, snapshot holders, ...) keyed by owner token; see
    * nodes/derived.ts. Dropped whenever a node is removed from a tree of this document, so caches
    * never keep removed subtrees alive.
    */
   [$derived]: Map<object, unknown> | null;
+  /**
+   * Connected <label> elements by `for` attribute value, each list in no particular order, or null
+   * before the first (html/forms/HTMLLabelElement.ts). Lets `element.labels` find the labels naming
+   * an ID without walking the tree.
+   */
+  [$forLabels]: Map<string, NodeImpl[]> | null;
   /** document.forms (named-properties proxy), created on first read. */
   [$forms]: HTMLCollection | null;
   /** https://html.spec.whatwg.org/#concept-document-about-base-url (about:blank / about:srcdoc documents of nested browsing contexts). */
@@ -123,6 +130,7 @@ export class Document extends Node {
     this[$forms] = null;
     this[$ranges] = null;
     this[$derived] = null;
+    this[$forLabels] = null;
     this[$aboutBase] = null;
     this[$baseOverride] = null;
     this[$baseURL] = "";
