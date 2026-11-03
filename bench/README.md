@@ -410,6 +410,19 @@ Inserting and removing a label costs ~60 ns more (8% on a 200-control churn loop
 suite (ctrl-dom-full) asks for 1,781 label lists, half of them ID-less, so its wall time does not
 move; the win is for large forms queried by name.
 
+**Forms** (2026-11-02). A scaling probe (each API after a mutation, 1k vs 10k unrelated elements)
+found two more whole-document walks. Dispatch reads `_hasActivationBehavior` on every click's
+path; a `<form>` lacked it, so the read became a named property lookup through the form's
+controls plus an uncached walk for `<img>` names. Element now defines it as false. And a form's
+controls (`elements`, named access, FormData, constraint validation, submission, radio groups of
+the form) were found by walking the whole tree per document version; outside its subtree only a
+`form` attribute naming the form's ID or the parser's form element pointer can associate an
+element, so an ID-less form walks only itself (`formOwnerScope` in html/forms/form-associated.ts).
+At 10k elements with an ID-less form: `form.elements` 129 → 1.5 µs, `checkValidity()` 378 → 3.6
+µs, a submit click 384 → 5.3 µs, radio checks and `validity` 111 → 0.2 µs, `userEvent.click` 458 →
+63 µs, `userEvent.type` 322 → 88 µs. Still walking: radios outside any form (inserting a checked
+one, ~110 µs at 10k), forms with an ID, and `userEvent.tab` (needs every focusable element).
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

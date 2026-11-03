@@ -18,11 +18,11 @@ import { reportNotImplemented, stubbedMethod } from "../../window/not-implemente
 /** jsdom reports form.submit() as not implemented (window/not-implemented.ts). */
 const SUBMIT_NOT_IMPLEMENTED = stubbedMethod("HTMLFormElement", "submit");
 import { reflectActionURL } from "./common.ts";
-import { formControls, formOwner } from "./form-associated.ts";
+import { formControls, formOwner, formOwnerScope } from "./form-associated.ts";
 import { createFormControlsCollection, RadioNodeList, type HTMLFormControlsCollection } from "./collections.ts";
 import { contentAttr } from "../reflect.ts";
 import { T } from "../../nodes/tags.ts";
-import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
+import { nextElementInTree } from "../../nodes/traverse.ts";
 import { formCheckValidity, isSubmitButton, resetForm, submitForm } from "./form-submission.ts";
 import {
   $assocGen,
@@ -99,7 +99,7 @@ export class HTMLFormElement extends HTMLElement {
     }
     if (candidates.length === 0) {
       // img elements whose form owner is this form.
-      const root = treeRoot(form);
+      const root = formOwnerScope(form, false);
       for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
         if (n.tag === T.img && (n.id === name || contentAttr(n, "name") === name) && formOwner(n) === form)
           candidates.push(n);

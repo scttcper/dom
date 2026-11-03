@@ -12,9 +12,10 @@
  *   entry list             https://html.spec.whatwg.org/#constructing-the-form-data-set
  *   FormData constructor   https://xhr.spec.whatwg.org/#dom-formdata
  *   labels                 https://html.spec.whatwg.org/#the-label-element
+ *   form owner scope       https://html.spec.whatwg.org/#form-owner
  *   disabled               https://html.spec.whatwg.org/#concept-fe-disabled
  */
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWindow, type Document } from "@ctrl/dom";
 import { implicitSubmission } from "../../../src/html/forms/index.ts";
 import { isActuallyDisabled } from "../../../src/html/forms/form-associated.ts";
@@ -75,6 +76,61 @@ describe("form.elements — https://html.spec.whatwg.org/#dom-form-elements", ()
     expect(list.value).toBe("2");
     list.value = "1";
     expect(list[0].checked).toBe(true);
+  });
+});
+
+// https://html.spec.whatwg.org/#form-owner: outside its descendants only a `form` attribute naming
+// the form's ID or the parser's form element pointer gives an element a form owner, so
+// formControls walks just an ID-less form's subtree (formOwnerScope). Each case checks
+// form.elements against every listed element's own form owner (`.form`).
+describe("form owner scope — https://html.spec.whatwg.org/#form-owner", () => {
+  const LISTED = "input:not([type=image]), button, select, textarea, fieldset, output, object";
+  const check = () => {
+    const all = [...document.querySelectorAll(LISTED)] as any[];
+    for (const form of document.querySelectorAll("form") as any)
+      expect([...form.elements]).toEqual(all.filter((el) => el.form === form));
+  };
+
+  test("an ID-less form owns its descendants, but not those naming another form", () => {
+    document.body!.innerHTML =
+      "<input name=x><form><input name=a><div><select></select><input form=g></div></form>" +
+      "<form id=g><button></button></form><input form=g><textarea></textarea>";
+    check();
+  });
+
+  test("a form with an ID also owns controls naming it from outside, and loses them when the ID changes", () => {
+    document.body!.innerHTML = "<input form=f id=out><form id=f><input></form><output form=f></output>";
+    check();
+    $("f").removeAttribute("id");
+    check();
+    expect($("out").form).toBeNull();
+  });
+
+  test("a control the parser associated from outside the form is listed", () => {
+    // Document parsing only: fragment parsing never uses the form element pointer.
+    window = createWindow({ html: "<div><form id=p></div><input id=after><input type=radio name=r id=r1>" });
+    document = window.document;
+    expect($("after").form).toBe($("p"));
+    $("p").removeAttribute("id");
+    check();
+  });
+
+  test("radio groups of an ID-less form stay within the form", () => {
+    document.body!.innerHTML =
+      "<form><input type=radio name=r id=a checked><input type=radio name=r id=b></form><input type=radio name=r id=c checked>";
+    $("b").checked = true;
+    expect([$("a").checked, $("b").checked, $("c").checked]).toEqual([false, true, true]);
+    $("c").checked = true;
+    expect([$("a").checked, $("b").checked, $("c").checked]).toEqual([false, true, true]);
+  });
+
+  test("a click inside a form reads no named property of the form", () => {
+    document.body!.innerHTML = "<form><input name=a><span id=s>x</span></form>";
+    const spy = vi.spyOn(window.HTMLFormElement.prototype, "_namedProperty");
+    $("s").click();
+    $("s").dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 });
 

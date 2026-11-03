@@ -591,7 +591,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [following-hyperlinks-2](https://html.spec.whatwg.org/#following-hyperlinks-2) | `dom/html/anchor.ts` | `compat/not-implemented/not-implemented.test.ts` |
 | [form-associated-custom-elements](https://html.spec.whatwg.org/#form-associated-custom-elements) | `dom/html/forms/face.ts` | `dom/html/forms/face-parser-selectedcontent.test.ts` |
 | [form-associated-element](https://html.spec.whatwg.org/#form-associated-element) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
-| [form-owner](https://html.spec.whatwg.org/#form-owner) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
+| [form-owner](https://html.spec.whatwg.org/#form-owner) | `dom/html/forms/form-associated.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts` |
 | [form-submission-algorithm](https://html.spec.whatwg.org/#form-submission-algorithm) | `dom/html/forms/form-submission.ts` | WPT: `html/semantics/forms/form-submission-0/form-submit-invalid.html`, `html/semantics/forms/form-submission-0/form-submitters.html` +1 |
 | [formatting](https://html.spec.whatwg.org/#formatting) | `dom/parser/treebuilder.ts` | **untested** |
 | [forms](https://html.spec.whatwg.org/#forms) | `dom/html/forms/common.ts`, `dom/html/forms/index.ts` | `dom/html/forms/wpt-forms.test.ts`, `compat/forms/reflection.test.ts` |

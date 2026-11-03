@@ -25,7 +25,8 @@
 // Rules:
 // - `_hasActivationBehavior` is read only for click MouseEvents (so it may be a getter that
 //   inspects state, e.g. `type`/`href`/`disabled`). It must be strictly `true` to count.
-//   Elements without activation behavior simply don't define it (undefined → false).
+//   Elements without activation behavior inherit Element's `false` (other targets leave it
+//   undefined); a <form> must not miss it, or the read becomes a named property lookup.
 // - `_legacyPreActivationBehavior()` runs after the path is built and before any listener
 //   (checkbox/radio toggling, so listeners observe the new state).
 // - After dispatch finishes (event path cleared, phase NONE): if the event was not canceled,

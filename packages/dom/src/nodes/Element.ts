@@ -499,6 +499,15 @@ export class Element extends Node {
 
   // --- hooks for subclasses (see constants.ts F_*_HOOK) -----------------------------------
 
+  /**
+   * Activation behavior (events/activation.ts): none unless a subclass overrides it. Defined here
+   * so dispatch reading it on every click's path is a prototype hit, not (on a <form>) a named
+   * property lookup through the form's controls.
+   */
+  get _hasActivationBehavior(): boolean {
+    return false;
+  }
+
   /** Runs when this element becomes connected. Only called when F_CONNECT_HOOK is set. */
   _connectedSteps(): void {}
   /** Runs when this element becomes disconnected. Only called when F_CONNECT_HOOK is set. */

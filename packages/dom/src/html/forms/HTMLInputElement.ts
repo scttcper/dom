@@ -91,7 +91,13 @@ import {
   serializeWeek,
   utcMs,
 } from "./microsyntaxes.ts";
-import { elementByIdInTree, formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
+import {
+  elementByIdInTree,
+  formOwner,
+  formOwnerScope,
+  hasDatalistAncestor,
+  isActuallyDisabled,
+} from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
 import { FileList, createFileList } from "../../window/FileList.ts";
 import { queueElementTask } from "../events.ts";
@@ -1414,8 +1420,8 @@ function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): vo
   const name = attr(el, "name");
   if (name === null || name === "") return;
   const owner = formOwner(el);
-  // Elements whose form owner is a form can only be in that form's tree; scan its root.
-  const root = treeRoot(owner ?? el);
+  // Members whose form owner is a form are where that form's owned elements can be.
+  const root = owner === null ? treeRoot(el) : formOwnerScope(owner, true);
   for (
     let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
     n !== null;

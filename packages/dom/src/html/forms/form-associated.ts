@@ -169,9 +169,19 @@ function parserAssociationValid(el: NodeImpl, a: ParserAssociation): boolean {
   return treeRoot(el) === treeRoot(a.form);
 }
 
+/**
+ * The subtree holding every element whose form owner is `form` (https://html.spec.whatwg.org/#form-owner).
+ * Outside its descendants only the parser's form element pointer or, for listed elements, a
+ * `form` attribute naming the form's ID associates an element with it, so without those the
+ * form's own subtree suffices: O(form) instead of a walk of the whole tree.
+ */
+export function formOwnerScope(form: NodeImpl, listed: boolean): NodeImpl {
+  return parserAssocCount === 0 && (!listed || form.id === "") ? form : treeRoot(form);
+}
+
 /** All listed elements (excluding image buttons) whose form owner is `form`, in tree order: form.elements. */
 export function formControls(form: NodeImpl, out: NodeImpl[], includeImages: boolean): NodeImpl[] {
-  const root = treeRoot(form);
+  const root = formOwnerScope(form, true);
   for (
     let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
     n !== null;
