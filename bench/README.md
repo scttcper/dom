@@ -447,6 +447,21 @@ properties, see collections/NodeList.ts), so removing 10k children from the fron
 checking each radio of one huge group visits the group each time; and adding attributes one by one
 to one element copies its exact-size attribute array.
 
+A second pass (same probe, more areas) found three more. Appending a child to a shadow host reran
+assign slottables, which found each host child's slot by walking the shadow tree and checked each
+old node with `includes` (O(n²) per insert): find slottables now looks the first slot per name up
+once, a slot's list is extended or shortened in place when a host's last child is appended or an
+assigned one removed (nodes/slots.ts), and appending 10k children went 1,455 → 0.45 µs each.
+DOMTokenList re-parses the attribute on every `add()` and deduped pairwise; past 16 tokens it uses
+a Set (an add to 1,000 classes 377 → 48 µs, now linear in the tokens it has to serialize). And
+inherited `visibility` / `pointer-events` of an element without author styles climbed every
+ancestor recursively, once per `*ByRole` candidate: in a document with no sheet and no inline style
+it is now the initial value at once, otherwise a loop to the nearest styled ancestor (`getByRole`
+in a 1,000-deep tree 6.1 → 0.09 µs per element). Not changed: `addEventListener`'s duplicate check
+is a scan of that type's listeners (10k listeners of one type on one target: 9 µs per add), and
+`.a ~ .b`, `:has()` and descendant selectors with no match rescan siblings, subtrees or ancestors
+per candidate, as browsers' query paths also do.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

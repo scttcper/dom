@@ -956,7 +956,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [add-an-event-listener](https://dom.spec.whatwg.org/#add-an-event-listener) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts`, `dom/events/wpt-events.test.ts` |
 | [add-transient-registered-observers](https://dom.spec.whatwg.org/#add-transient-registered-observers) | `dom/observers/queue.ts` | `dom/observers/wpt-mutation-observer.test.ts` |
 | [assign-a-slot](https://dom.spec.whatwg.org/#assign-a-slot) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
-| [assign-slotables](https://dom.spec.whatwg.org/#assign-slotables) | `dom/nodes/slots.ts` | `dom/nodes/shadow-dom.test.ts` |
+| [assign-slotables](https://dom.spec.whatwg.org/#assign-slotables) | `dom/nodes/slots.ts` | `dom/nodes/shadow-dom.test.ts`, `dom/nodes/slots.test.ts` |
 | [assign-slotables-for-a-tree](https://dom.spec.whatwg.org/#assign-slotables-for-a-tree) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [concept-attach-a-shadow-root](https://dom.spec.whatwg.org/#concept-attach-a-shadow-root) | `dom/html/custom-elements.ts`, `dom/nodes/Element.ts`, `dom/nodes/ShadowRoot.ts` | `dom/nodes/shadow-dom.test.ts`, `dom/nodes/wpt-shadow-dom.test.ts`; WPT: `dom/nodes/attach-shadow-realm-after-adoption.html` |
 | [concept-attribute-value](https://dom.spec.whatwg.org/#concept-attribute-value) | `dom/nodes/Node.ts` | `dom/nodes/attributes.test.ts` |

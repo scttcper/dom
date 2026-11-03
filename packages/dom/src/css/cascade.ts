@@ -1759,9 +1759,15 @@ export function isDisplayNoneInclusive(el: NodeImpl): boolean {
 }
 
 function inheritedKeyword(el: NodeImpl, prop: string, field: "visibility" | "pointerEvents", fallback: string): string {
+  // An element without author styles inherits the value: from its nearest styled ancestor, or the
+  // initial value. With no sheet and no inline style anywhere in the document every ancestor is
+  // plain, so skip the O(depth) climb (a role query asks for each candidate).
   if (plain(el)) {
-    const p = inheritanceParent(el);
-    return p === null ? fallback : inheritedKeyword(p, prop, field, fallback);
+    if (inlineStyleCount(el.doc) === 0) return fallback;
+    let p = inheritanceParent(el);
+    while (p !== null && plain(p)) p = inheritanceParent(p);
+    if (p === null) return fallback;
+    el = p;
   }
   const rec = styleRecord(el);
   if (rec[field] !== "") return rec[field];

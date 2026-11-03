@@ -399,6 +399,17 @@ describe("fast internal API (src/css/internal.ts)", () => {
     expect(cache === null || cache.style === null).toBe(true);
   });
 
+  test("visibility and pointer-events inherit from the nearest styled ancestor, however far up, and stay initial in a document without styles", () => {
+    html(`<div id=top>${"<div>".repeat(40)}<span id=deep></span>${"</div>".repeat(40)}</div>`);
+    expect(computedVisibility(impl("#deep"))).toBe("visible");
+    expect(pointerEvents(impl("#deep"))).toBe("auto");
+    $("#top").setAttribute("style", "visibility: hidden; pointer-events: none");
+    expect(computedVisibility(impl("#deep"))).toBe("hidden");
+    expect(pointerEvents(impl("#deep"))).toBe("none");
+    $("#top").removeAttribute("style");
+    expect(computedVisibility(impl("#deep"))).toBe("visible");
+  });
+
   test("hasAuthorStyles is false for a plain document", () => {
     html(`<div></div>`);
     expect(hasAuthorStyles(document)).toBe(false);

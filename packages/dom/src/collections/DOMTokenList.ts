@@ -25,6 +25,12 @@ const EMPTY: string[] = [];
 function orderedSet(tokens: string[]): string[] {
   const n = tokens.length;
   if (n < 2) return tokens;
+  // Every add() re-parses the attribute: past a few tokens the pairwise scan would make each
+  // add O(tokens²).
+  if (n > 16) {
+    const seen = new Set(tokens);
+    return seen.size === n ? tokens : [...seen];
+  }
   for (let i = 1; i < n; i++) {
     const t = tokens[i];
     for (let j = 0; j < i; j++) {

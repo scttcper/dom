@@ -45,6 +45,14 @@ describe("token set — https://dom.spec.whatwg.org/#concept-dtl-tokens", () => 
     },
   );
 
+  differential("long token lists dedupe the same way (orderedSet switches to a Set past 16 tokens)", (w) => {
+    const tokens = Array.from({ length: 40 }, (_, i) => `t${i % 25}`);
+    const el = classed(w, tokens.join(" "));
+    const before = [...el.classList];
+    el.classList.add("t3", "new", "t24");
+    return { before, after: [...el.classList], value: el.className, length: el.classList.length };
+  });
+
   differential(
     "attribute change steps: setting, removing and changing the attribute re-parses the live token set",
     (w) => {

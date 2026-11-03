@@ -91,8 +91,21 @@ export function findSlottables(slot: NodeImpl): NodeImpl[] {
     if (manual !== undefined) for (const s of manual) if (s.parent === host) result.push(s);
     return result;
   }
+  // find a slot for each slottable child, with the shadow tree's first slot per name looked up
+  // once instead of walking the shadow tree for every child.
+  let firstByName: Map<string, NodeImpl> | null = null;
   for (let c = host.first; c !== null; c = c.next) {
-    if (isSlottable(c) && findSlot(c, false) === slot) result.push(c);
+    if (!isSlottable(c)) continue;
+    if (firstByName === null) {
+      firstByName = new Map();
+      const shadowRoot = shadow[$impl];
+      for (let n = shadowRoot.first; n !== null; n = nextInTree(n, shadowRoot)) {
+        if (!isSlot(n)) continue;
+        const name = slotName(n);
+        if (!firstByName.has(name)) firstByName.set(name, n);
+      }
+    }
+    if (firstByName.get(slottableName(c)) === slot) result.push(c);
   }
   return result;
 }
@@ -129,9 +142,14 @@ export function assignSlottables(slot: NodeImpl): void {
       }
     }
   }
-  if (!identical) signalSlotChange(slot);
-  // Nodes that are no longer assigned here lose their assigned slot.
-  for (const n of old) if (assignedSlotOf.get(n) === slot && !slottables.includes(n)) assignedSlotOf.delete(n);
+  if (!identical) {
+    signalSlotChange(slot);
+    // Nodes that are no longer assigned here lose their assigned slot.
+    if (old.length !== 0) {
+      const kept = new Set(slottables);
+      for (const n of old) if (assignedSlotOf.get(n) === slot && !kept.has(n)) assignedSlotOf.delete(n);
+    }
+  }
   if (slottables.length === 0) assignedNodesOf.delete(slot);
   else assignedNodesOf.set(slot, slottables);
   for (const s of slottables) assignedSlotOf.set(s, slot);
@@ -146,6 +164,31 @@ export function assignSlottablesForTree(root: NodeImpl): void {
 export function assignASlot(slottable: NodeImpl): void {
   const slot = findSlot(slottable, false);
   if (slot !== null) assignSlottables(slot);
+}
+
+// A slot's assigned nodes are always its find-slottables result (every mutation that can change
+// one reassigns it), so two common changes update the list in place instead of recomputing it:
+// a slottable appended as the host's last child joins the end of its slot's list (tree order),
+// and a removed one leaves it. Only named assignment: manual slots keep the full algorithm.
+
+function appendedLast(slottable: NodeImpl, shadow: ShadowRoot): boolean {
+  if (shadow.slotAssignment === "manual" || assignedSlotOf.has(slottable)) return false;
+  const slot = findSlot(slottable, false);
+  if (slot === null) return true;
+  const old = assignedNodesOf.get(slot);
+  if (old === undefined) assignedNodesOf.set(slot, [slottable]);
+  else old.push(slottable);
+  assignedSlotOf.set(slottable, slot);
+  signalSlotChange(slot);
+  return true;
+}
+
+function removedAssigned(node: NodeImpl, slot: NodeImpl): void {
+  const old = assignedNodesOf.get(slot)!;
+  if (old.length === 1) assignedNodesOf.delete(slot);
+  else old.splice(old.indexOf(node), 1);
+  assignedSlotOf.delete(node);
+  signalSlotChange(slot);
 }
 
 function hasSlotDescendant(node: NodeImpl): boolean {
@@ -172,7 +215,7 @@ export function slotsAfterInsert(parent: NodeImpl, node: NodeImpl | null, nodes:
     // revealed when it becomes a child of the host (find a slot checks the manual assignment),
     // which is what browsers and WPT shadow-dom/imperative-slot-api.html expect.
     const shadow = shadowOf(parent);
-    if (shadow !== null && isSlottable(n)) assignASlot(n);
+    if (shadow !== null && isSlottable(n) && !(n.next === null && appendedLast(n, shadow))) assignASlot(n);
     // 7.5
     if (isEmptyShadowSlot(parent)) signalSlotChange(parent);
     // 7.6: assign slottables for a tree with n's root (only slots inside shadow trees matter).
@@ -186,7 +229,11 @@ export function slotsAfterInsert(parent: NodeImpl, node: NodeImpl | null, nodes:
 /** https://dom.spec.whatwg.org/#concept-node-remove steps 11-13 (after unlinking). */
 export function slotsAfterRemove(node: NodeImpl, parent: NodeImpl): void {
   const slot = assignedSlotOf.get(node);
-  if (slot !== undefined) assignSlottables(slot);
+  if (slot !== undefined) {
+    const shadow = shadowOf(parent);
+    if (shadow !== null && shadow.slotAssignment !== "manual") removedAssigned(node, slot);
+    else assignSlottables(slot);
+  }
   if (isEmptyShadowSlot(parent)) signalSlotChange(parent);
   if (hasSlotDescendant(node)) {
     const parentRoot = treeRoot(parent);

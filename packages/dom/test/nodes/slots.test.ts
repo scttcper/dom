@@ -178,6 +178,48 @@ describe("assign slottables for a tree — https://dom.spec.whatwg.org/#assign-s
   );
 });
 
+// Appending a host's last child and removing an assigned one update the slot's assigned nodes in
+// place (nodes/slots.ts appendedLast / removedAssigned) instead of rerunning assign slottables;
+// each step must leave the same assignment the full algorithm gives.
+describe("assigned nodes kept in place — https://dom.spec.whatwg.org/#assign-slotables", () => {
+  differential("appends, inserts, removals and slot changes keep every slot's assigned nodes in tree order", (w) => {
+    const { d, el, root, slot } = host(w, "", '<slot name="a"></slot><slot></slot><slot name="a"></slot>');
+    const add = (tag: string, name: string | null, before: AnyWindow = null) => {
+      const n = d.createElement(tag);
+      if (name !== null) n.slot = name;
+      return el.insertBefore(n, before);
+    };
+    const snap = () => ({
+      a: names(slot("a").assignedNodes()),
+      d: names(slot().assignedNodes()),
+      slots: [...el.childNodes].map((c: AnyWindow) => c.assignedSlot?.name ?? null),
+    });
+    const steps = [];
+    const b = add("b", "a");
+    add("i", null);
+    el.append("text");
+    add("u", "zzz");
+    steps.push(snap());
+    add("s", "a", b);
+    steps.push(snap());
+    const frag = d.createDocumentFragment();
+    frag.append(d.createElement("em"), Object.assign(d.createElement("q"), { slot: "a" }));
+    el.append(frag);
+    steps.push(snap());
+    b.remove();
+    el.firstChild.remove();
+    el.lastChild.remove();
+    steps.push(snap());
+    el.lastChild.slot = "a";
+    el.append(el.firstChild);
+    steps.push(snap());
+    root.prepend(d.createElement("slot"));
+    add("mark", null);
+    steps.push([names(root.firstChild.assignedNodes()), snap()]);
+    return steps;
+  });
+});
+
 describe("manual slot assignment — https://dom.spec.whatwg.org/#slot-manually-assigned-nodes", () => {
   function manual() {
     const { document } = createWindow();
