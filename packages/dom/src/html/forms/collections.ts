@@ -103,7 +103,7 @@ export class LabelsNodeList extends ComputedNodeList {
   }
 
   _compute(): Node[] {
-    const impls = labelsFor(this[$el], []);
+    const impls = labelsFor(this[$el]);
     const items: Node[] = new Array(impls.length);
     for (let i = 0; i < impls.length; i++) items[i] = impls[i].node;
     return items;

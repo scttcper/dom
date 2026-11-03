@@ -401,9 +401,10 @@ insert: two caches alternating 64.1 → 11.5 µs per insert (RSS 188 → 146 MB)
 **Labels** (2026-11-02). `element.labels` (which dom-accessibility-api reads for every candidate
 of a stock `*ByRole` with `name`) walked the whole tree once per document version, and aria's
 `labelsOf` rebuilt a whole-tree label index per version, even for a `<button>` with no ID. A
-control's labels are now its ancestor labels without `for` plus the document's connected labels
-with `for` equal to its ID (`Document[$forLabels]`, kept by HTMLLabelElement's connected,
-disconnected and attribute change steps); only a detached control with an ID still walks. In a
+control's labels (`labelsFor` in html/forms/form-associated.ts, which aria's `labelsOf` now calls)
+are its ancestor labels without `for` plus the document's connected labels with `for` equal to its
+ID (`Document[$forLabels]`, kept by HTMLLabelElement's connected, disconnected and attribute change
+steps); only a detached control with an ID still walks. In a
 3,800-element document with a mutation before each read: `labels` 31 → 0.09 µs, stock
 `getAllByRole('radio', { name })` 9.0 → 0.74 ms, ours 228 → 164 µs; unmutated repeats unchanged.
 Inserting and removing a label costs ~60 ns more (8% on a 200-control churn loop). Base UI's whole

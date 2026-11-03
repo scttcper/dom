@@ -76,11 +76,8 @@ export class HTMLCollection {
   declare [$items]: Element[] | null;
   declare [$version]: number;
 
-  /**
-   * @internal Use the static factories or a subclass. `structural`: the members depend only on
-   * the tree and tag names (not attributes or state), see the module comment.
-   */
-  constructor(root: NodeImpl, childrenOnly = false, filter: ElementFilter | null = null, structural = childrenOnly) {
+  /** @internal Use the static factories or a subclass. `structural`: see the module comment. */
+  constructor(root: NodeImpl, childrenOnly = false, filter: ElementFilter | null = null, structural = false) {
     Object.defineProperty(this, $coll, { value: new CollectionState(root, childrenOnly, filter, structural) });
     if (table === null) table = indexGetterTable(HTMLCollection.prototype, tableItem, 256);
   }
@@ -100,14 +97,14 @@ export class HTMLCollection {
 
   /** @internal Element children of `root` (ParentNode.children). */
   static _childrenOf(root: NodeImpl): HTMLCollection {
-    return new HTMLCollection(root, true, null);
+    return new HTMLCollection(root, true, null, true);
   }
 
   /**
    * @internal Descendant elements of `root` matching `filter`, in tree order; `structural` when
    * `filter` reads only tag names and namespaces.
    */
-  static _descendants(root: NodeImpl, filter: ElementFilter | null, structural: boolean): HTMLCollection {
+  static _descendants(root: NodeImpl, structural: boolean, filter: ElementFilter | null): HTMLCollection {
     return new HTMLCollection(root, false, filter, structural);
   }
 

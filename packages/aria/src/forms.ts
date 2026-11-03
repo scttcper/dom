@@ -7,9 +7,10 @@
 //   https://html.spec.whatwg.org/multipage/forms.html#category-label
 //   https://html.spec.whatwg.org/multipage/forms.html#labeled-control
 //
-// TODO(aria): switch the state reads to html-forms' NodeImpl-level exports
-// (`inputType`, value/checkedness/selectedness from `src/html/forms/state.ts`,
-// `listOfOptions`, `isLabelable`) once they are re-exported from `@ctrl/dom/internal`.
+// Labels come from html-forms (`isLabelable`, `labeledControl`, `labelsFor` in @ctrl/dom/internal).
+// TODO(aria): switch the state reads to html-forms' NodeImpl-level exports too (`inputType`,
+// value/checkedness/selectedness from `src/html/forms/state.ts`, `listOfOptions`) once they are
+// re-exported from `@ctrl/dom/internal`.
 // Until then dynamic state (value, checkedness, indeterminate, selectedness) is read
 // from the wrapper's IDL attributes when the element class implements them, falling back
 // to the content attributes (the initial state) otherwise.
@@ -17,16 +18,19 @@
 import {
   ELEMENT_NODE,
   DOCUMENT_NODE,
-  F_CONNECTED,
   HTML_NS,
   T,
   attr,
-  compareTreeOrder,
+  isLabelable,
+  labeledControl,
+  labelsFor,
   nextInTree,
   treeRoot,
   type NodeImpl,
 } from "@ctrl/dom/internal";
-import { $forLabels, $impl } from "@ctrl/dom/internal";
+import { $impl } from "@ctrl/dom/internal";
+
+export { isLabelable };
 
 /** Canonical `type` IDL value of an HTML input: https://html.spec.whatwg.org/multipage/input.html#attr-input-type */
 // oxfmt-ignore
@@ -157,76 +161,39 @@ export function selectedOptions(select: NodeImpl): NodeImpl[] {
 
 // --- labels -------------------------------------------------------------------------------
 
-/** https://html.spec.whatwg.org/multipage/forms.html#category-label (as jsdom implements it). */
-export function isLabelable(impl: NodeImpl): boolean {
-  if (impl.type !== ELEMENT_NODE || impl.ns !== HTML_NS) return false;
-  switch (impl.tag) {
-    case T.button:
-    case T.meter:
-    case T.output:
-    case T.progress:
-    case T.select:
-    case T.textarea:
-      return true;
-    case T.input:
-      return inputType(impl) !== "hidden";
-  }
-  // TODO(aria): form-associated custom elements are labelable too.
-  return false;
+/**
+ * `element.labels` as jsdom computes it: null for non-labelable elements, otherwise the label
+ * elements (tree order, same tree) whose labeled control is the element (@ctrl/dom's labelsFor).
+ */
+export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
+  return isLabelable(impl) ? labelsFor(impl) : null;
 }
 
-const EMPTY: NodeImpl[] = [];
-
-/** Every label association of the tree of `root`: labelable control → its labels in tree order. */
-function buildLabelMap(root: NodeImpl): Map<NodeImpl, NodeImpl[]> {
+/**
+ * The label associations of `impl`'s tree (labelable control → its labels in tree order) in one
+ * walk, for resolving many elements' labels at once (Testing Library's ByLabelText, per query).
+ */
+export function labelMapForTree(impl: NodeImpl): Map<NodeImpl, NodeImpl[]> {
+  const root = treeRoot(impl);
   const map = new Map<NodeImpl, NodeImpl[]>();
   const labels: NodeImpl[] = [];
-  let ids: Map<string, NodeImpl> | null = null;
-  const useDocIds = root.type === DOCUMENT_NODE;
   let anyFor = false;
-  // One preorder walk over the root's inclusive descendants.
-  for (let n: NodeImpl | null = root; n !== null;) {
-    if (n.type === ELEMENT_NODE) {
-      if (n.tag === T.label && n.ns === HTML_NS) {
-        labels.push(n);
-        if (attr(n, "for") !== null) anyFor = true;
-      }
-    }
-    // next in tree order within root
-    if (n.first !== null) n = n.first;
-    else {
-      let cur: NodeImpl | null = n;
-      n = null;
-      while (cur !== null && cur !== root) {
-        if (cur.next !== null) {
-          n = cur.next;
-          break;
-        }
-        cur = cur.parent;
-      }
-    }
+  for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
+    if (n.type !== ELEMENT_NODE || n.tag !== T.label) continue;
+    labels.push(n);
+    if (attr(n, "for") !== null) anyFor = true;
   }
   if (labels.length === 0) return map;
-  if (anyFor && !useDocIds) {
+  // A `for` target is the first element with that ID in the tree: the document's id index, or one
+  // map for the whole walk of a shadow or detached tree (instead of a walk per label).
+  let ids: Map<string, NodeImpl> | null = null;
+  if (anyFor && root.type !== DOCUMENT_NODE) {
     ids = new Map();
-    for (let n: NodeImpl | null = root; n !== null;) {
+    for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root))
       if (n.type === ELEMENT_NODE && n.id !== "" && !ids.has(n.id)) ids.set(n.id, n);
-      if (n.first !== null) n = n.first;
-      else {
-        let cur: NodeImpl | null = n;
-        n = null;
-        while (cur !== null && cur !== root) {
-          if (cur.next !== null) {
-            n = cur.next;
-            break;
-          }
-          cur = cur.parent;
-        }
-      }
-    }
   }
   for (const label of labels) {
-    const control = labeledControl(label, useDocIds ? root : null, ids);
+    const control = ids === null ? labeledControl(label) : forControl(label, ids);
     if (control === null) continue;
     const list = map.get(control);
     if (list === undefined) map.set(control, [label]);
@@ -235,92 +202,10 @@ function buildLabelMap(root: NodeImpl): Map<NodeImpl, NodeImpl[]> {
   return map;
 }
 
-/** https://html.spec.whatwg.org/multipage/forms.html#labeled-control */
-function labeledControl(label: NodeImpl, docRoot: NodeImpl | null, ids: Map<string, NodeImpl> | null): NodeImpl | null {
+/** https://html.spec.whatwg.org/multipage/forms.html#labeled-control with `for` targets from `ids`. */
+function forControl(label: NodeImpl, ids: Map<string, NodeImpl>): NodeImpl | null {
   const forValue = attr(label, "for");
-  if (forValue !== null) {
-    if (forValue === "") return null;
-    let target: NodeImpl | null;
-    if (docRoot !== null) {
-      const el = (docRoot.node as unknown as { _idLookup(id: string): NodeImpl | null })._idLookup(forValue);
-      target = el;
-    } else {
-      target = ids?.get(forValue) ?? null;
-    }
-    return target !== null && isLabelable(target) ? target : null;
-  }
-  for (let n = label.first; n !== null;) {
-    if (n.type === ELEMENT_NODE && isLabelable(n)) return n;
-    if (n.first !== null) n = n.first;
-    else {
-      let cur: NodeImpl | null = n;
-      n = null;
-      while (cur !== null && cur !== label) {
-        if (cur.next !== null) {
-          n = cur.next;
-          break;
-        }
-        cur = cur.parent;
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * `element.labels` as jsdom computes it: null for non-labelable elements, otherwise the
- * label elements (tree order, same tree) whose labeled control is the element.
- *
- * A label names the element by `for` (only when it has an ID), or is an ancestor without `for`
- * whose first labelable descendant it is. Ancestors are O(depth), and the document lists its
- * connected labels with `for` (Document[$forLabels], kept by @ctrl/dom's HTMLLabelElement), so
- * only a detached control with an ID walks its tree.
- */
-export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
-  if (!isLabelable(impl)) return null;
-  const id = impl.id;
-  if (id !== "" && (impl.flags & F_CONNECTED) === 0) return buildLabelMap(treeRoot(impl)).get(impl) ?? EMPTY;
-  let out = EMPTY;
-  // Walking up meets the innermost label first; tree order is outermost first.
-  for (let p = impl.parent; p !== null; p = p.parent) {
-    if (p.type !== ELEMENT_NODE || p.tag !== T.label || p.ns !== HTML_NS || attr(p, "for") !== null) continue;
-    if (labeledControl(p, null, null) !== impl) continue;
-    if (out === EMPTY) out = [p];
-    else out.unshift(p);
-  }
-  const forLabels =
-    id === ""
-      ? undefined
-      : (impl.doc as unknown as { [$forLabels]: Map<string, NodeImpl[]> | null })[$forLabels]?.get(id);
-  if (forLabels === undefined) return out;
-  // A label's control is the first element with the ID in the label's tree.
-  const root = treeRoot(impl);
-  if (firstWithId(root, id) !== impl) return out;
-  const ancestors = out.length;
-  for (let i = 0; i < forLabels.length; i++) {
-    const label = forLabels[i];
-    if (treeRoot(label) !== root) continue;
-    if (out === EMPTY) out = [];
-    out.push(label);
-  }
-  if (out.length > ancestors && out.length > 1) out.sort(compareTreeOrder);
-  return out;
-}
-
-/** The first element in tree order with ID `id` in the tree of `root` (labeledControl's lookup). */
-function firstWithId(root: NodeImpl, id: string): NodeImpl | null {
-  if (root.type === DOCUMENT_NODE)
-    return (root.node as unknown as { _idLookup(id: string): NodeImpl | null })._idLookup(id);
-  for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root))
-    if (n.type === ELEMENT_NODE && n.id === id) return n;
-  return null;
-}
-
-/**
- * The label associations of `impl`'s tree (labelable control → its labels in tree order), for
- * resolving `labelsOf` for many elements of one tree with a single walk (Testing Library's
- * ByLabelText builds it once per query).
- */
-export function labelMapForTree(impl: NodeImpl): Map<NodeImpl, NodeImpl[]> {
-  return buildLabelMap(treeRoot(impl));
+  if (forValue === null) return labeledControl(label);
+  const target = forValue === "" ? undefined : ids.get(forValue);
+  return target !== undefined && isLabelable(target) ? target : null;
 }

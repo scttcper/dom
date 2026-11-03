@@ -155,9 +155,8 @@ describe("HTMLCollection — https://dom.spec.whatwg.org/#interface-htmlcollecti
     expect(div.children[599]).toBe(div.lastElementChild);
   });
 
-  // Collections whose members depend only on the tree and tag names are stamped with the tree
-  // version (Document[$treeVersion]), the rest with the full document version: each must still see
-  // every change that can alter its members.
+  // Tree-only collections are stamped with Document[$treeVersion], the rest with the full document
+  // version: each must still see every change that can alter its members.
   test("tree-only collections follow tree changes; attribute- and state-dependent ones also attribute and state changes", () => {
     document.body!.innerHTML =
       '<div id="box"><p class="x"></p><a href="#">l</a><a>no</a></div>' +
@@ -174,29 +173,14 @@ describe("HTMLCollection — https://dom.spec.whatwg.org/#interface-htmlcollecti
     const xs = document.getElementsByClassName("x");
     const links = document.links;
     const elements = (document.getElementById("f") as unknown as { elements: HTMLCollection }).elements;
-    expect([
-      children.length,
-      ps.length,
-      xs.length,
-      links.length,
-      options.length,
-      selected.length,
-      elements.length,
-    ]).toEqual([3, 1, 1, 1, 2, 0, 1]);
+    const lengths = () => [children, ps, xs, links, options, selected, elements].map((c) => c.length);
+    expect(lengths()).toEqual([3, 1, 1, 1, 2, 0, 1]);
     // Attribute and state changes: tree-only collections keep their members.
     box.firstElementChild!.className = "y";
     box.lastElementChild!.setAttribute("href", "#2");
     (options[1] as unknown as { selected: boolean }).selected = true;
     document.getElementById("outside")!.setAttribute("form", "f");
-    expect([
-      children.length,
-      ps.length,
-      xs.length,
-      links.length,
-      options.length,
-      selected.length,
-      elements.length,
-    ]).toEqual([3, 1, 0, 2, 2, 1, 2]);
+    expect(lengths()).toEqual([3, 1, 0, 2, 2, 1, 2]);
     // Tree changes.
     box.append(document.createElement("p"));
     select.querySelector("optgroup")!.append(document.createElement("option"));

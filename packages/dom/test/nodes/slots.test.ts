@@ -179,7 +179,7 @@ describe("assign slottables for a tree — https://dom.spec.whatwg.org/#assign-s
 });
 
 // Appending a host's last child and removing an assigned one update the slot's assigned nodes in
-// place (nodes/slots.ts appendedLast / removedAssigned) instead of rerunning assign slottables;
+// place (nodes/slots.ts assignAppended / unassignRemoved) instead of rerunning assign slottables;
 // each step must leave the same assignment the full algorithm gives.
 describe("assigned nodes kept in place — https://dom.spec.whatwg.org/#assign-slotables", () => {
   differential("appends, inserts, removals and slot changes keep every slot's assigned nodes in tree order", (w) => {

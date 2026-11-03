@@ -423,16 +423,16 @@ export class Document extends Node {
   /** document.forms supports named access (`document.forms.login`), so it is the Proxy-wrapped variant. */
   get forms(): HTMLCollection {
     return (this[$forms] ??= withNamedProperties(
-      cachedCollection(this[$impl], "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS, true),
+      cachedCollection(this[$impl], "\u0001forms", true, (el) => el.tag === T.form && el.ns === HTML_NS),
     ));
   }
 
   get images(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001images", (el) => el.tag === T.img && el.ns === HTML_NS, true);
+    return cachedCollection(this[$impl], "\u0001images", true, (el) => el.tag === T.img && el.ns === HTML_NS);
   }
 
   get embeds(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001embeds", (el) => el.tag === T.embed && el.ns === HTML_NS, true);
+    return cachedCollection(this[$impl], "\u0001embeds", true, (el) => el.tag === T.embed && el.ns === HTML_NS);
   }
 
   get plugins(): HTMLCollection {
@@ -440,7 +440,7 @@ export class Document extends Node {
   }
 
   get scripts(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001scripts", (el) => el.tag === T.script && el.ns === HTML_NS, true);
+    return cachedCollection(this[$impl], "\u0001scripts", true, (el) => el.tag === T.script && el.ns === HTML_NS);
   }
 
   /** a and area elements with an href attribute. */
@@ -448,8 +448,8 @@ export class Document extends Node {
     return cachedCollection(
       this[$impl],
       "\u0001links",
-      (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null,
       false,
+      (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null,
     );
   }
 
@@ -458,13 +458,13 @@ export class Document extends Node {
     return cachedCollection(
       this[$impl],
       "\u0001anchors",
-      (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null,
       false,
+      (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null,
     );
   }
 
   get applets(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001applets", () => false, true);
+    return cachedCollection(this[$impl], "\u0001applets", true, () => false);
   }
 
   // --- ranges, traversal, selection --------------------------------------------------------

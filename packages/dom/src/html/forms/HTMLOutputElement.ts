@@ -255,6 +255,6 @@ export class HTMLDataListElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-datalist-options */
   get options(): HTMLCollection {
-    return (this[$options] ??= HTMLCollection._descendants(this[$impl], isOption, true));
+    return (this[$options] ??= HTMLCollection._descendants(this[$impl], true, isOption));
   }
 }

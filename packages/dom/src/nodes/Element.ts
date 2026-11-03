@@ -500,9 +500,8 @@ export class Element extends Node {
   // --- hooks for subclasses (see constants.ts F_*_HOOK) -----------------------------------
 
   /**
-   * Activation behavior (events/activation.ts): none unless a subclass overrides it. Defined here
-   * so dispatch reading it on every click's path is a prototype hit, not (on a <form>) a named
-   * property lookup through the form's controls.
+   * Activation behavior (events/activation.ts): none unless a subclass overrides it. Defined so
+   * dispatch's read on a <form> is not a named property lookup through the form's controls.
    */
   get _hasActivationBehavior(): boolean {
     return false;
@@ -625,19 +624,19 @@ const collectionCache = new WeakMap<NodeImpl, Map<string, HTMLCollection>>();
 export function cachedCollection(
   root: NodeImpl,
   key: string,
-  filter: ((el: NodeImpl) => boolean) | null,
   structural: boolean,
+  filter: ((el: NodeImpl) => boolean) | null,
 ): HTMLCollection {
   let map = collectionCache.get(root);
   if (map === undefined) collectionCache.set(root, (map = new Map()));
   let c = map.get(key);
-  if (c === undefined) map.set(key, (c = HTMLCollection._descendants(root, filter, structural)));
+  if (c === undefined) map.set(key, (c = HTMLCollection._descendants(root, structural, filter)));
   return c;
 }
 
 /** https://dom.spec.whatwg.org/#concept-getelementsbytagname */
 export function getElementsByTagName(root: NodeImpl, qualifiedName: string): HTMLCollection {
-  if (qualifiedName === "*") return cachedCollection(root, "t*", null, true);
+  if (qualifiedName === "*") return cachedCollection(root, "t*", true, null);
   const lower = asciiLowercase(qualifiedName);
   const isHTMLDoc = root.doc[$isHTML];
   const colon = qualifiedName.indexOf(":");
@@ -645,70 +644,50 @@ export function getElementsByTagName(root: NodeImpl, qualifiedName: string): HTM
   const local = colon === -1 ? qualifiedName : qualifiedName.slice(colon + 1);
   const lprefix = colon === -1 ? null : lower.slice(0, colon);
   const llocal = colon === -1 ? lower : lower.slice(colon + 1);
-  return cachedCollection(
-    root,
-    "t" + qualifiedName,
-    (el) => {
-      if (isHTMLDoc && el.ns === HTML_NS) return el.name === llocal && el.prefix === lprefix;
-      return el.name === local && el.prefix === prefix;
-    },
-    true,
-  );
+  return cachedCollection(root, "t" + qualifiedName, true, (el) => {
+    if (isHTMLDoc && el.ns === HTML_NS) return el.name === llocal && el.prefix === lprefix;
+    return el.name === local && el.prefix === prefix;
+  });
 }
 
 /** https://dom.spec.whatwg.org/#concept-getelementsbytagnamens */
 export function getElementsByTagNameNS(root: NodeImpl, namespace: string | null, localName: string): HTMLCollection {
   const ns = namespace === "" || namespace === undefined ? null : namespace === null ? null : String(namespace);
   const key = "n" + (ns ?? "") + "\u0000" + (ns === null ? "0" : "1") + localName;
-  if (ns === "*" && localName === "*") return cachedCollection(root, key, null, true);
-  if (ns === "*") return cachedCollection(root, key, (el) => el.name === localName, true);
-  if (localName === "*") return cachedCollection(root, key, (el) => el.ns === ns, true);
-  return cachedCollection(root, key, (el) => el.ns === ns && el.name === localName, true);
+  if (ns === "*" && localName === "*") return cachedCollection(root, key, true, null);
+  if (ns === "*") return cachedCollection(root, key, true, (el) => el.name === localName);
+  if (localName === "*") return cachedCollection(root, key, true, (el) => el.ns === ns);
+  return cachedCollection(root, key, true, (el) => el.ns === ns && el.name === localName);
 }
 
 /** https://dom.spec.whatwg.org/#concept-getelementsbyclassname */
 export function getElementsByClassName(root: NodeImpl, classNames: string): HTMLCollection {
   const wanted: string[] = [];
   for (const t of splitOnAsciiWhitespace(classNames)) if (!wanted.includes(t)) wanted.push(t);
-  if (wanted.length === 0) return cachedCollection(root, "c", () => false, true);
+  if (wanted.length === 0) return cachedCollection(root, "c", true, () => false);
   const quirks = root.doc[$mode] === "quirks";
   if (quirks) {
     const lowered = wanted.map(asciiLowercase);
-    return cachedCollection(
-      root,
-      "q" + classNames,
-      (el) => {
-        const have = classTokens(el);
-        outer: for (let i = 0; i < lowered.length; i++) {
-          for (let j = 0; j < have.length; j++) if (asciiLowercase(have[j]) === lowered[i]) continue outer;
-          return false;
-        }
-        return true;
-      },
-      false,
-    );
+    return cachedCollection(root, "q" + classNames, false, (el) => {
+      const have = classTokens(el);
+      outer: for (let i = 0; i < lowered.length; i++) {
+        for (let j = 0; j < have.length; j++) if (asciiLowercase(have[j]) === lowered[i]) continue outer;
+        return false;
+      }
+      return true;
+    });
   }
   if (wanted.length === 1) {
     const w = wanted[0];
-    return cachedCollection(
-      root,
-      "c" + classNames,
-      (el) => {
-        const have = classTokens(el);
-        for (let j = 0; j < have.length; j++) if (have[j] === w) return true;
-        return false;
-      },
-      false,
-    );
-  }
-  return cachedCollection(
-    root,
-    "c" + classNames,
-    (el) => {
+    return cachedCollection(root, "c" + classNames, false, (el) => {
       const have = classTokens(el);
-      for (let i = 0; i < wanted.length; i++) if (!have.includes(wanted[i])) return false;
-      return true;
-    },
-    false,
-  );
+      for (let j = 0; j < have.length; j++) if (have[j] === w) return true;
+      return false;
+    });
+  }
+  return cachedCollection(root, "c" + classNames, false, (el) => {
+    const have = classTokens(el);
+    for (let i = 0; i < wanted.length; i++) if (!have.includes(wanted[i])) return false;
+    return true;
+  });
 }

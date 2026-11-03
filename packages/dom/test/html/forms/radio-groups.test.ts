@@ -20,7 +20,7 @@ import { createWindow } from "@ctrl/dom";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Doc = any;
 
-const scenarios: Record<string, (d: Doc, w: any) => void> = {
+const scenarios: Record<string, (d: Doc) => void> = {
   "insert subtree, two checked": (d) => {
     const div = d.createElement("div");
     div.innerHTML = "<input type=radio name=a checked id=x1><span><input type=radio name=a checked id=x2></span>";
@@ -126,9 +126,9 @@ describe("radio button group — https://html.spec.whatwg.org/#radio-button-grou
   for (const [name, run] of Object.entries(scenarios)) {
     test(name, () => {
       const jsdom = new JSDOM("<!doctype html><body></body>").window;
-      run(jsdom.document, jsdom);
+      run(jsdom.document);
       const ours = createWindow({ url: "http://localhost/" });
-      run(ours.document, ours);
+      run(ours.document);
       expect(state(ours.document)).toBe(state(jsdom.document));
     });
   }

@@ -7,7 +7,7 @@
  *   https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion (hidden must track DOM + style)
  *   https://w3c.github.io/aria/#document-handling_author-errors_roles (role tokens)
  *   https://html.spec.whatwg.org/multipage/forms.html#dom-lfe-labels (label association)
- *   https://html.spec.whatwg.org/multipage/forms.html#labeled-control (labels of ID-less controls)
+ *   https://html.spec.whatwg.org/multipage/forms.html#labeled-control (labelsOf vs labelMapForTree)
  */
 import { describe, expect, test } from "vitest";
 import {
@@ -64,29 +64,9 @@ describe("name cache invalidation — https://w3c.github.io/accname/#computation
   });
 });
 
-// labelsOf finds ancestor labels and the document's connected labels with `for`
-// (Document[$forLabels]); labelMapForTree walks the whole tree and is the oracle.
-describe("labels without walking the tree — https://html.spec.whatwg.org/multipage/forms.html#labeled-control", () => {
-  const labelText = (el: Element) => labelsOf(impl(el))!.map((l) => (l.node as unknown as Element).textContent);
-
-  test("an ancestor label without for labels its first labelable descendant only", () => {
-    renderIntoDocument("<label>L <button>a</button><button>b</button></label>");
-    const [a, b] = document.querySelectorAll("button") as unknown as Element[];
-    expect(labelText(a)).toEqual(["L ab"]);
-    expect(labelText(b)).toEqual([]);
-  });
-
-  test("an ancestor label with for labels its target, not the descendant", () => {
-    renderIntoDocument('<label for="t">L <button>a</button></label><input id="t">');
-    expect(labelText($("button"))).toEqual([]);
-    expect(labelText($("#t"))).toEqual(["L a"]);
-  });
-
-  test("nested labels are listed outermost first, each only if the control is its first labelable descendant", () => {
-    renderIntoDocument("<label>Outer <label>Inner <button>a</button></label></label>");
-    expect(labelText($("button"))).toEqual(["Outer Inner a", "Inner a"]);
-  });
-
+// labelsOf is @ctrl/dom's labelsFor (ancestors plus the document's index of `for` labels);
+// labelMapForTree is the batched walk ByLabelText uses. They must agree.
+describe("label lookups agree — https://html.spec.whatwg.org/multipage/forms.html#labeled-control", () => {
   const matchesTreeWalk = (root: Element) => {
     const map = labelMapForTree(impl(root));
     for (const el of root.querySelectorAll("*") as unknown as Element[]) {
@@ -129,7 +109,7 @@ describe("labels without walking the tree — https://html.spec.whatwg.org/multi
     const shadow = ($("#host") as unknown as { attachShadow(o: object): Element }).attachShadow({ mode: "open" });
     shadow.innerHTML = '<label for="x">S</label><input id="x">';
     matchesTreeWalk(shadow);
-    expect(labelText($("#x"))).toEqual([]);
+    expect(labelsOf(impl($("#x")))).toEqual([]);
   });
 });
 

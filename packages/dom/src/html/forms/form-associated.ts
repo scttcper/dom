@@ -171,9 +171,8 @@ function parserAssociationValid(el: NodeImpl, a: ParserAssociation): boolean {
 
 /**
  * The subtree holding every element whose form owner is `form` (https://html.spec.whatwg.org/#form-owner).
- * Outside its descendants only the parser's form element pointer or, for listed elements, a
- * `form` attribute naming the form's ID associates an element with it, so without those the
- * form's own subtree suffices: O(form) instead of a walk of the whole tree.
+ * Outside it only the parser's form element pointer or, for listed elements, a `form` attribute
+ * naming the form's ID can associate an element, so without either the form itself is enough.
  */
 export function formOwnerScope(form: NodeImpl, listed: boolean): NodeImpl {
   return parserAssocCount === 0 && (!listed || form.id === "") ? form : treeRoot(form);
@@ -263,51 +262,49 @@ export function labeledControl(label: NodeImpl): NodeImpl | null {
   return null;
 }
 
-/** HTMLLabelElement: a connected `label` has `for` attribute value `forValue` (Document[$forLabels]). */
-export function addForLabel(label: NodeImpl, forValue: string): void {
-  const map = (label.doc[$forLabels] ??= new Map());
-  const list = map.get(forValue);
-  if (list === undefined) map.set(forValue, [label]);
-  else list.push(label);
+/**
+ * Per-document indexes of connected elements by a string key (Document[$forLabels] by `for`
+ * value, Document[$radios] by name), each list in no particular order. Kept by the elements'
+ * connected, disconnected and attribute change steps.
+ */
+export function indexAdd(index: Map<string, NodeImpl[]>, key: string, el: NodeImpl): void {
+  const list = index.get(key);
+  if (list === undefined) index.set(key, [el]);
+  else list.push(el);
 }
 
-/** HTMLLabelElement: `label` was disconnected, or its `for` attribute changed from `forValue`. */
-export function removeForLabel(label: NodeImpl, forValue: string): void {
-  const map = label.doc[$forLabels]!;
-  const list = map.get(forValue)!;
-  if (list.length === 1) map.delete(forValue);
-  else list.splice(list.indexOf(label), 1);
+export function indexRemove(index: Map<string, NodeImpl[]>, key: string, el: NodeImpl): void {
+  const list = index.get(key)!;
+  if (list.length === 1) index.delete(key);
+  else list.splice(list.indexOf(el), 1);
 }
 
-/** Label elements whose labeled control is `el`, in tree order. https://html.spec.whatwg.org/#dom-lfe-labels */
-export function labelsFor(el: NodeImpl, out: NodeImpl[]): NodeImpl[] {
-  // A label names `el` by `for` (only when `el` has an ID), or is an ancestor without `for` whose
-  // first labelable descendant is `el`. Ancestors are O(depth), and the document lists its
-  // connected labels with `for` (Document[$forLabels]), so only a detached control with an ID
-  // walks its tree.
-  if (el.id === "" || (el.flags & F_CONNECTED) !== 0) {
-    // Walking up meets the innermost label first; tree order is outermost first.
-    const start = out.length;
-    for (let p = el.parent; p !== null; p = p.parent)
-      if (p.tag === T.label && attr(p, "for") === null && labeledControl(p) === el) out.splice(start, 0, p);
-    const forLabels = el.id === "" ? undefined : el.doc[$forLabels]?.get(el.id);
-    if (forLabels !== undefined) {
-      const ancestors = out.length;
-      for (let i = 0; i < forLabels.length; i++) {
-        // labeledControl resolves `for` in the label's own tree, so a match shares el's tree.
-        if (labeledControl(forLabels[i]) === el) out.push(forLabels[i]);
-      }
-      if (out.length > ancestors && out.length - start > 1) out.push(...out.splice(start).sort(compareTreeOrder));
+/**
+ * Label elements whose labeled control is `el`, in tree order. https://html.spec.whatwg.org/#dom-lfe-labels
+ *
+ * A label names `el` by `for` (only when `el` has an ID), or is an ancestor without `for` whose
+ * first labelable descendant is `el`. The ancestors are O(depth) and the document indexes its
+ * connected labels by `for`, so only a detached control with an ID walks its tree.
+ */
+export function labelsFor(el: NodeImpl): NodeImpl[] {
+  const out: NodeImpl[] = [];
+  if (el.id !== "" && (el.flags & F_CONNECTED) === 0) {
+    const root = treeRoot(el);
+    for (
+      let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
+      n !== null;
+      n = nextElementInTree(n, root)
+    ) {
+      if (n.tag === T.label && labeledControl(n) === el) out.push(n);
     }
     return out;
   }
-  const root = treeRoot(el);
-  for (
-    let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
-    n !== null;
-    n = nextElementInTree(n, root)
-  ) {
-    if (n.tag === T.label && labeledControl(n) === el) out.push(n);
-  }
+  for (let p = el.parent; p !== null; p = p.parent)
+    if (p.tag === T.label && attr(p, "for") === null && labeledControl(p) === el) out.unshift(p);
+  const named = el.id === "" ? undefined : el.doc[$forLabels]?.get(el.id);
+  if (named === undefined) return out;
+  // labeledControl resolves `for` in the label's own tree, so a match shares el's tree.
+  for (let i = 0; i < named.length; i++) if (labeledControl(named[i]) === el) out.push(named[i]);
+  if (out.length > 1) out.sort(compareTreeOrder);
   return out;
 }

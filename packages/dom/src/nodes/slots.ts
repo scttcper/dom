@@ -91,23 +91,25 @@ export function findSlottables(slot: NodeImpl): NodeImpl[] {
     if (manual !== undefined) for (const s of manual) if (s.parent === host) result.push(s);
     return result;
   }
-  // find a slot for each slottable child, with the shadow tree's first slot per name looked up
-  // once instead of walking the shadow tree for every child.
+  // Find a slot for each slottable child, from one walk of the shadow tree instead of one per child.
   let firstByName: Map<string, NodeImpl> | null = null;
   for (let c = host.first; c !== null; c = c.next) {
     if (!isSlottable(c)) continue;
-    if (firstByName === null) {
-      firstByName = new Map();
-      const shadowRoot = shadow[$impl];
-      for (let n = shadowRoot.first; n !== null; n = nextInTree(n, shadowRoot)) {
-        if (!isSlot(n)) continue;
-        const name = slotName(n);
-        if (!firstByName.has(name)) firstByName.set(name, n);
-      }
-    }
+    firstByName ??= firstSlotsByName(shadow[$impl]);
     if (firstByName.get(slottableName(c)) === slot) result.push(c);
   }
   return result;
+}
+
+/** The first slot in tree order of each name in a shadow tree (what find a slot returns). */
+function firstSlotsByName(root: NodeImpl): Map<string, NodeImpl> {
+  const map = new Map<string, NodeImpl>();
+  for (let n = root.first; n !== null; n = nextInTree(n, root)) {
+    if (!isSlot(n)) continue;
+    const name = slotName(n);
+    if (!map.has(name)) map.set(name, n);
+  }
+  return map;
 }
 
 /** https://dom.spec.whatwg.org/#find-flattened-slotables */
@@ -167,11 +169,13 @@ export function assignASlot(slottable: NodeImpl): void {
 }
 
 // A slot's assigned nodes are always its find-slottables result (every mutation that can change
-// one reassigns it), so two common changes update the list in place instead of recomputing it:
-// a slottable appended as the host's last child joins the end of its slot's list (tree order),
-// and a removed one leaves it. Only named assignment: manual slots keep the full algorithm.
+// one reassigns it), so with named assignment two common changes edit the list in place instead
+// of recomputing it: a slottable appended as the host's last child joins the end of its slot's
+// list (tree order), and a removed one leaves it.
 
-function appendedLast(slottable: NodeImpl, shadow: ShadowRoot): boolean {
+/** Assign a slottable just appended as the host's last child; false when the full algorithm must run. */
+function assignAppended(slottable: NodeImpl, shadow: ShadowRoot): boolean {
+  // Already assigned: an earlier node of the same inserted fragment recomputed this slot.
   if (shadow.slotAssignment === "manual" || assignedSlotOf.has(slottable)) return false;
   const slot = findSlot(slottable, false);
   if (slot === null) return true;
@@ -183,7 +187,7 @@ function appendedLast(slottable: NodeImpl, shadow: ShadowRoot): boolean {
   return true;
 }
 
-function removedAssigned(node: NodeImpl, slot: NodeImpl): void {
+function unassignRemoved(node: NodeImpl, slot: NodeImpl): void {
   const old = assignedNodesOf.get(slot)!;
   if (old.length === 1) assignedNodesOf.delete(slot);
   else old.splice(old.indexOf(node), 1);
@@ -215,7 +219,7 @@ export function slotsAfterInsert(parent: NodeImpl, node: NodeImpl | null, nodes:
     // revealed when it becomes a child of the host (find a slot checks the manual assignment),
     // which is what browsers and WPT shadow-dom/imperative-slot-api.html expect.
     const shadow = shadowOf(parent);
-    if (shadow !== null && isSlottable(n) && !(n.next === null && appendedLast(n, shadow))) assignASlot(n);
+    if (shadow !== null && isSlottable(n) && (n.next !== null || !assignAppended(n, shadow))) assignASlot(n);
     // 7.5
     if (isEmptyShadowSlot(parent)) signalSlotChange(parent);
     // 7.6: assign slottables for a tree with n's root (only slots inside shadow trees matter).
@@ -230,9 +234,8 @@ export function slotsAfterInsert(parent: NodeImpl, node: NodeImpl | null, nodes:
 export function slotsAfterRemove(node: NodeImpl, parent: NodeImpl): void {
   const slot = assignedSlotOf.get(node);
   if (slot !== undefined) {
-    const shadow = shadowOf(parent);
-    if (shadow !== null && shadow.slotAssignment !== "manual") removedAssigned(node, slot);
-    else assignSlottables(slot);
+    if (shadowOf(parent)?.slotAssignment === "manual") assignSlottables(slot);
+    else unassignRemoved(node, slot);
   }
   if (isEmptyShadowSlot(parent)) signalSlotChange(parent);
   if (hasSlotDescendant(node)) {

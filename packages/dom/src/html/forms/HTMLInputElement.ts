@@ -97,6 +97,8 @@ import {
   formOwner,
   formOwnerScope,
   hasDatalistAncestor,
+  indexAdd,
+  indexRemove,
   isActuallyDisabled,
 } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
@@ -1088,10 +1090,9 @@ export class HTMLInputElement extends HTMLElement {
         const newType = inputTypeFromAttr(value);
         if (oldType !== newType) {
           const impl = this[$impl];
-          const name = attr(impl, "name");
-          if ((impl.flags & F_CONNECTED) !== 0 && name !== null && name !== "") {
-            if (oldType === I_RADIO) removeRadio(impl, name);
-            else if (newType === I_RADIO) addRadio(impl, name);
+          if ((impl.flags & F_CONNECTED) !== 0) {
+            const name = attr(impl, "name");
+            reindexRadio(impl, radioKey(oldType, name), radioKey(newType, name));
           }
           this._typeChange(oldType, newType);
         }
@@ -1101,11 +1102,13 @@ export class HTMLInputElement extends HTMLElement {
         // https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2
         if (!this[$dirtyChecked]) this._setCheckedness(value !== null, false);
         break;
-      case "name":
-        if ((this[$impl].flags & F_CONNECTED) !== 0 && inputType(this[$impl]) === I_RADIO) {
-          if (oldValue !== null && oldValue !== "") removeRadio(this[$impl], oldValue);
-          if (value !== null && value !== "") addRadio(this[$impl], value);
+      case "name": {
+        const impl = this[$impl];
+        if ((impl.flags & F_CONNECTED) !== 0) {
+          const type = inputType(impl);
+          reindexRadio(impl, radioKey(type, oldValue), radioKey(type, value));
         }
+      }
       // falls through
       case "form":
         if (inputType(this[$impl]) === I_RADIO && this._checkedness()) uncheckOtherRadios(this[$impl]);
@@ -1162,18 +1165,16 @@ export class HTMLInputElement extends HTMLElement {
   override _connectedSteps(): void {
     super._connectedSteps();
     const impl = this[$impl];
-    if (inputType(impl) !== I_RADIO) return;
-    const name = attr(impl, "name");
-    if (name !== null && name !== "") addRadio(impl, name);
+    const type = inputType(impl);
+    if (type !== I_RADIO) return;
+    reindexRadio(impl, null, radioKey(type, attr(impl, "name")));
     if (this._checkedness()) radioInserted(impl);
   }
 
   override _disconnectedSteps(): void {
     super._disconnectedSteps();
     const impl = this[$impl];
-    if (inputType(impl) !== I_RADIO) return;
-    const name = attr(impl, "name");
-    if (name !== null && name !== "") removeRadio(impl, name);
+    reindexRadio(impl, radioKey(inputType(impl), attr(impl, "name")), null);
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:concept-node-clone-ext */
@@ -1443,49 +1444,48 @@ export function inSameRadioGroup(a: NodeImpl, b: NodeImpl): boolean {
   return formOwner(a) === formOwner(b);
 }
 
-// Document[$radios]: the connected radios with a non-empty name, by name, kept by the input's
+// Document[$radios] indexes the connected radios with a non-empty name by name, kept by the input's
 // connected and disconnected steps and its `name` and `type` attribute change steps. A connected
 // radio's group is found there; only a disconnected one walks its (detached) tree.
 
-function addRadio(el: NodeImpl, name: string): void {
-  const map = (el.doc[$radios] ??= new Map());
-  const list = map.get(name);
-  if (list === undefined) map.set(name, [el]);
-  else list.push(el);
+/** An input's key in Document[$radios]: its name when it is a radio with a non-empty one. */
+function radioKey(type: number, name: string | null): string | null {
+  return type === I_RADIO && name !== null && name !== "" ? name : null;
 }
 
-function removeRadio(el: NodeImpl, name: string): void {
-  const map = el.doc[$radios]!;
-  const list = map.get(name)!;
-  if (list.length === 1) map.delete(name);
-  else list.splice(list.indexOf(el), 1);
+/** A connected input's key in Document[$radios] changed from `from` to `to`. */
+function reindexRadio(el: NodeImpl, from: string | null, to: string | null): void {
+  if (from === to) return;
+  if (from !== null) indexRemove(el.doc[$radios]!, from, el);
+  if (to !== null) indexAdd((el.doc[$radios] ??= new Map()), to, el);
 }
 
 /**
  * A checked radio was connected (https://html.spec.whatwg.org/#the-input-element:html-element-insertion-steps).
- * Every node of the inserted subtree runs its insertion steps with the whole subtree inserted, so
- * the first checked member in tree order unchecks the later ones before their turn. Those later
- * ones reach the index only as they connect: a radio meeting a checked member that connected
- * earlier in the same subtree is the one unchecked.
+ * Every node of an inserted subtree runs its insertion steps with the whole subtree in place, so
+ * the first checked member in tree order unchecks the later ones before their turn. The later
+ * ones reach the index only as they connect: one that meets a checked member connected earlier
+ * in the same subtree is itself unchecked.
  */
 function radioInserted(el: NodeImpl): void {
   const root = connectingRoot();
+  let checkedEarlier = false;
   if (root !== null && root !== el) {
-    let earlier: NodeImpl | null = null;
     forEachInRadioGroup(el, (other) => {
-      if (!isInclusiveAncestor(root, other) || !(other.node as HTMLInputElement)._checkedness()) return false;
-      earlier = other;
-      return true;
+      checkedEarlier = isInclusiveAncestor(root, other) && (other.node as HTMLInputElement)._checkedness();
+      return checkedEarlier;
     });
-    if (earlier !== null) {
-      const w = el.node as HTMLInputElement;
-      el.doc[$version]++;
-      w[$checked] = false;
-      w[$checkedSet] = true;
-      return;
-    }
   }
-  uncheckOtherRadios(el);
+  if (checkedEarlier) uncheck(el);
+  else uncheckOtherRadios(el);
+}
+
+function uncheck(radio: NodeImpl): void {
+  const w = radio.node as HTMLInputElement;
+  if (w[$checkedSet] && !w[$checked]) return;
+  radio.doc[$version]++;
+  w[$checked] = false;
+  w[$checkedSet] = true;
 }
 
 function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): void {
@@ -1521,11 +1521,7 @@ function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): vo
 /** Set checkedness false on every other member of el's radio button group. */
 export function uncheckOtherRadios(el: NodeImpl): void {
   forEachInRadioGroup(el, (other) => {
-    const w = other.node as HTMLInputElement;
-    if (w[$checkedSet] && !w[$checked]) return false;
-    other.doc[$version]++;
-    w[$checked] = false;
-    w[$checkedSet] = true;
+    uncheck(other);
     return false;
   });
 }

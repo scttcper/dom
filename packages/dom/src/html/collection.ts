@@ -1,7 +1,7 @@
 // HTMLCollection over a custom membership function (table.rows, tBodies, map.areas, cells).
-// Keeps dom-core's version-stamped caching by overriding `_collect`; the fill must depend only
-// on the tree and tag names, since the collection is structural (stamped with the tree version). The class is named HTMLCollection so pretty-format and
-// `constructor.name` match browsers.
+// Keeps dom-core's version-stamped caching by overriding `_collect`. The collection is structural
+// (stamped with the tree version), so a fill must depend only on the tree and tag names. The class
+// is named HTMLCollection so pretty-format and `constructor.name` match browsers.
 
 import { HTMLCollection as Base } from "../collections/HTMLCollection.ts";
 import type { Element } from "../nodes/Element.ts";

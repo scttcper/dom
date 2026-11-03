@@ -50,6 +50,12 @@ class Query {
   hasMemos: boolean;
   /** Id every match must descend from (compile.ts idRootOf), or "". */
   idRoot: string;
+  /**
+   * The ID the document's id index answers this selector for, or "": `#x` (not in quirks mode,
+   * where it matches ASCII case-insensitively), and `[id="x"]`, case-sensitive in every mode
+   * (stock Testing Library's aria-labelledby lookup). An empty `[id=""]` is not indexed.
+   */
+  indexedId: string;
 
   constructor(list: CList, info: CompileInfo) {
     const domList = new CListClass();
@@ -63,6 +69,13 @@ class Query {
     this.fastT = this.fast === FAST_NONE || this.fast === FAST_ALL ? null : fastTest(domList);
     this.hasMemos = info.nthTests.length !== 0;
     this.idRoot = this.fast === FAST_NONE && !info.usesScope ? idRootOf(domList) : "";
+    const t = this.fastT;
+    this.indexedId =
+      this.fast === FAST_ID
+        ? t!.name
+        : this.fast === FAST_ATTR && t!.attrOp === OP_EQUALS && t!.name === "id"
+          ? t!.value
+          : "";
   }
 }
 
@@ -157,6 +170,16 @@ function isQuirks(root: NodeImpl): boolean {
 
 /** Collect (or find the first of, when `first`) the matching descendants of `root` in tree order. */
 function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImpl | null {
+  if (q.indexedId !== "" && (q.fast !== FAST_ID || !isQuirks(root))) {
+    const hit = byIdIndex(root, q.indexedId);
+    if (hit !== undefined) {
+      if (hit !== null) {
+        if (first) return hit;
+        out.push(hit);
+      }
+      return null;
+    }
+  }
   switch (q.fast) {
     case FAST_ALL:
       for (let n = root.first; n !== null; n = next(n, root)) {
@@ -167,19 +190,7 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
       }
       return null;
     case FAST_ID: {
-      const t = q.fastT!;
-      // `#x` matches ASCII case-insensitively in quirks mode; the index holds exact ids.
-      if (!isQuirks(root)) {
-        const hit = byIdIndex(root, t.name);
-        if (hit !== undefined) {
-          if (hit !== null) {
-            if (first) return hit;
-            out.push(hit);
-          }
-          return null;
-        }
-      }
-      const id = t.name;
+      const id = q.fastT!.name;
       if (!isQuirks(root)) {
         for (let n = root.first; n !== null; n = next(n, root)) {
           if (n.type === ELEMENT_NODE && n.id === id) {
@@ -216,18 +227,6 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
     }
     case FAST_ATTR: {
       const t = q.fastT!;
-      // `[id="x"]` (stock Testing Library's aria-labelledby lookup): case-sensitive in every mode,
-      // so the id index answers it like `#x`. An empty value matches `id=""`, which is not indexed.
-      if (t.attrOp === OP_EQUALS && t.name === "id" && t.value !== "") {
-        const hit = byIdIndex(root, t.value);
-        if (hit !== undefined) {
-          if (hit !== null) {
-            if (first) return hit;
-            out.push(hit);
-          }
-          return null;
-        }
-      }
       const exists = t.attrOp === 0;
       for (let n = root.first; n !== null; n = next(n, root)) {
         if (n.type === ELEMENT_NODE && attrMatch(n, t, exists)) {

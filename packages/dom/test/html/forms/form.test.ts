@@ -79,10 +79,8 @@ describe("form.elements — https://html.spec.whatwg.org/#dom-form-elements", ()
   });
 });
 
-// https://html.spec.whatwg.org/#form-owner: outside its descendants only a `form` attribute naming
-// the form's ID or the parser's form element pointer gives an element a form owner, so
-// formControls walks just an ID-less form's subtree (formOwnerScope). Each case checks
-// form.elements against every listed element's own form owner (`.form`).
+// formControls walks only an ID-less form's subtree (formOwnerScope); each case checks
+// form.elements against every listed element's own `.form`.
 describe("form owner scope — https://html.spec.whatwg.org/#form-owner", () => {
   const LISTED = "input:not([type=image]), button, select, textarea, fieldset, output, object";
   const check = () => {
@@ -394,32 +392,33 @@ describe("labels — https://html.spec.whatwg.org/#dom-lfe-labels", () => {
     expect($("l").control).toBeNull();
   });
 
-  // https://html.spec.whatwg.org/#labeled-control: without an ID only an ancestor label can be
-  // the control's (labelsFor walks the ancestors instead of the tree).
+  // labelsFor finds ancestor labels and the document's index of `for` labels instead of walking the
+  // tree; `labels` must stay the labels whose `control` is the element.
+  const expectLabelsMatchControls = (selector: string) => {
+    const labels = [...document.querySelectorAll("label")] as any[];
+    for (const el of document.querySelectorAll(selector) as any)
+      expect([...el.labels]).toEqual(labels.filter((l) => l.control === el));
+  };
+
   test("a control without an ID is labelled only by ancestor labels whose first labelable descendant it is", () => {
     document.body!.innerHTML =
-      "<label id=o>Outer <label id=n>Inner <button id=a></button></label></label>" +
-      "<label id=f for=t><button id=b></button></label><input id=t>" +
-      "<label id=w><input type=hidden><output id=c></output><meter id=d></meter></label>";
-    for (const id of ["a", "b", "c", "d"]) $(id).removeAttribute("id");
-    const [a, b] = document.querySelectorAll("button");
-    const [c, d] = [document.querySelector("output"), document.querySelector("meter")];
-    expect([...(a as any).labels]).toEqual([$("o"), $("n")]);
-    expect([...(b as any).labels]).toEqual([]);
-    expect([...(c as any).labels]).toEqual([$("w")]);
-    expect([...(d as any).labels]).toEqual([]);
+      "<label id=o>Outer <label id=n>Inner <button></button></label></label>" +
+      "<label id=f for=t><button></button></label><input id=t>" +
+      "<label id=w><input type=hidden><output></output><meter></meter></label>";
+    const [a, b] = document.querySelectorAll("button") as any;
+    expect([...a.labels]).toEqual([$("o"), $("n")]);
+    expect([...b.labels]).toEqual([]);
+    expect([...(document.querySelector("output") as any).labels]).toEqual([$("w")]);
+    expect([...(document.querySelector("meter") as any).labels]).toEqual([]);
     expect([...$("t").labels]).toEqual([$("f")]);
+    document.body!.innerHTML =
+      "<label>A <input><input></label><label for=x>B <button></button></label><select id=x></select>" +
+      "<label>C <span><textarea></textarea></span></label><label><label for=''>D <meter></meter></label></label>";
+    expectLabelsMatchControls("input, button, select, textarea, meter");
   });
 
-  // Connected labels with `for` are listed per document (Document[$forLabels]) by the label's
-  // connected, disconnected and attribute change steps; every step below must keep `labels` equal
-  // to the labels whose control is the element.
   test("labels track for= labels through insertion, removal, for/id changes and moves", () => {
-    const check = () => {
-      const labels = [...document.querySelectorAll("label")] as any[];
-      for (const el of document.querySelectorAll("input, button") as any)
-        expect([...el.labels]).toEqual(labels.filter((l) => l.control === el));
-    };
+    const check = () => expectLabelsMatchControls("input, button");
     document.body!.innerHTML = "<div id=box><input id=x><button id=y></button></div><label id=a for=x>A</label>";
     check();
     const b = document.createElement("label") as any;
@@ -455,15 +454,5 @@ describe("labels — https://html.spec.whatwg.org/#dom-lfe-labels", () => {
     shadow.innerHTML = "<label for=x>S</label><input id=x>";
     expect([...$("x").labels]).toEqual([]);
     expect([...shadow.getElementById("x").labels]).toEqual([shadow.querySelector("label")]);
-  });
-
-  test("labels of an ID-less control match every label's control", () => {
-    document.body!.innerHTML =
-      "<label>A <input><input></label><label for=x>B <button></button></label><select id=x></select>" +
-      "<label>C <span><textarea></textarea></span></label><label><label for=''>D <meter></meter></label></label>";
-    const labels = [...document.querySelectorAll("label")] as any[];
-    for (const el of document.querySelectorAll("input, button, select, textarea, meter") as any) {
-      expect([...el.labels]).toEqual(labels.filter((l) => l.control === el));
-    }
   });
 });

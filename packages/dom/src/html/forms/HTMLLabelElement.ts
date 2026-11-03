@@ -9,10 +9,10 @@ import { ELEMENT_NODE, F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED } from "../../no
 import { attr } from "../../nodes/attributes.ts";
 import { T } from "../../nodes/tags.ts";
 import { contentAttr, str } from "../reflect.ts";
-import { addForLabel, formOwner, isActuallyDisabled, labeledControl, removeForLabel } from "./form-associated.ts";
+import { formOwner, indexAdd, indexRemove, isActuallyDisabled, labeledControl } from "./form-associated.ts";
 import { I_HIDDEN, inputType } from "./input-type.ts";
 import { syntheticClick } from "./form-submission.ts";
-import { $impl } from "../../keys.ts";
+import { $forLabels, $impl } from "../../keys.ts";
 
 /** https://html.spec.whatwg.org/#interactive-content */
 export function isInteractiveContent(el: NodeImpl): boolean {
@@ -47,18 +47,21 @@ export class HTMLLabelElement extends HTMLElement {
     this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
   }
 
-  // Keep Document[$forLabels] (form-associated.ts labelsFor) to the connected labels with `for`.
+  // The steps below keep the document's index of connected labels by `for` value
+  // (Document[$forLabels], read by form-associated.ts labelsFor).
 
   override _connectedSteps(): void {
     super._connectedSteps();
-    const forValue = attr(this[$impl], "for");
-    if (forValue !== null) addForLabel(this[$impl], forValue);
+    const impl = this[$impl];
+    const forValue = attr(impl, "for");
+    if (forValue !== null) indexAdd((impl.doc[$forLabels] ??= new Map()), forValue, impl);
   }
 
   override _disconnectedSteps(): void {
     super._disconnectedSteps();
-    const forValue = attr(this[$impl], "for");
-    if (forValue !== null) removeForLabel(this[$impl], forValue);
+    const impl = this[$impl];
+    const forValue = attr(impl, "for");
+    if (forValue !== null) indexRemove(impl.doc[$forLabels]!, forValue, impl);
   }
 
   override _attributeChangedSteps(
@@ -68,10 +71,10 @@ export class HTMLLabelElement extends HTMLElement {
     namespace: string | null,
   ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
-    if (localName !== "for" || namespace !== null || (this[$impl].flags & F_CONNECTED) === 0) return;
-    if (oldValue === value) return;
-    if (oldValue !== null) removeForLabel(this[$impl], oldValue);
-    if (value !== null) addForLabel(this[$impl], value);
+    const impl = this[$impl];
+    if (localName !== "for" || namespace !== null || oldValue === value || (impl.flags & F_CONNECTED) === 0) return;
+    if (oldValue !== null) indexRemove(impl.doc[$forLabels]!, oldValue, impl);
+    if (value !== null) indexAdd((impl.doc[$forLabels] ??= new Map()), value, impl);
   }
 
   /** https://html.spec.whatwg.org/#dom-label-control */
