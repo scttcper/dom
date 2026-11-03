@@ -41,7 +41,17 @@ import {
   iteratorsBeforeRemove,
 } from "../traversal/live.ts";
 import { slotsAfterInsert, slotsAfterRemove, slotAssignmentActive } from "./slots.ts";
-import { $childNodes, $derived, $focused, $host, $impl, $isHTML, $shadowRoot, $version } from "../keys.ts";
+import {
+  $childNodes,
+  $derived,
+  $focused,
+  $host,
+  $impl,
+  $isHTML,
+  $shadowRoot,
+  $treeVersion,
+  $version,
+} from "../keys.ts";
 
 function hierarchyError(message: string): DOMException {
   return new DOMException(message, "HierarchyRequestError");
@@ -335,6 +345,7 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
   // Step 9: children changed steps.
   childrenChanged(parent);
   doc[$version]++;
+  doc[$treeVersion]++;
   // Custom element reactions queued by hooks above (html agent; see create.ts). Keep last.
   if (ceReactionsPending) flushCEReactions();
 }
@@ -390,6 +401,7 @@ export function connectDetachedChildren(docImpl: NodeImpl): void {
   const doc = docImpl.node as Document;
   for (let c = docImpl.first; c !== null; c = c.next) connectSubtree(c, doc);
   doc[$version]++;
+  doc[$treeVersion]++;
 }
 
 function disconnectSubtree(root: NodeImpl, doc: Document): void {
@@ -444,6 +456,7 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   // Step 18.
   childrenChanged(parent);
   doc[$version]++;
+  doc[$treeVersion]++;
   // Version-stamped derived caches may still reference the removed subtree: drop them now
   // instead of on their next (maybe never) lookup (nodes/derived.ts).
   if (doc[$derived] !== null) dropDerivedCaches(doc);
@@ -528,6 +541,7 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   childrenChanged(oldParent);
   if (newParent !== oldParent) childrenChanged(newParent);
   doc[$version]++;
+  doc[$treeVersion]++;
   if (ceReactionsPending) flushCEReactions();
 }
 

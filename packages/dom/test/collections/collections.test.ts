@@ -155,6 +155,56 @@ describe("HTMLCollection — https://dom.spec.whatwg.org/#interface-htmlcollecti
     expect(div.children[599]).toBe(div.lastElementChild);
   });
 
+  // Collections whose members depend only on the tree and tag names are stamped with the tree
+  // version (Document[$treeVersion]), the rest with the full document version: each must still see
+  // every change that can alter its members.
+  test("tree-only collections follow tree changes; attribute- and state-dependent ones also attribute and state changes", () => {
+    document.body!.innerHTML =
+      '<div id="box"><p class="x"></p><a href="#">l</a><a>no</a></div>' +
+      '<select id="s" multiple><option>a</option><optgroup><option>b</option></optgroup></select>' +
+      '<form id="f"><input name="u"></form><input id="outside">';
+    const box = document.getElementById("box")!;
+    const select = document.getElementById("s")!;
+    const { options, selectedOptions: selected } = select as unknown as {
+      options: HTMLCollection;
+      selectedOptions: HTMLCollection;
+    };
+    const children = box.children;
+    const ps = document.getElementsByTagName("p");
+    const xs = document.getElementsByClassName("x");
+    const links = document.links;
+    const elements = (document.getElementById("f") as unknown as { elements: HTMLCollection }).elements;
+    expect([
+      children.length,
+      ps.length,
+      xs.length,
+      links.length,
+      options.length,
+      selected.length,
+      elements.length,
+    ]).toEqual([3, 1, 1, 1, 2, 0, 1]);
+    // Attribute and state changes: tree-only collections keep their members.
+    box.firstElementChild!.className = "y";
+    box.lastElementChild!.setAttribute("href", "#2");
+    (options[1] as unknown as { selected: boolean }).selected = true;
+    document.getElementById("outside")!.setAttribute("form", "f");
+    expect([
+      children.length,
+      ps.length,
+      xs.length,
+      links.length,
+      options.length,
+      selected.length,
+      elements.length,
+    ]).toEqual([3, 1, 0, 2, 2, 1, 2]);
+    // Tree changes.
+    box.append(document.createElement("p"));
+    select.querySelector("optgroup")!.append(document.createElement("option"));
+    box.firstElementChild!.remove();
+    expect([children.length, ps.length, options.length]).toEqual([3, 1, 3]);
+    expect(children[2]!.localName).toBe("p");
+  });
+
   test("document.forms supports named access (https://html.spec.whatwg.org/#dom-document-forms)", () => {
     document.body!.innerHTML = '<form name="login"></form><form id="other"></form>';
     const forms = document.forms as HTMLCollection & Record<string, unknown>;

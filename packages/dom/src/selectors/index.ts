@@ -17,7 +17,7 @@ import { DOCUMENT_NODE, ELEMENT_NODE, F_CONNECTED, F_HTML } from "../nodes/const
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { classTokens } from "../nodes/attributes.ts";
 import { NodeList } from "../collections/NodeList.ts";
-import { SelectorParser } from "./parser.ts";
+import { OP_EQUALS, SelectorParser } from "./parser.ts";
 import {
   type CList,
   type Test,
@@ -168,20 +168,15 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
       return null;
     case FAST_ID: {
       const t = q.fastT!;
-      if ((root.flags & F_CONNECTED) !== 0 && !isQuirks(root)) {
-        const found = root.doc[$ids].get(t.name);
-        if (found === undefined) {
-          if (root.type === DOCUMENT_NODE) return null;
-        } else if (!Array.isArray(found)) {
-          // Single element with this id in the document: answer from the index if it is under root.
-          for (let p = found.parent; p !== null; p = p.parent) {
-            if (p === root) {
-              if (first) return found;
-              out.push(found);
-              return null;
-            }
+      // `#x` matches ASCII case-insensitively in quirks mode; the index holds exact ids.
+      if (!isQuirks(root)) {
+        const hit = byIdIndex(root, t.name);
+        if (hit !== undefined) {
+          if (hit !== null) {
+            if (first) return hit;
+            out.push(hit);
           }
-          if (root.type === DOCUMENT_NODE) return null;
+          return null;
         }
       }
       const id = t.name;
@@ -221,6 +216,18 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
     }
     case FAST_ATTR: {
       const t = q.fastT!;
+      // `[id="x"]` (stock Testing Library's aria-labelledby lookup): case-sensitive in every mode,
+      // so the id index answers it like `#x`. An empty value matches `id=""`, which is not indexed.
+      if (t.attrOp === OP_EQUALS && t.name === "id" && t.value !== "") {
+        const hit = byIdIndex(root, t.value);
+        if (hit !== undefined) {
+          if (hit !== null) {
+            if (first) return hit;
+            out.push(hit);
+          }
+          return null;
+        }
+      }
       const exists = t.attrOp === 0;
       for (let n = root.first; n !== null; n = next(n, root)) {
         if (n.type === ELEMENT_NODE && attrMatch(n, t, exists)) {
@@ -252,6 +259,20 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
     setScope(prevScope);
     if (q.hasMemos) resetMemos(q.info);
   }
+}
+
+/**
+ * The only element with ID `id` under `root` from the document's id index: the element, null when
+ * there is none, undefined when the index cannot tell (a disconnected root, or several elements
+ * share the id) and the caller walks.
+ */
+function byIdIndex(root: NodeImpl, id: string): NodeImpl | null | undefined {
+  if ((root.flags & F_CONNECTED) === 0) return undefined;
+  const found = root.doc[$ids].get(id);
+  if (found === undefined) return root.type === DOCUMENT_NODE ? null : undefined;
+  if (Array.isArray(found)) return undefined;
+  for (let p = found.parent; p !== null; p = p.parent) if (p === root) return found;
+  return root.type === DOCUMENT_NODE ? null : undefined;
 }
 
 /**

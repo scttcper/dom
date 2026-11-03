@@ -58,6 +58,7 @@ import {
   $ranges,
   $selection,
   $styleVersion,
+  $treeVersion,
   $url,
   $version,
   $window,
@@ -69,6 +70,11 @@ export class Document extends Node {
   [$window]: Window | null;
   /** Bumped on every tree, attribute and character-data mutation of nodes owned by this document. */
   [$version]: number;
+  /**
+   * Bumped by tree mutations only (nodes/tree.ts), not attribute, character data or form state
+   * changes: stamps live collections whose members depend only on the tree and tag names.
+   */
+  [$treeVersion]: number;
   /** Bumped when author style sheets change (src/css). */
   [$styleVersion]: number;
   /** Connected elements by id. A value is an array only when several connected elements share an id. */
@@ -124,6 +130,7 @@ export class Document extends Node {
     this[$window] = null;
     this[$version] = 0;
     this[$styleVersion] = 0;
+    this[$treeVersion] = 0;
     this[$ids] = new Map();
     this[$focused] = null;
     this[$isHTML] = false;
@@ -416,16 +423,16 @@ export class Document extends Node {
   /** document.forms supports named access (`document.forms.login`), so it is the Proxy-wrapped variant. */
   get forms(): HTMLCollection {
     return (this[$forms] ??= withNamedProperties(
-      cachedCollection(this[$impl], "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS),
+      cachedCollection(this[$impl], "\u0001forms", (el) => el.tag === T.form && el.ns === HTML_NS, true),
     ));
   }
 
   get images(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001images", (el) => el.tag === T.img && el.ns === HTML_NS);
+    return cachedCollection(this[$impl], "\u0001images", (el) => el.tag === T.img && el.ns === HTML_NS, true);
   }
 
   get embeds(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001embeds", (el) => el.tag === T.embed && el.ns === HTML_NS);
+    return cachedCollection(this[$impl], "\u0001embeds", (el) => el.tag === T.embed && el.ns === HTML_NS, true);
   }
 
   get plugins(): HTMLCollection {
@@ -433,7 +440,7 @@ export class Document extends Node {
   }
 
   get scripts(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001scripts", (el) => el.tag === T.script && el.ns === HTML_NS);
+    return cachedCollection(this[$impl], "\u0001scripts", (el) => el.tag === T.script && el.ns === HTML_NS, true);
   }
 
   /** a and area elements with an href attribute. */
@@ -442,6 +449,7 @@ export class Document extends Node {
       this[$impl],
       "\u0001links",
       (el) => (el.tag === T.a || el.tag === T.area) && el.ns === HTML_NS && attr(el, "href") !== null,
+      false,
     );
   }
 
@@ -451,11 +459,12 @@ export class Document extends Node {
       this[$impl],
       "\u0001anchors",
       (el) => el.tag === T.a && el.ns === HTML_NS && attr(el, "name") !== null,
+      false,
     );
   }
 
   get applets(): HTMLCollection {
-    return cachedCollection(this[$impl], "\u0001applets", () => false);
+    return cachedCollection(this[$impl], "\u0001applets", () => false, true);
   }
 
   // --- ranges, traversal, selection --------------------------------------------------------

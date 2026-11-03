@@ -295,7 +295,8 @@ export function listOfOptions(select: NodeImpl, out: NodeImpl[]): NodeImpl[] {
 export class HTMLOptionsCollection extends HTMLCollection {
   /** @internal */
   constructor(select: NodeImpl) {
-    super(select, false, null);
+    // The list of options depends only on the tree and tag names.
+    super(select, false, null, true);
   }
 
   override _collect(out: Element[]): void {

@@ -158,6 +158,47 @@ describe("Element.matches without per-call setup — https://dom.spec.whatwg.org
   });
 });
 
+// `[id="x"]` (stock Testing Library's aria-labelledby lookup) is answered from the document's id
+// index like `#x`, but case-sensitively in every mode, and never for an empty value.
+describe("[id=…] from the id index — https://drafts.csswg.org/selectors-4/#attribute-representation (differential: jsdom)", () => {
+  const fixture =
+    '<div id=root><span id=a></span><p id=dup></p><p id=dup></p><i id=""></i><svg><g id=s ID=S></g></svg></div><b id=out></b>';
+  const selectors = [
+    '[id="a"]',
+    '[id="dup"]',
+    '[id=""]',
+    '[id="A"]',
+    '[ID="S"]',
+    '[id="s"]',
+    '[id="out"]',
+    '[id="none"]',
+  ];
+  for (const quirks of [false, true]) {
+    test.each(selectors)(`%s${quirks ? " (quirks)" : ""}`, (sel) => {
+      const html = `${quirks ? "" : "<!doctype html>"}<body>${fixture}</body>`;
+      const jsdom = new JSDOM(html).window.document;
+      const ours = createWindow({ html }).document as AnyEl;
+      expect(ours.compatMode).toBe(jsdom.compatMode);
+      for (const root of ["document", "root"]) {
+        const [j, o] = root === "document" ? [jsdom, ours] : [jsdom.getElementById(root), ours.getElementById(root)];
+        expect(o.querySelectorAll(sel).length).toBe(j.querySelectorAll(sel).length);
+        expect(o.querySelector(sel)?.outerHTML ?? null).toBe(j.querySelector(sel)?.outerHTML ?? null);
+      }
+    });
+  }
+
+  test("a detached root and a shadow root walk instead", () => {
+    const div = document.createElement("div") as AnyEl;
+    div.innerHTML = "<span id=a></span>";
+    expect(div.querySelector('[id="a"]')).toBe(div.firstChild);
+    const host = document.body!.appendChild(document.createElement("div")) as AnyEl;
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = "<span id=a></span>";
+    expect(shadow.querySelector('[id="a"]')).toBe(shadow.firstChild);
+    expect(document.querySelector('[id="a"]')).toBeNull();
+  });
+});
+
 describe("differential: the same selectors on jsdom", () => {
   const fixture = `<main id=app class="app"><header class="bar"><nav id=nav><a id=n1 href="#">x</a><a id=n2 class="cur" href="#">y</a></nav></header>
 <section id=list class="panel"><ul class="items"><li id=i1 class="item"><span id=sp1 class="label">a</span></li><li id=i2 class="item odd"><span id=sp2>b</span></li></ul>

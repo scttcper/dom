@@ -197,6 +197,7 @@ export const $targets: unique symbol = Symbol.for("ctrl-dom.targets");
 export const $tasks: unique symbol = Symbol.for("ctrl-dom.tasks");
 export const $timers: unique symbol = Symbol.for("ctrl-dom.timers");
 export const $title: unique symbol = Symbol.for("ctrl-dom.title");
+export const $treeVersion: unique symbol = Symbol.for("ctrl-dom.treeVersion");
 export const $type: unique symbol = Symbol.for("ctrl-dom.type");
 export const $types: unique symbol = Symbol.for("ctrl-dom.types");
 export const $uiValue: unique symbol = Symbol.for("ctrl-dom.uiValue");

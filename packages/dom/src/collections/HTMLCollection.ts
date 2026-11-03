@@ -5,6 +5,10 @@
 // Live collection over a root and a filter. The matching elements are computed lazily into a
 // snapshot array stamped with the root's node document and `Document._version` (bumped by every
 // mutation), so repeated reads between mutations are O(1) and mutations themselves pay nothing.
+// A collection whose members depend only on the tree and tag names (children,
+// getElementsByTagName, select.options, table.rows, ...) is `structural`: stamped with
+// `Document[$treeVersion]` instead, so attribute and form state changes (setting a class or
+// `selected` on each member while iterating it) do not make every read rebuild it.
 //
 // Indexed access (`coll[0]`) is Proxy-free: accessor properties on HTMLCollection.prototype
 // (collections/indexed.ts). Named access (`coll.foo`) needs a Proxy, which costs every property
@@ -32,7 +36,7 @@ import { attr } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
 import { CollectionIterator, iterableTarget } from "./iterator.ts";
-import { $coll, $impl, $items, $version } from "../keys.ts";
+import { $coll, $impl, $items, $treeVersion, $version } from "../keys.ts";
 
 export type ElementFilter = (el: NodeImpl) => boolean;
 
@@ -42,14 +46,17 @@ export class CollectionState {
   /** true: only element children of root; false: descendants matching `filter`. */
   childrenOnly: boolean;
   filter: ElementFilter | null;
+  /** Members depend only on the tree and tag names: stamped with Document[$treeVersion]. */
+  structural: boolean;
   items: Element[];
   doc: Document | null;
   version: number;
 
-  constructor(root: NodeImpl, childrenOnly: boolean, filter: ElementFilter | null) {
+  constructor(root: NodeImpl, childrenOnly: boolean, filter: ElementFilter | null, structural: boolean) {
     this.root = root;
     this.childrenOnly = childrenOnly;
     this.filter = filter;
+    this.structural = structural;
     this.items = [];
     this.doc = null;
     this.version = -1;
@@ -69,9 +76,12 @@ export class HTMLCollection {
   declare [$items]: Element[] | null;
   declare [$version]: number;
 
-  /** @internal Use the static factories or a subclass. */
-  constructor(root: NodeImpl, childrenOnly = false, filter: ElementFilter | null = null) {
-    Object.defineProperty(this, $coll, { value: new CollectionState(root, childrenOnly, filter) });
+  /**
+   * @internal Use the static factories or a subclass. `structural`: the members depend only on
+   * the tree and tag names (not attributes or state), see the module comment.
+   */
+  constructor(root: NodeImpl, childrenOnly = false, filter: ElementFilter | null = null, structural = childrenOnly) {
+    Object.defineProperty(this, $coll, { value: new CollectionState(root, childrenOnly, filter, structural) });
     if (table === null) table = indexGetterTable(HTMLCollection.prototype, tableItem, 256);
   }
 
@@ -93,9 +103,12 @@ export class HTMLCollection {
     return new HTMLCollection(root, true, null);
   }
 
-  /** @internal Descendant elements of `root` matching `filter`, in tree order. */
-  static _descendants(root: NodeImpl, filter: ElementFilter | null): HTMLCollection {
-    return new HTMLCollection(root, false, filter);
+  /**
+   * @internal Descendant elements of `root` matching `filter`, in tree order; `structural` when
+   * `filter` reads only tag names and namespaces.
+   */
+  static _descendants(root: NodeImpl, filter: ElementFilter | null, structural: boolean): HTMLCollection {
+    return new HTMLCollection(root, false, filter, structural);
   }
 
   /**
@@ -124,12 +137,13 @@ export class HTMLCollection {
   _snapshot(): Element[] {
     const s = this[$coll];
     const doc = s.root.doc;
-    if (s.version === doc[$version] && s.doc === doc) return s.items;
+    const version = s.structural ? doc[$treeVersion] : doc[$version];
+    if (s.version === version && s.doc === doc) return s.items;
     const items: Element[] = [];
     this._collect(items);
     s.items = items;
     s.doc = doc;
-    s.version = doc[$version];
+    s.version = version;
     if (items.length !== 0) holdSnapshot(doc, s, s.root);
     if (items.length > table!.count) ensureIndexGetters(table!, items.length);
     return items;

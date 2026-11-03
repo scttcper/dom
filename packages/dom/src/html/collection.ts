@@ -1,6 +1,6 @@
-// HTMLCollection over a custom membership function (table.rows, tBodies, map.areas,
-// document.images/links/..., media textTracks). Keeps dom-core's version-stamped caching by
-// overriding `_collect`. The class is named HTMLCollection so pretty-format and
+// HTMLCollection over a custom membership function (table.rows, tBodies, map.areas, cells).
+// Keeps dom-core's version-stamped caching by overriding `_collect`; the fill must depend only
+// on the tree and tag names, since the collection is structural (stamped with the tree version). The class is named HTMLCollection so pretty-format and
 // `constructor.name` match browsers.
 
 import { HTMLCollection as Base } from "../collections/HTMLCollection.ts";
@@ -14,7 +14,7 @@ const FnCollection = class HTMLCollection extends Base {
   declare [$fill]: Fill;
 
   constructor(root: NodeImpl, fill: Fill) {
-    super(root, false, null);
+    super(root, false, null, true);
     Object.defineProperty(this, $fill, { value: fill });
   }
 

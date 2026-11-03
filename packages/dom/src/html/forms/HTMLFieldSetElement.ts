@@ -40,7 +40,7 @@ export class HTMLFieldSetElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-fieldset-elements — listed descendants. */
   get elements(): HTMLCollection {
-    return (this[$elements] ??= HTMLCollection._descendants(this[$impl], isListed));
+    return (this[$elements] ??= HTMLCollection._descendants(this[$impl], isListed, false));
   }
 
   declare disabled: boolean;

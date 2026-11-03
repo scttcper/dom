@@ -432,6 +432,21 @@ against jsdom. Radios outside any form at 10k elements: inserting a checked one 
 checking one 110 → 0.14 µs, `validity` 115 → 0.17 µs. Inserting and removing a radio costs ~100
 ns more (15% on a 100-radio churn loop).
 
+**Quadratic loops** (2026-11-02). A second probe times loops that should be linear at n = 1k and
+10k items and flags growth in the per-item cost. Live collections were stamped with
+`Document._version`, which any attribute or form state change bumps, so mutating each member while
+iterating `children`, `getElementsByTagName`, `select.options` or `table.rows` rebuilt the
+collection on every step. Collections whose members depend only on the tree and tag names are now
+`structural`, stamped with `Document[$treeVersion]` (bumped only by nodes/tree.ts): adding a class
+to each of 10k children 43.9 → 0.19 µs per item, toggling `selected` on each of 10k options 97 →
+0.13 µs. And `[id="x"]`, which stock Testing Library's `getByLabelText` runs per element with
+`aria-labelledby`, now uses the id index like `#x` (case-sensitive in every mode): 72 → 1.4 µs per
+element at 10k (what remains is compiling each distinct selector string). Left as they are: a
+parent whose `childNodes` was read rebuilds the list on every non-tail removal (own index
+properties, see collections/NodeList.ts), so removing 10k children from the front is quadratic;
+checking each radio of one huge group visits the group each time; and adding attributes one by one
+to one element copies its exact-size attribute array.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

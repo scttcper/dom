@@ -29,7 +29,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
 | [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
-| [CSS: selectors](#css-selectors) | 29 | 13 | 4 | 12 |
+| [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 6 | 1 | 14 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
@@ -94,7 +94,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1586 | 1075 | 120 | 391 |
+| **All** | 1586 | 1076 | 120 | 390 |
 
 ## Web-platform-tests fixtures
 
@@ -1469,11 +1469,11 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: selectors
 
-<https://drafts.csswg.org/selectors/> — 29 sections implemented, 13 tested, 4 by WPT only, 12 untested.
+<https://drafts.csswg.org/selectors/> — 29 sections implemented, 14 tested, 4 by WPT only, 11 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [attribute-representation](https://drafts.csswg.org/selectors/#attribute-representation) | `dom/selectors/compile.ts` | **untested** |
+| [attribute-representation](https://drafts.csswg.org/selectors/#attribute-representation) | `dom/selectors/compile.ts` | `dom/selectors/engine-shortcuts.test.ts` |
 | [attribute-selectors](https://drafts.csswg.org/selectors/#attribute-selectors) | `dom/selectors/parser.ts` | `dom/selectors/matching.test.ts`; WPT: `css/selectors/attribute-selectors/style-attribute-selector.html`, `css/selectors/invalidation/attribute.html` +1 |
 | [attribute-substrings](https://drafts.csswg.org/selectors/#attribute-substrings) | `dom/selectors/compile.ts` | **untested** |
 | [child-index](https://drafts.csswg.org/selectors/#child-index) | `dom/selectors/compile.ts` | WPT: `css/selectors/invalidation/nth-child-whole-subtree.html`, `css/selectors/nth-last-child-invalid.html` |
