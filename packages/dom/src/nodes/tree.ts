@@ -346,8 +346,30 @@ function insertOne(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null, doc
   if (connected) connectSubtree(node, doc);
 }
 
+/** The root of the subtree (or shadow tree) connectSubtree is connecting, else null. */
+let connecting: NodeImpl | null = null;
+
+/**
+ * For connected steps: the root of the subtree being connected. Its descendants after the current
+ * node are already in the tree but not connected yet (https://dom.spec.whatwg.org/#concept-node-insert
+ * runs each node's insertion steps with the whole subtree inserted).
+ */
+export function connectingRoot(): NodeImpl | null {
+  return connecting;
+}
+
 /** Mark a newly inserted subtree connected; maintain the id index; run connected hooks. */
 function connectSubtree(root: NodeImpl, doc: Document): void {
+  const outer = connecting;
+  connecting = root;
+  try {
+    connectNodes(root, doc);
+  } finally {
+    connecting = outer;
+  }
+}
+
+function connectNodes(root: NodeImpl, doc: Document): void {
   for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
     n.flags |= F_CONNECTED;
     if (n.type === ELEMENT_NODE) {

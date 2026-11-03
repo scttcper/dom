@@ -54,6 +54,7 @@ import {
   $implementation,
   $isHTML,
   $mode,
+  $radios,
   $ranges,
   $selection,
   $styleVersion,
@@ -99,6 +100,12 @@ export class Document extends Node {
    * an ID without walking the tree.
    */
   [$forLabels]: Map<string, NodeImpl[]> | null;
+  /**
+   * Connected radio buttons with a non-empty name, by name, each list in no particular order, or
+   * null before the first (html/forms/HTMLInputElement.ts). A radio's group is looked up here
+   * instead of walking the tree.
+   */
+  [$radios]: Map<string, NodeImpl[]> | null;
   /** document.forms (named-properties proxy), created on first read. */
   [$forms]: HTMLCollection | null;
   /** https://html.spec.whatwg.org/#concept-document-about-base-url (about:blank / about:srcdoc documents of nested browsing contexts). */
@@ -131,6 +138,7 @@ export class Document extends Node {
     this[$ranges] = null;
     this[$derived] = null;
     this[$forLabels] = null;
+    this[$radios] = null;
     this[$aboutBase] = null;
     this[$baseOverride] = null;
     this[$baseURL] = "";

@@ -22,7 +22,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 786 | 606 | 54 | 126 |
+| [HTML Standard](#html-standard) | 787 | 607 | 54 | 126 |
 | [DOM Standard](#dom-standard) | 273 | 237 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
 | [Web IDL](#web-idl) | 34 | 22 | 0 | 12 |
@@ -94,7 +94,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1585 | 1074 | 120 | 391 |
+| **All** | 1586 | 1075 | 120 | 391 |
 
 ## Web-platform-tests fixtures
 
@@ -155,7 +155,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 786 sections implemented, 606 tested, 54 by WPT only, 126 untested.
+<https://html.spec.whatwg.org/> — 787 sections implemented, 607 tested, 54 by WPT only, 126 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -249,7 +249,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-custom-element-definition-construction-stack](https://html.spec.whatwg.org/#concept-custom-element-definition-construction-stack) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | `dom/nodes/wpt-nodes.test.ts`, `dom/window/iframe.test.ts` |
 | [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
-| [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts` |
+| [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/radio-groups.test.ts` |
 | [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`, `compat/html/focus.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-fe-value](https://html.spec.whatwg.org/#concept-fe-value) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
@@ -734,7 +734,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [queue-a-popover-toggle-event-task](https://html.spec.whatwg.org/#queue-a-popover-toggle-event-task) | `dom/html/top-layer.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/element-tasks.test.ts` |
 | [queue-a-task](https://html.spec.whatwg.org/#queue-a-task) | `dom/window/clock.ts` | `dom/window/clock.test.ts` |
 | [queue-an-element-task](https://html.spec.whatwg.org/#queue-an-element-task) | `dom/html/events.ts` | `dom/html/element-tasks.test.ts` |
-| [radio-button-group](https://html.spec.whatwg.org/#radio-button-group) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/checkedness.test.ts`; WPT: `html/semantics/forms/the-input-element/radio-groupname-case.html` |
+| [radio-button-group](https://html.spec.whatwg.org/#radio-button-group) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/radio-groups.test.ts`, `compat/forms/checkedness.test.ts`; WPT: `html/semantics/forms/the-input-element/radio-groupname-case.html` |
 | [radionodelist](https://html.spec.whatwg.org/#radionodelist) | `dom/html/forms/collections.ts` | `compat/forms/form-owner.test.ts` |
 | [range-state-(type=range](https://html.spec.whatwg.org/#range-state-(type=range) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-value.test.ts`, `compat/forms/pseudo-classes.test.ts`; WPT: `html/semantics/forms/the-input-element/range.html` |
 | [rawtext-state](https://html.spec.whatwg.org/#rawtext-state) | `dom/parser/tokenizer.ts` | **untested** |
@@ -863,6 +863,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-input-element:concept-form-reset-control](https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [the-input-element:concept-input-checked-dirty-flag-2](https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [the-input-element:concept-node-clone-ext](https://html.spec.whatwg.org/#the-input-element:concept-node-clone-ext) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/checkedness.test.ts` |
+| [the-input-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-input-element:html-element-insertion-steps) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/radio-groups.test.ts` |
 | [the-input-element:legacy-canceled-activation-behavior](https://html.spec.whatwg.org/#the-input-element:legacy-canceled-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/activation.test.ts` |
 | [the-input-element:legacy-pre-activation-behavior](https://html.spec.whatwg.org/#the-input-element:legacy-pre-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/activation.test.ts` |
 | [the-insertion-mode](https://html.spec.whatwg.org/#the-insertion-mode) | `dom/parser/treebuilder.ts` | **untested** |

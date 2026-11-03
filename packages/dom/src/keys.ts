@@ -153,6 +153,7 @@ export const $queries: unique symbol = Symbol.for("ctrl-dom.queries");
 export const $ranges: unique symbol = Symbol.for("ctrl-dom.ranges");
 export const $rawValue: unique symbol = Symbol.for("ctrl-dom.rawValue");
 export const $readonly: unique symbol = Symbol.for("ctrl-dom.readonly");
+export const $radios: unique symbol = Symbol.for("ctrl-dom.radios");
 export const $readyState: unique symbol = Symbol.for("ctrl-dom.readyState");
 export const $rebuildVersion: unique symbol = Symbol.for("ctrl-dom.rebuildVersion");
 export const $record: unique symbol = Symbol.for("ctrl-dom.record");

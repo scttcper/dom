@@ -20,7 +20,8 @@ import type { Event } from "../../events/Event.ts";
 import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, ELEMENT_NODE } from "../../nodes/constants.ts";
 import { T } from "../../nodes/tags.ts";
 import { attr, setAttribute } from "../../nodes/attributes.ts";
-import { nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
+import { isInclusiveAncestor, nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
+import { connectingRoot } from "../../nodes/tree.ts";
 import {
   fireEvent,
   readNonNegativeLong,
@@ -118,6 +119,7 @@ import {
   $preChecked,
   $preCheckedRadio,
   $preIndeterminate,
+  $radios,
   $selDir,
   $selEnd,
   $selStart,
@@ -1084,7 +1086,15 @@ export class HTMLInputElement extends HTMLElement {
       case "type": {
         const oldType = inputTypeFromAttr(oldValue);
         const newType = inputTypeFromAttr(value);
-        if (oldType !== newType) this._typeChange(oldType, newType);
+        if (oldType !== newType) {
+          const impl = this[$impl];
+          const name = attr(impl, "name");
+          if ((impl.flags & F_CONNECTED) !== 0 && name !== null && name !== "") {
+            if (oldType === I_RADIO) removeRadio(impl, name);
+            else if (newType === I_RADIO) addRadio(impl, name);
+          }
+          this._typeChange(oldType, newType);
+        }
         break;
       }
       case "checked":
@@ -1092,6 +1102,11 @@ export class HTMLInputElement extends HTMLElement {
         if (!this[$dirtyChecked]) this._setCheckedness(value !== null, false);
         break;
       case "name":
+        if ((this[$impl].flags & F_CONNECTED) !== 0 && inputType(this[$impl]) === I_RADIO) {
+          if (oldValue !== null && oldValue !== "") removeRadio(this[$impl], oldValue);
+          if (value !== null && value !== "") addRadio(this[$impl], value);
+        }
+      // falls through
       case "form":
         if (inputType(this[$impl]) === I_RADIO && this._checkedness()) uncheckOtherRadios(this[$impl]);
         break;
@@ -1146,7 +1161,19 @@ export class HTMLInputElement extends HTMLElement {
   /** Insertion steps (connected case): radio group rule on insertion. */
   override _connectedSteps(): void {
     super._connectedSteps();
-    if (inputType(this[$impl]) === I_RADIO && this._checkedness()) uncheckOtherRadios(this[$impl]);
+    const impl = this[$impl];
+    if (inputType(impl) !== I_RADIO) return;
+    const name = attr(impl, "name");
+    if (name !== null && name !== "") addRadio(impl, name);
+    if (this._checkedness()) radioInserted(impl);
+  }
+
+  override _disconnectedSteps(): void {
+    super._disconnectedSteps();
+    const impl = this[$impl];
+    if (inputType(impl) !== I_RADIO) return;
+    const name = attr(impl, "name");
+    if (name !== null && name !== "") removeRadio(impl, name);
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:concept-node-clone-ext */
@@ -1416,10 +1443,67 @@ export function inSameRadioGroup(a: NodeImpl, b: NodeImpl): boolean {
   return formOwner(a) === formOwner(b);
 }
 
+// Document[$radios]: the connected radios with a non-empty name, by name, kept by the input's
+// connected and disconnected steps and its `name` and `type` attribute change steps. A connected
+// radio's group is found there; only a disconnected one walks its (detached) tree.
+
+function addRadio(el: NodeImpl, name: string): void {
+  const map = (el.doc[$radios] ??= new Map());
+  const list = map.get(name);
+  if (list === undefined) map.set(name, [el]);
+  else list.push(el);
+}
+
+function removeRadio(el: NodeImpl, name: string): void {
+  const map = el.doc[$radios]!;
+  const list = map.get(name)!;
+  if (list.length === 1) map.delete(name);
+  else list.splice(list.indexOf(el), 1);
+}
+
+/**
+ * A checked radio was connected (https://html.spec.whatwg.org/#the-input-element:html-element-insertion-steps).
+ * Every node of the inserted subtree runs its insertion steps with the whole subtree inserted, so
+ * the first checked member in tree order unchecks the later ones before their turn. Those later
+ * ones reach the index only as they connect: a radio meeting a checked member that connected
+ * earlier in the same subtree is the one unchecked.
+ */
+function radioInserted(el: NodeImpl): void {
+  const root = connectingRoot();
+  if (root !== null && root !== el) {
+    let earlier: NodeImpl | null = null;
+    forEachInRadioGroup(el, (other) => {
+      if (!isInclusiveAncestor(root, other) || !(other.node as HTMLInputElement)._checkedness()) return false;
+      earlier = other;
+      return true;
+    });
+    if (earlier !== null) {
+      const w = el.node as HTMLInputElement;
+      el.doc[$version]++;
+      w[$checked] = false;
+      w[$checkedSet] = true;
+      return;
+    }
+  }
+  uncheckOtherRadios(el);
+}
+
 function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): void {
   const name = attr(el, "name");
   if (name === null || name === "") return;
   const owner = formOwner(el);
+  if ((el.flags & F_CONNECTED) !== 0) {
+    const members = el.doc[$radios]?.get(name);
+    if (members === undefined) return;
+    // A form owner implies the same tree; without one, members must share el's tree.
+    const root = owner === null ? treeRoot(el) : null;
+    for (let i = 0; i < members.length; i++) {
+      const n = members[i];
+      if (n === el || formOwner(n) !== owner || (root !== null && treeRoot(n) !== root)) continue;
+      if (fn(n)) return;
+    }
+    return;
+  }
   // Members whose form owner is a form are where that form's owned elements can be.
   const root = owner === null ? treeRoot(el) : formOwnerScope(owner, true);
   for (

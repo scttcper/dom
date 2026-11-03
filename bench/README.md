@@ -420,8 +420,17 @@ the form) were found by walking the whole tree per document version; outside its
 element, so an ID-less form walks only itself (`formOwnerScope` in html/forms/form-associated.ts).
 At 10k elements with an ID-less form: `form.elements` 129 → 1.5 µs, `checkValidity()` 378 → 3.6
 µs, a submit click 384 → 5.3 µs, radio checks and `validity` 111 → 0.2 µs, `userEvent.click` 458 →
-63 µs, `userEvent.type` 322 → 88 µs. Still walking: radios outside any form (inserting a checked
-one, ~110 µs at 10k), forms with an ID, and `userEvent.tab` (needs every focusable element).
+63 µs, `userEvent.type` 322 → 88 µs. Still walking: forms with an ID, and `userEvent.tab` (needs
+every focusable element).
+
+Radio groups no longer walk at all for connected radios: `Document[$radios]` lists the connected
+radios with a name, by name (the input's connected, disconnected and `name`/`type` change steps
+keep it), and a group is that list filtered by form owner and tree. Insertion keeps the spec's
+order (every node's insertion steps see the whole inserted subtree, so the first checked radio in
+tree order wins) through `connectingRoot()` in nodes/tree.ts; radio-groups.test.ts checks that
+against jsdom. Radios outside any form at 10k elements: inserting a checked one 113 → 0.47 µs,
+checking one 110 → 0.14 µs, `validity` 115 → 0.17 µs. Inserting and removing a radio costs ~100
+ns more (15% on a 100-radio churn loop).
 
 ## Regression check (`compare.ts`)
 
