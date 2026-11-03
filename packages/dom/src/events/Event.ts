@@ -122,14 +122,6 @@ export function isInternalConstruct(): boolean {
   return constructing;
 }
 
-const IS_TRUSTED: PropertyDescriptor = {
-  get: function isTrusted(this: Event): boolean {
-    return (this._s.flags & EF_TRUSTED) !== 0;
-  },
-  enumerable: true,
-  configurable: false,
-};
-
 export class Event {
   static readonly NONE = NONE;
   static readonly CAPTURING_PHASE = CAPTURING_PHASE;
@@ -143,6 +135,17 @@ export class Event {
   // All internal state lives in one private field: nothing but `isTrusted` is an own
   // enumerable property, as with WebIDL/jsdom (pretty-format prints `Event {"isTrusted": false}`).
   #s: EventState;
+
+  /**
+   * https://dom.spec.whatwg.org/#dom-event-istrusted — [LegacyUnforgeable], so an own enumerable
+   * property of every instance. A class field (an in-object data property) rather than the
+   * accessor WebIDL prescribes: `Object.defineProperty(this, "isTrusted", accessor)` is a C++
+   * runtime path costing ~50 ns, 40-60% of constructing a MouseEvent/KeyboardEvent and more than
+   * happy-dom spends on the whole event (docs/deviations.md, Events). Readers see the same
+   * value, `Object.keys` and pretty-format output are identical; the flag in `_s` stays the
+   * source of truth for dispatch, and `setTrusted` keeps the two in step.
+   */
+  readonly isTrusted: boolean = false;
 
   /** @internal The per-event state record (non-enumerable prototype accessor). */
   get _s(): EventState {
@@ -168,9 +171,6 @@ export class Event {
       if (eventInitDict.composed) flags |= EF_COMPOSED;
     }
     this.#s = new EventState(typeString, flags);
-    // https://dom.spec.whatwg.org/#dom-event-istrusted — [LegacyUnforgeable]: an own,
-    // enumerable, non-configurable accessor on every instance, sharing one getter.
-    Object.defineProperty(this, "isTrusted", IS_TRUSTED);
   }
 
   get type(): string {
@@ -205,8 +205,6 @@ export class Event {
   get composed(): boolean {
     return (this._s.flags & EF_COMPOSED) !== 0;
   }
-
-  declare readonly isTrusted: boolean;
 
   /** https://dom.spec.whatwg.org/#dom-event-timestamp — ms since the time origin (performance.now()). */
   get timeStamp(): number {
@@ -311,9 +309,8 @@ export class Event {
     if (arguments.length === 0) {
       throw new TypeError("Failed to execute 'initEvent' on 'Event': 1 argument required, but only 0 present.");
     }
-    const s = this._s;
-    if ((s.flags & EF_DISPATCH) !== 0) return;
-    initializeEvent(s, toDOMString(type), !!bubbles, !!cancelable);
+    if ((this._s.flags & EF_DISPATCH) !== 0) return;
+    initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
   }
 }
 
@@ -331,7 +328,8 @@ export function setCanceledFlag(s: EventState): void {
 }
 
 /** https://dom.spec.whatwg.org/#concept-event-initialize */
-export function initializeEvent(s: EventState, type: string, bubbles: boolean, cancelable: boolean): void {
+export function initializeEvent(event: Event, type: string, bubbles: boolean, cancelable: boolean): void {
+  const s = event._s;
   // Steps 1-4: set initialized; unset stop propagation, stop immediate, canceled; isTrusted false.
   let f =
     (s.flags | EF_INITIALIZED) &
@@ -339,15 +337,21 @@ export function initializeEvent(s: EventState, type: string, bubbles: boolean, c
   if (bubbles) f |= EF_BUBBLES;
   if (cancelable) f |= EF_CANCELABLE;
   s.flags = f;
+  (event as { isTrusted: boolean }).isTrusted = false;
   // Steps 5-8.
   s.target = null;
   s.type = type;
 }
 
-/** @internal Mark an event as trusted (dispatched by the user agent). */
+/**
+ * @internal Set an event's isTrusted: true for events the user agent fires, false again when
+ * script dispatches one (https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent step 2).
+ * The flag is what dispatch reads; the own property is what script reads.
+ */
 export function setTrusted(event: Event, trusted = true): void {
   if (trusted) event._s.flags |= EF_TRUSTED;
   else event._s.flags &= ~EF_TRUSTED;
+  (event as { isTrusted: boolean }).isTrusted = trusted;
 }
 
 /** Name used in subclass constructor errors. */

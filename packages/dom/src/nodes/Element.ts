@@ -14,6 +14,7 @@ import {
   removeAttribute,
   removeAttributeRecord,
   setAttribute,
+  setAttributeValue,
   appendAttribute,
   changeAttribute,
   attr,
@@ -119,8 +120,9 @@ export class Element extends Node {
     return this[$impl].id;
   }
 
+  // Reflected setters: https://dom.spec.whatwg.org/#concept-element-attributes-set-value (null namespace).
   set id(value: string) {
-    setAttribute(this[$impl], "id", String(value));
+    setAttributeValue(this[$impl], "id", String(value));
   }
 
   get className(): string {
@@ -128,7 +130,7 @@ export class Element extends Node {
   }
 
   set className(value: string) {
-    setAttribute(this[$impl], "class", String(value));
+    setAttributeValue(this[$impl], "class", String(value));
   }
 
   /** https://dom.spec.whatwg.org/#dom-element-classlist */
@@ -167,12 +169,7 @@ export class Element extends Node {
   }
 
   set slot(value: string) {
-    // https://dom.spec.whatwg.org/#concept-element-attributes-set-value (namespace null).
-    const impl = this[$impl];
-    const v = String(value);
-    const existing = findAttributeByNamespace(impl, null, "slot");
-    if (existing === null) appendAttribute(impl, new AttrRecord("slot", v, null, null));
-    else changeAttribute(impl, existing, v);
+    setAttributeValue(this[$impl], "slot", String(value));
   }
 
   // --- attributes -------------------------------------------------------------------------
@@ -498,14 +495,6 @@ export class Element extends Node {
   scrollIntoView(_arg?: unknown): void {}
 
   // --- hooks for subclasses (see constants.ts F_*_HOOK) -----------------------------------
-
-  /**
-   * Activation behavior (events/activation.ts): none unless a subclass overrides it. Defined so
-   * dispatch's read on a <form> is not a named property lookup through the form's controls.
-   */
-  get _hasActivationBehavior(): boolean {
-    return false;
-  }
 
   /** Runs when this element becomes connected. Only called when F_CONNECT_HOOK is set. */
   _connectedSteps(): void {}

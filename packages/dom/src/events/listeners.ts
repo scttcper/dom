@@ -3,83 +3,100 @@
 // https://dom.spec.whatwg.org/#add-an-event-listener
 // https://dom.spec.whatwg.org/#remove-an-event-listener
 //
-// Layout: `EventTarget._listeners` is null until the first addEventListener (the common case
-// for almost every node) and then a Map from event type to a `ListenerList` (possibly empty). Keying by type keeps React's root container
-// (≈150 types × capture/bubble listeners via `listenToAllSupportedEvents`) at one hash
-// lookup per invoked path entry instead of a scan over 300 listeners.
+// Layout: every event type gets a small integer id the first time anything listens for it
+// (`typeIds`, shared by the whole process). `EventTarget[$listeners]` is null until the first
+// addEventListener (the common case for almost every node) and then a sparse array indexed by
+// type id, each slot the head of that type's listeners as a singly linked list in insertion
+// order. React's root container (142 listeners over 87 types via `listenToAllSupportedEvents`)
+// is then one array plus 142 listeners: no per-target hash table, no per-type list objects, and
+// dispatch resolves the type's id once per event instead of hashing it at every path entry.
 //
 // Removal during dispatch: the spec clones the listener list before invoking it and skips
-// listeners whose `removed` flag is set. Instead of cloning on every invoke, a list being
-// iterated has `iterating > 0`; mutations made while iterating replace `items` with a copy
-// first (copy-on-write), so the dispatch loop keeps iterating its stable snapshot and the
-// common no-mutation case allocates nothing.
+// listeners whose `removed` flag (LISTENER_REMOVED) is set. Instead of cloning, each listener
+// records `seq`, its position in a process-wide insertion counter, and inner invoke walks the
+// chain up to the first listener added after it started. Removing a listener unlinks it but
+// leaves its own `next` intact, so a walk standing on it still reaches the rest of the chain.
+// Chains are in seq order (appends go to the tail and nothing is reinserted), so that walk sees
+// exactly the clone: listeners present when it started, minus those removed since.
 
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { DOCUMENT_NODE } from "../nodes/constants.ts";
 import { $impl, $listeners, $window } from "../keys.ts";
 
-export class Listener {
-  callback: EventListenerOrEventListenerObject;
-  capture: boolean;
-  once: boolean;
-  passive: boolean;
-  removed: boolean;
-  signal: AbortSignal | null;
-  /** The abort algorithm registered on `signal`, kept so removal can unregister it. */
-  onAbort: (() => void) | null;
+// Listener.flags bits: the spec's capture, once, passive and removed.
+export const LISTENER_CAPTURE = 1;
+export const LISTENER_ONCE = 2;
+export const LISTENER_PASSIVE = 4;
+export const LISTENER_REMOVED = 8;
 
-  constructor(
-    callback: EventListenerOrEventListenerObject,
-    capture: boolean,
-    once: boolean,
-    passive: boolean,
-    signal: AbortSignal | null,
-  ) {
-    this.callback = callback;
-    this.capture = capture;
-    this.once = once;
-    this.passive = passive;
-    this.removed = false;
+/** A listener's signal and the abort algorithm registered on it, kept so removal can unregister it. */
+class AbortBinding {
+  signal: AbortSignal;
+  onAbort: () => void;
+
+  constructor(signal: AbortSignal, onAbort: () => void) {
     this.signal = signal;
-    this.onAbort = null;
+    this.onAbort = onAbort;
   }
 }
 
-/** The `items` of every list that never had a listener; never mutated (see appendListener). */
-const NO_LISTENERS: Listener[] = [];
+/** Insertion counter behind Listener.seq. */
+let nextSeq = 0;
 
-export class ListenerList {
-  items: Listener[];
-  /** Number of in-progress invocations iterating `items` (nested dispatches can stack). */
-  iterating: number;
-
-  constructor() {
-    this.items = NO_LISTENERS;
-    this.iterating = 0;
-  }
+/** The seq the next added listener gets: inner invoke stops at listeners at or past it. */
+export function listenerSeqLimit(): number {
+  return nextSeq;
 }
 
 /**
- * Lists hold one or two listeners in practice (React's root container: capture + bubble for
- * ~80 types), so they grow by exact-size copies like attribute records: `push` onto `[]` would
- * give each list a 17-slot backing store. A fresh array also leaves the snapshot an in-progress
- * dispatch iterates untouched (copy-on-write for free). Longer lists push, unless iterated.
+ * The booleans pack into `flags` and the signal state lives out of line: a React root holds 142
+ * of these and none has a signal.
  */
-function appendListener(list: ListenerList, listener: Listener): void {
-  const items = list.items;
-  const n = items.length;
-  if (n >= 8 && list.iterating === 0) {
-    items.push(listener);
-    return;
+export class Listener {
+  callback: EventListenerOrEventListenerObject;
+  /** LISTENER_* bits. */
+  flags: number;
+  /** The next listener of the same type on the same target, in insertion order. */
+  next: Listener | null;
+  seq: number;
+  /** Null unless added with a signal. */
+  abort: AbortBinding | null;
+
+  constructor(callback: EventListenerOrEventListenerObject, flags: number) {
+    this.callback = callback;
+    this.flags = flags;
+    this.next = null;
+    this.seq = nextSeq++;
+    this.abort = null;
   }
-  const next: Listener[] = new Array(n + 1);
-  for (let i = 0; i < n; i++) next[i] = items[i];
-  next[n] = listener;
-  list.items = next;
 }
 
-export type ListenerMap = Map<string, ListenerList>;
+/** Indexed by type id; a hole or undefined means no listener of that type. */
+export type ListenerSlots = (Listener | undefined)[];
+
+const typeIds = new Map<string, number>();
+
+function idForType(type: string): number {
+  let id = typeIds.get(type);
+  if (id === undefined) {
+    id = typeIds.size;
+    typeIds.set(type, id);
+  }
+  return id;
+}
+
+/** `type`'s id, or -1 when nothing has ever listened for it (so no target has a listener). */
+export function typeIdOf(type: string): number {
+  const id = typeIds.get(type);
+  return id === undefined ? -1 : id;
+}
+
+/** The first listener for type id `id` (-1 included) on a target whose slots are `slots`. */
+export function firstListener(slots: ListenerSlots, id: number): Listener | undefined {
+  // `>>> 0` sends -1 out of range instead of reading the property "-1".
+  return id >>> 0 < slots.length ? slots[id] : undefined;
+}
 
 interface Flattened {
   capture: boolean;
@@ -164,9 +181,9 @@ function checkCallback(callback: unknown, method: string): void {
  * https://dom.spec.whatwg.org/#add-an-event-listener
  *
  * The most-called DOM entry point in component suites: React adds 142 listeners to every root
- * container, so each render() in a test makes 142 calls. It is our top function by self time in
- * Base UI's interaction tests and still only 0.2% of their CPU (~0.2 µs a call; bench/README.md
- * "Where real suites spend their time").
+ * container, so each render() in a test makes 142 calls. It was our top function by self time in
+ * Base UI's interaction tests at 0.2% of their CPU (bench/README.md "Where real suites spend their
+ * time") before the type-id layout; `dom/react-root-listeners` replays React's calls.
  */
 export function addEventListener(
   target: EventTarget,
@@ -174,43 +191,68 @@ export function addEventListener(
   callback: EventListenerOrEventListenerObject | null | undefined,
   options: boolean | AddEventListenerOptions | undefined | null,
 ): void {
+  // React passes a boolean for all but 6 of its 142 root listeners: a boolean flattens to
+  // (capture, false, null, null) without reading any member, so skip flattenMore.
+  if (typeof options === "boolean") {
+    // Step 3.
+    if (callback === null || callback === undefined) return;
+    checkCallback(callback, "addEventListener");
+    addFlattened(target, type, callback, options, false, null, null);
+    return;
+  }
   const { capture, once, passive, signal } = flattenMore(options);
   // Step 2.
   if (signal !== null && signal.aborted) return;
   // Step 3.
   if (callback === null || callback === undefined) return;
   checkCallback(callback, "addEventListener");
-  let map = target[$listeners];
-  let list: ListenerList | undefined;
-  if (map == null) {
-    map = target[$listeners] = new Map();
-  } else {
-    list = map.get(type);
-  }
-  if (list === undefined) {
-    list = new ListenerList();
-    map.set(type, list);
-  } else {
-    // Step 5: no duplicate (type, callback, capture).
-    const items = list.items;
-    for (let i = 0; i < items.length; i++) {
-      const l = items[i];
-      if (l.callback === callback && l.capture === capture) return;
+  addFlattened(target, type, callback, capture, once, passive, signal);
+}
+
+/** https://dom.spec.whatwg.org/#add-an-event-listener steps 4-6, with flattened options. */
+function addFlattened(
+  target: EventTarget,
+  type: string,
+  callback: EventListenerOrEventListenerObject,
+  capture: boolean,
+  once: boolean,
+  passive: boolean | null,
+  signal: AbortSignal | null,
+): void {
+  const captureBit = capture ? LISTENER_CAPTURE : 0;
+  const id = idForType(type);
+  let slots = target[$listeners];
+  if (slots == null) slots = target[$listeners] = [];
+  // Step 5: no duplicate (type, callback, capture). The walk ends on the tail to append to.
+  let tail = firstListener(slots, id);
+  if (tail !== undefined) {
+    for (;;) {
+      if (tail.callback === callback && (tail.flags & LISTENER_CAPTURE) === captureBit) return;
+      const next: Listener | null = tail.next;
+      if (next === null) break;
+      tail = next;
     }
   }
   // Step 4.
   const listener = new Listener(
     callback,
-    capture,
-    once,
-    passive === null ? defaultPassiveValue(type, target) : passive,
-    signal,
+    captureBit |
+      (once ? LISTENER_ONCE : 0) |
+      ((passive === null ? defaultPassiveValue(type, target) : passive) ? LISTENER_PASSIVE : 0),
   );
-  appendListener(list, listener);
+  if (tail !== undefined) tail.next = listener;
+  else {
+    // Ids at or past the length grow the array (a gap leaves holes) rather than presizing it:
+    // most targets listen for one or two types. A target's array is as long as the highest id
+    // it uses, ~8 bytes per id below it. Ids stay small because event types are a small
+    // vocabulary (React's 87 plus a few dozen); a process listening for over a thousand distinct
+    // types would push later targets past V8's 1,024-element gap into slower dictionary arrays.
+    slots[id] = listener;
+  }
   // Step 6.
   if (signal !== null) {
     const onAbort = () => removeListener(target, type, listener);
-    listener.onAbort = onAbort;
+    listener.abort = new AbortBinding(signal, onAbort);
     signal.addEventListener("abort", onAbort, { once: true });
   }
 }
@@ -222,18 +264,16 @@ export function removeEventListener(
   callback: EventListenerOrEventListenerObject | null | undefined,
   options: boolean | EventListenerOptions | undefined | null,
 ): void {
-  const capture = flattenCapture(options);
+  const captureBit = flattenCapture(options) ? LISTENER_CAPTURE : 0;
   if (callback === null || callback === undefined) return;
   checkCallback(callback, "removeEventListener");
-  const map = target[$listeners];
-  if (map == null) return;
-  const list = map.get(type);
-  if (list === undefined) return;
-  const items = list.items;
-  for (let i = 0; i < items.length; i++) {
-    const l = items[i];
-    if (l.callback === callback && l.capture === capture) {
-      removeAt(target, type, list, i);
+  const slots = target[$listeners];
+  if (slots == null) return;
+  const id = typeIdOf(type);
+  let prev: Listener | null = null;
+  for (let l = firstListener(slots, id) ?? null; l !== null; prev = l, l = l.next) {
+    if (l.callback === callback && (l.flags & LISTENER_CAPTURE) === captureBit) {
+      unlink(slots, id, prev, l);
       return;
     }
   }
@@ -241,52 +281,58 @@ export function removeEventListener(
 
 /** https://dom.spec.whatwg.org/#remove-an-event-listener */
 export function removeListener(target: EventTarget, type: string, listener: Listener): void {
-  if (listener.removed) return;
-  const map = target[$listeners];
-  const list = map == null ? undefined : map.get(type);
-  if (list === undefined) {
-    listener.removed = true;
-    return;
+  if ((listener.flags & LISTENER_REMOVED) !== 0) return;
+  const slots = target[$listeners];
+  if (slots != null) {
+    const id = typeIdOf(type);
+    let prev: Listener | null = null;
+    for (let l = firstListener(slots, id) ?? null; l !== null; prev = l, l = l.next) {
+      if (l === listener) {
+        unlink(slots, id, prev, l);
+        return;
+      }
+    }
   }
-  const i = list.items.indexOf(listener);
-  if (i === -1) listener.removed = true;
-  else removeAt(target, type, list, i);
+  listener.flags |= LISTENER_REMOVED;
 }
 
-function removeAt(target: EventTarget, type: string, list: ListenerList, i: number): void {
-  const listener = list.items[i];
-  // Step 2: set removed (an in-progress dispatch holding a snapshot will skip it).
-  listener.removed = true;
-  if (listener.signal !== null && listener.onAbort !== null) {
-    listener.signal.removeEventListener("abort", listener.onAbort);
-    listener.onAbort = null;
+function unlink(slots: ListenerSlots, id: number, prev: Listener | null, listener: Listener): void {
+  // Step 2: set removed (an in-progress dispatch standing before it will skip it).
+  markRemoved(listener);
+  // `listener.next` stays: a dispatch standing on it continues from there (see the header).
+  if (prev === null) slots[id] = listener.next ?? undefined;
+  else prev.next = listener.next;
+}
+
+function markRemoved(listener: Listener): void {
+  listener.flags |= LISTENER_REMOVED;
+  const abort = listener.abort;
+  if (abort !== null) {
+    abort.signal.removeEventListener("abort", abort.onAbort);
+    listener.abort = null;
   }
-  if (list.iterating > 0) {
-    const copy = list.items.slice();
-    copy.splice(i, 1);
-    list.items = copy;
-    return;
-  }
-  // Empty lists stay in the map: add/remove churn on the same type (effects re-subscribing)
-  // then reuses them (measured ~1.5x faster than deleting and re-creating the entry).
-  list.items.splice(i, 1);
 }
 
 /** https://dom.spec.whatwg.org/#concept-event-listener-remove-all */
 export function removeAllEventListeners(target: EventTarget): void {
-  const map = target[$listeners];
-  if (map == null) return;
-  for (const [type, list] of map) {
-    const items = list.items;
-    for (let i = items.length - 1; i >= 0; i--) removeAt(target, type, list, i);
-  }
+  const slots = target[$listeners];
+  if (slots == null) return;
   target[$listeners] = null;
+  for (let i = 0; i < slots.length; i++) {
+    for (let l = slots[i] ?? null; l !== null; l = l.next) markRemoved(l);
+  }
 }
 
 /** Whether `target` has at least one listener for `type` (internal fast check for other areas). */
 export function hasListeners(target: EventTarget, type: string): boolean {
-  const map = target[$listeners];
-  if (map == null) return false;
-  const list = map.get(type);
-  return list !== undefined && list.items.length > 0;
+  const slots = target[$listeners];
+  return slots != null && firstListener(slots, typeIdOf(type)) !== undefined;
+}
+
+/** Whether `target` has any listener at all. */
+export function hasAnyListener(target: EventTarget): boolean {
+  const slots = target[$listeners];
+  if (slots == null) return false;
+  for (let i = 0; i < slots.length; i++) if (slots[i] !== undefined) return true;
+  return false;
 }

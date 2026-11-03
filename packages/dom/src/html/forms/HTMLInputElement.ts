@@ -132,7 +132,6 @@ import {
   $value,
   $version,
 } from "../../keys.ts";
-import { noteChangeDispatch } from "./user-validity.ts";
 
 /** Accept a FileList or any array-like of File (user-event and tests build lists by hand). */
 function toFileList(value: unknown): FileList {
@@ -479,12 +478,6 @@ export class HTMLInputElement extends HTMLElement {
     this[$preCheckedRadio] = null;
     this[$preApplied] = false;
     this[$userValidity] = false;
-  }
-
-  /** Sets user validity when a `change` event is dispatched at this control (forms/user-validity.ts). */
-  override _getTheParent(event: Event): EventTarget | null {
-    noteChangeDispatch(this, event);
-    return super._getTheParent(event);
   }
 
   // --- type ---------------------------------------------------------------------------------
@@ -1102,6 +1095,9 @@ export class HTMLInputElement extends HTMLElement {
         // https://html.spec.whatwg.org/#the-input-element:concept-input-checked-dirty-flag-2
         if (!this[$dirtyChecked]) this._setCheckedness(value !== null, false);
         break;
+      // TODO(forms): `inputType(impl)` scans the attribute list twice per connected `name` write (here
+      // and in the "form" fall-through below); React sets `name` twice per input update. Measured
+      // ~8 ns of a 33 ns write (attribute-writes investigation, wf/attribute-writes/hooks.mjs).
       case "name": {
         const impl = this[$impl];
         if ((impl.flags & F_CONNECTED) !== 0) {

@@ -12,14 +12,16 @@
 //   enumerated(HTMLElement, "dir", { keywords: ["ltr", "rtl", "auto"] });
 //
 // Accessors are plain getter/setter closures over the attribute name: one property definition
-// per IDL attribute at module load, no per-read allocation. Reads use `contentAttr()` which
-// matches only null-namespace attributes, as "get an attribute by namespace and local name"
-// requires.
+// per IDL attribute at module load, no per-read allocation. Reads use `contentAttr()` and writes
+// `setContentAttr()` / `removeContentAttr()`, which match only null-namespace attributes, as
+// "get an attribute by namespace and local name" requires (setAttribute's qualified-name match,
+// validation and lowercasing are for author-supplied names; the content attribute names here
+// are lowercase literals).
 //
 // Used by every element interface in src/html (including src/html/forms).
 
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { setAttribute, removeAttribute, isAsciiWhitespace } from "../nodes/attributes.ts";
+import { setAttributeValue, removeAttributeByLocalName, isAsciiWhitespace } from "../nodes/attributes.ts";
 import { DOMTokenList } from "../collections/DOMTokenList.ts";
 import { HTML_NS } from "../nodes/constants.ts";
 import { $impl } from "../keys.ts";
@@ -43,11 +45,12 @@ export function contentAttr(el: NodeImpl, localName: string): string | null {
 
 /** https://dom.spec.whatwg.org/#concept-element-attributes-set-value (null namespace). */
 export function setContentAttr(el: NodeImpl, localName: string, value: string): void {
-  setAttribute(el, localName, value);
+  setAttributeValue(el, localName, value);
 }
 
+/** https://dom.spec.whatwg.org/#concept-element-attributes-remove-by-namespace (null namespace). */
 export function removeContentAttr(el: NodeImpl, localName: string): void {
-  removeAttribute(el, localName);
+  removeAttributeByLocalName(el, localName);
 }
 
 /** Lowercase only ASCII letters; returns the input unchanged when already lowercase. */
@@ -148,7 +151,7 @@ export function str(C: Ctor, list: string): void {
         return contentAttr(this[$impl], content) ?? "";
       },
       function (v) {
-        setAttribute(this[$impl], content, String(v));
+        setContentAttr(this[$impl], content, String(v));
       },
     );
   }
@@ -164,7 +167,7 @@ export function strNullEmpty(C: Ctor, list: string): void {
         return contentAttr(this[$impl], content) ?? "";
       },
       function (v) {
-        setAttribute(this[$impl], content, v === null ? "" : String(v));
+        setContentAttr(this[$impl], content, v === null ? "" : String(v));
       },
     );
   }
@@ -180,8 +183,8 @@ export function nullableStr(C: Ctor, list: string): void {
         return contentAttr(this[$impl], content);
       },
       function (v) {
-        if (v === null || v === undefined) removeAttribute(this[$impl], content);
-        else setAttribute(this[$impl], content, String(v));
+        if (v === null || v === undefined) removeContentAttr(this[$impl], content);
+        else setContentAttr(this[$impl], content, String(v));
       },
     );
   }
@@ -197,8 +200,8 @@ export function bool(C: Ctor, list: string): void {
         return contentAttr(this[$impl], content) !== null;
       },
       function (v) {
-        if (v) setAttribute(this[$impl], content, "");
-        else removeAttribute(this[$impl], content);
+        if (v) setContentAttr(this[$impl], content, "");
+        else removeContentAttr(this[$impl], content);
       },
     );
   }
@@ -217,7 +220,7 @@ export function url(C: Ctor, list: string): void {
         return resolveURL(impl, v) ?? v;
       },
       function (v) {
-        setAttribute(this[$impl], content, String(v));
+        setContentAttr(this[$impl], content, String(v));
       },
     );
   }
@@ -243,7 +246,7 @@ export function long(C: Ctor, list: string, def = 0): void {
         return n >= INT_MIN && n <= INT_MAX ? n : def;
       },
       function (v) {
-        setAttribute(this[$impl], content, String(Number(v) | 0));
+        setContentAttr(this[$impl], content, String(Number(v) | 0));
       },
     );
   }
@@ -264,7 +267,7 @@ export function nonNegativeLong(C: Ctor, list: string, def = -1): void {
       function (v) {
         const n = Number(v) | 0;
         if (n < 0) throw indexSizeError(`The value provided (${n}) is negative.`);
-        setAttribute(this[$impl], content, String(n));
+        setContentAttr(this[$impl], content, String(n));
       },
     );
   }
@@ -287,7 +290,7 @@ export function ulong(C: Ctor, list: string, def = 0, positive = false): void {
         let n = Number(v) >>> 0;
         if (positive && n === 0) throw indexSizeError("The value provided is 0, which is not a positive number.");
         if (n > INT_MAX) n = def;
-        setAttribute(this[$impl], content, String(n));
+        setContentAttr(this[$impl], content, String(n));
       },
     );
   }
@@ -308,7 +311,7 @@ export function clampedUlong(C: Ctor, idl: string, content: string, def: number,
     function (v) {
       let n = Number(v) >>> 0;
       if (n > INT_MAX) n = def;
-      setAttribute(this[$impl], content, String(n));
+      setContentAttr(this[$impl], content, String(n));
     },
   );
 }
@@ -330,7 +333,7 @@ export function double(C: Ctor, list: string, def = 0, positive = false): void {
         const n = Number(v);
         if (!Number.isFinite(n)) throw new TypeError("The provided double value is non-finite.");
         if (positive && n <= 0) return;
-        setAttribute(this[$impl], content, String(n));
+        setContentAttr(this[$impl], content, String(n));
       },
     );
   }
@@ -370,8 +373,8 @@ export function enumerated(C: Ctor, list: string, spec: EnumSpec): void {
         return map.get(lower(v)) ?? invalid;
       },
       function (v) {
-        if (nullable && (v === null || v === undefined)) removeAttribute(this[$impl], content);
-        else setAttribute(this[$impl], content, String(v));
+        if (nullable && (v === null || v === undefined)) removeContentAttr(this[$impl], content);
+        else setContentAttr(this[$impl], content, String(v));
       },
     );
   }
@@ -415,7 +418,7 @@ export function tokenList(C: Ctor, idl: string, content: string, supported: read
       return list;
     },
     function (v) {
-      setAttribute(this[$impl], content, String(v));
+      setContentAttr(this[$impl], content, String(v));
     },
   );
 }

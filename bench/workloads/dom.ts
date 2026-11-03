@@ -12,6 +12,40 @@ const rowsHtml = Array.from(
   (_, i) => `<div class="row" data-testid="row-${i}"><span>Item ${i}</span></div>`,
 ).join("");
 
+// React 19's listenToAllSupportedEvents on a root container, in order: type:options, where c is
+// `true`, b `false`, cp `{capture: true, passive: true}` and bp `{passive: true}` (recorded from
+// react-dom 19.3.1 createRoot on jsdom).
+const reactRootListeners = (
+  "abort:c auxclick:b auxclick:c beforetoggle:c cancel:c canplay:c canplaythrough:c click:b " +
+  "click:c close:c contextmenu:b contextmenu:c copy:b copy:c cut:b cut:c drag:b drag:c " +
+  "dragend:b dragend:c dragenter:b dragenter:c dragexit:b dragexit:c dragleave:b dragleave:c " +
+  "dragover:b dragover:c dragstart:b dragstart:c drop:b drop:c durationchange:c emptied:c " +
+  "encrypted:c ended:c error:c fullscreenchange:b fullscreenchange:c fullscreenerror:b " +
+  "fullscreenerror:c gotpointercapture:b gotpointercapture:c input:b input:c invalid:c " +
+  "keydown:b keydown:c keypress:b keypress:c keyup:b keyup:c load:c loadeddata:c " +
+  "loadedmetadata:c loadstart:c lostpointercapture:b lostpointercapture:c mousedown:b " +
+  "mousedown:c mousemove:b mousemove:c mouseout:b mouseout:c mouseover:b mouseover:c mouseup:b " +
+  "mouseup:c paste:b paste:c pause:c play:c playing:c pointercancel:b pointercancel:c " +
+  "pointerdown:b pointerdown:c pointermove:b pointermove:c pointerout:b pointerout:c " +
+  "pointerover:b pointerover:c pointerup:b pointerup:c progress:c ratechange:c reset:b reset:c " +
+  "resize:c seeked:c seeking:c stalled:c submit:b submit:c suspend:c timeupdate:c touchcancel:b " +
+  "touchcancel:c touchend:b touchend:c touchstart:bp touchstart:cp volumechange:c scroll:c " +
+  "toggle:c touchmove:bp touchmove:cp waiting:c wheel:bp wheel:cp scrollend:c " +
+  "webkitAnimationEnd:b webkitAnimationEnd:c webkitAnimationIteration:b " +
+  "webkitAnimationIteration:c webkitAnimationStart:b webkitAnimationStart:c dblclick:b " +
+  "dblclick:c focusin:b focusin:c focusout:b focusout:c transitionrun:b transitionrun:c " +
+  "transitionstart:b transitionstart:c transitioncancel:b transitioncancel:c transitionend:b " +
+  "transitionend:c change:b change:c compositionend:b compositionend:c textInput:b textInput:c " +
+  "compositionstart:b compositionstart:c compositionupdate:b compositionupdate:c"
+)
+  .split(" ")
+  .map((entry) => {
+    const [type, o] = entry.split(":");
+    const options =
+      o === "c" ? true : o === "b" ? false : o === "cp" ? { capture: true, passive: true } : { passive: true };
+    return [type, options] as const;
+  });
+
 export const domWorkloads: Workload[] = [
   {
     id: "dom/create-4k",
@@ -588,6 +622,34 @@ export const domWorkloads: Workload[] = [
         },
         close() {
           container.remove();
+        },
+      };
+    },
+  },
+  {
+    id: "dom/react-root-listeners",
+    title: "React root listener registration, 142 addEventListener calls x 50 roots",
+    kind: "dom",
+    iterations: 200,
+    warmup: 50,
+    setup({ document }) {
+      const listener = (_index: number) => {};
+      return {
+        run() {
+          let total = 0;
+          for (let r = 0; r < 50; r++) {
+            const root = document.createElement("div");
+            for (let i = 0; i < reactRootListeners.length; i++) {
+              const [type, options] = reactRootListeners[i];
+              // React wraps each listener in its own bound dispatcher.
+              root.addEventListener(type, listener.bind(null, i), options);
+            }
+            total += reactRootListeners.length;
+          }
+          return total;
+        },
+        verify(n) {
+          eq(n, 142 * 50, "listeners added");
         },
       };
     },

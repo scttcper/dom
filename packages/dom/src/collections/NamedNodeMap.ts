@@ -54,8 +54,10 @@ function named(target: NamedNodeMap, key: string | symbol) {
 const handler: ProxyHandler<NamedNodeMap> = {
   get(target, key) {
     // Members and index getters run with the target as `this` (not the Proxy), so `attributes[i]`
-    // costs one trap instead of a trap per inner `this.item` / `this[$el]` read.
-    if (typeof key === "symbol" || key in target) return (target as any)[key];
+    // costs one trap instead of a trap per inner `this.item` / `this[$el]` read — and one chain
+    // walk: only an undefined result needs `in` to tell an absent key (maybe a name) from a member.
+    const value = (target as any)[key];
+    if (value !== undefined || typeof key === "symbol" || key in target) return value;
     const a = isArrayIndex(key) ? null : namedAttribute(target, key);
     return a === null ? undefined : attrNode(target[$el], a);
   },

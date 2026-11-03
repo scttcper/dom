@@ -28,6 +28,9 @@
   "dom/events/Event-dispatch-click.html": [
     "pick the first with activation behavior <a href>"
   ],
+  "dom/events/Event-isTrusted.any.js": [
+    "(unnamed test)"
+  ],
   "dom/events/EventTarget-dispatchEvent.html": [
     "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceMotionEvent).",
     "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceOrientationEvent)."

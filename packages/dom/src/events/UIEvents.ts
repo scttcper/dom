@@ -33,10 +33,19 @@ import { $window } from "../keys.ts";
 
 type Dict = Record<string, unknown>;
 
-export function requireArgs(given: number, needed: number, iface: string): void {
+/**
+ * The interface a message names: a constructor (`new.target`) whose `name` is read only when an
+ * error is actually thrown. `Function.prototype.name` is a native accessor (~8 ns a read), and
+ * the subclass constructors used to read it several times per event to pass names down.
+ */
+type Iface = string | { readonly name: string };
+
+const ifaceName = (iface: Iface): string => (typeof iface === "string" ? iface : iface.name);
+
+export function requireArgs(given: number, needed: number, iface: Iface): void {
   if (given < needed) {
     throw new TypeError(
-      `Failed to construct '${iface}': ${needed} argument${needed > 1 ? "s" : ""} required, but only ${given} present.`,
+      `Failed to construct '${ifaceName(iface)}': ${needed} argument${needed > 1 ? "s" : ""} required, but only ${given} present.`,
     );
   }
 }
@@ -56,9 +65,11 @@ export function isWindow(v: unknown): v is Window {
   return w.window === v || (w.document != null && w.document[$window] === v);
 }
 
-function viewMember(v: unknown, iface: string): Window | null {
+function viewMember(v: unknown, iface: Iface): Window | null {
   if (v === undefined || v === null) return null;
-  if (!isWindow(v)) throw new TypeError(`Failed to construct '${iface}': member view is not of type Window.`);
+  if (!isWindow(v)) {
+    throw new TypeError(`Failed to construct '${ifaceName(iface)}': member view is not of type Window.`);
+  }
   return v;
 }
 
@@ -69,25 +80,33 @@ function targetMember(v: unknown): EventTarget | null {
 
 // The constructors read each member with a named load (`d.key`), so every read site keeps an
 // inline cache for the few dictionary shapes it sees; a shared `d[k]` was one megamorphic keyed
-// load for every member of every event interface. A missing dictionary reads as NO_INIT.
-const NO_INIT: Dict = Object.freeze(Object.create(null) as Dict);
+// load for every member of every event interface. A missing dictionary reads as NO_INIT: an
+// ordinary (fast-mode) empty object, so a missing member is a cached prototype-chain miss like
+// it is on a caller's dictionary; a null-prototype object is in dictionary mode and costs a hash
+// lookup per member (~3.5 ns instead of ~0.3 ns, times 40 members for a PointerEvent).
+//
+// Members are read in WebIDL dictionary conversion order (https://webidl.spec.whatwg.org/#es-dictionary):
+// the base dictionary's members first (Event's constructor reads EventInit), then each derived
+// dictionary's members in lexicographic order, as jsdom's generated converters do. Getters on an
+// init dictionary observe the order, so the subclass tests pin it against jsdom.
+const NO_INIT: Dict = Object.freeze({});
 
 const str = (v: unknown, def: string): string => (v === undefined ? def : toDOMString(v));
 const long = (v: unknown, def = 0): number => (v === undefined ? def : toLong(v));
 const ulong = (v: unknown): number => (v === undefined ? 0 : toUnsignedLong(v));
 // Messages are built only when a value fails to convert.
-const double = (v: unknown, k: string, iface: string, def = 0): number => {
+const double = (v: unknown, k: string, iface: Iface, def = 0): number => {
   if (v === undefined) return def;
   if (typeof v === "number" && Number.isFinite(v)) return v;
-  return toDouble(v, `Failed to construct '${iface}': member ${k}`);
+  return toDouble(v, `Failed to construct '${ifaceName(iface)}': member ${k}`);
 };
-const float = (v: unknown, k: string, iface: string, def = 0): number => {
+const float = (v: unknown, k: string, iface: Iface, def = 0): number => {
   if (v === undefined) return def;
   if (typeof v === "number") {
     const f = Math.fround(v);
     if (Number.isFinite(f)) return f;
   }
-  return toFloat(v, `Failed to construct '${iface}': member ${k}`);
+  return toFloat(v, `Failed to construct '${ifaceName(iface)}': member ${k}`);
 };
 
 // --- modifier keys ----------------------------------------------------------------------
@@ -114,12 +133,11 @@ const MODIFIER_INIT: ReadonlyArray<readonly [string, number]> = [
   ["modifierSymbolLock", 1 << 13],
 ];
 
-/** EventModifierInit's members, read in MODIFIER_INIT's order. */
+/** EventModifierInit's members, read in lexicographic (WebIDL dictionary) order. */
 function modifiers(d: Dict): number {
   let m = 0;
-  if (d.ctrlKey) m |= M_CTRL;
-  if (d.shiftKey) m |= M_SHIFT;
   if (d.altKey) m |= M_ALT;
+  if (d.ctrlKey) m |= M_CTRL;
   if (d.metaKey) m |= M_META;
   if (d.modifierAltGraph) m |= 1 << 4;
   if (d.modifierCapsLock) m |= 1 << 5;
@@ -131,6 +149,7 @@ function modifiers(d: Dict): number {
   if (d.modifierSuper) m |= 1 << 11;
   if (d.modifierSymbol) m |= 1 << 12;
   if (d.modifierSymbolLock) m |= 1 << 13;
+  if (d.shiftKey) m |= M_SHIFT;
   return m;
 }
 
@@ -183,11 +202,13 @@ export class UIEvent extends Event {
   #which: number;
 
   constructor(type: string, eventInitDict?: UIEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
-    const d = dict(eventInitDict, new.target.name) ?? NO_INIT;
+    requireArgs(arguments.length, 1, new.target);
+    // Event's constructor converts `type` and validates the dictionary, with new.target's name in
+    // its messages, so the subclasses only read their own members (in dictionary order) after it.
     super(type, eventInitDict);
-    this.#view = viewMember(d.view, new.target.name);
+    const d = (eventInitDict ?? NO_INIT) as Dict;
     this.#detail = long(d.detail);
+    this.#view = viewMember(d.view, new.target);
     this.#which = ulong(d.which);
   }
 
@@ -214,7 +235,7 @@ export class UIEvent extends Event {
       );
     }
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
-    initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
+    initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
     this.#view = view ?? null;
     this.#detail = toLong(detail);
   }
@@ -230,7 +251,7 @@ export interface FocusEventInit extends UIEventInit {
 /** https://w3c.github.io/uievents/#interface-focusevent */
 export class FocusEvent extends UIEvent {
   constructor(type: string, eventInitDict?: FocusEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this._s.relatedTarget = targetMember(eventInitDict?.relatedTarget);
   }
@@ -285,23 +306,25 @@ export class MouseEvent extends UIEvent {
   #movementY: number;
 
   constructor(type: string, eventInitDict?: MouseEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
-    const n = new.target.name;
     const d = (eventInitDict ?? NO_INIT) as Dict;
-    this.#screenX = double(d.screenX, "screenX", n);
-    this.#screenY = double(d.screenY, "screenY", n);
-    this.#clientX = double(d.clientX, "clientX", n);
-    this.#clientY = double(d.clientY, "clientY", n);
+    const iface = new.target;
+    // EventModifierInit's members, then MouseEventInit's.
     this.#mods = modifiers(d);
     const button = d.button;
     this.#button = button === undefined ? 0 : toShort(button);
     const buttons = d.buttons;
     this.#buttons = buttons === undefined ? 0 : toUnsignedShort(buttons);
-    this.#movementX = double(d.movementX, "movementX", n);
-    this.#movementY = double(d.movementY, "movementY", n);
-    this._s.relatedTarget = targetMember(d.relatedTarget);
-    this._s.flags |= EF_MOUSE_EVENT;
+    this.#clientX = double(d.clientX, "clientX", iface);
+    this.#clientY = double(d.clientY, "clientY", iface);
+    this.#movementX = double(d.movementX, "movementX", iface);
+    this.#movementY = double(d.movementY, "movementY", iface);
+    const s = this._s;
+    s.relatedTarget = targetMember(d.relatedTarget);
+    this.#screenX = double(d.screenX, "screenX", iface);
+    this.#screenY = double(d.screenY, "screenY", iface);
+    s.flags |= EF_MOUSE_EVENT;
   }
 
   get screenX(): number {
@@ -426,6 +449,9 @@ export interface PointerEventInit extends MouseEventInit {
 
 const RAD_TO_DEG = 180 / Math.PI;
 
+/** Shared by every event constructed without coalesced/predicted events; the getters copy. */
+const NO_EVENTS = Object.freeze([]) as unknown as PointerEvent[];
+
 /** https://w3c.github.io/pointerevents/#converting-between-tiltx-tilty-and-altitudeangle-azimuthangle */
 function spherical2tilt(altitudeAngle: number, azimuthAngle: number): [number, number] {
   let tiltXrad = 0;
@@ -502,39 +528,42 @@ export class PointerEvent extends MouseEvent {
   #predicted: PointerEvent[];
 
   constructor(type: string, eventInitDict?: PointerEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
-    const n = new.target.name;
     const d = (eventInitDict ?? NO_INIT) as Dict;
-    this.#pointerId = long(d.pointerId);
-    this.#width = double(d.width, "width", n, 1);
-    this.#height = double(d.height, "height", n, 1);
-    this.#pressure = float(d.pressure, "pressure", n);
-    this.#tangentialPressure = float(d.tangentialPressure, "tangentialPressure", n);
-    const tiltXInit = d.tiltX;
-    const tiltYInit = d.tiltY;
+    const iface = new.target;
+    // PointerEventInit's members in lexicographic order.
     const altitudeInit = d.altitudeAngle;
+    let altitude = double(altitudeInit, "altitudeAngle", iface, Math.PI / 2);
     const azimuthInit = d.azimuthAngle;
+    let azimuth = double(azimuthInit, "azimuthAngle", iface, 0);
+    const coalesced = d.coalescedEvents;
+    this.#coalesced = coalesced == null ? NO_EVENTS : Array.from(coalesced as Iterable<PointerEvent>);
+    this.#height = double(d.height, "height", iface, 1);
+    this.#isPrimary = !!d.isPrimary;
+    this.#persistentDeviceId = long(d.persistentDeviceId);
+    this.#pointerId = long(d.pointerId);
+    this.#pointerType = str(d.pointerType, "");
+    const predicted = d.predictedEvents;
+    this.#predicted = predicted == null ? NO_EVENTS : Array.from(predicted as Iterable<PointerEvent>);
+    this.#pressure = float(d.pressure, "pressure", iface);
+    this.#tangentialPressure = float(d.tangentialPressure, "tangentialPressure", iface);
+    const tiltXInit = d.tiltX;
+    let tiltX = long(tiltXInit);
+    const tiltYInit = d.tiltY;
+    let tiltY = long(tiltYInit);
+    this.#twist = long(d.twist);
+    this.#width = double(d.width, "width", iface, 1);
+    // https://w3c.github.io/pointerevents/#dom-pointerevent-constructor: when only one of the
+    // tilt pair and the angle pair is given, the other is derived from it.
     const hasTilt = tiltXInit !== undefined || tiltYInit !== undefined;
     const hasAngles = altitudeInit !== undefined || azimuthInit !== undefined;
-    let tiltX = long(tiltXInit);
-    let tiltY = long(tiltYInit);
-    let altitude = double(altitudeInit, "altitudeAngle", n, Math.PI / 2);
-    let azimuth = double(azimuthInit, "azimuthAngle", n, 0);
     if (hasTilt && !hasAngles) [altitude, azimuth] = tilt2spherical(tiltX, tiltY);
     else if (hasAngles && !hasTilt) [tiltX, tiltY] = spherical2tilt(altitude, azimuth);
     this.#tiltX = tiltX;
     this.#tiltY = tiltY;
-    this.#twist = long(d.twist);
     this.#altitudeAngle = altitude;
     this.#azimuthAngle = azimuth;
-    this.#pointerType = str(d.pointerType, "");
-    this.#isPrimary = !!d.isPrimary;
-    this.#persistentDeviceId = long(d.persistentDeviceId);
-    const coalesced = d.coalescedEvents;
-    this.#coalesced = coalesced != null ? Array.from(coalesced as Iterable<PointerEvent>) : [];
-    const predicted = d.predictedEvents;
-    this.#predicted = predicted != null ? Array.from(predicted as Iterable<PointerEvent>) : [];
   }
 
   get pointerId(): number {
@@ -609,14 +638,14 @@ export class WheelEvent extends MouseEvent {
   #deltaMode: number;
 
   constructor(type: string, eventInitDict?: WheelEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
-    const n = new.target.name;
     const d = (eventInitDict ?? NO_INIT) as Dict;
-    this.#deltaX = double(d.deltaX, "deltaX", n);
-    this.#deltaY = double(d.deltaY, "deltaY", n);
-    this.#deltaZ = double(d.deltaZ, "deltaZ", n);
+    const iface = new.target;
     this.#deltaMode = ulong(d.deltaMode);
+    this.#deltaX = double(d.deltaX, "deltaX", iface);
+    this.#deltaY = double(d.deltaY, "deltaY", iface);
+    this.#deltaZ = double(d.deltaZ, "deltaZ", iface);
   }
 
   get deltaX(): number {
@@ -650,7 +679,7 @@ export class DragEvent extends MouseEvent {
   #dataTransfer: DataTransfer | null;
 
   constructor(type: string, eventInitDict?: DragEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     // Lenient (no DataTransfer type check): Testing Library passes plain objects here.
     this.#dataTransfer = (eventInitDict?.dataTransfer ?? null) as DataTransfer | null;
@@ -690,17 +719,18 @@ export class KeyboardEvent extends UIEvent {
   #keyCode: number;
 
   constructor(type: string, eventInitDict?: KeyboardEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const d = (eventInitDict ?? NO_INIT) as Dict;
-    this.#key = str(d.key, "");
-    this.#code = str(d.code, "");
-    this.#location = ulong(d.location);
+    // EventModifierInit's members, then KeyboardEventInit's.
     this.#mods = modifiers(d);
-    this.#repeat = !!d.repeat;
-    this.#isComposing = !!d.isComposing;
     this.#charCode = ulong(d.charCode);
+    this.#code = str(d.code, "");
+    this.#isComposing = !!d.isComposing;
+    this.#key = str(d.key, "");
     this.#keyCode = ulong(d.keyCode);
+    this.#location = ulong(d.location);
+    this.#repeat = !!d.repeat;
   }
 
   get key(): string {
@@ -797,14 +827,14 @@ export class InputEvent extends UIEvent {
   #dataTransfer: DataTransfer | null;
 
   constructor(type: string, eventInitDict?: InputEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const d = (eventInitDict ?? NO_INIT) as Dict;
     const data = d.data;
     this.#data = data === undefined || data === null ? null : toDOMString(data);
-    this.#isComposing = !!d.isComposing;
-    this.#inputType = str(d.inputType, "");
     this.#dataTransfer = (d.dataTransfer ?? null) as DataTransfer | null;
+    this.#inputType = str(d.inputType, "");
+    this.#isComposing = !!d.isComposing;
   }
 
   get data(): string | null {
@@ -833,7 +863,7 @@ export class CompositionEvent extends UIEvent {
   #data: string;
 
   constructor(type: string, eventInitDict?: CompositionEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#data = str(((eventInitDict ?? NO_INIT) as Dict).data, "");
   }
@@ -935,20 +965,21 @@ export class Touch {
     if (d.target === undefined)
       throw new TypeError("Failed to construct 'Touch': required member target is undefined.");
     const n = "Touch";
-    this.#identifier = toLong(d.identifier);
-    this.#target = d.target as EventTarget;
+    // TouchInit's members in lexicographic order.
+    this.#altitudeAngle = double(d.altitudeAngle, "altitudeAngle", n);
+    this.#azimuthAngle = double(d.azimuthAngle, "azimuthAngle", n);
     this.#clientX = double(d.clientX, "clientX", n);
     this.#clientY = double(d.clientY, "clientY", n);
-    this.#screenX = double(d.screenX, "screenX", n);
-    this.#screenY = double(d.screenY, "screenY", n);
+    this.#force = float(d.force, "force", n);
+    this.#identifier = toLong(d.identifier);
     this.#pageX = double(d.pageX, "pageX", n);
     this.#pageY = double(d.pageY, "pageY", n);
     this.#radiusX = float(d.radiusX, "radiusX", n);
     this.#radiusY = float(d.radiusY, "radiusY", n);
     this.#rotationAngle = float(d.rotationAngle, "rotationAngle", n);
-    this.#force = float(d.force, "force", n);
-    this.#altitudeAngle = double(d.altitudeAngle, "altitudeAngle", n);
-    this.#azimuthAngle = double(d.azimuthAngle, "azimuthAngle", n);
+    this.#screenX = double(d.screenX, "screenX", n);
+    this.#screenY = double(d.screenY, "screenY", n);
+    this.#target = d.target as EventTarget;
     this.#touchType = str(d.touchType, "direct");
   }
 
@@ -1067,13 +1098,14 @@ export class TouchEvent extends UIEvent {
   #mods: number;
 
   constructor(type: string, eventInitDict?: TouchEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const d = (eventInitDict ?? NO_INIT) as Dict;
-    this.#touches = TouchList._create(touchSequence(d.touches, "touches"));
-    this.#targetTouches = TouchList._create(touchSequence(d.targetTouches, "targetTouches"));
-    this.#changedTouches = TouchList._create(touchSequence(d.changedTouches, "changedTouches"));
+    // EventModifierInit's members, then TouchEventInit's.
     this.#mods = modifiers(d);
+    this.#changedTouches = TouchList._create(touchSequence(d.changedTouches, "changedTouches"));
+    this.#targetTouches = TouchList._create(touchSequence(d.targetTouches, "targetTouches"));
+    this.#touches = TouchList._create(touchSequence(d.touches, "touches"));
     this._s.flags |= EF_TOUCH_EVENT;
   }
 
@@ -1129,7 +1161,7 @@ export class ClipboardEvent extends Event {
   #clipboardData: DataTransfer | null;
 
   constructor(type: string, eventInitDict?: ClipboardEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     // Lenient (no DataTransfer type check): Testing Library passes plain objects here.
     this.#clipboardData = (eventInitDict?.clipboardData ?? null) as DataTransfer | null;

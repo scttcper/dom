@@ -130,6 +130,9 @@ export class HTMLElement extends Element {
     namespace: string | null,
   ): void {
     if (localName === "popover" && namespace === null) popoverAttributeChanged(this[$impl], oldValue, value);
+    // TODO(html): this WeakMap lookup runs on every attribute write of every F_ATTR_HOOK element (~5 ns
+    // of a 22 ns input write) even when no custom element was ever defined; a registry count or an
+    // F_CE_CUSTOM-style flag check would skip it.
     if (definitionOf(this) !== undefined) ceAttributeChanged(this, localName, oldValue, value, namespace);
     if ((this[$impl].flags & F_FACE) !== 0 && namespace === null && (localName === "form" || localName === "disabled"))
       faceStateMaybeChanged(this[$impl]);

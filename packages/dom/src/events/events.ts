@@ -33,9 +33,12 @@ const nullableStr = (d: unknown, k: string): string | null => {
   const v = get(d, k);
   return v === undefined || v === null ? null : toDOMString(v);
 };
-const dbl = (d: unknown, k: string, iface: string): number => {
+// `iface` is the constructor (`new.target`); its name is only read for the error message.
+const dbl = (d: unknown, k: string, iface: { readonly name: string }): number => {
   const v = get(d, k);
-  return v === undefined ? 0 : toDouble(v, `Failed to construct '${iface}': member ${k}`);
+  if (v === undefined) return 0;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  return toDouble(v, `Failed to construct '${iface.name}': member ${k}`);
 };
 
 function required(d: unknown, k: string, iface: string): unknown {
@@ -55,7 +58,7 @@ export class CustomEvent<T = unknown> extends Event {
   #detail: T | null;
 
   constructor(type: string, eventInitDict?: CustomEventInit<T> | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const detail = eventInitDict?.detail;
     this.#detail = detail === undefined ? null : detail;
@@ -72,7 +75,7 @@ export class CustomEvent<T = unknown> extends Event {
         "Failed to execute 'initCustomEvent' on 'CustomEvent': 1 argument required, but only 0 present.",
       );
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
-    initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
+    initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
     this.#detail = detail;
   }
 }
@@ -97,7 +100,7 @@ export class ErrorEvent extends Event {
   #error: unknown;
 
   constructor(type: string, eventInitDict?: ErrorEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const d = eventInitDict;
     this.#message = str(d, "message");
@@ -140,7 +143,7 @@ export class PromiseRejectionEvent extends Event {
   #reason: unknown;
 
   constructor(type: string, eventInitDict: PromiseRejectionEventInit) {
-    requireArgs(arguments.length, 2, new.target.name);
+    requireArgs(arguments.length, 2, new.target);
     const promise = required(eventInitDict, "promise", new.target.name);
     if (promise === null || (typeof promise !== "object" && typeof promise !== "function")) {
       throw new TypeError(`Failed to construct '${new.target.name}': member promise is not an object.`);
@@ -178,7 +181,7 @@ export class MessageEvent extends Event {
   #ports: readonly unknown[];
 
   constructor(type: string, eventInitDict?: MessageEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const d = eventInitDict;
     const data = get(d, "data");
@@ -218,7 +221,7 @@ export class MessageEvent extends Event {
     ports: unknown[] = [],
   ): void {
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
-    initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
+    initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
     this.#data = data;
     this.#origin = toDOMString(origin);
     this.#lastEventId = toDOMString(lastEventId);
@@ -243,11 +246,11 @@ export class ProgressEvent extends Event {
   #total: number;
 
   constructor(type: string, eventInitDict?: ProgressEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#lengthComputable = !!get(eventInitDict, "lengthComputable");
-    this.#loaded = dbl(eventInitDict, "loaded", new.target.name);
-    this.#total = dbl(eventInitDict, "total", new.target.name);
+    this.#loaded = dbl(eventInitDict, "loaded", new.target);
+    this.#total = dbl(eventInitDict, "total", new.target);
   }
 
   get lengthComputable(): boolean {
@@ -277,10 +280,10 @@ export class AnimationEvent extends Event {
   #pseudoElement: string;
 
   constructor(type: string, eventInitDict?: AnimationEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#animationName = str(eventInitDict, "animationName");
-    this.#elapsedTime = dbl(eventInitDict, "elapsedTime", new.target.name);
+    this.#elapsedTime = dbl(eventInitDict, "elapsedTime", new.target);
     this.#pseudoElement = str(eventInitDict, "pseudoElement");
   }
 
@@ -309,10 +312,10 @@ export class TransitionEvent extends Event {
   #pseudoElement: string;
 
   constructor(type: string, eventInitDict?: TransitionEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#propertyName = str(eventInitDict, "propertyName");
-    this.#elapsedTime = dbl(eventInitDict, "elapsedTime", new.target.name);
+    this.#elapsedTime = dbl(eventInitDict, "elapsedTime", new.target);
     this.#pseudoElement = str(eventInitDict, "pseudoElement");
   }
 
@@ -341,7 +344,7 @@ export class PopStateEvent extends Event {
   #hasUAVisualTransition: boolean;
 
   constructor(type: string, eventInitDict?: PopStateEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     const state = get(eventInitDict, "state");
     this.#state = state === undefined ? null : state;
@@ -368,7 +371,7 @@ export class HashChangeEvent extends Event {
   #newURL: string;
 
   constructor(type: string, eventInitDict?: HashChangeEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#oldURL = str(eventInitDict, "oldURL");
     this.#newURL = str(eventInitDict, "newURL");
@@ -392,7 +395,7 @@ export class PageTransitionEvent extends Event {
   #persisted: boolean;
 
   constructor(type: string, eventInitDict?: PageTransitionEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#persisted = !!get(eventInitDict, "persisted");
   }
@@ -422,7 +425,7 @@ export class StorageEvent extends Event {
   #storageArea: unknown;
 
   constructor(type: string, eventInitDict?: StorageEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#key = nullableStr(eventInitDict, "key");
     this.#oldValue = nullableStr(eventInitDict, "oldValue");
@@ -459,7 +462,7 @@ export class StorageEvent extends Event {
     storageArea: unknown = null,
   ): void {
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
-    initializeEvent(this._s, toDOMString(type), !!bubbles, !!cancelable);
+    initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
     this.#key = key === null ? null : toDOMString(key);
     this.#oldValue = oldValue === null ? null : toDOMString(oldValue);
     this.#newValue = newValue === null ? null : toDOMString(newValue);
@@ -480,7 +483,7 @@ export class SubmitEvent extends Event {
   #submitter: unknown;
 
   constructor(type: string, eventInitDict?: SubmitEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#submitter = get(eventInitDict, "submitter") ?? null;
   }
@@ -500,7 +503,7 @@ export class FormDataEvent extends Event {
   #formData: unknown;
 
   constructor(type: string, eventInitDict: FormDataEventInit) {
-    requireArgs(arguments.length, 2, new.target.name);
+    requireArgs(arguments.length, 2, new.target);
     const formData = required(eventInitDict, "formData", new.target.name);
     super(type, eventInitDict);
     this.#formData = formData;
@@ -525,7 +528,7 @@ export class ToggleEvent extends Event {
   #source: unknown;
 
   constructor(type: string, eventInitDict?: ToggleEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#oldState = str(eventInitDict, "oldState");
     this.#newState = str(eventInitDict, "newState");
@@ -583,7 +586,7 @@ export class CloseEvent extends Event {
   #reason: string;
 
   constructor(type: string, eventInitDict?: CloseEventInit | null) {
-    requireArgs(arguments.length, 1, new.target.name);
+    requireArgs(arguments.length, 1, new.target);
     super(type, eventInitDict);
     this.#wasClean = !!get(eventInitDict, "wasClean");
     const code = get(eventInitDict, "code");

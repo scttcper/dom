@@ -153,6 +153,110 @@ describe("form named properties — https://html.spec.whatwg.org/#the-form-eleme
     expect($("i").form).toBe($("f"));
     expect(document.querySelector("form")).toBe($("f"));
   });
+
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty step 2: a name is only
+  // visible when neither the object nor its prototype chain has the property, whatever its value.
+  test("an own or inherited property wins over a control of the same name, even when undefined", () => {
+    document.body!.innerHTML = "<form id=f><input name=a><input name=inherited><input name=action></form>";
+    const f = $("f");
+    f.own = undefined; // an expando first (a visible name refuses [[Set]]), then a control takes the name
+    f.elements[0].name = "own";
+    window.HTMLFormElement.prototype.inherited = undefined;
+    try {
+      expect(f.own).toBeUndefined();
+      expect(f.inherited).toBeUndefined();
+      expect("inherited" in f).toBe(true);
+      expect(Object.getOwnPropertyDescriptor(f, "inherited")).toBeUndefined();
+      expect(f.action).toBe(document.URL);
+      expect(f.elements.own).toBe(f.elements[0]); // the collection still sees them
+    } finally {
+      delete window.HTMLFormElement.prototype.inherited;
+    }
+  });
+
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-set: no indexed or named setter, so an
+  // expando is an ordinary data property; a supported index or visible name refuses (jsdom and
+  // browsers agree on the indexed half, jsdom has no named getter).
+  test("[[Set]] creates and updates expandos (React's __reactFiber$/__reactProps$), refuses indices and visible names", () => {
+    document.body!.innerHTML = "<form id=f><input name=email></form>";
+    const f = $("f");
+    f.__reactProps$ = { a: 1 };
+    expect(Object.getOwnPropertyDescriptor(f, "__reactProps$")).toEqual({
+      value: { a: 1 },
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+    f.__reactProps$ = { a: 2 };
+    expect(f.__reactProps$).toEqual({ a: 2 });
+    expect(Reflect.set(f, "email", 1)).toBe(false);
+    expect(() => {
+      "use strict";
+      f.email = 1;
+    }).toThrow(TypeError);
+    expect(f.email).toBe(f.elements[0]);
+    expect(Reflect.set(f, "0", 1)).toBe(false);
+    expect(Reflect.set(f, "99", 1)).toBe(false); // https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty step 1
+    expect(Object.hasOwn(f, "99")).toBe(false);
+    expect(Reflect.defineProperty(f, "99", { value: 1, configurable: true })).toBe(false);
+    expect(Reflect.defineProperty(f, "email", { value: 1, configurable: true })).toBe(false);
+    expect(Reflect.deleteProperty(f, "email")).toBe(false);
+    expect(Reflect.deleteProperty(f, "0")).toBe(false);
+    expect(Reflect.deleteProperty(f, "99")).toBe(true);
+    // An existing expando keeps winning once a control takes its name.
+    f.k = 1;
+    f.elements[0].name = "k";
+    expect(Reflect.set(f, "k", 2)).toBe(true);
+    expect(f.k).toBe(2);
+    // Non-writable own data properties refuse; an inheriting object gets its own copy.
+    Object.defineProperty(f, "ro", { value: 1, writable: false, configurable: true });
+    expect(Reflect.set(f, "ro", 2)).toBe(false);
+    const o = Object.create(f);
+    o.z = 5;
+    expect([Object.hasOwn(o, "z"), Object.hasOwn(f, "z")]).toEqual([true, false]);
+    expect(Reflect.set(o, "0", 5)).toBe(false); // the index is a non-writable own descriptor of the form
+    expect(Reflect.set(o, "5", 5)).toBe(true);
+  });
+
+  test("accessors run with the form (the proxy) as `this`, including spies on prototype getters", () => {
+    document.body!.innerHTML = "<form id=f><input name=email></form>";
+    const f = $("f");
+    const seen: unknown[] = [];
+    Object.defineProperty(f, "ownAcc", {
+      get() {
+        return this;
+      },
+      set(v: unknown) {
+        seen.push(this, v);
+      },
+      configurable: true,
+    });
+    Object.defineProperty(window.HTMLFormElement.prototype, "protoAcc", {
+      get() {
+        return this;
+      },
+      set(v: unknown) {
+        seen.push(this, v);
+      },
+      configurable: true,
+    });
+    const nodeName = vi.spyOn(window.Node.prototype, "nodeName", "get").mockImplementation(function (this: unknown) {
+      return this === f ? "SPIED" : "WRONG THIS";
+    });
+    try {
+      expect(f.ownAcc).toBe(f);
+      expect(f.protoAcc).toBe(f);
+      f.ownAcc = 1;
+      f.protoAcc = 2;
+      expect(seen).toEqual([f, 1, f, 2]);
+      expect(f.nodeName).toBe("SPIED");
+      expect(nodeName).toHaveBeenCalledTimes(1);
+    } finally {
+      nodeName.mockRestore();
+      delete window.HTMLFormElement.prototype.protoAcc;
+    }
+    expect(f.nodeName).toBe("FORM");
+  });
 });
 
 describe("disabled — https://html.spec.whatwg.org/#concept-fe-disabled", () => {

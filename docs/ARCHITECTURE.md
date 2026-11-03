@@ -129,9 +129,11 @@ Memory rules for per-node state (every rendered element pays them):
 - Attribute lists are exact-size arrays created with `new Array(n)` (one elements kind, no
   `push` slack) and `AttrRecord` holds only `localName`, `value` and a `rare` slot for
   namespace/prefix/`Attr` node; hot loops read `rare === null` directly.
-- Small lists in general (attributes, per-type listener lists, a fragment's children during
-  insertion) are built at their exact size: the first `push` onto `[]` allocates a 17-slot
-  backing store, which dominated React root containers (~80 one- or two-listener lists each).
+- Small lists in general (attributes, a fragment's children during insertion) are built at their
+  exact size: the first `push` onto `[]` allocates a 17-slot backing store. Event listeners avoid
+  per-type lists altogether: a target holds one array indexed by a process-wide event type id,
+  each slot the head of a linked list (`events/listeners.ts`), so a React root container's 142
+  listeners over 87 types are one array plus the listeners themselves.
   Measure allocation with `pnpm bench` (`allocMB`/`gcMs` extras) when touching hot paths.
 
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,

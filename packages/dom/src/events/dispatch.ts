@@ -1,11 +1,26 @@
 // The event dispatch algorithm.
 // https://dom.spec.whatwg.org/#concept-event-dispatch
 //
-// Hot-path notes:
+// Hot-path notes (user-event dispatches ~13 events per click and React's root listens to all of
+// them, so this runs on every interaction test; most paths are light DOM: no slots, no shadow
+// roots, no touch targets, at most one element with activation behavior, and most items
+// without a single listener):
 // - The path lives in the shared strided `PATH` stack (see Event.ts) — no struct objects.
-// - The spec updates event.target/relatedTarget/touch targets at *every* struct; those values
-//   are only observable from listeners and after dispatch, so `invoke` updates them only for
-//   items that have listeners and the final values are applied once at the end.
+// - The walk is NodeImpl-centric: stepping to a plain parent reads `impl.parent` and
+//   `parent.node`, never `node[$impl]` on the parent wrapper (a megamorphic keyed load, and a
+//   Proxy trap on a <form>). "Get the parent" (https://dom.spec.whatwg.org/#get-the-parent) is
+//   inlined for nodes (`nodeParentOf`, also behind `Node._getTheParent`); only a Document, a
+//   Window and a non-node EventTarget go through their `_getTheParent` override. Nothing else
+//   may override it.
+// - Activation behavior: `_hasActivationBehavior` is read only on elements whose tag can have
+//   it (activation.ts `mayHaveActivationBehavior`), so a click never does string-keyed reads
+//   through a <form> Proxy or prototype-chain misses on <div>/<body>/Document/Window.
+// - The spec updates event.target/relatedTarget/touch targets and eventPhase at *every* struct;
+//   those values are only observable from listeners and after dispatch, so `invoke` runs (and
+//   writes them) only for items that have a listener array, and the final values are applied
+//   once at the end from the last struct the bubbling pass would have visited.
+// - An event type nobody has ever listened for (`typeIdOf` is -1) has no listener to run on any
+//   item: both passes are skipped (activation behavior and legacy webkit* types still apply).
 // - Root tracking: computing "the root of X" for every path entry would be O(depth²). Walking
 //   up through plain parent links keeps the same root, so it is recomputed only when the
 //   path jumps (shadow root → host, slottable → assigned slot).
@@ -41,11 +56,23 @@ import {
   type EventState,
 } from "./Event.ts";
 import type { EventTarget } from "./EventTarget.ts";
-import type { ActivationTarget } from "./activation.ts";
+import { mayHaveActivationBehavior, type ActivationTarget } from "./activation.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { ELEMENT_NODE, F_HAS_SHADOW, F_SHADOW_ROOT, TEXT_NODE } from "../nodes/constants.ts";
+import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_SHADOW, F_SHADOW_ROOT, TEXT_NODE } from "../nodes/constants.ts";
 import { reportException } from "./report.ts";
-import { removeListener, type ListenerList } from "./listeners.ts";
+import {
+  LISTENER_CAPTURE,
+  LISTENER_ONCE,
+  LISTENER_PASSIVE,
+  LISTENER_REMOVED,
+  firstListener,
+  listenerSeqLimit,
+  removeListener,
+  typeIdOf,
+  type Listener,
+  type ListenerSlots,
+} from "./listeners.ts";
+import { noteChangeDispatch } from "../html/forms/user-validity.ts";
 import { $globalObject, $host, $impl, $listeners } from "../keys.ts";
 
 type NodeLike = EventTarget & { [$impl]: NodeImpl };
@@ -90,6 +117,12 @@ export function setAssignedSlotLookup(fn: ((impl: NodeImpl) => EventTarget | nul
   assignedSlotLookup = fn;
 }
 
+/**
+ * Parallel to `PATH`, indexed by struct offset: the listener array the capturing pass read for
+ * that struct's item (null when it had none), reused by the bubbling pass — see `dispatch`.
+ */
+const SLOTS: (ListenerSlots | null | undefined)[] = [];
+
 /** Only children of shadow hosts (F_HAS_SHADOW) can be assigned to a slot: gate the lookup on it. */
 function assignedSlot(impl: NodeImpl): EventTarget | null {
   if (assignedSlotLookup === null) return null;
@@ -108,28 +141,51 @@ function treeRoot(n: NodeImpl): NodeImpl {
   return n;
 }
 
+// --- get the parent -------------------------------------------------------------------------
+
+/** Out-parameter of `nodeParentOf`: the NodeImpl of the target it returned (undefined for a host that is not a node, or null). */
+let nextImpl: NodeImpl | undefined = undefined;
+
 /**
- * "Get the parent" for nodes and shadow roots.
- * https://dom.spec.whatwg.org/#get-the-parent (Node: assigned slot or parent; ShadowRoot:
- * null for non-composed events whose path starts inside it, otherwise its host).
- * `Node._getTheParent` delegates here; Document/Window override it themselves.
+ * "Get the parent" for a node whose NodeImpl is `impl` (`node` is its wrapper).
+ * https://dom.spec.whatwg.org/#get-the-parent — Node: its assigned slot, if any, else its
+ * parent; ShadowRoot: null for a non-composed event whose path started inside it, otherwise
+ * its host. Document and Window override `_getTheParent` instead (see the header).
+ * The caller's fast path handles the plain-parent case inline; this covers the rest.
  */
-export function nodeGetTheParent(node: NodeLike, event: Event): EventTarget | null {
-  const impl = node[$impl];
+function nodeParentOf(impl: NodeImpl, node: EventTarget, event: Event): EventTarget | null {
   const parent = impl.parent;
   if (parent !== null && (parent.flags & F_HAS_SHADOW) !== 0) {
     const slot = assignedSlot(impl);
-    if (slot !== null) return slot;
+    if (slot !== null) {
+      nextImpl = (slot as NodeLike)[$impl];
+      return slot;
+    }
   }
   if ((impl.flags & F_SHADOW_ROOT) !== 0) {
     const s = event._s;
     if ((s.flags & EF_COMPOSED) === 0 && s.pathLength > 0) {
       const first = (PATH[s.pathStart] as MaybeNode)[$impl];
-      if (first !== undefined && treeRoot(first) === impl) return null;
+      if (first !== undefined && treeRoot(first) === impl) {
+        nextImpl = undefined;
+        return null;
+      }
     }
-    return (node as unknown as ShadowRootLike)[$host];
+    const host = (node as unknown as ShadowRootLike)[$host];
+    nextImpl = host === null ? undefined : (host as MaybeNode)[$impl];
+    return host;
   }
-  return parent === null ? null : parent.node;
+  if (parent === null) {
+    nextImpl = undefined;
+    return null;
+  }
+  nextImpl = parent;
+  return parent.node;
+}
+
+/** `Node._getTheParent` delegates here (the dispatch algorithm itself inlines it). */
+export function nodeGetTheParent(node: NodeLike, event: Event): EventTarget | null {
+  return nodeParentOf(node[$impl], node, event);
 }
 
 /** https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor */
@@ -167,8 +223,7 @@ export function retarget(a: EventTarget | null, b: EventTarget): EventTarget | n
   }
 }
 
-function retargetList(list: EventTarget[] | null, b: EventTarget): EventTarget[] | null {
-  if (list === null) return null;
+function retargetList(list: EventTarget[], b: EventTarget): EventTarget[] {
   const out: EventTarget[] = [];
   for (let i = 0; i < list.length; i++) out.push(retarget(list[i], b)!);
   return out;
@@ -179,8 +234,15 @@ function isWindowInstance(t: EventTarget): boolean {
   return (t as unknown as { [$globalObject]?: unknown })[$globalObject] !== undefined;
 }
 
-function hasActivationBehavior(t: EventTarget): boolean {
-  return (t as ActivationTarget)._hasActivationBehavior === true;
+/**
+ * https://dom.spec.whatwg.org/#eventtarget-activation-behavior — `impl` is `t`'s NodeImpl (a
+ * non-node target never has activation behavior). The string-keyed hook is read only on the
+ * element tags that implement it (activation.ts).
+ */
+function hasActivationBehavior(t: EventTarget, impl: NodeImpl | undefined): boolean {
+  return (
+    impl !== undefined && mayHaveActivationBehavior(impl.tag) && (t as ActivationTarget)._hasActivationBehavior === true
+  );
 }
 
 /** https://dom.spec.whatwg.org/#concept-event-path-append */
@@ -214,6 +276,25 @@ function appendToEventPath(
 }
 
 /**
+ * `appendToEventPath` for a struct of a `plain` dispatch (see `dispatch`) whose item is outside
+ * any shadow tree: no flags, the effective target carried over, and +2/+3 (relatedTarget, touch
+ * targets) left as the null the last clear or `growPath` put there.
+ */
+function appendLight(item: EventTarget): void {
+  const o = pathStack.top;
+  if (PATH.length < o + STRIDE) growPath(o + STRIDE);
+  PATH[o] = item;
+  PATH[o + 1] = PATH[o + 1 - STRIDE];
+  PATH[o + 4] = 0;
+  pathStack.top = o + STRIDE;
+}
+
+/** Extends `PATH` with nulls, so slots a light struct does not write read as null. */
+function growPath(length: number): void {
+  while (PATH.length < length) PATH.push(null);
+}
+
+/**
  * https://dom.spec.whatwg.org/#concept-event-dispatch
  * Returns false if the event was canceled. Callers set isTrusted beforehand
  * (`dispatchEvent` clears it; user-agent dispatches use `fireAnEvent` / `setTrusted`).
@@ -236,6 +317,10 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
   // Step 5.
   let clearTargets = false;
   const base = pathStack.top;
+  // No relatedTarget and no touch targets (every event but mouse/focus/touch ones with a
+  // relatedTarget): every struct's +2/+3 slots are null, so light-DOM structs leave them as the
+  // last clear left them (`appendLight`) and the clear below skips them.
+  let plain = false;
   try {
     // Step 6.
     if (target !== relatedTarget || target === eventRelatedTarget) {
@@ -243,6 +328,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
         (s.flags & EF_TOUCH_EVENT) !== 0
           ? (event as unknown as { _touchTargetList(): EventTarget[] })._touchTargetList()
           : null;
+      plain = eventRelatedTarget === null && touchList === null;
       s.pathStart = base;
       s.pathLength = 0;
       const targetImpl = (target as MaybeNode)[$impl];
@@ -255,7 +341,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
         target,
         windowTarget ? exposedWindow(target) : targetOverride,
         relatedTarget,
-        retargetList(touchList, target),
+        touchList === null ? null : retargetList(touchList, target),
         false,
         curRoot,
       );
@@ -266,19 +352,42 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       // Steps 6.4-6.5.
       const isActivationEvent = (s.flags & EF_MOUSE_EVENT) !== 0 && s.type === "click";
       const bubbles = (s.flags & EF_BUBBLES) !== 0;
-      if (isActivationEvent && hasActivationBehavior(target)) activationTarget = target;
-      // Steps 6.6-6.8.
+      if (isActivationEvent && hasActivationBehavior(target, targetImpl)) activationTarget = target;
+      // Steps 6.6-6.7.
       let slottable = targetImpl !== undefined && isAssigned(targetImpl);
       let slotInClosedTree = false;
-      let prevImpl: NodeImpl | undefined = targetImpl;
-      let parent = target._getTheParent(event);
-      // Step 6.9.
-      while (parent !== null) {
-        const pi = (parent as MaybeNode)[$impl];
-        let parentRoot: NodeImpl | null;
-        if (pi === undefined) parentRoot = null;
-        else if (prevImpl !== undefined && prevImpl.parent === pi) parentRoot = curRoot;
-        else parentRoot = treeRoot(pi);
+      // A `change` dispatched at a form control sets its user validity (html/forms/user-validity.ts)
+      // before any listener runs; it used to ride on the control's "get the parent" (step 6.8).
+      if (targetImpl !== undefined && s.type === "change") noteChangeDispatch(targetImpl);
+      // Steps 6.8-6.9: `item`/`itemImpl` is the struct appended last; each iteration gets its
+      // parent (6.8 for the target, 6.9.9 afterwards) and appends it.
+      let item = target;
+      let itemImpl = targetImpl;
+      for (;;) {
+        let parent: EventTarget | null;
+        let pi: NodeImpl | undefined;
+        // True when `parent` is `item`'s plain parent: same tree, same root.
+        let sameRoot: boolean;
+        if (itemImpl === undefined || itemImpl.type === DOCUMENT_NODE) {
+          // Document (its Window), Window (null) or a non-node EventTarget (null).
+          parent = item._getTheParent(event);
+          pi = parent === null ? undefined : (parent as MaybeNode)[$impl];
+          sameRoot = false;
+        } else {
+          const p = itemImpl.parent;
+          if (p !== null && (p.flags & F_HAS_SHADOW) === 0) {
+            // Light DOM: no slot to be assigned to; not a shadow root (those have no parent).
+            parent = p.node;
+            pi = p;
+            sameRoot = true;
+          } else {
+            parent = nodeParentOf(itemImpl, item, event);
+            pi = nextImpl;
+            sameRoot = pi !== undefined && pi === p;
+          }
+        }
+        if (parent === null) break;
+        const parentRoot: NodeImpl | null = pi === undefined ? null : sameRoot ? curRoot : treeRoot(pi);
         // 6.9.1.
         if (slottable) {
           slottable = false;
@@ -294,42 +403,43 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
         if (pi !== undefined && isAssigned(pi)) slottable = true;
         // 6.9.3-6.9.4.
         relatedTarget = relatedSlow ? retarget(eventRelatedTarget, parent) : eventRelatedTarget;
-        const touchTargets = retargetList(touchList, parent);
+        const touchTargets = touchList === null ? null : retargetList(touchList, parent);
         // 6.9.5.
         if (
           pi === undefined ||
           (targetRoot !== null && (!targetRootIsShadow || isShadowIncludingInclusiveAncestor(targetRoot, pi)))
         ) {
-          if (isActivationEvent && bubbles && activationTarget === null && hasActivationBehavior(parent))
+          if (isActivationEvent && bubbles && activationTarget === null && hasActivationBehavior(parent, pi))
             activationTarget = parent;
-          appendToEventPath(parent, null, relatedTarget, touchTargets, slotInClosedTree, parentRoot);
+          // Outside a shadow tree slotInClosedTree is false (6.9.1 sets it only under one).
+          if (plain && (parentRoot === null || (parentRoot.flags & F_SHADOW_ROOT) === 0)) appendLight(parent);
+          else appendToEventPath(parent, null, relatedTarget, touchTargets, slotInClosedTree, parentRoot);
           // The only non-node parent is a document's Window.
           if (pi === undefined && isWindowInstance(parent))
             PATH[pathStack.top - STRIDE + 4] = (PATH[pathStack.top - STRIDE + 4] as number) | PF_WINDOW;
-          s.pathLength++;
         } else if (parent === relatedTarget) {
           // 6.9.6.
-          parent = null;
+          break;
         } else {
           // 6.9.7.
           target = parent;
           targetRoot = parentRoot;
           targetRootIsShadow = targetRoot !== null && (targetRoot.flags & F_SHADOW_ROOT) !== 0;
-          if (isActivationEvent && activationTarget === null && hasActivationBehavior(target))
+          if (isActivationEvent && activationTarget === null && hasActivationBehavior(target, pi))
             activationTarget = target;
           lastShadowAdjusted = pathStack.top;
           appendToEventPath(parent, target, relatedTarget, touchTargets, slotInClosedTree, parentRoot);
-          s.pathLength++;
         }
         // 6.9.8-6.9.9.
-        if (parent !== null) {
-          prevImpl = pi;
-          curRoot = parentRoot;
-          parent = parent._getTheParent(event);
-        }
+        item = parent;
+        itemImpl = pi;
+        curRoot = parentRoot;
         slotInClosedTree = false;
       }
       const end = pathStack.top;
+      // Nothing reads the count while the path is built (`pathLength` stays 1, non-empty, for
+      // the shadow-root check in nodeParentOf); composedPath() needs it right from here on.
+      s.pathLength = (end - base) / STRIDE;
       // Steps 6.10-6.11.
       {
         const o = lastShadowAdjusted;
@@ -343,30 +453,64 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       }
       // Step 6.12.
       if (activationTarget !== null) (activationTarget as ActivationTarget)._legacyPreActivationBehavior?.();
-      // Step 6.13: capturing.
-      for (let o = end - STRIDE; o >= base; o -= STRIDE) {
-        s.eventPhase = ((PATH[o + 4] as number) & PF_HAS_SHADOW_ADJUSTED_TARGET) !== 0 ? AT_TARGET : CAPTURING_PHASE;
-        invoke(event, s, o, CAPTURING_PHASE);
-      }
-      // Step 6.14: bubbling.
-      let last = base;
-      for (let o = base; o < end; o += STRIDE) {
-        if (((PATH[o + 4] as number) & PF_HAS_SHADOW_ADJUSTED_TARGET) !== 0) s.eventPhase = AT_TARGET;
-        else {
-          if (!bubbles) continue;
-          s.eventPhase = BUBBLING_PHASE;
+      // Resolved once for the whole path (listeners.ts: slots are indexed by type id). -1 means
+      // no target anywhere listens for the type: nothing to invoke unless a legacy webkit* alias
+      // of a trusted event's type is listened for.
+      const id = typeIdOf(s.type);
+      if (id !== -1 || ((s.flags & EF_TRUSTED) !== 0 && legacyTypeListened(s.type))) {
+        // Each item's listener array is a megamorphic keyed load (a Proxy trap on a <form>), so
+        // the capturing pass records what it read in SLOTS for the bubbling pass. A target's
+        // first listener of any type is a new Listener, which advances the insertion counter:
+        // while it has not moved, a null stays null (and a stale array only holds listeners
+        // marked removed, which inner invoke skips), so the cache matches a fresh read.
+        const seq = listenerSeqLimit();
+        // Step 6.13: capturing.
+        let stopped = false;
+        for (let o = end - STRIDE; o >= base; o -= STRIDE) {
+          const slots = (PATH[o] as EventTarget)[$listeners];
+          SLOTS[o] = slots;
+          if (slots == null) continue;
+          s.eventPhase = ((PATH[o + 4] as number) & PF_HAS_SHADOW_ADJUSTED_TARGET) !== 0 ? AT_TARGET : CAPTURING_PHASE;
+          invoke(event, s, o, slots, CAPTURING_PHASE, id);
+          // Once stopped, the remaining invokes only write target/relatedTarget (applied below).
+          if ((s.flags & EF_STOP_PROPAGATION) !== 0) {
+            stopped = true;
+            break;
+          }
         }
-        last = o;
-        invoke(event, s, o, BUBBLING_PHASE);
+        // Step 6.14: bubbling.
+        if (!stopped) {
+          for (let o = base; o < end; o += STRIDE) {
+            const f = PATH[o + 4] as number;
+            if ((f & PF_HAS_SHADOW_ADJUSTED_TARGET) === 0 && !bubbles) continue;
+            const slots = listenerSeqLimit() === seq ? SLOTS[o] : (PATH[o] as EventTarget)[$listeners];
+            if (slots == null) continue;
+            s.eventPhase = (f & PF_HAS_SHADOW_ADJUSTED_TARGET) !== 0 ? AT_TARGET : BUBBLING_PHASE;
+            invoke(event, s, o, slots, BUBBLING_PHASE, id);
+            if ((s.flags & EF_STOP_PROPAGATION) !== 0) break;
+          }
+        }
       }
-      // The last invoke's target updates (applied lazily, see the header comment).
+      // The last struct the bubbling pass visits (invoke steps 1-3, applied lazily — see the
+      // header): the top of the path when the event bubbles, else the last struct with a
+      // shadow-adjusted target.
+      const last = bubbles ? end - STRIDE : lastShadowAdjusted;
       s.target = PATH[last + 1] as EventTarget;
       s.relatedTarget = PATH[last + 2] as EventTarget | null;
       s.touchTargets = PATH[last + 3] as EventTarget[] | null;
     }
   } finally {
-    // Pop this dispatch's structs (and drop the references they hold).
-    for (let o = base, end = pathStack.top; o < end; o++) PATH[o] = null;
+    // Pop this dispatch's structs and drop the references they hold (+4 is a number; a plain
+    // dispatch's +2/+3 are already null, see `plain`).
+    for (let o = base, end = pathStack.top; o < end; o += STRIDE) {
+      PATH[o] = null;
+      PATH[o + 1] = null;
+      SLOTS[o] = null;
+      if (!plain) {
+        PATH[o + 2] = null;
+        PATH[o + 3] = null;
+      }
+    }
     pathStack.top = base;
     // Steps 7-10.
     s.eventPhase = NONE;
@@ -408,11 +552,18 @@ function legacyType(type: string): string | null {
   }
 }
 
-/** https://dom.spec.whatwg.org/#concept-event-listener-invoke */
-function invoke(event: Event, s: EventState, o: number, phase: number): void {
+/** Whether some target has ever listened for `type`'s legacy webkit* alias. */
+function legacyTypeListened(type: string): boolean {
+  const legacy = legacyType(type);
+  return legacy !== null && typeIdOf(legacy) !== -1;
+}
+
+/**
+ * https://dom.spec.whatwg.org/#concept-event-listener-invoke — `slots` is the item's (non-null)
+ * listener array and `id` is `s.type`'s type id.
+ */
+function invoke(event: Event, s: EventState, o: number, slots: ListenerSlots, phase: number, id: number): void {
   const item = PATH[o] as EventTarget;
-  const map = item[$listeners];
-  if (map == null) return;
   // Steps 1-3.
   s.target = PATH[o + 1] as EventTarget;
   s.relatedTarget = PATH[o + 2] as EventTarget | null;
@@ -426,17 +577,17 @@ function invoke(event: Event, s: EventState, o: number, phase: number): void {
   const inShadow = (f & PF_IN_SHADOW_TREE) !== 0;
   // Steps 6-7.
   const type = s.type;
-  const list = map.get(type);
-  const found = list !== undefined && innerInvoke(event, s, item, currentTarget, type, list, phase, inShadow);
+  const head = firstListener(slots, id);
+  const found = head !== undefined && innerInvoke(event, s, item, currentTarget, type, head, phase, inShadow);
   // Step 8.
   if (!found && (s.flags & EF_TRUSTED) !== 0) {
     const legacy = legacyType(type);
     if (legacy === null) return;
-    const legacyList = map.get(legacy);
-    if (legacyList === undefined) return;
+    const legacyHead = firstListener(slots, typeIdOf(legacy));
+    if (legacyHead === undefined) return;
     s.type = legacy;
     try {
-      innerInvoke(event, s, item, currentTarget, legacy, legacyList, phase, inShadow);
+      innerInvoke(event, s, item, currentTarget, legacy, legacyHead, phase, inShadow);
     } finally {
       s.type = type;
     }
@@ -453,50 +604,45 @@ function innerInvoke(
   item: EventTarget,
   currentTarget: EventTarget,
   type: string,
-  list: ListenerList,
+  head: Listener,
   phase: number,
   inShadow: boolean,
 ): boolean {
   let found = false;
-  // The snapshot: mutations while iterating copy-on-write (see listeners.ts).
-  const items = list.items;
-  list.iterating++;
-  try {
-    for (let i = 0; i < items.length; i++) {
-      const listener = items[i];
-      // Step 2.1-2.3.
-      if (listener.removed) continue;
-      found = true;
-      // Step 2.4.
-      if (phase === CAPTURING_PHASE ? !listener.capture : listener.capture) continue;
-      // Step 2.5.
-      if (listener.once) removeListener(item, type, listener);
-      // Steps 2.6-2.8: window.event.
-      const previousEvent = currentEvent;
-      if (!inShadow) currentEvent = event;
-      // Step 2.9.
-      if (listener.passive) s.flags |= EF_IN_PASSIVE_LISTENER;
-      // Step 2.10.
-      const callback = listener.callback;
-      try {
-        if (typeof callback === "function") callback.call(currentTarget, event);
-        else {
-          const handleEvent = callback.handleEvent;
-          if (typeof handleEvent !== "function")
-            throw new TypeError("The provided callback is not a function and has no callable 'handleEvent' property.");
-          handleEvent.call(callback, event);
-        }
-      } catch (error) {
-        reportException(error, item);
+  // Step 1's clone: the chain up to the first listener added from here on (see listeners.ts).
+  const limit = listenerSeqLimit();
+  for (let listener: Listener | null = head; listener !== null && listener.seq < limit; listener = listener.next) {
+    const flags = listener.flags;
+    // Step 2.1-2.3.
+    if ((flags & LISTENER_REMOVED) !== 0) continue;
+    found = true;
+    // Step 2.4.
+    if ((flags & LISTENER_CAPTURE) !== 0 ? phase !== CAPTURING_PHASE : phase === CAPTURING_PHASE) continue;
+    // Step 2.5.
+    if ((flags & LISTENER_ONCE) !== 0) removeListener(item, type, listener);
+    // Steps 2.6-2.8: window.event.
+    const previousEvent = currentEvent;
+    if (!inShadow) currentEvent = event;
+    // Step 2.9.
+    if ((flags & LISTENER_PASSIVE) !== 0) s.flags |= EF_IN_PASSIVE_LISTENER;
+    // Step 2.10.
+    const callback = listener.callback;
+    try {
+      if (typeof callback === "function") callback.call(currentTarget, event);
+      else {
+        const handleEvent = callback.handleEvent;
+        if (typeof handleEvent !== "function")
+          throw new TypeError("The provided callback is not a function and has no callable 'handleEvent' property.");
+        handleEvent.call(callback, event);
       }
-      // Steps 2.11-2.12.
-      s.flags &= ~EF_IN_PASSIVE_LISTENER;
-      currentEvent = previousEvent;
-      // Step 2.13.
-      if ((s.flags & EF_STOP_IMMEDIATE) !== 0) break;
+    } catch (error) {
+      reportException(error, item);
     }
-  } finally {
-    list.iterating--;
+    // Steps 2.11-2.12.
+    s.flags &= ~EF_IN_PASSIVE_LISTENER;
+    currentEvent = previousEvent;
+    // Step 2.13.
+    if ((s.flags & EF_STOP_IMMEDIATE) !== 0) break;
   }
   return found;
 }

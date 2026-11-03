@@ -40,9 +40,6 @@ import {
   $validity,
   $version,
 } from "../../keys.ts";
-import { noteChangeDispatch } from "./user-validity.ts";
-import type { Event } from "../../events/Event.ts";
-import type { EventTarget } from "../../events/EventTarget.ts";
 
 export class HTMLTextAreaElement extends HTMLElement {
   /** Raw value while the dirty value flag is set. */
@@ -74,12 +71,6 @@ export class HTMLTextAreaElement extends HTMLElement {
     this[$labels] = null;
     this[$userEdited] = false;
     this[$userValidity] = false;
-  }
-
-  /** Sets user validity when a `change` event is dispatched at this control (forms/user-validity.ts). */
-  override _getTheParent(event: Event): EventTarget | null {
-    noteChangeDispatch(this, event);
-    return super._getTheParent(event);
   }
 
   get type(): string {

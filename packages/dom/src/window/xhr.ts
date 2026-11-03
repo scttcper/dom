@@ -19,13 +19,14 @@ import { Event } from "../events/Event.ts";
 import { EventTarget } from "../events/EventTarget.ts";
 import { fireAnEvent } from "../events/fire.ts";
 import { getEventHandler, setEventHandler } from "../events/handlers.ts";
+import { hasAnyListener } from "../events/listeners.ts";
 import { Document } from "../nodes/Document.ts";
 import { parseDocument, parseXML, PARSERERROR_NS } from "../parser/index.ts";
 import { serializeChildren, serializeXML } from "../serializer/index.ts";
 import { currentWindowOrNull } from "./current.ts";
 import { eventInterface } from "./interfaces.ts";
 import type { Window } from "./Window.ts";
-import { $closed, $contentType, $impl, $isHTML, $listeners, $url, $xhr } from "../keys.ts";
+import { $closed, $contentType, $impl, $isHTML, $url, $xhr } from "../keys.ts";
 
 const UNSENT = 0;
 const OPENED = 1;
@@ -371,7 +372,7 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
       }
     }
     // Step 5: the upload listener flag.
-    s.uploadListener = (s.upload[$listeners]?.size ?? 0) > 0;
+    s.uploadListener = hasAnyListener(s.upload);
     // Step 11: no body means nothing to upload.
     s.uploadTotal = extracted?.length ?? 0;
     s.uploadComplete = s.uploadTotal === 0;

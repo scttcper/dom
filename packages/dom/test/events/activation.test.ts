@@ -8,7 +8,8 @@
  * HTML: https://html.spec.whatwg.org/#fire-a-synthetic-pointer-event
  *
  * The hooks are implemented by html-elements/html-forms (src/events/activation.ts documents
- * the contract). These tests install the hooks on plain elements so they pin the dispatch
+ * the contract). These tests install their own hooks on elements of the activation tags
+ * (a, label, input, button: the only tags dispatch reads the hook on) so they pin the dispatch
  * side of the contract independently of any element implementation.
  * Related WPT: dom/events/Event-dispatch-single-activation-behavior.html,
  * dom/events/legacy-pre-activation-behavior.window.js.
@@ -98,7 +99,7 @@ describe("activation target — https://dom.spec.whatwg.org/#concept-event-dispa
   });
 
   test("activation behavior runs after the dispatch flag is cleared (the event can be re-dispatched)", () => {
-    const a = document.createElement("x-a");
+    const a = document.createElement("button");
     let redispatched: boolean | null = null;
     Object.defineProperty(a, "_hasActivationBehavior", { value: true });
     (a as unknown as Record<string, unknown>)._activationBehavior = (e: Event) => {

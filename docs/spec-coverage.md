@@ -23,9 +23,9 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
 | [HTML Standard](#html-standard) | 787 | 607 | 54 | 126 |
-| [DOM Standard](#dom-standard) | 273 | 237 | 28 | 8 |
+| [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
-| [Web IDL](#web-idl) | 34 | 22 | 0 | 12 |
+| [Web IDL](#web-idl) | 35 | 26 | 0 | 9 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
 | [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
@@ -45,8 +45,8 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css](#css-css) | 7 | 1 | 0 | 6 |
 | [RFC6265](#rfc6265) | 7 | 5 | 0 | 2 |
 | [W3C: FileAPI](#w3c-fileapi) | 7 | 2 | 0 | 5 |
+| [W3C: pointerevents](#w3c-pointerevents) | 7 | 3 | 0 | 4 |
 | [W3C: clipboard-apis](#w3c-clipboard-apis) | 6 | 3 | 0 | 3 |
-| [W3C: pointerevents](#w3c-pointerevents) | 6 | 2 | 0 | 4 |
 | [CSS: css-animations](#css-css-animations) | 5 | 0 | 2 | 3 |
 | [CSS: css-display](#css-css-display) | 5 | 2 | 0 | 3 |
 | [CSS: mediaqueries](#css-mediaqueries) | 5 | 1 | 0 | 4 |
@@ -94,7 +94,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1586 | 1076 | 120 | 390 |
+| **All** | 1589 | 1082 | 120 | 387 |
 
 ## Web-platform-tests fixtures
 
@@ -118,7 +118,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | `dom` | 4 | 4 | 0 |  |
 | `dom/abort` | 3 | 3 | 0 |  |
 | `dom/collections` | 13 | 13 | 21 | `expectations/dom-core.json` |
-| `dom/events` | 70 | 70 | 31 | `expectations/events.json` |
+| `dom/events` | 70 | 70 | 32 | `expectations/events.json` |
 | `dom/lists` | 5 | 5 | 3 | `expectations/dom-core.json` |
 | `dom/nodes` | 293 | 293 | 1376 | `expectations/dom-core.json` |
 | `dom/ranges` | 50 | 50 | 1 | `expectations.json` |
@@ -930,7 +930,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [update-the-rendering](https://html.spec.whatwg.org/#update-the-rendering) | `dom/html/focus.ts`, `dom/window/Window.ts` | `dom/html/top-layer.test.ts`, `dom/html/wpt-focus.test.ts` |
 | [used-autocorrection-state](https://html.spec.whatwg.org/#used-autocorrection-state) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [user-prompts](https://html.spec.whatwg.org/#user-prompts) | `dom/window/Window.ts` | `dom/window/window.test.ts`, `compat/not-implemented/not-implemented.test.ts` |
-| [user-validity](https://html.spec.whatwg.org/#user-validity) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/HTMLSelectElement.ts`, `dom/html/forms/HTMLTextAreaElement.ts` +2 | `dom/selectors/pseudo-classes.test.ts`, `user-event/event/user-validity.test.ts` |
+| [user-validity](https://html.spec.whatwg.org/#user-validity) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/HTMLSelectElement.ts`, `dom/html/forms/HTMLTextAreaElement.ts` +2 | `dom/events/dispatch-path.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `user-event/event/user-validity.test.ts` |
 | [valid-absolute-url](https://html.spec.whatwg.org/#valid-absolute-url) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [valid-custom-element-name](https://html.spec.whatwg.org/#valid-custom-element-name) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `compat/html/custom-elements.test.ts` |
 | [valid-date-string](https://html.spec.whatwg.org/#valid-date-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
@@ -949,7 +949,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## DOM Standard
 
-<https://dom.spec.whatwg.org/> — 273 sections implemented, 237 tested, 28 by WPT only, 8 untested.
+<https://dom.spec.whatwg.org/> — 274 sections implemented, 238 tested, 28 by WPT only, 8 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -975,16 +975,17 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-element-attributes-get-by-name](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-name) | `dom/collections/NamedNodeMap.ts`, `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-get-by-namespace](https://dom.spec.whatwg.org/#concept-element-attributes-get-by-namespace) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-remove](https://dom.spec.whatwg.org/#concept-element-attributes-remove) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-remove-by-namespace](https://dom.spec.whatwg.org/#concept-element-attributes-remove-by-namespace) | `dom/html/reflect.ts`, `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-replace](https://dom.spec.whatwg.org/#concept-element-attributes-replace) | `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-attributes-set](https://dom.spec.whatwg.org/#concept-element-attributes-set) | `dom/nodes/attr-nodes.ts` | `dom/nodes/attributes.test.ts` |
-| [concept-element-attributes-set-value](https://dom.spec.whatwg.org/#concept-element-attributes-set-value) | `dom/html/reflect.ts`, `dom/nodes/Element.ts` | `dom/nodes/attributes.test.ts` |
+| [concept-element-attributes-set-value](https://dom.spec.whatwg.org/#concept-element-attributes-set-value) | `dom/html/reflect.ts`, `dom/nodes/Element.ts`, `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [concept-element-custom-element-state](https://dom.spec.whatwg.org/#concept-element-custom-element-state) | `dom/html/custom-elements.ts`, `dom/nodes/constants.ts` | **untested** |
-| [concept-event-dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) | `dom/events/dispatch.ts`, `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/user-validity.ts` | `dom/events/activation.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` +5; WPT: `dom/events/Event-dispatch-bubbles-false.html`, `dom/events/Event-dispatch-bubbles-true.html` +8 |
-| [concept-event-fire](https://dom.spec.whatwg.org/#concept-event-fire) | `dom/events/fire.ts`, `dom/html/events.ts`, `dom/html/forms/common.ts` | `dom/events/event-path.test.ts` |
-| [concept-event-initialize](https://dom.spec.whatwg.org/#concept-event-initialize) | `dom/events/Event.ts` | `dom/events/Event.test.ts` |
+| [concept-event-dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) | `dom/events/dispatch.ts`, `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/user-validity.ts` | `dom/events/activation.test.ts`, `dom/events/dispatch-path.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts` +6; WPT: `dom/events/Event-dispatch-bubbles-false.html`, `dom/events/Event-dispatch-bubbles-true.html` +8 |
+| [concept-event-fire](https://dom.spec.whatwg.org/#concept-event-fire) | `dom/events/fire.ts`, `dom/html/events.ts`, `dom/html/forms/common.ts` | `dom/events/event-path.test.ts`, `dom/events/shape.test.ts` |
+| [concept-event-initialize](https://dom.spec.whatwg.org/#concept-event-initialize) | `dom/events/Event.ts` | `dom/events/Event.test.ts`, `dom/events/shape.test.ts` |
 | [concept-event-listener](https://dom.spec.whatwg.org/#concept-event-listener) | `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
 | [concept-event-listener-inner-invoke](https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke) | `dom/events/dispatch.ts`, `dom/events/report.ts` | `dom/events/EventTarget.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/wpt-events.test.ts`; WPT: `dom/events/event-global-event-targets.html`, `dom/events/window-event-restored-after-throwing-onerror.html` |
-| [concept-event-listener-invoke](https://dom.spec.whatwg.org/#concept-event-listener-invoke) | `dom/events/dispatch.ts` | `dom/events/dispatch.test.ts`; WPT: `dom/events/EventTarget-this-of-listener.html` |
+| [concept-event-listener-invoke](https://dom.spec.whatwg.org/#concept-event-listener-invoke) | `dom/events/dispatch.ts` | `dom/events/dispatch-path.test.ts`, `dom/events/dispatch.test.ts`; WPT: `dom/events/EventTarget-this-of-listener.html` |
 | [concept-event-listener-remove-all](https://dom.spec.whatwg.org/#concept-event-listener-remove-all) | `dom/events/listeners.ts` | **untested** |
 | [concept-event-path-append](https://dom.spec.whatwg.org/#concept-event-path-append) | `dom/events/Event.ts`, `dom/events/dispatch.ts` | `dom/events/event-path.test.ts` |
 | [concept-flatten-options](https://dom.spec.whatwg.org/#concept-flatten-options) | `dom/events/listeners.ts` | `dom/events/EventTarget.test.ts` |
@@ -1084,7 +1085,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-event-stoppropagation](https://dom.spec.whatwg.org/#dom-event-stoppropagation) | `dom/events/Event.ts` | `dom/events/event-path.test.ts` |
 | [dom-event-timestamp](https://dom.spec.whatwg.org/#dom-event-timestamp) | `dom/events/Event.ts`, `dom/window/clock.ts` | `dom/events/Event.test.ts` |
 | [dom-eventtarget-addeventlistener](https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener) | `dom/events/EventTarget.ts` | `dom/events/EventTarget.test.ts`; WPT: `dom/events/Event-dispatch-omitted-capture.html`, `dom/events/event-handler-attribute-replace-preserves-passive.html` |
-| [dom-eventtarget-dispatchevent](https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent) | `dom/events/EventTarget.ts` | `dom/events/dispatch.test.ts`; WPT: `dom/events/EventTarget-dispatchEvent.html` |
+| [dom-eventtarget-dispatchevent](https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent) | `dom/events/Event.ts`, `dom/events/EventTarget.ts` | `dom/events/dispatch.test.ts`; WPT: `dom/events/EventTarget-dispatchEvent.html` |
 | [dom-eventtarget-eventtarget](https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget) | `dom/events/EventTarget.ts` | `dom/events/EventTarget.test.ts` |
 | [dom-eventtarget-removeeventlistener](https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener) | `dom/events/EventTarget.ts`, `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
 | [dom-htmlcollection-item](https://dom.spec.whatwg.org/#dom-htmlcollection-item) | `dom/collections/HTMLCollection.ts` | `dom/collections/token-lists.test.ts` |
@@ -1141,13 +1142,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [event-flatten-more](https://dom.spec.whatwg.org/#event-flatten-more) | `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
 | [event-path](https://dom.spec.whatwg.org/#event-path) | `dom/events/Event.ts` | `dom/events/event-path.test.ts` |
 | [event-touch-target-list](https://dom.spec.whatwg.org/#event-touch-target-list) | `dom/events/Event.ts`, `dom/events/UIEvents.ts` | `dom/events/event-path.test.ts` |
-| [eventtarget-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-activation-behavior) | `dom/events/activation.ts` | `dom/events/activation.test.ts` |
+| [eventtarget-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-activation-behavior) | `dom/events/activation.ts`, `dom/events/dispatch.ts` | `dom/events/activation.test.ts` |
 | [eventtarget-legacy-canceled-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-legacy-canceled-activation-behavior) | `dom/events/activation.ts` | `dom/events/event-path.test.ts` |
 | [eventtarget-legacy-pre-activation-behavior](https://dom.spec.whatwg.org/#eventtarget-legacy-pre-activation-behavior) | `dom/events/activation.ts` | `dom/events/event-path.test.ts` |
 | [find-a-slot](https://dom.spec.whatwg.org/#find-a-slot) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [find-flattened-slotables](https://dom.spec.whatwg.org/#find-flattened-slotables) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [find-slotables](https://dom.spec.whatwg.org/#find-slotables) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
-| [get-the-parent](https://dom.spec.whatwg.org/#get-the-parent) | `dom/events/EventTarget.ts`, `dom/events/dispatch.ts`, `dom/nodes/Document.ts` +2 | `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts`, `dom/nodes/shadow-dom.test.ts` |
+| [get-the-parent](https://dom.spec.whatwg.org/#get-the-parent) | `dom/events/EventTarget.ts`, `dom/events/dispatch.ts`, `dom/nodes/Document.ts` +2 | `dom/events/dispatch-path.test.ts`, `dom/events/dispatch.test.ts`, `dom/events/retargeting.test.ts`, `dom/events/wpt-events.test.ts` +1 |
 | [handle-attribute-changes](https://dom.spec.whatwg.org/#handle-attribute-changes) | `dom/nodes/attributes.ts` | `dom/nodes/attributes.test.ts` |
 | [interface-AbortSignal](https://dom.spec.whatwg.org/#interface-AbortSignal) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
 | [interface-abstractrange](https://dom.spec.whatwg.org/#interface-abstractrange) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
@@ -1310,7 +1311,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## Web IDL
 
-<https://webidl.spec.whatwg.org/> — 34 sections implemented, 22 tested, 0 by WPT only, 12 untested.
+<https://webidl.spec.whatwg.org/> — 35 sections implemented, 26 tested, 0 by WPT only, 9 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1325,6 +1326,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/events/convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
 | [es-attributes](https://webidl.spec.whatwg.org/#es-attributes) | `dom/nodes/DocumentType.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/nodes/node-accessors.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
+| [es-dictionary](https://webidl.spec.whatwg.org/#es-dictionary) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts`, `user-event/event/native-dicts.test.ts` |
 | [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts` | `dom/events/wpt-uievents.test.ts` |
@@ -1340,13 +1342,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [js-DOMString](https://webidl.spec.whatwg.org/#js-DOMString) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [legacy-callback-interface-object](https://webidl.spec.whatwg.org/#legacy-callback-interface-object) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts` |
-| [legacy-platform-object-defineownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
+| [legacy-platform-object-defineownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | `dom/html/forms/form.test.ts` |
 | [legacy-platform-object-delete](https://webidl.spec.whatwg.org/#legacy-platform-object-delete) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
-| [legacy-platform-object-getownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty) | `dom/collections/HTMLCollection.ts`, `dom/collections/NamedNodeMap.ts` | **untested** |
+| [legacy-platform-object-getownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty) | `dom/collections/HTMLCollection.ts`, `dom/collections/NamedNodeMap.ts`, `dom/html/forms/HTMLFormElement.ts` | `dom/html/forms/form.test.ts` |
 | [legacy-platform-object-ownpropertykeys](https://webidl.spec.whatwg.org/#legacy-platform-object-ownpropertykeys) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
 | [legacy-platform-object-property-enumeration](https://webidl.spec.whatwg.org/#legacy-platform-object-property-enumeration) | `dom/collections/HTMLCollection.ts` | **untested** |
 | [legacy-platform-object-property-visibility](https://webidl.spec.whatwg.org/#legacy-platform-object-property-visibility) | `dom/window/Storage.ts` | **untested** |
-| [legacy-platform-object-set](https://webidl.spec.whatwg.org/#legacy-platform-object-set) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
+| [legacy-platform-object-set](https://webidl.spec.whatwg.org/#legacy-platform-object-set) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | `dom/html/forms/form.test.ts` |
 | [quotaexceedederror](https://webidl.spec.whatwg.org/#quotaexceedederror) | `dom/window/Storage.ts` | **untested** |
 
 ## XMLHttpRequest Standard
@@ -1789,6 +1791,20 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [packaging-data](https://w3c.github.io/FileAPI/#packaging-data) | `dom/window/FileReader.ts` | **untested** |
 | [readOperation](https://w3c.github.io/FileAPI/#readOperation) | `dom/window/FileReader.ts` | **untested** |
 
+## W3C: pointerevents
+
+<https://w3c.github.io/pointerevents/> — 7 sections implemented, 3 tested, 0 by WPT only, 4 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [converting-between-tiltx-tilty-and-altitudeangle-azimuthangle](https://w3c.github.io/pointerevents/#converting-between-tiltx-tilty-and-altitudeangle-azimuthangle) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
+| [dom-pointerevent-constructor](https://w3c.github.io/pointerevents/#dom-pointerevent-constructor) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-pointerevent-getcoalescedevents](https://w3c.github.io/pointerevents/#dom-pointerevent-getcoalescedevents) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts` |
+| [dom-pointerevent-getpredictedevents](https://w3c.github.io/pointerevents/#dom-pointerevent-getpredictedevents) | `dom/events/UIEvents.ts` | **untested** |
+| [extensions-to-the-globaleventhandlers-mixin](https://w3c.github.io/pointerevents/#extensions-to-the-globaleventhandlers-mixin) | `dom/events/handlers.ts` | **untested** |
+| [extensions-to-the-navigator-interface](https://w3c.github.io/pointerevents/#extensions-to-the-navigator-interface) | `dom/window/Navigator.ts` | **untested** |
+| [pointerevent-interface](https://w3c.github.io/pointerevents/#pointerevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts`, `user-event/event/fallback-constructors.test.ts` |
+
 ## W3C: clipboard-apis
 
 <https://w3c.github.io/clipboard-apis/> — 6 sections implemented, 3 tested, 0 by WPT only, 3 untested.
@@ -1801,19 +1817,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [clipboardevent](https://w3c.github.io/clipboard-apis/#clipboardevent) | `dom/events/UIEvents.ts` | **untested** |
 | [clipboarditem](https://w3c.github.io/clipboard-apis/#clipboarditem) | `dom/window/Navigator.ts` | **untested** |
 | [navigator-interface](https://w3c.github.io/clipboard-apis/#navigator-interface) | `dom/window/Navigator.ts` | `dom/window/window.test.ts` |
-
-## W3C: pointerevents
-
-<https://w3c.github.io/pointerevents/> — 6 sections implemented, 2 tested, 0 by WPT only, 4 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [converting-between-tiltx-tilty-and-altitudeangle-azimuthangle](https://w3c.github.io/pointerevents/#converting-between-tiltx-tilty-and-altitudeangle-azimuthangle) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
-| [dom-pointerevent-getcoalescedevents](https://w3c.github.io/pointerevents/#dom-pointerevent-getcoalescedevents) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-pointerevent-getpredictedevents](https://w3c.github.io/pointerevents/#dom-pointerevent-getpredictedevents) | `dom/events/UIEvents.ts` | **untested** |
-| [extensions-to-the-globaleventhandlers-mixin](https://w3c.github.io/pointerevents/#extensions-to-the-globaleventhandlers-mixin) | `dom/events/handlers.ts` | **untested** |
-| [extensions-to-the-navigator-interface](https://w3c.github.io/pointerevents/#extensions-to-the-navigator-interface) | `dom/window/Navigator.ts` | **untested** |
-| [pointerevent-interface](https://w3c.github.io/pointerevents/#pointerevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts`, `user-event/event/fallback-constructors.test.ts` |
 
 ## CSS: css-animations
 

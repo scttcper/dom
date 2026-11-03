@@ -498,3 +498,151 @@ interface HTMLElementLike {
   removeAttributeNS(ns: string | null, name: string): void;
   toggleAttribute(name: string): boolean;
 }
+
+describe("set an attribute value — https://dom.spec.whatwg.org/#concept-element-attributes-set-value", () => {
+  // Reflected IDL setters set (and boolean/nullable ones remove, https://dom.spec.whatwg.org/#concept-element-attributes-remove-by-namespace)
+  // by namespace and local name, where setAttribute / removeAttribute match the qualified name.
+  differential("a reflected setter leaves a same-named namespaced attribute alone and appends", (w) => {
+    const el = w.document.createElement("div");
+    el.setAttributeNS("urn:x", "title", "ns");
+    el.title = "t";
+    el.id = "i";
+    el.className = "c";
+    return [list(el), el.title, el.getAttribute("title"), el.id, el.className];
+  });
+
+  differential("a boolean reflected setter removes only the null-namespace attribute", (w) => {
+    const b = w.document.createElement("button");
+    b.setAttributeNS("urn:x", "disabled", "");
+    b.disabled = true;
+    const on = [list(b), b.disabled];
+    b.disabled = false;
+    return [on, list(b), b.disabled, b.hasAttribute("disabled")];
+  });
+
+  differential("the id setter next to a namespaced id: getElementById follows the null-namespace attribute", (w) => {
+    const d = w.document;
+    const el = d.createElement("p");
+    el.setAttributeNS("urn:x", "id", "ns");
+    d.body.append(el);
+    const before = d.getElementById("ns") === el;
+    el.id = "real";
+    return [before, d.getElementById("real") === el, d.getElementById("ns") === el, list(el)];
+  });
+
+  differential("the slot setter is a set-an-attribute-value too", (w) => {
+    const el = w.document.createElement("span");
+    el.setAttributeNS("urn:x", "slot", "ns");
+    el.slot = "s";
+    return [list(el), el.slot];
+  });
+});
+
+describe("remove an attribute — https://dom.spec.whatwg.org/#concept-element-attributes-remove", () => {
+  differential("removing the first, middle, last and only attribute keeps order, names and records", (w) => {
+    const el = w.document.createElement("div");
+    const mo = watch(w, el);
+    el.setAttribute("hidden", "");
+    el.removeAttribute("hidden");
+    const emptied = [el.hasAttributes(), el.attributes.length, el.getAttributeNames(), el.outerHTML];
+    el.setAttribute("a", "1");
+    el.setAttribute("b", "2");
+    el.setAttribute("c", "3");
+    el.setAttribute("d", "4");
+    el.removeAttribute("b");
+    const middle = el.getAttributeNames();
+    el.removeAttribute("a");
+    const first = el.getAttributeNames();
+    el.removeAttribute("d");
+    el.setAttribute("e", "5");
+    return [emptied, middle, first, el.getAttributeNames(), el.outerHTML, el.attributes.length, attrRecords(mo)];
+  });
+
+  differential("an element emptied by removal takes attributes again by every write path", (w) => {
+    const el = w.document.createElement("input");
+    el.setAttribute("type", "checkbox");
+    el.removeAttribute("type");
+    el.toggleAttribute("required");
+    el.setAttributeNS("urn:x", "x:a", "1");
+    el.name = "n";
+    el.removeAttributeNode(el.getAttributeNode("required"));
+    return [list(el), el.required, el.type, el.outerHTML];
+  });
+
+  test("the attribute list of an element emptied by removal is null again (ours)", () => {
+    const el = document.createElement("div");
+    el.setAttribute("aria-label", "x");
+    el.removeAttribute("aria-label");
+    const impl = (el as unknown as Record<symbol, { attrs: unknown; flags: number }>)[$impl];
+    expect(impl.attrs).toBeNull();
+    expect(impl.flags & F_ARIA_ATTRS).toBe(0);
+    el.setAttribute("aria-label", "y");
+    expect(el.getAttribute("aria-label")).toBe("y");
+    expect(impl.flags & F_ARIA_ATTRS).not.toBe(0);
+  });
+});
+
+describe("change an attribute to the same value — https://dom.spec.whatwg.org/#handle-attribute-changes", () => {
+  // Nothing observable changes, but the steps still run: a mutation record is queued, the
+  // id index keeps the element, class and style stay readable, duplicates keep tree order.
+  differential("records, id lookup, class membership and inline style after same-value rewrites", (w) => {
+    const d = w.document;
+    const first = d.createElement("div");
+    first.id = "dup";
+    const el = d.createElement("div");
+    el.id = "dup";
+    el.className = "a b";
+    el.setAttribute("style", "color: red");
+    d.body.append(first, el);
+    const hadA = el.classList.contains("a");
+    const mo = watch(w, el);
+    el.setAttribute("id", "dup");
+    el.id = "dup";
+    el.setAttribute("class", "a b");
+    el.setAttribute("style", "color: red");
+    el.setAttribute("data-x", "1");
+    el.setAttribute("data-x", "1");
+    return [
+      attrRecords(mo),
+      hadA,
+      d.getElementById("dup") === first,
+      el.classList.contains("b"),
+      el.classList.length,
+      el.style.color,
+      el.matches("#dup.a.b[data-x='1']"),
+      d.querySelectorAll("#dup").length,
+    ];
+  });
+
+  differential("a same-value rewrite keeps the id index when the id then changes or the element leaves", (w) => {
+    const d = w.document;
+    const el = d.createElement("div");
+    el.id = "x";
+    d.body.append(el);
+    el.setAttribute("id", "x");
+    el.id = "y";
+    const moved = [d.getElementById("x"), d.getElementById("y") === el];
+    el.setAttribute("id", "y");
+    el.remove();
+    return [moved, d.getElementById("y")];
+  });
+
+  differential("attributeChangedCallback runs for a same-value rewrite", (w) => {
+    const calls: unknown[] = [];
+    w.customElements.define(
+      "x-same-value",
+      class extends w.HTMLElement {
+        static observedAttributes = ["a"];
+        attributeChangedCallback(...args: unknown[]) {
+          calls.push(args);
+        }
+      },
+    );
+    const el = w.document.createElement("x-same-value");
+    el.setAttribute("a", "1");
+    el.setAttribute("a", "1");
+    el.removeAttribute("a");
+    el.removeAttribute("a");
+    return calls;
+  });
+});

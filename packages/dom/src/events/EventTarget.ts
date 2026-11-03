@@ -10,20 +10,20 @@
 // Listener storage is in listeners.ts, the dispatch algorithm in dispatch.ts.
 
 import { exposeMembers } from "../webidl-runtime.ts";
-import { EF_DISPATCH, EF_INITIALIZED, EF_TRUSTED, Event, NONE } from "./Event.ts";
+import { EF_DISPATCH, EF_INITIALIZED, Event, NONE, setTrusted } from "./Event.ts";
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
-import { addEventListener, removeEventListener, type ListenerMap } from "./listeners.ts";
+import { addEventListener, removeEventListener, type ListenerSlots } from "./listeners.ts";
 import { dispatch } from "./dispatch.ts";
 import { toDOMString } from "./convert.ts";
 import { $listeners } from "../keys.ts";
 
 export class EventTarget {
-  /** @internal Event type → listener list, or null when there are no listeners (see listeners.ts). */
+  /** @internal Event type id → first listener, or null when there are no listeners (see listeners.ts). */
   /**
    * Added on first addEventListener (absent otherwise): most nodes never get a listener (React
    * delegates to its root container), and an always-initialized field cost every node a slot.
    */
-  declare [$listeners]?: ListenerMap | null;
+  declare [$listeners]?: ListenerSlots | null;
 
   /** https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget */
   constructor() {}
@@ -75,8 +75,8 @@ export class EventTarget {
         "InvalidStateError",
       );
     }
-    // Step 2.
-    s.flags &= ~EF_TRUSTED;
+    // Step 2 (the flag and the own `isTrusted` property together).
+    setTrusted(event, false);
     // Step 3.
     return dispatch(event, this);
   }

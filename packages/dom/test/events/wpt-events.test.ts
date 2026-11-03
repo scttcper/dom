@@ -37,9 +37,13 @@ import { describe, expect, test } from "vitest";
 import { defineWPT, defineWPTDirectory, FIXTURES, JS_TEST } from "../wpt/harness.ts";
 import { createWindow, AnimationEvent, TransitionEvent } from "../../src/index.ts";
 
-/** `.any.js` / `.window.js` tests of a vendored directory (defineWPTDirectory registers `.html` only). */
-function defineJSTests(dir: string): void {
-  for (const f of readdirSync(join(FIXTURES, dir)).sort()) if (JS_TEST.test(f)) defineWPT(`${dir}/${f}`);
+/**
+ * `.any.js` / `.window.js` tests of a vendored directory (defineWPTDirectory registers `.html`
+ * only), with per-file reasons for known subtest failures.
+ */
+function defineJSTests(dir: string, reasons: Record<string, string> = {}): void {
+  for (const f of readdirSync(join(FIXTURES, dir)).sort())
+    if (JS_TEST.test(f)) defineWPT(`${dir}/${f}`, reasons[f] ?? "");
 }
 
 const INLINE_HANDLERS = "inline event handler content attributes are not compiled (docs/deviations.md Scripting)";
@@ -64,7 +68,9 @@ defineWPTDirectory(
 defineWPT("dom/events/Event-dispatch-click.html", "javascript: URLs never run (no script execution, no navigation)", {
   timeout: 300,
 });
-defineJSTests("dom/events");
+defineJSTests("dom/events", {
+  "Event-isTrusted.any.js": "isTrusted is an own data property, not an accessor (docs/deviations.md Events)",
+});
 defineWPTDirectory("dom/events/non-cancelable-when-passive", {}, {});
 defineJSTests("dom/abort");
 

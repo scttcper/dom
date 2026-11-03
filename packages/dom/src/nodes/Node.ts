@@ -414,7 +414,10 @@ export abstract class Node extends EventTarget {
     return child;
   }
 
-  /** https://dom.spec.whatwg.org/#get-the-parent */
+  /**
+   * https://dom.spec.whatwg.org/#get-the-parent — the dispatch algorithm inlines this for every
+   * node but a Document (events/dispatch.ts), so no other Node subclass may override it.
+   */
   override _getTheParent(event: Event): import("../events/EventTarget.ts").EventTarget | null {
     return nodeGetTheParent(this, event);
   }

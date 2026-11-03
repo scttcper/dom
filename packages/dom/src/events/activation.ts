@@ -24,9 +24,11 @@
 //
 // Rules:
 // - `_hasActivationBehavior` is read only for click MouseEvents (so it may be a getter that
-//   inspects state, e.g. `type`/`href`/`disabled`). It must be strictly `true` to count.
-//   Elements without activation behavior inherit Element's `false` (other targets leave it
-//   undefined); a <form> must not miss it, or the read becomes a named property lookup.
+//   inspects state, e.g. `type`/`href`/`disabled`), and only on the HTML elements that can
+//   have activation behavior (`mayHaveActivationBehavior` below: a, area, button, input, label,
+//   summary — a closed set in the HTML spec). It must be strictly `true` to count. Nothing is
+//   ever read on other path items, so a <div>, a <form> (a Proxy) or a Document costs a click
+//   nothing. A new activation behavior needs its tag added to that table.
 // - `_legacyPreActivationBehavior()` runs after the path is built and before any listener
 //   (checkbox/radio toggling, so listeners observe the new state).
 // - After dispatch finishes (event path cleared, phase NONE): if the event was not canceled,
@@ -43,6 +45,16 @@
 //   "not trusted flag", and respects the click-in-progress flag (owners keep that flag).
 
 import type { Event } from "./Event.ts";
+import { T } from "../nodes/tags.ts";
+
+/** Indexed by `NodeImpl.tag`: 1 for the element tags whose classes implement ActivationTarget. */
+const ACTIVATION_TAGS = new Uint8Array(256);
+for (const tag of [T.a, T.area, T.button, T.input, T.label, T.summary]) ACTIVATION_TAGS[tag] = 1;
+
+/** Whether an element with tag id `tag` can have activation behavior (the dispatch algorithm's gate). */
+export function mayHaveActivationBehavior(tag: number): boolean {
+  return ACTIVATION_TAGS[tag] === 1;
+}
 
 export interface ActivationTarget {
   readonly _hasActivationBehavior?: boolean;

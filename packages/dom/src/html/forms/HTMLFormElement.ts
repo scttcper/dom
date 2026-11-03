@@ -255,12 +255,15 @@ function supportedNames(form: HTMLFormElement): string[] {
   return names;
 }
 
-/** Whether `key` is a supported index or a visible named property ([LegacyOverrideBuiltIns]: not an own property). */
-function isIndexedOrNamed(target: HTMLFormElement, key: string): boolean {
-  if (Object.hasOwn(target, key)) return false;
+/**
+ * The indexed or named property value for `key` (https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty
+ * steps 1-2), or undefined. The caller has established that `key` is neither an own nor an
+ * inherited property, i.e. that a name is visible (no [LegacyOverrideBuiltIns]).
+ */
+function indexedOrNamedValue(target: HTMLFormElement, key: string): unknown {
   const i = arrayIndex(key);
-  if (i !== -1) return i < target._controls().length;
-  return !(key in target) && target._namedProperty(key) !== undefined;
+  if (i !== -1) return target._controls()[i]?.node;
+  return target._namedProperty(key);
 }
 
 function arrayIndex(key: string): number {
@@ -270,49 +273,88 @@ function arrayIndex(key: string): number {
   return Number.isInteger(n) && String(n) === key ? n : -1;
 }
 
+// Every trap settles the common case — a built-in member, a React expando (`__reactFiber$`,
+// `__reactProps$`), an internal symbol (keys.ts) — with one prototype-chain walk, and consults
+// the (comparatively expensive: a scan of the controls) named-property machinery only for keys
+// the object does not have.
+
 /** Named and indexed property access for form elements (WebIDL legacy platform object, no override of built-ins). */
 const formHandler: ProxyHandler<HTMLFormElement> = {
   get(target, key, receiver) {
-    // Symbol keys are never named properties: internal state (keys.ts) is read on every event
-    // dispatched through a form, so skip Reflect.get's receiver plumbing for them.
+    // Symbol keys are never named properties: internal state is read on every event dispatched
+    // through a form and by every prototype getter (`this[$impl]` with `this` the proxy), so skip
+    // Reflect.get's receiver plumbing; `$impl` itself gets a monomorphic named load.
+    if (key === $impl) return target[$impl];
     if (typeof key === "symbol") return (target as unknown as Record<symbol, unknown>)[key];
-    if (!(key in target)) {
-      const i = arrayIndex(key);
-      if (i !== -1) return target._controls()[i]?.node;
-      return target._namedProperty(key);
+    // Step 1: a supported index is not subject to visibility, so it needs no chain walk at all.
+    const i = arrayIndex(key);
+    if (i !== -1) {
+      const controls = target._controls();
+      return i < controls.length ? controls[i].node : Reflect.get(target, key, receiver);
     }
-    return Reflect.get(target, key, receiver);
+    // One chain walk settles a defined value. An undefined one is either an own or inherited
+    // undefined (which wins: no [LegacyOverrideBuiltIns]) or a visible name; `in` is only needed
+    // to tell those apart when there is a control of that name.
+    const value = Reflect.get(target, key, receiver);
+    if (value !== undefined) return value;
+    const named = target._namedProperty(key);
+    return named === undefined || key in target ? undefined : named;
   },
   has(target, key) {
-    if (typeof key === "string" && !(key in target)) {
-      const i = arrayIndex(key);
-      if (i !== -1) return i < target._controls().length;
-      return target._namedProperty(key) !== undefined;
-    }
-    return Reflect.has(target, key);
+    if (key in target) return true;
+    return typeof key === "string" && indexedOrNamedValue(target, key) !== undefined;
   },
   getOwnPropertyDescriptor(target, key) {
-    if (typeof key === "string" && !Object.hasOwn(target, key) && !(key in target)) {
-      const i = arrayIndex(key);
-      const value = i !== -1 ? target._controls()[i]?.node : target._namedProperty(key);
-      if (value !== undefined) return { value, writable: false, enumerable: i !== -1, configurable: true };
+    if (typeof key === "string" && !(key in target)) {
+      const value = indexedOrNamedValue(target, key);
+      if (value !== undefined) {
+        return { value, writable: false, enumerable: arrayIndex(key) !== -1, configurable: true };
+      }
     }
     return Reflect.getOwnPropertyDescriptor(target, key);
   },
-  // https://webidl.spec.whatwg.org/#legacy-platform-object-set — no indexed/named setters: a
-  // supported index or visible name cannot be shadowed by an expando (TypeError in strict mode).
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-set — no indexed/named setters, so
+  // ordinary [[Set]] with LegacyPlatformObjectGetOwnProperty as the own descriptor: a supported
+  // index or visible name cannot be shadowed by an expando (TypeError in strict mode).
   set(target, key, value, receiver) {
-    if (typeof key === "string" && !(key in target) && isIndexedOrNamed(target, key)) return false;
-    return Reflect.set(target, key, value, receiver);
+    if (typeof key === "symbol") return Reflect.set(target, key, value, receiver);
+    if (receiver !== target[$impl].node) {
+      // The form is on the receiver's prototype chain: a supported index or visible name is a
+      // non-writable own descriptor, anything else is ordinary.
+      if (!(key in target) && indexedOrNamedValue(target, key) !== undefined) return false;
+      return Reflect.set(target, key, value, receiver);
+    }
+    const own = Reflect.getOwnPropertyDescriptor(target, key);
+    if (own !== undefined) {
+      // An own writable data property (a React expando being updated): plain store. Accessors
+      // keep the proxy as `this`; a non-writable data property refuses.
+      if (own.writable === true) {
+        (target as unknown as Record<string, unknown>)[key] = value;
+        return true;
+      }
+      if (own.set === undefined && own.get === undefined) return false;
+      return Reflect.set(target, key, value, receiver);
+    }
+    if (key in target) return Reflect.set(target, key, value, receiver);
+    // Neither own nor inherited: an unsettable index or visible name, or a new expando. For the
+    // expando, [[Set]] on the proxy itself ends in CreateDataProperty on the receiver, i.e. the
+    // defineProperty trap below repeating these checks: define it directly.
+    if (arrayIndex(key) !== -1 || target._namedProperty(key) !== undefined) return false;
+    return Reflect.defineProperty(target, key, { value, writable: true, enumerable: true, configurable: true });
   },
-  // https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty — step 1: no
+  // indexed setter, so any array index refuses; step 2: a visible name without a named setter too.
   defineProperty(target, key, desc) {
-    if (typeof key === "string" && isIndexedOrNamed(target, key)) return false;
+    if (typeof key === "string") {
+      if (arrayIndex(key) !== -1) return false;
+      if (!(key in target) && target._namedProperty(key) !== undefined) return false;
+    }
     return Reflect.defineProperty(target, key, desc);
   },
-  // https://webidl.spec.whatwg.org/#legacy-platform-object-delete — no deleters.
+  // https://webidl.spec.whatwg.org/#legacy-platform-object-delete — no deleters: a supported
+  // index (step 1) or visible name (step 2) cannot be deleted.
   deleteProperty(target, key) {
-    if (typeof key === "string" && isIndexedOrNamed(target, key)) return false;
+    if (typeof key === "string" && !(key in target) && indexedOrNamedValue(target, key) !== undefined) return false;
     return Reflect.deleteProperty(target, key);
   },
   // https://webidl.spec.whatwg.org/#legacy-platform-object-ownpropertykeys — indices, visible

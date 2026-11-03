@@ -231,16 +231,32 @@ export function appendAttribute(el: NodeImpl, a: AttrRecord): void {
   handleAttributeChanges(el, a, null, a.value);
 }
 
-/** https://dom.spec.whatwg.org/#concept-element-attributes-remove */
+/**
+ * https://dom.spec.whatwg.org/#concept-element-attributes-remove
+ *
+ * The list is rebuilt at its exact new size in the pass that drops the record (see `addRecord`;
+ * `indexOf` + `splice` kept the old backing store and cost about twice as much), and the same
+ * pass learns whether another attribute still holds the removed name's presence flag. An
+ * element whose last attribute goes returns to `attrs === null`, the state it was created in.
+ */
 export function removeAttributeRecord(el: NodeImpl, a: AttrRecord): void {
   const attrs = el.attrs!;
-  const i = attrs.indexOf(a);
-  attrs.splice(i, 1);
+  const n = attrs.length;
   const flag = prefixFlag(a.localName);
-  if (flag !== 0) {
+  if (n === 1) {
+    el.attrs = null;
+    if (flag !== 0) el.flags &= ~flag;
+  } else {
+    const next: AttrRecord[] = new Array(n - 1);
     let still = false;
-    for (let j = 0; j < attrs.length && !still; j++) still = prefixFlag(attrs[j].localName) === flag;
-    if (!still) el.flags &= ~flag;
+    for (let i = 0, j = 0; i < n; i++) {
+      const r = attrs[i];
+      if (r === a) continue;
+      next[j++] = r;
+      if (flag !== 0 && !still && prefixFlag(r.localName) === flag) still = true;
+    }
+    el.attrs = next;
+    if (flag !== 0 && !still) el.flags &= ~flag;
   }
   // A materialized Attr node keeps its value but loses its element.
   if (a.attr !== null) a.attr._detach();
@@ -257,6 +273,42 @@ export function removeAttribute(el: NodeImpl, qualifiedName: string): AttrRecord
 }
 
 /**
+ * https://dom.spec.whatwg.org/#concept-element-attributes-get-by-namespace with a null
+ * namespace: the record behind reflected IDL attributes (html/reflect.ts `contentAttr` reads the
+ * value the same way).
+ */
+export function findAttributeByLocalName(el: NodeImpl, localName: string): AttrRecord | null {
+  const attrs = el.attrs;
+  if (attrs === null) return null;
+  for (let i = 0; i < attrs.length; i++) {
+    const a = attrs[i];
+    if (a.localName === localName) {
+      const r = a.rare;
+      if (r === null || r.ns === null) return a;
+    }
+  }
+  return null;
+}
+
+/**
+ * https://dom.spec.whatwg.org/#concept-element-attributes-set-value with a null namespace and
+ * prefix: what reflected IDL setters (`el.name = ...`, `el.id = ...`) do. Unlike `setAttribute`
+ * it matches by namespace and local name, so a namespaced attribute with the same local name is
+ * left alone (as in jsdom), and the name needs neither validation nor lowercasing.
+ */
+export function setAttributeValue(el: NodeImpl, localName: string, value: string): void {
+  const existing = findAttributeByLocalName(el, localName);
+  if (existing === null) appendAttribute(el, new AttrRecord(localName, value, null, null));
+  else changeAttribute(el, existing, value);
+}
+
+/** https://dom.spec.whatwg.org/#concept-element-attributes-remove-by-namespace with a null namespace. */
+export function removeAttributeByLocalName(el: NodeImpl, localName: string): void {
+  const a = findAttributeByLocalName(el, localName);
+  if (a !== null) removeAttributeRecord(el, a);
+}
+
+/**
  * https://dom.spec.whatwg.org/#handle-attribute-changes plus this implementation's core
  * attribute bookkeeping (id index, class token cache, style flag, document version).
  */
@@ -266,13 +318,18 @@ export function handleAttributeChanges(
   oldValue: string | null,
   newValue: string | null,
 ): void {
-  if (activeObservers !== 0) queueAttributeMutationRecord(el, a.localName, a.ns, oldValue);
-  if (a.ns === null) {
+  const r = a.rare;
+  const ns = r === null ? null : r.ns;
+  if (activeObservers !== 0) queueAttributeMutationRecord(el, a.localName, ns, oldValue);
+  if (ns === null) {
+    // Same-value rewrites (React's `input.type = "text"` on every update) run the core steps too:
+    // skipping them on `oldValue === newValue` cost 1.5–2 ns on every changed-value write, which
+    // React does far more often, for 1–3 ns saved here.
     coreAttributeSteps(el, a.localName, newValue);
     if (slotAssignmentActive !== 0) slotsAttributeChanged(el, a.localName, oldValue, newValue);
   }
   if ((el.flags & F_ATTR_HOOK) !== 0) {
-    (el.node as Element)._attributeChangedSteps(a.localName, oldValue, newValue, a.ns);
+    (el.node as Element)._attributeChangedSteps(a.localName, oldValue, newValue, ns);
   }
   el.doc[$version]++;
   if (ceReactionsPending) flushCEReactions(); // custom element reactions (html agent; see create.ts)

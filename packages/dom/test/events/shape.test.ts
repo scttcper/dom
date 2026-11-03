@@ -10,7 +10,10 @@
  * Differential against jsdom (the oracle): an event's only own enumerable property is
  * `isTrusted`, so Jest/Vitest print `MouseEvent {"isTrusted": false}` in mock-call diffs and
  * snapshots, and `for...in` yields the IDL attributes and operations.
- * Related WPT: dom/events/Event-isTrusted.any.js.
+ *
+ * Deviation (docs/deviations.md, Events): `isTrusted` is an own data property, not the
+ * [LegacyUnforgeable] accessor, so WPT dom/events/Event-isTrusted.any.js (same getter on every
+ * instance) is a known failure; its observable value is pinned below instead.
  */
 import { describe, expect, test } from "vitest";
 // Vitest's own serializer (pretty-format + default plugins), used for snapshots and
@@ -18,6 +21,7 @@ import { describe, expect, test } from "vitest";
 import { stringify } from "vitest/internal/browser";
 import { JSDOM } from "jsdom";
 import * as ctrlDom from "@ctrl/dom";
+import { setTrusted } from "@ctrl/dom/internal";
 import { setup } from "./helpers.ts";
 
 const vitestFormat = (v: unknown) => stringify(v);
@@ -92,15 +96,50 @@ describe("Event object shape (differential vs jsdom) — https://webidl.spec.wha
 });
 
 describe("[LegacyUnforgeable] isTrusted — https://dom.spec.whatwg.org/#dom-event-istrusted", () => {
-  // https://github.com/web-platform-tests/wpt/blob/master/dom/events/Event-isTrusted.any.js
-  test("isTrusted is an own accessor with the same getter on every instance", () => {
-    const desc1 = Object.getOwnPropertyDescriptor(new ctrlDom.Event("x"), "isTrusted");
-    expect(desc1).not.toBeUndefined();
-    expect(typeof desc1!.get).toBe("function");
-    const desc2 = Object.getOwnPropertyDescriptor(new ctrlDom.MouseEvent("x"), "isTrusted");
-    expect(desc2!.get).toBe(desc1!.get);
-    expect(desc1!.enumerable).toBe(true);
-    expect(desc1!.configurable).toBe(false);
+  test("isTrusted is an own enumerable property of every instance, with jsdom's value (a data property here)", () => {
+    for (const Ctor of [ctrlDom.Event, ctrlDom.MouseEvent, ctrlDom.KeyboardEvent, ctrlDom.CustomEvent]) {
+      const desc = Object.getOwnPropertyDescriptor(new Ctor("x"), "isTrusted");
+      expect(desc).toMatchObject({ value: false, enumerable: true });
+      expect(Object.hasOwn(Ctor.prototype, "isTrusted")).toBe(false);
+    }
+    const jsdomDesc = Object.getOwnPropertyDescriptor(new new JSDOM("").window.Event("x"), "isTrusted")!;
+    expect([jsdomDesc.enumerable, jsdomDesc.get!.call(new new JSDOM("").window.Event("x"))]).toEqual([true, false]);
+    expect(setup().document.createEvent("MouseEvent").isTrusted).toBe(false);
+  });
+
+  // https://dom.spec.whatwg.org/#concept-event-fire sets it; dispatchEvent step 2 and
+  // https://dom.spec.whatwg.org/#concept-event-initialize step 4 reset it.
+  test("true on events the user agent fires, false again once script re-dispatches or re-initializes them", () => {
+    const { document } = setup();
+    const checkbox = document.createElement("input") as ctrlDom.HTMLInputElement;
+    checkbox.setAttribute("type", "checkbox");
+    document.body!.appendChild(checkbox);
+    const seen: [string, boolean][] = [];
+    let changeEvent!: ctrlDom.Event;
+    checkbox.addEventListener("click", (e) => seen.push([e.type, e.isTrusted]));
+    checkbox.addEventListener("change", (e) => {
+      seen.push([e.type, e.isTrusted]);
+      changeEvent = e;
+    });
+    // click() dispatches an untrusted click; the input/change it causes are the UA's.
+    checkbox.click();
+    expect(seen).toEqual([
+      ["click", false],
+      ["change", true],
+    ]);
+    expect(changeEvent.isTrusted).toBe(true);
+    expect(Object.keys(changeEvent)).toEqual(["isTrusted"]);
+    expect(vitestFormat(changeEvent)).toBe('Event {\n  "isTrusted": true,\n}');
+    seen.length = 0;
+    checkbox.dispatchEvent(changeEvent);
+    expect(seen).toEqual([["change", false]]);
+    expect(changeEvent.isTrusted).toBe(false);
+
+    const trusted = new ctrlDom.Event("x");
+    setTrusted(trusted);
+    expect(trusted.isTrusted).toBe(true);
+    trusted.initEvent("y");
+    expect([trusted.type, trusted.isTrusted]).toEqual(["y", false]);
   });
 
   test("DataTransfer has no own enumerable internals", () => {

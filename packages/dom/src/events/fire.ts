@@ -2,7 +2,7 @@
 // https://dom.spec.whatwg.org/#concept-event-fire
 // https://html.spec.whatwg.org/#fire-a-synthetic-pointer-event
 
-import { EF_TRUSTED, Event } from "./Event.ts";
+import { Event, setTrusted } from "./Event.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { dispatch } from "./dispatch.ts";
 import { PointerEvent, type PointerEventInit } from "./UIEvents.ts";
@@ -24,13 +24,13 @@ export function fireAnEvent<E extends Event = Event, I extends EventInit = Event
   legacyTargetOverride = false,
 ): boolean {
   const event = eventConstructor === undefined ? new Event(type, init) : new eventConstructor(type, init);
-  event._s.flags |= EF_TRUSTED;
+  setTrusted(event);
   return dispatch(event, target, legacyTargetOverride);
 }
 
 /** Dispatch an already constructed event as a trusted (user-agent) event. */
 export function dispatchTrusted(event: Event, target: EventTarget): boolean {
-  event._s.flags |= EF_TRUSTED;
+  setTrusted(event);
   return dispatch(event, target);
 }
 
@@ -56,6 +56,6 @@ export function fireSyntheticPointerEvent(
     composed: true,
     view: view as PointerEventInit["view"],
   });
-  if (!notTrusted) event._s.flags |= EF_TRUSTED;
+  if (!notTrusted) setTrusted(event);
   return dispatch(event, target);
 }

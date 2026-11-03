@@ -21,7 +21,6 @@
 // control therefore also sets it, which a browser would not (docs/deviations.md).
 
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
-import type { Event } from "../../events/Event.ts";
 import { T } from "../../nodes/tags.ts";
 import { $userValidity } from "../../keys.ts";
 
@@ -31,15 +30,19 @@ export interface UserValidityHolder {
 }
 
 /**
- * Called from the controls' `_getTheParent` (the event dispatch algorithm calls it on the
- * target first, https://dom.spec.whatwg.org/#concept-event-dispatch step 6.8, before any
- * listener runs, so `change` listeners already see the new state). `pathLength` is 1 only for
- * that first call: a `change` dispatched at an `<option>` reaches its `<select>` as a parent and
+ * Called by the event dispatch algorithm (events/dispatch.ts) with the target of a `change`
+ * event, while building the path (https://dom.spec.whatwg.org/#concept-event-dispatch step
+ * 6.8) and so before any listener runs: `change` listeners already see the new state. Only the
+ * target counts: a `change` dispatched at an `<option>` reaches its `<select>` as a parent and
  * must not set the select's flag.
  */
-export function noteChangeDispatch(el: UserValidityHolder, event: Event): void {
-  const s = event._s;
-  if (s.pathLength === 1 && s.type === "change") el[$userValidity] = true;
+export function noteChangeDispatch(target: NodeImpl): void {
+  switch (target.tag) {
+    case T.input:
+    case T.textarea:
+    case T.select:
+      (target.node as unknown as UserValidityHolder)[$userValidity] = true;
+  }
 }
 
 /** Whether `el` is an input, textarea or select whose user validity is true. */

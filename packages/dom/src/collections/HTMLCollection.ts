@@ -233,8 +233,11 @@ function isArrayIndex(key: string): boolean {
 export function withNamedProperties<C extends HTMLCollection>(collection: C): C {
   return new Proxy(collection, {
     get(target, key, _receiver) {
-      if (typeof key === "string" && !(key in target)) return target.namedItem(key) ?? undefined;
-      return Reflect.get(target, key, target);
+      // One chain walk for members and index getters (the common reads); only an undefined
+      // result needs `in` to tell an absent key, which may be a name, from a member that is undefined.
+      const value = Reflect.get(target, key, target);
+      if (value !== undefined || typeof key === "symbol" || key in target) return value;
+      return target.namedItem(key) ?? undefined;
     },
     has(target, key) {
       if (typeof key === "string" && !(key in target)) {

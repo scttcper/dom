@@ -38,9 +38,6 @@ import {
   $userValidity,
   $validity,
 } from "../../keys.ts";
-import { noteChangeDispatch } from "./user-validity.ts";
-import type { Event } from "../../events/Event.ts";
-import type { EventTarget } from "../../events/EventTarget.ts";
 
 function opt(o: NodeImpl): HTMLOptionElement {
   return o.node as HTMLOptionElement;
@@ -90,12 +87,6 @@ export class HTMLSelectElement extends HTMLElement {
     this[$settled] = false;
     this[$updatingSelectedContent] = false;
     this[$userValidity] = false;
-  }
-
-  /** Sets user validity when a `change` event is dispatched at this control (forms/user-validity.ts). */
-  override _getTheParent(event: Event): EventTarget | null {
-    noteChangeDispatch(this, event);
-    return super._getTheParent(event);
   }
 
   _ensureSettled(): void {
