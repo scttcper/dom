@@ -398,6 +398,38 @@ either way. A scratch loop inserting 2,000 rules and reading a computed style af
 insert: two caches alternating 64.1 → 11.5 µs per insert (RSS 188 → 146 MB), a `<style>` per rule
 75.3 → 19.5 µs, one sheet 11.5 µs before and after.
 
+**Sentry, where it stands** (2026-11-09 at 0f009cd, `perf` preset, ctrl-dom-full; one worker with
+`NODE_OPTIONS=--cpu-prof`, 35.8 s sampled, and the same on jsdom, 45.2 s). Nothing of ours is left
+to take out of this suite:
+
+| where | ours | jsdom |
+| --- | ---: | ---: |
+| react-dom | 6.7 s | 7.1 s |
+| react, with its `defineProperty` calls (charged to our guard on our stack) | 4.5 s | 4.5 s |
+| Sentry's own source | 4.7 s | 4.8 s |
+| emotion | 4.1 s | 4.2 s |
+| Jest | 3.0 s | 3.1 s |
+| GC | 2.1 s | 2.6 s |
+| other dependencies | 4.4 s | 13.3 s (jsdom among them) |
+| @ctrl/dom, testing-library, user-event, aria, react (without the guard) | 2.0 s | |
+
+React, Sentry, emotion and Jest do the same work on both, so we cause none of it; 0.75 s of the
+run is idle. Our 2.0 s (5.6%) is flat: after the guard the top function is the virtual `Date`
+constructor at 0.5%, which costs what the native one does (30 ns; app code and moment construct
+that many). The guard itself adds 5% to a `defineProperty` call (645 against 616 ns for the four
+React makes per element): ~130 ms of its 2.65 s. React reads `performance.now()` 25 million times
+(0.6 s, and 382 MB of boxed numbers). Allocation, sampled the same way: 23.6 GB over the run, 6.8%
+ours, most of that the property storage React's `defineProperty` calls allocate under the guard.
+The day's changes (container reuse, control state, turnless yields and the rest) moved the preset
+63.5 → 61.7 s of CPU and ~12.4 → 11.9 s of wall time at four workers, three interleaved runs.
+
+The `smoke` preset's wall time (13.8 s) is one file, `searchQueryBuilder/index.spec.tsx` at
+12.5 s: react-dom 22%, react-aria and other dependencies 15%, ours 7% without the guard. Its one
+entry of ours above 0.5% is `addEventListener` at 1.1%, all from one effect: Sentry's
+`useSelectOnDrag` adds a `mouseup` listener to the document and removes `mousedown`, so every
+mount leaves one behind, and step 5 of add-an-event-listener scans the document's growing list
+for a duplicate on each add (jsdom scans it too).
+
 **Labels** (2026-11-02). `element.labels` (which dom-accessibility-api reads for every candidate
 of a stock `*ByRole` with `name`) walked the whole tree once per document version, and aria's
 `labelsOf` rebuilt a whole-tree label index per version, even for a `<button>` with no ID. A
