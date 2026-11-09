@@ -463,6 +463,32 @@ is a scan of that type's listeners (10k listeners of one type on one target: 9 �
 `.a ~ .b`, `:has()` and descendant selectors with no match rescan siblings, subtrees or ancestors
 per candidate, as browsers' query paths also do.
 
+**What React does to our objects** (2026-11-09). An allocation profile of the React workloads
+(the inspector's sampling heap profiler with collected objects included, `bench/worker.ts` under
+`ctrl-dom-full`) puts our DOM at 14% of what a mount allocates, react-dom at 47% and react at 19%.
+Two of our largest entries were React's doing rather than ours:
+
+- `createRoot` adds 142 event listeners to a container it has not listened on: 142 listener
+  records on our side (9 KB, plus the slots array), 142 bound functions on React's, on every
+  `render()`. A container `render()` created is now given to a later `render()` once `cleanup()`
+  has removed it, when it is still what a new `<div>` would be (`reusableContainers` in
+  packages/react/src/pure.ts), and React skips the registration: a warm render + unmount of a
+  three-element tree 18.8 → 12.8 µs.
+- react-dom's `trackValueOnNode` was the largest allocator of a form mount (15%). It defines an
+  own `value`/`checked` accessor on every input and textarea, which sends the wrapper to V8's
+  dictionary mode; with the element's state in 17 own fields that was 2,238 B per input against
+  390 B untracked, and reads through the wrapper took 168 ns against 27 ns. The state is now one
+  object (html/forms/control-state.ts): 1,245 B and 100 ns.
+
+`react/mount-unmount-churn` (the 20-field form) with both, two equal-path worktrees, 7 pairs:
+0.381 → 0.348 ms (ratios 0.89–0.94) and 0.345 → 0.290 MB allocated per mount. The other React
+workloads did not move outside an A/A run's spread (they mount once per iteration, or do not call
+`cleanup()`).
+
+Still there: an element with one listener pays for a slots array as long as that event type's id
+(React's non-delegated `invalid` listener on every input: ~600 B), and adding attributes one by
+one copies the exact-size attribute array.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

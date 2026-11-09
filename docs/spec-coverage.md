@@ -258,10 +258,10 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-form-submit](https://html.spec.whatwg.org/#concept-form-submit) | `dom/html/forms/form-submission.ts`, `dom/html/forms/user-validity.ts`, `dom/html/interactive.ts` | `dom/html/forms/form.test.ts`, `dom/html/wpt-dialog.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `compat/forms/form-algorithms.test.ts` +2 |
 | [concept-fs-method](https://html.spec.whatwg.org/#concept-fs-method) | `dom/html/interactive.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
 | [concept-hyperlink-url-set](https://html.spec.whatwg.org/#concept-hyperlink-url-set) | `dom/html/anchor.ts` | `compat/html/elements.test.ts` |
-| [concept-input-checked-dirty-flag](https://html.spec.whatwg.org/#concept-input-checked-dirty-flag) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/checkedness.test.ts`; WPT: `html/semantics/forms/the-input-element/input-value-dirty-flag.html` |
+| [concept-input-checked-dirty-flag](https://html.spec.whatwg.org/#concept-input-checked-dirty-flag) | `dom/html/forms/control-state.ts` | `compat/forms/checkedness.test.ts`; WPT: `html/semantics/forms/the-input-element/input-value-dirty-flag.html` |
 | [concept-input-min-zero](https://html.spec.whatwg.org/#concept-input-min-zero) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-input-step](https://html.spec.whatwg.org/#concept-input-step) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
-| [concept-input-value-dirty-flag](https://html.spec.whatwg.org/#concept-input-value-dirty-flag) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
+| [concept-input-value-dirty-flag](https://html.spec.whatwg.org/#concept-input-value-dirty-flag) | `dom/html/forms/control-state.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-input-value-number-string](https://html.spec.whatwg.org/#concept-input-value-number-string) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-input-value-string-number](https://html.spec.whatwg.org/#concept-input-value-string-number) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-location-ancestor-origins-list](https://html.spec.whatwg.org/#concept-location-ancestor-origins-list) | `dom/window/Location.ts` | `dom/window/window-apis.test.ts` |
@@ -274,7 +274,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-settings-object-origin](https://html.spec.whatwg.org/#concept-settings-object-origin) | `dom/window/origin.ts` | `dom/window/window-apis.test.ts` |
 | [concept-storage-broadcast](https://html.spec.whatwg.org/#concept-storage-broadcast) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
 | [concept-submit-button](https://html.spec.whatwg.org/#concept-submit-button) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
-| [concept-textarea-dirty](https://html.spec.whatwg.org/#concept-textarea-dirty) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [concept-textarea-dirty](https://html.spec.whatwg.org/#concept-textarea-dirty) | `dom/html/forms/control-state.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-textarea-raw-value](https://html.spec.whatwg.org/#concept-textarea-raw-value) | `dom/html/forms/HTMLTextAreaElement.ts` | `dom/html/forms/select-textarea.test.ts` |
 | [concept-try-upgrade](https://html.spec.whatwg.org/#concept-try-upgrade) | `dom/html/custom-elements.ts` | WPT: `custom-elements/upgrading.html` |
 | [concept-upgrade-an-element](https://html.spec.whatwg.org/#concept-upgrade-an-element) | `dom/html/custom-elements.ts` | `dom/html/custom-elements.test.ts`, `compat/html/custom-element-reactions.test.ts`, `compat/html/custom-elements.test.ts`; WPT: `custom-elements/microtasks-and-constructors.html`, `custom-elements/range-and-constructors.html` |
@@ -651,7 +651,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [is-modal](https://html.spec.whatwg.org/#is-modal) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `aria/internal.test.ts`, `compat/forms/form-algorithms.test.ts` |
 | [language](https://html.spec.whatwg.org/#language) | `dom/html/innerText.ts`, `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
-| [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/html/forms/HTMLInputElement.ts` | `compat/html/activation.test.ts` |
+| [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/html/forms/control-state.ts` | `compat/html/activation.test.ts` |
 | [light-dismiss-open-dialogs](https://html.spec.whatwg.org/#light-dismiss-open-dialogs) | `dom/html/interactive.ts` | `dom/html/top-layer.test.ts` |
 | [light-dismiss-open-popovers](https://html.spec.whatwg.org/#light-dismiss-open-popovers) | `dom/html/top-layer.ts` | `dom/html/top-layer.test.ts` |
 | [list-of-animation-frame-callbacks](https://html.spec.whatwg.org/#list-of-animation-frame-callbacks) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |

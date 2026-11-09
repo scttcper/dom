@@ -32,25 +32,12 @@ import {
 import { isMutable } from "./state.ts";
 import { sanitizeValue, type HTMLInputElement } from "./HTMLInputElement.ts";
 import type { HTMLTextAreaElement } from "./HTMLTextAreaElement.ts";
+import type { ControlState } from "./control-state.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
 import { createFileList } from "../../window/FileList.ts";
 import { optionSelect } from "./HTMLOptionElement.ts";
 import type { HTMLSelectElement } from "./HTMLSelectElement.ts";
-import {
-  $badInput,
-  $dirtiness,
-  $dirtyValue,
-  $files,
-  $impl,
-  $rawValue,
-  $selDir,
-  $selEnd,
-  $selStart,
-  $uiValue,
-  $userEdited,
-  $value,
-  $version,
-} from "../../keys.ts";
+import { $control, $dirtiness, $impl, $version } from "../../keys.ts";
 
 type El = Element | NodeImpl;
 
@@ -90,7 +77,7 @@ export function getUIValue(el: El): string {
   const impl = implOf(el);
   if (impl.tag === T.input) {
     const input = impl.node as HTMLInputElement;
-    return input[$uiValue] ?? input.value;
+    return input[$control].uiValue ?? input.value;
   }
   if (impl.tag === T.textarea) return (impl.node as HTMLTextAreaElement).value;
   return "";
@@ -109,22 +96,22 @@ export function setUIValue(el: El, value: string): void {
     if (valueMode(type) !== MODE_VALUE) return;
     const sanitized = sanitizeValue(type, value, impl);
     impl.doc[$version]++;
-    input[$value] = sanitized;
-    input[$dirtyValue] = true;
-    input[$userEdited] = true;
-    input[$uiValue] = sanitized === value ? null : value;
-    input[$badInput] = sanitized === "" && value !== "" && type !== I_EMAIL && !isTextualType(type);
+    input[$control].value = sanitized;
+    input[$control].dirtyValue = true;
+    input[$control].userEdited = true;
+    input[$control].uiValue = sanitized === value ? null : value;
+    input[$control].badInput = sanitized === "" && value !== "" && type !== I_EMAIL && !isTextualType(type);
     const len = value.length;
-    if (input[$selStart] > len) input[$selStart] = len;
-    if (input[$selEnd] > len) input[$selEnd] = len;
+    if (input[$control].selStart > len) input[$control].selStart = len;
+    if (input[$control].selEnd > len) input[$control].selEnd = len;
     return;
   }
   if (impl.tag === T.textarea) {
     const ta = impl.node as HTMLTextAreaElement;
     impl.doc[$version]++;
-    ta[$rawValue] = value;
-    ta[$dirtyValue] = true;
-    ta[$userEdited] = true;
+    ta[$control].value = value;
+    ta[$control].dirtyValue = true;
+    ta[$control].userEdited = true;
   }
 }
 
@@ -133,8 +120,8 @@ export function clearUIValue(el: El): void {
   const impl = implOf(el);
   if (impl.tag === T.input) {
     const input = impl.node as HTMLInputElement;
-    input[$uiValue] = null;
-    input[$badInput] = false;
+    input[$control].uiValue = null;
+    input[$control].badInput = false;
   }
 }
 
@@ -147,9 +134,13 @@ export interface UISelection {
 /** The caret/selection inside an input or textarea (works for every value-mode input type). */
 export function getUISelection(el: El): UISelection {
   const impl = implOf(el);
-  const host = impl.node as unknown as { [$selStart]: number; [$selEnd]: number; [$selDir]: UISelection["direction"] };
+  const host = impl.node as unknown as { [$control]: ControlState };
   const len = getUIValue(el).length;
-  return { start: Math.min(host[$selStart], len), end: Math.min(host[$selEnd], len), direction: host[$selDir] };
+  return {
+    start: Math.min(host[$control].selStart, len),
+    end: Math.min(host[$control].selEnd, len),
+    direction: host[$control].selDir,
+  };
 }
 
 /** Set the caret/selection as the user would (no exceptions for email/number inputs). */
@@ -161,15 +152,15 @@ export function setUISelection(
 ): void {
   const impl = implOf(el);
   if (impl.tag !== T.input && impl.tag !== T.textarea) return;
-  const host = impl.node as unknown as { [$selStart]: number; [$selEnd]: number; [$selDir]: UISelection["direction"] };
+  const host = impl.node as unknown as { [$control]: ControlState };
   const len = getUIValue(el).length;
   let s = Math.max(0, Math.min(start, end));
   let e = Math.max(start, end);
   if (e > len) e = len;
   if (s > e) s = e;
-  host[$selStart] = s;
-  host[$selEnd] = e;
-  host[$selDir] = direction;
+  host[$control].selStart = s;
+  host[$control].selEnd = e;
+  host[$control].selDir = direction;
 }
 
 /** Replace a file input's selected files as the file picker would (no events). */
@@ -177,7 +168,7 @@ export function setFilesFromUI(el: El, files: readonly File[]): void {
   const impl = implOf(el);
   if (impl.tag !== T.input || inputType(impl) !== I_FILE) return;
   impl.doc[$version]++;
-  (impl.node as HTMLInputElement)[$files] = createFileList(files);
+  (impl.node as HTMLInputElement)[$control].files = createFileList(files);
 }
 
 /** Set an option's selectedness as the user would (dirty; single selects deselect the rest). */

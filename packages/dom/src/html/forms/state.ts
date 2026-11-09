@@ -27,7 +27,7 @@ import { isFACE, validatableOf } from "./face.ts";
 import type { HTMLInputElement } from "./HTMLInputElement.ts";
 import { radioGroupHasNoChecked } from "./HTMLInputElement.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
-import { $impl, $indeterminate } from "../../keys.ts";
+import { $control, $impl } from "../../keys.ts";
 
 export { isActuallyDisabled } from "./form-associated.ts";
 
@@ -198,7 +198,7 @@ export function isChecked(el: NodeImpl): boolean {
 export function isIndeterminate(el: NodeImpl): boolean {
   if (el.tag === T.input) {
     const type = inputType(el);
-    if (type === I_CHECKBOX) return (el.node as HTMLInputElement)[$indeterminate];
+    if (type === I_CHECKBOX) return (el.node as HTMLInputElement)[$control].indeterminate;
     if (type === I_RADIO) return radioGroupHasNoChecked(el);
     return false;
   }
@@ -277,7 +277,7 @@ export function inputChecked(el: NodeImpl): boolean {
 
 /** The indeterminate IDL flag of an input. */
 export function inputIndeterminate(el: NodeImpl): boolean {
-  return el.tag === T.input && (el.node as HTMLInputElement)[$indeterminate];
+  return el.tag === T.input && (el.node as HTMLInputElement)[$control].indeterminate;
 }
 
 /** Selectedness of an option. */

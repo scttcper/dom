@@ -135,6 +135,12 @@ Memory rules for per-node state (every rendered element pays them):
   each slot the head of a linked list (`events/listeners.ts`), so a React root container's 142
   listeners over 87 types are one array plus the listeners themselves.
   Measure allocation with `pnpm bench` (`allocMB`/`gcMs` extras) when touching hot paths.
+- A wrapper React defines an own accessor on must have few own properties. React tracks every
+  `<input>` and `<textarea>` it mounts by defining an own `value`/`checked` accessor with closures
+  of its own, and V8 moves the second object to get a different accessor pair to dictionary mode:
+  ~24 B per own property, rounded up to a power of two, and every later read a hash lookup. So an
+  input's and a textarea's state is one `ControlState` (html/forms/control-state.ts) in
+  `wrapper[$control]`, not 17 fields of the wrapper (a tracked input: 2,238 → 1,245 B).
 
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,
 `Document`, `DocumentFragment → ShadowRoot`, `DocumentType`, `Attr`. Wrapper fields are
@@ -227,6 +233,8 @@ document. Intentionally retained:
 
 - the current window (`window/current.ts`) until it is closed or another window is created;
 - a window's own state while it is open (its custom element registry, storage, history);
+- up to 8 emptied, detached containers `render()` created, per document, for its later renders
+  (@ctrl/dom/react, `reusableContainers` in packages/react/src/pure.ts): held weakly by the document;
 - host timers created through `window.setTimeout` & co. (they are the host's), until they fire,
   are cleared or the window closes (`close()` clears the ones created through the window's, or
   under @ctrl/dom-jest-environment / Vitest VM pools the file global's, setTimeout/setInterval);

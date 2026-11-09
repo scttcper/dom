@@ -26,34 +26,15 @@ import {
   type ConstraintValidation,
   type ValidityState,
 } from "./validation.ts";
-import {
-  $customValidity,
-  $dirtyValue,
-  $impl,
-  $labels,
-  $rawValue,
-  $selDir,
-  $selEnd,
-  $selStart,
-  $userEdited,
-  $userValidity,
-  $validity,
-  $version,
-} from "../../keys.ts";
+import { $control, $customValidity, $impl, $labels, $userValidity, $validity, $version } from "../../keys.ts";
+import { ControlState } from "./control-state.ts";
 
 export class HTMLTextAreaElement extends HTMLElement {
-  /** Raw value while the dirty value flag is set. */
-  [$rawValue]: string;
-  /** https://html.spec.whatwg.org/#concept-textarea-dirty */
-  [$dirtyValue]: boolean;
-  [$selStart]: number;
-  [$selEnd]: number;
-  [$selDir]: "forward" | "backward" | "none";
+  /** Value, checkedness, selection and UI state (./control-state.ts). */
+  [$control]: ControlState;
   [$customValidity]: string;
   [$validity]: ValidityState | null;
   [$labels]: LabelsNodeList | null;
-  /** The value was last changed by a user edit (tooLong/tooShort only apply then). */
-  [$userEdited]: boolean;
   /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
   [$userValidity]: boolean;
 
@@ -61,15 +42,10 @@ export class HTMLTextAreaElement extends HTMLElement {
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$impl].flags |= F_CHILDREN_HOOK;
-    this[$rawValue] = "";
-    this[$dirtyValue] = false;
-    this[$selStart] = 0;
-    this[$selEnd] = 0;
-    this[$selDir] = "none";
+    this[$control] = new ControlState();
     this[$customValidity] = "";
     this[$validity] = null;
     this[$labels] = null;
-    this[$userEdited] = false;
     this[$userValidity] = false;
   }
 
@@ -92,7 +68,7 @@ export class HTMLTextAreaElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#concept-textarea-raw-value */
   _rawValueNow(): string {
-    return this[$dirtyValue] ? this[$rawValue] : this.defaultValue;
+    return this[$control].dirtyValue ? this[$control].value : this.defaultValue;
   }
 
   /** https://html.spec.whatwg.org/#concept-fe-api-value */
@@ -109,14 +85,14 @@ export class HTMLTextAreaElement extends HTMLElement {
     const value = v === null ? "" : String(v); // [LegacyNullToEmptyString]
     const old = this._apiValue();
     this[$impl].doc[$version]++;
-    this[$rawValue] = value;
-    this[$dirtyValue] = true;
-    this[$userEdited] = false;
+    this[$control].value = value;
+    this[$control].dirtyValue = true;
+    this[$control].userEdited = false;
     const now = this._apiValue();
     if (now !== old) {
-      this[$selStart] = now.length;
-      this[$selEnd] = now.length;
-      this[$selDir] = "none";
+      this[$control].selStart = now.length;
+      this[$control].selEnd = now.length;
+      this[$control].selDir = "none";
     }
   }
 
@@ -154,24 +130,24 @@ export class HTMLTextAreaElement extends HTMLElement {
   }
 
   get selectionStart(): number {
-    return Math.min(this[$selStart], this._selectionLength());
+    return Math.min(this[$control].selStart, this._selectionLength());
   }
 
   set selectionStart(value: number) {
     const start = toUnsignedLong(value);
-    setSelection(this, start, Math.max(start, this.selectionEnd), this[$selDir]);
+    setSelection(this, start, Math.max(start, this.selectionEnd), this[$control].selDir);
   }
 
   get selectionEnd(): number {
-    return Math.min(this[$selEnd], this._selectionLength());
+    return Math.min(this[$control].selEnd, this._selectionLength());
   }
 
   set selectionEnd(value: number) {
-    setSelection(this, this.selectionStart, toUnsignedLong(value), this[$selDir]);
+    setSelection(this, this.selectionStart, toUnsignedLong(value), this[$control].selDir);
   }
 
   get selectionDirection(): string {
-    return this[$selDir];
+    return this[$control].selDir;
   }
 
   set selectionDirection(value: string) {
@@ -198,8 +174,8 @@ export class HTMLTextAreaElement extends HTMLElement {
       );
     const result = rangeText(
       this._apiValue(),
-      this[$selStart],
-      this[$selEnd],
+      this[$control].selStart,
+      this[$control].selEnd,
       String(replacement),
       start,
       end,
@@ -207,8 +183,8 @@ export class HTMLTextAreaElement extends HTMLElement {
       arguments.length,
     );
     this[$impl].doc[$version]++;
-    this[$rawValue] = result.value;
-    this[$dirtyValue] = true;
+    this[$control].value = result.value;
+    this[$control].dirtyValue = true;
     setSelection(this, result.start, result.end, "none");
   }
 
@@ -228,7 +204,7 @@ export class HTMLTextAreaElement extends HTMLElement {
     let flags = this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
     const value = this._apiValue();
     if (contentAttr(impl, "required") !== null && this._isMutable() && value === "") flags |= V_VALUE_MISSING;
-    if (this[$userEdited] && value !== "") {
+    if (this[$control].userEdited && value !== "") {
       const max = readNonNegativeLong(impl, "maxlength", -1);
       if (max !== -1 && value.length > max) flags |= V_TOO_LONG;
       const min = readNonNegativeLong(impl, "minlength", -1);
@@ -250,9 +226,9 @@ export class HTMLTextAreaElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#the-textarea-element:concept-form-reset-control */
   _reset(): void {
     this[$userValidity] = false;
-    this[$dirtyValue] = false;
-    this[$userEdited] = false;
-    this[$rawValue] = "";
+    this[$control].dirtyValue = false;
+    this[$control].userEdited = false;
+    this[$control].value = "";
   }
 
   /**
@@ -262,17 +238,17 @@ export class HTMLTextAreaElement extends HTMLElement {
    * https://html.spec.whatwg.org/#textFieldSelection ("the selection ... must be adjusted").
    */
   override _childrenChangedSteps(): void {
-    if (this[$dirtyValue]) return;
+    if (this[$control].dirtyValue) return;
     const len = this._selectionLength();
-    if (this[$selStart] > len) this[$selStart] = len;
-    if (this[$selEnd] > len) this[$selEnd] = len;
+    if (this[$control].selStart > len) this[$control].selStart = len;
+    if (this[$control].selEnd > len) this[$control].selEnd = len;
   }
 
   /** https://html.spec.whatwg.org/#the-textarea-element:concept-node-clone-ext */
   override _cloningSteps(copy: Element): void {
     const c = copy as HTMLTextAreaElement;
-    c[$rawValue] = this[$rawValue];
-    c[$dirtyValue] = this[$dirtyValue];
+    c[$control].value = this[$control].value;
+    c[$control].dirtyValue = this[$control].dirtyValue;
   }
 }
 
