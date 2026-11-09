@@ -506,6 +506,10 @@ environment's clock. The CPU profile of our code is flat there too; what stood o
 - **`toHaveFormValues`** ran upstream's `querySelectorAll('[name="…"]')` once per form control:
   23 µs at 20 fields, 1.4 ms at 200, 33 ms at 1,000. One walk grouping by name: 16 µs, 76 µs,
   0.36 ms.
+- **user-event's `isDisabled`** runs for every event target and climbed to the root on the
+  wrappers (`parentElement`, `tagName`, `hasAttribute` per ancestor, through a `<form>`'s Proxy).
+  On the node records instead: `user.type` of one character 85 → 69 µs, `user.tab` 73 → 53 µs,
+  `user.click` on a checkbox 25 → 21 µs.
 - Not ours: `fireEvent.change` on one field grows with the form (38 → 84 µs) because React walks
   the form's fibers, reading `performance.now()` about three times per fiber in development (14%
   of that workload is the native clock read behind our virtual one).
@@ -513,7 +517,8 @@ environment's clock. The CPU profile of our code is flat there too; what stood o
 Still there: `getByLabelText` walks the tree three times per call (8.6 µs at 20 fields, 59 µs at
 200, against 3 and 20 µs for `getByRole` with a name); `form.elements.namedItem` scans the
 controls; `user.tab` needs every focusable element; and a `<form>` is a Proxy, whose `get` trap
-was 2.3% of the user-event calls' CPU (user-event's `isDisabled` climbs through it).
+is still ~1% of the user-event calls' CPU. With the three changes above the profile of those
+calls is flat again: `dispatch` leads at 3%.
 
 ## Regression check (`compare.ts`)
 

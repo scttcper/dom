@@ -161,6 +161,12 @@ export function implOf(node: Node | null | undefined): NodeImpl | null {
   return impl instanceof NodeImplClass ? impl : null
 }
 
+/** `attr(el, lowercaseName)` and the tag ids of @ctrl/dom's node records (src/nodes), for walks that stay off the wrappers. */
+export const implAttr = internal?.attr as
+  | ((el: NodeImpl, lowerName: string) => string | null)
+  | undefined
+export const TAGS = internal?.T as Record<string, number> | undefined
+
 /** Whether `el` is an @ctrl/dom element and the html-forms UI hooks are available. */
 export function hasCtrlDomUI(el: Element): boolean {
   return ctrlDomUI !== null && implOf(el) !== null
