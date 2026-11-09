@@ -9,7 +9,6 @@ import { checkContainerType, implOf } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext } from "../label-helpers.ts";
 import { makeNormalizer, textMatcher, type Matcher, type NormalizerFn } from "../matches.ts";
 import {
-  queryAllByAttribute,
   makeFindQuery,
   makeSingleQuery,
   wrapAllByQueryWithSuggestion,
@@ -60,15 +59,22 @@ function queryAllByLabelText(
   const ctx = new LabelContext(root, true);
   const labelledElements: any[] = [];
 
+  // `queryAllByAttribute('aria-label', container, …)` in the same walk: its elements are found
+  // here and matched after the labelled ones, in upstream's order (a matcher function sees the
+  // same calls).
+  const ariaLabelled: NodeImpl[] = [];
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type !== ELEMENT_NODE) continue;
+    if (ariaAttr(n, "aria-label") !== null) ariaLabelled.push(n);
     // `getRealLabels(element).length || element.hasAttribute('aria-labelledby')`
     if (ariaAttr(n, "aria-labelledby") === null && ctx.labelsOf(n).length === 0) continue;
     collectLabelled(ctx, n, selector, match, labelledElements);
   }
 
-  const ariaLabelled = queryAllByAttribute("aria-label", container, text, { exact, normalizer: matchNormalizer });
-  for (let i = 0; i < ariaLabelled.length; i++) labelledElements.push(ariaLabelled[i]);
+  for (let i = 0; i < ariaLabelled.length; i++) {
+    const n = ariaLabelled[i];
+    if (match(ariaAttr(n, "aria-label"), n.node)) labelledElements.push(n.node);
+  }
 
   const unique = Array.from(new Set(labelledElements));
   return selector === "*" ? unique : unique.filter((element) => matchesSelector(element[$impl], selector));

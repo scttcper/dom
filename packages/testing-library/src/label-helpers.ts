@@ -86,7 +86,7 @@ export class LabelContext {
   /** `element.labels` (empty for non-labelable elements) — label elements in tree order. */
   labelsOf(el: NodeImpl): NodeImpl[] {
     if (!this.sameTree) return ariaLabelsOf(el) ?? EMPTY;
-    if (!isLabelable(el)) return EMPTY;
+    // The map's keys are labeled controls, which are labelable: no check per element asked about.
     const map = (this.labelMap ??= labelMapForTree(this.container));
     return map.get(el) ?? EMPTY;
   }
