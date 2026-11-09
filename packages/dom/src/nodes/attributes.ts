@@ -9,6 +9,7 @@ import {
   F_DATA_ATTRS,
   F_HAS_STYLE_ATTR,
   F_HTML,
+  F_FORM_ATTR,
   F_INERT_ATTR,
   F_TABINDEX_ATTR,
 } from "./constants.ts";
@@ -18,7 +19,7 @@ import { noteInlineStyle } from "../css/inline-count.ts";
 import { activeObservers, queueAttributeMutationRecord } from "../observers/queue.ts";
 import { slotAssignmentActive, slotsAttributeChanged } from "./slots.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
-import { $style, $version } from "../keys.ts";
+import { $formAttrSeen, $style, $version } from "../keys.ts";
 
 /** ASCII-lowercase without allocating when the input is already lowercase (the common case). */
 export function asciiLowercase(s: string): string {
@@ -117,10 +118,13 @@ export function getAttribute(el: NodeImpl, qualifiedName: string): string | null
 /**
  * The presence bit an attribute local name sets on its element: F_ARIA_ATTRS / F_DATA_ATTRS for
  * names starting with `aria-` / `data-`, F_TABINDEX_ATTR, F_CONTENTEDITABLE_ATTR or F_INERT_ATTR
- * for those names, else 0.
+ * for those names, F_FORM_ATTR for `form`, else 0.
  */
 export function prefixFlag(localName: string): number {
   switch (localName.length) {
+    case 4:
+      if (localName === "form") return F_FORM_ATTR;
+      break;
     case 5:
       if (localName === "inert") return F_INERT_ATTR;
       break;
@@ -206,7 +210,10 @@ export function changeAttribute(el: NodeImpl, a: AttrRecord, value: string): voi
  */
 function addRecord(el: NodeImpl, a: AttrRecord): void {
   const flag = prefixFlag(a.localName);
-  if (flag !== 0) el.flags |= flag;
+  if (flag !== 0) {
+    el.flags |= flag;
+    if (flag === F_FORM_ATTR) el.doc[$formAttrSeen] = true;
+  }
   const attrs = el.attrs;
   if (attrs === null) {
     const list: AttrRecord[] = new Array(1);

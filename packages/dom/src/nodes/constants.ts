@@ -74,3 +74,8 @@ export const F_DATA_ATTRS = 1 << 16;
 export const F_TABINDEX_ATTR = 1 << 13;
 export const F_CONTENTEDITABLE_ATTR = 1 << 17;
 export const F_INERT_ATTR = 1 << 18;
+/**
+ * Element has a `form` attribute, kept like F_ARIA_ATTRS. A document that never held one
+ * (Document[$formAttrSeen]) has no form whose controls lie outside it (html/forms/form-associated.ts).
+ */
+export const F_FORM_ATTR = 1 << 19;

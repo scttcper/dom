@@ -16,7 +16,7 @@ import { T } from "../../nodes/tags.ts";
 import { attr } from "../../nodes/attributes.ts";
 import { compareTreeOrder, nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
 import { I_HIDDEN, I_IMAGE, inputType } from "./input-type.ts";
-import { $assocGen, $forLabels } from "../../keys.ts";
+import { $assocGen, $forLabels, $formAttrSeen } from "../../keys.ts";
 
 // --- categories ---------------------------------------------------------------------------
 
@@ -173,9 +173,12 @@ function parserAssociationValid(el: NodeImpl, a: ParserAssociation): boolean {
  * The subtree holding every element whose form owner is `form` (https://html.spec.whatwg.org/#form-owner).
  * Outside it only the parser's form element pointer or, for listed elements, a `form` attribute
  * naming the form's ID can associate an element, so without either the form itself is enough.
+ * Forms usually have an ID and `form` attributes are rare: a document none of whose elements has
+ * ever had one (Document[$formAttrSeen]) needs no walk of the whole tree for a form with an ID
+ * (in a 10,000-node page, `form.elements` after a mutation 119 → 4 µs).
  */
 export function formOwnerScope(form: NodeImpl, listed: boolean): NodeImpl {
-  return parserAssocCount === 0 && (!listed || form.id === "") ? form : treeRoot(form);
+  return parserAssocCount === 0 && (!listed || form.id === "" || !form.doc[$formAttrSeen]) ? form : treeRoot(form);
 }
 
 /** All listed elements (excluding image buttons) whose form owner is `form`, in tree order: form.elements. */
@@ -263,9 +266,16 @@ export function labeledControl(label: NodeImpl): NodeImpl | null {
 }
 
 /**
- * Per-document indexes of connected elements by a string key (Document[$forLabels] by `for`
- * value, Document[$radios] by name), each list in no particular order. Kept by the elements'
- * connected, disconnected and attribute change steps.
+ * Per-document indexes of connected elements by a string key, in no particular order, kept by the
+ * elements' connected, disconnected and attribute change steps: Document[$forLabels], the labels
+ * by `for` value, and Document[$radios], the radios by name.
+ *
+ * A `for` value nearly always has one label, which never moves: an array. A radio leaves and
+ * rejoins its group constantly: on every update React sets its `name` to "" and back
+ * (react-dom's updateInput, so the radio is out of its group while its checkedness changes), and
+ * splicing each one out of an array made a re-render of a group of 500 radios 250,000 element
+ * moves (8% of a click's CPU there). A set, which costs a few hundred bytes per name: fine for
+ * radio groups, 11% more allocation building 1,000 labelled rows when the labels had one each.
  */
 export function indexAdd(index: Map<string, NodeImpl[]>, key: string, el: NodeImpl): void {
   const list = index.get(key);
@@ -277,6 +287,18 @@ export function indexRemove(index: Map<string, NodeImpl[]>, key: string, el: Nod
   const list = index.get(key)!;
   if (list.length === 1) index.delete(key);
   else list.splice(list.indexOf(el), 1);
+}
+
+export function radioIndexAdd(index: Map<string, Set<NodeImpl>>, name: string, el: NodeImpl): void {
+  const set = index.get(name);
+  if (set === undefined) index.set(name, new Set<NodeImpl>().add(el));
+  else set.add(el);
+}
+
+export function radioIndexRemove(index: Map<string, Set<NodeImpl>>, name: string, el: NodeImpl): void {
+  const set = index.get(name)!;
+  if (set.size === 1) index.delete(name);
+  else set.delete(el);
 }
 
 /**

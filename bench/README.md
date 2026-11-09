@@ -532,6 +532,38 @@ controls; `user.tab` needs every focusable element; and a `<form>` is a Proxy, w
 is still ~1% of the user-event calls' CPU. With the three changes above the profile of those
 calls is flat again: `dispatch` leads at 3%.
 
+**Forms, worst cases** (2026-11-09). A second scratch probe went after the bad shapes: a form whose
+every field re-renders on each keystroke (state in the root; with validation of the whole form
+and an error element per field; with an inline style object per field), 20 against 200 fields;
+one input or textarea typed to 500 characters, pasted 10,000 and edited while holding 10,000; a
+select of 1,000 options; a group of 500 radios; 500 controlled checkboxes toggled at once; and a
+five-control form inside a page of 10,000 other nodes, with and without an ID on the form.
+Nothing grew faster than its size, and long values cost nothing extra (33 µs per character at 20
+and at 500). In the re-render-everything cases React is 65–70% of the CPU and we are 8–12%: a
+keystroke in the 200-field form is 1.8 ms, nearly all of it React rendering 200 fields. What was
+ours:
+
+- **A radio's `name`, on every update.** react-dom's `updateInput` sets a radio's `name` to "" and
+  back around each update, so the radio leaves and rejoins the document's radio index
+  (`Document[$radios]`), an array per name: each removal spliced it, 250,000 element moves to
+  re-render a group of 500 (8% of a click's CPU there, 21% → 16% ours). The indexes are sets now.
+- **React's radio query, on the whole document.** The same update runs
+  `document.querySelectorAll('input[name="…"][type="radio"]')`. In the 10,000-node page that walk
+  was 32% of the CPU of a click on a radio (159 µs in a 100-node page, 298 µs in that one). A
+  document query whose subject names an element type now only looks at the document's elements of
+  that type, a list stamped with the tree version (`elementsOfType` in selectors/index.ts), so
+  attribute and state changes keep it: 183 µs.
+- **A form with an ID**, which is most forms, was looked for across its whole tree at every
+  document version, since a `form` attribute anywhere can name it. A document remembers whether
+  any element of it has had one (`Document[$formAttrSeen]`); until then the form's own subtree is
+  enough. In the 10,000-node page, after a mutation: `form.elements` 119 → 1.7 µs,
+  `checkValidity()` 113 → 3.2 µs, `new FormData(form)` 115 → 2.7 µs. Awaiting a form
+  (`await screen.findByRole("form")`) paid the same walk, because resolving a promise reads
+  `then`, which on a form is a named-property lookup through its controls: 116 → 0.8 µs.
+
+Left alone: validating a 200-field form on every keystroke is 200 fields' worth of attribute
+reads (12% ours); a 1,000-option select re-rendered by React sets `selected` on each option.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

@@ -14,6 +14,7 @@ import {
   F_ARIA_ATTRS,
   F_CONTENTEDITABLE_ATTR,
   F_DATA_ATTRS,
+  F_FORM_ATTR,
   F_HAS_SHADOW,
   F_HAS_STYLE_ATTR,
   F_INERT_ATTR,
@@ -28,6 +29,7 @@ import {
   $clonable,
   $declarative,
   $delegatesFocus,
+  $formAttrSeen,
   $impl,
   $mode,
   $serializable,
@@ -90,7 +92,14 @@ function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
         el.id = node.id;
         el.flags |=
           node.flags &
-          (F_HAS_STYLE_ATTR | F_ARIA_ATTRS | F_DATA_ATTRS | F_TABINDEX_ATTR | F_CONTENTEDITABLE_ATTR | F_INERT_ATTR);
+          (F_HAS_STYLE_ATTR |
+            F_ARIA_ATTRS |
+            F_DATA_ATTRS |
+            F_TABINDEX_ATTR |
+            F_CONTENTEDITABLE_ATTR |
+            F_INERT_ATTR |
+            F_FORM_ATTR);
+        if ((node.flags & F_FORM_ATTR) !== 0) el.doc[$formAttrSeen] = true;
       }
       // Element-specific cloning steps (input value/checkedness, template contents, ...).
       (node.node as Element)._cloningSteps(el.node as Element, deep); // `deep` = the spec's subtree flag (template contents)

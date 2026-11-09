@@ -16,6 +16,7 @@ import {
   F_CHILDREN_HOOK,
   F_CONNECTED,
   F_CONNECT_HOOK,
+  F_FORM_ATTR,
   F_HAS_SHADOW,
   F_HTML,
   F_SHADOW_ROOT,
@@ -45,6 +46,7 @@ import {
   $childNodes,
   $derived,
   $focused,
+  $formAttrSeen,
   $host,
   $impl,
   $isHTML,
@@ -635,6 +637,7 @@ export function adopt(node: NodeImpl, doc: Document): void {
         // F_HTML depends on the node document being an HTML document.
         if (n.ns === HTML_NS && html) n.flags |= F_HTML;
         else n.flags &= ~F_HTML;
+        if ((n.flags & F_FORM_ATTR) !== 0) doc[$formAttrSeen] = true;
         const attrs = n.attrs;
         if (attrs !== null) {
           for (let i = 0; i < attrs.length; i++) {
@@ -667,6 +670,7 @@ function adoptShadowTree(root: NodeImpl, doc: Document): void {
     if (n.type === ELEMENT_NODE) {
       if (n.ns === HTML_NS && doc[$isHTML]) n.flags |= F_HTML;
       else n.flags &= ~F_HTML;
+      if ((n.flags & F_FORM_ATTR) !== 0) doc[$formAttrSeen] = true;
       const attrs = n.attrs;
       if (attrs !== null) {
         for (let i = 0; i < attrs.length; i++) {

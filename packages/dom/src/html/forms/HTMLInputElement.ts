@@ -97,8 +97,8 @@ import {
   formOwner,
   formOwnerScope,
   hasDatalistAncestor,
-  indexAdd,
-  indexRemove,
+  radioIndexAdd,
+  radioIndexRemove,
   isActuallyDisabled,
 } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
@@ -1386,8 +1386,8 @@ function radioKey(type: number, name: string | null): string | null {
 /** A connected input's key in Document[$radios] changed from `from` to `to`. */
 function reindexRadio(el: NodeImpl, from: string | null, to: string | null): void {
   if (from === to) return;
-  if (from !== null) indexRemove(el.doc[$radios]!, from, el);
-  if (to !== null) indexAdd((el.doc[$radios] ??= new Map()), to, el);
+  if (from !== null) radioIndexRemove(el.doc[$radios]!, from, el);
+  if (to !== null) radioIndexAdd((el.doc[$radios] ??= new Map()), to, el);
 }
 
 /**
@@ -1427,8 +1427,7 @@ function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): vo
     if (members === undefined) return;
     // A form owner implies the same tree; without one, members must share el's tree.
     const root = owner === null ? treeRoot(el) : null;
-    for (let i = 0; i < members.length; i++) {
-      const n = members[i];
+    for (const n of members) {
       if (n === el || formOwner(n) !== owner || (root !== null && treeRoot(n) !== root)) continue;
       if (fn(n)) return;
     }

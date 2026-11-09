@@ -48,6 +48,7 @@ import {
   $doc,
   $focused,
   $forLabels,
+  $formAttrSeen,
   $forms,
   $ids,
   $impl,
@@ -106,12 +107,14 @@ export class Document extends Node {
    * an ID without walking the tree.
    */
   [$forLabels]: Map<string, NodeImpl[]> | null;
+  /** An element of this document has had a `form` attribute (never reset): formOwnerScope. */
+  [$formAttrSeen]: boolean;
   /**
    * Connected radio buttons with a non-empty name, by name, each list in no particular order, or
    * null before the first (html/forms/HTMLInputElement.ts). A radio's group is looked up here
    * instead of walking the tree.
    */
-  [$radios]: Map<string, NodeImpl[]> | null;
+  [$radios]: Map<string, Set<NodeImpl>> | null;
   /** document.forms (named-properties proxy), created on first read. */
   [$forms]: HTMLCollection | null;
   /** https://html.spec.whatwg.org/#concept-document-about-base-url (about:blank / about:srcdoc documents of nested browsing contexts). */
@@ -145,6 +148,7 @@ export class Document extends Node {
     this[$ranges] = null;
     this[$derived] = null;
     this[$forLabels] = null;
+    this[$formAttrSeen] = false;
     this[$radios] = null;
     this[$aboutBase] = null;
     this[$baseOverride] = null;

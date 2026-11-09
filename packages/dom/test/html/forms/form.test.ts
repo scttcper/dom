@@ -104,6 +104,50 @@ describe("form owner scope — https://html.spec.whatwg.org/#form-owner", () => 
     expect($("out").form).toBeNull();
   });
 
+  // A form with an ID is searched beyond its subtree only in a document that has had a `form`
+  // attribute (Document[$formAttrSeen]): every way one can arrive must be seen.
+  test.each([
+    ["setAttribute on a connected control", (out: any) => out.setAttribute("form", "f")],
+    [
+      "an attribute node",
+      (out: any) => out.setAttributeNode(Object.assign(document.createAttribute("form"), { value: "f" })),
+    ],
+    [
+      "a control given the attribute while detached",
+      (out: any) => {
+        const parent = out.parentNode;
+        parent.removeChild(out);
+        out.setAttribute("form", "f");
+        parent.append(out);
+      },
+    ],
+    [
+      "a clone of another document's control",
+      (out: any) => {
+        const source = createWindow().document.createElement("input");
+        source.setAttribute("form", "f");
+        out.replaceWith(Object.assign(document.importNode(source, true), { id: "out" }));
+      },
+    ],
+    [
+      "a control adopted from another document",
+      (out: any) => {
+        const source = createWindow().document.createElement("input");
+        source.setAttribute("form", "f");
+        source.id = "out";
+        out.replaceWith(document.adoptNode(source));
+      },
+    ],
+    ["markup", (out: any) => (out.outerHTML = "<input id=out form=f>")],
+  ])("a form with an ID owns an outside control that names it through %s", (_how, give) => {
+    document.body!.innerHTML = "<form id=f><input id=in></form><input id=out>";
+    expect([...$("f").elements]).toEqual([$("in")]);
+    give($("out"));
+    expect([...$("f").elements]).toEqual([$("in"), $("out")]);
+    expect($("out").form).toBe($("f"));
+    check();
+  });
+
   test("a control the parser associated from outside the form is listed", () => {
     // Document parsing only: fragment parsing never uses the form element pointer.
     window = createWindow({ html: "<div><form id=p></div><input id=after><input type=radio name=r id=r1>" });
