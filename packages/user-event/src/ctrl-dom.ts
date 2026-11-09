@@ -139,6 +139,17 @@ export function immediatesPending(): boolean {
     : process.getActiveResourcesInfo().includes('Immediate')
 }
 
+const turn = internal?.loopTurn as ((resolve: () => void) => void) | undefined
+
+/**
+ * `setImmediate(resolve)`; on @ctrl/dom's idle-skipping clock without the event-loop turn when
+ * that turn would run nothing else (src/window/clock.ts, loopTurn).
+ */
+export function loopTurn(resolve: () => void): void {
+  if (turn !== undefined) turn(resolve)
+  else globalThis.setImmediate(resolve)
+}
+
 const NodeImplClass = (internal?.NodeImpl ?? null) as
   | (abstract new (...args: never[]) => NodeImpl)
   | null

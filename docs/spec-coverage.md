@@ -1290,7 +1290,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [serialize-a-simple-selector](https://drafts.csswg.org/cssom/#serialize-a-simple-selector) | `dom/selectors/serialize.ts` | **untested** |
 | [serialize-a-string](https://drafts.csswg.org/cssom/#serialize-a-string) | `dom/css/values.ts`, `dom/selectors/serialize.ts` | **untested** |
 | [serialize-a-url](https://drafts.csswg.org/cssom/#serialize-a-url) | `dom/css/values.ts` | **untested** |
-| [serialize-an-identifier](https://drafts.csswg.org/cssom/#serialize-an-identifier) | `dom/css/CSS.ts`, `dom/selectors/serialize.ts`, `dom/window/fallbacks.ts` +2 | `dom/selectors/parser.test.ts` |
+| [serialize-an-identifier](https://drafts.csswg.org/cssom/#serialize-an-identifier) | `dom/css/CSS.ts`, `dom/selectors/serialize.ts`, `dom/window/fallbacks.ts` +1 | `dom/selectors/parser.test.ts` |
 | [serializing-media-queries](https://drafts.csswg.org/cssom/#serializing-media-queries) | `dom/css/media.ts` | WPT: `css/cssom/mediaquery-sort-dedup.html` |
 | [set-a-css-declaration](https://drafts.csswg.org/cssom/#set-a-css-declaration) | `dom/css/declarations.ts` | WPT: `css/cssom/setproperty-custom-property-override-important.html` |
 | [synchronously-replace-the-rules-of-a-cssstylesheet](https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |

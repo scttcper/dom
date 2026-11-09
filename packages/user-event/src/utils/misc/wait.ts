@@ -29,7 +29,12 @@
 // behind ours, so after either wait user-event yields again while immediates other than the
 // clock's own are queued, up to MAX_YIELD_HOPS (upstream's 1 ms timer can lose that race too).
 
-import {immediatesPending, isClockTimer, skipIdleTime} from '../../ctrl-dom.ts'
+import {
+  immediatesPending,
+  isClockTimer,
+  loopTurn,
+  skipIdleTime,
+} from '../../ctrl-dom.ts'
 import {type Instance} from '../../setup/index.ts'
 
 type TimerFn = ((...args: never[]) => unknown) & {
@@ -298,7 +303,10 @@ export function yieldBetweenActions(
 
 async function yieldAndSettle(config: Instance['config']) {
   if (canYieldWithImmediate(config)) {
-    await new Promise<void>(resolveOnImmediate)
+    // On the clock, a macrotask boundary without the event-loop turn when the loop is idle.
+    await new Promise<void>(
+      isClockTimer(globalThis.setTimeout) ? loopTurn : resolveOnImmediate,
+    )
   } else {
     await wait(config)
     if (timerGlobalsObserved() && !isClockTimer(globalThis.setTimeout))

@@ -489,6 +489,32 @@ Still there: an element with one listener pays for a slots array as long as that
 (React's non-delegated `invalid` listener on every input: ~600 B), and adding attributes one by
 one copies the exact-size attribute array.
 
+**Forms, per operation** (2026-11-09). A scratch probe timed each thing a form test does (user-event
+calls, queries, matchers, form APIs) on a React form of 20 and 200 fields, warm, on the
+environment's clock. The CPU profile of our code is flat there too; what stood out was not in it:
+
+- **Event-loop turns.** An empty turn (`await new Promise(setImmediate)`) costs Node ~12.6 µs on
+  this machine (macOS: libuv polls for I/O on every turn), with or without our clock. user-event
+  yields between actions and at the end of a call, and Testing Library's asyncWrapper drains once
+  more: two to four turns per call, which was half of a `user.click()` and nearly all of a
+  `user.clear()`. Those yields now go through `loopTurn` (window/clock.ts): after a full
+  microtask drain, with no event-loop turn when the loop is idle (no immediate but the clock's
+  own, no I/O beyond the baseline, no timer due), and a real turn at least every 1 ms. On the
+  20-field form: `user.clear` 33.6 → 7.8 µs, `user.click` on a checkbox 77 → 27 µs, on the submit
+  button 82 → 32 µs, `user.type` of one character 159 → 95 µs, `user.selectOptions` 155 → 93 µs,
+  `user.tab` 105 → 68 µs.
+- **`toHaveFormValues`** ran upstream's `querySelectorAll('[name="…"]')` once per form control:
+  23 µs at 20 fields, 1.4 ms at 200, 33 ms at 1,000. One walk grouping by name: 16 µs, 76 µs,
+  0.36 ms.
+- Not ours: `fireEvent.change` on one field grows with the form (38 → 84 µs) because React walks
+  the form's fibers, reading `performance.now()` about three times per fiber in development (14%
+  of that workload is the native clock read behind our virtual one).
+
+Still there: `getByLabelText` walks the tree three times per call (8.6 µs at 20 fields, 59 µs at
+200, against 3 and 20 µs for `getByRole` with a name); `form.elements.namedItem` scans the
+controls; `user.tab` needs every focusable element; and a `<form>` is a Proxy, whose `get` trap
+was 2.3% of the user-event calls' CPU (user-event's `isDisabled` climbs through it).
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

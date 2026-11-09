@@ -67,6 +67,7 @@ export {
   installClock,
   clockNow,
   clockStats,
+  loopTurn,
   canSkipZeroDelayWait,
   foreignImmediatesPending,
   isClockTimer,

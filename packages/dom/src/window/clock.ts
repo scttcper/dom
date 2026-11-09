@@ -37,6 +37,8 @@ type Callback = (...args: unknown[]) => unknown;
 const hostSetTimeout = globalThis.setTimeout;
 const hostClearTimeout = globalThis.clearTimeout;
 const hostSetImmediate = globalThis.setImmediate;
+const hostQueueMicrotask = globalThis.queueMicrotask;
+const hostNextTick = process.nextTick;
 const hostPerformance = globalThis.performance;
 const realNow = hostPerformance.now.bind(hostPerformance);
 const getActiveResourcesInfo = process.getActiveResourcesInfo.bind(process);
@@ -418,6 +420,7 @@ export class VirtualClock {
   };
 
   onHostTimer = (): void => {
+    lastLoopTurn = realNow();
     this.hostTimer = null;
     this.hostDue = Infinity;
     this.fireNext();
@@ -484,6 +487,7 @@ export class VirtualClock {
    * consecutive turns (pending promise reactions and the immediates they schedule settle first).
    */
   driverTurn = (): void => {
+    lastLoopTurn = realNow();
     this.driverScheduled = false;
     this.driverImmediate = false;
     if (this.disposed || this.heap.length === 0) {
@@ -732,6 +736,60 @@ export function foreignImmediatesPending(): boolean {
   let immediates = 0;
   for (let i = 0; i < resources.length; i++) if (resources[i] === "Immediate") immediates++;
   return immediates > (activeClock === null ? 0 : activeClock.ownImmediates);
+}
+
+/** Real time of the last event-loop turn loopTurn knows of: its own, the driver's, a host timer's. */
+let lastLoopTurn = 0;
+/** Real time loopTurn lets pass between two event-loop turns. */
+const MAX_TURNLESS_MS = 1;
+
+/**
+ * A macrotask boundary for a caller that yields so pending work can run, and has nothing of its
+ * own to wait for: user-event between two actions and at the end of a call, Testing Library's
+ * asyncWrapper drain. `resolve` runs where a `setImmediate(resolve)` would have run it, without
+ * the event-loop turn when that turn has nothing else to do.
+ *
+ * A turn costs Node ~12.6 µs here even when empty (libuv polls for I/O on every one), and
+ * user-event takes two to four per call: half of a `user.click()`. What a turn does for such a
+ * caller is finish the microtasks (and process.nextTick callbacks) queued so far, with everything
+ * they queue in turn, then run timers that are due, I/O that is ready and the immediates queued
+ * before the caller's. So:
+ *
+ * - `resolve` is called from a process.nextTick callback queued from a microtask. Node runs its
+ *   tick queue only once V8's microtask queue is empty (processTicksAndRejections in
+ *   lib/internal/process/task_queues.js), so every microtask queued before, and every one those
+ *   queued, has run by then, as at the end of a macrotask.
+ * - There, the loop must be idle as the driver sees it (busy(): no immediate but the clock's own,
+ *   which covers React's scheduler; no I/O resource beyond the baseline) with no timer of the
+ *   clock's due. Otherwise the caller gets its real turn.
+ * - Every MAX_TURNLESS_MS of real time a real turn is taken regardless, so Node's own timers (the
+ *   test runner's timeout for a test that loops forever on `await user.click()`), unref'd timers
+ *   and the runner's messages are never starved.
+ *
+ * Without a clock that skips idle time: `setImmediate(resolve)`.
+ */
+export function loopTurn(resolve: () => void): void {
+  const clock = activeClock;
+  if (clock === null || realNow() - lastLoopTurn > MAX_TURNLESS_MS) realTurn(resolve);
+  else hostQueueMicrotask(() => hostNextTick(settleTurn, clock, resolve));
+}
+
+function settleTurn(clock: VirtualClock, resolve: () => void): void {
+  if (activeClock === clock && clock.busy(clock.ownImmediates) === null) {
+    const first = clock.heap[0];
+    if (first === undefined || first.due > clock.now()) {
+      resolve();
+      return;
+    }
+  }
+  realTurn(resolve);
+}
+
+function realTurn(resolve: () => void): void {
+  hostSetImmediate(() => {
+    lastLoopTurn = realNow();
+    resolve();
+  });
 }
 
 /** Milliseconds the active clock has skipped (0 without one): what a traced span reads at start and end. */

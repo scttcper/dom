@@ -34,6 +34,7 @@ import act, {
 import {
   canSkipZeroDelayWait,
   listenerCount,
+  loopTurn,
   reusableElement,
   skipZeroDelayWait,
   traceSync,
@@ -261,11 +262,12 @@ configureDTL({
       // `act()`.
       await new Promise<void>((resolve) => {
         // Ours: on @ctrl/dom's idle-skipping clock with real timers, an idle loop and nothing due
-        // within the timer's 1 ms, the same wait in one event-loop turn instead of two. The check
-        // is repeated in that turn, after the microtasks still queued now: work they schedule
-        // (React's, through setImmediate) gets the 0 ms timer's wait, as upstream.
+        // within the timer's 1 ms, the same wait in one macrotask boundary instead of two turns
+        // (loopTurn: without the event-loop turn itself when it would run nothing). The check is
+        // repeated there, after the microtasks still queued now: work they schedule (React's,
+        // through setImmediate) gets the 0 ms timer's wait, as upstream.
         if (canSkipZeroDelayWait(globalThis)) {
-          setImmediate(() => (skipZeroDelayWait(globalThis) ? resolve() : drainWithTimer(resolve)));
+          loopTurn(() => (skipZeroDelayWait(globalThis) ? resolve() : drainWithTimer(resolve)));
           return;
         }
         drainWithTimer(resolve);

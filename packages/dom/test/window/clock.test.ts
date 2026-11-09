@@ -17,6 +17,7 @@ import { VirtualClock, installClock, type InstalledClock } from "@ctrl/dom/inter
 import {
   canSkipZeroDelayWait,
   foreignImmediatesPending,
+  loopTurn,
   queueUserAgentTask,
   skipZeroDelayWait,
 } from "../../src/window/clock.ts";
@@ -571,5 +572,86 @@ describe("async context — https://nodejs.org/api/async_context.html#class-asyn
       });
     });
     expect(seen).toEqual(["interval", "interval", "unref"]);
+  });
+});
+
+describe("loopTurn: a macrotask boundary without an event-loop turn when the loop is idle — https://html.spec.whatwg.org/#event-loop-processing-model, https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick", () => {
+  /** Runs on the check phase of the next event-loop turn without counting as pending work (unref'd). */
+  const onNextTurn = (fn: () => void) => void setImmediate(fn).unref();
+  const turn = () => new Promise<void>((resolve) => loopTurn(resolve));
+  /** A real turn, so the next loopTurn starts within its turnless allowance. */
+  const realTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+  test("idle loop: resolves after every microtask queued before it, and those they queue, without taking an event-loop turn", async () => {
+    setup(true);
+    const microtasks = [...Array.from({ length: 20 }, (_, i) => `microtask ${i}`), "microtask from a tick"];
+    let turnless = false;
+    // A stalled machine can let the 1 ms turnless allowance run out between two lines: the
+    // microtasks drain either way, and one attempt in ten without a turn is the point.
+    for (let attempt = 0; attempt < 10 && !turnless; attempt++) {
+      await realTurn();
+      const order: string[] = [];
+      let turned = false;
+      onNextTurn(() => (turned = true));
+      let chain = Promise.resolve();
+      for (let i = 0; i < 20; i++) chain = chain.then(() => void order.push(`microtask ${i}`));
+      process.nextTick(() => queueMicrotask(() => order.push("microtask from a tick")));
+      await turn();
+      expect(order).toEqual(microtasks);
+      turnless = !turned;
+    }
+    expect(turnless).toBe(true);
+  });
+
+  test("an immediate queued before it (React's scheduler) runs first: a real turn", async () => {
+    setup(true);
+    await realTurn();
+    const order: string[] = [];
+    setImmediate(() => order.push("immediate"));
+    await turn();
+    expect(order).toEqual(["immediate"]);
+  });
+
+  test("an immediate queued by a pending microtask runs first", async () => {
+    setup(true);
+    await realTurn();
+    const order: string[] = [];
+    void Promise.resolve().then(() => void setImmediate(() => order.push("immediate")));
+    await turn();
+    expect(order).toEqual(["immediate"]);
+  });
+
+  test("a timer of the clock that falls due while the pending microtasks run takes a real turn", async () => {
+    const g = setup(true);
+    await realTurn();
+    let turned = false;
+    onNextTurn(() => (turned = true));
+    // Due in 1 ms (Node's minimum); a microtask queued before the yield runs past that.
+    g.setTimeout(() => {}, 0);
+    queueMicrotask(() => {
+      const start = performance.now();
+      while (performance.now() - start < 2);
+    });
+    await turn();
+    expect(turned).toBe(true);
+  });
+
+  test("after 1 ms of real time without an event-loop turn the next one is real, so Node's own timers are not starved", async () => {
+    setup(true);
+    await realTurn();
+    let turned = false;
+    onNextTurn(() => (turned = true));
+    const start = performance.now();
+    while (performance.now() - start < 2);
+    await turn();
+    expect(turned).toBe(true);
+  });
+
+  test("without a skipping clock it is setImmediate", async () => {
+    setup(false);
+    let turned = false;
+    onNextTurn(() => (turned = true));
+    await turn();
+    expect(turned).toBe(true);
   });
 });
