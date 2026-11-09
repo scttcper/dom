@@ -596,6 +596,59 @@ ours:
 Left alone: validating a 200-field form on every keystroke is 200 fields' worth of attribute
 reads (12% ours); a 1,000-option select re-rendered by React sets `selected` on each option.
 
+## Shared workers (`ctrlDom({ sharedWorkers: true })`)
+
+Measured 2026-11-09. A suite of many short files spends most of its time starting workers ("Worker
+startup" above), and Vitest's `isolate: false` skips that: the 100-file suite here takes 3.4 s of
+Vitest's reported duration in the default pool, 0.95 s in vmForks and 0.28 s with `isolate: false`.
+Alone it is not usable: stock Testing Library (and ours) registered its cleanup for the first file
+of a worker only (29 of those 100 files fail, on every DOM), 31 of Base UI's tests fail on jsdom and
+on us alike (files that `vi.mock` a module another file loaded first), and more fail from what a
+file leaves in the document. The plugin's mode (packages/vitest-environment/src/shared-workers.ts)
+adds a setup file that, before every test file, evaluates first-party modules again
+(`vi.resetModules()`), resets the window (window/file-reset.ts) and registers the testing
+library's hooks for the file. Base UI, `all`, ctrl-dom-full, default workers
+(`CTRL_DOM_SHARED_WORKERS=1 node downstream/base-ui/run.ts`): 9,197 passed and 2 failed in
+7.0–7.6 s, against 9,198 and 1 in 36.1 s isolated; the failures in both are the Popover focus tests
+downstream/baseline.json lists as flaky. jsdom gets less from `isolate: false` (29.9 → 18.7 s on the
+`interactions` preset, where ours went 17.0 → 4.7 s): its time is in running the tests.
+
+What the setup file had to learn from that suite:
+
+- Vitest runs a setup file again for each test file only when it evaluates the module itself. A
+  setup file in node_modules is loaded by Node, once: the plugin marks its own as inlined.
+- Timers a file leaves pending fire in the pause before the next file starts (at once, on the
+  clock that skips idle time), so the window is reset when a file ends too, in an afterAll hook
+  registered first (it runs last under Vitest's default hook order).
+- React 19 hoists `<style precedence>` and the like to `<head>` and tracks them in a map on the
+  document; both have to go, or a test that expects no style element finds the previous file's
+  (Base UI's CSPProvider tests). @ctrl/dom/react does it in its `fileEnd` hook.
+- Listeners on the window and document, and properties on them, stay. Removing the listeners a
+  file added without also removing React's "already listening" markers left its portals deaf
+  (4,125 failures); a dependency that adds its listeners once per module instance (React Aria)
+  would be left the same way.
+
+**Memory grows with every file, and it is Vitest's.** Heap after a forced GC, one worker, Base UI's
+`interactions` preset (149 files): 163 MB after 10 files, 482 MB after 149, 2.3 MB per file. A heap
+snapshot at the 31st file (retaining paths from the roots, through weak-map keys) leads from chai's
+`used` array: `chai.use(fn)` keeps every plugin function it is given, Vitest's `createExpect(test)`
+calls `expect.extend()` twice for each test's own `expect`, and each call hands chai a new closure
+over that `expect`, which holds the test, whose function holds its file's module graph. 3,543
+entries after 2,471 tests. Nothing we can reach holds them: the array is private to chai, and
+Vitest 5 no longer exports the helpers that could clear a finished test's function
+(`vitest/suite`). With `isolate: true` the worker ends with the file. Not reported upstream yet.
+
+**The JSX runtime** (`jsxRuntime`, on by default). Vitest hands the code it transforms a Proxy over
+an external CommonJS namespace (`shouldInterop` in its module evaluator: not `.mjs`, has a
+`default`), so `jsxDEV(...)` for every element, and `React.useState` when React is imported as a
+namespace, go through its `get` trap: 3.5% of the CPU in Base UI's shared-worker profile. With
+`react/jsx-runtime` and `react/jsx-dev-runtime` resolved to ES modules that export the same
+functions and no default, a hooks-heavy render (200 components, mount and rerender, warm median of
+five fresh runs) goes 3.29 → 3.01 ms; doing the same for `react` itself gives 2.80 ms but makes the
+namespace immutable (`vi.spyOn(React, "useState")` throws), so it is not done. The plugin's
+resolution options are in the key of Vitest's on-disk module cache (`defineCacheKeyGenerator`): a
+file transformed with one setting was otherwise reused with the other.
+
 ## Regression check (`compare.ts`)
 
 `pnpm bench:compare --base <checkout> --head <checkout>` runs our configurations (`ctrl-dom-full` for React

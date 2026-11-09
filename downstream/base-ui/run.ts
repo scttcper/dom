@@ -34,6 +34,10 @@ const repo = resolve(here, "../..");
 // CTRL_DOM_SENTRY_REPORTER=1 (opt in, so a SENTRY_DSN in the shell never reports harness runs by
 // accident): @ctrl/sentry-tests' runner and reporter, sending to SENTRY_DSN / SENTRY_SPOTLIGHT.
 const SENTRY_REPORTER = process.env.CTRL_DOM_SENTRY_REPORTER === "1";
+// CTRL_DOM_SHARED_WORKERS=1: the ctrl-dom modes run as the ctrlDom() plugin's `sharedWorkers` sets a
+// project up (`isolate: false`, its setup file first and transformed by Vitest). An experiment:
+// reports are labelled by hand, never tracked in downstream/baseline.json.
+const SHARED_WORKERS = process.env.CTRL_DOM_SHARED_WORKERS === "1";
 // Extra Vitest CLI arguments (space-separated), e.g. to profile workers:
 // CTRL_DOM_VITEST_ARGS="--execArgv=--cpu-prof --execArgv=--cpu-prof-dir=/tmp/prof".
 const EXTRA_VITEST_ARGS = process.env.CTRL_DOM_VITEST_ARGS?.split(" ").filter(Boolean) ?? [];
@@ -394,7 +398,11 @@ const project = mergeConfig(upstreamProject, {
     }
   },
 });
-project.test.setupFiles = [${JSON.stringify(probe)}, ...(project.test.setupFiles ?? [])];${SENTRY_REPORTER ? `\nproject.test.runner = ${JSON.stringify(join(repo, "packages/sentry-tests/src/vitest-runner.ts"))};` : ""}
+project.test.setupFiles = [${JSON.stringify(probe)}, ...(project.test.setupFiles ?? [])];${
+      ctrlDom && SHARED_WORKERS
+        ? `\nproject.test.isolate = false;\nproject.test.setupFiles.unshift(${JSON.stringify(join(repo, "packages/vitest-environment/src/shared-workers.ts"))});\nproject.test.server.deps.inline = [...(project.test.server.deps.inline ?? []), /vitest-environment\\/src\\/shared-workers\\.ts$/];`
+        : ""
+    }${SENTRY_REPORTER ? `\nproject.test.runner = ${JSON.stringify(join(repo, "packages/sentry-tests/src/vitest-runner.ts"))};` : ""}
 
 export default {
   ...upstreamRoot,

@@ -262,6 +262,50 @@ Jest):
 | `compileCache` (Vitest) | `true` with the plugin's Testing Library, else `false` | enable Node's compile cache before importing the DOM (with the plugin: as each worker starts), for every worker after the first. It stays on for everything the worker loads, which only pays off for large files (stock Testing Library's many small ones load slower). `CTRL_DOM_COMPILE_CACHE=0/1` overrides |
 | `nodeFetch` (Jest) | `false` | keep Node's `fetch`/`Request`/`Response` (absent under jest-environment-jsdom) |
 
+Options of the Vitest plugin alone (`ctrlDom({ ... })`):
+
+| Option | Default | |
+| --- | --- | --- |
+| `testingLibrary` | `true` | route stock `@testing-library/*` imports to @ctrl/dom's implementations; `false` swaps only the DOM |
+| `jsxRuntime` | `true` | resolve `react/jsx-runtime` and `react/jsx-dev-runtime` to ES module copies of them. Vitest hands test and application code a Proxy over a CommonJS dependency, so every JSX element otherwise goes through the Proxy's `get` trap; a hooks-heavy render is 8% faster without it. Left alone when the project resolves the runtime to anything but its React |
+| `sharedWorkers` | `false` | run a worker's test files one after another in the same realm instead of starting a worker per file: see below |
+| `debug` | off | `"aria"` or `"compact"`: [debugging with coding agents](#debugging-with-coding-agents) |
+
+### Shared workers
+
+```ts
+export default defineConfig({ plugins: [ctrlDom({ sharedWorkers: true })] });
+```
+
+Most of what a suite of many short test files costs is not the tests: each file starts a worker,
+which boots Node, loads Vitest, React and react-dom, and runs all of it cold. `sharedWorkers` sets
+Vitest's `isolate: false`, so a worker keeps going from file to file, and puts back most of what a
+fresh worker gave each file. Base UI's 9,199 tests take 35 s isolated and 7–8 s this way, with the
+same results.
+
+Before each test file:
+
+- first-party modules are evaluated again (`vi.resetModules()`), so module state and `vi.mock()`
+  start over;
+- the window is reset: trees still mounted are unmounted, pending timers and animation frames
+  dropped, the body emptied, focus, storage, cookies and the URL put back;
+- Testing Library's cleanup is registered for the file (stock Testing Library registers it for a
+  worker's first file only, which is why the mode needs `testingLibrary`).
+
+What a file can still see from an earlier one, and why the mode is opt-in:
+
+- the module state of dependencies. Vitest loads `node_modules` through Node, once per worker:
+  React, a CSS-in-JS cache, a data-fetching client created at module scope in a dependency;
+- `<head>`, event listeners on `window` and `document`, and patched prototypes, which those
+  modules may rely on;
+- memory. Vitest keeps every test it has run reachable for the life of the worker (chai remembers
+  each `expect.extend` call, and Vitest makes one per test), and with it that file's modules: a
+  worker's heap grows by the size of a file's module graph per file, 2.3 MB on Base UI. More
+  workers means fewer files each.
+
+The VM pools (`pool: "vmThreads"`) already reuse workers with a fresh context per file, and are
+unaffected.
+
 ## Compat profiles
 
 Suites written for jsdom feature-detect: a library that finds `PointerEvent`, `matchMedia` or

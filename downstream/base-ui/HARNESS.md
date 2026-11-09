@@ -33,6 +33,10 @@ node downstream/base-ui/run.ts --files packages/react/src/tabs/list/TabsList.tes
 writes a CPU profile per worker (ctrl-dom modes), from environment setup to teardown, into `dir`:
 Vitest ends its workers before `--cpu-prof` would write one.
 
+`CTRL_DOM_SHARED_WORKERS=1` runs the ctrl-dom modes as the `ctrlDom()` plugin's `sharedWorkers` option
+sets a project up (`isolate: false`, its setup file first): an experiment, not what the tracked
+results run.
+
 `CTRL_DOM_SENTRY_REPORTER=1` adds @ctrl/sentry-tests' runner and Vitest reporter (ctrl-dom modes),
 sending to `SENTRY_DSN` / `SENTRY_SPOTLIGHT`
 ([its README](../../packages/sentry-tests/README.md#development)).

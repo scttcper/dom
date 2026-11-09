@@ -14,6 +14,8 @@
 //    (bv) (b) with `--pool vmThreads`: modules evaluate in a vm context per file
 //    (c)  Vitest, the stock test file under the ctrlDom() plugin (README's whole-stack setup)
 //    (cv) (c) with `--pool vmThreads`
+//    (cs) Vitest, ctrlDom({ sharedWorkers: true }): two files in one worker, each starting from a
+//         reset window and fresh first-party modules, with React's JSX runtime from the plugin's copy
 //    (d1) Jest, testEnvironment "@ctrl/dom-jest-environment", stock Testing Library
 //    (d2) Jest, preset "@ctrl/dom", the stock test file routed to @ctrl/dom's CJS builds (README)
 //    (d3) Jest, a `@jest-environment @ctrl/dom-jest-environment` docblock, @ctrl/dom/react +
@@ -249,6 +251,18 @@ const checks: Check[] = [
       "@ctrl/dom/dist/react/index.js",
       "@ctrl/dom/dist/user-event/index.js",
       "@ctrl/dom/dist/jest-dom/vitest.js",
+    ],
+    mustNotLoad: /\/node_modules\/@testing-library\//,
+  },
+  {
+    id: "cs",
+    title: "Vitest, ctrlDom({ sharedWorkers: true }): two files in one worker",
+    cmd: ["vitest", "run", "--config", "vitest.shared.config.ts"],
+    mustLoad: [
+      "@ctrl/dom/dist/vitest-environment/plugin.js",
+      "@ctrl/dom/dist/vitest-environment/index.js",
+      "@ctrl/dom/dist/vitest-environment/jsx-dev-runtime.js",
+      "@ctrl/dom/dist/react/index.js",
     ],
     mustNotLoad: /\/node_modules\/@testing-library\//,
   },

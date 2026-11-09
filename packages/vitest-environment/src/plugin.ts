@@ -6,6 +6,8 @@
 // returning the environment's DOM instance (scripts/release.ts, writeBridges), so nothing here
 // needs to be inlined.
 
+import { realpathSync } from "node:fs";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vitest/config";
 import type { CtrlDomEnvironmentOptions } from "./index.ts";
@@ -28,6 +30,25 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
    * snapshot of `document.body` to every failing test's error, taken before cleanup.
    */
   debug?: "aria" | "compact";
+  /**
+   * Resolve `react/jsx-runtime` and `react/jsx-dev-runtime` to ES module copies of them (default
+   * true). Vitest hands the code it transforms a Proxy over a CommonJS dependency, so every
+   * element a test or component creates otherwise calls `jsx` through the Proxy's `get` trap; a
+   * hooks-heavy render is 8% faster without it. Left alone when the project's React is not the
+   * one @ctrl/dom resolves (an alias to another JSX runtime, a second copy of React).
+   */
+  jsxRuntime?: boolean;
+  /**
+   * Run a worker's test files one after another in the same realm instead of starting a worker
+   * per file (default false): Vitest's `isolate: false`, with first-party modules evaluated again
+   * and the window reset before each file, and Testing Library's cleanup registered for each
+   * (./shared-workers.ts has the details). Much faster for suites of many short files — Base UI's
+   * 9,199 tests take 35 s isolated and 7–8 s this way — and less isolated: modules Vitest loads
+   * from node_modules stay loaded, so a file can see what an earlier one did to a dependency's
+   * module state, to `<head>`, or to a prototype. Needs @ctrl/dom's Testing Library
+   * (`testingLibrary`), and does nothing in the VM pools, which reuse workers already.
+   */
+  sharedWorkers?: boolean;
 }
 
 // The environment and agent debug mode's failure snapshots (docs/agent-debugging.md: a setup file
@@ -36,6 +57,12 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
 const extension = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
 const environment = fileURLToPath(new URL(`./index${extension}`, import.meta.url));
 const failureSnapshot = fileURLToPath(new URL(`./failure-snapshot${extension}`, import.meta.url));
+const sharedWorkersSetup = fileURLToPath(new URL(`./shared-workers${extension}`, import.meta.url));
+/** React's JSX runtimes as ES modules without a default export (./jsx-runtime.ts has the reason). */
+const JSX_RUNTIMES: Record<string, string> = {
+  "react/jsx-runtime": fileURLToPath(new URL(`./jsx-runtime${extension}`, import.meta.url)),
+  "react/jsx-dev-runtime": fileURLToPath(new URL(`./jsx-dev-runtime${extension}`, import.meta.url)),
+};
 const DEBUG_FORMATS = new Set(["aria", "compact", "html"]);
 const ENVIRONMENT_NAME = "ctrl-dom";
 const ENVIRONMENT_PACKAGE = `vitest-environment-${ENVIRONMENT_NAME}`;
@@ -91,9 +118,31 @@ export function workerExecArgv({
   return flags;
 }
 
+/**
+ * The file Node loads for `specifier` from `from`, symlinks resolved, or null. The JSX runtime
+ * copies import React from where they are, so they stand in for the project's only when both
+ * resolve to one file.
+ */
+function resolvedFrom(from: string, specifier: string): string | null {
+  try {
+    return realpathSync(createRequire(from).resolve(specifier));
+  } catch {
+    return null;
+  }
+}
+
 /** @ctrl/dom's Vitest environment plus (by default) the Testing Library aliases. */
 export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
-  const { testingLibrary = true, debug, ...rest } = options;
+  const { testingLibrary = true, debug, jsxRuntime = true, sharedWorkers = false, ...rest } = options;
+  if (sharedWorkers && !testingLibrary) {
+    throw new Error(
+      "@ctrl/dom: `sharedWorkers` needs `testingLibrary` (the default): stock @testing-library/react registers its cleanup for the first test file of a worker only.",
+    );
+  }
+  // Set once Vitest configures a project: the same plugins may serve a Vite build or dev server.
+  let underVitest = false;
+  /** What React's own runtime resolves to from a JSX runtime copy, per specifier (null: not installed). */
+  const reactRuntime = new Map<string, string | null>();
   // The compile cache pays off for @ctrl/dom's few large bundles, not for stock Testing Library's
   // many small files (CtrlDomEnvironmentOptions.compileCache).
   const environmentOptions: CtrlDomEnvironmentOptions = { compileCache: testingLibrary, ...rest };
@@ -111,8 +160,23 @@ export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
     enforce: "pre",
     // `// @vitest-environment ctrl-dom`: Vitest looks a custom environment name up as the package
     // `vitest-environment-<name>`, through Vite's resolver.
-    resolveId(id) {
-      return id === ENVIRONMENT_PACKAGE ? environment : null;
+    async resolveId(id, importer, resolveOptions) {
+      if (id === ENVIRONMENT_PACKAGE) return environment;
+      const copy = jsxRuntime && underVitest ? JSX_RUNTIMES[id] : undefined;
+      // The copy's own import of the runtime is React's.
+      if (copy === undefined || importer === copy) return null;
+      let react = reactRuntime.get(id);
+      if (react === undefined) reactRuntime.set(id, (react = resolvedFrom(copy, id)));
+      if (react === null) return null;
+      const resolved = await this.resolve(id, importer, { ...resolveOptions, skipSelf: true });
+      if (resolved === null) return null;
+      let file: string;
+      try {
+        file = realpathSync(resolved.id.split("?")[0]);
+      } catch {
+        return null;
+      }
+      return file === react ? copy : null;
     },
     config(config) {
       // The project's environment unless it names another one (`environment: "node"` with
@@ -122,6 +186,21 @@ export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
       return {
         ...(testingLibrary ? { resolve: { alias: TESTING_LIBRARY } } : {}),
         test: {
+          server: {
+            deps: {
+              // Loaded by Node, like a dependency, wherever this package is (a workspace's sources
+              // too): an ES module without a default export gets no Proxy only when Vitest does
+              // not transform it.
+              ...(jsxRuntime
+                ? { external: Object.values(JSX_RUNTIMES).map((f) => new RegExp(`^${RegExp.escape(f)}$`)) }
+                : {}),
+              // Transformed by Vitest, unlike the rest of this package in node_modules: Vitest runs
+              // a setup file again for each test file only when it evaluates the module itself
+              // (Node would cache it after the worker's first file).
+              ...(sharedWorkers ? { inline: [new RegExp(`^${RegExp.escape(sharedWorkersSetup)}$`)] } : {}),
+            },
+          },
+          ...(sharedWorkers ? { isolate: false } : {}),
           ...(configured === undefined || configured === ENVIRONMENT_NAME ? { environment } : {}),
           environmentOptions: { [ENVIRONMENT_NAME]: environmentOptions },
           ...(debug && shellDebug === undefined ? { env: { CTRL_DOM_DEBUG: debug } } : {}),
@@ -131,9 +210,19 @@ export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
       };
     },
     // Worker flags go on the resolved project config (a CLI `--pool` included), known only here.
-    configureVitest({ project }) {
+    configureVitest({ project, defineCacheKeyGenerator }) {
       const config = project.config;
       if (config.browser?.enabled) return;
+      underVitest = true;
+      // What these options resolve imports to is in the transforms Vitest keeps on disk: a key
+      // per combination, or a file transformed under one would be reused under another.
+      defineCacheKeyGenerator(() => `@ctrl/dom testingLibrary=${testingLibrary} jsxRuntime=${jsxRuntime}`);
+      // First, so each file starts from the reset: before the project's setup files import anything.
+      if (sharedWorkers && config.pool !== "vmThreads" && config.pool !== "vmForks") {
+        config.setupFiles = [sharedWorkersSetup, ...config.setupFiles];
+        // Its end-of-file reset is an afterAll hook that must run last (./shared-workers.ts).
+        if (config.sequence.hooks !== "stack") config.env = { ...config.env, CTRL_DOM_SHARED_WORKERS_END: "0" };
+      }
       const flags = workerExecArgv({
         pool: config.pool,
         execArgv: config.execArgv,

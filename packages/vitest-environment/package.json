@@ -6,7 +6,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./plugin": "./src/plugin.ts",
-    "./failure-snapshot": "./src/failure-snapshot.ts"
+    "./failure-snapshot": "./src/failure-snapshot.ts",
+    "./jsx-runtime": "./src/jsx-runtime.ts",
+    "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
+    "./shared-workers": "./src/shared-workers.ts"
   },
   "files": [
     "dist",
@@ -30,6 +33,18 @@
       "./failure-snapshot": {
         "types": "./dist/types/failure-snapshot.d.ts",
         "default": "./dist/failure-snapshot.js"
+      },
+      "./jsx-runtime": {
+        "types": "./dist/types/jsx-runtime.d.ts",
+        "default": "./dist/jsx-runtime.js"
+      },
+      "./jsx-dev-runtime": {
+        "types": "./dist/types/jsx-dev-runtime.d.ts",
+        "default": "./dist/jsx-dev-runtime.js"
+      },
+      "./shared-workers": {
+        "types": "./dist/types/shared-workers.d.ts",
+        "default": "./dist/shared-workers.js"
       },
       "./package.json": "./package.json"
     }
