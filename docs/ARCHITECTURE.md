@@ -133,14 +133,18 @@ Memory rules for per-node state (every rendered element pays them):
   exact size: the first `push` onto `[]` allocates a 17-slot backing store. Event listeners avoid
   per-type lists altogether: a target holds one array indexed by a process-wide event type id,
   each slot the head of a linked list (`events/listeners.ts`), so a React root container's 142
-  listeners over 87 types are one array plus the listeners themselves.
+  listeners over 87 types are one array plus the listeners themselves. A target with up to four
+  types holds `[id, head]` pairs instead (React's own `invalid` listener on every input: 641 → 128 B).
   Measure allocation with `pnpm bench` (`allocMB`/`gcMs` extras) when touching hot paths.
 - A wrapper React defines an own accessor on must have few own properties. React tracks every
   `<input>` and `<textarea>` it mounts by defining an own `value`/`checked` accessor with closures
   of its own, and V8 moves the second object to get a different accessor pair to dictionary mode:
   ~24 B per own property, rounded up to a power of two, and every later read a hash lookup. So an
   input's and a textarea's state is one `ControlState` (html/forms/control-state.ts) in
-  `wrapper[$control]`, not 17 fields of the wrapper (a tracked input: 2,238 → 1,245 B).
+  `wrapper[$control]`, not 17 fields of the wrapper (a tracked input: 2,238 → 1,245 B), and the
+  validity state, labels list, custom validity message and user validity flag of a form control
+  are added on first use like the objects above: an input React mounted has 8 own properties
+  (ours, React's two keys, its `value` accessor and tracker), inside a 16-entry dictionary.
 
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,
 `Document`, `DocumentFragment → ShadowRoot`, `DocumentType`, `Attr`. Wrapper fields are

@@ -24,17 +24,15 @@ import { $customValidity, $defaultValueOverride, $impl, $labels, $options, $vali
 export class HTMLOutputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#concept-output-default-value-override (null = none). */
   [$defaultValueOverride]: string | null;
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
-  [$labels]: LabelsNodeList | null;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
+  declare [$labels]?: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$defaultValueOverride] = null;
-    this[$customValidity] = "";
-    this[$validity] = null;
-    this[$labels] = null;
   }
 
   get type(): string {
@@ -85,11 +83,11 @@ export class HTMLOutputElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
   }
 
   _validationMessage(_flags: number): string {
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 }
 
@@ -112,12 +110,11 @@ function setFloat(el: HTMLElement, name: string, value: unknown): void {
 }
 
 export class HTMLProgressElement extends HTMLElement {
-  [$labels]: LabelsNodeList | null;
+  declare [$labels]?: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this[$labels] = null;
   }
 
   /** https://html.spec.whatwg.org/#dom-progress-max */
@@ -159,12 +156,11 @@ export class HTMLProgressElement extends HTMLElement {
 
 /** https://html.spec.whatwg.org/#the-meter-element — the clamped values of the meter algorithm. */
 export class HTMLMeterElement extends HTMLElement {
-  [$labels]: LabelsNodeList | null;
+  declare [$labels]?: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this[$labels] = null;
   }
 
   get min(): number {

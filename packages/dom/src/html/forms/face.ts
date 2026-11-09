@@ -70,8 +70,9 @@ export class FaceState {
   lastOwner: NodeImpl | null;
   lastDisabled: boolean;
   // Validatable members (unused fields of the interface kept for shape).
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
 
   constructor(impl: NodeImpl) {
     this.impl = impl;
@@ -84,8 +85,6 @@ export class FaceState {
     this.labels = null;
     this.lastOwner = null;
     this.lastDisabled = false;
-    this[$customValidity] = "";
-    this[$validity] = null;
   }
 
   _validityFlags(): number {

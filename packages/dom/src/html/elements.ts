@@ -301,8 +301,9 @@ str(HTMLEmbedElement, "type width height align name");
  * validation (willValidate false), but setCustomValidity still sets validity.customError.
  */
 export class HTMLObjectElement extends HTMLElement {
-  [$customValidity] = "";
-  [$validity]: ValidityState | null = null;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
 
   get contentDocument(): null {
     return null;
@@ -321,10 +322,10 @@ export class HTMLObjectElement extends HTMLElement {
     return true;
   }
   _validityFlags(): number {
-    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
   }
   _validationMessage(_flags: number): string {
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 }
 export interface HTMLObjectElement extends ConstraintValidation {}

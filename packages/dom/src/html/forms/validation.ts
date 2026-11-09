@@ -24,8 +24,8 @@ export const V_CUSTOM_ERROR = 1 << 9;
 
 /** Internal contract every element with the constraint validation API implements. */
 export interface Validatable extends Element {
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
+  [$customValidity]?: string;
+  [$validity]?: ValidityState | null;
   /** Bit set of V_* flags describing the current validity state. */
   _validityFlags(): number;
   /** https://html.spec.whatwg.org/#barred-from-constraint-validation */
@@ -128,7 +128,7 @@ const constraintValidation = {
     if (flags === 0) return "";
     // The custom validity error message takes precedence whenever customError is set
     // (Chromium and jsdom behave the same).
-    if ((flags & V_CUSTOM_ERROR) !== 0) return el[$customValidity];
+    if ((flags & V_CUSTOM_ERROR) !== 0) return el[$customValidity] ?? "";
     return builtinMessage(el, flags);
   },
 

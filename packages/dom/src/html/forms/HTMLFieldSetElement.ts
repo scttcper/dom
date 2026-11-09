@@ -17,15 +17,14 @@ import {
 import { $customValidity, $elements, $impl, $validity } from "../../keys.ts";
 
 export class HTMLFieldSetElement extends HTMLElement {
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
   [$elements]: HTMLCollection | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this[$customValidity] = "";
-    this[$validity] = null;
     this[$elements] = null;
   }
 
@@ -52,11 +51,11 @@ export class HTMLFieldSetElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
   }
 
   _validationMessage(_flags: number): string {
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 }
 

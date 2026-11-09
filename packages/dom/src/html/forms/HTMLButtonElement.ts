@@ -21,16 +21,14 @@ import {
 import { $customValidity, $impl, $labels, $validity } from "../../keys.ts";
 
 export class HTMLButtonElement extends HTMLElement {
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
-  [$labels]: LabelsNodeList | null;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
+  declare [$labels]?: LabelsNodeList | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
-    this[$customValidity] = "";
-    this[$validity] = null;
-    this[$labels] = null;
   }
 
   /** https://html.spec.whatwg.org/#dom-button-type */
@@ -76,11 +74,11 @@ export class HTMLButtonElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    return this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
   }
 
   _validationMessage(_flags: number): string {
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 
   // --- activation behavior: https://html.spec.whatwg.org/#the-button-element:activation-behaviour

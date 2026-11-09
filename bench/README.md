@@ -514,8 +514,20 @@ environment's clock. The CPU profile of our code is flat there too; what stood o
   the form's fibers, reading `performance.now()` about three times per fiber in development (14%
   of that workload is the native clock read behind our virtual one).
 
-Still there: `getByLabelText` walks the tree three times per call (8.6 µs at 20 fields, 59 µs at
-200, against 3 and 20 µs for `getByRole` with a name); `form.elements.namedItem` scans the
+- **What a mounted input weighs.** Heap per element of 5,000 mounted by React (development
+  build, its fibers included): a `<span>` 1,677 B, an `<input>` 4,082 B. Of the difference, 513 B
+  was the listener array for the `invalid` listener React adds to every input, select and
+  textarea (indexed by event type id, with V8's growth slack: now `[id, head]` pairs for a target
+  with few types), and 384 B the wrapper's property dictionary being 32 entries for 12 own
+  properties (four of them rarely used state, now added on first use: 16 entries for 8). An
+  input is 3,226 B, a textarea 3,957 → 3,100 B, a select 2,597 → 2,090 B. The rest is React's
+  value tracker and the dictionary itself, which React's own accessor forces.
+- `getByLabelText` matched `aria-label` in a second walk and checked every element for being
+  labelable before looking it up among the labeled controls: one walk, 40 → 36 µs at 200 fields.
+
+Still there: `getByLabelText` builds the tree's label map and every label's text per call (6.4 µs
+at 20 fields, 36 µs at 200, against 2.5 and 16 µs for `getByRole` with a name);
+`form.elements.namedItem` scans the
 controls; `user.tab` needs every focusable element; and a `<form>` is a Proxy, whose `get` trap
 is still ~1% of the user-event calls' CPU. With the three changes above the profile of those
 calls is flat again: `dispatch` leads at 3%.

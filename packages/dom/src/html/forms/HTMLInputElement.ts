@@ -396,21 +396,18 @@ function roundForStep(x: number, step: number, base: number): number {
 export class HTMLInputElement extends HTMLElement {
   /** Value, checkedness, selection and UI state (./control-state.ts). */
   [$control]: ControlState;
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
-  [$labels]: LabelsNodeList | null;
-  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
-  [$userValidity]: boolean;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
+  declare [$labels]?: LabelsNodeList | null;
+  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts); absent while false. */
+  declare [$userValidity]?: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$impl].flags |= F_ATTR_HOOK | F_CONNECT_HOOK;
     this[$control] = new ControlState();
-    this[$customValidity] = "";
-    this[$validity] = null;
-    this[$labels] = null;
-    this[$userValidity] = false;
   }
 
   // --- type ---------------------------------------------------------------------------------
@@ -876,7 +873,7 @@ export class HTMLInputElement extends HTMLElement {
   _validityFlags(): number {
     const impl = this[$impl];
     const type = inputType(impl);
-    let flags = this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    let flags = this[$customValidity] ? V_CUSTOM_ERROR : 0;
     const mode = valueMode(type);
     // valueMissing
     if (requiredApplies(type) && attr(impl, "required") !== null) {
@@ -983,14 +980,14 @@ export class HTMLInputElement extends HTMLElement {
       const high = !Number.isNaN(max) && highN > max ? null : numberToString(type, highN);
       return msgStep(low, high);
     }
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 
   // --- algorithms --------------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#the-input-element:concept-form-reset-control */
   _reset(): void {
-    this[$userValidity] = false;
+    if (this[$userValidity]) this[$userValidity] = false;
     this[$control].dirtyValue = false;
     this[$control].dirtyChecked = false;
     this[$control].userEdited = false;

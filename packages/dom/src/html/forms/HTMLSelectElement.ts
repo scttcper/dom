@@ -60,9 +60,10 @@ Object.defineProperty(SelectedOptionsCollection.prototype, "constructor", {
 });
 
 export class HTMLSelectElement extends HTMLElement {
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
-  [$labels]: LabelsNodeList | null;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
+  declare [$labels]?: LabelsNodeList | null;
   [$options]: HTMLOptionsCollection | null;
   [$selectedOptions]: HTMLCollection | null;
   /**
@@ -72,21 +73,17 @@ export class HTMLSelectElement extends HTMLElement {
   [$settled]: boolean;
   /** Re-entrancy guard for `_updateSelectedContent` (it mutates the select's subtree). */
   [$updatingSelectedContent]: boolean;
-  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
-  [$userValidity]: boolean;
+  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts); absent while false. */
+  declare [$userValidity]?: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$impl].flags |= F_CHILDREN_HOOK | F_ATTR_HOOK | F_CONNECT_HOOK;
-    this[$customValidity] = "";
-    this[$validity] = null;
-    this[$labels] = null;
     this[$options] = null;
     this[$selectedOptions] = null;
     this[$settled] = false;
     this[$updatingSelectedContent] = false;
-    this[$userValidity] = false;
   }
 
   _ensureSettled(): void {
@@ -333,7 +330,7 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#the-select-element:concept-form-reset-control */
   _reset(): void {
-    this[$userValidity] = false;
+    if (this[$userValidity]) this[$userValidity] = false;
     this[$settled] = true;
     const options = listOfOptions(this[$impl], []);
     for (let i = 0; i < options.length; i++) {
@@ -382,7 +379,7 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   _validityFlags(): number {
-    let flags = this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    let flags = this[$customValidity] ? V_CUSTOM_ERROR : 0;
     if (contentAttr(this[$impl], "required") !== null) {
       const options = listOfOptions(this[$impl], []);
       let selected: NodeImpl | null = null;
@@ -400,7 +397,7 @@ export class HTMLSelectElement extends HTMLElement {
 
   _validationMessage(flags: number): string {
     if ((flags & V_VALUE_MISSING) !== 0) return MSG_SELECT;
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 }
 

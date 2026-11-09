@@ -24,9 +24,9 @@ import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import { T } from "../../nodes/tags.ts";
 import { $userValidity } from "../../keys.ts";
 
-/** A control with a user validity flag (input, textarea, select). */
+/** A control with a user validity flag (input, textarea, select): an own property once it is true. */
 export interface UserValidityHolder {
-  [$userValidity]: boolean;
+  [$userValidity]?: boolean;
 }
 
 /**
@@ -51,7 +51,7 @@ export function hasUserValidity(el: NodeImpl): boolean {
     case T.input:
     case T.textarea:
     case T.select:
-      return (el.node as unknown as UserValidityHolder)[$userValidity];
+      return (el.node as unknown as UserValidityHolder)[$userValidity] === true;
   }
   return false;
 }
@@ -62,6 +62,6 @@ export function setUserValidity(el: NodeImpl, value: boolean): void {
     case T.input:
     case T.textarea:
     case T.select:
-      (el.node as unknown as UserValidityHolder)[$userValidity] = value;
+      if (value || hasUserValidity(el)) (el.node as unknown as UserValidityHolder)[$userValidity] = value;
   }
 }

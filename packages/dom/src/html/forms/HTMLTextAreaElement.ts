@@ -32,21 +32,18 @@ import { ControlState } from "./control-state.ts";
 export class HTMLTextAreaElement extends HTMLElement {
   /** Value, checkedness, selection and UI state (./control-state.ts). */
   [$control]: ControlState;
-  [$customValidity]: string;
-  [$validity]: ValidityState | null;
-  [$labels]: LabelsNodeList | null;
-  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts). */
-  [$userValidity]: boolean;
+  /** The custom validity error message; absent while it is the empty string. */
+  declare [$customValidity]?: string;
+  declare [$validity]?: ValidityState | null;
+  declare [$labels]?: LabelsNodeList | null;
+  /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts); absent while false. */
+  declare [$userValidity]?: boolean;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$impl].flags |= F_CHILDREN_HOOK;
     this[$control] = new ControlState();
-    this[$customValidity] = "";
-    this[$validity] = null;
-    this[$labels] = null;
-    this[$userValidity] = false;
   }
 
   get type(): string {
@@ -201,7 +198,7 @@ export class HTMLTextAreaElement extends HTMLElement {
 
   _validityFlags(): number {
     const impl = this[$impl];
-    let flags = this[$customValidity] === "" ? 0 : V_CUSTOM_ERROR;
+    let flags = this[$customValidity] ? V_CUSTOM_ERROR : 0;
     const value = this._apiValue();
     if (contentAttr(impl, "required") !== null && this._isMutable() && value === "") flags |= V_VALUE_MISSING;
     if (this[$control].userEdited && value !== "") {
@@ -218,14 +215,14 @@ export class HTMLTextAreaElement extends HTMLElement {
     const len = this._apiValue().length;
     if ((flags & V_TOO_LONG) !== 0) return msgTooLong(this.maxLength, len);
     if ((flags & V_TOO_SHORT) !== 0) return msgTooShort(this.minLength, len);
-    return this[$customValidity];
+    return this[$customValidity] ?? "";
   }
 
   // --- algorithms -----------------------------------------------------------------------------
 
   /** https://html.spec.whatwg.org/#the-textarea-element:concept-form-reset-control */
   _reset(): void {
-    this[$userValidity] = false;
+    if (this[$userValidity]) this[$userValidity] = false;
     this[$control].dirtyValue = false;
     this[$control].userEdited = false;
     this[$control].value = "";
