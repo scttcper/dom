@@ -5,7 +5,8 @@
 //
 // Layout: every event type gets a small integer id the first time anything listens for it
 // (`typeIds`, shared by the whole process). `EventTarget[$listeners]` is null until the first
-// addEventListener (the common case for almost every node) and then a sparse array indexed by
+// addEventListener (the common case for almost every node) and then, once it listens for more
+// than a few types (ListenerSlots has the compact layout before that), a sparse array indexed by
 // type id, each slot the head of that type's listeners as a singly linked list in insertion
 // order. React's root container (142 listeners over 87 types via `listenToAllSupportedEvents`)
 // is then one array plus 142 listeners: no per-target hash table, no per-type list objects, and
@@ -73,8 +74,27 @@ export class Listener {
   }
 }
 
-/** Indexed by type id; a hole or undefined means no listener of that type. */
-export type ListenerSlots = (Listener | undefined)[];
+/**
+ * A target's listeners, in one of two layouts:
+ *
+ * - compact, while it has listened for at most COMPACT_TYPES event types: `[id, head, id, head…]`,
+ *   exactly as long as its pairs. Nearly every target with a listener has one or two types (React
+ *   adds `invalid` to every input, select and textarea, `load`/`error` to images, `toggle` to
+ *   details), and an array indexed by type id is as long as that id plus V8's growth slack: one
+ *   `invalid` listener cost 641 B, 64 B of it the listener. Compact, 128 B.
+ * - indexed by type id (a hole or undefined: no listener of that type), from the type after that:
+ *   React's root container, with 87.
+ *
+ * A compact array's first element is a number, an indexed one's never is. Adding a type to a
+ * compact target replaces the array; removing one leaves its pair with an undefined head.
+ */
+export type ListenerSlots = (Listener | number | undefined)[];
+
+const COMPACT_TYPES = 4;
+
+function isCompact(slots: ListenerSlots): boolean {
+  return slots.length !== 0 && typeof slots[0] === "number";
+}
 
 const typeIds = new Map<string, number>();
 
@@ -95,8 +115,56 @@ export function typeIdOf(type: string): number {
 
 /** The first listener for type id `id` (-1 included) on a target whose slots are `slots`. */
 export function firstListener(slots: ListenerSlots, id: number): Listener | undefined {
+  const length = slots.length;
+  if (length !== 0 && typeof slots[0] === "number") {
+    for (let i = 0; i < length; i += 2) if (slots[i] === id) return slots[i + 1] as Listener | undefined;
+    return undefined;
+  }
   // `>>> 0` sends -1 out of range instead of reading the property "-1".
-  return id >>> 0 < slots.length ? slots[id] : undefined;
+  return id >>> 0 < length ? (slots[id] as Listener | undefined) : undefined;
+}
+
+/** Make `head` the first listener for type id `id`, which has none (addFlattened, unlink). */
+function setFirstListener(target: EventTarget, slots: ListenerSlots, id: number, head: Listener | undefined): void {
+  if (!isCompact(slots)) {
+    // Ids at or past the length grow the array (a gap leaves holes) rather than presizing it. A
+    // target's array is as long as the highest id it uses, ~8 bytes per id below it. Ids stay
+    // small because event types are a small vocabulary (React's 87 plus a few dozen); a process
+    // listening for over a thousand distinct types would push later targets past V8's
+    // 1,024-element gap into slower dictionary arrays.
+    slots[id] = head;
+    return;
+  }
+  const length = slots.length;
+  for (let i = 0; i < length; i += 2) {
+    if (slots[i] === id) {
+      slots[i + 1] = head;
+      return;
+    }
+  }
+  if (head === undefined) return;
+  let next: ListenerSlots;
+  if (length < COMPACT_TYPES * 2) {
+    // One more pair, at the exact size (a push would leave ~16 slots of slack).
+    next = new Array(length + 2);
+    for (let i = 0; i < length; i++) next[i] = slots[i];
+    next[length] = id;
+    next[length + 1] = head;
+  } else {
+    next = [];
+    for (let i = 0; i < length; i += 2) next[slots[i] as number] = slots[i + 1];
+    next[id] = head;
+  }
+  target[$listeners] = next;
+}
+
+/** Calls `visit` with the first listener of every type that has one. */
+function eachHead(slots: ListenerSlots, visit: (head: Listener) => void): void {
+  const compact = isCompact(slots);
+  for (let i = compact ? 1 : 0; i < slots.length; i += compact ? 2 : 1) {
+    const head = slots[i] as Listener | undefined;
+    if (head !== undefined) visit(head);
+  }
 }
 
 interface Flattened {
@@ -222,10 +290,9 @@ function addFlattened(
 ): void {
   const captureBit = capture ? LISTENER_CAPTURE : 0;
   const id = idForType(type);
-  let slots = target[$listeners];
-  if (slots == null) slots = target[$listeners] = [];
+  const slots = target[$listeners];
   // Step 5: no duplicate (type, callback, capture). The walk ends on the tail to append to.
-  let tail = firstListener(slots, id);
+  let tail = slots == null ? undefined : firstListener(slots, id);
   if (tail !== undefined) {
     for (;;) {
       if (tail.callback === callback && (tail.flags & LISTENER_CAPTURE) === captureBit) return;
@@ -242,14 +309,8 @@ function addFlattened(
       ((passive === null ? defaultPassiveValue(type, target) : passive) ? LISTENER_PASSIVE : 0),
   );
   if (tail !== undefined) tail.next = listener;
-  else {
-    // Ids at or past the length grow the array (a gap leaves holes) rather than presizing it:
-    // most targets listen for one or two types. A target's array is as long as the highest id
-    // it uses, ~8 bytes per id below it. Ids stay small because event types are a small
-    // vocabulary (React's 87 plus a few dozen); a process listening for over a thousand distinct
-    // types would push later targets past V8's 1,024-element gap into slower dictionary arrays.
-    slots[id] = listener;
-  }
+  else if (slots == null) target[$listeners] = [id, listener];
+  else setFirstListener(target, slots, id, listener);
   // Step 6.
   if (signal !== null) {
     const onAbort = () => removeListener(target, type, listener);
@@ -274,7 +335,7 @@ export function removeEventListener(
   let prev: Listener | null = null;
   for (let l = firstListener(slots, id) ?? null; l !== null; prev = l, l = l.next) {
     if (l.callback === callback && (l.flags & LISTENER_CAPTURE) === captureBit) {
-      unlink(slots, id, prev, l);
+      unlink(target, slots, id, prev, l);
       return;
     }
   }
@@ -289,7 +350,7 @@ export function removeListener(target: EventTarget, type: string, listener: List
     let prev: Listener | null = null;
     for (let l = firstListener(slots, id) ?? null; l !== null; prev = l, l = l.next) {
       if (l === listener) {
-        unlink(slots, id, prev, l);
+        unlink(target, slots, id, prev, l);
         return;
       }
     }
@@ -297,11 +358,17 @@ export function removeListener(target: EventTarget, type: string, listener: List
   listener.flags |= LISTENER_REMOVED;
 }
 
-function unlink(slots: ListenerSlots, id: number, prev: Listener | null, listener: Listener): void {
+function unlink(
+  target: EventTarget,
+  slots: ListenerSlots,
+  id: number,
+  prev: Listener | null,
+  listener: Listener,
+): void {
   // Step 2: set removed (an in-progress dispatch standing before it will skip it).
   markRemoved(listener);
   // `listener.next` stays: a dispatch standing on it continues from there (see the header).
-  if (prev === null) slots[id] = listener.next ?? undefined;
+  if (prev === null) setFirstListener(target, slots, id, listener.next ?? undefined);
   else prev.next = listener.next;
 }
 
@@ -319,9 +386,9 @@ export function removeAllEventListeners(target: EventTarget): void {
   const slots = target[$listeners];
   if (slots == null) return;
   target[$listeners] = null;
-  for (let i = 0; i < slots.length; i++) {
-    for (let l = slots[i] ?? null; l !== null; l = l.next) markRemoved(l);
-  }
+  eachHead(slots, (head) => {
+    for (let l: Listener | null = head; l !== null; l = l.next) markRemoved(l);
+  });
 }
 
 /** Whether `target` has at least one listener for `type` (internal fast check for other areas). */
@@ -355,9 +422,9 @@ export function listenerCount(target: EventTarget): number {
   const slots = target[$listeners];
   if (slots == null) return 0;
   let count = 0;
-  for (let i = 0; i < slots.length; i++) {
-    for (let l = slots[i] ?? null; l !== null; l = l.next) count++;
-  }
+  eachHead(slots, (head) => {
+    for (let l: Listener | null = head; l !== null; l = l.next) count++;
+  });
   return count;
 }
 
@@ -365,6 +432,9 @@ export function listenerCount(target: EventTarget): number {
 export function hasAnyListener(target: EventTarget): boolean {
   const slots = target[$listeners];
   if (slots == null) return false;
-  for (let i = 0; i < slots.length; i++) if (slots[i] !== undefined) return true;
-  return false;
+  let any = false;
+  eachHead(slots, () => {
+    any = true;
+  });
+  return any;
 }

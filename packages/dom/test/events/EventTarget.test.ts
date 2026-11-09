@@ -12,7 +12,7 @@
  * Mostly ported from WPT dom/events (links per describe block); original assertions kept.
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { CustomEvent, Event, EventTarget, type Document, type Window } from "@ctrl/dom";
+import { CustomEvent, Event, EventTarget, type Document, type HTMLElement, type Window } from "@ctrl/dom";
 import { setup } from "./helpers.ts";
 import { $listeners } from "../../src/keys.ts";
 
@@ -701,5 +701,81 @@ describe("listener list mutation during dispatch — https://dom.spec.whatwg.org
     et.addEventListener("x", fn);
     et.dispatchEvent(new Event("x"));
     expect(count).toBe(1);
+  });
+});
+
+describe("listener storage: compact for a few event types, indexed by type after that — https://dom.spec.whatwg.org/#concept-event-listener", () => {
+  const TYPES = ["s-a", "s-b", "s-c", "s-d", "s-e", "s-f", "s-g"];
+  const isCompact = (et: EventTarget) => typeof (et as any)[$listeners][0] === "number";
+
+  test("a target with up to four event types holds [id, first listener] pairs at their exact size", () => {
+    const et = new EventTarget();
+    et.addEventListener(TYPES[0], () => {});
+    expect((et as any)[$listeners].length).toBe(2);
+    et.addEventListener(TYPES[0], () => {});
+    expect((et as any)[$listeners].length).toBe(2);
+    for (const type of TYPES.slice(1, 4)) et.addEventListener(type, () => {});
+    expect(isCompact(et)).toBe(true);
+    expect((et as any)[$listeners].length).toBe(8);
+  });
+
+  test("add-an-event-listener step 6 appends in order across the switch to the indexed layout, and every type still dispatches to its own listeners", () => {
+    const et = new EventTarget();
+    const calls: string[] = [];
+    for (const type of TYPES) {
+      et.addEventListener(type, () => calls.push(`${type} 1`));
+      et.addEventListener(type, () => calls.push(`${type} 2`));
+    }
+    expect(isCompact(et)).toBe(false);
+    for (const type of TYPES) et.dispatchEvent(new Event(type));
+    expect(calls).toEqual(TYPES.flatMap((type) => [`${type} 1`, `${type} 2`]));
+  });
+
+  test("remove-an-event-listener in the compact layout: the last listener of a type leaves, the type can be listened for again, and the others are untouched", () => {
+    const et = new EventTarget();
+    const calls: string[] = [];
+    const a = () => calls.push("a");
+    const b = () => calls.push("b");
+    et.addEventListener(TYPES[0], a);
+    et.addEventListener(TYPES[1], b);
+    et.removeEventListener(TYPES[0], a);
+    et.dispatchEvent(new Event(TYPES[0]));
+    et.dispatchEvent(new Event(TYPES[1]));
+    expect(calls).toEqual(["b"]);
+    et.addEventListener(TYPES[0], a);
+    expect((et as any)[$listeners].length).toBe(4);
+    et.dispatchEvent(new Event(TYPES[0]));
+    expect(calls).toEqual(["b", "a"]);
+  });
+
+  test("inner invoke: a listener that adds the target's fifth type mid-dispatch (replacing the storage) neither loses the listeners after it nor runs the new one for this event", () => {
+    const et = new EventTarget();
+    const calls: string[] = [];
+    for (const type of TYPES.slice(1, 4)) et.addEventListener(type, () => calls.push(type));
+    et.addEventListener(TYPES[0], () => {
+      calls.push("first");
+      et.addEventListener(TYPES[4], () => calls.push("fifth type"));
+      et.addEventListener(TYPES[0], () => calls.push("added during dispatch"));
+    });
+    et.addEventListener(TYPES[0], () => calls.push("second"));
+    et.dispatchEvent(new Event(TYPES[0]));
+    expect(calls).toEqual(["first", "second"]);
+    expect(isCompact(et)).toBe(false);
+    et.dispatchEvent(new Event(TYPES[4]));
+    et.dispatchEvent(new Event(TYPES[0]));
+    expect(calls).toEqual(["first", "second", "fifth type", "first", "second", "added during dispatch"]);
+  });
+
+  test("event handler IDL attributes and listeners share the storage on an element", () => {
+    const input = document.createElement("input") as HTMLElement;
+    const calls: string[] = [];
+    input.addEventListener("invalid", () => calls.push("listener"));
+    // The on* IDL attributes are installed on the prototypes at run time (events/handlers.ts).
+    (input as unknown as { onclick: () => void }).onclick = () => calls.push("handler");
+    document.body!.append(input);
+    input.dispatchEvent(new Event("invalid"));
+    input.click();
+    expect(calls).toEqual(["listener", "handler"]);
+    expect(isCompact(input)).toBe(true);
   });
 });
