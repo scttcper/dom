@@ -1622,6 +1622,21 @@ export function idRootOf(list: CList): string {
   return "";
 }
 
+/**
+ * The type selector every match of `list` must satisfy, or null: a single complex selector whose
+ * subject compound names an element type in any namespace (`input[name="a"][type="radio"]`,
+ * `form > button.primary`).
+ */
+export function subjectType(list: CList): Test | null {
+  if (list.items.length !== 1) return null;
+  const tests = list.items[0].comps[0];
+  for (let i = 0; i < tests.length; i++) {
+    const t = tests[i];
+    if (t.op === O_TYPE && !t.nsCheck) return t;
+  }
+  return null;
+}
+
 /** Fast-path shapes for querySelector(All): a single complex with one compound of one test. */
 export const FAST_NONE = 0;
 export const FAST_ALL = 1; // `*`

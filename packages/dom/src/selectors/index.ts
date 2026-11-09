@@ -30,6 +30,7 @@ import {
   fastShape,
   fastTest,
   idRootOf,
+  subjectType,
   FAST_NONE,
   FAST_ALL,
   FAST_ID,
@@ -37,7 +38,7 @@ import {
   FAST_TAG,
   FAST_ATTR,
 } from "./compile.ts";
-import { $ids, $mode, $version } from "../keys.ts";
+import { $ids, $mode, $treeVersion, $version } from "../keys.ts";
 
 /** A compiled selector string, cached by text. */
 class Query {
@@ -50,6 +51,8 @@ class Query {
   hasMemos: boolean;
   /** Id every match must descend from (compile.ts idRootOf), or "". */
   idRoot: string;
+  /** The element type every match has (compile.ts subjectType), for the general walk only. */
+  subject: Test | null;
   /**
    * The ID the document's id index answers this selector for, or "": `#x` (not in quirks mode,
    * where it matches ASCII case-insensitively), and `[id="x"]`, case-sensitive in every mode
@@ -69,6 +72,7 @@ class Query {
     this.fastT = this.fast === FAST_NONE || this.fast === FAST_ALL ? null : fastTest(domList);
     this.hasMemos = info.nthTests.length !== 0;
     this.idRoot = this.fast === FAST_NONE && !info.usesScope ? idRootOf(domList) : "";
+    this.subject = this.fast === FAST_NONE ? subjectType(domList) : null;
     const t = this.fastT;
     this.indexedId =
       this.fast === FAST_ID
@@ -247,6 +251,17 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
   }
   const prevScope = setScope(q.info.usesScope ? scopeFor(root) : null);
   try {
+    if (q.subject !== null && walkRoot.type === DOCUMENT_NODE) {
+      const candidates = elementsOfType(walkRoot, q.subject);
+      for (let i = 0; i < candidates.length; i++) {
+        const n = candidates[i];
+        if (matchList(list, n)) {
+          if (first) return n;
+          out.push(n);
+        }
+      }
+      return null;
+    }
     for (let n = walkRoot.first; n !== null; n = next(n, walkRoot)) {
       if (n.type === ELEMENT_NODE && matchList(list, n)) {
         if (first) return n;
@@ -322,6 +337,47 @@ class ResultEntry {
     this.all = null;
     this.first = undefined;
   }
+}
+
+// --- a document's elements by type ------------------------------------------------------------
+//
+// A query on a document whose subject names an element type only has to look at the elements of
+// that type, and which those are changes with the tree, not with attributes or form state. React
+// asks the document for `input[name="…"][type="radio"]` on every change of a controlled radio
+// (react-dom's updateInput, to update the rest of its group): in a 10,000-node page that walk was
+// 32% of the CPU of a `user.click()` on a radio. The list per type is stamped with the tree
+// version and kept in the document's derived caches, which a removal drops.
+
+class TypeList {
+  version: number;
+  elements: NodeImpl[];
+  constructor(version: number, elements: NodeImpl[]) {
+    this.version = version;
+    this.elements = elements;
+  }
+}
+
+/** Owner token of the per-document cache (nodes/derived.ts): type → its elements. */
+const TYPES = {};
+const newTypes = (): Map<string, TypeList> => new Map();
+
+/** The elements of `document`'s tree that type selector `t` matches, in tree order. */
+function elementsOfType(document: NodeImpl, t: Test): NodeImpl[] {
+  const doc = document.doc;
+  const types = derivedCache(doc, TYPES, newTypes);
+  // An HTML element matches the lowercased name, any other the name as written.
+  const key = t.lower === t.name ? t.name : `${t.lower}\n${t.name}`;
+  const version = doc[$treeVersion];
+  const cached = types.get(key);
+  if (cached !== undefined && cached.version === version) return cached.elements;
+  const lower = t.lower;
+  const name = t.name;
+  const elements: NodeImpl[] = [];
+  for (let n = document.first; n !== null; n = next(n, document)) {
+    if (n.type === ELEMENT_NODE && ((n.flags & F_HTML) !== 0 ? n.name === lower : n.name === name)) elements.push(n);
+  }
+  types.set(key, new TypeList(version, elements));
+  return elements;
 }
 
 const MAX_ENTRIES_PER_ROOT = 64;

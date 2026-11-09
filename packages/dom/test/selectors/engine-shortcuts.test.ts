@@ -199,6 +199,62 @@ describe("[id=…] from the id index — https://drafts.csswg.org/selectors-4/#a
   });
 });
 
+describe("a document's elements by type, kept across attribute and state changes — https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall", () => {
+  // React's query for a controlled radio's group, on the document, at every change.
+  const RADIOS = 'input[name="plan"][type="radio"]';
+  const byId = (id: string): AnyEl => document.getElementById(id);
+
+  test("a document query whose subject names a type follows attribute changes, insertions and removals", () => {
+    document.body!.innerHTML =
+      "<input id=a type=radio name=plan><div><input id=b type=radio name=other><input id=c type=text name=plan></div>";
+    expect($$(RADIOS)).toEqual(["a"]);
+    byId("b").setAttribute("name", "plan");
+    byId("c").setAttribute("type", "radio");
+    expect($$(RADIOS)).toEqual(["a", "b", "c"]);
+    byId("a").removeAttribute("name");
+    expect($$(RADIOS)).toEqual(["b", "c"]);
+    const d: AnyEl = document.createElement("input");
+    d.id = "d";
+    d.setAttribute("type", "radio");
+    d.setAttribute("name", "plan");
+    document.body!.prepend(d);
+    expect($$(RADIOS)).toEqual(["d", "b", "c"]);
+    expect(document.querySelector(RADIOS)).toBe(d);
+    byId("b").parentNode.removeChild(byId("b"));
+    expect($$(RADIOS)).toEqual(["d", "c"]);
+    document.body!.append(d);
+    expect($$(RADIOS)).toEqual(["c", "d"]);
+    document.body!.replaceChildren();
+    expect($$(RADIOS)).toEqual([]);
+  });
+
+  test("combinators before the subject, an element root and a shadow tree answer as the plain walk does", () => {
+    document.body!.innerHTML =
+      "<form id=f><p><input id=a class=x></p><input id=b></form><input id=c class=x><div id=host></div>";
+    const shadow = byId("host").attachShadow({ mode: "open" });
+    shadow.innerHTML = "<input id=s class=x>";
+    expect($$("form > p input.x")).toEqual(["a"]);
+    expect($$("form input:not(.x)")).toEqual(["b"]);
+    expect($$("input.x")).toEqual(["a", "c"]);
+    expect($$("input.x", byId("f"))).toEqual(["a"]);
+    expect($$("input.x", shadow)).toEqual(["s"]);
+    byId("b").className = "x";
+    expect($$("input.x")).toEqual(["a", "b", "c"]);
+  });
+
+  test("case-sensitivity of selectors: an HTML element matches the lowercased type, a foreign element the type as written — https://html.spec.whatwg.org/#case-sensitivity-of-selectors", () => {
+    document.body!.innerHTML = "<input id=h data-k><svg><foreignObject id=fo data-k></foreignObject></svg>";
+    const foreign: AnyEl = document.createElementNS("http://www.w3.org/2000/svg", "INPUT");
+    foreign.id = "x";
+    foreign.setAttribute("data-k", "");
+    document.body!.append(foreign);
+    expect($$("INPUT[data-k]")).toEqual(["h", "x"]);
+    expect($$("input[data-k]")).toEqual(["h"]);
+    expect($$("foreignObject[data-k]")).toEqual(["fo"]);
+    expect($$("foreignobject[data-k]")).toEqual([]);
+  });
+});
+
 describe("differential: the same selectors on jsdom", () => {
   const fixture = `<main id=app class="app"><header class="bar"><nav id=nav><a id=n1 href="#">x</a><a id=n2 class="cur" href="#">y</a></nav></header>
 <section id=list class="panel"><ul class="items"><li id=i1 class="item"><span id=sp1 class="label">a</span></li><li id=i2 class="item odd"><span id=sp2>b</span></li></ul>
