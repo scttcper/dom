@@ -6,6 +6,10 @@
 // - The default queries bound to a baseElement are computed once per baseElement (WeakMap)
 //   instead of re-binding ~120 query functions on every render()/renderHook() call; the
 //   render result still gets them as own enumerable properties, exactly like upstream.
+// - A container render() created itself is given to a later render() once cleanup() has removed
+//   it, when it is still what a new `<div>` would be (reusableContainers below). React adds 142
+//   event listeners to every new root container and skips that for one it has listened on.
+//   Observable only through a reference kept past cleanup(): the same element comes back.
 // - The legacy root path is gone: React 19 has no ReactDOM.render, so `legacyRoot: true`
 //   throws the same error upstream throws on React 19.
 
@@ -27,7 +31,14 @@ import act, {
   getIsReactActEnvironment,
   setReactActEnvironment,
 } from "./act-compat.ts";
-import { canSkipZeroDelayWait, skipZeroDelayWait, traceSync, tracing } from "@ctrl/dom/internal";
+import {
+  canSkipZeroDelayWait,
+  listenerCount,
+  reusableElement,
+  skipZeroDelayWait,
+  traceSync,
+  tracing,
+} from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
 import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
 
@@ -292,6 +303,19 @@ interface RootHandle {
 // (most common use case).
 const mountedContainers = new Set<unknown>();
 const mountedRootEntries: Array<{ container: any; root: RootHandle }> = [];
+
+/**
+ * Containers render() created, waiting for another render() in the same document. React's
+ * `createRoot` adds 142 event listeners to a container it has not seen (`listenToAllSupportedEvents`,
+ * 142 bound functions on its side and as many listener records on ours) and nothing to one it has:
+ * a warm render + unmount of a small tree takes 12.8 µs in a reused container against 18.8 µs in a
+ * new one. Only for @ctrl/dom elements. Keyed weakly by document and holding only that document's
+ * elements, so nothing here outlives a window.
+ */
+const reusableContainers = new WeakMap<object, unknown[]>();
+/** What a container render() created had once React made it a root: listeners and own keys. */
+const ownContainers = new WeakMap<object, { listeners: number; keys: number }>();
+const MAX_REUSABLE_CONTAINERS = 8;
 
 function strictModeIfNeeded(innerElement: React.ReactNode, reactStrictMode: boolean | undefined): React.ReactNode {
   return (reactStrictMode ?? getConfig().reactStrictMode)
@@ -604,8 +628,11 @@ function renderUntraced(
     // head elements (such as JSS style blocks) in debug output
     baseElement = document.body;
   }
+  let created = false;
   if (!container) {
-    container = baseElement.appendChild(document.createElement("div"));
+    const reused = reusableContainers.get(document)?.pop();
+    created = reused === undefined;
+    container = baseElement.appendChild(reused ?? document.createElement("div"));
   }
 
   let root: RootHandle | undefined;
@@ -618,6 +645,9 @@ function renderUntraced(
       wrapper,
       reactStrictMode,
     });
+    if (created) {
+      ownContainers.set(container, { listeners: listenerCount(container), keys: Object.keys(container).length });
+    }
     mountedRootEntries.push({ container, root });
     // we'll add it to the mounted containers regardless of whether it's actually added to
     // document.body so the cleanup method works regardless of whether they're passing us a
@@ -652,6 +682,22 @@ export function cleanup(): void {
     });
     if (container.parentNode === document.body) {
       document.body.removeChild(container);
+      // Reused by a later render() while it is what a new <div> would be, the listeners
+      // createRoot added and React's two keys aside: no attributes, children, observers, or
+      // listeners and properties of the test's or the app's.
+      const own = ownContainers.get(container);
+      // React's commit sets `onclick` on a root container that has none (a no-op, for Safari's
+      // click delegation) and leaves it there; cleared, the next mount sets it again.
+      if (own !== undefined) container.onclick = null;
+      if (
+        own !== undefined &&
+        reusableElement(container, own.listeners) &&
+        Object.keys(container).length === own.keys
+      ) {
+        let reusable = reusableContainers.get(document);
+        if (reusable === undefined) reusableContainers.set(document, (reusable = []));
+        if (reusable.length < MAX_REUSABLE_CONTAINERS) reusable.push(container);
+      }
     }
   }
   mountedRootEntries.length = 0;

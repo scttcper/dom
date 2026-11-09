@@ -21,8 +21,9 @@
 
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
-import { DOCUMENT_NODE } from "../nodes/constants.ts";
-import { $impl, $listeners, $window } from "../keys.ts";
+import { DOCUMENT_NODE, F_MO_REGISTERED } from "../nodes/constants.ts";
+import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { $impl, $listeners, $shadowRoot, $window } from "../keys.ts";
 
 // Listener.flags bits: the spec's capture, once, passive and removed.
 export const LISTENER_CAPTURE = 1;
@@ -327,6 +328,37 @@ export function removeAllEventListeners(target: EventTarget): void {
 export function hasListeners(target: EventTarget, type: string): boolean {
   const slots = target[$listeners];
   return slots != null && firstListener(slots, typeIdOf(type)) !== undefined;
+}
+
+/**
+ * Whether a detached element is a new element in every way but its event listeners, of which it
+ * has `listeners`: no parent, children, attributes, shadow root or mutation observers. For
+ * @ctrl/dom/react, which gives such a container to the next render() (packages/react/src/pure.ts).
+ * False for another DOM's nodes.
+ */
+export function reusableElement(element: EventTarget, listeners: number): boolean {
+  const impl = (element as { [$impl]?: NodeImpl })[$impl];
+  if (
+    impl === undefined ||
+    impl.parent !== null ||
+    impl.first !== null ||
+    impl.attrs !== null ||
+    (impl.flags & F_MO_REGISTERED) !== 0 ||
+    (element as { [$shadowRoot]?: object | null })[$shadowRoot] != null
+  )
+    return false;
+  return listenerCount(element) === listeners;
+}
+
+/** How many listeners `target` has, over every type. */
+export function listenerCount(target: EventTarget): number {
+  const slots = target[$listeners];
+  if (slots == null) return 0;
+  let count = 0;
+  for (let i = 0; i < slots.length; i++) {
+    for (let l = slots[i] ?? null; l !== null; l = l.next) count++;
+  }
+  return count;
 }
 
 /** Whether `target` has any listener at all. */

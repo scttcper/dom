@@ -1,8 +1,8 @@
 // @vitest-environment ctrl-dom
 /**
  * Retention after Testing Library cleanup: render → interact → cleanup must leave nothing of the
- * rendered tree reachable (elements, containers, React roots/fibers, listeners, per-node caches,
- * waitFor observers).
+ * rendered tree reachable (elements, React roots/fibers, listeners, per-node caches, waitFor
+ * observers). The emptied containers render() created stay, for the document's later renders.
  *
  * Specs: ECMAScript WeakRef / FinalizationRegistry liveness
  *   https://tc39.es/ecma262/#sec-weak-ref-objects — an object is collectable once no strong
@@ -147,7 +147,12 @@ describe("render → interact → cleanup — https://testing-library.com/docs/r
       })();
     }
     expect(document.body.childNodes.length).toBe(0);
-    expect(await tracker.alive()).toEqual({});
+    // Containers render() created are kept for later renders in this document, empty and detached
+    // (packages/react/src/pure.ts, reusableContainers); nothing rendered into them is.
+    const { container, ...rest } = await tracker.alive();
+    expect(rest).toEqual({});
+    expect(container).toBeGreaterThan(0);
+    expect(container).toBeLessThanOrEqual(4);
   });
 
   test("renderHook results and waitFor observers are collectable after cleanup()", async () => {

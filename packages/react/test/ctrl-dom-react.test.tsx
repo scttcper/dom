@@ -93,6 +93,58 @@ describe("render result", () => {
   });
 });
 
+describe("container reuse", () => {
+  // React's createRoot adds its 142 root listeners only to a container it has not listened on
+  // (listenToAllSupportedEvents): https://react.dev/reference/react-dom/client/createRoot
+  test("a container render() created is given to the next render() after cleanup(), and its events still reach React", () => {
+    const first = main.render(<p>one</p>);
+    main.cleanup();
+    expect(first.container.parentNode).toBeNull();
+    const onClick = vi.fn();
+    const second = main.render(<button onClick={onClick}>two</button>);
+    expect(second.container).toBe(first.container);
+    expect(second.container.parentNode).toBe(document.body);
+    expect(second.container.innerHTML).toBe("<button>two</button>");
+    main.fireEvent.click(second.getByRole("button"));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    main.cleanup();
+  });
+
+  test("two renders alive at once get different containers", () => {
+    const a = main.render(<p>a</p>);
+    const b = main.render(<p>b</p>);
+    expect(a.container).not.toBe(b.container);
+    main.cleanup();
+  });
+
+  test.each([
+    ["an attribute", (c: any) => c.setAttribute("data-mine", "")],
+    ["a listener", (c: any) => c.addEventListener("click", () => {})],
+    ["a handler property", (c: any) => (c.ontoggle = () => {})],
+    ["an own property", (c: any) => (c.mine = 1)],
+    ["a mutation observer", (c: any) => new MutationObserver(() => {}).observe(c, { childList: true })],
+    ["a shadow root", (c: any) => c.attachShadow({ mode: "closed" })],
+    ["a child", (c: any) => c.append("left behind")],
+  ])("a container the test gave %s is not reused", (_what, touch) => {
+    main.cleanup();
+    const first = main.render(<p>one</p>);
+    touch(first.container);
+    main.cleanup();
+    const second = main.render(<p>two</p>);
+    expect(second.container).not.toBe(first.container);
+    main.cleanup();
+  });
+
+  test("a container the caller passed is never reused", () => {
+    main.cleanup();
+    const mine = document.body.appendChild(document.createElement("div"));
+    main.render(<p>one</p>, { container: mine });
+    main.cleanup();
+    expect(main.render(<p>two</p>).container).not.toBe(mine);
+    main.cleanup();
+  });
+});
+
 describe("act environment", () => {
   test("act restores IS_REACT_ACT_ENVIRONMENT after an async callback resolves", async () => {
     const g = globalThis as any;

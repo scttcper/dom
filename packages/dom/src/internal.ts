@@ -112,7 +112,7 @@ export {
   WINDOW_EVENT_HANDLER_EVENTS,
   type EventHandlersKind,
 } from "./events/handlers.ts";
-export { hasListeners, removeAllEventListeners } from "./events/listeners.ts";
+export { hasListeners, listenerCount, removeAllEventListeners, reusableElement } from "./events/listeners.ts";
 export type { ActivationTarget } from "./events/activation.ts";
 
 // --- dom-core ---
