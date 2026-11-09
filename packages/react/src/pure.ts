@@ -35,6 +35,7 @@ import {
   canSkipZeroDelayWait,
   listenerCount,
   loopTurn,
+  registerTestHooks,
   reusableElement,
   skipZeroDelayWait,
   traceSync,
@@ -704,6 +705,40 @@ export function cleanup(): void {
   }
   mountedRootEntries.length = 0;
   mountedContainers.clear();
+}
+
+// Ours: where test files share a window and this module (Vitest with `isolate: false`, the
+// ctrlDom() plugin's `sharedWorkers`), the trees a file left mounted are unmounted before the next
+// one starts (@ctrl/dom window/file-reset.ts).
+registerTestHooks("react", {
+  fileEnd() {
+    cleanup();
+    dropHoistedResources();
+  },
+});
+
+/**
+ * React 19 moves `<style precedence>`, `<link rel="stylesheet" precedence>` and async scripts to
+ * `<head>` and never takes them out: it keeps them, by key, in a map on the document
+ * (`__reactResources$…`, react-dom's getResourcesFromRoot), so the next tree that asks for one
+ * finds it there. Fine within a test file; left for the next one, a test of "this renders no style
+ * element" finds the previous file's (Base UI's CSPProvider tests). Both go: the elements and the
+ * map that says they are in place.
+ */
+function dropHoistedResources(): void {
+  for (const key of Object.keys(document)) {
+    if (!key.startsWith("__reactResources$")) continue;
+    const resources = document[key] as { hoistableStyles?: unknown; hoistableScripts?: unknown } | null;
+    for (const map of [resources?.hoistableStyles, resources?.hoistableScripts]) {
+      if (!(map instanceof Map)) continue;
+      for (const resource of map.values()) {
+        // A resource record holding its element, or the element itself.
+        const element = resource?.instance ?? resource;
+        if (typeof element?.remove === "function") element.remove();
+      }
+    }
+    delete document[key];
+  }
 }
 
 /**

@@ -2,6 +2,7 @@
 // https://github.com/testing-library/react-testing-library/blob/v16.3.3/src/index.js
 
 import { getIsReactActEnvironment, setReactActEnvironment } from "./act-compat.ts";
+import { registerTestHooks } from "@ctrl/dom/internal";
 import { cleanup } from "./pure.ts";
 
 declare const afterEach: ((fn: () => void) => void) | undefined;
@@ -18,6 +19,10 @@ if (typeof process === "undefined" || !process.env?.RTL_SKIP_AUTO_CLEANUP) {
     afterEach(() => {
       cleanup();
     });
+    // Ours: a hook registered here belongs to the test file that loaded this module. Where later
+    // files share it (the ctrlDom() plugin's `sharedWorkers`), the plugin's setup file registers
+    // the same for each of them (@ctrl/dom window/file-reset.ts).
+    registerTestHooks("react", { afterEach: cleanup });
   } else if (typeof teardown === "function") {
     teardown(() => {
       cleanup();
@@ -28,14 +33,16 @@ if (typeof process === "undefined" || !process.env?.RTL_SKIP_AUTO_CLEANUP) {
   if (typeof beforeAll === "function" && typeof afterAll === "function") {
     // This matches the behavior of React < 18.
     let previousIsReactActEnvironment = getIsReactActEnvironment();
-    beforeAll(() => {
+    const enterActEnvironment = () => {
       previousIsReactActEnvironment = getIsReactActEnvironment();
       setReactActEnvironment(true);
-    });
-
-    afterAll(() => {
+    };
+    const leaveActEnvironment = () => {
       setReactActEnvironment(previousIsReactActEnvironment);
-    });
+    };
+    beforeAll(enterActEnvironment);
+    afterAll(leaveActEnvironment);
+    registerTestHooks("react", { beforeAll: enterActEnvironment, afterAll: leaveActEnvironment });
   }
 }
 

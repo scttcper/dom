@@ -114,6 +114,7 @@ export {
   type EventHandlersKind,
 } from "./events/handlers.ts";
 export { hasListeners, listenerCount, removeAllEventListeners, reusableElement } from "./events/listeners.ts";
+export { registerTestHooks, resetWindowBetweenFiles, testHooks, type TestLibraryHooks } from "./window/file-reset.ts";
 export type { ActivationTarget } from "./events/activation.ts";
 
 // --- dom-core ---

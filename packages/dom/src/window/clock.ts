@@ -366,18 +366,25 @@ export class VirtualClock {
     this.kickDriver();
   }
 
-  dispose(): void {
-    this.disposed = true;
+  /** Drop every pending timer; the clock goes on (a test file ended in a worker the next one shares). */
+  clearAll(): void {
     for (const record of this.byId.values()) {
       if (record.real !== null) hostClearTimeout(record.real);
       record.real = null;
       record.cleared = true;
+      record.index = -1;
     }
     if (this.hostTimer !== null) hostClearTimeout(this.hostTimer);
     this.hostTimer = null;
+    this.hostDue = Infinity;
     this.heap.length = 0;
     this.byId.clear();
     this.refCount = 0;
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.clearAll();
     // VM pools dispose without uninstalling: the next file must not see this clock as active.
     if (activeClock === this) activeClock = null;
   }
@@ -795,6 +802,11 @@ function realTurn(resolve: () => void): void {
 /** Milliseconds the active clock has skipped (0 without one): what a traced span reads at start and end. */
 export function clockSkipped(): number {
   return activeClock === null ? 0 : activeClock.skipped;
+}
+
+/** Drop the active clock's pending timers (window/file-reset.ts); nothing without one. */
+export function clearActiveClockTimers(): void {
+  activeClock?.clearAll();
 }
 
 /** The active clock's skipped time and pending timers (for test observability), or null without one. */

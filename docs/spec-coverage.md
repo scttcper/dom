@@ -360,7 +360,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-dialog-showmodal](https://html.spec.whatwg.org/#dom-dialog-showmodal) | `dom/html/interactive.ts` | WPT: `html/semantics/interactive-elements/the-dialog-element/dialog-showModal-remove.html` |
 | [dom-document-body](https://html.spec.whatwg.org/#dom-document-body) | `dom/nodes/Document.ts` | WPT: `html/dom/documents/dom-tree-accessors/Document.body.html` |
 | [dom-document-close](https://html.spec.whatwg.org/#dom-document-close) | `dom/nodes/Document.ts` | `dom/nodes/document-write.test.ts` |
-| [dom-document-cookie](https://html.spec.whatwg.org/#dom-document-cookie) | `dom/window/cookies.ts`, `dom/window/document.ts` | `dom/window/cookies.test.ts`, `dom/window/window.test.ts`, `compat/html/cookie.test.ts` |
+| [dom-document-cookie](https://html.spec.whatwg.org/#dom-document-cookie) | `dom/window/cookies.ts`, `dom/window/document.ts` | `dom/window/cookies.test.ts`, `dom/window/file-reset.test.ts`, `dom/window/window.test.ts`, `compat/html/cookie.test.ts` |
 | [dom-document-currentscript](https://html.spec.whatwg.org/#dom-document-currentscript) | `dom/window/document.ts` | `compat/html/elements.test.ts` |
 | [dom-document-defaultview](https://html.spec.whatwg.org/#dom-document-defaultview) | `dom/window/globals.ts` | `dom/css/computed-style-override.test.ts`, `dom/window/globals.test.ts`; WPT: `dom/nodes/DOMImplementation-createDocument-no-browsing-context.html` |
 | [dom-document-designmode](https://html.spec.whatwg.org/#dom-document-designmode) | `dom/html/shared.ts`, `dom/window/document.ts` | `dom/html/editing.test.ts` |
@@ -582,7 +582,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [focus](https://html.spec.whatwg.org/#focus) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts`; WPT: `html/interaction/focus/focus-01.html`, `html/interaction/focus/focus-02.html` +1 |
 | [focus-chain](https://html.spec.whatwg.org/#focus-chain) | `dom/html/focus.ts` | `dom/html/focus.test.ts`; WPT: `html/interaction/focus/focus-management/focus-event-targets-simple.html` |
 | [focus-delegate](https://html.spec.whatwg.org/#focus-delegate) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts` |
-| [focus-fixup-rule](https://html.spec.whatwg.org/#focus-fixup-rule) | `dom/html/focus.ts`, `dom/nodes/tree.ts` | `dom/html/focus.test.ts`, `compat/html/focus.test.ts`; WPT: `inert/dynamic-inert-on-focused-element.html` |
+| [focus-fixup-rule](https://html.spec.whatwg.org/#focus-fixup-rule) | `dom/html/focus.ts`, `dom/nodes/tree.ts` | `dom/html/focus.test.ts`, `dom/window/file-reset.test.ts`, `compat/html/focus.test.ts`; WPT: `inert/dynamic-inert-on-focused-element.html` |
 | [focus-navigation-scope-owner](https://html.spec.whatwg.org/#focus-navigation-scope-owner) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [focus-update-steps](https://html.spec.whatwg.org/#focus-update-steps) | `dom/html/focus.ts`, `dom/html/forms/user-validity.ts` | `dom/html/focus.test.ts`, `dom/html/wpt-focus.test.ts`, `compat/html/focus.test.ts`; WPT: `html/interaction/focus/focus-management/focus-event-targets-simple.html` |
 | [focusable-area](https://html.spec.whatwg.org/#focusable-area) | `dom/html/focus.ts` | `dom/html/editing.test.ts`, `dom/html/focus.test.ts`, `compat/html/focus.test.ts`; WPT: `inert/inert-canvas-fallback-content.html` |
@@ -851,7 +851,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-form-element:supported-property-names](https://html.spec.whatwg.org/#the-form-element:supported-property-names) | `dom/html/forms/HTMLFormElement.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts` |
 | [the-formdataevent-interface](https://html.spec.whatwg.org/#the-formdataevent-interface) | `dom/events/events.ts` | `compat/forms/form-data.test.ts` |
 | [the-hashchangeevent-interface](https://html.spec.whatwg.org/#the-hashchangeevent-interface) | `dom/events/events.ts` | **untested** |
-| [the-history-interface](https://html.spec.whatwg.org/#the-history-interface) | `dom/window/History.ts` | `dom/window/history.test.ts`, `dom/window/wpt-history.test.ts`, `compat/html/history-location.test.ts` |
+| [the-history-interface](https://html.spec.whatwg.org/#the-history-interface) | `dom/window/History.ts` | `dom/window/file-reset.test.ts`, `dom/window/history.test.ts`, `dom/window/wpt-history.test.ts`, `compat/html/history-location.test.ts` |
 | [the-iframe-element](https://html.spec.whatwg.org/#the-iframe-element) | `dom/window/browsing-context.ts` | `dom/html/elements.test.ts`, `dom/window/iframe.test.ts`, `vitest-environment/react.test.tsx` |
 | [the-iframe-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-iframe-element:html-element-insertion-steps) | `dom/window/browsing-context.ts` | `dom/html/forms/controls-details.test.ts` |
 | [the-iframe-element:html-element-removing-steps](https://html.spec.whatwg.org/#the-iframe-element:html-element-removing-steps) | `dom/window/browsing-context.ts` | `dom/html/forms/controls-details.test.ts` |
@@ -913,7 +913,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-window-object](https://html.spec.whatwg.org/#the-window-object) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts`, `jest-environment/jest.test.ts`, `register/register.test.ts` +2 |
 | [timer-initialisation-steps](https://html.spec.whatwg.org/#timer-initialisation-steps) | `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts`, `dom/window/wpt-timers.test.ts` |
 | [timeranges](https://html.spec.whatwg.org/#timeranges) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
-| [timers](https://html.spec.whatwg.org/#timers) | `dom/window/Window.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts`, `dom/window/wpt-timers.test.ts` +1 |
+| [timers](https://html.spec.whatwg.org/#timers) | `dom/window/Window.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/window/clock.test.ts`, `dom/window/file-reset.test.ts`, `dom/window/timers.test.ts`, `dom/window/window-apis.test.ts` +2 |
 | [tokenization](https://html.spec.whatwg.org/#tokenization) | `dom/parser/tokenizer.ts` | `dom/parser/html5lib-tokenizer.test.ts` |
 | [top-layer](https://html.spec.whatwg.org/#top-layer) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [topmost-auto-or-hint-popover](https://html.spec.whatwg.org/#topmost-auto-or-hint-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
