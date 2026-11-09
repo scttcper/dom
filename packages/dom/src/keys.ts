@@ -20,7 +20,12 @@ export const $baseFor: unique symbol = Symbol.for("ctrl-dom.baseFor");
 export const $baseOverride: unique symbol = Symbol.for("ctrl-dom.baseOverride");
 export const $baseURL: unique symbol = Symbol.for("ctrl-dom.baseURL");
 export const $baseVersion: unique symbol = Symbol.for("ctrl-dom.baseVersion");
+/** Document: how many of its version bumps could not change a computed style (css/style-deps.ts). */
+export const $benign: unique symbol = Symbol.for("ctrl-dom.benign");
 export const $block: unique symbol = Symbol.for("ctrl-dom.block");
+/** CSSStyleRule: its declaration block once parsed, and its text until then (css/cssom.ts). */
+export const $blockParsed: unique symbol = Symbol.for("ctrl-dom.blockParsed");
+export const $blockText: unique symbol = Symbol.for("ctrl-dom.blockText");
 export const $byCtor: unique symbol = Symbol.for("ctrl-dom.byCtor");
 export const $byName: unique symbol = Symbol.for("ctrl-dom.byName");
 export const $cache: unique symbol = Symbol.for("ctrl-dom.cache");

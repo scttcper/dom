@@ -13,22 +13,23 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { SelectorParser } from "./parser.ts";
 import { serializeSelectorList, withNamespaceContext, type NamespaceContext } from "./serialize.ts";
 import {
-  type CComplex,
-  CompileInfo,
-  compileComplex,
-  matchComplex,
-  setScope,
-  setHostContext,
-  resetMemos,
-  subjectKey,
   ancestorHashes,
-  unpackSpecificity,
-  packSpecificity,
-  KEY_NONE,
-  KEY_ID,
+  attributeNamesIn,
+  type CComplex,
+  compileComplex,
+  CompileInfo,
   KEY_CLASS,
+  KEY_ID,
+  KEY_NONE,
   KEY_TAG,
+  matchComplex,
   matchFeaturelessHost,
+  packSpecificity,
+  resetMemos,
+  setHostContext,
+  setScope,
+  subjectKey,
+  unpackSpecificity,
 } from "./compile.ts";
 import { $cx, $info } from "../keys.ts";
 
@@ -89,6 +90,11 @@ export class CompiledSelector {
   get specificityTuple(): [number, number, number] {
     return unpackSpecificity(this.specificity);
   }
+}
+
+/** Calls `visit` with the name of every attribute selector in `selector` (as written and lowercased). */
+export function selectorAttributeNames(selector: CompiledSelector, visit: (name: string) => void): void {
+  attributeNamesIn(selector[$cx], visit);
 }
 
 export interface CompiledSelectorList {

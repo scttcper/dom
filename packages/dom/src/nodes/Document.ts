@@ -42,6 +42,7 @@ import {
   $baseOverride,
   $baseURL,
   $baseVersion,
+  $benign,
   $contentType,
   $css,
   $derived,
@@ -78,6 +79,8 @@ export class Document extends Node {
   [$treeVersion]: number;
   /** Bumped when author style sheets change (src/css). */
   [$styleVersion]: number;
+  /** Version bumps that left every computed style as it was (css/style-deps.ts). */
+  [$benign]: number;
   /** Connected elements by id. A value is an array only when several connected elements share an id. */
   [$ids]: Map<string, NodeImpl | NodeImpl[]>;
   /** Focused element (https://html.spec.whatwg.org/#focused-area-of-the-document), null = viewport/body. */
@@ -133,6 +136,7 @@ export class Document extends Node {
     this[$window] = null;
     this[$version] = 0;
     this[$styleVersion] = 0;
+    this[$benign] = 0;
     this[$treeVersion] = 0;
     this[$ids] = new Map();
     this[$focused] = null;

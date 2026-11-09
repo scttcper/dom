@@ -596,6 +596,37 @@ ours:
 Left alone: validating a 200-field form on every keystroke is 200 fields' worth of attribute
 reads (12% ours); a 1,000-option select re-rendered by React sets `selected` on each option.
 
+## CSS (2026-11-09)
+
+A scratch probe timed what tests do with CSS at two sizes: parsing a style sheet, the first
+cascade after it, `getComputedStyle` on 200 elements after a class change under 200 and 5,000
+rules (class rules, Tailwind-like rules with `@media`, descendant/`:is`/`:not` rules), custom
+properties, `getAllByRole` and `toBeVisible` under 1,000 rules, inline style writes and
+`insertRule`. The cascade itself does not grow with the sheet (132 µs for 200 elements at 5,000
+rules, as at 200), and `var()` with 2,000 custom properties on `:root` costs 1.7 µs an element.
+Two things did stand out:
+
+- **Parsing.** A sheet cost 2.1 µs per rule (5,000 class rules: 10.5 ms, per test file that loads
+  it), two thirds of it the declarations: tokenizing each value, normalizing it, expanding
+  shorthands, building the block. Most rules of a sheet match nothing a test renders, so a block
+  that holds only declarations is now left as text until something asks for it (`flatBlockEnd` in
+  css/parser.ts, `CSSStyleRule[$block]`; Blink puts the same work off): the rule's `style`,
+  `cssText`, or the cascade when an element first matches it (`IndexedRule.owner`). 5,000 class
+  rules: 10.5 → 3.8 ms; 5,000 Tailwind-like rules with `@media`: 23.2 → 14.6 ms; the first computed
+  style after a new 5,000-rule sheet: 16.5 → 8.9 ms. What is left is the selectors.
+- **Every mutation threw every computed style away.** Style records were stamped with the
+  document version, which a text update or an `aria-expanded` flip bumps like anything else, so
+  the next visibility check cascaded each element it looked at again. Text changing between two
+  non-empty strings, and `aria-*` / `data-*` attributes no indexed selector mentions, now count
+  as benign (css/style-deps.ts) and leave the records valid. After one such change, under 1,000
+  rules: `getAllByRole("button")` over 500 rows 776 → 87 µs, `toBeVisible` on a button 100
+  levels deep 104 → 21 µs; `dom/computed-style-mutation` 0.237 → 0.125 ms and 0.70 → 0.18 MB
+  allocated (9 of 9 pairs). The check on attribute writes starts with the first cached style
+  record: before that it cost `dom/attr-revisions` 24%.
+
+Not changed: an attribute other than `aria-*`/`data-*`, any tree change and any form state change
+still invalidate everything (they can feed selectors and pseudo-classes).
+
 ## Shared workers (`ctrlDom({ sharedWorkers: true })`)
 
 Measured 2026-11-09. A suite of many short files spends most of its time starting workers ("Worker

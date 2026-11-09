@@ -9,7 +9,7 @@ import type { NodeImpl } from "./NodeImpl.ts";
 import { insert } from "./tree.ts";
 import { activeObservers, queueCharacterDataMutationRecord } from "../observers/queue.ts";
 import { liveRangeCount, rangesReplaceData, rangesSplitText } from "../traversal/live.ts";
-import { $impl, $version } from "../keys.ts";
+import { $benign, $impl, $version } from "../keys.ts";
 
 /** https://dom.spec.whatwg.org/#concept-cd-replace */
 export function replaceData(node: NodeImpl, offset: number, count: number, data: string): void {
@@ -28,7 +28,11 @@ export function replaceData(node: NodeImpl, offset: number, count: number, data:
   // Step 12: children changed steps of the parent.
   const parent = node.parent;
   if (parent !== null && (parent.flags & F_CHILDREN_HOOK) !== 0) (parent.node as Element)._childrenChangedSteps();
-  node.doc[$version]++;
+  const doc = node.doc;
+  doc[$version]++;
+  // Text changing between two non-empty strings changes no computed style (css/style-deps.ts);
+  // one that becomes or stops being empty may change what `:empty` matches.
+  if (old.length !== 0 && node.data.length !== 0) doc[$benign]++;
 }
 
 /** https://dom.spec.whatwg.org/#concept-text-split */

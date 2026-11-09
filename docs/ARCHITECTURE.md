@@ -183,6 +183,9 @@ bookkeeping:
 - `Document._version++` on every mutation. Caches anywhere (live collections, selector
   results, roles, names, computed style) are stamped with the version they were computed at.
   `Document._styleVersion++` when style sheets change.
+  Computed style records are stamped with the version less `Document[$benign]`, the count of
+  bumps that cannot change a style (text between two non-empty strings, `aria-*`/`data-*`
+  attributes no style rule selects on: css/style-deps.ts), so those leave them valid.
 
 Parser / clone fast paths build detached trees with `appendDetached` and
 `appendAttributeDetached` (no records, hooks or version bumps). The parser must call

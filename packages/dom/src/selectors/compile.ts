@@ -1622,6 +1622,22 @@ export function idRootOf(list: CList): string {
   return "";
 }
 
+/** Calls `visit` with the name (as written and lowercased) of every attribute selector in `cx`, nested lists included. */
+export function attributeNamesIn(cx: CComplex, visit: (name: string) => void): void {
+  for (let k = 0; k <= cx.last; k++) {
+    const tests = cx.comps[k];
+    for (let i = 0; i < tests.length; i++) {
+      const t = tests[i];
+      if (t.op === O_ATTR) {
+        visit(t.name);
+        if (t.lower !== t.name) visit(t.lower);
+      }
+      const list = t.list;
+      if (list !== null) for (let j = 0; j < list.items.length; j++) attributeNamesIn(list.items[j], visit);
+    }
+  }
+}
+
 /**
  * The type selector every match of `list` must satisfy, or null: a single complex selector whose
  * subject compound names an element type in any namespace (`input[name="a"][type="radio"]`,

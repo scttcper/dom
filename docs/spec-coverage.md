@@ -27,7 +27,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
 | [Web IDL](#web-idl) | 35 | 26 | 0 | 9 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
-| [CSS: css-syntax](#css-css-syntax) | 32 | 6 | 0 | 26 |
+| [CSS: css-syntax](#css-css-syntax) | 32 | 9 | 0 | 23 |
 | [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 6 | 1 | 14 |
@@ -94,7 +94,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1589 | 1082 | 120 | 387 |
+| **All** | 1589 | 1085 | 120 | 384 |
 
 ## Web-platform-tests fixtures
 
@@ -1268,7 +1268,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-medialist-appendmedium](https://drafts.csswg.org/cssom/#dom-medialist-appendmedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-appendmedium-parse-single-and-dedup.html` |
 | [dom-medialist-deletemedium](https://drafts.csswg.org/cssom/#dom-medialist-deletemedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-deletemedium-parse-and-remove-all.html` |
 | [dom-stylesheet-title](https://drafts.csswg.org/cssom/#dom-stylesheet-title) | `dom/css/cssom.ts` | WPT: `css/cssom/link-element-stylesheet-title.html` |
-| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +2; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
+| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +3; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
 | [extensions-to-the-document-or-shadow-root-interface](https://drafts.csswg.org/cssom/#extensions-to-the-document-or-shadow-root-interface) | `dom/css/index.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-cssRules.html`, `css/cssom/CSSStyleSheet-constructable-invalidation.html` +4 |
 | [insert-a-css-rule](https://drafts.csswg.org/cssom/#insert-a-css-rule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/at-namespace.html` |
 | [namespacedef-css](https://drafts.csswg.org/cssom/#namespacedef-css) | `dom/css/CSS.ts`, `dom/window/fallbacks.ts` | WPT: `css/cssom/CSS-namespace-object-class-string.html` |
@@ -1393,13 +1393,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-syntax
 
-<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 6 tested, 0 by WPT only, 26 untested.
+<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 9 tested, 0 by WPT only, 23 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [anb-microsyntax](https://drafts.csswg.org/css-syntax/#anb-microsyntax) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts` |
 | [consume-at-rule](https://drafts.csswg.org/css-syntax/#consume-at-rule) | `dom/css/parser.ts` | **untested** |
-| [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | `dom/css/cssom-stylesheet.test.ts` |
+| [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | `dom/css/cssom-stylesheet.test.ts`, `dom/css/lazy-blocks.test.ts` |
 | [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-declaration](https://drafts.csswg.org/css-syntax/#consume-declaration) | `dom/css/parser.ts` | **untested** |
 | [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
@@ -1407,13 +1407,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | **untested** |
+| [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | `dom/css/lazy-blocks.test.ts` |
 | [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-simple-block](https://drafts.csswg.org/css-syntax/#consume-simple-block) | `dom/css/values.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/lazy-blocks.test.ts` |
 | [consume-stylesheet-contents](https://drafts.csswg.org/css-syntax/#consume-stylesheet-contents) | `dom/css/parser.ts` | **untested** |
 | [consume-token](https://drafts.csswg.org/css-syntax/#consume-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
-| [consume-url-token](https://drafts.csswg.org/css-syntax/#consume-url-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-url-token](https://drafts.csswg.org/css-syntax/#consume-url-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/lazy-blocks.test.ts` |
 | [ident-code-point](https://drafts.csswg.org/css-syntax/#ident-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [ident-start-code-point](https://drafts.csswg.org/css-syntax/#ident-start-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [input-preprocessing](https://drafts.csswg.org/css-syntax/#input-preprocessing) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
@@ -1476,7 +1476,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [attribute-representation](https://drafts.csswg.org/selectors/#attribute-representation) | `dom/selectors/compile.ts` | `dom/selectors/engine-shortcuts.test.ts` |
-| [attribute-selectors](https://drafts.csswg.org/selectors/#attribute-selectors) | `dom/selectors/parser.ts` | `dom/selectors/matching.test.ts`; WPT: `css/selectors/attribute-selectors/style-attribute-selector.html`, `css/selectors/invalidation/attribute.html` +1 |
+| [attribute-selectors](https://drafts.csswg.org/selectors/#attribute-selectors) | `dom/selectors/parser.ts` | `dom/css/style-invalidation.test.ts`, `dom/selectors/matching.test.ts`; WPT: `css/selectors/attribute-selectors/style-attribute-selector.html`, `css/selectors/invalidation/attribute.html` +1 |
 | [attribute-substrings](https://drafts.csswg.org/selectors/#attribute-substrings) | `dom/selectors/compile.ts` | **untested** |
 | [child-index](https://drafts.csswg.org/selectors/#child-index) | `dom/selectors/compile.ts` | WPT: `css/selectors/invalidation/nth-child-whole-subtree.html`, `css/selectors/nth-last-child-invalid.html` |
 | [complex](https://drafts.csswg.org/selectors/#complex) | `dom/selectors/parser.ts` | **untested** |
@@ -1491,7 +1491,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [modal-state](https://drafts.csswg.org/selectors/#modal-state) | `dom/html/top-layer.ts` | WPT: `css/selectors/modal-pseudo-class.html` |
 | [parse-selector](https://drafts.csswg.org/selectors/#parse-selector) | `dom/selectors/parser.ts` | **untested** |
 | [pseudo-element-states](https://drafts.csswg.org/selectors/#pseudo-element-states) | `dom/selectors/parser.ts` | **untested** |
-| [relational](https://drafts.csswg.org/selectors/#relational) | `dom/selectors/compile.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `dom/selectors/wpt-selectors.test.ts`; WPT: `css/selectors/invalidation/child-indexed-pseudo-classes-in-has.html`, `css/selectors/invalidation/defined-in-has.html` +38 |
+| [relational](https://drafts.csswg.org/selectors/#relational) | `dom/selectors/compile.ts` | `dom/css/style-invalidation.test.ts`, `dom/selectors/matching.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `dom/selectors/wpt-selectors.test.ts`; WPT: `css/selectors/invalidation/child-indexed-pseudo-classes-in-has.html`, `css/selectors/invalidation/defined-in-has.html` +38 |
 | [scope-element](https://drafts.csswg.org/selectors/#scope-element) | `dom/selectors/compile.ts` | **untested** |
 | [scoping-root](https://drafts.csswg.org/selectors/#scoping-root) | `dom/selectors/index.ts` | **untested** |
 | [specificity-rules](https://drafts.csswg.org/selectors/#specificity-rules) | `dom/selectors/compile.ts`, `dom/selectors/internal.ts` | `dom/selectors/matching.test.ts`, `dom/selectors/parser.test.ts`; WPT: `css/selectors/has-specificity.html`, `css/selectors/selector-specificity.html` |
@@ -1635,7 +1635,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [cascade-sort](https://drafts.csswg.org/css-cascade/#cascade-sort) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts`, `dom/css/computed-values.test.ts` |
+| [cascade-sort](https://drafts.csswg.org/css-cascade/#cascade-sort) | `dom/css/cascade.ts` | `dom/css/cascade.test.ts`, `dom/css/computed-values.test.ts`, `dom/css/lazy-blocks.test.ts`, `dom/css/style-invalidation.test.ts` |
 | [cascading](https://drafts.csswg.org/css-cascade/#cascading) | `dom/css/cascade.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/cascade.test.ts` |
 | [computed](https://drafts.csswg.org/css-cascade/#computed) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [defaulting-keywords](https://drafts.csswg.org/css-cascade/#defaulting-keywords) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |

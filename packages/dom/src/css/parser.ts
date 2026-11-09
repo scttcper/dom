@@ -73,6 +73,11 @@ export class RawRule {
   leading: number;
   /** Rules found directly in the block, with RULE_DECLS runs between and after them. */
   rules: RawRule[];
+  /**
+   * A qualified rule's block when it holds nothing but declarations, as written and not parsed
+   * yet (see `flatBlockEnd`); `decls` is empty until `rawDecls()` parses it. Null otherwise.
+   */
+  lazy: string | null;
 
   constructor(kind: number, name: string, prelude: string, hasBlock: boolean) {
     this.kind = kind;
@@ -82,7 +87,113 @@ export class RawRule {
     this.decls = [];
     this.leading = 0;
     this.rules = [];
+    this.lazy = null;
   }
+}
+
+/** A rule's declarations, parsing its block now if that was put off. */
+export function rawDecls(rule: RawRule): RawDecl[] {
+  const text = rule.lazy;
+  if (text !== null) {
+    rule.lazy = null;
+    rule.decls = parseDeclarationList(text);
+    rule.leading = rule.decls.length;
+  }
+  return rule.decls;
+}
+
+/**
+ * Where the block that starts at `from` (just after its "{") ends, when it can only hold
+ * declarations: the offset of its "}", or -1 when it needs the parser (a nested rule or at-rule,
+ * or anything this scan does not read exactly as the tokenizer would).
+ *
+ * Most of a style sheet is rules no element of a test ever matches, and most of parsing one was
+ * their declarations: tokenizing each value, normalizing it, expanding shorthands and building the
+ * block (a 5,000-rule sheet: 10.5 ms, of which the selectors and this scan are a third). Blink
+ * defers the same work (its lazy property parsing). Flat blocks are found by characters alone:
+ *
+ * - strings and comments are skipped; one that does not end before a newline or the end of the
+ *   text gives up, as does an unquoted `url(` holding anything a URL token may not;
+ * - "{" and "@" give up (a nested rule, an at-rule), wherever they are;
+ * - a "}" inside parentheses or brackets gives up: there it is part of a value.
+ *
+ * Giving up costs nothing but the scan: the tokenizer parses the block as before.
+ */
+export function flatBlockEnd(src: string, from: number): number {
+  const length = src.length;
+  let depth = 0;
+  for (let i = from; i < length; i++) {
+    const c = src.charCodeAt(i);
+    switch (c) {
+      case 0x7d: // }
+        return depth === 0 ? i : -1;
+      case 0x7b: // {
+      case 0x40: // @
+        return -1;
+      case 0x28: // (
+        // `url(` followed by anything but a quoted string is one URL token.
+        if (
+          i - from >= 3 &&
+          (src.charCodeAt(i - 1) | 0x20) === 0x6c &&
+          (src.charCodeAt(i - 2) | 0x20) === 0x72 &&
+          (src.charCodeAt(i - 3) | 0x20) === 0x75
+        ) {
+          let j = i + 1;
+          while (j < length && isCssWhitespace(src.charCodeAt(j))) j++;
+          const q = src.charCodeAt(j);
+          if (q !== 0x22 && q !== 0x27) {
+            for (; j < length; j++) {
+              const u = src.charCodeAt(j);
+              if (u === 0x29) break;
+              // Whitespace, quotes, "(", "\\" and braces: escapes and bad URLs are the tokenizer's.
+              if (u <= 0x20 || u === 0x22 || u === 0x27 || u === 0x28 || u === 0x5c || u === 0x7b || u === 0x7d)
+                return -1;
+            }
+            if (j === length) return -1;
+            i = j;
+            break;
+          }
+        }
+        depth++;
+        break;
+      case 0x5b: // [
+        depth++;
+        break;
+      case 0x29: // )
+      case 0x5d: // ]
+        if (depth === 0) return -1;
+        depth--;
+        break;
+      case 0x22: // "
+      case 0x27: {
+        // '
+        let j = i + 1;
+        for (; j < length; j++) {
+          const u = src.charCodeAt(j);
+          if (u === c) break;
+          // A newline ends a string badly; an escape may hide one.
+          if (u === 0x0a || u === 0x0d || u === 0x0c || u === 0x5c) return -1;
+        }
+        if (j === length) return -1;
+        i = j;
+        break;
+      }
+      case 0x2f: // /
+        if (src.charCodeAt(i + 1) === 0x2a) {
+          const close = src.indexOf("*/", i + 2);
+          if (close === -1) return -1;
+          i = close + 1;
+        }
+        break;
+      case 0x5c: // \\: an escape, wherever it is
+        return -1;
+    }
+  }
+  return -1;
+}
+
+function isCssWhitespace(c: number): boolean {
+  return c === 0x20 || c === 0x0a || c === 0x09 || c === 0x0d || c === 0x0c;
 }
 
 function closerFor(t: number): number {
@@ -148,6 +259,8 @@ export class CSSParser {
   important: boolean;
   valueHasBlock: boolean;
   valueOtherCount: number;
+  /** Leave a flat block of a qualified rule unparsed (RawRule.lazy); false parses every block now. */
+  lazyBlocks: boolean;
 
   constructor(src: string) {
     this.src = src;
@@ -160,6 +273,7 @@ export class CSSParser {
     this.important = false;
     this.valueHasBlock = false;
     this.valueOtherCount = 0;
+    this.lazyBlocks = true;
   }
 
   advance(): number {
@@ -310,7 +424,13 @@ export class CSSParser {
           }
         }
         const rule = new RawRule(RULE_QUALIFIED, "", prelude, true);
-        this.consumeBlockContents(rule);
+        const blockStart = this.t.end;
+        const blockEnd = this.lazyBlocks ? flatBlockEnd(this.src, blockStart) : -1;
+        if (blockEnd === -1) this.consumeBlockContents(rule);
+        else {
+          rule.lazy = this.src.slice(blockStart, blockEnd);
+          this.restore(blockEnd + 1);
+        }
         return rule;
       }
       if (type === TK_WHITESPACE) continue;

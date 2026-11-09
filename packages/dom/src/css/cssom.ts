@@ -13,8 +13,10 @@
 import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
 import {
+  parseDeclarationList,
   parseRule,
   parseStylesheet,
+  rawDecls,
   RULE_AT,
   RULE_DECLS,
   RULE_QUALIFIED,
@@ -40,6 +42,8 @@ import { evaluateSupportsCondition } from "./supports.ts";
 import { currentWindowOrNull } from "../window/current.ts";
 import {
   $block,
+  $blockParsed,
+  $blockText,
   $compiled,
   $compiledFor,
   $condition,
@@ -770,16 +774,20 @@ export class CSSGroupingRule extends CSSRule {
 /** https://drafts.csswg.org/cssom/#the-cssstylerule-interface (+ CSS Nesting: nested cssRules) */
 export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRule {
   [$selector]: string;
-  [$block]: DeclBlock;
+  /** The declarations, once something asked for them (`[$block]`). */
+  [$blockParsed]: DeclBlock | null;
+  /** The block as written, until then: parsed for the first element the rule matches (parser.ts flatBlockEnd). */
+  [$blockText]: string | null;
   [$style]: CSSStyleDeclaration | null;
   /** Compiled (nesting-resolved) selector list, cached until selectorText or an ancestor selector changes. */
   [$compiled]: CompiledSelectorList | null;
   [$compiledFor]: string;
 
-  constructor(selector: string, block: DeclBlock) {
+  constructor(selector: string, block: DeclBlock | null, text: string | null = null) {
     super();
     this[$selector] = selector;
-    this[$block] = block;
+    this[$blockParsed] = block;
+    this[$blockText] = text;
     this[$style] = null;
     this[$compiled] = null;
     this[$compiledFor] = "";
@@ -787,6 +795,22 @@ export class CSSStyleRule extends CSSGroupingRule implements DeclarationOwnerRul
 
   override get type(): number {
     return 1;
+  }
+
+  get [$block](): DeclBlock {
+    let block = this[$blockParsed];
+    if (block === null) {
+      this[$blockParsed] = block = new DeclBlock();
+      block.addRaw(parseDeclarationList(this[$blockText]!));
+      this[$blockText] = null;
+    }
+    return block;
+  }
+
+  /** Whether the rule declares anything, without parsing a block nothing has asked for: one with text in it may. */
+  _mayDeclare(): boolean {
+    const block = this[$blockParsed];
+    return block !== null ? block.names.length !== 0 : /\S/.test(this[$blockText]!);
   }
 
   /** https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext */
@@ -1386,13 +1410,14 @@ function createKeyframe(raw: RawRule): CSSKeyframeRule | null {
   const key = normalizeKeyText(raw.prelude);
   if (key === null) return null;
   const block = new DeclBlock();
-  block.addRaw(raw.decls);
+  block.addRaw(rawDecls(raw));
   return new CSSKeyframeRule(key, block);
 }
 
 /** The declarations before the block's first nested rule (all of them when there is none). */
 function leadingDecls(raw: RawRule): RawDecl[] {
-  return raw.leading === raw.decls.length ? raw.decls : raw.decls.slice(0, raw.leading);
+  const decls = rawDecls(raw);
+  return raw.leading === decls.length ? decls : decls.slice(0, raw.leading);
 }
 
 function nestedDeclarations(parent: CSSGroupingRule, decls: RawDecl[]): CSSNestedDeclarations {
@@ -1412,7 +1437,7 @@ function fillChildren(rule: CSSGroupingRule, raw: RawRule, sheet: CSSStyleSheet 
     // Declarations after a nested rule keep their position in the rule list
     // (https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule); outside style rules they are invalid.
     if (child.kind === RULE_DECLS) {
-      if (inStyle) rule[$rules].push(nestedDeclarations(rule, child.decls));
+      if (inStyle) rule[$rules].push(nestedDeclarations(rule, rawDecls(child)));
       continue;
     }
     const c = createRule(child, rule, sheet, inStyle, false);
@@ -1498,11 +1523,15 @@ export function createRule(
     if (inKeyframes) return createKeyframe(raw);
     if (!raw.hasBlock) return null;
     if (!isValidSelectorFor(raw.prelude, nested, sheet)) return null;
-    const block = new DeclBlock();
-    // https://drafts.csswg.org/css-syntax-3/#consume-qualified-rule: only the leading
-    // declarations are the style rule's own; later runs become CSSNestedDeclarations.
-    block.addRaw(leadingDecls(raw));
-    const sr = new CSSStyleRule(raw.prelude, block);
+    let sr: CSSStyleRule;
+    if (raw.lazy !== null) sr = new CSSStyleRule(raw.prelude, null, raw.lazy);
+    else {
+      const block = new DeclBlock();
+      // https://drafts.csswg.org/css-syntax-3/#consume-qualified-rule: only the leading
+      // declarations are the style rule's own; later runs become CSSNestedDeclarations.
+      block.addRaw(leadingDecls(raw));
+      sr = new CSSStyleRule(raw.prelude, block);
+    }
     sr[$parent] = parent;
     fillChildren(sr, raw, sheet, true);
     return sr;
@@ -1589,21 +1618,21 @@ export function createRule(
     case "font-face": {
       if (!raw.hasBlock || prelude !== "") return null;
       const block = new DeclBlock();
-      for (const d of raw.decls) block.putParsed(d.name.toLowerCase(), d.value, d.important);
+      for (const d of rawDecls(raw)) block.putParsed(d.name.toLowerCase(), d.value, d.important);
       rule = new CSSFontFaceRule(block);
       break;
     }
     case "page": {
       if (!raw.hasBlock) return null;
       const block = new DeclBlock();
-      block.addRaw(raw.decls);
+      block.addRaw(rawDecls(raw));
       rule = new CSSPageRule(prelude, block);
       break;
     }
     case "property": {
       if (!raw.hasBlock || !prelude.startsWith("--")) return null;
       const block = new DeclBlock();
-      for (const d of raw.decls) block.putParsed(d.name.toLowerCase(), d.value, false);
+      for (const d of rawDecls(raw)) block.putParsed(d.name.toLowerCase(), d.value, false);
       rule = new CSSPropertyRule(prelude, block);
       break;
     }

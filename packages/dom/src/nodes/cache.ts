@@ -25,7 +25,7 @@ export class NodeCache {
   name: string;
 
   // --- css (computed style) ---
-  /** `Document._version` at which `style` was computed. */
+  /** `Document._version` less its benign bumps (css/style-deps.ts) at which `style` was computed. */
   styleVersion: number;
   /** `Document._styleVersion` at which `style` was computed. */
   styleSheetVersion: number;

@@ -22,22 +22,24 @@ import { T } from "../nodes/tags.ts";
 import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import {
+  beginStateDeps,
+  buildAncestorFilter,
+  type CompiledSelector,
+  type CompiledSelectorList,
+  compileSelectorList,
+  endStateDeps,
   KEY_CLASS,
   KEY_ID,
   KEY_TAG,
-  beginStateDeps,
-  buildAncestorFilter,
-  compileSelectorList,
-  endStateDeps,
   matchesSelector,
   matchesSelectorDirect,
-  mayMatchAncestors,
-  stateDepsHold,
-  type CompiledSelector,
-  type CompiledSelectorList,
   type MatchOptions,
+  mayMatchAncestors,
+  selectorAttributeNames,
   type StateDeps,
+  stateDepsHold,
 } from "../selectors/internal.ts";
+import { noteSelectorAttribute, noteStyleRecordCached } from "./style-deps.ts";
 import { directionality, inputTypeName, predicates } from "../selectors/state.ts";
 import {
   appendableRule,
@@ -95,6 +97,7 @@ import {
 import { inlineStyleCount } from "./inline-count.ts";
 import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor, validateAdopted } from "./stylesheets.ts";
 import {
+  $benign,
   $block,
   $css,
   $disabled,
@@ -126,7 +129,9 @@ export class IndexedRule {
   order: number;
   /** Layer rank: higher wins for normal declarations; unlayered rules have the highest rank. */
   layer: number;
-  block: DeclBlock;
+  /** The declarations; null until the rule first matches, for a rule whose `owner` has not parsed them. */
+  block: DeclBlock | null;
+  owner: BlockOwner | null;
   layerNode: LayerNode;
   /** Copied from `sel` so the cascade's loop reads them without a pointer hop (as Blink's RuleData). */
   h0: number;
@@ -134,7 +139,14 @@ export class IndexedRule {
   h2: number;
   h3: number;
 
-  constructor(sel: CompiledSelector, sheetIndex: number, order: number, block: DeclBlock, layerNode: LayerNode) {
+  constructor(
+    sel: CompiledSelector,
+    sheetIndex: number,
+    order: number,
+    block: DeclBlock | null,
+    layerNode: LayerNode,
+    owner: BlockOwner | null,
+  ) {
     this.sel = sel;
     this.specificity = sel.specificity;
     this.h0 = sel.h0;
@@ -145,8 +157,19 @@ export class IndexedRule {
     this.order = order;
     this.layer = 0;
     this.block = block;
+    this.owner = owner;
     this.layerNode = layerNode;
   }
+}
+
+/** A rule that holds declarations: asking for them parses a style rule's block if nothing has yet. */
+interface BlockOwner {
+  readonly [$block]: DeclBlock;
+}
+
+/** A matched rule's declarations. */
+function blockOf(rule: IndexedRule): DeclBlock {
+  return rule.block ?? (rule.block = rule.owner![$block]);
 }
 
 /** The rules that share one subject key. */
@@ -311,7 +334,8 @@ class IndexBuilder {
     for (let i = 0; i < rules.length; i++) {
       const r = rules[i];
       if (r instanceof CSSStyleRule) {
-        this.style(r, r[$block], layer);
+        // The rule's own block stays unparsed until an element matches it (IndexedRule.owner).
+        if (r._mayDeclare()) this.add(r._compile(), null, layer, r);
         if (r[$rules].length !== 0) this.rules(r[$rules], layer, r);
       } else if (r instanceof CSSNestedDeclarations) {
         if (parentStyle !== null) this.style(parentStyle, r[$block], layer);
@@ -335,11 +359,18 @@ class IndexBuilder {
   }
 
   /** Indexes a style rule's selectors with its declarations. */
-  add(compiled: CompiledSelectorList | null, block: DeclBlock, layer: LayerNode): void {
-    if (compiled === null || block.names.length === 0) return;
+  add(
+    compiled: CompiledSelectorList | null,
+    block: DeclBlock | null,
+    layer: LayerNode,
+    owner: BlockOwner | null = null,
+  ): void {
+    if (compiled === null || (block !== null && block.names.length === 0)) return;
     const order = this.order++;
     for (const sel of compiled.selectors) {
-      const ir = new IndexedRule(sel, this.sheetIndex, order, block, layer);
+      const ir = new IndexedRule(sel, this.sheetIndex, order, block, layer, owner);
+      // Changes to other aria-* / data-* attributes leave style records valid (./style-deps.ts).
+      selectorAttributeNames(sel, noteSelectorAttribute);
       if (sel.volatile) this.index.volatile = true;
       const pe = sel.pseudoElement;
       if (pe === "") this.index.main.add(ir, this.extending);
@@ -992,13 +1023,13 @@ function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null,
   if (uaMatched.length !== 0) {
     map = new Map();
     uaMatched.sort(normalOrder);
-    for (const m of uaMatched) applyBlock(map, m.rule.block, false);
+    for (const m of uaMatched) applyBlock(map, blockOf(m.rule), false);
     rec.ua = new Map(map);
   }
   if (matched.length !== 0) {
     map ??= new Map();
     matched.sort(normalOrder);
-    for (const m of matched) applyBlock(map, m.rule.block, false);
+    for (const m of matched) applyBlock(map, blockOf(m.rule), false);
   }
   if (inline !== null && inline.names.length !== 0) {
     map ??= new Map();
@@ -1006,10 +1037,10 @@ function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null,
   }
   if (matched.length !== 0) {
     let anyImportant = false;
-    for (const m of matched) if (m.rule.block.important.indexOf(true) !== -1) anyImportant = true;
+    for (const m of matched) if (blockOf(m.rule).important.indexOf(true) !== -1) anyImportant = true;
     if (anyImportant) {
       const imp = matched.slice().sort(importantOrder);
-      for (const m of imp) applyBlock(map!, m.rule.block, true);
+      for (const m of imp) applyBlock(map!, blockOf(m.rule), true);
     }
   }
   if (inline !== null && inline.important.indexOf(true) !== -1) applyBlock(map!, inline, true);
@@ -1140,12 +1171,12 @@ function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
     winLayer = 0;
     for (let i = 0; i < matched.length; i++) {
       const k = layerKey(matched[i]);
-      if (excluded.indexOf(k) === -1) winnerIn(matched[i].rule.block, false, prop, k);
+      if (excluded.indexOf(k) === -1) winnerIn(blockOf(matched[i].rule), false, prop, k);
     }
     if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, false, prop, INLINE_LAYER);
     for (let i = 0; i < important.length; i++) {
       const k = layerKey(important[i]);
-      if (excluded.indexOf(k) === -1) winnerIn(important[i].rule.block, true, prop, k);
+      if (excluded.indexOf(k) === -1) winnerIn(blockOf(important[i].rule), true, prop, k);
     }
     if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, true, prop, INLINE_LAYER);
     const v = winValue as string | undefined;
@@ -1221,11 +1252,15 @@ export function styleRecord(el: NodeImpl): StyleRecord {
   const sv = currentStyleVersion(doc);
   const c: NodeCache = nodeCache(el);
   const cached = c.style as StyleRecord | null;
-  if (cached !== null && c.styleVersion === doc[$version] && c.styleSheetVersion === sv && reusable(cached))
-    return cached;
+  // Every mutation but the ones that cannot change a computed style (./style-deps.ts).
+  const stamp = doc[$version] - doc[$benign];
+  if (cached !== null && c.styleVersion === stamp && c.styleSheetVersion === sv && reusable(cached)) return cached;
   const rec = computeRecord(el, PSEUDO_NONE, sv);
   c.style = rec;
-  c.styleVersion = doc[$version];
+  // From here on attribute writes count the benign ones. The stamp was read before computing: a
+  // cascade changes nothing in the document.
+  noteStyleRecordCached();
+  c.styleVersion = stamp;
   c.styleSheetVersion = sv;
   return rec;
 }

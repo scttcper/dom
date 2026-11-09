@@ -16,10 +16,11 @@ import {
 import type { Element } from "./Element.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import { noteInlineStyle } from "../css/inline-count.ts";
+import { styleBlindAttribute, styleRecordsCached } from "../css/style-deps.ts";
 import { activeObservers, queueAttributeMutationRecord } from "../observers/queue.ts";
 import { slotAssignmentActive, slotsAttributeChanged } from "./slots.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
-import { $formAttrSeen, $style, $version } from "../keys.ts";
+import { $benign, $formAttrSeen, $style, $version } from "../keys.ts";
 
 /** ASCII-lowercase without allocating when the input is already lowercase (the common case). */
 export function asciiLowercase(s: string): string {
@@ -338,7 +339,10 @@ export function handleAttributeChanges(
   if ((el.flags & F_ATTR_HOOK) !== 0) {
     (el.node as Element)._attributeChangedSteps(a.localName, oldValue, newValue, ns);
   }
-  el.doc[$version]++;
+  const doc = el.doc;
+  doc[$version]++;
+  // Computed styles survive a change no style rule can see (css/style-deps.ts).
+  if (styleRecordsCached && ns === null && styleBlindAttribute(a.localName)) doc[$benign]++;
   if (ceReactionsPending) flushCEReactions(); // custom element reactions (html agent; see create.ts)
 }
 
