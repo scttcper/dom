@@ -22,7 +22,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 787 | 607 | 54 | 126 |
+| [HTML Standard](#html-standard) | 787 | 608 | 54 | 125 |
 | [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
 | [CSS: geometry](#css-geometry) | 61 | 54 | 3 | 4 |
@@ -95,7 +95,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1678 | 1157 | 123 | 398 |
+| **All** | 1678 | 1158 | 123 | 397 |
 
 ## Web-platform-tests fixtures
 
@@ -157,7 +157,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 787 sections implemented, 607 tested, 54 by WPT only, 126 untested.
+<https://html.spec.whatwg.org/> — 787 sections implemented, 608 tested, 54 by WPT only, 125 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -255,7 +255,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`, `compat/html/focus.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [concept-fe-value](https://html.spec.whatwg.org/#concept-fe-value) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/input-microsyntaxes.test.ts` |
-| [concept-fieldset-disabled](https://html.spec.whatwg.org/#concept-fieldset-disabled) | `jest-dom/matchers/state.ts` | **untested** |
+| [concept-fieldset-disabled](https://html.spec.whatwg.org/#concept-fieldset-disabled) | `jest-dom/matchers/state.ts` | `jest-dom/to-be-disabled-impl.test.ts` |
 | [concept-form-reset](https://html.spec.whatwg.org/#concept-form-reset) | `dom/html/forms/form-submission.ts` | `dom/html/forms/form.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `compat/forms/form-algorithms.test.ts`, `compat/forms/submission-activation.test.ts`; WPT: `html/semantics/forms/resetting-a-form/reset-form-2.html`, `html/semantics/forms/resetting-a-form/reset-form.html` |
 | [concept-form-submit](https://html.spec.whatwg.org/#concept-form-submit) | `dom/html/forms/form-submission.ts`, `dom/html/forms/user-validity.ts`, `dom/html/interactive.ts` | `dom/html/forms/form.test.ts`, `dom/html/wpt-dialog.test.ts`, `dom/selectors/pseudo-classes.test.ts`, `compat/forms/form-algorithms.test.ts` +2 |
 | [concept-fs-method](https://html.spec.whatwg.org/#concept-fs-method) | `dom/html/interactive.ts` | `dom/html/close-watchers-light-dismiss.test.ts` |
@@ -1256,7 +1256,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-cssstyledeclaration-length](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [dom-cssstyledeclaration-parentrule](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts` |
 | [dom-cssstyledeclaration-removeproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/cssstyledeclaration-removeProperty-all.html` |
-| [dom-cssstyledeclaration-setproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/declaration.test.ts`; WPT: `css/cssom/MutationObserver-style.html`, `css/cssom/cssstyledeclaration-mutationrecord-002.html` +6 |
+| [dom-cssstyledeclaration-setproperty](https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty) | `dom/css/CSSStyleDeclaration.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/declaration.test.ts`, `jest-dom/to-have-style-memo.test.ts`; WPT: `css/cssom/MutationObserver-style.html`, `css/cssom/cssstyledeclaration-mutationrecord-002.html` +6 |
 | [dom-cssstylerule-selectortext](https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSStyleRule-selectorText-setter.html`, `css/cssom/CSSStyleRule-set-selectorText-namespace.html` +2 |
 | [dom-cssstylesheet-addrule](https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [dom-cssstylesheet-cssrules](https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |

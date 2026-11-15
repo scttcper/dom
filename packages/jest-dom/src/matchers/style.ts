@@ -110,6 +110,11 @@ export function toBeVisible(this: MatcherContext, element: DOMNode): MatcherResu
 // --- toHaveStyle ------------------------------------------------------------------------
 
 function getStyleDeclaration(document: DOMNode, css: Record<string, unknown>): Record<string, string> {
+  const key = normalizedKey(css);
+  if (key !== null) {
+    const hit = normalized.get(key);
+    if (hit !== undefined) return { ...hit };
+  }
   const styles: Record<string, string> = {};
 
   // The next block is necessary to normalize colors
@@ -119,7 +124,29 @@ function getStyleDeclaration(document: DOMNode, css: Record<string, unknown>): R
     styles[property] = copy.style[property];
   }
 
+  if (key !== null) {
+    if (normalized.size >= 512) normalized.clear();
+    normalized.set(key, { ...styles });
+  }
   return styles;
+}
+
+// Ours: the normalized expectation by its properties and values. Upstream builds a <div> and
+// writes every property to its style on each call (~0.7 µs of a 1.4 µs toHaveStyle); what it
+// reads back depends only on the sequence written (a later invalid value reads back what an
+// earlier shorthand set, so the key is the whole sequence). Only strings and numbers are keyed:
+// any other value is converted by the setter, which may run user code.
+const normalized = new Map<string, Record<string, string>>();
+
+function normalizedKey(css: Record<string, unknown>): string | null {
+  let key = "";
+  for (const property of Object.keys(css)) {
+    const value = css[property];
+    const type = typeof value;
+    if (type !== "string" && type !== "number") return null;
+    key += `${property}\u0000${type === "number" ? "n" : "s"}${value as string}\u0001`;
+  }
+  return key;
 }
 
 // Upstream compares strings only. Divergence (same pass/fail whenever upstream's DOM and

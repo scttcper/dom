@@ -12,6 +12,7 @@
 // pass/fail result is the contract. They only read attributes and walk parents, which is
 // already cheap on @ctrl/dom.
 
+import { $impl, ELEMENT_NODE, F_HTML, getAttribute, type NodeImpl } from "@ctrl/dom/internal";
 import { roles } from "@ctrl/dom/aria";
 import {
   checkHtmlElement,
@@ -261,7 +262,49 @@ function isAncestorDisabled(element: DOMNode): boolean {
 }
 
 function isElementOrAncestorDisabled(element: DOMNode): boolean {
+  const impl = (element as { [$impl]?: NodeImpl })[$impl];
+  if (impl !== undefined) return isElementOrAncestorDisabledImpl(impl);
   return canElementBeDisabled(element) && (isElementDisabled(element) || isAncestorDisabled(element));
+}
+
+// Ours: the same steps over @ctrl/dom's node records, without the wrappers (a <form> ancestor's
+// named-property Proxy made every property read on it ~75 ns; the walk read four or five).
+
+/** getTag(el): `el.tagName.toLowerCase()`. */
+function tagOf(el: NodeImpl): string {
+  // A known HTML tag (tag id) without a prefix: tagName is its uppercased name, which lowercases back.
+  if (el.prefix === null && el.tag !== 0 && (el.flags & F_HTML) !== 0) return el.name;
+  return (el.prefix === null ? el.name : `${el.prefix}:${el.name}`).toLowerCase();
+}
+
+function isElementDisabledImpl(el: NodeImpl, tag: string): boolean {
+  return (DISABLEABLE_FORM_TAGS.includes(tag) || isCustomElement(tag)) && getAttribute(el, "disabled") !== null;
+}
+
+function isElementOrAncestorDisabledImpl(element: NodeImpl): boolean {
+  const tag = tagOf(element);
+  if (!DISABLEABLE_FORM_TAGS.includes(tag) && !isCustomElement(tag)) return false;
+  if (getAttribute(element, "disabled") !== null) return true;
+  // isAncestorDisabled: `parentElement` up to the first non-element parent.
+  let child = element;
+  let childTag = tag;
+  for (let parent = element.parent; parent !== null && parent.type === ELEMENT_NODE; parent = parent.parent) {
+    const parentTag = tagOf(parent);
+    if (isElementDisabledImpl(parent, parentTag) && !isFirstLegendChildImpl(child, childTag, parent, parentTag)) {
+      return true;
+    }
+    child = parent;
+    childTag = parentTag;
+  }
+  return false;
+}
+
+function isFirstLegendChildImpl(element: NodeImpl, tag: string, parent: NodeImpl, parentTag: string): boolean {
+  if (tag !== "legend" || parentTag !== "fieldset") return false;
+  for (let c = parent.first; c !== null; c = c.next) {
+    if (c.type === ELEMENT_NODE && tagOf(c) === "legend") return c === element;
+  }
+  return false;
 }
 
 export function toBeDisabled(this: MatcherContext, element: DOMNode): MatcherResult {
