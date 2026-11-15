@@ -11,6 +11,7 @@
 
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nextSkippingChildren, isInclusiveAncestor, indexOf } from "../nodes/traverse.ts";
+import { F_RANGE, F_RANGE_BELOW } from "../nodes/constants.ts";
 import { $ec, $eo, $home, $inflight, $pointerBeforeReference, $ranges, $reference, $root, $sc, $so } from "../keys.ts";
 
 /** Boundary points of a live range, as NodeImpls. Implemented by `AbstractRange`. */
@@ -42,32 +43,70 @@ export let nodeIteratorCount = 0;
 // stay registered until GC clears their WeakRefs.
 let iterators: WeakRef<IteratorState>[] = [];
 
-interface RangeHome {
-  [$ranges]: WeakRef<LiveBoundaries>[] | null;
+/**
+ * A document's live ranges. Dead WeakRefs are dropped when a mutation walks the list, and on
+ * registration once the list has doubled since the last sweep: a WeakRef's target stays alive
+ * until the current job ends, so `createRange()` in a synchronous loop finds nothing to drop
+ * and sweeping on a fixed stride would be quadratic.
+ */
+interface RangeList {
+  refs: WeakRef<LiveBoundaries>[];
+  sweepAt: number;
 }
+
+interface RangeHome {
+  [$ranges]: RangeList | null;
+}
+
+const SWEEP_MIN = 64;
 
 function homeOf(n: NodeImpl): RangeHome {
   return n.doc as unknown as RangeHome;
 }
 
+function file(home: RangeHome, ref: WeakRef<LiveBoundaries>): void {
+  let list = home[$ranges];
+  if (list === null) list = home[$ranges] = { refs: [], sweepAt: SWEEP_MIN };
+  else if (list.refs.length >= list.sweepAt) {
+    compact(home, list);
+    list.sweepAt = Math.max(SWEEP_MIN, list.refs.length * 2);
+  }
+  list.refs.push(ref);
+  liveRangeCount++;
+}
+
+/**
+ * Marks `n` as a live range's boundary node and its ancestors as having one below
+ * (nodes/constants.ts F_RANGE). Called whenever a live range takes a new start or end node.
+ */
+export function markBoundary(n: NodeImpl): void {
+  if ((n.flags & F_RANGE) !== 0) return;
+  n.flags |= F_RANGE;
+  if (n.parent !== null) markRangeAncestors(n.parent);
+}
+
+/** Sets F_RANGE_BELOW on `n` and its ancestors (stops at the first one that has it). */
+export function markRangeAncestors(n: NodeImpl): void {
+  for (let p: NodeImpl | null = n; p !== null && (p.flags & F_RANGE_BELOW) === 0; p = p.parent)
+    p.flags |= F_RANGE_BELOW;
+}
+
 export function registerLiveRange(r: LiveBoundaries): void {
+  markBoundary(r[$sc]);
+  markBoundary(r[$ec]);
   const home = homeOf(r[$sc]);
   r[$home] = home;
-  const list = (home[$ranges] ??= []);
-  // Lists are compacted on mutation (liveRanges); `createRange()` in a loop without mutations
-  // would otherwise keep one dead WeakRef per range. Sweep every 256 registrations.
-  if (list.length !== 0 && (list.length & 255) === 0) liveRanges(r[$sc]);
-  (home[$ranges] ??= []).push(new WeakRef(r));
-  liveRangeCount++;
+  file(home, new WeakRef(r));
 }
 
 /** Re-file `r` after its boundary points moved to another document. */
 export function refileRange(r: LiveBoundaries): void {
+  markBoundary(r[$sc]);
+  markBoundary(r[$ec]);
   const home = homeOf(r[$sc]);
   if (r[$home] === home || r[$home] === null) return;
   r[$home] = home;
-  (home[$ranges] ??= []).push(new WeakRef(r));
-  liveRangeCount++;
+  file(home, new WeakRef(r));
 }
 
 /** Registry length at which registerNodeIterator drops collected entries (amortized O(1)). */
@@ -86,25 +125,45 @@ export function registerNodeIterator(it: IteratorState): void {
   nodeIteratorCount = iterators.length;
 }
 
-/** Live ranges of `n`'s node document that are still alive; compacts that document's list. */
+/** Drops collected entries and entries for ranges now filed elsewhere; keeps `list` attached. */
+function compact(home: RangeHome, list: RangeList): void {
+  const refs = list.refs;
+  let w = 0;
+  for (let i = 0; i < refs.length; i++) {
+    const r = refs[i].deref();
+    // Entries left behind by refileRange/rangesAdopt (the range now lives elsewhere) are dropped.
+    if (r !== undefined && r[$home] === home) refs[w++] = refs[i];
+  }
+  liveRangeCount -= refs.length - w;
+  refs.length = w;
+}
+
+/** Reused result buffer of liveRanges (the range update loops never re-enter it). */
+const scratch: LiveBoundaries[] = [];
+
+/**
+ * Live ranges of `n`'s node document that are still alive, in a shared buffer valid until the
+ * next call; compacts that document's list.
+ */
 function liveRanges(n: NodeImpl): LiveBoundaries[] {
   const home = homeOf(n);
   const list = home[$ranges];
-  const out: LiveBoundaries[] = [];
-  if (list === null) return out;
+  scratch.length = 0;
+  if (list === null) return scratch;
+  const refs = list.refs;
   let w = 0;
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i].deref();
-    // Entries left behind by refileRange/rangesAdopt (the range now lives elsewhere) are dropped.
+  for (let i = 0; i < refs.length; i++) {
+    const r = refs[i].deref();
     if (r !== undefined && r[$home] === home) {
-      out.push(r);
-      list[w++] = list[i];
+      scratch.push(r);
+      refs[w++] = refs[i];
     }
   }
-  liveRangeCount -= list.length - w;
-  list.length = w;
+  liveRangeCount -= refs.length - w;
+  refs.length = w;
   if (w === 0) home[$ranges] = null;
-  return out;
+  else if (list.sweepAt > SWEEP_MIN && w * 4 < list.sweepAt) list.sweepAt = Math.max(SWEEP_MIN, w * 2);
+  return scratch;
 }
 
 /**
@@ -116,25 +175,23 @@ export function rangesAdopt(node: NodeImpl, oldDoc: object): void {
   const newHome = homeOf(node);
   const list = oldHome[$ranges];
   if (list === null || oldHome === newHome) return;
+  const refs = list.refs;
   let w = 0;
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i].deref();
-    if (r === undefined) {
-      liveRangeCount--;
-      continue;
-    }
-    if (r[$home] !== oldHome) {
+  for (let i = 0; i < refs.length; i++) {
+    const r = refs[i].deref();
+    if (r === undefined || r[$home] !== oldHome) {
       liveRangeCount--;
       continue;
     }
     if (isInclusiveAncestor(node, r[$sc]) || isInclusiveAncestor(node, r[$ec])) {
       r[$home] = newHome;
-      (newHome[$ranges] ??= []).push(list[i]);
+      liveRangeCount--;
+      file(newHome, refs[i]);
     } else {
-      list[w++] = list[i];
+      refs[w++] = refs[i];
     }
   }
-  list.length = w;
+  refs.length = w;
   if (w === 0) oldHome[$ranges] = null;
 }
 
@@ -156,10 +213,12 @@ export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl, index: numb
     if (isInclusiveAncestor(node, r[$sc])) {
       r[$sc] = parent;
       r[$so] = index;
+      markBoundary(parent);
     }
     if (isInclusiveAncestor(node, r[$ec])) {
       r[$ec] = parent;
       r[$eo] = index;
+      markBoundary(parent);
     }
     if (r[$sc] === parent && r[$so] > index) r[$so]--;
     if (r[$ec] === parent && r[$eo] > index) r[$eo]--;
@@ -188,10 +247,12 @@ export function rangesSplitText(node: NodeImpl, newNode: NodeImpl, offset: numbe
     if (r[$sc] === node && r[$so] > offset) {
       r[$sc] = newNode;
       r[$so] -= offset;
+      markBoundary(newNode);
     }
     if (r[$ec] === node && r[$eo] > offset) {
       r[$ec] = newNode;
       r[$eo] -= offset;
+      markBoundary(newNode);
     }
     if (r[$sc] === parent && r[$so] === index + 1) r[$so]++;
     if (r[$ec] === parent && r[$eo] === index + 1) r[$eo]++;
@@ -201,6 +262,8 @@ export function rangesSplitText(node: NodeImpl, newNode: NodeImpl, offset: numbe
 /** https://dom.spec.whatwg.org/#dom-node-normalize steps 6.4.1-6.4.4 for one merged sibling. */
 export function rangesNormalizeMerge(node: NodeImpl, current: NodeImpl, length: number): void {
   const list = liveRanges(node);
+  // `node` may become a boundary node (conservatively marked: the marks only gate work).
+  if (list.length !== 0) markBoundary(node);
   const parent = current.parent;
   const index = indexOf(current);
   for (let i = 0; i < list.length; i++) {

@@ -3,7 +3,7 @@
 // https://dom.spec.whatwg.org/#concept-cd-replace
 // https://dom.spec.whatwg.org/#concept-text-split
 
-import { F_CHILDREN_HOOK } from "./constants.ts";
+import { F_CHILDREN_HOOK, F_RANGE } from "./constants.ts";
 import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import { insert } from "./tree.ts";
@@ -24,7 +24,7 @@ export function replaceData(node: NodeImpl, offset: number, count: number, data:
   // Steps 5-7.
   node.data = offset === 0 && count === length ? data : old.slice(0, offset) + data + old.slice(offset + count);
   // Steps 8-11.
-  if (liveRangeCount !== 0) rangesReplaceData(node, offset, count, data.length);
+  if (liveRangeCount !== 0 && (node.flags & F_RANGE) !== 0) rangesReplaceData(node, offset, count, data.length);
   // Step 12: children changed steps of the parent.
   const parent = node.parent;
   if (parent !== null && (parent.flags & F_CHILDREN_HOOK) !== 0) (parent.node as Element)._childrenChangedSteps();
@@ -49,7 +49,8 @@ export function splitText(node: NodeImpl, offset: number): NodeImpl {
   const parent = node.parent;
   if (parent !== null) {
     insert(newNode, parent, node.next, false);
-    if (liveRangeCount !== 0) rangesSplitText(node, newNode, offset, parent);
+    if (liveRangeCount !== 0 && ((node.flags | parent.flags) & F_RANGE) !== 0)
+      rangesSplitText(node, newNode, offset, parent);
   }
   // Step 8.
   replaceData(node, offset, count, "");

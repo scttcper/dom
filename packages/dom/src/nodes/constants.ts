@@ -79,3 +79,13 @@ export const F_INERT_ATTR = 1 << 18;
  * (Document[$formAttrSeen]) has no form whose controls lie outside it (html/forms/form-associated.ts).
  */
 export const F_FORM_ATTR = 1 << 19;
+/**
+ * Sticky marks for live ranges (traversal/live.ts): F_RANGE on a node that is or was a live
+ * range's start or end node, F_RANGE_BELOW on every ancestor of such a node (link() carries it
+ * up when a marked subtree is inserted). The mutation algorithms skip the range update steps
+ * when the nodes they touch have neither, so a selection elsewhere in the document costs
+ * React's commits one bit test per mutation.
+ */
+export const F_RANGE = 1 << 20;
+export const F_RANGE_BELOW = 1 << 21;
+export const F_RANGE_MARKS = F_RANGE | F_RANGE_BELOW;

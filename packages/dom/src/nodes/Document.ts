@@ -97,7 +97,7 @@ export class Document extends Node {
   /** https://w3c.github.io/selection-api/#dfn-selection — created on first getSelection(). */
   declare [$selection]: Selection | null;
   /** Live ranges whose boundary points are in this document (traversal/live.ts); null when none. */
-  declare [$ranges]: WeakRef<object>[] | null;
+  declare [$ranges]: object | null;
   /**
    * Derived per-document caches (selector results, snapshot holders, ...) keyed by owner token; see
    * nodes/derived.ts. Dropped whenever a node is removed from a tree of this document, so caches

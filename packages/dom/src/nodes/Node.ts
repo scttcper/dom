@@ -21,6 +21,7 @@ import {
   ENTITY_REFERENCE_NODE,
   F_CONNECTED,
   F_HTML,
+  F_RANGE,
   F_SHADOW_ROOT,
   NOTATION_NODE,
   PROCESSING_INSTRUCTION_NODE,
@@ -302,7 +303,8 @@ export abstract class Node extends EventTarget {
       // Steps 5-6: move live range boundary points, then remove the merged siblings.
       let current: NodeImpl | null = next;
       while (current !== null && current.type === TEXT_NODE) {
-        if (liveRangeCount !== 0) rangesNormalizeMerge(n, current, length);
+        if (liveRangeCount !== 0 && ((current.flags | current.parent!.flags) & F_RANGE) !== 0)
+          rangesNormalizeMerge(n, current, length);
         length += current.data.length;
         current = current.next;
       }

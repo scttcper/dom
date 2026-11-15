@@ -15,9 +15,19 @@
 
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { DOCUMENT_NODE, ELEMENT_NODE, F_CONNECTED, HTML_NS } from "../nodes/constants.ts";
+import { DOCUMENT_NODE, F_CONNECTED, HTML_NS } from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
-import { computedValue, computedPosition, inheritanceParent, isDisplayNone, computedVisibility } from "./cascade.ts";
+import {
+  BOX_DISPLAY_NONE,
+  BOX_POSITIONED,
+  boxFacts,
+  computedPosition,
+  computedValue,
+  computedVisibility,
+  inheritanceParent,
+  isDisplayNone,
+  sheetsApplyTo,
+} from "./cascade.ts";
 import { $impl, $scrollX, $scrollY } from "../keys.ts";
 import { layoutEnabled } from "./layout-mode.ts";
 import {
@@ -164,17 +174,22 @@ export function offsetParent(el: NodeImpl): NodeImpl | null {
   if ((el.flags & F_CONNECTED) === 0) return null;
   const parent = el.parent;
   if (parent === null || parent.type === DOCUMENT_NODE || isBody(el)) return null;
-  for (let n: NodeImpl | null = el; n !== null; n = inheritanceParent(n)) if (isDisplayNone(n)) return null;
-  const position = computedPosition(el);
-  if (position === "fixed") return null;
-  const isStatic = position === "static";
-  // Steps 2-3: nearest positioned ancestor, body, or (for static elements) td/th/table.
+  const sheets = sheetsApplyTo(el);
+  const own = boxFacts(el, sheets);
+  if ((own & BOX_DISPLAY_NONE) !== 0) return null;
+  const isStatic = (own & BOX_POSITIONED) === 0;
+  if (!isStatic && computedPosition(el) === "fixed") return null;
+  // Steps 2-3: nearest positioned ancestor, body, or (for static elements) td/th/table. Every
+  // ancestor is still checked for display: none (step 1: then el has no box).
+  let found: NodeImpl | null = null;
   for (let a = inheritanceParent(el); a !== null; a = inheritanceParent(a)) {
-    if (a.type !== ELEMENT_NODE) break;
-    if (computedPosition(a) !== "static" || isBody(a)) return a;
-    if (isStatic && a.ns === HTML_NS && (a.tag === T.td || a.tag === T.th || a.tag === T.table)) return a;
+    const facts = boxFacts(a, sheets);
+    if ((facts & BOX_DISPLAY_NONE) !== 0) return null;
+    if (found !== null) continue;
+    if ((facts & BOX_POSITIONED) !== 0 || isBody(a)) found = a;
+    else if (isStatic && a.ns === HTML_NS && (a.tag === T.td || a.tag === T.th || a.tag === T.table)) found = a;
   }
-  return null;
+  return found;
 }
 
 // --- layout-lite reads ------------------------------------------------------------------------

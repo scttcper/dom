@@ -962,7 +962,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [assign-slotables-for-a-tree](https://dom.spec.whatwg.org/#assign-slotables-for-a-tree) | `dom/nodes/slots.ts` | `dom/nodes/slots.test.ts` |
 | [concept-attach-a-shadow-root](https://dom.spec.whatwg.org/#concept-attach-a-shadow-root) | `dom/html/custom-elements.ts`, `dom/nodes/Element.ts`, `dom/nodes/ShadowRoot.ts` | `dom/nodes/shadow-dom.test.ts`, `dom/nodes/wpt-shadow-dom.test.ts`; WPT: `dom/nodes/attach-shadow-realm-after-adoption.html` |
 | [concept-attribute-value](https://dom.spec.whatwg.org/#concept-attribute-value) | `dom/nodes/Node.ts` | `dom/nodes/attributes.test.ts` |
-| [concept-cd-replace](https://dom.spec.whatwg.org/#concept-cd-replace) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-cd-replace](https://dom.spec.whatwg.org/#concept-cd-replace) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts`, `dom/traversal/range-mutations-fuzz.test.ts` |
 | [concept-child-text-content](https://dom.spec.whatwg.org/#concept-child-text-content) | `aria/forms.ts` | **untested** |
 | [concept-create-element](https://dom.spec.whatwg.org/#concept-create-element) | `dom/html/custom-elements.ts`, `dom/nodes/create.ts` | `dom/html/custom-elements.test.ts`, `dom/html/interfaces.wpt.test.ts`, `dom/html/wpt-custom-elements.test.ts`; WPT: `custom-elements/microtasks-and-constructors.html`, `custom-elements/parser/parser-constructs-custom-element-in-document-write.html` +7 |
 | [concept-descendant-text-content](https://dom.spec.whatwg.org/#concept-descendant-text-content) | `dom/nodes/Node.ts` | `dom/nodes/node-methods.test.ts` |
@@ -994,7 +994,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-getelementsbyclassname](https://dom.spec.whatwg.org/#concept-getelementsbyclassname) | `dom/nodes/Element.ts` | WPT: `dom/nodes/getElementsByClassName-14.htm` |
 | [concept-getelementsbytagname](https://dom.spec.whatwg.org/#concept-getelementsbytagname) | `dom/nodes/Element.ts` | `dom/collections/collections.test.ts` |
 | [concept-getelementsbytagnamens](https://dom.spec.whatwg.org/#concept-getelementsbytagnamens) | `dom/nodes/Element.ts` | `dom/collections/token-lists.test.ts` |
-| [concept-live-range](https://dom.spec.whatwg.org/#concept-live-range) | `dom/traversal/live.ts` | `dom/traversal/range.test.ts`, `dom/traversal/selection.test.ts`, `dom/traversal/wpt-ranges.test.ts` |
+| [concept-live-range](https://dom.spec.whatwg.org/#concept-live-range) | `dom/traversal/live.ts` | `dom/traversal/range-mutations-fuzz.test.ts`, `dom/traversal/range.test.ts`, `dom/traversal/selection.test.ts`, `dom/traversal/wpt-ranges.test.ts` |
 | [concept-mo-callback](https://dom.spec.whatwg.org/#concept-mo-callback) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
 | [concept-mo-queue](https://dom.spec.whatwg.org/#concept-mo-queue) | `dom/observers/MutationObserver.ts` | `dom/observers/mutation-records.test.ts` |
 | [concept-node-adopt](https://dom.spec.whatwg.org/#concept-node-adopt) | `dom/html/HTMLElement.ts`, `dom/html/custom-elements.ts`, `dom/nodes/tree.ts` | `aria/internal.test.ts`, `dom/nodes/element-node-misc.test.ts`; WPT: `dom/nodes/node-realm-adoption-after-frame-removal.html`, `dom/nodes/node-realm-mixed-across-adoption.html` +2 |
@@ -1006,12 +1006,12 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-node-ensure-pre-insertion-validity](https://dom.spec.whatwg.org/#concept-node-ensure-pre-insertion-validity) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts`, `dom/nodes/tree.test.ts` |
 | [concept-node-equals](https://dom.spec.whatwg.org/#concept-node-equals) | `dom/nodes/clone.ts` | `dom/nodes/node-methods.test.ts` |
 | [concept-node-filter](https://dom.spec.whatwg.org/#concept-node-filter) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
-| [concept-node-insert](https://dom.spec.whatwg.org/#concept-node-insert) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/traversal/live.ts` | `dom/nodes/tree.test.ts`; WPT: `dom/nodes/post-connection-steps-shadow-tree.html` |
+| [concept-node-insert](https://dom.spec.whatwg.org/#concept-node-insert) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/traversal/live.ts` | `dom/nodes/tree.test.ts`, `dom/traversal/range-mutations-fuzz.test.ts`; WPT: `dom/nodes/post-connection-steps-shadow-tree.html` |
 | [concept-node-length](https://dom.spec.whatwg.org/#concept-node-length) | `dom/traversal/Range.ts` | `dom/nodes/node-methods.test.ts` |
 | [concept-node-move-ext](https://dom.spec.whatwg.org/#concept-node-move-ext) | `dom/nodes/Element.ts` | `dom/nodes/interfaces-and-hooks.test.ts` |
 | [concept-node-pre-insert](https://dom.spec.whatwg.org/#concept-node-pre-insert) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [concept-node-pre-remove](https://dom.spec.whatwg.org/#concept-node-pre-remove) | `dom/nodes/tree.ts` | `dom/nodes/tree.test.ts` |
-| [concept-node-remove](https://dom.spec.whatwg.org/#concept-node-remove) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/observers/queue.ts` +1 | `dom/nodes/tree.test.ts`, `dom/observers/mutation-observer.test.ts`, `compat/leaks/dom.test.ts`, `compat/leaks/layout.test.ts` |
+| [concept-node-remove](https://dom.spec.whatwg.org/#concept-node-remove) | `dom/nodes/slots.ts`, `dom/nodes/tree.ts`, `dom/observers/queue.ts` +1 | `dom/nodes/tree.test.ts`, `dom/observers/mutation-observer.test.ts`, `dom/traversal/range-mutations-fuzz.test.ts`, `compat/leaks/dom.test.ts` +1 |
 | [concept-node-replace](https://dom.spec.whatwg.org/#concept-node-replace) | `dom/nodes/tree.ts` | `dom/nodes/element-node-misc.test.ts`, `dom/nodes/tree.test.ts` |
 | [concept-node-replace-all](https://dom.spec.whatwg.org/#concept-node-replace-all) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
 | [concept-nodeiterator-traverse](https://dom.spec.whatwg.org/#concept-nodeiterator-traverse) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts`; WPT: `dom/traversal/NodeIterator-removal-during-filtering.html` |
@@ -1024,7 +1024,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-range-select](https://dom.spec.whatwg.org/#concept-range-select) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [concept-shadow-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor) | `dom/events/dispatch.ts` | `dom/events/event-path.test.ts` |
 | [concept-shadow-including-root](https://dom.spec.whatwg.org/#concept-shadow-including-root) | `dom/nodes/Node.ts`, `dom/nodes/tree.ts` | `dom/nodes/node-methods.test.ts` |
-| [concept-text-split](https://dom.spec.whatwg.org/#concept-text-split) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts` |
+| [concept-text-split](https://dom.spec.whatwg.org/#concept-text-split) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts`, `dom/traversal/range-mutations-fuzz.test.ts` |
 | [concept-traverse-children](https://dom.spec.whatwg.org/#concept-traverse-children) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [concept-traverse-siblings](https://dom.spec.whatwg.org/#concept-traverse-siblings) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [concept-tree-host-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-tree-host-including-inclusive-ancestor) | `dom/nodes/tree.ts` | `dom/nodes/mutation-methods.test.ts` |
@@ -1108,7 +1108,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-node-nodename](https://dom.spec.whatwg.org/#dom-node-nodename) | `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts` |
 | [dom-node-nodetype](https://dom.spec.whatwg.org/#dom-node-nodetype) | `dom/nodes/NodeImpl.ts`, `dom/nodes/constants.ts` | WPT: `dom/nodes/DOMImplementation-createDocument.html`, `dom/nodes/Document-createComment.html` +1 |
 | [dom-node-nodevalue](https://dom.spec.whatwg.org/#dom-node-nodevalue) | `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts`; WPT: `dom/nodes/Document-createComment.html`, `dom/nodes/Document-createTextNode.html` +1 |
-| [dom-node-normalize](https://dom.spec.whatwg.org/#dom-node-normalize) | `dom/nodes/Node.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts`; WPT: `dom/ranges/Range-mutations-normalize.html` |
+| [dom-node-normalize](https://dom.spec.whatwg.org/#dom-node-normalize) | `dom/nodes/Node.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts`, `dom/traversal/range-mutations-fuzz.test.ts`; WPT: `dom/ranges/Range-mutations-normalize.html` |
 | [dom-node-textcontent](https://dom.spec.whatwg.org/#dom-node-textcontent) | `aria/tree.ts`, `dom/nodes/Node.ts` | `dom/nodes/node-accessors.test.ts`; WPT: `dom/nodes/Document-createComment.html`, `dom/nodes/Document-createTextNode.html` |
 | [dom-nodeiterator-detach](https://dom.spec.whatwg.org/#dom-nodeiterator-detach) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [dom-nodelist-item](https://dom.spec.whatwg.org/#dom-nodelist-item) | `dom/collections/NodeList.ts` | `dom/collections/token-lists.test.ts` |
@@ -1636,7 +1636,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [extensions-to-globaleventhandlers-interface](https://w3c.github.io/selection-api/#extensions-to-globaleventhandlers-interface) | `dom/events/handlers.ts` | **untested** |
 | [firing-selectionhange-event](https://w3c.github.io/selection-api/#firing-selectionhange-event) | `dom/traversal/Selection.ts` | **untested** |
 | [scheduling-selectionhange-event](https://w3c.github.io/selection-api/#scheduling-selectionhange-event) | `dom/traversal/Selection.ts` | `dom/traversal/selection.test.ts` |
-| [selection-interface](https://w3c.github.io/selection-api/#selection-interface) | `dom/traversal/Selection.ts` | `dom/traversal/selection.test.ts`, `dom/traversal/wpt-selection.test.ts` |
+| [selection-interface](https://w3c.github.io/selection-api/#selection-interface) | `dom/traversal/Selection.ts` | `dom/traversal/range-mutations-fuzz.test.ts`, `dom/traversal/selection.test.ts`, `dom/traversal/wpt-selection.test.ts` |
 | [selectionchange-event](https://w3c.github.io/selection-api/#selectionchange-event) | `dom/traversal/Selection.ts` | `dom/traversal/wpt-selection.test.ts`; WPT: `selection/document-selectionchange.html`, `selection/onselectionchange-on-document.html` |
 
 ## W3C: aria

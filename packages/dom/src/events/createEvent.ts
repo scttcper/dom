@@ -2,7 +2,8 @@
 //
 // `Document.prototype.createEvent` calls `createEvent(interfaceName)`.
 
-import { EF_INITIALIZED, Event, withInternalConstruct } from "./Event.ts";
+import { EF_INITIALIZED, Event, setInternalConstruct } from "./Event.ts";
+import { asciiLowercase } from "../nodes/attributes.ts";
 import {
   CompositionEvent,
   DragEvent,
@@ -46,7 +47,7 @@ const TABLE: Record<string, AnyEventCtor | null> = {
 /** https://dom.spec.whatwg.org/#dom-document-createevent */
 export function createEvent(interfaceName: string): Event {
   // Steps 1-3.
-  const ctor = TABLE[String(interfaceName).replace(/[A-Z]/g, (c) => c.toLowerCase())];
+  const ctor = TABLE[asciiLowercase(String(interfaceName))];
   if (ctor === undefined || ctor === null) {
     throw new DOMException(
       `Failed to execute 'createEvent' on 'Document': The provided event type ('${interfaceName}') is invalid.`,
@@ -55,7 +56,13 @@ export function createEvent(interfaceName: string): Event {
   }
   // Step 4: create an event (no constructor steps beyond defaults). Steps 5-7: type "",
   // timeStamp now, isTrusted false, initialized flag unset.
-  const event = withInternalConstruct(() => new ctor(""));
+  const prev = setInternalConstruct(true);
+  let event: Event;
+  try {
+    event = new ctor("");
+  } finally {
+    setInternalConstruct(prev);
+  }
   event._s.flags &= ~EF_INITIALIZED;
   return event;
 }

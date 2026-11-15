@@ -38,7 +38,7 @@ import { replaceData, splitText } from "../nodes/character-data.ts";
 import { currentDocument } from "../window/current.ts";
 import { parseFragment } from "../parser/index.ts";
 import { DOMRect, DOMRectList } from "../window/geometry.ts";
-import { refileRange, registerLiveRange } from "./live.ts";
+import { markBoundary, refileRange, registerLiveRange } from "./live.ts";
 import { $ec, $eo, $home, $impl, $sc, $so } from "../keys.ts";
 
 export const START_TO_START = 0;
@@ -418,6 +418,7 @@ export class Range extends AbstractRange {
     // Step 10.
     this[$sc] = this[$ec] = newNode;
     this[$so] = this[$eo] = newOffset;
+    markBoundary(newNode);
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-extractcontents */
@@ -681,6 +682,7 @@ function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl,
   if (range !== null) {
     range[$sc] = range[$ec] = newNode;
     range[$so] = range[$eo] = newOffset;
+    markBoundary(newNode);
   }
   return fragment;
 }
@@ -750,5 +752,6 @@ function insertIntoRange(range: Range, node: NodeImpl): void {
   if (range.collapsed) {
     range[$ec] = parent;
     range[$eo] = newOffset;
+    markBoundary(parent);
   }
 }

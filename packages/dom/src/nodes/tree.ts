@@ -19,6 +19,8 @@ import {
   F_FORM_ATTR,
   F_HAS_SHADOW,
   F_HTML,
+  F_RANGE,
+  F_RANGE_MARKS,
   F_SHADOW_ROOT,
   HTML_NS,
   TEXT_NODE,
@@ -36,6 +38,7 @@ import { NodeList } from "../collections/NodeList.ts";
 import {
   liveRangeCount,
   nodeIteratorCount,
+  markRangeAncestors,
   rangesAdopt,
   rangesAfterInsert,
   rangesBeforeRemove,
@@ -244,6 +247,7 @@ export function append(node: NodeImpl, parent: NodeImpl): NodeImpl {
 /** Link `node` (already detached) into `parent` before `child` (or last). No bookkeeping. */
 function link(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null): void {
   node.parent = parent;
+  if ((node.flags & F_RANGE_MARKS) !== 0) markRangeAncestors(parent);
   if (child === null) {
     const last = parent.last;
     node.prev = last;
@@ -322,7 +326,8 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
   }
 
   // Step 2: live range boundary points after the insertion point move right by count.
-  if (liveRangeCount !== 0 && child !== null) rangesAfterInsert(parent, indexOf(child), count);
+  if (liveRangeCount !== 0 && child !== null && (parent.flags & F_RANGE) !== 0)
+    rangesAfterInsert(parent, indexOf(child), count);
 
   // Step 6: previousSibling.
   const previousSibling = child === null ? parent.last : child.prev;
@@ -436,7 +441,8 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   const parent = node.parent!;
   const doc = parent.doc;
   // Steps 2-6: live ranges and NodeIterator pre-removing steps (only when any exist).
-  if (liveRangeCount !== 0) rangesBeforeRemove(node, parent, indexOf(node));
+  if (liveRangeCount !== 0 && ((node.flags & F_RANGE_MARKS) !== 0 || (parent.flags & F_RANGE) !== 0))
+    rangesBeforeRemove(node, parent, indexOf(node));
   if (nodeIteratorCount !== 0) iteratorsBeforeRemove(node);
   // Steps 7-8.
   const oldPrevious = node.prev;
@@ -511,7 +517,8 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   const oldParent = node.parent!;
   const doc = newParent.doc;
   // Steps 9-10: live range and NodeIterator pre-remove steps.
-  if (liveRangeCount !== 0) rangesBeforeRemove(node, oldParent, indexOf(node));
+  if (liveRangeCount !== 0 && ((node.flags & F_RANGE_MARKS) !== 0 || (oldParent.flags & F_RANGE) !== 0))
+    rangesBeforeRemove(node, oldParent, indexOf(node));
   if (nodeIteratorCount !== 0) iteratorsBeforeRemove(node);
   // Steps 11-13.
   const oldPreviousSibling = node.prev;
@@ -522,7 +529,8 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   // Step 17.
   if (activeObservers !== 0) addTransientObservers(oldParent, node);
   // Step 18: live ranges after the insertion point.
-  if (liveRangeCount !== 0 && child !== null) rangesAfterInsert(newParent, indexOf(child), 1);
+  if (liveRangeCount !== 0 && child !== null && (newParent.flags & F_RANGE) !== 0)
+    rangesAfterInsert(newParent, indexOf(child), 1);
   // Steps 19-20.
   const newPreviousSibling = child === null ? newParent.last : child.prev;
   link(node, newParent, child);

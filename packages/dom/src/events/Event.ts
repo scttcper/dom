@@ -118,6 +118,12 @@ export function withInternalConstruct<T>(fn: () => T): T {
     constructing = prev;
   }
 }
+/** withInternalConstruct without the closure: returns the previous value to restore. */
+export function setInternalConstruct(value: boolean): boolean {
+  const prev = constructing;
+  constructing = value;
+  return prev;
+}
 export function isInternalConstruct(): boolean {
   return constructing;
 }

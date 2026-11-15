@@ -1787,6 +1787,28 @@ export function isDisplayNone(el: NodeImpl): boolean {
   return computeDisplay(styleRecord(el)) === "none";
 }
 
+/** boxFacts bits: own computed display is none; own computed position is not static. */
+export const BOX_DISPLAY_NONE = 1;
+export const BOX_POSITIONED = 2;
+
+/**
+ * Own `display: none` and non-static `position` of `el` from one style record lookup
+ * (offsetParent reads both for every ancestor). `sheets` is sheetsApplyTo(el.doc).
+ */
+export function boxFacts(el: NodeImpl, sheets: boolean): number {
+  if (!sheets && (el.flags & F_HAS_STYLE_ATTR) === 0) return uaDisplay(el) === "none" ? BOX_DISPLAY_NONE : 0;
+  const rec = styleRecord(el);
+  return (
+    (computeDisplay(rec) === "none" ? BOX_DISPLAY_NONE : 0) |
+    (computedValueOf(rec, "position") !== "static" ? BOX_POSITIONED : 0)
+  );
+}
+
+/** Whether any style sheet applies in `el`'s document (see plain()). */
+export function sheetsApplyTo(el: NodeImpl): boolean {
+  return sheetsApply(el);
+}
+
 /** The element or an ancestor (flat-tree-ish: through shadow hosts) is display:none. */
 export function isDisplayNoneInclusive(el: NodeImpl): boolean {
   for (let n: NodeImpl | null = el; n !== null; n = inheritanceParent(n)) if (isDisplayNone(n)) return true;
