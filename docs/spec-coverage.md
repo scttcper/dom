@@ -792,7 +792,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [semantics](https://html.spec.whatwg.org/#semantics) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [send-select-update-notifications](https://html.spec.whatwg.org/#send-select-update-notifications) | `dom/html/forms/user-validity.ts` | `user-event/event/user-validity.test.ts` |
 | [sequential-focus-navigation](https://html.spec.whatwg.org/#sequential-focus-navigation) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts` |
-| [sequential-focus-navigation-order](https://html.spec.whatwg.org/#sequential-focus-navigation-order) | `dom/html/focus.ts` | `dom/html/focus.test.ts` |
+| [sequential-focus-navigation-order](https://html.spec.whatwg.org/#sequential-focus-navigation-order) | `dom/html/focus.ts` | `dom/html/focus.test.ts`, `user-event/event/tab-destination.test.ts` |
 | [sequentially-focusable](https://html.spec.whatwg.org/#sequentially-focusable) | `dom/html/focus.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [serialising-html-fragments](https://html.spec.whatwg.org/#serialising-html-fragments) | `dom/serializer/index.ts` | `dom/serializer/serializer.test.ts` |
 | [serializes-as-void](https://html.spec.whatwg.org/#serializes-as-void) | `dom/serializer/index.ts` | **untested** |
@@ -832,7 +832,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-datatransfer-interface](https://html.spec.whatwg.org/#the-datatransfer-interface) | `dom/events/DataTransfer.ts` | `dom/events/DataTransfer.test.ts` |
 | [the-datatransferitem-interface](https://html.spec.whatwg.org/#the-datatransferitem-interface) | `dom/events/DataTransfer.ts` | `dom/events/DataTransfer.test.ts` |
 | [the-datatransferitemlist-interface](https://html.spec.whatwg.org/#the-datatransferitemlist-interface) | `dom/events/DataTransfer.ts` | `dom/events/DataTransfer.test.ts` |
-| [the-details-element](https://html.spec.whatwg.org/#the-details-element) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/elements.test.ts`, `dom/html/wpt-details.test.ts`; WPT: `html/semantics/interactive-elements/the-details-element/details-name-exclusivity-fragment-insertion.html` |
+| [the-details-element](https://html.spec.whatwg.org/#the-details-element) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/elements.test.ts`, `dom/html/wpt-details.test.ts`, `jest-dom/to-be-visible-impl.test.ts`; WPT: `html/semantics/interactive-elements/the-details-element/details-name-exclusivity-fragment-insertion.html` |
 | [the-details-element:concept-element-attributes-change-ext](https://html.spec.whatwg.org/#the-details-element:concept-element-attributes-change-ext) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [the-details-element:html-element-insertion-steps](https://html.spec.whatwg.org/#the-details-element:html-element-insertion-steps) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [the-dialog-element](https://html.spec.whatwg.org/#the-dialog-element) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts`, `dom/html/elements.test.ts`, `dom/html/wpt-dialog.test.ts`, `user-event/wpt/wpt-html-interaction.test.ts`; WPT: `html/semantics/interactive-elements/the-dialog-element/dialog-close-event-async.html`, `html/semantics/interactive-elements/the-dialog-element/dialog-close-event.html` +6 |
@@ -1140,7 +1140,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-treewalker-parentnode](https://dom.spec.whatwg.org/#dom-treewalker-parentnode) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [dom-treewalker-previousnode](https://dom.spec.whatwg.org/#dom-treewalker-previousnode) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
 | [dom-window-event](https://dom.spec.whatwg.org/#dom-window-event) | `dom/window/Window.ts` | `dom/events/wpt-events.test.ts` |
-| [element-html-uppercased-qualified-name](https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name) | `dom/nodes/Element.ts`, `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
+| [element-html-uppercased-qualified-name](https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name) | `dom/nodes/Element.ts`, `dom/nodes/Node.ts`, `jest-dom/matchers/style.ts` | `dom/nodes/element-node-misc.test.ts` |
 | [event-flatten-more](https://dom.spec.whatwg.org/#event-flatten-more) | `dom/events/listeners.ts` | `dom/events/event-path.test.ts` |
 | [event-path](https://dom.spec.whatwg.org/#event-path) | `dom/events/Event.ts` | `dom/events/event-path.test.ts` |
 | [event-touch-target-list](https://dom.spec.whatwg.org/#event-touch-target-list) | `dom/events/Event.ts`, `dom/events/UIEvents.ts` | `dom/events/event-path.test.ts` |
@@ -1270,7 +1270,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-medialist-appendmedium](https://drafts.csswg.org/cssom/#dom-medialist-appendmedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-appendmedium-parse-single-and-dedup.html` |
 | [dom-medialist-deletemedium](https://drafts.csswg.org/cssom/#dom-medialist-deletemedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-deletemedium-parse-and-remove-all.html` |
 | [dom-stylesheet-title](https://drafts.csswg.org/cssom/#dom-stylesheet-title) | `dom/css/cssom.ts` | WPT: `css/cssom/link-element-stylesheet-title.html` |
-| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +3; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
+| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +4; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
 | [extensions-to-the-document-or-shadow-root-interface](https://drafts.csswg.org/cssom/#extensions-to-the-document-or-shadow-root-interface) | `dom/css/index.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-cssRules.html`, `css/cssom/CSSStyleSheet-constructable-invalidation.html` +4 |
 | [insert-a-css-rule](https://drafts.csswg.org/cssom/#insert-a-css-rule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/at-namespace.html` |
 | [namespacedef-css](https://drafts.csswg.org/cssom/#namespacedef-css) | `dom/css/CSS.ts`, `dom/window/fallbacks.ts` | WPT: `css/cssom/CSS-namespace-object-class-string.html` |

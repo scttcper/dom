@@ -2,35 +2,60 @@
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/focus/getTabDestination.ts
 
 import type {Element, HTMLInputElement} from '../../dom-types.ts'
+import {implAttr, implOf} from '../../ctrl-dom.ts'
 import {isDisabled} from '../misc/isDisabled.ts'
 import {isElementType} from '../misc/isElementType.ts'
 import {isVisible} from '../misc/isVisible.ts'
 import {FOCUSABLE_SELECTOR} from './selector.ts'
 
+/** `Number(el.getAttribute('tabindex'))`, off the wrapper on @ctrl/dom. */
+function tabIndexAttr(el: Element): number {
+  const impl = implAttr === undefined ? null : implOf(el)
+  return Number(
+    impl === null ? el.getAttribute('tabindex') : implAttr!(impl, 'tabindex'),
+  )
+}
+
+/** Upstream's sort comparator, over the tabindex values. */
+function compareTabIndex(i: number, j: number): number {
+  if (i === j) {
+    return 0
+  } else if (i === 0) {
+    return 1
+  } else if (j === 0) {
+    return -1
+  }
+  return i - j
+}
+
 export function getTabDestination(activeElement: Element, shift: boolean) {
   const document = activeElement.ownerDocument
   const focusableElements = document.querySelectorAll(FOCUSABLE_SELECTOR)
 
-  const enabledElements = Array.from(focusableElements).filter(
-    el =>
-      el === activeElement ||
-      !(Number(el.getAttribute('tabindex')) < 0 || isDisabled(el)),
-  )
+  // Ours: each tabindex is read once (upstream's comparator read two per comparison, so a Tab in
+  // a 1,000-control form did ~20,000 getAttribute calls), and the sort is skipped when every
+  // value is 0: the comparator then returns 0 throughout and the stable sort keeps the order.
+  let enabledElements: Element[] = []
+  const tabIndexes: number[] = []
+  let anyNonZero = false
+  for (let k = 0; k < focusableElements.length; k++) {
+    const el = focusableElements[k] as Element
+    const tabIndex = tabIndexAttr(el)
+    if (el === activeElement || !(tabIndex < 0 || isDisabled(el))) {
+      enabledElements.push(el)
+      tabIndexes.push(tabIndex)
+      if (tabIndex !== 0) anyNonZero = true
+    }
+  }
 
   // tabindex has no effect if the active element has negative tabindex
-  if (Number(activeElement.getAttribute('tabindex')) >= 0) {
-    enabledElements.sort((a, b) => {
-      const i = Number(a.getAttribute('tabindex'))
-      const j = Number(b.getAttribute('tabindex'))
-      if (i === j) {
-        return 0
-      } else if (i === 0) {
-        return 1
-      } else if (j === 0) {
-        return -1
-      }
-      return i - j
-    })
+  if (anyNonZero && tabIndexAttr(activeElement) >= 0) {
+    const order = enabledElements.map((el, k) => ({
+      el,
+      tabIndex: tabIndexes[k]!,
+    }))
+    order.sort((a, b) => compareTabIndex(a.tabIndex, b.tabIndex))
+    enabledElements = order.map(o => o.el)
   }
 
   const checkedRadio: Record<string, HTMLInputElement> = {}

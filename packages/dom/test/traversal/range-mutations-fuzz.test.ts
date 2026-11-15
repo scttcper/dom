@@ -19,17 +19,25 @@ import { describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
 import { createWindow } from "@ctrl/dom";
 
+/** mulberry32: a seeded PRNG whose every output bit is usable (an LCG's low bits cycle). */
+function mulberry32(seed: number): (n: number) => number {
+  let a = seed >>> 0;
+  return (n) => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((((t ^ (t >>> 14)) >>> 0) / 4294967296) * n) | 0;
+  };
+}
+
 const MARKUP =
   "<div><p>aaaa<b>bbbb</b>cccc</p><p>dddd<i>eeee</i></p><ul><li>1111</li><li>2222</li><li>3333</li></ul></div><section><span>xxxx</span>yyyy</section>";
 
 type Op = [kind: number, a: number, b: number, c: number];
 
 function ops(seed: number, count: number): Op[] {
-  let s = seed;
-  const rnd = (n: number): number => {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    return s % n;
-  };
+  const rnd = mulberry32(seed);
   const out: Op[] = [];
   for (let i = 0; i < count; i++) out.push([rnd(13), rnd(1000), rnd(1000), rnd(7)]);
   return out;
@@ -134,6 +142,37 @@ describe("live ranges under mutation — https://dom.spec.whatwg.org/#concept-li
     ours.close();
     jsdom.close();
   }, 30_000);
+});
+
+describe("remove steps 4-7 after the boundary's subtree was inserted — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  // remove() skips the range steps unless the removed node has F_RANGE_BELOW, which insertion
+  // must carry up to a boundary's new ancestors (nodes/tree.ts link()). A boundary only travels
+  // with its subtree when that subtree was detached (moving a connected node, or inserting a
+  // fragment's children, removes them first, which moves the boundary out to the old parent).
+  // Each way of inserting one:
+  const inserts: [string, (d: any, node: any, into: any) => void][] = [
+    ["appendChild", (_d, node, into) => into.appendChild(node)],
+    ["insertBefore", (_d, node, into) => into.insertBefore(node, into.firstChild)],
+    ["replaceChildren", (_d, node, into) => into.replaceChildren(node)],
+  ];
+  for (const [how, insert] of inserts) {
+    test(`a range set in a detached subtree inserted by ${how} follows the removal of its new ancestor`, () => {
+      const w = createWindow();
+      const d = w.document as any;
+      d.body.innerHTML = "<section><div id=b></div></section>";
+      const b = d.getElementById("b");
+      const section = b.parentNode;
+      const span = d.createElement("span");
+      span.innerHTML = "<i>hello</i>";
+      const r = d.createRange();
+      r.setStart(span.firstChild.firstChild, 2);
+      insert(d, span, b);
+      expect([r.startContainer, r.startOffset]).toEqual([span.firstChild.firstChild, 2]);
+      section.removeChild(b);
+      expect([r.startContainer, r.startOffset]).toEqual([section, 0]);
+      w.close();
+    });
+  }
 });
 
 describe("normalize() — https://dom.spec.whatwg.org/#dom-node-normalize", () => {

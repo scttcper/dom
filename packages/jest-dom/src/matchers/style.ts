@@ -2,6 +2,16 @@
 // https://github.com/testing-library/jest-dom/blob/v7.0.1/src/to-be-visible.js
 // https://github.com/testing-library/jest-dom/blob/v7.0.1/src/to-have-style.js
 
+import {
+  $impl,
+  ELEMENT_NODE,
+  F_HTML,
+  asciiLowercase,
+  computedValue,
+  getAttribute,
+  getComputedStyleOverride,
+  type NodeImpl,
+} from "@ctrl/dom/internal";
 import { sameColor } from "../color.ts";
 import {
   checkHtmlElement,
@@ -14,9 +24,38 @@ import {
 
 // --- toBeVisible ------------------------------------------------------------------------
 
-// TODO(jest-dom): when src/css/internal.ts lands (css agent), use `isDisplayNone(impl)`,
-// `isVisibilityHidden(impl)` and `computedValue(impl, "opacity")` for @ctrl/dom elements
-// (`element._impl`) instead of building a full CSSStyleDeclaration per ancestor.
+// Ours: on @ctrl/dom, with the window's own getComputedStyle, the same walk runs over NodeImpls
+// (isElementVisibleImpl): upstream's goes through the wrappers and a CSSStyleDeclaration per
+// ancestor, ~2 µs for an input six levels deep, a third of it in a <form>'s named-property Proxy.
+// A replaced getComputedStyle (a test's mock) is read through, as upstream does.
+
+/** `el.nodeName === upper` for an element (https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name). */
+function nodeNameIs(el: NodeImpl, lower: string, upper: string): boolean {
+  if (el.prefix !== null) return false;
+  return (el.flags & F_HTML) !== 0 ? asciiLowercase(el.name) === lower : el.name === upper;
+}
+
+function isElementVisibleImpl(element: NodeImpl): boolean {
+  let previous: NodeImpl | null = null;
+  // `parentElement`: the climb ends at a parent that is not an element (document, shadow root).
+  for (let el: NodeImpl | null = element; el !== null && el.type === ELEMENT_NODE; previous = el, el = el.parent) {
+    // isStyleVisible: the computed values getComputedStyle(el) would report.
+    if (computedValue(el, "display") === "none") return false;
+    const visibility = computedValue(el, "visibility");
+    if (visibility === "hidden" || visibility === "collapse" || computedValue(el, "opacity") === "0") return false;
+    // isAttributeVisible.
+    if (getAttribute(el, "hidden") !== null) return false;
+    if (
+      nodeNameIs(el, "details", "DETAILS") &&
+      (previous === null || !nodeNameIs(previous, "summary", "SUMMARY")) &&
+      getAttribute(el, "open") === null
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function isStyleVisible(element: DOMNode): boolean {
   const { getComputedStyle } = element.ownerDocument.defaultView;
 
@@ -48,7 +87,12 @@ function isElementVisible(element: DOMNode, previousElement?: DOMNode): boolean 
 export function toBeVisible(this: MatcherContext, element: DOMNode): MatcherResult {
   checkHtmlElement(element, toBeVisible, this);
   const isInDocument = element.ownerDocument === element.getRootNode({ composed: true });
-  const isVisible = isInDocument && isElementVisible(element);
+  const impl = (element as { [$impl]?: NodeImpl })[$impl];
+  const isVisible =
+    isInDocument &&
+    (impl !== undefined && getComputedStyleOverride(impl) === null
+      ? isElementVisibleImpl(impl)
+      : isElementVisible(element));
   return {
     pass: isVisible,
     message: () => {

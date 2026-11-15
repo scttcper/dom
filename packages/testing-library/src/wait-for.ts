@@ -166,7 +166,7 @@ function waitForImpl<T>(
       // Ours: how many times the callback ran, for the waitFor/findBy span (@ctrl/dom trace.ts).
       if (span !== null) span.data.checks = ((span.data.checks as number | undefined) ?? 0) + 1;
       try {
-        const result: any = runWithExpensiveErrorDiagnosticsDisabled(callback);
+        const result: any = runWithExpensiveErrorDiagnosticsDisabled(callback, !usingJestFakeTimers);
         if (typeof result?.then === "function") {
           promiseStatus = "pending";
           result.then(

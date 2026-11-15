@@ -52,6 +52,7 @@ let config: InternalConfig = {
       error.name = "TestingLibraryElementError";
       return error;
     }
+    if (lazyElementErrors) return lazyElementError(message, container, config.defaultIgnore);
     const prettifiedDOM = prettyDOM(container);
     const error = new Error(
       [message, `Ignored nodes: comments, ${config.defaultIgnore}\n${prettifiedDOM}`].filter(Boolean).join("\n\n"),
@@ -63,12 +64,46 @@ let config: InternalConfig = {
   computedStyleSupportsPseudoElements: false,
 };
 
-export function runWithExpensiveErrorDiagnosticsDisabled<T>(callback: () => T): T {
+/**
+ * Ours: while set, the default getElementError defers its prettyDOM until the message is read.
+ * waitFor's real-timers loop sets it around its callback: a findBy* polling on every commit threw
+ * one error per failed check, each printing the whole container (~90% of a failed check's time,
+ * ~0.4 ms on a 100-field form), and keeps only the last one, which is read at the timeout. That
+ * loop re-checks on every mutation of the container (its MutationObserver) before the timeout
+ * task can run, so the container is unchanged from the last check to the read and the message is
+ * the one upstream builds. Not under fake timers: one advance there can run a timer that mutates
+ * the DOM and then the timeout, with no check in between.
+ */
+let lazyElementErrors = false;
+
+/** A TestingLibraryElementError whose message (and so its stack header) is built on first read. */
+function lazyElementError(message: string | null, container: any, ignore: string): Error {
+  const error = new Error();
+  error.name = "TestingLibraryElementError";
+  const settle = (value: string): string => {
+    // The data property `new Error(message)` would have created.
+    Object.defineProperty(error, "message", { value, writable: true, enumerable: false, configurable: true });
+    return value;
+  };
+  Object.defineProperty(error, "message", {
+    get: () =>
+      settle([message, `Ignored nodes: comments, ${ignore}\n${prettyDOM(container)}`].filter(Boolean).join("\n\n")),
+    set: settle,
+    enumerable: false,
+    configurable: true,
+  });
+  return error;
+}
+
+export function runWithExpensiveErrorDiagnosticsDisabled<T>(callback: () => T, lazyErrorMessages = false): T {
+  const lazyBefore = lazyElementErrors;
   try {
     config._disableExpensiveErrorDiagnostics = true;
+    lazyElementErrors = lazyErrorMessages;
     return callback();
   } finally {
     config._disableExpensiveErrorDiagnostics = false;
+    lazyElementErrors = lazyBefore;
   }
 }
 
