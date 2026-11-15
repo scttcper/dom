@@ -21,4 +21,7 @@ test('advances timers when set', async () => {
   expect(performance.now() - beforeFake).toBe(1000)
   vi.useRealTimers()
   expect(performance.now() - beforeReal).toBeLessThan(1000)
-}, 10)
+  // Upstream's test timeout is 10 ms. Everything here runs cold (installing fake timers, the
+  // first wait()), and with this file alone on idle cores at their lowest frequency the test took
+  // 25 ms. The assertion above already pins that the 1000 ms delay is not waited in real time.
+}, 500)
