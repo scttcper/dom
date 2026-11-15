@@ -492,6 +492,21 @@ export class Document extends Node {
     return new NodeIterator(root, whatToShow, filter);
   }
 
+  /**
+   * https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint — the DocumentOrShadowRoot
+   * hit test (ShadowRoot.ts has the same pair). With no layout there is no box at any point, so
+   * the result is null, as for a point outside the viewport. jsdom has neither method
+   * (window/compat.ts).
+   */
+  elementFromPoint(_x: number, _y: number): Element | null {
+    return null;
+  }
+
+  /** https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint — an empty sequence, as above. */
+  elementsFromPoint(_x: number, _y: number): Element[] {
+    return [];
+  }
+
   /** https://w3c.github.io/selection-api/#dom-document-getselection */
   getSelection(): Selection | null {
     // "the selection associated with this if this has an associated browsing context, and null otherwise"

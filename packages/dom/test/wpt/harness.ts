@@ -436,6 +436,12 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
       check(actual, expected, "");
     },
     assert_approx_equals(actual: number, expected: number, epsilon: number, desc?: string) {
+      // As testharness.js: the epsilon math does not work for NaN and Infinity, which compare
+      // with assert_equals instead (NaN equals NaN, Infinity equals Infinity).
+      if (!Number.isFinite(actual) && !Number.isFinite(expected)) {
+        asserts.assert_equals(actual, expected, desc);
+        return;
+      }
       assert(
         Math.abs(actual - expected) <= epsilon,
         "assert_approx_equals",
@@ -827,6 +833,8 @@ export interface RunOptions {
    * (WPT_NATIVE_FRAMES=0 turns it off).
    */
   nativeFrames?: boolean;
+  /** Extra createWindow options for the top-level test window, e.g. `{ layout: "lite" }`. */
+  windowOptions?: dom.WindowOptions;
 }
 
 interface LoadedDocument {
@@ -847,6 +855,7 @@ function loadDocument(
   prelude?: string,
   testdriver?: RunOptions["testdriver"],
   parent?: FrameOwner,
+  windowOptions?: dom.WindowOptions,
 ): LoadedDocument {
   const file = fileWithQuery.replace(/[?#].*$/, "");
   const path = join(FIXTURES, file);
@@ -859,7 +868,7 @@ function loadDocument(
   // of the same top-level window, `parent`), like @ctrl/dom's own iframes.
   const window =
     parent === undefined
-      ? dom.createWindow({ url, cssComputedColors: "rgb" })
+      ? dom.createWindow({ ...windowOptions, url, cssComputedColors: "rgb" })
       : new (dom.Window as unknown as new (o: object, n: object) => dom.Window)(
           { url },
           { parent: parent.window, frameElement: parent.frame, srcdoc: null },
@@ -1190,7 +1199,14 @@ async function runOnClock(file: string, options: RunOptions): Promise<SubtestRes
   const pending: Promise<void>[] = [];
   const harness = createHarness(results, pending);
   nativeFrames = options.nativeFrames ?? process.env.WPT_NATIVE_FRAMES !== "0";
-  const loaded = loadDocument(file, harness as unknown as Record<string, unknown>, options.prelude, options.testdriver);
+  const loaded = loadDocument(
+    file,
+    harness as unknown as Record<string, unknown>,
+    options.prelude,
+    options.testdriver,
+    undefined,
+    options.windowOptions,
+  );
   const fail = (message: string) =>
     results.push({
       name: "(harness error)",

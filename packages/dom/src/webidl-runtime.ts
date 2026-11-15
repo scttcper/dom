@@ -24,6 +24,38 @@ export function exposeMembers(...ctors: Ctor[]): void {
 }
 
 /**
+ * Give an interface object what class syntax gets wrong (one-time, at module load):
+ *   - @@toStringTag on the prototype, so `Object.prototype.toString` gives `[object Name]`
+ *     (https://webidl.spec.whatwg.org/#dfn-class-string);
+ *   - each operation's and the constructor's `length`: the number of required arguments
+ *     (https://webidl.spec.whatwg.org/#es-operations, https://webidl.spec.whatwg.org/#es-interface-call),
+ *     where TypeScript `x?: T` parameters would count. `required` maps operation names (and
+ *     "constructor") to their required-argument count; every other operation gets 0.
+ */
+export function defineInterfaceShape(
+  ctor: Ctor & { name: string },
+  required: Readonly<Record<string, number>> = {},
+): void {
+  Object.defineProperty(ctor.prototype, Symbol.toStringTag, { value: ctor.name, configurable: true });
+  setLength(
+    ctor as unknown as Function,
+    Object.hasOwn(required, "constructor") ? required["constructor" as string] : 0,
+  );
+  for (const target of [ctor.prototype, ctor]) {
+    for (const key of Object.getOwnPropertyNames(target)) {
+      if (key === "constructor" || key === "prototype" || key === "length" || key === "name") continue;
+      const d = Object.getOwnPropertyDescriptor(target, key)!;
+      if (typeof d.value === "function")
+        setLength(d.value as Function, Object.hasOwn(required, key) ? required[key] : 0);
+    }
+  }
+}
+
+function setLength(fn: Function, length: number): void {
+  if (fn.length !== length) Object.defineProperty(fn, "length", { value: length, configurable: true });
+}
+
+/**
  * Make an instance's internal own fields (`_`-prefixed or symbol-keyed, see keys.ts)
  * non-enumerable, so spreads and Jest's symbol-aware equality skip them too. Call at the end of
  * a constructor.

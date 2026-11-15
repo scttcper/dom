@@ -25,10 +25,11 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [HTML Standard](#html-standard) | 787 | 607 | 54 | 126 |
 | [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
-| [Web IDL](#web-idl) | 35 | 26 | 0 | 9 |
+| [CSS: geometry](#css-geometry) | 60 | 53 | 3 | 4 |
+| [Web IDL](#web-idl) | 37 | 28 | 0 | 9 |
+| [CSS: cssom-view](#css-cssom-view) | 34 | 22 | 1 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
-| [CSS: css-syntax](#css-css-syntax) | 32 | 9 | 0 | 23 |
-| [CSS: cssom-view](#css-cssom-view) | 32 | 20 | 1 | 11 |
+| [CSS: css-syntax](#css-css-syntax) | 32 | 10 | 0 | 22 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 6 | 1 | 14 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
@@ -49,6 +50,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: clipboard-apis](#w3c-clipboard-apis) | 6 | 3 | 0 | 3 |
 | [CSS: css-animations](#css-css-animations) | 5 | 0 | 2 | 3 |
 | [CSS: css-display](#css-css-display) | 5 | 2 | 0 | 3 |
+| [CSS: css-values](#css-css-values) | 5 | 2 | 0 | 3 |
 | [CSS: mediaqueries](#css-mediaqueries) | 5 | 1 | 0 | 4 |
 | [Fetch Standard](#fetch-standard) | 5 | 3 | 0 | 2 |
 | [W3C: xml](#w3c-xml) | 5 | 0 | 0 | 5 |
@@ -60,6 +62,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-fonts](#css-css-fonts) | 3 | 1 | 2 | 0 |
 | [CSS: css-properties-values-api](#css-css-properties-values-api) | 3 | 0 | 0 | 3 |
 | [CSS: css-scoping](#css-css-scoping) | 3 | 0 | 1 | 2 |
+| [CSS: css-transforms](#css-css-transforms) | 3 | 1 | 0 | 2 |
 | [CSS: css-transitions](#css-css-transitions) | 3 | 1 | 0 | 2 |
 | [ECMAScript](#ecmascript) | 3 | 2 | 0 | 1 |
 | [Compatibility Standard](#compatibility-standard) | 2 | 1 | 0 | 1 |
@@ -67,7 +70,6 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-namespaces](#css-css-namespaces) | 2 | 1 | 0 | 1 |
 | [CSS: css-shadow-parts](#css-css-shadow-parts) | 2 | 0 | 1 | 1 |
 | [CSS: css-text](#css-css-text) | 2 | 0 | 1 | 1 |
-| [CSS: geometry](#css-geometry) | 2 | 0 | 0 | 2 |
 | [URL Standard](#url-standard) | 2 | 0 | 0 | 2 |
 | [W3C: IntersectionObserver](#w3c-intersectionobserver) | 2 | 1 | 0 | 1 |
 | [CSS: css-backgrounds](#css-css-backgrounds) | 1 | 0 | 0 | 1 |
@@ -79,7 +81,6 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-overflow](#css-css-overflow) | 1 | 1 | 0 | 0 |
 | [CSS: css-sizing](#css-css-sizing) | 1 | 0 | 0 | 1 |
 | [CSS: css-ui](#css-css-ui) | 1 | 1 | 0 | 0 |
-| [CSS: css-values](#css-css-values) | 1 | 0 | 0 | 1 |
 | [Encoding Standard](#encoding-standard) | 1 | 0 | 0 | 1 |
 | [RFC9110](#rfc9110) | 1 | 0 | 0 | 1 |
 | [MIME Sniffing Standard](#mime-sniffing-standard) | 1 | 0 | 0 | 1 |
@@ -94,7 +95,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1589 | 1085 | 120 | 384 |
+| **All** | 1658 | 1146 | 123 | 389 |
 
 ## Web-platform-tests fixtures
 
@@ -108,6 +109,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | `accname/name` | 12 | 12 | 68 | `expectations/aria.json` |
 | `css/cssom` | 152 | 152 | 84 | `expectations/css.json` |
 | `css/cssom-view` | 30 | 30 | 0 |  |
+| `css/geometry` | 25 | 25 | 2 | `expectations/geometry.json` |
 | `css/selectors` | 127 | 127 | 610 | `expectations/css.json` |
 | `custom-elements` | 33 | 33 | 37 | `expectations/components.json` |
 | `custom-elements/form-associated` | 16 | 16 | 6 | `expectations/components.json` |
@@ -1309,38 +1311,107 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-stylesheetlist-interface](https://drafts.csswg.org/cssom/#the-stylesheetlist-interface) | `dom/css/cssom.ts` | WPT: `css/cssom/StyleSheetList.html`, `css/cssom/ttwf-cssom-doc-ext-load-tree-order.html` +1 |
 | [update-style-attribute-for](https://drafts.csswg.org/cssom/#update-style-attribute-for) | `dom/css/CSSStyleDeclaration.ts` | WPT: `css/cssom/cssstyledeclaration-mutationrecord-001.html` |
 
+## CSS: geometry
+
+<https://drafts.csswg.org/geometry/> — 60 sections implemented, 53 tested, 3 by WPT only, 4 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [DOMMatrix](https://drafts.csswg.org/geometry/#DOMMatrix) | `dom/index.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts`; WPT: `css/geometry/DOMMatrix-001.html`, `css/geometry/DOMMatrix-002.html` +9 |
+| [DOMQuad](https://drafts.csswg.org/geometry/#DOMQuad) | `dom/window/quad.ts` | `dom/window/geometry.test.ts`, `dom/window/wpt-geometry.test.ts`; WPT: `css/geometry/DOMQuad-001.html`, `css/geometry/DOMQuad-002.html` |
+| [create-a-dommatrix-from-the-dictionary](https://drafts.csswg.org/geometry/#create-a-dommatrix-from-the-dictionary) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dictdef-dommatrix2dinit](https://drafts.csswg.org/geometry/#dictdef-dommatrix2dinit) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dictdef-dommatrixinit](https://drafts.csswg.org/geometry/#dictdef-dommatrixinit) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dictdef-domquadinit](https://drafts.csswg.org/geometry/#dictdef-domquadinit) | `dom/window/quad.ts` | **untested** |
+| [dom-dommatrix-frommatrix](https://drafts.csswg.org/geometry/#dom-dommatrix-frommatrix) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrix-invertself](https://drafts.csswg.org/geometry/#dom-dommatrix-invertself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-multiplyself](https://drafts.csswg.org/geometry/#dom-dommatrix-multiplyself) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrix-premultiplyself](https://drafts.csswg.org/geometry/#dom-dommatrix-premultiplyself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-rotateaxisangleself](https://drafts.csswg.org/geometry/#dom-dommatrix-rotateaxisangleself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-rotatefromvectorself](https://drafts.csswg.org/geometry/#dom-dommatrix-rotatefromvectorself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-rotateself](https://drafts.csswg.org/geometry/#dom-dommatrix-rotateself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-scale3dself](https://drafts.csswg.org/geometry/#dom-dommatrix-scale3dself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-scaleself](https://drafts.csswg.org/geometry/#dom-dommatrix-scaleself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-setmatrixvalue](https://drafts.csswg.org/geometry/#dom-dommatrix-setmatrixvalue) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-skewxself](https://drafts.csswg.org/geometry/#dom-dommatrix-skewxself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrix-skewyself](https://drafts.csswg.org/geometry/#dom-dommatrix-skewyself) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrix-translateself](https://drafts.csswg.org/geometry/#dom-dommatrix-translateself) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrixreadonly-dommatrixreadonly](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrixreadonly-flipx](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-flipx) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrixreadonly-flipy](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-flipy) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-fromfloat32array](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-fromfloat32array) | `dom/window/geometry.ts` | `dom/window/geometry.test.ts` |
+| [dom-dommatrixreadonly-fromfloat64array](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-fromfloat64array) | `dom/window/geometry.ts` | `dom/window/geometry.test.ts` |
+| [dom-dommatrixreadonly-frommatrix](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-frommatrix) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-inverse](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-inverse) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-is2d](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-is2d) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-isidentity](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-isidentity) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-multiply](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-multiply) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-rotate](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-rotate) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-rotateaxisangle](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-rotateaxisangle) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-rotatefromvector](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-rotatefromvector) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-scale](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-scale) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-scale3d](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-scale3d) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-scalenonuniform](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-scalenonuniform) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dom-dommatrixreadonly-skewx](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-skewx) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-skewy](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-skewy) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
+| [dom-dommatrixreadonly-tofloat32array](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-tofloat32array) | `dom/window/geometry.ts` | `dom/window/geometry.test.ts` |
+| [dom-dommatrixreadonly-tofloat64array](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-tofloat64array) | `dom/window/geometry.ts` | `dom/window/geometry.test.ts` |
+| [dom-dommatrixreadonly-tojson](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-tojson) | `dom/window/geometry.ts` | `dom/window/geometry.test.ts` |
+| [dom-dommatrixreadonly-transformpoint](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-transformpoint) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts`; WPT: `css/geometry/DOMPoint-matrixTransform-translation-w.html` |
+| [dom-dommatrixreadonly-translate](https://drafts.csswg.org/geometry/#dom-dommatrixreadonly-translate) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts` |
+| [dom-dompointreadonly-frompoint](https://drafts.csswg.org/geometry/#dom-dompointreadonly-frompoint) | `dom/window/quad.ts` | **untested** |
+| [dom-dompointreadonly-matrixtransform](https://drafts.csswg.org/geometry/#dom-dompointreadonly-matrixtransform) | `dom/window/geometry.ts` | WPT: `css/geometry/DOMPoint-matrixTransform-translation-w.html` |
+| [dom-domquad-domquad](https://drafts.csswg.org/geometry/#dom-domquad-domquad) | `dom/window/quad.ts` | WPT: `css/geometry/DOMQuad-001.html` |
+| [dom-domquad-fromquad](https://drafts.csswg.org/geometry/#dom-domquad-fromquad) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
+| [dom-domquad-fromrect](https://drafts.csswg.org/geometry/#dom-domquad-fromrect) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
+| [dom-domquad-getbounds](https://drafts.csswg.org/geometry/#dom-domquad-getbounds) | `dom/window/quad.ts` | `dom/window/geometry.test.ts`; WPT: `css/geometry/DOMRect-nan.html` |
+| [dom-domquad-p1](https://drafts.csswg.org/geometry/#dom-domquad-p1) | `dom/window/quad.ts` | WPT: `css/geometry/DOMQuad-001.html` |
+| [dom-domrectlist-item](https://drafts.csswg.org/geometry/#dom-domrectlist-item) | `dom/window/geometry.ts` | **untested** |
+| [dommatrix](https://drafts.csswg.org/geometry/#dommatrix) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dommatrix-attributes](https://drafts.csswg.org/geometry/#dommatrix-attributes) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`; WPT: `css/geometry/DOMMatrix-attributes.html` |
+| [dommatrixreadonly](https://drafts.csswg.org/geometry/#dommatrixreadonly) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [dommatrixreadonly-stringification-behavior](https://drafts.csswg.org/geometry/#dommatrixreadonly-stringification-behavior) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts` |
+| [domquad](https://drafts.csswg.org/geometry/#domquad) | `dom/window/quad.ts` | **untested** |
+| [domrectlist](https://drafts.csswg.org/geometry/#domrectlist) | `dom/window/geometry.ts` | `dom/window/geometry.test.ts`, `dom/window/wpt-geometry.test.ts` |
+| [matrix-validate-and-fixup](https://drafts.csswg.org/geometry/#matrix-validate-and-fixup) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts` |
+| [matrix-validate-and-fixup-2d](https://drafts.csswg.org/geometry/#matrix-validate-and-fixup-2d) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [parse-a-string-into-an-abstract-matrix](https://drafts.csswg.org/geometry/#parse-a-string-into-an-abstract-matrix) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts` |
+| [transform-a-point-with-a-matrix](https://drafts.csswg.org/geometry/#transform-a-point-with-a-matrix) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts` |
+
 ## Web IDL
 
-<https://webidl.spec.whatwg.org/> — 35 sections implemented, 26 tested, 0 by WPT only, 9 untested.
+<https://webidl.spec.whatwg.org/> — 37 sections implemented, 28 tested, 0 by WPT only, 9 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [LegacyPlatformObjectGetOwnProperty](https://webidl.spec.whatwg.org/#LegacyPlatformObjectGetOwnProperty) | `dom/window/Storage.ts` | **untested** |
 | [Replaceable](https://webidl.spec.whatwg.org/#Replaceable) | `dom/window/Navigator.ts` | `dom/window/window.test.ts` |
 | [abstract-opdef-converttoint](https://webidl.spec.whatwg.org/#abstract-opdef-converttoint) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
+| [default-tojson-steps](https://webidl.spec.whatwg.org/#default-tojson-steps) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
 | [dfn-array-index-property-name](https://webidl.spec.whatwg.org/#dfn-array-index-property-name) | `dom/collections/NamedNodeMap.ts` | **untested** |
-| [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts` | `dom/html/interfaces.wpt.test.ts` |
+| [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts`, `dom/webidl-runtime.ts` | `dom/html/interfaces.wpt.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/geometry.test.ts` |
 | [dfn-create-operation-function](https://webidl.spec.whatwg.org/#dfn-create-operation-function) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dfn-overload-resolution-algorithm](https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm) | `dom/webidl-runtime.ts`, `dom/window/Storage.ts` | **untested** |
-| [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | `dom/collections/token-lists.test.ts` |
+| [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | `dom/collections/token-lists.test.ts`, `dom/window/geometry.test.ts` |
 | [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/events/convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
 | [es-attributes](https://webidl.spec.whatwg.org/#es-attributes) | `dom/nodes/DocumentType.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/nodes/node-accessors.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
 | [es-dictionary](https://webidl.spec.whatwg.org/#es-dictionary) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts`, `user-event/event/native-dicts.test.ts` |
 | [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
-| [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts` | `dom/events/wpt-uievents.test.ts` |
+| [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/wpt-uievents.test.ts` |
 | [es-interfaces](https://webidl.spec.whatwg.org/#es-interfaces) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts`, `dom/window/isolation.test.ts`, `vitest-environment/environment.test.ts`, `compat/surface/profiles.test.ts` |
 | [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
 | [es-legacy-platform-objects](https://webidl.spec.whatwg.org/#es-legacy-platform-objects) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
 | [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts`, `dom/window/window-apis.test.ts` |
 | [es-namespaces](https://webidl.spec.whatwg.org/#es-namespaces) | `dom/css/CSS.ts` | `dom/css/view.test.ts`; WPT: `css/cssom/CSS-namespace-object-class-string.html` |
-| [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/webidl-enumeration.test.ts` |
+| [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
-| [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/events/convert.ts`, `dom/window/Storage.ts` | `dom/events/event-path.test.ts` |
+| [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/events/convert.ts`, `dom/window/Storage.ts`, `dom/window/geometry.ts` | `dom/events/event-path.test.ts`, `dom/window/geometry.test.ts` |
 | [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [js-DOMString](https://webidl.spec.whatwg.org/#js-DOMString) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
+| [js-dictionary](https://webidl.spec.whatwg.org/#js-dictionary) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
 | [legacy-callback-interface-object](https://webidl.spec.whatwg.org/#legacy-callback-interface-object) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts` |
 | [legacy-platform-object-defineownproperty](https://webidl.spec.whatwg.org/#legacy-platform-object-defineownproperty) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | `dom/html/forms/form.test.ts` |
 | [legacy-platform-object-delete](https://webidl.spec.whatwg.org/#legacy-platform-object-delete) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | **untested** |
@@ -1350,6 +1421,47 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [legacy-platform-object-property-visibility](https://webidl.spec.whatwg.org/#legacy-platform-object-property-visibility) | `dom/window/Storage.ts` | **untested** |
 | [legacy-platform-object-set](https://webidl.spec.whatwg.org/#legacy-platform-object-set) | `dom/html/forms/HTMLFormElement.ts`, `dom/window/Storage.ts` | `dom/html/forms/form.test.ts` |
 | [quotaexceedederror](https://webidl.spec.whatwg.org/#quotaexceedederror) | `dom/window/Storage.ts` | **untested** |
+
+## CSS: cssom-view
+
+<https://drafts.csswg.org/cssom-view/> — 34 sections implemented, 22 tested, 1 by WPT only, 11 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [determine-the-scroll-into-view-position](https://drafts.csswg.org/cssom-view/#determine-the-scroll-into-view-position) | `dom/css/view.ts` | WPT: `css/cssom-view/scrollIntoView-nearest-visible-element.html` |
+| [dom-document-elementfrompoint](https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint) | `dom/nodes/Document.ts` | `dom/css/view.test.ts` |
+| [dom-document-elementsfrompoint](https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint) | `dom/nodes/Document.ts` | `dom/css/view.test.ts` |
+| [dom-document-scrollingelement](https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement) | `dom/css/index.ts` | `dom/css/view.test.ts`; WPT: `css/cssom-view/scroll-overflow-clip-quirks-002.html` |
+| [dom-element-checkvisibility](https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/view.test.ts` |
+| [dom-element-clienttop](https://drafts.csswg.org/cssom-view/#dom-element-clienttop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
+| [dom-element-clientwidth](https://drafts.csswg.org/cssom-view/#dom-element-clientwidth) | `dom/css/layout.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollWidthHeight-not-scrollable-fractional-zoom.html` |
+| [dom-element-getboundingclientrect](https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/layout.test.ts`, `dom/nodes/element-node-misc.test.ts` |
+| [dom-element-getclientrects](https://drafts.csswg.org/cssom-view/#dom-element-getclientrects) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
+| [dom-element-scroll](https://drafts.csswg.org/cssom-view/#dom-element-scroll) | `dom/css/view.ts` | **untested** |
+| [dom-element-scrollintoview](https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview) | `dom/css/view.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode-and-rtl-direction.html`, `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode.html` +7 |
+| [dom-element-scrolltop](https://drafts.csswg.org/cssom-view/#dom-element-scrolltop) | `dom/css/view.ts` | `dom/css/layout.test.ts`, `dom/css/view.test.ts` |
+| [dom-htmlelement-offsetparent](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent) | `dom/css/view.ts` | `dom/css/view.test.ts` |
+| [dom-htmlelement-offsettop](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsettop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
+| [dom-mediaquerylist-addlistener](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener) | `dom/window/media.ts` | **untested** |
+| [dom-mediaquerylist-matches](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches) | `dom/window/media.ts` | **untested** |
+| [dom-mediaquerylist-media](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media) | `dom/window/media.ts` | `dom/css/media-queries.test.ts` |
+| [dom-mouseevent-offsetx](https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-mouseevent-pagex](https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-mouseevent-x](https://drafts.csswg.org/cssom-view/#dom-mouseevent-x) | `dom/events/UIEvents.ts` | **untested** |
+| [dom-window-matchmedia](https://drafts.csswg.org/cssom-view/#dom-window-matchmedia) | `dom/css/media.ts`, `dom/window/Window.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [dom-window-screen](https://drafts.csswg.org/cssom-view/#dom-window-screen) | `dom/window/Window.ts` | **untested** |
+| [dom-window-scroll](https://drafts.csswg.org/cssom-view/#dom-window-scroll) | `dom/window/Window.ts` | `dom/window/window.test.ts` |
+| [dom-window-scrollby](https://drafts.csswg.org/cssom-view/#dom-window-scrollby) | `dom/window/Window.ts` | **untested** |
+| [dom-window-visualviewport](https://drafts.csswg.org/cssom-view/#dom-window-visualviewport) | `dom/window/Window.ts` | **untested** |
+| [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [extensions-to-the-htmlelement-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface) | `dom/css/view.ts`, `dom/html/HTMLElement.ts` | `dom/css/layout.test.ts` |
+| [extensions-to-the-mouseevent-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
+| [extensions-to-the-window-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts` |
+| [scrolling-area](https://drafts.csswg.org/cssom-view/#scrolling-area) | `dom/css/view.ts` | **untested** |
+| [the-mediaquerylist-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface) | `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [the-mediaquerylistevent-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylistevent-interface) | `dom/window/events.ts` | **untested** |
+| [the-screen-interface](https://drafts.csswg.org/cssom-view/#the-screen-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts`; WPT: `css/cssom-view/cssom-view-window-screen-interface.html`, `css/cssom-view/window-screen-height-immutable.html` +3 |
+| [the-visualviewport-interface](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts` |
 
 ## XMLHttpRequest Standard
 
@@ -1393,19 +1505,19 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-syntax
 
-<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 9 tested, 0 by WPT only, 23 untested.
+<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 10 tested, 0 by WPT only, 22 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [anb-microsyntax](https://drafts.csswg.org/css-syntax/#anb-microsyntax) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts` |
 | [consume-at-rule](https://drafts.csswg.org/css-syntax/#consume-at-rule) | `dom/css/parser.ts` | **untested** |
 | [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | `dom/css/cssom-stylesheet.test.ts`, `dom/css/lazy-blocks.test.ts` |
-| [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts`, `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
 | [consume-declaration](https://drafts.csswg.org/css-syntax/#consume-declaration) | `dom/css/parser.ts` | **untested** |
 | [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
 | [consume-ident-like-token](https://drafts.csswg.org/css-syntax/#consume-ident-like-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts`, `dom/window/geometry.ts` | **untested** |
 | [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
 | [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | `dom/css/lazy-blocks.test.ts` |
 | [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
@@ -1429,45 +1541,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [tokenization](https://drafts.csswg.org/css-syntax/#tokenization) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
 | [tokenizer-definitions](https://drafts.csswg.org/css-syntax/#tokenizer-definitions) | `dom/selectors/parser.ts` | **untested** |
 | [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-
-## CSS: cssom-view
-
-<https://drafts.csswg.org/cssom-view/> — 32 sections implemented, 20 tested, 1 by WPT only, 11 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [determine-the-scroll-into-view-position](https://drafts.csswg.org/cssom-view/#determine-the-scroll-into-view-position) | `dom/css/view.ts` | WPT: `css/cssom-view/scrollIntoView-nearest-visible-element.html` |
-| [dom-document-scrollingelement](https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement) | `dom/css/index.ts` | `dom/css/view.test.ts`; WPT: `css/cssom-view/scroll-overflow-clip-quirks-002.html` |
-| [dom-element-checkvisibility](https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/view.test.ts` |
-| [dom-element-clienttop](https://drafts.csswg.org/cssom-view/#dom-element-clienttop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
-| [dom-element-clientwidth](https://drafts.csswg.org/cssom-view/#dom-element-clientwidth) | `dom/css/layout.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollWidthHeight-not-scrollable-fractional-zoom.html` |
-| [dom-element-getboundingclientrect](https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/layout.test.ts`, `dom/nodes/element-node-misc.test.ts` |
-| [dom-element-getclientrects](https://drafts.csswg.org/cssom-view/#dom-element-getclientrects) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
-| [dom-element-scroll](https://drafts.csswg.org/cssom-view/#dom-element-scroll) | `dom/css/view.ts` | **untested** |
-| [dom-element-scrollintoview](https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview) | `dom/css/view.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode-and-rtl-direction.html`, `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode.html` +7 |
-| [dom-element-scrolltop](https://drafts.csswg.org/cssom-view/#dom-element-scrolltop) | `dom/css/view.ts` | `dom/css/layout.test.ts`, `dom/css/view.test.ts` |
-| [dom-htmlelement-offsetparent](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent) | `dom/css/view.ts` | `dom/css/view.test.ts` |
-| [dom-htmlelement-offsettop](https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsettop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
-| [dom-mediaquerylist-addlistener](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener) | `dom/window/media.ts` | **untested** |
-| [dom-mediaquerylist-matches](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches) | `dom/window/media.ts` | **untested** |
-| [dom-mediaquerylist-media](https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media) | `dom/window/media.ts` | `dom/css/media-queries.test.ts` |
-| [dom-mouseevent-offsetx](https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-mouseevent-pagex](https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-mouseevent-x](https://drafts.csswg.org/cssom-view/#dom-mouseevent-x) | `dom/events/UIEvents.ts` | **untested** |
-| [dom-window-matchmedia](https://drafts.csswg.org/cssom-view/#dom-window-matchmedia) | `dom/css/media.ts`, `dom/window/Window.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
-| [dom-window-screen](https://drafts.csswg.org/cssom-view/#dom-window-screen) | `dom/window/Window.ts` | **untested** |
-| [dom-window-scroll](https://drafts.csswg.org/cssom-view/#dom-window-scroll) | `dom/window/Window.ts` | `dom/window/window.test.ts` |
-| [dom-window-scrollby](https://drafts.csswg.org/cssom-view/#dom-window-scrollby) | `dom/window/Window.ts` | **untested** |
-| [dom-window-visualviewport](https://drafts.csswg.org/cssom-view/#dom-window-visualviewport) | `dom/window/Window.ts` | **untested** |
-| [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
-| [extensions-to-the-htmlelement-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface) | `dom/css/view.ts`, `dom/html/HTMLElement.ts` | `dom/css/layout.test.ts` |
-| [extensions-to-the-mouseevent-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
-| [extensions-to-the-window-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts` |
-| [scrolling-area](https://drafts.csswg.org/cssom-view/#scrolling-area) | `dom/css/view.ts` | **untested** |
-| [the-mediaquerylist-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface) | `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
-| [the-mediaquerylistevent-interface](https://drafts.csswg.org/cssom-view/#the-mediaquerylistevent-interface) | `dom/window/events.ts` | **untested** |
-| [the-screen-interface](https://drafts.csswg.org/cssom-view/#the-screen-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts`; WPT: `css/cssom-view/cssom-view-window-screen-interface.html`, `css/cssom-view/window-screen-height-immutable.html` +3 |
-| [the-visualviewport-interface](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface) | `dom/window/Screen.ts` | `dom/window/window.test.ts` |
 
 ## CSS: selectors
 
@@ -1842,6 +1915,18 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [valdef-display-none](https://drafts.csswg.org/css-display/#valdef-display-none) | `dom/css/cascade.ts` | **untested** |
 | [visibility](https://drafts.csswg.org/css-display/#visibility) | `aria/style.ts` | `aria/is-inaccessible.test.ts`, `aria/tree-exclusion.test.ts` |
 
+## CSS: css-values
+
+<https://drafts.csswg.org/css-values/> — 5 sections implemented, 2 tested, 0 by WPT only, 3 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [absolute-lengths](https://drafts.csswg.org/css-values/#absolute-lengths) | `dom/window/geometry.ts` | **untested** |
+| [angles](https://drafts.csswg.org/css-values/#angles) | `dom/window/geometry.ts` | **untested** |
+| [calc-func](https://drafts.csswg.org/css-values/#calc-func) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [calc-type-checking](https://drafts.csswg.org/css-values/#calc-type-checking) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [lengths](https://drafts.csswg.org/css-values/#lengths) | `dom/css/layout.ts` | **untested** |
+
 ## CSS: mediaqueries
 
 <https://drafts.csswg.org/mediaqueries/> — 5 sections implemented, 1 tested, 0 by WPT only, 4 untested.
@@ -1962,6 +2047,16 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [flat-tree](https://drafts.csswg.org/css-scoping/#flat-tree) | `dom/html/top-layer.ts` | **untested** |
 | [host-selector](https://drafts.csswg.org/css-scoping/#host-selector) | `dom/selectors/compile.ts` | WPT: `css/cssom/getComputedStyle-shadow-host.html` |
 
+## CSS: css-transforms
+
+<https://drafts.csswg.org/css-transforms/> — 3 sections implemented, 1 tested, 0 by WPT only, 2 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [Rotate3dDefined](https://drafts.csswg.org/css-transforms/#Rotate3dDefined) | `dom/window/geometry.ts` | **untested** |
+| [funcdef-perspective](https://drafts.csswg.org/css-transforms/#funcdef-perspective) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [transform-functions](https://drafts.csswg.org/css-transforms/#transform-functions) | `dom/window/geometry.ts` | **untested** |
+
 ## CSS: css-transitions
 
 <https://drafts.csswg.org/css-transitions/> — 3 sections implemented, 1 tested, 0 by WPT only, 2 untested.
@@ -2026,15 +2121,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | --- | --- | --- |
 | [text-transform-property](https://drafts.csswg.org/css-text/#text-transform-property) | `dom/html/innerText.ts` | **untested** |
 | [white-space-processing](https://drafts.csswg.org/css-text/#white-space-processing) | `dom/html/innerText.ts` | WPT: `html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html` |
-
-## CSS: geometry
-
-<https://drafts.csswg.org/geometry/> — 2 sections implemented, 0 tested, 0 by WPT only, 2 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [dommatrixreadonly](https://drafts.csswg.org/geometry/#dommatrixreadonly) | `dom/window/geometry.ts` | **untested** |
-| [domrectlist](https://drafts.csswg.org/geometry/#domrectlist) | `dom/window/geometry.ts` | **untested** |
 
 ## URL Standard
 
@@ -2125,14 +2211,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [outline](https://drafts.csswg.org/css-ui/#outline) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
-
-## CSS: css-values
-
-<https://drafts.csswg.org/css-values/> — 1 sections implemented, 0 tested, 0 by WPT only, 1 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [lengths](https://drafts.csswg.org/css-values/#lengths) | `dom/css/layout.ts` | **untested** |
 
 ## Encoding Standard
 

@@ -52,6 +52,10 @@ export {
   DOMMatrix,
   type DOMRectInit,
 } from "./window/geometry.ts";
+// https://drafts.csswg.org/geometry/#DOMMatrix — [LegacyWindowAlias=WebKitCSSMatrix]: the window
+// property is the DOMMatrix interface object itself (window/compat.ts limits it to `modern`).
+export { DOMMatrix as WebKitCSSMatrix } from "./window/geometry.ts";
+export { DOMQuad, type DOMQuadInit } from "./window/quad.ts";
 
 // --- events area ---
 export { Event } from "./events/Event.ts";

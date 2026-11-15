@@ -86,6 +86,12 @@ export const COMPAT: readonly CompatEntry[] = [
       "No jsdom has the `inert` IDL attribute. Libraries that find it mark content outside a modal `inert` instead of `aria-hidden` (React Aria's ariaHideOutside, Radix's hideOthers), which stock Testing Library's queries do not treat as inaccessible. The content attribute makes subtrees inert in every profile.",
   },
   {
+    globals: ["WebKitCSSMatrix"],
+    profiles: MODERN,
+    reason:
+      "The geometry spec's legacy alias of DOMMatrix, which no jsdom has. Libraries that find it parse computed `transform` strings with it (Swiper's getTranslate) instead of their string fallback, and our parser throws SyntaxError on values jsdom-era suites never exercised.",
+  },
+  {
     globals: ["visualViewport"],
     profiles: MODERN,
     reason:
@@ -165,7 +171,7 @@ export const COMPAT: readonly CompatEntry[] = [
       "Element classes for markup jsdom creates as plain SVGElement/Element (instanceof checks only), and SVG geometry that returns zeros without layout; suites that need numbers assign their own getBBox.",
   },
   {
-    globals: ["DOMMatrix", "DOMMatrixReadOnly", "DOMPoint", "DOMPointReadOnly", "DOMRectList"],
+    globals: ["DOMMatrix", "DOMMatrixReadOnly", "DOMPoint", "DOMPointReadOnly", "DOMQuad", "DOMRectList"],
     members: ["Range.getBoundingClientRect", "Range.getClientRects"],
     profiles: ALL,
     reason:
@@ -207,8 +213,8 @@ export const COMPAT: readonly CompatEntry[] = [
   {
     members: [
       ...on("Document", [
-        "adoptedStyleSheets", "alinkColor", "bgColor", "designMode", "domain", "fgColor", "linkColor", "moveBefore",
-        "scrollingElement", "vlinkColor",
+        "adoptedStyleSheets", "alinkColor", "bgColor", "designMode", "domain", "elementFromPoint", "elementsFromPoint",
+        "fgColor", "linkColor", "moveBefore", "scrollingElement", "vlinkColor",
       ]),
       "Document.static.parseHTMLUnsafe",
       "DocumentFragment.moveBefore",

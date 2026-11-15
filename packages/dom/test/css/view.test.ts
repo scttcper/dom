@@ -7,6 +7,7 @@
  *   CSSOM View scrollingElement — https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement
  *   HTML rendering, popover — https://html.spec.whatwg.org/#flow-content-3
  *   CSSOM View offsetParent — https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent
+ *   CSSOM View hit testing — https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint
  *   WebIDL namespaces (CSS) — https://webidl.spec.whatwg.org/#es-namespaces
  *
  * Deviation pinned here (docs/deviations.md): without layout, assigned scroll offsets are
@@ -141,6 +142,24 @@ describe("offsetParent — https://drafts.csswg.org/cssom-view/#dom-htmlelement-
     expect(op("#h")).toBe(null);
     expect(op("#u")).toBe(document.querySelector(".abs"));
     expect((document.createElement("div") as unknown as { offsetParent: unknown }).offsetParent).toBe(null);
+  });
+});
+
+describe("hit testing without layout — https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint", () => {
+  test("Document and ShadowRoot both have elementFromPoint/elementsFromPoint (the DocumentOrShadowRoot pair) and find no box", () => {
+    document.body!.innerHTML = "<p>hit me</p>";
+    const root = document.body!.appendChild(document.createElement("div")).attachShadow({ mode: "open" });
+    for (const target of [document, root]) {
+      expect(target.elementFromPoint(1, 1)).toBeNull();
+      expect(target.elementsFromPoint(1, 1)).toEqual([]);
+    }
+    // A fresh array per call (https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint).
+    expect(document.elementsFromPoint(0, 0)).not.toBe(document.elementsFromPoint(0, 0));
+  });
+
+  test("both methods take two required arguments (WebIDL length)", () => {
+    expect(document.elementFromPoint.length).toBe(2);
+    expect(document.elementsFromPoint.length).toBe(2);
   });
 });
 
