@@ -30,6 +30,7 @@ import {
   FileList,
   FileReader,
   IntersectionObserver,
+  IntersectionObserverEntry,
   ResizeObserver,
   type Window,
 } from "@ctrl/dom";
@@ -406,7 +407,47 @@ describe("observers — https://drafts.csswg.org/resize-observer/, https://w3c.g
     expect(io.takeRecords()).toEqual([]);
     expect(() => new IntersectionObserver(() => {}, { threshold: 2 })).toThrow(RangeError);
   });
+
+  test("IntersectionObserverEntry is exposed with IntersectionObserver and built from its init dictionary (https://w3c.github.io/IntersectionObserver/#intersection-observer-entry)", () => {
+    // react-lazy-load-image-component checks the prototype before trusting the observer.
+    expect(
+      "IntersectionObserver" in window &&
+        "isIntersecting" in
+          (window as unknown as { IntersectionObserverEntry: { prototype: object } }).IntersectionObserverEntry
+            .prototype,
+    ).toBe(true);
+    const target = window.document.body!;
+    const entry = new IntersectionObserverEntry({
+      time: 5,
+      rootBounds: null,
+      boundingClientRect: { width: 10, height: 4 },
+      intersectionRect: {},
+      isIntersecting: true,
+      intersectionRatio: 0.5,
+      target,
+    });
+    expect([entry.time, entry.isIntersecting, entry.intersectionRatio, entry.target]).toEqual([5, true, 0.5, target]);
+    expect(entry.rootBounds).toBeNull();
+    expect(entry.boundingClientRect).toBeInstanceOf(DOMRectReadOnly);
+    expect(entry.boundingClientRect.height).toBe(4);
+    expect(Object.prototype.toString.call(entry)).toBe("[object IntersectionObserverEntry]");
+    // Every member of IntersectionObserverEntryInit is required.
+    expect(() => new IntersectionObserverEntry({ time: 1 } as never)).toThrow(TypeError);
+    expect(() => new IntersectionObserverEntry({ ...entryInit(target), target: {} } as never)).toThrow(TypeError);
+  });
 });
+
+function entryInit(target: unknown) {
+  return {
+    time: 0,
+    rootBounds: null,
+    boundingClientRect: {},
+    intersectionRect: {},
+    isIntersecting: false,
+    intersectionRatio: 0,
+    target,
+  };
+}
 
 describe("geometry — https://drafts.fxtf.org/geometry/", () => {
   test("DOMRect derived edges and toJSON", () => {

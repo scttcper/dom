@@ -57,6 +57,7 @@ export { HTMLStyleElement, HTMLLinkElement, HTMLScriptElement, HTMLTitleElement 
 export { ElementInternals, CustomStateSet } from "./HTMLElement.ts";
 export { CustomElementRegistry } from "./custom-elements.ts";
 export { MathMLElement } from "./MathMLElement.ts";
+export { SVGNumber, SVGAnimatedRect, SVGPreserveAspectRatio, SVGAnimatedPreserveAspectRatio } from "./svg-types.ts";
 export {
   SVGAnimatedString,
   SVGGraphicsElement,

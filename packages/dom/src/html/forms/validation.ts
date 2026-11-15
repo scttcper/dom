@@ -6,7 +6,7 @@
 // reportValidity/setCustomValidity members, installed onto each prototype like the DOM
 // interface mixins (see nodes/mixins.ts).
 
-import { exposeMembers, hideInternals } from "../../webidl-runtime.ts";
+import { defineHidden, exposeMembers } from "../../webidl-runtime.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { fireEvent, normalizeNewlines } from "./common.ts";
 import { $customValidity, $el, $impl, $options, $validity, $window } from "../../keys.ts";
@@ -36,12 +36,12 @@ export interface Validatable extends Element {
 
 /** https://html.spec.whatwg.org/#validitystate */
 export class ValidityState {
-  [$el]: Validatable;
+  declare [$el]: Validatable;
 
   /** @internal */
   constructor(el: Validatable) {
-    this[$el] = el;
-    hideInternals(this);
+    // Non-enumerable from the start (spreads and Jest's equality skip it), not hidden afterwards.
+    defineHidden(this, $el, el);
   }
 
   get valueMissing(): boolean {

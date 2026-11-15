@@ -168,7 +168,53 @@ export class NamedNodeMap {
   declare [Symbol.iterator]: () => ArrayIterator<Attr>;
 }
 
+/**
+ * `attributes[Symbol.iterator]`: %Array.prototype.values%'s semantics (WebIDL,
+ * https://webidl.spec.whatwg.org/#es-iterable) over the element's AttrRecords. The builtin reads
+ * `length` and `[i]` through the Proxy on every step (two traps per attribute), and
+ * pretty-format's DOM plugin `Array.from()`s every element's attributes twice (snapshots,
+ * prettyDOM, Testing Library's error messages). Like the builtin, each step reads the current
+ * list (changes show) and a finished iterator stays finished. Not the same function object as
+ * Array.prototype.values (docs/deviations.md, Collections).
+ */
+class AttributeIterator extends Iterator<Attr, undefined> {
+  /** The element, or null once exhausted. */
+  #el: NodeImpl | null;
+  #index = 0;
+
+  constructor(el: NodeImpl) {
+    super();
+    this.#el = el;
+  }
+
+  override next(): IteratorResult<Attr, undefined> {
+    const el = this.#el;
+    if (el !== null) {
+      const attrs = el.attrs;
+      const i = this.#index;
+      if (attrs !== null && i < attrs.length) {
+        this.#index = i + 1;
+        return { value: attrNode(el, attrs[i]), done: false };
+      }
+      this.#el = null;
+    }
+    return { value: undefined, done: true };
+  }
+}
+
+Object.defineProperty(AttributeIterator.prototype, Symbol.toStringTag, { value: "Array Iterator", configurable: true });
+
+const arrayValues = Array.prototype.values;
+/** A method (named "values", not a constructor), like the builtin it stands in for. */
+const attributeValues = {
+  values(this: NamedNodeMap) {
+    // `this` is the Proxy: one trap. Anything but a NamedNodeMap gets the builtin (any array-like).
+    const el = this === null || this === undefined ? undefined : (this as { [$el]?: NodeImpl })[$el];
+    return el === undefined ? arrayValues.call(this) : new AttributeIterator(el);
+  },
+}.values;
+
 Object.defineProperties(NamedNodeMap.prototype, {
-  [Symbol.iterator]: { value: Array.prototype.values, writable: true, configurable: true },
+  [Symbol.iterator]: { value: attributeValues, writable: true, configurable: true },
   [Symbol.toStringTag]: { value: "NamedNodeMap", configurable: true },
 });

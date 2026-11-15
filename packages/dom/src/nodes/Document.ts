@@ -1,7 +1,7 @@
 // https://dom.spec.whatwg.org/#interface-document
 // https://html.spec.whatwg.org/#the-document-object
 
-import { argumentsRequired, hideInternals } from "../webidl-runtime.ts";
+import { argumentsRequired, defineHidden, hideInternals } from "../webidl-runtime.ts";
 import { installEventHandlers } from "../events/handlers.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE, HTML_NS, SVG_NS, DOCUMENT_TYPE_NODE, F_CONNECTED } from "./constants.ts";
 import { Node } from "./Node.ts";
@@ -69,99 +69,102 @@ import {
 
 export class Document extends Node {
   /** Browsing context's window, or null for documents created via DOMImplementation / new Document(). */
-  [$window]: Window | null;
+  declare [$window]: Window | null;
   /** Bumped on every tree, attribute and character-data mutation of nodes owned by this document. */
-  [$version]: number;
+  declare [$version]: number;
   /**
    * Bumped by tree mutations only (nodes/tree.ts), not attribute, character data or form state
    * changes: stamps live collections whose members depend only on the tree and tag names.
    */
-  [$treeVersion]: number;
+  declare [$treeVersion]: number;
   /** Bumped when author style sheets change (src/css). */
-  [$styleVersion]: number;
+  declare [$styleVersion]: number;
   /** Version bumps that left every computed style as it was (css/style-deps.ts). */
-  [$benign]: number;
+  declare [$benign]: number;
   /** Connected elements by id. A value is an array only when several connected elements share an id. */
-  [$ids]: Map<string, NodeImpl | NodeImpl[]>;
+  declare [$ids]: Map<string, NodeImpl | NodeImpl[]>;
   /** Focused element (https://html.spec.whatwg.org/#focused-area-of-the-document), null = viewport/body. */
-  [$focused]: NodeImpl | null;
-  [$isHTML]: boolean;
-  [$contentType]: string;
-  [$url]: string;
-  [$mode]: "no-quirks" | "quirks" | "limited-quirks";
-  [$implementation]: DOMImplementation | null;
+  declare [$focused]: NodeImpl | null;
+  declare [$isHTML]: boolean;
+  declare [$contentType]: string;
+  declare [$url]: string;
+  declare [$mode]: "no-quirks" | "quirks" | "limited-quirks";
+  declare [$implementation]: DOMImplementation | null;
   /** Opaque per-document state owned by src/css (style sheet list, rule index). */
-  [$css]: object | null;
+  declare [$css]: object | null;
   /** Markup written since document.open() (null when no open() is in effect). */
-  [$writeBuffer]: string | null;
+  declare [$writeBuffer]: string | null;
   /** https://w3c.github.io/selection-api/#dfn-selection — created on first getSelection(). */
-  [$selection]: Selection | null;
+  declare [$selection]: Selection | null;
   /** Live ranges whose boundary points are in this document (traversal/live.ts); null when none. */
-  [$ranges]: WeakRef<object>[] | null;
+  declare [$ranges]: WeakRef<object>[] | null;
   /**
    * Derived per-document caches (selector results, snapshot holders, ...) keyed by owner token; see
    * nodes/derived.ts. Dropped whenever a node is removed from a tree of this document, so caches
    * never keep removed subtrees alive.
    */
-  [$derived]: Map<object, unknown> | null;
+  declare [$derived]: Map<object, unknown> | null;
   /**
    * Connected <label> elements by `for` attribute value, each list in no particular order, or null
    * before the first (html/forms/HTMLLabelElement.ts). Lets `element.labels` find the labels naming
    * an ID without walking the tree.
    */
-  [$forLabels]: Map<string, NodeImpl[]> | null;
+  declare [$forLabels]: Map<string, NodeImpl[]> | null;
   /** An element of this document has had a `form` attribute (never reset): formOwnerScope. */
-  [$formAttrSeen]: boolean;
+  declare [$formAttrSeen]: boolean;
   /**
    * Connected radio buttons with a non-empty name, by name, each list in no particular order, or
    * null before the first (html/forms/HTMLInputElement.ts). A radio's group is looked up here
    * instead of walking the tree.
    */
-  [$radios]: Map<string, Set<NodeImpl>> | null;
+  declare [$radios]: Map<string, Set<NodeImpl>> | null;
   /** document.forms (named-properties proxy), created on first read. */
-  [$forms]: HTMLCollection | null;
+  declare [$forms]: HTMLCollection | null;
   /** https://html.spec.whatwg.org/#concept-document-about-base-url (about:blank / about:srcdoc documents of nested browsing contexts). */
-  [$aboutBase]: string | null;
+  declare [$aboutBase]: string | null;
   /** https://dom.spec.whatwg.org/#document-base-url-override (set when cloning a document). */
-  [$baseOverride]: string | null;
+  declare [$baseOverride]: string | null;
   /** Cached document base URL, valid while `[$baseVersion] === [$version]` and `[$baseFor] === [$url]`. */
-  [$baseURL]: string;
-  [$baseVersion]: number;
-  [$baseFor]: string;
+  declare [$baseURL]: string;
+  declare [$baseVersion]: number;
+  declare [$baseFor]: string;
 
   constructor() {
     super(DOCUMENT_NODE, null);
+    // Documents are few: their internals are non-enumerable so object walks (Jest's diff printer)
+    // stop here instead of following [$window] into the host global (see Window's constructor).
+    // Node's fields are hidden after the fact; Document's own are defined hidden up front, which
+    // is several times cheaper than reconfiguring them (the fields are `declare`d, so class
+    // syntax does not create them as enumerable properties first).
+    hideInternals(this);
     // A document is the root of its own tree, so it is always connected.
     this[$impl].flags |= F_CONNECTED;
-    this[$window] = null;
-    this[$version] = 0;
-    this[$styleVersion] = 0;
-    this[$benign] = 0;
-    this[$treeVersion] = 0;
-    this[$ids] = new Map();
-    this[$focused] = null;
-    this[$isHTML] = false;
-    this[$contentType] = "application/xml";
-    this[$url] = "about:blank";
-    this[$mode] = "no-quirks";
-    this[$implementation] = null;
-    this[$css] = null;
-    this[$writeBuffer] = null;
-    this[$selection] = null;
-    this[$forms] = null;
-    this[$ranges] = null;
-    this[$derived] = null;
-    this[$forLabels] = null;
-    this[$formAttrSeen] = false;
-    this[$radios] = null;
-    this[$aboutBase] = null;
-    this[$baseOverride] = null;
-    this[$baseURL] = "";
-    this[$baseVersion] = -1;
-    this[$baseFor] = "";
-    // Documents are few: hide their internals so object walks (Jest's diff printer) stop here
-    // instead of following [$window] into the host global (see Window's constructor).
-    hideInternals(this);
+    defineHidden(this, $window, null);
+    defineHidden(this, $version, 0);
+    defineHidden(this, $treeVersion, 0);
+    defineHidden(this, $styleVersion, 0);
+    defineHidden(this, $benign, 0);
+    defineHidden(this, $ids, new Map());
+    defineHidden(this, $focused, null);
+    defineHidden(this, $isHTML, false);
+    defineHidden(this, $contentType, "application/xml");
+    defineHidden(this, $url, "about:blank");
+    defineHidden(this, $mode, "no-quirks");
+    defineHidden(this, $implementation, null);
+    defineHidden(this, $css, null);
+    defineHidden(this, $writeBuffer, null);
+    defineHidden(this, $selection, null);
+    defineHidden(this, $ranges, null);
+    defineHidden(this, $derived, null);
+    defineHidden(this, $forLabels, null);
+    defineHidden(this, $formAttrSeen, false);
+    defineHidden(this, $radios, null);
+    defineHidden(this, $forms, null);
+    defineHidden(this, $aboutBase, null);
+    defineHidden(this, $baseOverride, null);
+    defineHidden(this, $baseURL, "");
+    defineHidden(this, $baseVersion, -1);
+    defineHidden(this, $baseFor, "");
   }
 
   /** @internal Create an HTML document (what a Window and DOMImplementation.createHTMLDocument use). */

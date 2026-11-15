@@ -8,7 +8,7 @@
 // so it also completes under fake timers (docs/deviations.md).
 
 import { createFileList, type FileList } from "../html/forms/FileList.ts";
-import { exposeMembers, hideInternals } from "../webidl-runtime.ts";
+import { defineHidden, exposeMembers } from "../webidl-runtime.ts";
 import { $data, $dropEffect, $effectAllowed, $file, $files, $items, $kind, $owner, $type, $types } from "../keys.ts";
 
 const DROP_EFFECTS = new Set(["none", "copy", "link", "move"]);
@@ -32,18 +32,19 @@ let internal = false;
 
 /** https://html.spec.whatwg.org/#the-datatransferitem-interface */
 export class DataTransferItem {
+  // Internal fields are created non-enumerable (defineHidden), so object walks skip them.
   /** "string" | "file", or "" once removed from its list. */
-  [$kind]: string;
-  [$type]: string;
-  [$data]: string;
-  [$file]: File | null;
+  declare [$kind]: string;
+  declare [$type]: string;
+  declare [$data]: string;
+  declare [$file]: File | null;
 
   constructor() {
     if (!internal) throw new TypeError("Illegal constructor");
-    this[$kind] = "";
-    this[$type] = "";
-    this[$data] = "";
-    this[$file] = null;
+    defineHidden(this, $kind, "");
+    defineHidden(this, $type, "");
+    defineHidden(this, $data, "");
+    defineHidden(this, $file, null);
   }
 
   get kind(): string {
@@ -83,7 +84,6 @@ function makeItem(kind: string, type: string, data: string, file: File | null): 
     item[$type] = type;
     item[$data] = data;
     item[$file] = file;
-    hideInternals(item);
     return item;
   } finally {
     internal = false;
@@ -93,13 +93,13 @@ function makeItem(kind: string, type: string, data: string, file: File | null): 
 /** https://html.spec.whatwg.org/#the-datatransferitemlist-interface */
 export class DataTransferItemList {
   [index: number]: DataTransferItem;
-  [$items]: DataTransferItem[];
-  [$owner]: DataTransfer | null;
+  declare [$items]: DataTransferItem[];
+  declare [$owner]: DataTransfer | null;
 
   constructor() {
     if (!internal) throw new TypeError("Illegal constructor");
-    this[$items] = [];
-    this[$owner] = null;
+    defineHidden(this, $items, []);
+    defineHidden(this, $owner, null);
   }
 
   get length(): number {
@@ -178,7 +178,6 @@ function makeList(owner: DataTransfer): DataTransferItemList {
   try {
     const list = new DataTransferItemList();
     list[$owner] = owner;
-    hideInternals(list);
     return list;
   } finally {
     internal = false;
@@ -194,20 +193,19 @@ function normalizeFormat(format: string): { type: string; url: boolean } {
 
 /** https://html.spec.whatwg.org/#the-datatransfer-interface */
 export class DataTransfer {
-  [$dropEffect]: string;
-  [$effectAllowed]: string;
-  [$items]: DataTransferItemList;
-  [$types]: readonly string[] | null;
-  [$files]: FileList | null;
+  declare [$dropEffect]: string;
+  declare [$effectAllowed]: string;
+  declare [$items]: DataTransferItemList;
+  declare [$types]: readonly string[] | null;
+  declare [$files]: FileList | null;
 
   /** https://html.spec.whatwg.org/#dom-datatransfer */
   constructor() {
-    this[$dropEffect] = "none";
-    this[$effectAllowed] = "uninitialized";
-    this[$items] = makeList(this);
-    this[$types] = null;
-    this[$files] = null;
-    hideInternals(this);
+    defineHidden(this, $dropEffect, "none");
+    defineHidden(this, $effectAllowed, "uninitialized");
+    defineHidden(this, $items, makeList(this));
+    defineHidden(this, $types, null);
+    defineHidden(this, $files, null);
   }
 
   get dropEffect(): string {

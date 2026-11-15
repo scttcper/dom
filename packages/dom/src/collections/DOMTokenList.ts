@@ -18,6 +18,7 @@ import {
   splitOnAsciiWhitespace,
 } from "../nodes/attributes.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
+import { collectionForEach } from "./iterator.ts";
 
 const EMPTY: string[] = [];
 
@@ -219,7 +220,7 @@ export class DOMTokenList {
 }
 
 Object.defineProperties(DOMTokenList.prototype, {
-  forEach: { value: Array.prototype.forEach, writable: true, enumerable: true, configurable: true },
+  forEach: { value: collectionForEach, writable: true, enumerable: true, configurable: true },
   entries: { value: Array.prototype.entries, writable: true, enumerable: true, configurable: true },
   keys: { value: Array.prototype.keys, writable: true, enumerable: true, configurable: true },
   values: { value: Array.prototype.values, writable: true, enumerable: true, configurable: true },

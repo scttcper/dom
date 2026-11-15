@@ -74,7 +74,7 @@ export const COMPAT: readonly CompatEntry[] = [
       "No jsdom has matchMedia. Suites install their own (mock-match-media only polyfills it when it is missing: React Aria's `setMedia({pointer: 'coarse'})` did nothing with ours present) and components feature-detect it.",
   },
   {
-    globals: ["ResizeObserver"],
+    globals: ["ResizeObserver", "ResizeObserverEntry", "ResizeObserverSize"],
     profiles: MODERN,
     reason:
       "No jsdom has ResizeObserver, and libraries detect it to pick their browser path: Base UI's ScrollArea then calls getAnimations(), which nothing implements. Suites written for jsdom install their own (Sentry's MockResizeObserver).",
@@ -143,10 +143,10 @@ export const COMPAT: readonly CompatEntry[] = [
       "user-event's `setup()` replaces `navigator.clipboard` with its stub either way, and builds DataTransfer objects for drag/paste whether or not the DOM has the class.",
   },
   {
-    globals: ["IntersectionObserver"],
+    globals: ["IntersectionObserver", "IntersectionObserverEntry"],
     profiles: ALL,
     reason:
-      "Component libraries construct it unconditionally and crash when it is missing; ours never reports entries (no layout), and suites that need entries install a mock by assignment.",
+      "Component libraries construct it unconditionally and crash when it is missing; ours never reports entries (no layout), and suites that need entries install a mock by assignment. The entry interface comes with it: libraries check `IntersectionObserverEntry.prototype` before trusting the observer (react-lazy-load-image-component crashed reading it).",
   },
   {
     globals: [
@@ -246,7 +246,6 @@ export const COMPAT: readonly CompatEntry[] = [
       ...on("HTMLDialogElement", ["close", "closedBy", "requestClose", "returnValue", "show", "showModal"]),
       ...on("HTMLAnchorElement", ["ping", "referrerPolicy"]),
       ...on("HTMLAreaElement", ["download", "hreflang", "ping", "referrerPolicy", "type"]),
-      ...on("HTMLCanvasElement", ["captureStream", "transferControlToOffscreen"]),
       "HTMLDetailsElement.name",
       "HTMLEmbedElement.getSVGDocument",
       ...on("HTMLFormElement", ["autocomplete", "encoding", "rel", "relList"]),
@@ -268,7 +267,7 @@ export const COMPAT: readonly CompatEntry[] = [
       "HTMLStyleElement.blocking",
       ...on("HTMLTemplateElement", ["shadowRootClonable", "shadowRootDelegatesFocus", "shadowRootMode", "shadowRootSerializable", "shadowRootSlotAssignment"]),
       "HTMLTrackElement.track",
-      ...on("HTMLVideoElement", ["cancelVideoFrameCallback", "disablePictureInPicture", "getVideoPlaybackQuality", "requestPictureInPicture", "requestVideoFrameCallback"]),
+      ...on("HTMLVideoElement", ["disablePictureInPicture", "getVideoPlaybackQuality", "requestPictureInPicture"]),
     ],
     profiles: ALL,
     reason:

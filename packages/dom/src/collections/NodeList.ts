@@ -22,9 +22,9 @@
 //    get accessor properties `0..n` on their own prototype (collections/indexed.ts), so they
 //    never mix with own index properties.
 //
-// Iteration: `forEach`, `entries` and `keys` are the Array.prototype functions, as WebIDL specifies
-// for indexed iterable interfaces (https://webidl.spec.whatwg.org/#es-iterable); `values` and
-// `@@iterator` are collections/iterator.ts, the same semantics (iterating a live list sees
+// Iteration: `entries` and `keys` are the Array.prototype functions, as WebIDL specifies
+// for indexed iterable interfaces (https://webidl.spec.whatwg.org/#es-iterable); `forEach`, `values`
+// and `@@iterator` are collections/iterator.ts, the same semantics (iterating a live list sees
 // mutations) without V8's generic per-element lookups.
 //
 // Internal state lives in private fields so `Object.keys(list)` is just the indices (jest's
@@ -41,7 +41,7 @@ import { F_CHILD_LIST } from "../nodes/constants.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
-import { CollectionIterator, iterableTarget } from "./iterator.ts";
+import { CollectionIterator, collectionForEach, iterableTarget } from "./iterator.ts";
 import { $items, $version } from "../keys.ts";
 
 /** Index getter tables of lazy NodeList subclasses, by prototype. */
@@ -178,7 +178,7 @@ const values = {
 }.values;
 
 Object.defineProperties(NodeList.prototype, {
-  forEach: { value: Array.prototype.forEach, writable: true, enumerable: true, configurable: true },
+  forEach: { value: collectionForEach, writable: true, enumerable: true, configurable: true },
   entries: { value: Array.prototype.entries, writable: true, enumerable: true, configurable: true },
   keys: { value: Array.prototype.keys, writable: true, enumerable: true, configurable: true },
   values: { value: values, writable: true, enumerable: true, configurable: true },

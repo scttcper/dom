@@ -15,6 +15,26 @@ let dom: Record<string, unknown> = Object.create(null);
 /** Called once by src/index.ts with its module namespace. */
 export function registerDomNamespace(namespace: object): void {
   dom = namespace as Record<string, unknown>;
+  tagInterfaces(dom);
+}
+
+/**
+ * Give every exported interface its class string (https://webidl.spec.whatwg.org/#dfn-class-string):
+ * @@toStringTag on the interface prototype, so `Object.prototype.toString.call(document)` is
+ * `[object Document]` rather than the nearest tagged ancestor's (`[object EventTarget]`) or
+ * `[object Object]`. Classes that define their own tag keep it; aliases (WebKitCSSMatrix, SVGRect)
+ * and legacy factory functions (Audio, Image, Option) are skipped, since their `prototype` belongs
+ * to another interface. One pass at load, so new interfaces are covered without a call per class.
+ */
+function tagInterfaces(namespace: Record<string, unknown>): void {
+  for (const name of Object.keys(namespace)) {
+    const C = namespace[name];
+    if (typeof C !== "function" || !isInterfaceName(name) || C.name !== name) continue;
+    const proto = (C as { prototype?: unknown }).prototype;
+    if (typeof proto !== "object" || proto === null || (proto as { constructor?: unknown }).constructor !== C) continue;
+    if (Object.hasOwn(proto, Symbol.toStringTag)) continue;
+    Object.defineProperty(proto, Symbol.toStringTag, { value: name, configurable: true });
+  }
 }
 
 /** name → interface object (or namespace object such as CSS). */
@@ -36,7 +56,7 @@ function isInterfaceName(name: string): boolean {
  * Exported from @ctrl/dom but not on Window.prototype: installGlobals defines them on the global
  * only for compat profiles that expose them (window/compat.ts: ResizeObserver is "modern" only).
  */
-const NOT_ON_WINDOW = new Set(["ResizeObserver"]);
+const NOT_ON_WINDOW = new Set(["ResizeObserver", "ResizeObserverEntry", "ResizeObserverSize"]);
 
 /** The NOT_ON_WINDOW interface objects, for installGlobals. */
 export function optInInterfaces(): InterfaceMap {

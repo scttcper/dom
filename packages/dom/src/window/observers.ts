@@ -10,6 +10,8 @@
 
 import type { Element } from "../nodes/Element.ts";
 import { $callback, $targets } from "../keys.ts";
+import { DOMRectReadOnly, type DOMRectInit } from "./geometry.ts";
+import { defineInterfaceShape, exposeMembers } from "../webidl-runtime.ts";
 
 type ResizeObserverCallback = (entries: unknown[], observer: ResizeObserver) => void;
 type IntersectionObserverCallback = (entries: unknown[], observer: IntersectionObserver) => void;
@@ -114,6 +116,88 @@ export class IntersectionObserver {
     return "IntersectionObserver";
   }
 }
+
+/** https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverentryinit */
+export interface IntersectionObserverEntryInit {
+  time: number;
+  rootBounds: DOMRectInit | null;
+  boundingClientRect: DOMRectInit;
+  intersectionRect: DOMRectInit;
+  isIntersecting: boolean;
+  intersectionRatio: number;
+  target: Element;
+}
+
+/**
+ * https://w3c.github.io/IntersectionObserver/#intersection-observer-entry — never delivered here
+ * (no layout), but exposed with IntersectionObserver: libraries check
+ * `"isIntersecting" in IntersectionObserverEntry.prototype` before trusting the observer
+ * (react-lazy-load-image-component), and test mocks construct entries.
+ */
+export class IntersectionObserverEntry {
+  #time: number;
+  #rootBounds: DOMRectReadOnly | null;
+  #boundingClientRect: DOMRectReadOnly;
+  #intersectionRect: DOMRectReadOnly;
+  #isIntersecting: boolean;
+  #intersectionRatio: number;
+  #target: Element;
+
+  constructor(init: IntersectionObserverEntryInit) {
+    // WebIDL dictionary conversion: members in lexicographic order, all required.
+    const ctx = "Failed to construct 'IntersectionObserverEntry'";
+    if (init === null || init === undefined || typeof init !== "object") {
+      throw new TypeError(`${ctx}: 1 argument required, but only 0 present.`);
+    }
+    const required = <T>(name: keyof IntersectionObserverEntryInit): T => {
+      const v = init[name];
+      if (v === undefined)
+        throw new TypeError(
+          `${ctx}: Failed to read the '${name}' property from 'IntersectionObserverEntryInit': Required member is undefined.`,
+        );
+      return v as T;
+    };
+    this.#boundingClientRect = DOMRectReadOnly.fromRect(required<DOMRectInit>("boundingClientRect"));
+    this.#intersectionRatio = Number(required("intersectionRatio"));
+    this.#intersectionRect = DOMRectReadOnly.fromRect(required<DOMRectInit>("intersectionRect"));
+    this.#isIntersecting = Boolean(required("isIntersecting"));
+    const rootBounds = required<DOMRectInit | null>("rootBounds");
+    this.#rootBounds = rootBounds === null ? null : DOMRectReadOnly.fromRect(rootBounds);
+    const target = required<Element>("target");
+    if (typeof target !== "object" || (target as { nodeType?: unknown }).nodeType !== 1) {
+      throw new TypeError(
+        `${ctx}: Failed to read the 'target' property from 'IntersectionObserverEntryInit': Failed to convert value to 'Element'.`,
+      );
+    }
+    this.#target = target;
+    this.#time = Number(required("time"));
+  }
+
+  get time(): number {
+    return this.#time;
+  }
+  get rootBounds(): DOMRectReadOnly | null {
+    return this.#rootBounds;
+  }
+  get boundingClientRect(): DOMRectReadOnly {
+    return this.#boundingClientRect;
+  }
+  get intersectionRect(): DOMRectReadOnly {
+    return this.#intersectionRect;
+  }
+  get isIntersecting(): boolean {
+    return this.#isIntersecting;
+  }
+  get intersectionRatio(): number {
+    return this.#intersectionRatio;
+  }
+  get target(): Element {
+    return this.#target;
+  }
+}
+
+exposeMembers(IntersectionObserverEntry);
+defineInterfaceShape(IntersectionObserverEntry, { constructor: 1 });
 
 /** https://w3c.github.io/IntersectionObserver/#parse-a-margin (serialization: 4 lengths) */
 function normalizeMargin(margin: string): string {

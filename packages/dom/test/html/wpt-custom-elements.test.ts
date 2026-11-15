@@ -174,10 +174,7 @@ describe("Custom elements — custom-elements/reactions/customized-builtins (htt
 });
 
 describe("Custom elements — custom-elements/state (https://github.com/web-platform-tests/wpt/tree/master/custom-elements/state)", () => {
-  defineWPT(
-    "custom-elements/state/ElementInternals-states.html",
-    "CustomStateSet initial-state check (see expectations)",
-  );
+  defineWPT("custom-elements/state/ElementInternals-states.html");
   defineWPT("custom-elements/state/state-css-selector-nth-of.html");
   defineWPT("custom-elements/state/state-css-selector-shadow-dom.html");
   defineWPT("custom-elements/state/state-css-selector.html");

@@ -89,9 +89,6 @@
   "custom-elements/reactions/Range.html": [
     "createContextualFragment on Range must construct a custom element"
   ],
-  "custom-elements/state/ElementInternals-states.html": [
-    "CustomStateSet behavior of ElementInternals.states: Initial state"
-  ],
   "custom-elements/state/state-pseudo-class.html": [
     ":state(foo) and ::part()"
   ],

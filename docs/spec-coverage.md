@@ -25,12 +25,13 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [HTML Standard](#html-standard) | 787 | 607 | 54 | 126 |
 | [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
-| [CSS: geometry](#css-geometry) | 60 | 53 | 3 | 4 |
+| [CSS: geometry](#css-geometry) | 61 | 54 | 3 | 4 |
 | [Web IDL](#web-idl) | 37 | 28 | 0 | 9 |
 | [CSS: cssom-view](#css-cssom-view) | 34 | 22 | 1 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
 | [CSS: css-syntax](#css-css-syntax) | 32 | 10 | 0 | 22 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
+| [SVG 2](#svg-2) | 25 | 9 | 0 | 16 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 6 | 1 | 14 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
@@ -41,7 +42,6 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: resize-observer](#css-resize-observer) | 10 | 2 | 0 | 8 |
 | [Infra Standard](#infra-standard) | 10 | 0 | 0 | 10 |
 | [CSS: css-conditional](#css-css-conditional) | 9 | 8 | 1 | 0 |
-| [SVG 2](#svg-2) | 9 | 1 | 0 | 8 |
 | [W3C: DOM-Parsing](#w3c-dom-parsing) | 9 | 2 | 0 | 7 |
 | [CSS: css](#css-css) | 7 | 1 | 0 | 6 |
 | [RFC6265](#rfc6265) | 7 | 5 | 0 | 2 |
@@ -57,6 +57,8 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-nesting](#css-css-nesting) | 4 | 2 | 1 | 1 |
 | [CSS: css-position](#css-css-position) | 4 | 1 | 0 | 3 |
 | [CSS: css-variables](#css-css-variables) | 4 | 4 | 0 | 0 |
+| [ECMAScript](#ecmascript) | 4 | 3 | 0 | 1 |
+| [W3C: IntersectionObserver](#w3c-intersectionobserver) | 4 | 2 | 0 | 2 |
 | [W3C: touch-events](#w3c-touch-events) | 4 | 1 | 0 | 3 |
 | [CSS: css-flexbox](#css-css-flexbox) | 3 | 3 | 0 | 0 |
 | [CSS: css-fonts](#css-css-fonts) | 3 | 1 | 2 | 0 |
@@ -64,14 +66,12 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-scoping](#css-css-scoping) | 3 | 0 | 1 | 2 |
 | [CSS: css-transforms](#css-css-transforms) | 3 | 1 | 0 | 2 |
 | [CSS: css-transitions](#css-css-transitions) | 3 | 1 | 0 | 2 |
-| [ECMAScript](#ecmascript) | 3 | 2 | 0 | 1 |
 | [Compatibility Standard](#compatibility-standard) | 2 | 1 | 0 | 1 |
 | [CSS: css-align](#css-css-align) | 2 | 1 | 0 | 1 |
 | [CSS: css-namespaces](#css-css-namespaces) | 2 | 1 | 0 | 1 |
 | [CSS: css-shadow-parts](#css-css-shadow-parts) | 2 | 0 | 1 | 1 |
 | [CSS: css-text](#css-css-text) | 2 | 0 | 1 | 1 |
 | [URL Standard](#url-standard) | 2 | 0 | 0 | 2 |
-| [W3C: IntersectionObserver](#w3c-intersectionobserver) | 2 | 1 | 0 | 1 |
 | [CSS: css-backgrounds](#css-css-backgrounds) | 1 | 0 | 0 | 1 |
 | [CSS: css-contain](#css-css-contain) | 1 | 1 | 0 | 0 |
 | [CSS: css-content](#css-css-content) | 1 | 0 | 0 | 1 |
@@ -95,7 +95,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1658 | 1146 | 123 | 389 |
+| **All** | 1678 | 1157 | 123 | 398 |
 
 ## Web-platform-tests fixtures
 
@@ -115,7 +115,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | `custom-elements/form-associated` | 16 | 16 | 6 | `expectations/components.json` |
 | `custom-elements/parser` | 5 | 5 | 2 | `expectations/components.json` |
 | `custom-elements/reactions` | 54 | 54 | 10 | `expectations/components.json` |
-| `custom-elements/state` | 5 | 5 | 2 | `expectations/components.json` |
+| `custom-elements/state` | 5 | 5 | 1 | `expectations/components.json` |
 | `custom-elements/upgrading` | 5 | 5 | 0 |  |
 | `dom` | 4 | 4 | 0 |  |
 | `dom/abort` | 3 | 3 | 0 |  |
@@ -631,7 +631,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [htmlhyperlinkelementutils](https://html.spec.whatwg.org/#htmlhyperlinkelementutils) | `dom/html/anchor.ts` | `dom/html/elements.test.ts` |
 | [htmliframeelement](https://html.spec.whatwg.org/#htmliframeelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [htmlimageelement](https://html.spec.whatwg.org/#htmlimageelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
-| [htmlmediaelement](https://html.spec.whatwg.org/#htmlmediaelement) | `dom/html/media.ts` | `compat/html/elements.test.ts` |
+| [htmlmediaelement](https://html.spec.whatwg.org/#htmlmediaelement) | `dom/html/media.ts` | `dom/window/interface-shape.test.ts`, `compat/html/elements.test.ts` |
 | [htmlobjectelement](https://html.spec.whatwg.org/#htmlobjectelement) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
 | [htmloptionscollection](https://html.spec.whatwg.org/#htmloptionscollection) | `dom/html/forms/collections.ts` | `dom/html/forms/select-textarea.test.ts` |
 | [htmlorsvgelement](https://html.spec.whatwg.org/#htmlorsvgelement) | `dom/html/HTMLElement.ts` | `dom/html/global-attributes-focus.test.ts` |
@@ -1313,12 +1313,13 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: geometry
 
-<https://drafts.csswg.org/geometry/> — 60 sections implemented, 53 tested, 3 by WPT only, 4 untested.
+<https://drafts.csswg.org/geometry/> — 61 sections implemented, 54 tested, 3 by WPT only, 4 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [DOMMatrix](https://drafts.csswg.org/geometry/#DOMMatrix) | `dom/index.ts` | `dom/window/dommatrix.test.ts`, `dom/window/wpt-geometry.test.ts`; WPT: `css/geometry/DOMMatrix-001.html`, `css/geometry/DOMMatrix-002.html` +9 |
 | [DOMQuad](https://drafts.csswg.org/geometry/#DOMQuad) | `dom/window/quad.ts` | `dom/window/geometry.test.ts`, `dom/window/wpt-geometry.test.ts`; WPT: `css/geometry/DOMQuad-001.html`, `css/geometry/DOMQuad-002.html` |
+| [DOMRect](https://drafts.csswg.org/geometry/#DOMRect) | `dom/index.ts` | `dom/html/svg.test.ts`, `dom/window/wpt-geometry.test.ts`; WPT: `css/geometry/DOMRect-001.html`, `css/geometry/DOMRect-002.html` |
 | [create-a-dommatrix-from-the-dictionary](https://drafts.csswg.org/geometry/#create-a-dommatrix-from-the-dictionary) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
 | [dictdef-dommatrix2dinit](https://drafts.csswg.org/geometry/#dictdef-dommatrix2dinit) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
 | [dictdef-dommatrixinit](https://drafts.csswg.org/geometry/#dictdef-dommatrixinit) | `dom/window/geometry.ts` | `dom/window/wpt-geometry.test.ts` |
@@ -1389,19 +1390,19 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [abstract-opdef-converttoint](https://webidl.spec.whatwg.org/#abstract-opdef-converttoint) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
 | [default-tojson-steps](https://webidl.spec.whatwg.org/#default-tojson-steps) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
 | [dfn-array-index-property-name](https://webidl.spec.whatwg.org/#dfn-array-index-property-name) | `dom/collections/NamedNodeMap.ts` | **untested** |
-| [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts`, `dom/webidl-runtime.ts` | `dom/html/interfaces.wpt.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/geometry.test.ts` |
+| [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts`, `dom/webidl-runtime.ts`, `dom/window/interfaces.ts` | `dom/html/interfaces.wpt.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/geometry.test.ts`, `dom/window/interface-shape.test.ts` |
 | [dfn-create-operation-function](https://webidl.spec.whatwg.org/#dfn-create-operation-function) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dfn-overload-resolution-algorithm](https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm) | `dom/webidl-runtime.ts`, `dom/window/Storage.ts` | **untested** |
 | [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | `dom/collections/token-lists.test.ts`, `dom/window/geometry.test.ts` |
 | [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/events/convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
 | [es-attributes](https://webidl.spec.whatwg.org/#es-attributes) | `dom/nodes/DocumentType.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/nodes/node-accessors.test.ts`, `dom/window/webidl-enumeration.test.ts` |
-| [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts` | `dom/nodes/element-node-misc.test.ts` |
+| [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/html/svg.test.ts`, `dom/nodes/element-node-misc.test.ts`, `dom/window/interface-shape.test.ts` |
 | [es-dictionary](https://webidl.spec.whatwg.org/#es-dictionary) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts`, `user-event/event/native-dicts.test.ts` |
 | [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
-| [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
+| [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts`, `dom/html/svg-types.ts` | `dom/events/event-path.test.ts` |
 | [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/wpt-uievents.test.ts` |
 | [es-interfaces](https://webidl.spec.whatwg.org/#es-interfaces) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts`, `dom/window/isolation.test.ts`, `vitest-environment/environment.test.ts`, `compat/surface/profiles.test.ts` |
-| [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
+| [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NamedNodeMap.ts`, `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
 | [es-legacy-platform-objects](https://webidl.spec.whatwg.org/#es-legacy-platform-objects) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
 | [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts`, `dom/window/window-apis.test.ts` |
 | [es-namespaces](https://webidl.spec.whatwg.org/#es-namespaces) | `dom/css/CSS.ts` | `dom/css/view.test.ts`; WPT: `css/cssom/CSS-namespace-object-class-string.html` |
@@ -1409,7 +1410,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
 | [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/events/convert.ts`, `dom/window/Storage.ts`, `dom/window/geometry.ts` | `dom/events/event-path.test.ts`, `dom/window/geometry.test.ts` |
-| [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
+| [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts`, `dom/html/svg-types.ts` | `dom/events/event-path.test.ts` |
 | [js-DOMString](https://webidl.spec.whatwg.org/#js-DOMString) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [js-dictionary](https://webidl.spec.whatwg.org/#js-dictionary) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
 | [legacy-callback-interface-object](https://webidl.spec.whatwg.org/#legacy-callback-interface-object) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts` |
@@ -1577,6 +1578,38 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [typedef-compound-selector](https://drafts.csswg.org/selectors/#typedef-compound-selector) | `dom/selectors/parser.ts` | **untested** |
 | [user-pseudos](https://drafts.csswg.org/selectors/#user-pseudos) | `dom/html/forms/user-validity.ts` | `user-event/event/user-validity.test.ts` |
 | [useraction-pseudos](https://drafts.csswg.org/selectors/#useraction-pseudos) | `dom/selectors/state.ts` | `dom/css/cascade-matching-caches.test.ts`; WPT: `css/selectors/is-where-pseudo-classes.html` |
+
+## SVG 2
+
+<https://svgwg.org/svg2-draft/> — 25 sections implemented, 9 tested, 0 by WPT only, 16 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [AElement](https://svgwg.org/svg2-draft/#AElement) | `dom/selectors/state.ts` | **untested** |
+| [InterfaceSVGAnimatedPreserveAspectRatio](https://svgwg.org/svg2-draft/#InterfaceSVGAnimatedPreserveAspectRatio) | `dom/html/svg-types.ts` | **untested** |
+| [InterfaceSVGAnimatedRect](https://svgwg.org/svg2-draft/#InterfaceSVGAnimatedRect) | `dom/html/svg-types.ts` | `dom/html/svg.test.ts` |
+| [InterfaceSVGAnimatedString](https://svgwg.org/svg2-draft/#InterfaceSVGAnimatedString) | `dom/html/SVGElement.ts` | **untested** |
+| [InterfaceSVGElement](https://svgwg.org/svg2-draft/#InterfaceSVGElement) | `dom/html/SVGElement.ts` | **untested** |
+| [InterfaceSVGFitToViewBox](https://svgwg.org/svg2-draft/#InterfaceSVGFitToViewBox) | `dom/html/svg-types.ts` | `dom/html/svg.test.ts` |
+| [InterfaceSVGGraphicsElement](https://svgwg.org/svg2-draft/#InterfaceSVGGraphicsElement) | `dom/html/SVGElement.ts` | `dom/html/svg.test.ts` |
+| [InterfaceSVGNumber](https://svgwg.org/svg2-draft/#InterfaceSVGNumber) | `dom/html/svg-types.ts` | `dom/html/svg.test.ts` |
+| [InterfaceSVGPreserveAspectRatio](https://svgwg.org/svg2-draft/#InterfaceSVGPreserveAspectRatio) | `dom/html/svg-types.ts` | `dom/html/svg.test.ts` |
+| [InterfaceSVGSVGElement](https://svgwg.org/svg2-draft/#InterfaceSVGSVGElement) | `dom/html/SVGElement.ts` | `dom/html/svg.test.ts` |
+| [PreserveAspectRatioAttribute](https://svgwg.org/svg2-draft/#PreserveAspectRatioAttribute) | `dom/html/svg-types.ts` | **untested** |
+| [SpecifyingPaint](https://svgwg.org/svg2-draft/#SpecifyingPaint) | `dom/css/values.ts` | `dom/css/color-serialization.test.ts` |
+| [TermReserialize](https://svgwg.org/svg2-draft/#TermReserialize) | `dom/html/svg-types.ts` | `dom/html/svg.test.ts` |
+| [TextElement](https://svgwg.org/svg2-draft/#TextElement) | `dom/html/innerText.ts` | **untested** |
+| [ViewBoxAttribute](https://svgwg.org/svg2-draft/#ViewBoxAttribute) | `dom/html/svg-types.ts` | `dom/html/svg.test.ts` |
+| [__svg__SVGElement__className](https://svgwg.org/svg2-draft/#__svg__SVGElement__className) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGElement__ownerSVGElement](https://svgwg.org/svg2-draft/#__svg__SVGElement__ownerSVGElement) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGGeometryElement__getPointAtLength](https://svgwg.org/svg2-draft/#__svg__SVGGeometryElement__getPointAtLength) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGGraphicsElement__getBBox](https://svgwg.org/svg2-draft/#__svg__SVGGraphicsElement__getBBox) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGGraphicsElement__getCTM](https://svgwg.org/svg2-draft/#__svg__SVGGraphicsElement__getCTM) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGGraphicsElement__getScreenCTM](https://svgwg.org/svg2-draft/#__svg__SVGGraphicsElement__getScreenCTM) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGSVGElement__createSVGMatrix](https://svgwg.org/svg2-draft/#__svg__SVGSVGElement__createSVGMatrix) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGSVGElement__createSVGNumber](https://svgwg.org/svg2-draft/#__svg__SVGSVGElement__createSVGNumber) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGSVGElement__createSVGPoint](https://svgwg.org/svg2-draft/#__svg__SVGSVGElement__createSVGPoint) | `dom/html/SVGElement.ts` | **untested** |
+| [__svg__SVGSVGElement__createSVGRect](https://svgwg.org/svg2-draft/#__svg__SVGSVGElement__createSVGRect) | `dom/html/SVGElement.ts` | **untested** |
 
 ## W3C: selection-api
 
@@ -1790,22 +1823,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [the-cssmediarule-interface](https://drafts.csswg.org/css-conditional/#the-cssmediarule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [the-csssupportsrule-interface](https://drafts.csswg.org/css-conditional/#the-csssupportsrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 
-## SVG 2
-
-<https://svgwg.org/svg2-draft/> — 9 sections implemented, 1 tested, 0 by WPT only, 8 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [AElement](https://svgwg.org/svg2-draft/#AElement) | `dom/selectors/state.ts` | **untested** |
-| [InterfaceSVGAnimatedString](https://svgwg.org/svg2-draft/#InterfaceSVGAnimatedString) | `dom/html/SVGElement.ts` | **untested** |
-| [InterfaceSVGElement](https://svgwg.org/svg2-draft/#InterfaceSVGElement) | `dom/html/SVGElement.ts` | **untested** |
-| [InterfaceSVGGraphicsElement](https://svgwg.org/svg2-draft/#InterfaceSVGGraphicsElement) | `dom/html/SVGElement.ts` | **untested** |
-| [InterfaceSVGSVGElement](https://svgwg.org/svg2-draft/#InterfaceSVGSVGElement) | `dom/html/SVGElement.ts` | **untested** |
-| [SpecifyingPaint](https://svgwg.org/svg2-draft/#SpecifyingPaint) | `dom/css/values.ts` | `dom/css/color-serialization.test.ts` |
-| [TextElement](https://svgwg.org/svg2-draft/#TextElement) | `dom/html/innerText.ts` | **untested** |
-| [__svg__SVGElement__className](https://svgwg.org/svg2-draft/#__svg__SVGElement__className) | `dom/html/SVGElement.ts` | **untested** |
-| [__svg__SVGElement__ownerSVGElement](https://svgwg.org/svg2-draft/#__svg__SVGElement__ownerSVGElement) | `dom/html/SVGElement.ts` | **untested** |
-
 ## W3C: DOM-Parsing
 
 <https://w3c.github.io/DOM-Parsing/> — 9 sections implemented, 2 tested, 0 by WPT only, 7 untested.
@@ -1996,6 +2013,28 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [serializing-custom-props](https://drafts.csswg.org/css-variables/#serializing-custom-props) | `dom/css/values.ts` | `dom/css/computed-values.test.ts`; WPT: `css/cssom/serialize-variable-reference.html`, `css/cssom/variable-names.html` |
 | [substitute-a-var](https://drafts.csswg.org/css-variables/#substitute-a-var) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 
+## ECMAScript
+
+<https://tc39.es/ecma262/> — 4 sections implemented, 3 tested, 0 by WPT only, 1 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [array-index](https://tc39.es/ecma262/#array-index) | `dom/window/isolation.ts` | **untested** |
+| [sec-%arrayiteratorprototype%.next](https://tc39.es/ecma262/#sec-%25arrayiteratorprototype%25.next) | `dom/collections/iterator.ts` | `dom/collections/collections.test.ts` |
+| [sec-array.prototype.foreach](https://tc39.es/ecma262/#sec-array.prototype.foreach) | `dom/collections/iterator.ts` | `dom/collections/collections.test.ts` |
+| [sec-compiletocharset](https://tc39.es/ecma262/#sec-compiletocharset) | `testing-library/matches.ts` | `testing-library/unit/default-normalizer.test.ts` |
+
+## W3C: IntersectionObserver
+
+<https://w3c.github.io/IntersectionObserver/> — 4 sections implemented, 2 tested, 0 by WPT only, 2 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [dictdef-intersectionobserverentryinit](https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverentryinit) | `dom/window/observers.ts` | **untested** |
+| [intersection-observer-entry](https://w3c.github.io/IntersectionObserver/#intersection-observer-entry) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
+| [intersection-observer-interface](https://w3c.github.io/IntersectionObserver/#intersection-observer-interface) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
+| [parse-a-margin](https://w3c.github.io/IntersectionObserver/#parse-a-margin) | `dom/window/observers.ts` | **untested** |
+
 ## W3C: touch-events
 
 <https://w3c.github.io/touch-events/> — 4 sections implemented, 1 tested, 0 by WPT only, 3 untested.
@@ -2067,16 +2106,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [interface-transitionevent](https://drafts.csswg.org/css-transitions/#interface-transitionevent) | `dom/events/events.ts` | **untested** |
 | [the-cssstartingstylerule-interface](https://drafts.csswg.org/css-transitions/#the-cssstartingstylerule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 
-## ECMAScript
-
-<https://tc39.es/ecma262/> — 3 sections implemented, 2 tested, 0 by WPT only, 1 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [array-index](https://tc39.es/ecma262/#array-index) | `dom/window/isolation.ts` | **untested** |
-| [sec-%arrayiteratorprototype%.next](https://tc39.es/ecma262/#sec-%25arrayiteratorprototype%25.next) | `dom/collections/iterator.ts` | `dom/collections/collections.test.ts` |
-| [sec-compiletocharset](https://tc39.es/ecma262/#sec-compiletocharset) | `testing-library/matches.ts` | `testing-library/unit/default-normalizer.test.ts` |
-
 ## Compatibility Standard
 
 <https://compat.spec.whatwg.org/> — 2 sections implemented, 1 tested, 0 by WPT only, 1 untested.
@@ -2130,15 +2159,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | --- | --- | --- |
 | [scheme-start-state](https://url.spec.whatwg.org/#scheme-start-state) | `dom/window/Location.ts` | **untested** |
 | [scheme-state](https://url.spec.whatwg.org/#scheme-state) | `dom/window/Location.ts` | **untested** |
-
-## W3C: IntersectionObserver
-
-<https://w3c.github.io/IntersectionObserver/> — 2 sections implemented, 1 tested, 0 by WPT only, 1 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [intersection-observer-interface](https://w3c.github.io/IntersectionObserver/#intersection-observer-interface) | `dom/window/observers.ts` | `dom/window/window.test.ts` |
-| [parse-a-margin](https://w3c.github.io/IntersectionObserver/#parse-a-margin) | `dom/window/observers.ts` | **untested** |
 
 ## CSS: css-backgrounds
 

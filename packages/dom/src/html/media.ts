@@ -17,6 +17,7 @@ import { setAttribute } from "../nodes/attributes.ts";
 import { HTML_NS } from "../nodes/constants.ts";
 import { reportNotImplemented, stubbedMethod } from "../window/not-implemented.ts";
 import { $impl, $window } from "../keys.ts";
+import { defineConstants } from "../webidl-runtime.ts";
 
 /** What jsdom stubs (and reports, window/not-implemented.ts) on HTMLMediaElement; we implement them. */
 const NOT_IMPLEMENTED = {
@@ -78,7 +79,18 @@ export class MediaError {
   static readonly MEDIA_ERR_NETWORK = 2;
   static readonly MEDIA_ERR_DECODE = 3;
   static readonly MEDIA_ERR_SRC_NOT_SUPPORTED = 4;
+  // Also on the prototype (WebIDL constants): defineConstants below.
+  declare readonly MEDIA_ERR_ABORTED: number;
+  declare readonly MEDIA_ERR_NETWORK: number;
+  declare readonly MEDIA_ERR_DECODE: number;
+  declare readonly MEDIA_ERR_SRC_NOT_SUPPORTED: number;
 }
+defineConstants(MediaError, {
+  MEDIA_ERR_ABORTED: 1,
+  MEDIA_ERR_NETWORK: 2,
+  MEDIA_ERR_DECODE: 3,
+  MEDIA_ERR_SRC_NOT_SUPPORTED: 4,
+});
 
 export class HTMLMediaElement extends HTMLElement {
   static readonly NETWORK_EMPTY = 0;
@@ -90,6 +102,16 @@ export class HTMLMediaElement extends HTMLElement {
   static readonly HAVE_CURRENT_DATA = 2;
   static readonly HAVE_FUTURE_DATA = 3;
   static readonly HAVE_ENOUGH_DATA = 4;
+  // Also on the prototype (WebIDL constants): defineConstants below.
+  declare readonly NETWORK_EMPTY: number;
+  declare readonly NETWORK_IDLE: number;
+  declare readonly NETWORK_LOADING: number;
+  declare readonly NETWORK_NO_SOURCE: number;
+  declare readonly HAVE_NOTHING: number;
+  declare readonly HAVE_METADATA: number;
+  declare readonly HAVE_CURRENT_DATA: number;
+  declare readonly HAVE_FUTURE_DATA: number;
+  declare readonly HAVE_ENOUGH_DATA: number;
 
   get error(): MediaError | null {
     return null;
@@ -261,6 +283,17 @@ export class HTMLMediaElement extends HTMLElement {
     return "";
   }
 }
+defineConstants(HTMLMediaElement, {
+  NETWORK_EMPTY: 0,
+  NETWORK_IDLE: 1,
+  NETWORK_LOADING: 2,
+  NETWORK_NO_SOURCE: 3,
+  HAVE_NOTHING: 0,
+  HAVE_METADATA: 1,
+  HAVE_CURRENT_DATA: 2,
+  HAVE_FUTURE_DATA: 3,
+  HAVE_ENOUGH_DATA: 4,
+});
 url(HTMLMediaElement, "src");
 enumerated(HTMLMediaElement, "crossOrigin=crossorigin", CROSS_ORIGIN);
 enumerated(HTMLMediaElement, "preload", {
@@ -287,10 +320,9 @@ export class HTMLVideoElement extends HTMLMediaElement {
   requestPictureInPicture(): Promise<never> {
     return Promise.reject(new DOMException("Picture-in-Picture is not supported.", "NotSupportedError"));
   }
-  requestVideoFrameCallback(_cb: unknown): number {
-    return 0;
-  }
-  cancelVideoFrameCallback(_handle: number): void {}
+  // No requestVideoFrameCallback(): without playback frames it could never call back, and
+  // players that find it wait on it instead of falling back to requestAnimationFrame (as they do
+  // under jsdom, which lacks it).
 }
 ulong(HTMLVideoElement, "width height");
 url(HTMLVideoElement, "poster");

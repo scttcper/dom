@@ -5,7 +5,11 @@
 //
 // Enough for React/testing-library: correct interface per tag (instanceof checks), `className`
 // as SVGAnimatedString, `style`, `dataset`, `tabIndex`/`focus()`/`blur()`, `ownerSVGElement`,
-// and zero-valued geometry (`getBBox()`, `getCTM()`, `getTotalLength()`).
+// `viewBox`/`preserveAspectRatio` (svg-types.ts), and geometry without layout: `getBBox()` is an
+// empty DOMRect, `getCTM()`/`getScreenCTM()` the identity DOMMatrix, `getTotalLength()` 0. They
+// are real DOMRect/DOMMatrix/DOMPoint objects, because code that finds `createSVGPoint` or
+// `getScreenCTM` goes on to call `matrixTransform()` and `inverse()` on them (d3-selection's
+// pointer(), visx's localPoint).
 
 import { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
@@ -15,6 +19,8 @@ import { ELEMENT_NODE, SVG_NS, XLINK_NS } from "../nodes/constants.ts";
 import { contentAttr } from "./reflect.ts";
 import { installHTMLOrSVGElement } from "./HTMLElement.ts";
 import { $attr, $el, $impl, $style } from "../keys.ts";
+import { DOMMatrix, DOMPoint, DOMRect } from "../window/geometry.ts";
+import { SVGNumber, installFitToViewBox } from "./svg-types.ts";
 
 /** https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedString */
 export class SVGAnimatedString {
@@ -103,23 +109,18 @@ function installURIReference(C: { prototype: object }): void {
   });
 }
 
-function zeroRect(): { x: number; y: number; width: number; height: number } {
-  return { x: 0, y: 0, width: 0, height: 0 };
-}
-
-function identityMatrix(): object {
-  return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
-}
-
 export class SVGGraphicsElement extends SVGElement {
-  getBBox(): { x: number; y: number; width: number; height: number } {
-    return zeroRect();
+  /** https://svgwg.org/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox — no layout: an empty box. */
+  getBBox(): DOMRect {
+    return new DOMRect();
   }
-  getCTM(): object | null {
-    return identityMatrix();
+  /** https://svgwg.org/svg2-draft/types.html#__svg__SVGGraphicsElement__getCTM — no layout: the identity. */
+  getCTM(): DOMMatrix | null {
+    return new DOMMatrix();
   }
-  getScreenCTM(): object | null {
-    return identityMatrix();
+  /** https://svgwg.org/svg2-draft/types.html#__svg__SVGGraphicsElement__getScreenCTM */
+  getScreenCTM(): DOMMatrix | null {
+    return new DOMMatrix();
   }
 }
 
@@ -133,14 +134,16 @@ export class SVGGeometryElement extends SVGGraphicsElement {
   getTotalLength(): number {
     return 0;
   }
-  getPointAtLength(): { x: number; y: number } {
-    return { x: 0, y: 0 };
+  /** https://svgwg.org/svg2-draft/types.html#__svg__SVGGeometryElement__getPointAtLength */
+  getPointAtLength(): DOMPoint {
+    return new DOMPoint();
   }
 }
 
 export class SVGSVGElement extends SVGGraphicsElement {
-  createSVGNumber(): { value: number } {
-    return { value: 0 };
+  /** https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGNumber */
+  createSVGNumber(): SVGNumber {
+    return new SVGNumber();
   }
   createSVGLength(): object {
     return { unitType: 0, value: 0, valueInSpecifiedUnits: 0, valueAsString: "0" };
@@ -148,17 +151,21 @@ export class SVGSVGElement extends SVGGraphicsElement {
   createSVGAngle(): object {
     return { unitType: 0, value: 0, valueInSpecifiedUnits: 0, valueAsString: "0" };
   }
-  createSVGPoint(): { x: number; y: number } {
-    return { x: 0, y: 0 };
+  /** https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGPoint */
+  createSVGPoint(): DOMPoint {
+    return new DOMPoint();
   }
-  createSVGMatrix(): object {
-    return identityMatrix();
+  /** https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGMatrix */
+  createSVGMatrix(): DOMMatrix {
+    return new DOMMatrix();
   }
-  createSVGRect(): object {
-    return zeroRect();
+  /** https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGRect */
+  createSVGRect(): DOMRect {
+    return new DOMRect();
   }
+  // SVGLength, SVGAngle and SVGTransform are not implemented: plain records, with a real matrix.
   createSVGTransform(): object {
-    return { type: 0, matrix: identityMatrix(), angle: 0 };
+    return { type: 0, matrix: new DOMMatrix(), angle: 0 };
   }
   getIntersectionList(): unknown[] {
     return [];
@@ -196,6 +203,8 @@ export class SVGSVGElement extends SVGGraphicsElement {
   }
 }
 
+installFitToViewBox(SVGSVGElement);
+
 function nextEl(n: NodeImpl, root: NodeImpl): NodeImpl | null {
   if (n.first !== null) return n.first;
   for (let c: NodeImpl | null = n; c !== null && c !== root; c = c.parent) if (c.next !== null) return c.next;
@@ -208,6 +217,7 @@ export class SVGDescElement extends SVGElement {}
 export class SVGMetadataElement extends SVGElement {}
 export class SVGTitleElement extends SVGElement {}
 export class SVGSymbolElement extends SVGGraphicsElement {}
+installFitToViewBox(SVGSymbolElement);
 export class SVGUseElement extends SVGGraphicsElement {}
 installURIReference(SVGUseElement);
 export class SVGSwitchElement extends SVGGraphicsElement {}
@@ -240,9 +250,11 @@ export class SVGTSpanElement extends SVGTextPositioningElement {}
 export class SVGTextPathElement extends SVGTextContentElement {}
 installURIReference(SVGTextPathElement);
 export class SVGMarkerElement extends SVGElement {}
+installFitToViewBox(SVGMarkerElement);
 export class SVGClipPathElement extends SVGElement {}
 export class SVGMaskElement extends SVGElement {}
 export class SVGPatternElement extends SVGElement {}
+installFitToViewBox(SVGPatternElement);
 installURIReference(SVGPatternElement);
 export class SVGGradientElement extends SVGElement {}
 installURIReference(SVGGradientElement);
@@ -253,6 +265,7 @@ export class SVGStyleElement extends SVGElement {}
 export class SVGScriptElement extends SVGElement {}
 installURIReference(SVGScriptElement);
 export class SVGViewElement extends SVGElement {}
+installFitToViewBox(SVGViewElement);
 export class SVGFilterElement extends SVGElement {}
 
 /** SVG local name → interface. Unknown SVG names are SVGElement. */

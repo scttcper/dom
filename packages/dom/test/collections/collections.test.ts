@@ -40,14 +40,16 @@ describe("NodeList — https://dom.spec.whatwg.org/#interface-nodelist", () => {
     expect(list[0]).toBeUndefined();
   });
 
-  test("iteration: forEach/keys/entries are Array.prototype's (WebIDL indexed iterable), values and @@iterator one fast iterator, and it sees live changes", () => {
+  test("iteration: keys/entries are Array.prototype's (WebIDL indexed iterable), forEach, values and @@iterator our fast versions, and it sees live changes", () => {
     const div = document.createElement("div");
     div.append("a", "b");
     // Intentional difference (docs/deviations.md): values/@@iterator are not %Array.prototype.values%.
     expect(NodeList.prototype[Symbol.iterator]).toBe(NodeList.prototype.values);
     expect(NodeList.prototype.values).not.toBe(Array.prototype.values);
     expect(NodeList.prototype.values.name).toBe("values");
-    expect(NodeList.prototype.forEach).toBe(Array.prototype.forEach);
+    // Intentional difference (docs/deviations.md): forEach is not %Array.prototype.forEach% either.
+    expect(NodeList.prototype.forEach).not.toBe(Array.prototype.forEach);
+    expect(NodeList.prototype.forEach.name).toBe("forEach");
     expect(NodeList.prototype.keys).toBe(Array.prototype.keys);
     expect(Array.from(div.childNodes).length).toBe(2);
     expect([...div.childNodes.keys()]).toEqual([0, 1]);
@@ -58,6 +60,42 @@ describe("NodeList — https://dom.spec.whatwg.org/#interface-nodelist", () => {
     }
     expect(seen).toEqual(["a", "b", "c"]);
     expect(Object.prototype.toString.call(div.childNodes)).toBe("[object NodeList]");
+  });
+
+  test("forEach follows Array.prototype.forEach: length read once, `k in O` per step, callback(value, k, list) with thisArg (https://tc39.es/ecma262/#sec-array.prototype.foreach)", () => {
+    const div = document.createElement("div");
+    div.append("a", "b", "c");
+    const thisArg = {};
+    const calls: unknown[][] = [];
+    div.childNodes.forEach(function (this: unknown, n, k, list) {
+      calls.push([n.textContent, k, list === div.childNodes, this === thisArg]);
+      // A live list shrinks under the walk: the length was read once, `k in O` skips the gap.
+      if (k === 0) div.removeChild(div.lastChild!);
+    }, thisArg);
+    expect(calls).toEqual([
+      ["a", 0, true, true],
+      ["b", 1, true, true],
+    ]);
+    // On any array-like, like the builtin; errors are V8's own.
+    const seen: unknown[] = [];
+    NodeList.prototype.forEach.call({ length: 3, 0: "x", 2: "z" }, (v: unknown) => seen.push(v));
+    expect(seen).toEqual(["x", "z"]);
+    for (const bad of [undefined, {}, "f"]) {
+      expect(() => div.childNodes.forEach(bad as never)).toThrow(
+        (() => {
+          try {
+            Array.prototype.forEach.call([], bad as never);
+          } catch (e) {
+            return (e as Error).message;
+          }
+          return "";
+        })(),
+      );
+    }
+    expect(() => NodeList.prototype.forEach.call(null, () => {})).toThrow(
+      "Array.prototype.forEach called on null or undefined",
+    );
+    expect(document.body!.classList.forEach).toBe(NodeList.prototype.forEach);
   });
 
   test("values() follows %ArrayIteratorPrototype%.next: index and length read each step, done stays done (https://tc39.es/ecma262/#sec-%arrayiteratorprototype%.next)", () => {
@@ -311,6 +349,32 @@ describe("NamedNodeMap and Attr nodes — https://dom.spec.whatwg.org/#interface
     expect(attrs.item(0)?.name).toBe("data-x");
     expect(el.attributes).toBe(attrs);
     expect(Object.prototype.toString.call(attrs)).toBe("[object NamedNodeMap]");
+  });
+
+  test("[Symbol.iterator] has %Array.prototype.values% semantics over the live attribute list (https://webidl.spec.whatwg.org/#es-iterable)", () => {
+    const el = document.createElement("div");
+    el.setAttribute("id", "a");
+    el.setAttribute("class", "b");
+    el.setAttribute("data-x", "1");
+    const attrs = el.attributes;
+    // Intentional difference (docs/deviations.md): not %Array.prototype.values% itself.
+    expect(attrs[Symbol.iterator]).not.toBe(Array.prototype.values);
+    expect(Array.from(attrs, (a) => a.name)).toEqual(["id", "class", "data-x"]);
+    const it = attrs[Symbol.iterator]();
+    expect(Object.prototype.toString.call(it)).toBe("[object Array Iterator]");
+    expect(it.next().value?.name).toBe("id");
+    el.removeAttribute("class"); // read against the current list
+    expect(it.next().value?.name).toBe("data-x");
+    expect(it.next()).toEqual({ value: undefined, done: true });
+    el.setAttribute("z", "1"); // done stays done
+    expect(it.next().done).toBe(true);
+    expect(
+      attrs[Symbol.iterator]()
+        .map((a) => a.name)
+        .toArray(),
+    ).toEqual(["id", "data-x", "z"]);
+    // Like the builtin, it works on any array-like.
+    expect(Array.from(attrs[Symbol.iterator].call({ length: 2, 0: "p", 1: "q" } as never))).toEqual(["p", "q"]);
   });
 
   test("named properties keep case on non-HTML elements", () => {

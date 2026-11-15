@@ -51,6 +51,20 @@ export function defineInterfaceShape(
   }
 }
 
+/**
+ * Define WebIDL constants on the interface object and its prototype
+ * (https://webidl.spec.whatwg.org/#es-constants): `{ writable: false, enumerable: true,
+ * configurable: false }` on both. Class `static readonly` fields are writable and configurable, and
+ * class syntax puts nothing on the prototype, so `video.HAVE_ENOUGH_DATA` would be undefined.
+ */
+export function defineConstants(ctor: Ctor, constants: Readonly<Record<string, number>>): void {
+  for (const name of Object.keys(constants)) {
+    const d = { value: constants[name], writable: false, enumerable: true, configurable: false };
+    Object.defineProperty(ctor, name, d);
+    Object.defineProperty(ctor.prototype, name, d);
+  }
+}
+
 function setLength(fn: Function, length: number): void {
   if (fn.length !== length) Object.defineProperty(fn, "length", { value: length, configurable: true });
 }
@@ -62,9 +76,22 @@ function setLength(fn: Function, length: number): void {
  */
 export function hideInternals(obj: object): void {
   for (const key of Reflect.ownKeys(obj)) {
-    if (typeof key === "symbol" || key.charCodeAt(0) === 95 /* _ */)
+    // Skip keys already hidden: redefining a property is the expensive part.
+    if ((typeof key === "symbol" || key.charCodeAt(0) === 95) /* _ */ && propertyIsEnumerable.call(obj, key))
       Object.defineProperty(obj, key, { enumerable: false });
   }
+}
+
+const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+/**
+ * Create an internal own field already hidden: what `hideInternals` would leave (writable,
+ * configurable, not enumerable), without reconfiguring the property afterwards, which costs
+ * several times more. Use with `declare`d class fields (a plain field declaration would create an
+ * enumerable `undefined` property first).
+ */
+export function defineHidden(obj: object, key: symbol | string, value: unknown): void {
+  Object.defineProperty(obj, key, { value, writable: true, configurable: true, enumerable: false });
 }
 
 /**

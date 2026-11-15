@@ -41,7 +41,8 @@ export { FileReader } from "./window/FileReader.ts";
 export { FileList } from "./window/FileList.ts";
 export { MediaQueryListEvent } from "./window/events.ts";
 export { DOMParser, XMLSerializer } from "./window/fallbacks.ts";
-export { ResizeObserver, IntersectionObserver } from "./window/observers.ts";
+export { ResizeObserver, IntersectionObserver, IntersectionObserverEntry } from "./window/observers.ts";
+export { ResizeObserverEntry, ResizeObserverSize } from "./css/resize-observer.ts";
 export {
   DOMPointReadOnly,
   DOMPoint,
@@ -55,6 +56,8 @@ export {
 // https://drafts.csswg.org/geometry/#DOMMatrix — [LegacyWindowAlias=WebKitCSSMatrix]: the window
 // property is the DOMMatrix interface object itself (window/compat.ts limits it to `modern`).
 export { DOMMatrix as WebKitCSSMatrix } from "./window/geometry.ts";
+// https://drafts.csswg.org/geometry/#DOMRect — [LegacyWindowAlias=SVGRect]; jsdom has SVGRect too.
+export { DOMRect as SVGRect } from "./window/geometry.ts";
 export { DOMQuad, type DOMQuadInit } from "./window/quad.ts";
 
 // --- events area ---

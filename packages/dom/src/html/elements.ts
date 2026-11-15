@@ -44,6 +44,7 @@ import { formOwner } from "./forms/form-associated.ts";
 import { currentDocument } from "../window/current.ts";
 import type { HTMLCollection } from "../collections/HTMLCollection.ts";
 import { $customValidity, $impl, $validity } from "../keys.ts";
+import { defineConstants } from "../webidl-runtime.ts";
 import { queueElementTask } from "./events.ts";
 
 /** Lazily created, per-element [SameObject] value stored under a non-enumerable symbol. */
@@ -344,6 +345,11 @@ export class HTMLTrackElement extends HTMLElement {
   static readonly LOADING = 1;
   static readonly LOADED = 2;
   static readonly ERROR = 3;
+  // Also on the prototype (WebIDL constants): defineConstants below.
+  declare readonly NONE: number;
+  declare readonly LOADING: number;
+  declare readonly LOADED: number;
+  declare readonly ERROR: number;
   get readyState(): number {
     return 0;
   }
@@ -351,6 +357,7 @@ export class HTMLTrackElement extends HTMLElement {
     return null;
   }
 }
+defineConstants(HTMLTrackElement, { NONE: 0, LOADING: 1, LOADED: 2, ERROR: 3 });
 enumerated(HTMLTrackElement, "kind", {
   keywords: ["subtitles", "captions", "descriptions", "chapters", "metadata"],
   missing: "subtitles",
@@ -386,12 +393,9 @@ export class HTMLCanvasElement extends HTMLElement {
   toBlob(callback: (blob: null) => void): void {
     queueElementTask(this, () => callback(null));
   }
-  transferControlToOffscreen(): never {
-    throw new DOMException("OffscreenCanvas is not supported.", "NotSupportedError");
-  }
-  captureStream(): never {
-    throw new DOMException("captureStream is not supported.", "NotSupportedError");
-  }
+  // No transferControlToOffscreen() / captureStream(): a stub that throws NotSupportedError
+  // passes `"captureStream" in canvas` and then fails, where code written for jsdom (which has
+  // neither) takes its fallback.
 }
 ulong(HTMLCanvasElement, "width", 300);
 ulong(HTMLCanvasElement, "height", 150);

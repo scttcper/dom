@@ -228,64 +228,113 @@ function otherReceiver(self: unknown, operation: string): Window {
   return window;
 }
 
+/** Window's internal fields, in declaration order (see the constructor). */
+const WINDOW_FIELDS: readonly symbol[] = [
+  $options,
+  $url,
+  $location,
+  $history,
+  $navigator,
+  $screen,
+  $visualViewport,
+  $localStorage,
+  $sessionStorage,
+  $shed,
+  $customElements,
+  $cookieJar,
+  $mediaQueryLists,
+  $tasks,
+  $timers,
+  $frameCallbacks,
+  $runningFrame,
+  $frameTask,
+  $frameTime,
+  $frameId,
+  $idleCallbacks,
+  $idleId,
+  $innerWidth,
+  $innerHeight,
+  $devicePixelRatio,
+  $scrollX,
+  $scrollY,
+  $closed,
+  $host,
+  $parentWindow,
+  $frameElement,
+  $globalObject,
+  $childWindows,
+];
+
 export class Window extends EventTarget {
   document: Document;
   name: string;
   status: string;
   opener: Window | null;
   /** @internal */
-  [$options]: ResolvedWindowOptions;
+  declare [$options]: ResolvedWindowOptions;
   /** @internal The document's URL (https://dom.spec.whatwg.org/#concept-document-url) as a parsed URL. */
-  [$url]: URL;
-  [$location]: Location | null;
-  [$history]: History | null;
-  [$navigator]: Navigator | null;
-  [$screen]: Screen | null;
-  [$visualViewport]: VisualViewport | null;
+  declare [$url]: URL;
+  declare [$location]: Location | null;
+  declare [$history]: History | null;
+  declare [$navigator]: Navigator | null;
+  declare [$screen]: Screen | null;
+  declare [$visualViewport]: VisualViewport | null;
   /** Present only for windows created with `visualViewport: true` (an own accessor). */
   declare readonly visualViewport?: VisualViewport;
-  [$localStorage]: Storage | null;
-  [$sessionStorage]: Storage | null;
-  [$shed]: StorageShed | null;
-  [$customElements]: unknown;
-  [$cookieJar]: CookieJar | null;
+  declare [$localStorage]: Storage | null;
+  declare [$sessionStorage]: Storage | null;
+  declare [$shed]: StorageShed | null;
+  declare [$customElements]: unknown;
+  declare [$cookieJar]: CookieJar | null;
   /** MediaQueryLists with change listeners (https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes). */
-  [$mediaQueryLists]: Set<MediaQueryList>;
-  [$tasks]: Set<PendingTask> | null;
+  declare [$mediaQueryLists]: Set<MediaQueryList>;
+  declare [$tasks]: Set<PendingTask> | null;
   /** Host timers created through setTimeout/setInterval of this window or its installed global (window/timers.ts). */
-  [$timers]: TimerList | null;
+  declare [$timers]: TimerList | null;
   /** https://html.spec.whatwg.org/#list-of-animation-frame-callbacks */
-  [$frameCallbacks]: Map<number, FrameRequestCallback> | null;
-  [$runningFrame]: Map<number, FrameRequestCallback> | null;
-  [$frameTask]: PendingTask | null;
+  declare [$frameCallbacks]: Map<number, FrameRequestCallback> | null;
+  declare [$runningFrame]: Map<number, FrameRequestCallback> | null;
+  declare [$frameTask]: PendingTask | null;
   /** performance.now() of the last frame (-1 before the first). */
-  [$frameTime]: number;
-  [$frameId]: number;
-  [$idleCallbacks]: Map<number, PendingTask> | null;
-  [$idleId]: number;
-  [$innerWidth]: number;
-  [$innerHeight]: number;
-  [$devicePixelRatio]: number;
-  [$scrollX]: number;
-  [$scrollY]: number;
-  [$closed]: boolean;
+  declare [$frameTime]: number;
+  declare [$frameId]: number;
+  declare [$idleCallbacks]: Map<number, PendingTask> | null;
+  declare [$idleId]: number;
+  declare [$innerWidth]: number;
+  declare [$innerHeight]: number;
+  declare [$devicePixelRatio]: number;
+  declare [$scrollX]: number;
+  declare [$scrollY]: number;
+  declare [$closed]: boolean;
   /**
    * @internal The global whose timers/performance the window uses: the Node global by default,
    * the global it is installed on otherwise (a Jest vm context), so fake timers installed on
    * that global control animation frames and window tasks.
    */
-  [$host]: typeof globalThis;
+  declare [$host]: typeof globalThis;
   /** @internal Parent window of a nested browsing context (iframe), else null. */
-  [$parentWindow]: Window | null;
+  declare [$parentWindow]: Window | null;
   /** @internal The <iframe> hosting this window, else null. */
-  [$frameElement]: Element | null;
+  declare [$frameElement]: Element | null;
   /** @internal The host global this window is installed on (installGlobals), else null: what WindowProxy references to it return. */
-  [$globalObject]: Window | null;
+  declare [$globalObject]: Window | null;
   /** @internal Nested windows of connected iframes in this window's document (created lazily). */
-  [$childWindows]: Set<Window> | null;
+  declare [$childWindows]: Set<Window> | null;
 
   constructor(options: WindowOptions = {}, nested?: NestedBrowsingContext) {
     super();
+    // The internal fields are `declare`d and created here, non-enumerable from the start, in
+    // declaration order (where class syntax used to create them as enumerable `undefined`): far
+    // cheaper than reconfiguring each one in hideInternals below, which now only catches keys
+    // added later during construction.
+    for (let i = 0; i < WINDOW_FIELDS.length; i++) {
+      Object.defineProperty(this, WINDOW_FIELDS[i], {
+        value: undefined,
+        writable: true,
+        configurable: true,
+        enumerable: false,
+      });
+    }
     if (!prototypeReady) preparePrototype();
     const url = new URL(options.url ?? "http://localhost/");
     const doc = Document._createHTML(this, url.href);
