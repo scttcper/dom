@@ -110,6 +110,83 @@ const COMPUTED_INITIAL: Record<string, string> = {
   "text-transform": "none",
 };
 
+/**
+ * Legacy name aliases (https://compat.spec.whatwg.org/#css-simple-aliases, plus
+ * `-webkit-appearance` and `-webkit-user-select` from css-ui-4 and `-webkit-text-size-adjust`
+ * from css-size-adjust): at parse time the alias is the standard property, so a declaration set
+ * through one is stored, serialized (cssText) and read back under the standard name
+ * (https://drafts.csswg.org/css-cascade-5/#legacy-name-alias). jsdom ≤30 kept them separate;
+ * jsdom 31 and browsers alias them. `-webkit-line-clamp` is not one: css-overflow-4 defines it as
+ * a legacy shorthand of its own.
+ */
+const LEGACY_ALIASES = new Map<string, string>([
+  ["-webkit-align-content", "align-content"],
+  ["-webkit-align-items", "align-items"],
+  ["-webkit-align-self", "align-self"],
+  ["-webkit-animation", "animation"],
+  ["-webkit-animation-delay", "animation-delay"],
+  ["-webkit-animation-direction", "animation-direction"],
+  ["-webkit-animation-duration", "animation-duration"],
+  ["-webkit-animation-fill-mode", "animation-fill-mode"],
+  ["-webkit-animation-iteration-count", "animation-iteration-count"],
+  ["-webkit-animation-name", "animation-name"],
+  ["-webkit-animation-play-state", "animation-play-state"],
+  ["-webkit-animation-timing-function", "animation-timing-function"],
+  ["-webkit-appearance", "appearance"],
+  ["-webkit-backface-visibility", "backface-visibility"],
+  ["-webkit-background-clip", "background-clip"],
+  ["-webkit-background-origin", "background-origin"],
+  ["-webkit-background-size", "background-size"],
+  ["-webkit-border-bottom-left-radius", "border-bottom-left-radius"],
+  ["-webkit-border-bottom-right-radius", "border-bottom-right-radius"],
+  ["-webkit-border-radius", "border-radius"],
+  ["-webkit-border-top-left-radius", "border-top-left-radius"],
+  ["-webkit-border-top-right-radius", "border-top-right-radius"],
+  ["-webkit-box-shadow", "box-shadow"],
+  ["-webkit-box-sizing", "box-sizing"],
+  ["-webkit-filter", "filter"],
+  ["-webkit-flex", "flex"],
+  ["-webkit-flex-basis", "flex-basis"],
+  ["-webkit-flex-direction", "flex-direction"],
+  ["-webkit-flex-flow", "flex-flow"],
+  ["-webkit-flex-grow", "flex-grow"],
+  ["-webkit-flex-shrink", "flex-shrink"],
+  ["-webkit-flex-wrap", "flex-wrap"],
+  ["-webkit-justify-content", "justify-content"],
+  ["-webkit-mask", "mask"],
+  ["-webkit-mask-box-image", "mask-border"],
+  ["-webkit-mask-box-image-outset", "mask-border-outset"],
+  ["-webkit-mask-box-image-repeat", "mask-border-repeat"],
+  ["-webkit-mask-box-image-slice", "mask-border-slice"],
+  ["-webkit-mask-box-image-source", "mask-border-source"],
+  ["-webkit-mask-box-image-width", "mask-border-width"],
+  ["-webkit-mask-clip", "mask-clip"],
+  ["-webkit-mask-composite", "mask-composite"],
+  ["-webkit-mask-image", "mask-image"],
+  ["-webkit-mask-origin", "mask-origin"],
+  ["-webkit-mask-position", "mask-position"],
+  ["-webkit-mask-repeat", "mask-repeat"],
+  ["-webkit-mask-size", "mask-size"],
+  ["-webkit-order", "order"],
+  ["-webkit-perspective", "perspective"],
+  ["-webkit-perspective-origin", "perspective-origin"],
+  ["-webkit-text-size-adjust", "text-size-adjust"],
+  ["-webkit-transform", "transform"],
+  ["-webkit-transform-origin", "transform-origin"],
+  ["-webkit-transform-style", "transform-style"],
+  ["-webkit-transition", "transition"],
+  ["-webkit-transition-delay", "transition-delay"],
+  ["-webkit-transition-duration", "transition-duration"],
+  ["-webkit-transition-property", "transition-property"],
+  ["-webkit-transition-timing-function", "transition-timing-function"],
+  ["-webkit-user-select", "user-select"],
+]);
+
+/** The property a lowercase name stands for: the aliased property for a legacy name alias, else the name. */
+export function canonicalPropertyName(lower: string): string {
+  return lower.charCodeAt(0) === 0x2d ? (LEGACY_ALIASES.get(lower) ?? lower) : lower;
+}
+
 // Built on first use (startup: ~0.2 ms of module evaluation otherwise).
 let info: Map<string, PropInfo> = null as never;
 let allNames: string[] = null as never;

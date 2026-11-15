@@ -123,6 +123,38 @@ function ctrlDomResults(fx: Fixture) {
   };
 }
 
+/**
+ * Where jsdom 31's computed styles differ from the spec rendering rules @ctrl/dom follows, the
+ * upstream stack answers differently on it. Each entry: fixture, element, field, jsdom's answer,
+ * ours, and why. The test asserts both, so a jsdom fix (or a change of ours) shows up here.
+ */
+const JSDOM_DIFFERENCES: { fixture: string; el: string; field: string; jsdom: unknown; ours: unknown; why: string }[] =
+  [];
+
+const SVG_TITLE =
+  "SVG's UA stylesheet makes title and desc display: none !important (https://svgwg.org/svg2-draft/styling.html#UAStyleSheet); jsdom 31 renders it";
+const INLINE_BLOCK_CONTROLS =
+  "textarea, meter and progress render as inline-block boxes (https://html.spec.whatwg.org/#the-textarea-element-2, #the-meter-element-2, #the-progress-element-2), so accname separates them with spaces; jsdom 31 leaves them inline";
+
+for (const [fixture, el] of [
+  ["form controls with labels", "#73 <title>"],
+  ["name from content and child separators", "#65 <title>"],
+  ["name from content and child separators", "#66 <desc>"],
+]) {
+  for (const field of ["tlInaccessible", "daaInaccessible", "daaSubtreeInaccessible"])
+    JSDOM_DIFFERENCES.push({ fixture, el, field, jsdom: false, ours: true, why: SVG_TITLE });
+}
+for (const field of ["name05", "name06", "nameHidden"]) {
+  JSDOM_DIFFERENCES.push({
+    fixture: "inline-block form controls as name-from-content children (separators)",
+    el: '#7 <input type="checkbox" id="s1">',
+    field,
+    jsdom: "a b cdemfg",
+    ours: "a b c d e m f g",
+    why: INLINE_BLOCK_CONTROLS,
+  });
+}
+
 describe("differential: roles, names, descriptions, states, hidden — https://w3c.github.io/accname/ + https://www.w3.org/TR/html-aam-1.0/", () => {
   for (const fx of [...fixtures, ...comboFixtures]) {
     test(`fixture "${fx.name}" matches the upstream stack on jsdom`, () => {
@@ -131,7 +163,15 @@ describe("differential: roles, names, descriptions, states, hidden — https://w
       // Both parsers must build the same tree for the comparison to be meaningful.
       expect(actual.structure).toEqual(expected.structure);
       for (let i = 0; i < expected.perElement.length; i++) {
-        expect(actual.perElement[i]).toEqual(expected.perElement[i]);
+        const want = { ...(expected.perElement[i] as Record<string, unknown>) };
+        const got = actual.perElement[i] as Record<string, unknown>;
+        for (const d of JSDOM_DIFFERENCES) {
+          if (d.fixture !== fx.name || d.el !== want.el) continue;
+          expect([d.field, want[d.field]], d.why).toEqual([d.field, d.jsdom]);
+          expect([d.field, got[d.field]], d.why).toEqual([d.field, d.ours]);
+          want[d.field] = d.ours;
+        }
+        expect(got).toEqual(want);
       }
       expect(actual.roles).toEqual(expected.roles);
       expect(actual.rolesHidden).toEqual(expected.rolesHidden);

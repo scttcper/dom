@@ -35,7 +35,7 @@ import { DEVIATIONS, renderDeviations } from "../../../../scripts/compat-doc.ts"
 
 type AnyRecord = Record<string, any>;
 const require = createRequire(import.meta.url);
-const ORACLES: Record<Exclude<CompatProfile, "modern">, string> = { "jsdom-26": "jsdom-26", "jsdom-30": "jsdom" };
+const ORACLES: Record<Exclude<CompatProfile, "modern">, string> = { "jsdom-26": "jsdom-26", "jsdom-30": "jsdom-30" };
 
 /** JavaScript builtins every realm has: never part of the comparison. */
 const BUILTINS = new Set<string>(runInNewContext("Object.getOwnPropertyNames(globalThis)"));

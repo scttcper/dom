@@ -17,7 +17,7 @@ import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nodeCache, type NodeCache } from "../nodes/cache.ts";
-import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_STYLE_ATTR, F_SHADOW_ROOT, HTML_NS } from "../nodes/constants.ts";
+import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_STYLE_ATTR, F_SHADOW_ROOT, HTML_NS, SVG_NS } from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
@@ -56,7 +56,7 @@ import {
 import { DeclBlock, parseDeclBlock } from "./declarations.ts";
 import { evaluateMediaQueryList, type MediaEnvironment, DEFAULT_MEDIA_ENV } from "./media.ts";
 import { mediaEnvironment } from "../window/media.ts";
-import { isCustomPropertyName, propertyInfo } from "./properties.ts";
+import { canonicalPropertyName, isCustomPropertyName, propertyInfo } from "./properties.ts";
 import {
   cascadeLonghandsOf,
   expandCascadeShorthand,
@@ -538,7 +538,10 @@ function sameEnvironment(a: MediaEnvironment, b: MediaEnvironment): boolean {
  * `!important` (see uaDisplayImportant).
  */
 export function uaDisplay(el: NodeImpl): string {
-  if (el.ns !== HTML_NS) return el.parent !== null && el.parent.type === DOCUMENT_NODE ? "block" : "inline";
+  if (el.ns !== HTML_NS) {
+    if (el.ns === SVG_NS && svgNeverRendered(el)) return "none";
+    return el.parent !== null && el.parent.type === DOCUMENT_NODE ? "block" : "inline";
+  }
   if (el.attrs !== null) {
     if (el.tag !== T.embed) {
       const hidden = attr(el, "hidden");
@@ -568,6 +571,9 @@ export function uaDisplay(el: NodeImpl): string {
     case T.style:
     case T.template:
     case T.title:
+    // `@media (scripting) { noscript { display: none !important } }`: scripting is enabled here
+    // (the `scripting` media feature; scripts are the test's, not the page's), as in jsdom 31.
+    case T.noscript:
       return "none";
     case T.dialog:
       // dialog:not([open]) { display: none } / dialog:popover-open { display: block } — https://html.spec.whatwg.org/#flow-content-3
@@ -658,8 +664,23 @@ export function uaDisplay(el: NodeImpl): string {
   return "inline";
 }
 
-/** `input[type=hidden i] { display: none !important }` */
+// https://svgwg.org/svg2-draft/styling.html#UAStyleSheet: `defs, clipPath, mask, marker, desc,
+// title, metadata, pattern, linearGradient, radialGradient, script, style, symbol { display: none
+// !important }` (`:host(use) > symbol` aside: use elements' shadow trees are not built here).
+// oxfmt-ignore
+const SVG_NEVER_RENDERED = new Set([
+  "defs", "clipPath", "mask", "marker", "desc", "title", "metadata", "pattern", "linearGradient",
+  "radialGradient", "script", "style", "symbol",
+]);
+
+function svgNeverRendered(el: NodeImpl): boolean {
+  return SVG_NEVER_RENDERED.has(el.name);
+}
+
+/** `input[type=hidden i] { display: none !important }`, `noscript` and SVG's never-rendered elements (above). */
 function uaDisplayImportant(el: NodeImpl): boolean {
+  if (el.ns === SVG_NS) return svgNeverRendered(el);
+  if (el.tag === T.noscript && el.ns === HTML_NS) return true;
   if (el.tag !== T.input || el.ns !== HTML_NS) return false;
   const t = attr(el, "type");
   return t !== null && asciiLowercase(t) === "hidden";
@@ -1863,7 +1884,7 @@ function pseudoKind(pseudo: string | null | undefined): number {
 export function computedValue(el: NodeImpl, property: string, pseudo?: string | null): string {
   const kind = pseudoKind(pseudo);
   if (kind === -1) return "";
-  const prop = isCustomPropertyName(property) ? property : property.toLowerCase();
+  const prop = isCustomPropertyName(property) ? property : canonicalPropertyName(property.toLowerCase());
   if (kind === PSEUDO_NONE) {
     // Hot keywords (Testing Library's visibility checks) skip record allocation when possible.
     if (prop === "display") return computedDisplay(el);

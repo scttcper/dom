@@ -536,7 +536,9 @@ function normalizeCanonical(name: string, comps: Comp[]): string | null {
         if (deg === null) return null;
         h = deg;
       } else return null;
+      // Normalized to [0, 360) after rounding too: 359.99999 serializes as 0, not 360.
       text = roundSig(((h % 360) + 360) % 360, 6);
+      if (text === "360") text = "0";
     } else {
       let v: number;
       if (c.type === TK_NUMBER) v = c.num;
@@ -587,41 +589,57 @@ function colorComponent(c: Comp): string | null {
 }
 
 /**
- * https://drafts.csswg.org/css-color-5/#color-mix and #serial-color-mix: the interpolation
- * method lower-cased, both colors serialized, percentages normalized (a single 50% — or none —
- * is omitted; a lone second percentage becomes the first's complement), both 0% invalid.
+ * https://drafts.csswg.org/css-color-5/#color-mix, serialized per #serial-color-mix: the
+ * interpolation method omitted when it is the default (`in oklab`, `shorter hue`), each color
+ * serialized, and percentages written out unless every effective percentage is 100%/N (an
+ * omitted percentage's effective value is (100% − specified sum) / omitted count, clamped at 0%,
+ * unless another one is a calc()). One or more colors; the method may be omitted. Equal
+ * percentages above 100%/N are kept (`red 75%, blue 75%`), as WPT
+ * css/css-color/parsing/color-valid-color-mix-function.html has it; the spec's prose omits them.
  */
 function normalizeColorMix(comps: Comp[]): string | null {
   const args = commaArgs(comps);
-  if (args.length !== 3) return null;
+  let methodText = "";
+  let first = 0;
   const method = args[0];
-  if (method.length < 2 || method[0].type !== TK_IDENT || method[0].lower !== "in" || method[1].type !== TK_IDENT)
-    return null;
-  const space = method[1].lower;
-  let methodText = "in " + space;
-  if (POLAR_SPACES.has(space)) {
-    if (method.length === 4) {
-      if (
-        method[2].type !== TK_IDENT ||
-        !HUE_METHODS.has(method[2].lower) ||
-        method[3].type !== TK_IDENT ||
-        method[3].lower !== "hue"
-      )
-        return null;
-      methodText += " " + method[2].lower + " hue";
-    } else if (method.length !== 2) return null;
-  } else if (!RECTANGULAR_SPACES.has(space) || method.length !== 2) return null;
+  if (method.length >= 1 && method[0].type === TK_IDENT && method[0].lower === "in") {
+    if (method.length < 2 || method[1].type !== TK_IDENT) return null;
+    // `xyz` is an alias of xyz-d65 and serializes as it (https://drafts.csswg.org/css-color-4/#predefined-xyz).
+    const space = method[1].lower === "xyz" ? "xyz-d65" : method[1].lower;
+    let hue = "";
+    if (POLAR_SPACES.has(space)) {
+      if (method.length === 4) {
+        if (
+          method[2].type !== TK_IDENT ||
+          !HUE_METHODS.has(method[2].lower) ||
+          method[3].type !== TK_IDENT ||
+          method[3].lower !== "hue"
+        )
+          return null;
+        if (method[2].lower !== "shorter") hue = " " + method[2].lower + " hue";
+      } else if (method.length !== 2) return null;
+    } else if (!RECTANGULAR_SPACES.has(space) || method.length !== 2) return null;
+    if (space !== "oklab" || hue !== "") methodText = "in " + space + hue + ", ";
+    first = 1;
+  }
+  const n = args.length - first;
+  if (n < 1) return null;
   const colors: string[] = [];
-  const percents: (number | null)[] = [];
-  for (let k = 1; k <= 2; k++) {
+  /** A number for a plain percentage, the source text for a math function, null when omitted. */
+  const percents: (number | string | null)[] = [];
+  for (let k = first; k < args.length; k++) {
     const arg = args[k];
     if (arg.length < 1 || arg.length > 2) return null;
     let color: string | null = null;
-    let pct: number | null = null;
+    let pct: number | string | null = null;
     for (const c of arg) {
-      if (c.type === TK_PERCENTAGE && pct === null) {
+      if (pct === null && c.type === TK_PERCENTAGE) {
         if (c.num < 0 || c.num > 100) return null;
         pct = c.num;
+        continue;
+      }
+      if (pct === null && c.type === TK_FUNCTION && MATH_RE.test(c.text)) {
+        pct = c.lower + c.text.slice(c.lower.length);
         continue;
       }
       if (color !== null) return null;
@@ -632,18 +650,31 @@ function normalizeColorMix(comps: Comp[]): string | null {
     colors.push(color);
     percents.push(pct);
   }
-  const [p1, p2] = percents;
-  if (p1 === 0 && p2 === 0) return null;
-  let first = colors[0];
-  let second = colors[1];
-  if (p1 !== null && p2 !== null) {
-    first += " " + formatNumber(p1) + "%";
-    second += " " + formatNumber(p2) + "%";
-  } else if (p1 !== null || p2 !== null) {
-    const p = p1 !== null ? p1 : 100 - p2!;
-    if (p !== 50) first += " " + formatNumber(p) + "%";
+  const anyCalc = percents.some((p) => typeof p === "string");
+  let sum = 0;
+  let omitted = 0;
+  for (const p of percents) {
+    if (typeof p === "number") sum += p;
+    else if (p === null) omitted++;
   }
-  return "color-mix(" + methodText + ", " + first + ", " + second + ")";
+  const fill = omitted === 0 || anyCalc ? null : Math.max(0, (100 - sum) / omitted);
+  const effective = percents.map((p) => (typeof p === "number" ? p : p === null ? fill : null));
+  const allEqual =
+    effective.every((e) => e !== null) &&
+    effective.every((e) => Math.abs(e! - effective[0]!) < 1e-9) &&
+    Math.abs(effective[0]! - 100 / n) < 1e-9;
+  const out: string[] = [];
+  for (let k = 0; k < n; k++) {
+    const p = percents[k];
+    let text = colors[k];
+    if (!allEqual) {
+      if (typeof p === "string") text += " " + p;
+      else if (typeof p === "number") text += " " + roundSig(p, 6) + "%";
+      else if (fill !== null) text += " " + roundSig(fill, 6) + "%";
+    }
+    out.push(text);
+  }
+  return "color-mix(" + methodText + out.join(", ") + ")";
 }
 
 /** https://drafts.csswg.org/css-color-5/#light-dark — both colors serialized. */

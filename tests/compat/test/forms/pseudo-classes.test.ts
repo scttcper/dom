@@ -31,6 +31,24 @@ function barred(...ids: string[]): DifferentialOptions {
   };
 }
 
+/**
+ * jsdom 31 does not match :optional on inputs the `required` attribute does not apply to
+ * (hidden, range, submit, reset). :optional is every input that is not required
+ * (https://html.spec.whatwg.org/#selector-optional); WPT
+ * html/semantics/selectors/pseudo-classes/required-optional-hidden.html pins type=hidden, and
+ * jsdom 30 and browsers agree.
+ */
+function optionalOn(obs: Record<string, string[]>, ...ids: string[]): Record<string, string[]> {
+  for (const id of ids) {
+    if (!obs[id].includes(":optional"))
+      obs[id] = [...obs[id], ":optional"].sort((a, b) => PSEUDOS.indexOf(a) - PSEUDOS.indexOf(b));
+  }
+  return obs;
+}
+
+const OPTIONAL_SPEC = "https://html.spec.whatwg.org/#selector-optional";
+const OPTIONAL_REASON = "jsdom 31 does not match :optional on inputs `required` does not apply to";
+
 const PSEUDOS = [
   ":checked",
   ":default",
@@ -78,13 +96,12 @@ describe("input pseudo-classes — https://html.spec.whatwg.org/#pseudo-classes"
       ),
     {
       jsdomFix: {
-        spec: "https://html.spec.whatwg.org/#selector-valid and https://html.spec.whatwg.org/#range-state-(type=range) (default value is the midpoint, 5, which is in range)",
-        reason:
-          "jsdom matches :valid on barred controls, and reports a value-less range input with min=0 max=10 as invalid/out-of-range",
+        spec: `https://html.spec.whatwg.org/#selector-valid, https://html.spec.whatwg.org/#range-state-(type=range) (default value is the midpoint, 5, which is in range) and ${OPTIONAL_SPEC}`,
+        reason: `jsdom matches :valid on barred controls, and reports a value-less range input with min=0 max=10 as invalid/out-of-range; ${OPTIONAL_REASON}`,
         fix: (obs: Record<string, string[]>) => {
           const fixed = barred("ro", "dis", "hidden").jsdomFix!.fix(obs) as Record<string, string[]>;
           fixed.range = fixed.range.map((p) => (p === ":invalid" ? ":valid" : p === ":out-of-range" ? ":in-range" : p));
-          return fixed;
+          return optionalOn(fixed, "hidden", "range");
         },
       },
     },
@@ -104,7 +121,14 @@ describe("input pseudo-classes — https://html.spec.whatwg.org/#pseudo-classes"
       );
       return result;
     },
-    barred("bb", "rs"),
+    {
+      jsdomFix: {
+        spec: `https://html.spec.whatwg.org/#selector-valid and ${OPTIONAL_SPEC}`,
+        reason: `jsdom matches :valid/:invalid on elements barred from constraint validation; ${OPTIONAL_REASON}`,
+        fix: (obs: Record<string, string[]>) =>
+          optionalOn(barred("bb", "rs").jsdomFix!.fix(obs) as Record<string, string[]>, "s", "rs"),
+      },
+    },
   );
 
   differential("indeterminate checkbox and progress", (w) => {

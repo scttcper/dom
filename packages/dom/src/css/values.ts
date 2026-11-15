@@ -34,6 +34,7 @@ import {
   TK_WHITESPACE,
 } from "./tokenizer.ts";
 import { normalizeColor } from "./colors.ts";
+import { isIdentChar, isIdentStart } from "./tokenizer.ts";
 
 // --- components ---------------------------------------------------------------------------
 
@@ -331,7 +332,7 @@ const GRAMMAR_SPECS: Record<string, string> = {
   "border-left-color": COLOR,
   color: COLOR,
   "background-color": COLOR,
-  "outline-color": COLOR + " invert",
+  "outline-color": COLOR + " auto",
   "caret-color": COLOR + " auto",
   "text-decoration-color": COLOR,
   "column-rule-color": COLOR,
@@ -522,8 +523,9 @@ const GRADIENT_FUNCTIONS = new Set([
  * https://drafts.csswg.org/cssom/#serialize-a-css-component-value): function name, keywords and
  * units lower-cased, color stops serialized as colors, arguments joined with ", ", and the
  * default line / shape / position omitted (`to bottom`, `ellipse`, `farthest-corner`,
- * `at center`) like jsdom. Returns null when the gradient has an empty argument or fewer than
- * two color stops; other unrecognized arguments are kept as written.
+ * `at center`) like jsdom, numbers and units canonical (`.5em` → `0.5em`, a stop's `0` →
+ * `0px`). Returns null when the gradient has an empty argument or no color stop; other
+ * unrecognized arguments are kept as written.
  */
 export function normalizeGradient(c: Comp): string | null {
   const open = c.text.indexOf("(");
@@ -564,20 +566,32 @@ export function normalizeGradient(c: Comp): string | null {
     }
     if (text === null) {
       if (comp.type === TK_IDENT) text = comp.lower;
-      else if (comp.type === TK_DIMENSION) text = comp.text.toLowerCase();
+      else if (comp.type === TK_DIMENSION) text = formatNumber(comp.num) + comp.lower;
+      else if (comp.type === TK_PERCENTAGE) text = formatNumber(comp.num) + "%";
+      // A color stop's unitless 0 is the length 0px (WPT css/css-backgrounds/parsing/background-image-valid.html).
+      else if (comp.type === TK_NUMBER) text = comp.num === 0 && argHasColor ? "0px" : formatNumber(comp.num);
       else if (comp.type === TK_FUNCTION) text = comp.lower + comp.text.slice(comp.lower.length);
       else text = comp.text;
     }
     arg.push(text);
   }
-  if (colorStops < 2) return null;
+  // One color stop is enough (https://drafts.csswg.org/css-images-4/#color-stop-syntax).
+  if (colorStops < 1) return null;
   return name + "(" + args.join(", ") + ")";
 }
 
 /** <paint> (fill, stroke; https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint): single values normalized like jsdom, the rest kept. */
 function normalizePaint(comps: Comp[]): string | null {
   const sig = significant(comps);
-  if (sig.length !== 1) return verbatimComps(comps);
+  // url(...) with a fallback (https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint):
+  // `url(#a) red` → `url("#a") red`.
+  if (sig.length === 2 && (sig[0].type === TK_URL || (sig[0].type === TK_FUNCTION && sig[0].lower === "url"))) {
+    const url = sig[0].type === TK_URL ? serializeUrl(sig[0].value) : normalizeComponent(sig[0], URL_GRAMMAR);
+    const fallback = sig[1].type === TK_IDENT && sig[1].lower === "none" ? "none" : colorComp(sig[1]);
+    if (url === null || fallback === null) return null;
+    return url + " " + fallback;
+  }
+  if (sig.length !== 1) return null;
   const c = sig[0];
   switch (c.type) {
     case TK_IDENT:
@@ -610,6 +624,86 @@ function verbatimComps(comps: Comp[]): string {
   let out = "";
   for (const c of comps) out += c.text;
   return out;
+}
+
+// --- font families --------------------------------------------------------------------------
+
+// https://drafts.csswg.org/css-fonts-4/#generic-font-families
+// oxfmt-ignore
+const GENERIC_FAMILIES = new Set([
+  "serif", "sans-serif", "cursive", "fantasy", "monospace", "system-ui", "emoji", "math", "fangsong",
+  "ui-serif", "ui-sans-serif", "ui-monospace", "ui-rounded",
+]);
+
+/** A word that serializes as an identifier as is (https://drafts.csswg.org/cssom/#serialize-an-identifier, no escapes needed). */
+function plainIdent(w: string): boolean {
+  if (w === "") return false;
+  let i = 0;
+  if (w.charCodeAt(0) === 0x2d) {
+    if (w.length === 1) return false;
+    i = 1;
+    if (w.charCodeAt(1) === 0x2d) i = 2;
+    else if (!isIdentStart(w.charCodeAt(1))) return false;
+  } else if (!isIdentStart(w.charCodeAt(0))) return false;
+  for (; i < w.length; i++) if (!isIdentChar(w.charCodeAt(i))) return false;
+  return true;
+}
+
+/**
+ * A <family-name>: as its identifiers when it is a sequence of identifiers that would read back
+ * as the same name (not a generic family or CSS-wide keyword), else as a string. Browsers and
+ * WPT css/css-fonts/parsing/font-family-valid.html: `"New Century Schoolbook", serif` →
+ * `New Century Schoolbook, serif`, `"inherit", "serif"` stays quoted.
+ */
+function serializeFamilyName(name: string): string {
+  const lower = name.toLowerCase();
+  if (!GENERIC_FAMILIES.has(lower) && !isCSSWideKeyword(lower) && lower !== "default") {
+    const words = name.split(" ");
+    if (words.every(plainIdent)) return name;
+  }
+  return serializeString(name);
+}
+
+/**
+ * <family-name> | <generic-family> list (font-family, the font shorthand's tail) from
+ * significant components; null when invalid. https://drafts.csswg.org/css-fonts-4/#font-family-prop
+ */
+export function serializeFamilyList(parts: Comp[]): string | null {
+  const out: string[] = [];
+  let words: string[] = [];
+  let str: string | null = null;
+  for (let i = 0; i <= parts.length; i++) {
+    const p = i < parts.length ? parts[i] : null;
+    if (p === null || p.type === TK_COMMA) {
+      if (str !== null) out.push(serializeFamilyName(str));
+      else if (words.length === 0) return null;
+      else if (words.length === 1 && GENERIC_FAMILIES.has(words[0].toLowerCase())) out.push(words[0].toLowerCase());
+      // <custom-ident>+: no CSS-wide keyword (revert-rule included), `default` or generic family
+      // among them (WPT css/css-fonts/parsing/font-family-invalid.html: `cursive serif`).
+      else if (words.some(excludedFamilyWord)) return null;
+      else out.push(serializeFamilyName(words.join(" ")));
+      words = [];
+      str = null;
+      continue;
+    }
+    if (p.type === TK_STRING) {
+      if (str !== null || words.length !== 0) return null;
+      str = p.value;
+    } else if (p.type === TK_IDENT) {
+      if (str !== null) return null;
+      words.push(p.value);
+    } else return null;
+  }
+  return out.join(", ");
+}
+
+function excludedFamilyWord(word: string): boolean {
+  const lower = word.toLowerCase();
+  return isCSSWideKeyword(lower) || lower === "revert-rule" || lower === "default" || GENERIC_FAMILIES.has(lower);
+}
+
+function normalizeFontFamily(comps: Comp[]): string | null {
+  return serializeFamilyList(significant(comps));
 }
 
 /** https://drafts.csswg.org/cssom/#serialize-a-string */
@@ -721,8 +815,233 @@ function normalizeContent(comps: Comp[]): string | null {
 
 const URL_GRAMMAR = new Grammar(G_URL, new Set(), new Set(), 1);
 
+/**
+ * <opacity-value> (opacity, fill-/stroke-/flood-/stop-opacity): a percentage is the number it
+ * stands for (https://drafts.csswg.org/css-color-4/#transparency: "50%" serializes as "0.5", WPT
+ * css/css-color/parsing/opacity-valid.html).
+ */
+function normalizeOpacity(comps: Comp[]): string | null {
+  const sig = significant(comps);
+  if (sig.length !== 1) return null;
+  const c = sig[0];
+  if (c.type === TK_PERCENTAGE) return formatNumber(c.num / 100);
+  return normalizeComponent(c, OPACITY_GRAMMAR);
+}
+
+const OPACITY_GRAMMAR = grammar("N");
+const OPACITY_PROPERTIES = new Set(["opacity", "fill-opacity", "stroke-opacity", "flood-opacity", "stop-opacity"]);
+
+/** A component as CSSOM serializes it: canonical numbers and units, lowercase keywords, function arguments likewise. */
+function canonicalComp(c: Comp): string {
+  switch (c.type) {
+    case TK_NUMBER:
+      return formatNumber(c.num);
+    case TK_PERCENTAGE:
+      return formatNumber(c.num) + "%";
+    case TK_DIMENSION:
+      return formatNumber(c.num) + c.lower;
+    case TK_IDENT:
+      return c.lower;
+    case TK_FUNCTION: {
+      if (MATH_FUNCTIONS.has(c.lower) || c.lower === "var" || c.lower === "env" || c.lower === "attr") return c.text;
+      const inner = splitComponents(c.text.slice(c.text.indexOf("(") + 1, -1));
+      if (inner === null) return c.text;
+      let out = "";
+      let pendingSpace = false;
+      for (const i of inner) {
+        if (i.type === COMP_SPACE) {
+          pendingSpace = true;
+          continue;
+        }
+        if (i.type === TK_COMMA) {
+          out += ", ";
+          pendingSpace = false;
+          continue;
+        }
+        if (pendingSpace && out !== "" && !out.endsWith(", ")) out += " ";
+        pendingSpace = false;
+        out += canonicalComp(i);
+      }
+      return c.lower + "(" + out + ")";
+    }
+  }
+  return c.text;
+}
+
+// https://drafts.csswg.org/css-easing-2/#typedef-easing-function
+const EASING_KEYWORDS = new Set(["linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end"]);
+const EASING_FUNCTIONS = new Set(["cubic-bezier", "steps", "linear"]);
+
+function isZeroTime(t: string): boolean {
+  return t === "0s" || t === "0ms";
+}
+
+/**
+ * `transition` (https://drafts.csswg.org/css-transitions-2/#transition-shorthand-property),
+ * stored as one declaration, serialized in canonical order (property, duration, easing, delay,
+ * behavior) without the initial values that can be left out (`all`, `0s`, `ease`, `normal`):
+ * WPT css/css-transitions/parsing/transition-valid.html (`all 1s` → `1s`,
+ * `1s -3s cubic-bezier(0, -2, 1, 3) top` → `top 1s cubic-bezier(0, -2, 1, 3) -3s`).
+ */
+function normalizeTransition(comps: Comp[]): string | null {
+  const items: string[] = [];
+  let item: Comp[] = [];
+  const sig = significant(comps);
+  for (let i = 0; i <= sig.length; i++) {
+    const c = i < sig.length ? sig[i] : null;
+    if (c !== null && c.type !== TK_COMMA) {
+      item.push(c);
+      continue;
+    }
+    if (item.length === 0) return null;
+    let property: string | null = null;
+    let easing: string | null = null;
+    let behavior: string | null = null;
+    const times: string[] = [];
+    for (const p of item) {
+      if (p.type === TK_DIMENSION && TIME_UNITS.has(p.lower)) {
+        if (times.length === 2) return null;
+        if (times.length === 0 && p.num < 0) return null;
+        times.push(formatNumber(p.num) + p.lower);
+      } else if (p.type === TK_FUNCTION && MATH_FUNCTIONS.has(p.lower)) {
+        if (times.length === 2) return null;
+        times.push(p.text);
+      } else if (p.type === TK_IDENT && EASING_KEYWORDS.has(p.lower)) {
+        if (easing !== null) return null;
+        easing = p.lower;
+      } else if (p.type === TK_FUNCTION && EASING_FUNCTIONS.has(p.lower)) {
+        if (easing !== null) return null;
+        easing = canonicalComp(p);
+      } else if (p.type === TK_IDENT && (p.lower === "normal" || p.lower === "allow-discrete")) {
+        if (behavior !== null) return null;
+        behavior = p.lower;
+      } else if (p.type === TK_IDENT && !isCSSWideKeyword(p.lower) && p.lower !== "default") {
+        if (property !== null) return null;
+        // <custom-ident> keeps its case; `all` and `none` are keywords.
+        property = p.lower === "all" || p.lower === "none" ? p.lower : p.value;
+      } else return null;
+    }
+    if (property === "none" && sig.some((x) => x.type === TK_COMMA)) return null;
+    const out: string[] = [];
+    if (property !== null && property !== "all") out.push(property);
+    const duration = times[0] ?? "0s";
+    const delay = times[1] ?? "0s";
+    if (!isZeroTime(duration) || !isZeroTime(delay)) out.push(duration);
+    if (easing !== null && easing !== "ease") out.push(easing);
+    if (!isZeroTime(delay)) out.push(delay);
+    if (behavior !== null && behavior !== "normal") out.push(behavior);
+    items.push(out.length === 0 ? "all" : out.join(" "));
+    item = [];
+  }
+  return items.join(", ");
+}
+
+/** A <length> component (0 → 0px, math functions kept); null otherwise. */
+function lengthComp(c: Comp): string | null {
+  if (c.type === TK_DIMENSION && LENGTH_UNITS.has(c.lower)) return formatNumber(c.num) + c.lower;
+  if (c.type === TK_NUMBER && c.num === 0) return "0px";
+  if (c.type === TK_FUNCTION && MATH_FUNCTIONS.has(c.lower)) return c.text;
+  return null;
+}
+
+/** A <color> component, serialized; null otherwise. */
+function colorComp(c: Comp): string | null {
+  if (c.type !== TK_IDENT && c.type !== TK_HASH && c.type !== TK_FUNCTION) return null;
+  return normalizeColor(c.text);
+}
+
+/**
+ * `box-shadow` (https://drafts.csswg.org/css-backgrounds-3/#box-shadow): `none | <shadow>#`,
+ * <shadow> = <color>? && <length>{2,4} && inset?, the lengths adjacent and the blur radius not
+ * negative. Serialized in canonical order: color, lengths (`0` → `0px`), `inset` (WPT
+ * css/css-backgrounds/parsing/box-shadow-valid.html).
+ */
+function normalizeBoxShadow(comps: Comp[]): string | null {
+  const sig = significant(comps);
+  if (sig.length === 1 && sig[0].type === TK_IDENT && sig[0].lower === "none") return "none";
+  const shadows: string[] = [];
+  let item: Comp[] = [];
+  for (let i = 0; i <= sig.length; i++) {
+    const c = i < sig.length ? sig[i] : null;
+    if (c !== null && c.type !== TK_COMMA) {
+      item.push(c);
+      continue;
+    }
+    if (item.length === 0) return null;
+    let color: string | null = null;
+    let inset = false;
+    const lengths: string[] = [];
+    // The lengths are one run: once a non-length follows them, no more lengths.
+    let lengthsDone = false;
+    for (const p of item) {
+      const len = lengthComp(p);
+      if (len !== null) {
+        if (lengthsDone || lengths.length === 4) return null;
+        if (lengths.length === 2 && p.type === TK_DIMENSION && p.num < 0) return null;
+        lengths.push(len);
+        continue;
+      }
+      if (lengths.length !== 0) lengthsDone = true;
+      if (p.type === TK_IDENT && p.lower === "inset") {
+        if (inset) return null;
+        inset = true;
+        continue;
+      }
+      const col = colorComp(p);
+      if (col === null || color !== null) return null;
+      color = col;
+    }
+    if (lengths.length < 2) return null;
+    let out = color === null ? "" : color + " ";
+    out += lengths.join(" ");
+    if (inset) out += " inset";
+    shadows.push(out);
+    item = [];
+  }
+  return shadows.join(", ");
+}
+
+/**
+ * `outline` (https://drafts.csswg.org/css-ui-4/#outline): `<'outline-width'> || <'outline-style'>
+ * || <'outline-color'>`, kept as one declaration, serialized width, style, color with each part
+ * normalized (`1px solid #f00` → `1px solid rgb(255, 0, 0)`, `dashed thin` → `thin dashed`; WPT
+ * css/css-ui/parsing/outline-valid.html).
+ */
+function normalizeOutline(comps: Comp[]): string | null {
+  const sig = significant(comps);
+  if (sig.length === 0 || sig.length > 3) return null;
+  let width: string | null = null;
+  let style: string | null = null;
+  let color: string | null = null;
+  const gw = grammarFor("outline-width");
+  const gs = grammarFor("outline-style");
+  const gc = grammarFor("outline-color");
+  for (const c of sig) {
+    if (c.type === TK_COMMA || c.type === TK_DELIM) return null;
+    let v: string | null;
+    if (width === null && (v = normalizeComponent(c, gw)) !== null) width = v;
+    else if (style === null && (v = normalizeComponent(c, gs)) !== null) style = v;
+    else if (color === null && (v = normalizeComponent(c, gc)) !== null) color = v;
+    else return null;
+  }
+  const out: string[] = [];
+  if (width !== null) out.push(width);
+  if (style !== null) out.push(style);
+  if (color !== null) out.push(color);
+  return out.join(" ");
+}
+
 const SPECIAL: Record<string, Special> = {
+  outline: normalizeOutline,
+  "box-shadow": normalizeBoxShadow,
+  transition: normalizeTransition,
+  opacity: normalizeOpacity,
+  "fill-opacity": normalizeOpacity,
+  "stroke-opacity": normalizeOpacity,
+  "flood-opacity": normalizeOpacity,
+  "stop-opacity": normalizeOpacity,
   display: normalizeDisplay,
+  "font-family": normalizeFontFamily,
   content: normalizeContent,
   fill: normalizePaint,
   stroke: normalizePaint,
@@ -808,12 +1127,14 @@ export function fastLonghand(name: string, value: string): string | undefined {
     integer = false;
   }
   if (digits > 15 || (negative && intIsZero && integer)) return undefined;
-  if (SPECIAL[name] !== undefined) return undefined;
+  // Opacity's plain numbers stay on the fast path (React writes them); its percentages do not.
+  const opacity = OPACITY_PROPERTIES.has(name);
+  if (SPECIAL[name] !== undefined && !opacity) return undefined;
   const types = grammarFor(name).types;
   const unitStart = i;
   if (unitStart < n) {
     if (value.charCodeAt(i) === 37) {
-      if (i + 1 !== n) return undefined;
+      if (i + 1 !== n || opacity) return undefined;
       if (types === G_ANY) return value;
       return (types & G_PERCENT) !== 0 && !(negative && (types & G_NONNEG) !== 0) ? value : undefined;
     }

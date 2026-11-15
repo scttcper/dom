@@ -449,6 +449,23 @@ function createHarness(results: Test[], pending: Promise<void>[]) {
         `expected ${expected} +/- ${epsilon} but got ${actual}`,
       );
     },
+    // https://github.com/web-platform-tests/wpt/blob/master/resources/testharness.js (assert_array_approx_equals)
+    assert_array_approx_equals(actual: ArrayLike<number>, expected: ArrayLike<number>, epsilon: number, desc?: string) {
+      assert(
+        actual.length === expected.length,
+        "assert_array_approx_equals",
+        desc,
+        `lengths differ, expected array ${String(expected)} length ${expected.length}, got ${String(actual)} length ${actual.length}`,
+      );
+      for (let i = 0; i < actual.length; i++) {
+        assert(
+          typeof actual[i] === typeof expected[i] && Math.abs(actual[i]! - expected[i]!) <= epsilon,
+          "assert_array_approx_equals",
+          desc,
+          `expected ${expected[i]} +/- ${epsilon} but got ${actual[i]} at index ${i}`,
+        );
+      }
+    },
     assert_less_than(actual: number, expected: number, desc?: string) {
       assert(actual < expected, "assert_less_than", desc, `expected a number less than ${expected} but got ${actual}`);
     },

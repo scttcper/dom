@@ -57,8 +57,7 @@
   "::first-letter styles applied (\"<div class='first-letter-uppercase' style='width:0'>abc def\")",
   "Invisible <p> doesn't induce extra line breaks (\"<div style='visibility:hidden'><p><span style='visibility:visible'>abc</span></p>\\n<div style='visibility:visible'>def</div>\")",
   "tfoot not reordered (\"<div><table><tfoot>x</tfoot><tbody>y</tbody></table>\")",
-  " (\"<table><tfoot><tr><td>footer</tfoot><thead><tr><td style='visibility:collapse'>thead</thead><tbody><tr><td>tbody</tbody></table>\")",
-  "display:block <noscript> is not rendered (it's not parsed!) (\"<div><noscript style='display:block'>abc\")"
+  " (\"<table><tfoot><tr><td>footer</tfoot><thead><tr><td style='visibility:collapse'>thead</thead><tbody><tr><td>tbody</tbody></table>\")"
  ],
  "html/dom/historical.html": [
   "document.all cannot find applet"

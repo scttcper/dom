@@ -113,7 +113,7 @@ describe("Custom elements — custom-elements/parser (https://github.com/web-pla
 describe("Custom elements — custom-elements/reactions (https://github.com/web-platform-tests/wpt/tree/master/custom-elements/reactions)", () => {
   defineWPT("custom-elements/reactions/AriaMixin-element-attributes.html");
   defineWPT("custom-elements/reactions/AriaMixin-string-attributes.html");
-  defineWPT("custom-elements/reactions/CSSStyleDeclaration.html", "-webkit-filter alias serialization (css)");
+  defineWPT("custom-elements/reactions/CSSStyleDeclaration.html");
   defineWPT("custom-elements/reactions/ChildNode.html");
   defineWPT("custom-elements/reactions/DOMStringMap.html");
   defineWPT("custom-elements/reactions/DOMTokenList.html");

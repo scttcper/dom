@@ -9,8 +9,9 @@
  *   CSSOM §6.7.2 serialize a CSS declaration — https://drafts.csswg.org/cssom/#serialize-a-css-declaration
  *   CSSOM ElementCSSInlineStyle — https://drafts.csswg.org/cssom/#the-elementcssinlinestyle-mixin
  *
- * Value normalization is differentially tested against jsdom (the oracle Testing Library users
- * wrote their tests against): fixtures/declaration-cases.json is run through both. Incremental
+ * Value normalization is differentially tested against jsdom 31 (whose serialization follows the
+ * spec and WPT closely): fixtures/declaration-cases.json is run through both, and the cases where
+ * we follow the spec instead (or the spec allows either) are listed with the reason. Incremental
  * block serialization (DeclBlock.serialize) is differentially tested against the full algorithm
  * (DeclBlock.serializeAll).
  */
@@ -47,8 +48,44 @@ interface HTMLElementLike {
   removeAttribute(n: string): void;
 }
 
-/** Cases where we intentionally differ from jsdom 30 (jsdom rejects valid values). */
-const JSDOM_BUGS = new Set(["font|italic small-caps 700 16px/2 serif", "width|fit-content(10px)"]);
+/**
+ * Where we follow the spec (or WPT) and jsdom 31 does not, or the spec leaves the choice open and
+ * we keep jsdom 30's output: our serialization, and why. docs/deviations.md "CSS values".
+ */
+const JSDOM_DIFFERENCES: Record<string, { ours: string; why: string }> = {
+  "color|color-mix(in srgb, rgb(255 0 0 / .5), hsl(0 100% 50%))": {
+    ours: "color-mix(in srgb, rgba(255, 0, 0, 0.5), rgb(255, 0, 0))",
+    why: "colors inside color-mix() serialize as colors (WPT css/css-color/parsing/color-valid-color-mix-function.html: hsl(120, 100%, 50%) → rgb(0, 255, 0)); jsdom 31 keeps them as written",
+  },
+  "color|color-mix(in srgb, lab(50% 40 59.5), #00f)": {
+    ours: "color-mix(in srgb, lab(50 40 59.5), rgb(0, 0, 255))",
+    why: "lab() lightness serializes as a number (WPT css/css-color/parsing/color-valid-lab.html); jsdom 31 keeps the nested color as written",
+  },
+  "color|light-dark(#fff, rgb(0 0 0 / 50%))": {
+    ours: "light-dark(rgb(255, 255, 255), rgba(0, 0, 0, 0.5))",
+    why: "both colors serialize as colors; jsdom 31 converts the first and keeps the second as written",
+  },
+  "background-image|linear-gradient(#f00 10% 20%, #00f)": {
+    ours: "linear-gradient(rgb(255, 0, 0) 10% 20%, rgb(0, 0, 255))",
+    why: "a two-position color stop may serialize either way (https://drafts.csswg.org/css-images-4/#color-stop-syntax); jsdom 31 splits it into two stops",
+  },
+  "color|lab(50 40 59.5 / 0.123456)": {
+    ours: "lab(50 40 59.5 / 0.123)",
+    why: "alpha precision is implementation-defined above round-tripping integer percentages (https://drafts.csswg.org/css-color-4/#serializing-alpha-values); jsdom 31 keeps 6 digits",
+  },
+  "color|color(srgb 0.123456789 0 0)": {
+    ours: "color(srgb 0.12346 0 0)",
+    why: "channel precision is implementation-defined above 10 bits for srgb (https://drafts.csswg.org/css-color-4/#serializing-color-function-values); jsdom 31 keeps 6 digits",
+  },
+  "background-image|radial-gradient(circle at 50% 50%, #f00, #00f)": {
+    ours: "radial-gradient(circle at 50% 50%, rgb(255, 0, 0), rgb(0, 0, 255))",
+    why: "the default position may be kept (WPT css/css-images/parsing/gradient-position-valid.html accepts both); jsdom 31 drops it",
+  },
+  "background-image|conic-gradient(from 0deg, #f00, #00f)": {
+    ours: "conic-gradient(from 0deg, rgb(255, 0, 0), rgb(0, 0, 255))",
+    why: "the default angle may be kept; jsdom 31 drops it",
+  },
+};
 
 describe("§6.7.2 serializing CSS values (differential vs jsdom) — https://drafts.csswg.org/cssom/#serialize-a-css-value", () => {
   const cases = JSON.parse(readFileSync(new URL("./fixtures/declaration-cases.json", import.meta.url), "utf8")) as [
@@ -57,15 +94,16 @@ describe("§6.7.2 serializing CSS values (differential vs jsdom) — https://dra
   ][];
   const jsdomStyle = new JSDOM("<div></div>").window.document.querySelector("div")!.style;
   for (const [prop, value] of cases) {
-    const bug = JSDOM_BUGS.has(`${prop}|${value}`);
-    test(`setProperty(${JSON.stringify(prop)}, ${JSON.stringify(value)}) ${bug ? "accepts a value jsdom wrongly rejects" : "matches jsdom getPropertyValue and cssText"}`, () => {
+    const difference = JSDOM_DIFFERENCES[`${prop}|${value}`];
+    test(`setProperty(${JSON.stringify(prop)}, ${JSON.stringify(value)}) ${difference ? "serializes per spec where jsdom differs" : "matches jsdom getPropertyValue and cssText"}`, () => {
       const ours = div().style;
       ours.setProperty(prop, value);
       jsdomStyle.cssText = "";
       jsdomStyle.setProperty(prop, value);
-      if (bug) {
-        expect(jsdomStyle.getPropertyValue(prop)).toBe("");
-        expect(ours.getPropertyValue(prop)).not.toBe("");
+      if (difference) {
+        expect(ours.getPropertyValue(prop)).toBe(difference.ours);
+        // Still a difference: when jsdom changes, revisit the entry.
+        expect(jsdomStyle.getPropertyValue(prop), difference.why).not.toBe(difference.ours);
         return;
       }
       expect(ours.getPropertyValue(prop)).toBe(jsdomStyle.getPropertyValue(prop));

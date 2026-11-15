@@ -2,7 +2,7 @@
  * jsdom's "Not implemented" diagnostics under the jsdom compat profiles: the same Error (message
  * and `type`) at the same points as the real jsdom of each profile, observed differentially.
  *
- * Oracles: jsdom 26.1.0 (`jsdom-26`) and 30.1.3 (`jsdom`), each with a VirtualConsole whose
+ * Oracles: jsdom 26.1.0 (`jsdom-26`) and 30.1.3 (`jsdom-30`), each with a VirtualConsole whose
  * "jsdomError" events are collected (lib/jsdom/browser/not-implemented.js). @ctrl/dom: a window of
  * the matching profile with setNotImplementedHandler collecting (window/not-implemented.ts).
  *
@@ -22,7 +22,7 @@ import { createWindow } from "@ctrl/dom";
 import { setNotImplementedHandler } from "@ctrl/dom/internal";
 
 const require = createRequire(import.meta.url);
-const ORACLES = { "jsdom-26": require("jsdom-26"), "jsdom-30": require("jsdom") } as const;
+const ORACLES = { "jsdom-26": require("jsdom-26"), "jsdom-30": require("jsdom-30") } as const;
 type Profile = keyof typeof ORACLES;
 type AnyWindow = any;
 type Reported = { message: string; type: string };

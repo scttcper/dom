@@ -85,7 +85,7 @@ describe("HTML §3.2.7 innerText / outerText (https://html.spec.whatwg.org/#the-
     "html/dom/elements/the-innertext-and-outertext-properties",
     {
       "getter.html":
-        "no ::first-line/::first-letter styles, visibility does not suppress block line breaks, the parser drops text foster-parented out of a table, noscript is parsed as markup (scripting disabled)",
+        "no ::first-line/::first-letter styles, visibility does not suppress block line breaks, the parser drops text foster-parented out of a table",
     },
     { "innertext-with-white-spaces.html": "meaningful only with its ?white-space= variants, registered below" },
   );

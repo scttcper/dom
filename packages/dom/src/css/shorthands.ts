@@ -22,6 +22,7 @@ import {
   TK_STRING,
   TK_URL,
   formatNumber,
+  serializeFamilyList,
   serializeUrl,
 } from "./values.ts";
 import { normalizeColor } from "./colors.ts";
@@ -462,18 +463,9 @@ function expandFont(value: string): string[] | null {
     i++;
   }
   if (i >= parts.length) return null;
-  // The rest is the family list, kept verbatim (normalized separators).
-  let family = "";
-  for (; i < parts.length; i++) {
-    const p = parts[i];
-    if (p.type === TK_COMMA) {
-      family += ",";
-      continue;
-    }
-    if (p.type === TK_NUMBER || p.type === TK_DELIM) return null;
-    const text = p.type === 5 /* string */ ? '"' + p.value.replace(/(["\\])/g, "\\$1") + '"' : p.text;
-    family += family === "" || family.endsWith(",") ? (family === "" ? text : " " + text) : " " + text;
-  }
+  // The rest is the family list (https://drafts.csswg.org/css-fonts-4/#font-family-prop).
+  const family = serializeFamilyList(parts.slice(i));
+  if (family === null) return null;
   if (normals > 3) return null;
   return [style || "normal", variant || "normal", weight || "normal", size, lineHeight, family];
 }

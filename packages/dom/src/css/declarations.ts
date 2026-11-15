@@ -3,7 +3,7 @@
 // https://drafts.csswg.org/cssom/#css-declaration-blocks
 
 import { parseDeclarationList, type RawDecl } from "./parser.ts";
-import { isCustomPropertyName, isSupportedProperty } from "./properties.ts";
+import { canonicalPropertyName, isCustomPropertyName, isSupportedProperty } from "./properties.ts";
 import {
   containsVar,
   isCSSWideKeyword,
@@ -158,6 +158,7 @@ export class DeclBlock {
    * value was invalid (nothing changed).
    */
   setValue(property: string, value: string, important: boolean, parsing: boolean): boolean {
+    property = canonicalPropertyName(property);
     if (isCustomPropertyName(property)) {
       const v = normalizeCustom(value);
       if (v === null) return false;
@@ -209,6 +210,7 @@ export class DeclBlock {
 
   /** Removes a property (expanding shorthands); returns true if anything was removed. */
   remove(property: string): boolean {
+    property = canonicalPropertyName(property);
     let removed = this.removeOne(property);
     const longhands = longhandsOf(property);
     if (longhands !== undefined) for (const l of longhands) if (this.removeOne(l)) removed = true;
@@ -217,6 +219,7 @@ export class DeclBlock {
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue */
   getPropertyValue(property: string): string {
+    property = canonicalPropertyName(property);
     const i = this.indexOf(property);
     if (i !== -1) return this.values[i];
     const longhands = longhandsOf(property);
@@ -236,6 +239,7 @@ export class DeclBlock {
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority */
   getPropertyPriority(property: string): string {
+    property = canonicalPropertyName(property);
     const i = this.indexOf(property);
     if (i !== -1) return this.important[i] ? "important" : "";
     const longhands = longhandsOf(property);

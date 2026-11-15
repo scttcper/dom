@@ -70,10 +70,10 @@ describe("sRGB colors — https://drafts.csswg.org/css-color-4/#serializing-sRGB
 describe("color-mix() — https://drafts.csswg.org/css-color-5/#serial-color-mix", () => {
   test("nested colors serialize as specified values and keywords are lower-cased (Sentry ansiText)", () => {
     expect(styleAfterSetting("color", "color-mix(in srgb, #ff8700 80%, currentColor)")).toBe(
-      "color-mix(in srgb, rgb(255, 135, 0) 80%, currentcolor)",
+      "color-mix(in srgb, rgb(255, 135, 0) 80%, currentcolor 20%)",
     );
     expect(styleAfterSetting("color", "COLOR-MIX(IN SRGB, RED 20%, #00f)")).toBe(
-      "color-mix(in srgb, red 20%, rgb(0, 0, 255))",
+      "color-mix(in srgb, red 20%, rgb(0, 0, 255) 80%)",
     );
     expect(styleAfterSetting("color", "color-mix(in oklch longer hue, #f00, #00f)")).toBe(
       "color-mix(in oklch longer hue, rgb(255, 0, 0), rgb(0, 0, 255))",
@@ -83,26 +83,46 @@ describe("color-mix() — https://drafts.csswg.org/css-color-5/#serial-color-mix
     );
   });
 
-  test("percentages: a lone 50% is omitted, a lone second percentage becomes the first's complement, two are kept", () => {
+  test("percentages: written out unless all are 100%/N; an omitted one is (100% − the specified sum) / the omitted count", () => {
     expect(styleAfterSetting("color", "color-mix(in srgb, #f00 50%, #00f)")).toBe(
       "color-mix(in srgb, rgb(255, 0, 0), rgb(0, 0, 255))",
     );
     expect(styleAfterSetting("color", "color-mix(in srgb, #f00, #00f 30%)")).toBe(
-      "color-mix(in srgb, rgb(255, 0, 0) 70%, rgb(0, 0, 255))",
+      "color-mix(in srgb, rgb(255, 0, 0) 70%, rgb(0, 0, 255) 30%)",
     );
     expect(styleAfterSetting("color", "color-mix(in srgb, 30% #f00, #00f)")).toBe(
-      "color-mix(in srgb, rgb(255, 0, 0) 30%, rgb(0, 0, 255))",
+      "color-mix(in srgb, rgb(255, 0, 0) 30%, rgb(0, 0, 255) 70%)",
     );
     expect(styleAfterSetting("color", "color-mix(in srgb, #f00 20%, #00f 80%)")).toBe(
       "color-mix(in srgb, rgb(255, 0, 0) 20%, rgb(0, 0, 255) 80%)",
     );
   });
 
-  test("invalid: no interpolation method, three colors, both percentages 0%, a percentage above 100%", () => {
-    expect(styleAfterSetting("color", "color-mix(#f00, #00f)")).toBe("");
-    expect(styleAfterSetting("color", "color-mix(in srgb, #f00, #00f, #0f0)")).toBe("");
-    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 0%, #00f 0%)")).toBe("");
+  test("the interpolation method may be omitted (and is when it is in oklab / shorter hue); one or more colors; 0% each is valid", () => {
+    expect(styleAfterSetting("color", "color-mix(#f00, #00f)")).toBe("color-mix(rgb(255, 0, 0), rgb(0, 0, 255))");
+    expect(styleAfterSetting("color", "color-mix(in oklab, #f00, #00f)")).toBe(
+      "color-mix(rgb(255, 0, 0), rgb(0, 0, 255))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in hsl shorter hue, #f00, #00f)")).toBe(
+      "color-mix(in hsl, rgb(255, 0, 0), rgb(0, 0, 255))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in srgb, #f00, #00f, #0f0)")).toBe(
+      "color-mix(in srgb, rgb(255, 0, 0), rgb(0, 0, 255), rgb(0, 255, 0))",
+    );
+    expect(styleAfterSetting("color", "color-mix(in srgb, red 60%, green, blue 50%)")).toBe(
+      "color-mix(in srgb, red 60%, green 0%, blue 50%)",
+    );
+    expect(styleAfterSetting("color", "color-mix(in srgb, red 100%)")).toBe("color-mix(in srgb, red)");
+    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 0%, #00f 0%)")).toBe(
+      "color-mix(in srgb, rgb(255, 0, 0) 0%, rgb(0, 0, 255) 0%)",
+    );
+  });
+
+  test("invalid: a percentage outside [0%, 100%], a method not first, `hue` without a method", () => {
     expect(styleAfterSetting("color", "color-mix(in srgb, #f00 120%, #00f)")).toBe("");
+    expect(styleAfterSetting("color", "color-mix(in srgb, #f00 -1%, #00f)")).toBe("");
+    expect(styleAfterSetting("color", "color-mix(#f00, #00f, in srgb)")).toBe("");
+    expect(styleAfterSetting("color", "color-mix(in hsl hue, #f00, #00f)")).toBe("");
   });
 
   test("light-dark() serializes both of its colors", () => {
@@ -157,16 +177,20 @@ describe("colors in <gradient> and <paint> values — https://drafts.csswg.org/c
     );
   });
 
-  test("a gradient needs two color stops and no empty arguments", () => {
-    expect(styleAfterSetting("background-image", "linear-gradient(red)")).toBe("");
+  test("a gradient needs a color stop and no empty arguments (https://drafts.csswg.org/css-images-4/#color-stop-syntax)", () => {
+    expect(styleAfterSetting("background-image", "linear-gradient(red)")).toBe("linear-gradient(red)");
+    expect(styleAfterSetting("background-image", "linear-gradient(to left)")).toBe("");
     expect(styleAfterSetting("background-image", "linear-gradient(#f00 , , #00f)")).toBe("");
   });
 
-  test("fill / stroke: a single color, url or keyword is normalized; paint with a fallback is kept", () => {
+  test("fill / stroke: a color, url or keyword, or a url with a fallback, normalized; anything else is invalid", () => {
     expect(styleAfterSetting("fill", "#f00")).toBe("rgb(255, 0, 0)");
     expect(styleAfterSetting("stroke", "currentColor")).toBe("currentcolor");
     expect(styleAfterSetting("fill", "URL(#a)")).toBe('url("#a")');
     expect(styleAfterSetting("fill", "Context-Stroke")).toBe("context-stroke");
-    expect(styleAfterSetting("fill", "url(#a) red")).toBe("url(#a) red");
+    expect(styleAfterSetting("fill", "url(#a) red")).toBe('url("#a") red');
+    expect(styleAfterSetting("fill", "url(#a) NONE")).toBe('url("#a") none');
+    expect(styleAfterSetting("fill", "red url(#a)")).toBe("");
+    expect(styleAfterSetting("fill", "none red")).toBe("");
   });
 });

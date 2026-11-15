@@ -193,7 +193,7 @@ describe("CSSOM (https://drafts.csswg.org/cssom/)", () => {
   defineWPT("css/cssom/serialize-namespaced-type-selectors.html");
   defineWPT(
     "css/cssom/serialize-values.html",
-    "jsdom-compatible specified-value serialization edge case (author text kept closer to as written)",
+    "specified-value serialization edge cases (author text kept closer to as written); and `outline-color: invert`, which this older test keeps but css-ui-4 and css/css-ui/parsing/outline-color-invalid.html drop",
   );
   defineWPT("css/cssom/serialize-variable-reference.html");
   defineWPT("css/cssom/serialize-whitespace.html");
