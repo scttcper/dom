@@ -771,18 +771,24 @@ const MAX_TURNLESS_MS = 1;
  *   clock's due. Otherwise the caller gets its real turn.
  * - Every MAX_TURNLESS_MS of real time a real turn is taken regardless, so Node's own timers (the
  *   test runner's timeout for a test that loops forever on `await user.click()`), unref'd timers
- *   and the runner's messages are never starved.
+ *   and the runner's messages are never starved. That turn is asked for from the same tick
+ *   callback, so `resolve` comes after the immediates the pending microtasks queued whether or
+ *   not the allowance had run out: the order does not depend on how fast the machine is.
  *
  * Without a clock that skips idle time: `setImmediate(resolve)`.
  */
 export function loopTurn(resolve: () => void): void {
   const clock = activeClock;
-  if (clock === null || realNow() - lastLoopTurn > MAX_TURNLESS_MS) realTurn(resolve);
+  if (clock === null) realTurn(resolve);
   else hostQueueMicrotask(() => hostNextTick(settleTurn, clock, resolve));
 }
 
 function settleTurn(clock: VirtualClock, resolve: () => void): void {
-  if (activeClock === clock && clock.busy(clock.ownImmediates) === null) {
+  if (
+    activeClock === clock &&
+    realNow() - lastLoopTurn <= MAX_TURNLESS_MS &&
+    clock.busy(clock.ownImmediates) === null
+  ) {
     const first = clock.heap[0];
     if (first === undefined || first.due > clock.now()) {
       resolve();

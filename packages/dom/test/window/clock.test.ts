@@ -116,11 +116,13 @@ describe("timer initialisation steps, the timeout — https://html.spec.whatwg.o
   test("the timeout is converted to a WebIDL long (https://webidl.spec.whatwg.org/#es-long): 2^31 wraps to a negative timeout, which waits 1 ms", async () => {
     const g = setup(true);
     const order: string[] = [];
-    g.setTimeout(() => order.push("2ms"), 2);
+    // The reference timer is 50 ms out, not 2: each deadline counts from its own setTimeout call,
+    // and a machine that stalls 1 ms between two lines would put a 2 ms timer ahead.
+    g.setTimeout(() => order.push("50ms"), 50);
     g.setTimeout(() => order.push("wrapped"), 2 ** 31);
     g.setTimeout(() => order.push("1.9ms"), 1.9);
-    await sleep(g, 10);
-    expect(order).toEqual(["wrapped", "1.9ms", "2ms"]);
+    await sleep(g, 60);
+    expect(order).toEqual(["wrapped", "1.9ms", "50ms"]);
   });
 });
 
@@ -579,8 +581,13 @@ describe("loopTurn: a macrotask boundary without an event-loop turn when the loo
   /** Runs on the check phase of the next event-loop turn without counting as pending work (unref'd). */
   const onNextTurn = (fn: () => void) => void setImmediate(fn).unref();
   const turn = () => new Promise<void>((resolve) => loopTurn(resolve));
-  /** A real turn, so the next loopTurn starts within its turnless allowance. */
+  /** A turn of the event loop, so nothing queued by an earlier test is still pending. */
   const realTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
+  /** Lets the 1 ms turnless allowance run out, as a stalled machine does between two lines. */
+  const stall = () => {
+    const start = performance.now();
+    while (performance.now() - start < 2);
+  };
 
   test("idle loop: resolves after every microtask queued before it, and those they queue, without taking an event-loop turn", async () => {
     setup(true);
@@ -621,6 +628,16 @@ describe("loopTurn: a macrotask boundary without an event-loop turn when the loo
     expect(order).toEqual(["immediate"]);
   });
 
+  test("an immediate queued by a pending microtask runs first once the turnless allowance has run out too: the order does not depend on timing", async () => {
+    setup(true);
+    await realTurn();
+    const order: string[] = [];
+    void Promise.resolve().then(() => void setImmediate(() => order.push("immediate")));
+    stall();
+    await turn();
+    expect(order).toEqual(["immediate"]);
+  });
+
   test("a timer of the clock that falls due while the pending microtasks run takes a real turn", async () => {
     const g = setup(true);
     await realTurn();
@@ -641,8 +658,7 @@ describe("loopTurn: a macrotask boundary without an event-loop turn when the loo
     await realTurn();
     let turned = false;
     onNextTurn(() => (turned = true));
-    const start = performance.now();
-    while (performance.now() - start < 2);
+    stall();
     await turn();
     expect(turned).toBe(true);
   });
