@@ -24,15 +24,15 @@ pnpm add -D @ctrl/dom
 import { defineConfig } from "vitest/config";
 import { ctrlDom } from "@ctrl/dom/vitest";
 
-export default defineConfig({
-  plugins: [ctrlDom()],
-  // Optional: reuse workers between test files, cutting per-file setup from ~23 ms to ~2 ms.
-  test: { pool: "vmThreads" },
-});
+export default defineConfig({ plugins: [ctrlDom()] });
 ```
 
-The plugin also points your `@testing-library/*` imports at ours. To keep the stock packages, use
-`ctrlDom({ testingLibrary: false })`.
+That is the whole setup. The plugin points your `@testing-library/*` imports at ours (to keep the
+stock packages: `ctrlDom({ testingLibrary: false })`), and every test file still runs in its own
+fresh process, as with Vitest's defaults.
+
+With hundreds of test files, Vitest's `pool` setting can more than halve the run:
+[Getting the fastest runs](#getting-the-fastest-runs).
 
 ### Jest
 
@@ -54,33 +54,6 @@ instead of the preset.
 You can also import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
 `@ctrl/dom/testing-library` and `@ctrl/dom/aria` directly. The
 [package README](publish/ctrl-dom/README.md) covers options and agent-friendly debug output.
-
-## Failing and flaky tests in Sentry
-
-[`@ctrl/sentry-tests`](packages/sentry-tests/README.md) sends your test runs to Sentry. It's a
-separate package (`pnpm add -D @ctrl/sentry-tests`) and works with any DOM.
-
-- **Failing tests become issues**, with the failing line, breadcrumbs of what the test did, and
-  the page as it was when it failed.
-- **Flaky tests** (failed, then passed on retry) become `FlakyTest` issues.
-- **Each test file becomes a trace**, with spans for describe blocks, tests and hooks.
-
-With @ctrl/dom, traces also include every query, `waitFor`, user-event action and render, and
-failures get an accessibility snapshot.
-
-```ts
-// vitest.config.ts
-plugins: [ctrlDom(), sentryTests()],
-```
-
-```js
-// jest.config.js
-reporters: ["default", "@ctrl/sentry-tests/jest"],
-testRunner: "@ctrl/sentry-tests/jest-runner",
-```
-
-Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` to view runs locally in
-[Spotlight](https://spotlightjs.com).
 
 ## Performance
 
@@ -117,6 +90,31 @@ And real projects' own test suites on each DOM:
 
 <sub>Wall time · peak memory (RSS) of each project's unmodified test suite at a pinned commit. Each project's page has the details.</sub>
 <!-- downstream:end -->
+
+## Getting the fastest runs
+
+`ctrlDom()` alone is the safe setup: a new process for every test file, as Vitest does by default.
+Past that, how fast a suite runs is mostly a Vitest question, and Vitest's own guide is the place
+to start: [Improving Performance](https://vitest.dev/guide/improving-performance). What in it
+matters most for component tests:
+
+- **Find out where the time goes first.** Vitest prints the split at the end of a run
+  (`Duration … environment, import, tests`) and has a guide to
+  [profiling](https://vitest.dev/guide/profiling-test-performance). For short component tests it
+  is usually starting a worker for every file, not the tests.
+- **[Pool](https://vitest.dev/guide/improving-performance#pool).** With many test files this is
+  the setting that matters. `pool: "vmThreads"` reuses workers and gives each file a fresh
+  context: 1,000 short React test files went from 18.7 s to 7.0 s here. It uses more memory
+  ([`vmMemoryLimit`](https://vitest.dev/config/vmmemorylimit)), and `instanceof` no longer holds
+  for values that come from Node (an error from `fs`, a `Buffer`); DOM objects are unaffected.
+- **[Test isolation](https://vitest.dev/guide/improving-performance#test-isolation).** Rather
+  than `isolate: false`, use `ctrlDom({ sharedWorkers: true })`: it sets that and resets the
+  window between files, which stock Testing Library's cleanup does not do past a worker's first
+  file. [Details](publish/ctrl-dom/README.md#shared-workers).
+- **[Sharding](https://vitest.dev/guide/improving-performance#sharding)** splits a large suite
+  across CI machines.
+- **Watch mode while you work.** A one-file `vitest run` is mostly Vitest starting; `vitest` pays
+  that once.
 
 ## Compatibility
 
@@ -185,6 +183,33 @@ depend on real sizes and positions belong in a browser, for example
   [Time skipping](publish/ctrl-dom/README.md#time-skipping).
 
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the details.
+
+## Failing and flaky tests in Sentry
+
+[`@ctrl/sentry-tests`](packages/sentry-tests/README.md) sends your test runs to Sentry. It's a
+separate package (`pnpm add -D @ctrl/sentry-tests`) and works with any DOM.
+
+- **Failing tests become issues**, with the failing line, breadcrumbs of what the test did, and
+  the page as it was when it failed.
+- **Flaky tests** (failed, then passed on retry) become `FlakyTest` issues.
+- **Each test file becomes a trace**, with spans for describe blocks, tests and hooks.
+
+With @ctrl/dom, traces also include every query, `waitFor`, user-event action and render, and
+failures get an accessibility snapshot.
+
+```ts
+// vitest.config.ts
+plugins: [ctrlDom(), sentryTests()],
+```
+
+```js
+// jest.config.js
+reporters: ["default", "@ctrl/sentry-tests/jest"],
+testRunner: "@ctrl/sentry-tests/jest-runner",
+```
+
+Then set `SENTRY_DSN` in CI, or `SENTRY_SPOTLIGHT=1` to view runs locally in
+[Spotlight](https://spotlightjs.com).
 
 ## Inspirations
 

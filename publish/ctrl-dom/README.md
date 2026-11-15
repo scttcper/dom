@@ -36,13 +36,12 @@ pnpm add -D @ctrl/dom
 import { defineConfig } from "vitest/config";
 import { ctrlDom } from "@ctrl/dom/vitest";
 
-export default defineConfig({
-  plugins: [ctrlDom()],
-  // Optional and faster: each test file gets a fresh context in a reused worker instead of a
-  // new worker, so per-file setup drops from about 23 ms to about 2 ms.
-  test: { pool: "vmThreads" },
-});
+export default defineConfig({ plugins: [ctrlDom()] });
 ```
+
+That is the whole setup: every test file still runs in its own fresh process, as with Vitest's
+defaults. With hundreds of test files, Vitest's `pool` setting can more than halve the run:
+[Faster runs](#faster-runs).
 
 DOM only (stock Testing Library packages keep working):
 
@@ -54,9 +53,132 @@ Options go to the plugin: `ctrlDom({ url: "http://localhost:3000/", width: 1280 
 plugin installed, a file can also pick the environment itself: `// @vitest-environment ctrl-dom`.
 An `environment` you set in the config other than `"ctrl-dom"` stays the project's default.
 
-The plugin also adds a Node flag to Vitest's workers, since the default pool starts one per test
-file: with its Testing Library it turns the compile cache on as each worker starts, so Vitest's
-own worker modules load from it too, not only the DOM.
+The plugin also looks after Vitest's workers, since the default pool starts one per test file:
+with its Testing Library it turns Node's compile cache on as each worker starts (so Vitest's own
+worker modules load from it too, not only the DOM), and it starts the next files' workers ahead
+of time ([warm workers](#warm-workers)).
+
+### Faster runs
+
+`ctrlDom()` alone is the safe setup: a new process for every test file, as Vitest does by default.
+Past that, how fast a suite runs is mostly a Vitest question, and Vitest's own guide is the place
+to start: [Improving Performance](https://vitest.dev/guide/improving-performance). What in it
+matters most for component tests:
+
+- **Find out where the time goes first.** Vitest prints the split at the end of a run
+  (`Duration … environment, import, tests`) and has a guide to
+  [profiling](https://vitest.dev/guide/profiling-test-performance). For short component tests it
+  is usually starting a worker for every file, not the tests.
+- **[Pool](https://vitest.dev/guide/improving-performance#pool).** With many test files this is
+  the setting that matters. `pool: "vmThreads"` reuses workers and gives each file a fresh
+  context: 1,000 short React test files went from 18.7 s to 7.0 s here. It uses more memory
+  ([`vmMemoryLimit`](https://vitest.dev/config/vmmemorylimit)), and `instanceof` no longer holds
+  for values that come from Node (an error from `fs`, a `Buffer`); DOM objects are unaffected.
+- **[Test isolation](https://vitest.dev/guide/improving-performance#test-isolation).** Rather
+  than `isolate: false`, use `ctrlDom({ sharedWorkers: true })`: it sets that and resets the
+  window between files, which stock Testing Library's cleanup does not do past a worker's first
+  file. [Shared workers](#shared-workers).
+- **[Sharding](https://vitest.dev/guide/improving-performance#sharding)** splits a large suite
+  across CI machines.
+- **Watch mode while you work.** A one-file `vitest run` is mostly Vitest starting; `vitest` pays
+  that once.
+
+DOM only (stock Testing Library packages keep working):
+
+```ts
+export default defineConfig({ plugins: [ctrlDom({ testingLibrary: false })] });
+```
+
+Options go to the plugin: `ctrlDom({ url: "http://localhost:3000/", width: 1280 })`. With the
+plugin installed, a file can also pick the environment itself: `// @vitest-environment ctrl-dom`.
+An `environment` you set in the config other than `"ctrl-dom"` stays the project's default.
+
+The plugin also looks after Vitest's workers, since the default pool starts one per test file:
+with its Testing Library it turns Node's compile cache on as each worker starts (so Vitest's own
+worker modules load from it too, not only the DOM), and it starts the next files' workers ahead
+of time ([warm workers](#warm-workers)).
+
+### Faster runs
+
+`ctrlDom()` alone is the safe setup: a new process for every test file, as Vitest does by default,
+with each file's process started ahead of time ([warm workers](#warm-workers)). For a small suite
+that is all you need.
+
+For a large suite, change the pool. Most of what a short component test costs is starting its
+worker, not the test, and that cost is per file. The same React test files on each option, with
+Vitest's default of 15 workers on a 16-thread machine:
+
+| | 100 files | 1,000 files | Memory, 1,000 files | What changes for your tests |
+| --- | ---: | ---: | --- | --- |
+| `ctrlDom()` (Vitest's default pool) | 2.56 s | 18.7 s | ~100 MB per worker (1.5 GB for 15) | Nothing. A new process for every test file. |
+| `test: { pool: "threads" }` | 2.33 s | 16.7 s | | A new thread per file instead of a process: `process.chdir()` throws, and native addons must be thread-safe. |
+| `test: { pool: "vmThreads" }` | 1.61 s | **7.0 s** | 4.0 GB at peak | Workers are reused, and each file gets a fresh global scope and module graph in them: how Jest isolates. See below. |
+| `test: { pool: "vmForks" }` | 1.64 s | 7.3 s | 273 MB per worker, up to 527 MB | The same, in processes instead of threads. |
+| `ctrlDom({ sharedWorkers: true })` | | | | Files of a worker share one realm; the plugin resets the window and re-evaluates your own modules before each file. Base UI's 9,199 tests: 35 s → 7–8 s. [Shared workers](#shared-workers). |
+
+Medians of 3–5 runs, i5-12600K, Node 26.13.1. With 4 workers and 1,000 files: 24.3 s by default,
+11.9 s on `vmThreads`.
+
+**`pool: "vmThreads"` is the one to try first on a large suite: 2.7× faster here**, and the gap
+grows with the number of files. Two things to check when you switch:
+
+- **Memory.** Reused workers hold on to the modules of every file they have run. Vitest recycles
+  a worker when it passes [`vmMemoryLimit`](https://vitest.dev/config/#vmmemorylimit); lower it
+  if CI runs out.
+- **`instanceof` on values from Node.** Each file's globals are its own, so an error thrown by
+  `fs` or `fetch`, or a `Buffer`, is not an instance of the file's `Error` or `Uint8Array`. DOM
+  objects are fine: `@ctrl/dom`'s classes are shared with every file.
+
+`sharedWorkers` is the other way to reuse workers. Files then share one set of globals, so
+`instanceof` holds, but they also share module state in dependencies, and memory grows there too.
+Do not set `isolate: false` yourself: stock Testing Library then cleans up after a worker's first
+file only, which `sharedWorkers` handles.
+
+While you work, use watch mode: `vitest run` on one file is about 0.9 s for a 0.02 s test, and
+`vitest` pays the start once and keeps a worker ready for the file you just saved.
+
+DOM only (stock Testing Library packages keep working):
+
+```ts
+export default defineConfig({ plugins: [ctrlDom({ testingLibrary: false })] });
+```
+
+Options go to the plugin: `ctrlDom({ url: "http://localhost:3000/", width: 1280 })`. With the
+plugin installed, a file can also pick the environment itself: `// @vitest-environment ctrl-dom`.
+An `environment` you set in the config other than `"ctrl-dom"` stays the project's default.
+
+The plugin also looks after Vitest's workers, since the default pool starts one per test file:
+with its Testing Library it turns Node's compile cache on as each worker starts (so Vitest's own
+worker modules load from it too, not only the DOM), and it starts the next files' workers ahead
+of time ([warm workers](#warm-workers)).
+
+### Faster runs
+
+Most of what a suite of short component tests costs is not the tests: a file that renders a form
+and clicks through it runs in about 20 ms, and starting a worker for it takes several times that.
+Vitest prints the split at the end of a run (`Duration … environment 40%, tests 25%, …`). When
+`tests` is the small share, this section pays.
+
+1. **Start with `ctrlDom()` and nothing else.** It already does the safe things: this package's
+   Testing Library, the compile cache, warm workers. Prefer it to `environment: "ctrl-dom"` alone,
+   which gets you the DOM and none of that.
+2. **Use watch mode while you work.** `vitest run` on one file is about 0.9 s, of which the test
+   is 0.02 s; the rest is Vitest starting. `vitest` pays that once and keeps a worker ready, so
+   the file you just saved starts immediately.
+3. **Leave `maxWorkers` alone** unless the machine is busy with something else.
+4. **For more, trade isolation for speed deliberately.** The same 100 React test files:
+
+| | 4 workers | 15 workers | What changes for your tests |
+| --- | ---: | ---: | --- |
+| `ctrlDom()` (Vitest's default pool) | 2.86 s | 2.56 s | Nothing. A new process for every test file. |
+| `test: { pool: "threads" }` | 3.60 s | 2.33 s | A new thread for every file instead of a process: `process.chdir()` throws, and native addons must be thread-safe. Only ahead when every core is busy. |
+| `test: { pool: "vmThreads" }` | 2.05 s | 1.61 s | Workers are reused; each file gets a fresh global scope and module graph in them, which is how Jest isolates. Objects Node itself creates (an error from `fs` or `fetch`, a `Buffer`) come from outside that scope, so `instanceof Error` on them is false, and memory grows until a worker is recycled (`vmMemoryLimit`). `vmForks` is the same with processes: 2.16 s / 1.64 s. |
+| `ctrlDom({ sharedWorkers: true })` | | | Files of a worker share one realm; the plugin resets the window and re-evaluates your own modules before each file. Module state in dependencies carries over. Base UI's 9,199 tests: 35 s → 7–8 s. [Shared workers](#shared-workers). |
+
+Medians of 5 runs, i5-12600K (16 threads), Node 26.13.1. Whether a suite passes on `vmThreads`
+unchanged comes down to those `instanceof` checks on values from Node: run the whole suite on it
+before committing to it. Do not set `isolate: false` yourself: stock Testing Library
+then cleans up after a worker's first file only, which `sharedWorkers` exists to handle.
 
 ## Jest
 
@@ -268,8 +390,37 @@ Options of the Vitest plugin alone (`ctrlDom({ ... })`):
 | --- | --- | --- |
 | `testingLibrary` | `true` | route stock `@testing-library/*` imports to @ctrl/dom's implementations; `false` swaps only the DOM |
 | `jsxRuntime` | `true` | resolve `react/jsx-runtime` and `react/jsx-dev-runtime` to ES module copies of them. Vitest hands test and application code a Proxy over a CommonJS dependency, so every JSX element otherwise goes through the Proxy's `get` trap; a hooks-heavy render is 8% faster without it. Left alone when the project resolves the runtime to anything but its React |
+| `warmWorkers` | `true` | start the next test files' worker processes ahead of time, with the DOM already loaded: see below |
 | `sharedWorkers` | `false` | run a worker's test files one after another in the same realm instead of starting a worker per file: see below |
 | `debug` | off | `"aria"` or `"compact"`: [debugging with coding agents](#debugging-with-coding-agents) |
+
+### Warm workers
+
+Vitest's default pool gives every test file a fresh worker process, started when the file's turn
+comes. The file then waits about 100 ms while Node boots, Vitest's runtime loads and the DOM is
+set up: longer than a short component test takes to run.
+
+The plugin starts those processes ahead of time instead. While one file's tests run, the next
+file's worker boots on a core Vitest is not using and loads the DOM; when its turn comes it starts
+at once. Nothing is shared or reused: each file still runs in its own new process and window,
+exactly as without the option (`isolate` stays on), and a worker that is never needed is not
+started.
+
+| 100 React test files | without | with |
+| --- | ---: | ---: |
+| 4 workers on 12 cores | 4.22 s | 2.94 s |
+| 8 workers on 16 cores (what `vitest` in watch mode uses) | 3.10 s | 2.51 s |
+| 15 workers on 16 cores (what `vitest run` uses) | 2.55 s | 2.42 s |
+
+It needs idle cores to boot on, so it helps most where Vitest runs fewer workers than the machine
+has cores: watch mode, a `maxWorkers` setting, CI machines. In watch mode one worker stays ready
+between runs, so the file you just saved starts immediately. When every core already has a
+worker, runs take what they took.
+
+It applies to `pool: "forks"` (Vitest's default) and turns itself off under a debugger or
+profiler (`--inspect`, `--cpu-prof`). `ctrlDom({ warmWorkers: false })` or
+`CTRL_DOM_WARM_WORKERS=0` turns it off; `CTRL_DOM_WARM_WORKERS=debug` prints how many workers
+started ahead of their file.
 
 ### Shared workers
 
