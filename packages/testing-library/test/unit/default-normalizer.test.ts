@@ -73,6 +73,44 @@ describe("textMatcher — same answers as matches / fuzzyMatches", () => {
     }
   }
 
+  test("RegExp matchers: same answers, call for call, as matches with the default normalizer", () => {
+    class Sub extends RegExp {}
+    const ownExec = /Row/;
+    let execCalls = 0;
+    Object.defineProperty(ownExec, "exec", {
+      value(this: RegExp, s: string) {
+        execCalls++;
+        return RegExp.prototype.exec.call(this, s);
+      },
+    });
+    const regexes = () => [
+      /Row/,
+      /^Row 12$/,
+      /^$/,
+      /x*/,
+      /row/i,
+      /\s/,
+      /12/g,
+      /Row/y,
+      new Sub("Row"),
+      ownExec,
+      /^\S+$/u,
+    ];
+    const normalizer = makeNormalizer({});
+    // Fresh RegExp objects for each side: `g`/`y` carry lastIndex from call to call.
+    const ours = regexes().map((m) => textMatcher(true, m, normalizer));
+    const theirs = regexes();
+    const order = [...texts, "", "", null, "", "Row 12"];
+    for (let i = 0; i < ours.length; i++) {
+      for (const t of order) {
+        const expected = matches(t, null, theirs[i]!, normalizer);
+        expect(ours[i]!(t, null), `${String(theirs[i])} vs ${JSON.stringify(t)}`).toBe(expected);
+      }
+    }
+    // An own `exec` runs for every candidate, empty ones included (no shortcut).
+    expect(execCalls).toBe(2 * order.filter((t) => typeof t === "string").length);
+  });
+
   test("a null matcher still throws only once there is a text to match", () => {
     const match = textMatcher(true, null as never, makeNormalizer({}));
     expect(match(null, null)).toBe(false);

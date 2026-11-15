@@ -210,7 +210,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [can-have-its-url-rewritten](https://html.spec.whatwg.org/#can-have-its-url-rewritten) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
 | [case-sensitivity-of-selectors](https://html.spec.whatwg.org/#case-sensitivity-of-selectors) | `dom/css/cascade.ts`, `dom/selectors/compile.ts`, `jest-dom/matchers/aria.ts` +1 | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/matching.test.ts`; WPT: `css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html` |
 | [categories](https://html.spec.whatwg.org/#categories) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
-| [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` +1 | `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
+| [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` +1 | `testing-library/unit/label-map-cache.test.ts`, `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
 | [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
 | [category-reset](https://html.spec.whatwg.org/#category-reset) | `dom/html/forms/form-associated.ts` | WPT: `html/semantics/forms/resetting-a-form/reset-form.html` |
 | [category-submit](https://html.spec.whatwg.org/#category-submit) | `dom/html/forms/form-associated.ts` | `compat/forms/form-algorithms.test.ts` |
@@ -651,7 +651,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [interactively-validate-the-constraints](https://html.spec.whatwg.org/#interactively-validate-the-constraints) | `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
 | [invoke-custom-element-reactions](https://html.spec.whatwg.org/#invoke-custom-element-reactions) | `dom/html/custom-elements.ts` | WPT: `custom-elements/reaction-timing.html` |
 | [is-modal](https://html.spec.whatwg.org/#is-modal) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
-| [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `aria/internal.test.ts`, `compat/forms/form-algorithms.test.ts` |
+| [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `aria/internal.test.ts`, `testing-library/unit/label-map-cache.test.ts`, `compat/forms/form-algorithms.test.ts` |
 | [language](https://html.spec.whatwg.org/#language) | `dom/html/innerText.ts`, `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
 | [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/html/forms/control-state.ts` | `compat/html/activation.test.ts` |
 | [light-dismiss-open-dialogs](https://html.spec.whatwg.org/#light-dismiss-open-dialogs) | `dom/html/interactive.ts` | `dom/html/top-layer.test.ts` |

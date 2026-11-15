@@ -152,6 +152,17 @@ export function textMatcher(
   normalizer: NormalizerFn,
 ): (textToMatch: string | null, node: any) => boolean {
   if (!exact) return (textToMatch, node) => fuzzyMatches(textToMatch, node, matcher, normalizer);
+  if (normalizer === defaultNormalizer && isPlainRegExp(matcher)) {
+    // Ours: a plain RegExp (no `g`/`y`, RegExp.prototype's exec) tests without side effects, so
+    // the many candidates whose text is empty (rows, cells holding only elements, inputs) share
+    // one test of "" instead of a normalize and a test each.
+    let empty: boolean | undefined;
+    return (textToMatch) => {
+      if (typeof textToMatch !== "string") return false;
+      if (textToMatch.length === 0) return (empty ??= matcher.test(""));
+      return matcher.test(defaultNormalizer(textToMatch));
+    };
+  }
   if (normalizer !== defaultNormalizer || (typeof matcher !== "string" && typeof matcher !== "number"))
     return (textToMatch, node) => matches(textToMatch, node, matcher, normalizer);
   const m = String(matcher);
@@ -195,6 +206,24 @@ export function makeNormalizer({ trim, collapseWhitespace, normalizer }: Normali
 
   return normalizer;
 }
+
+const regExpExec = RegExp.prototype.exec;
+
+/** A RegExp whose `test` has no side effects: no `g`/`y` (lastIndex), RegExp.prototype's own exec. */
+function isPlainRegExp(matcher: unknown): matcher is RegExp {
+  return (
+    matcher instanceof RegExp &&
+    !matcher.global &&
+    !matcher.sticky &&
+    Object.getPrototypeOf(matcher) === RegExp.prototype &&
+    !Object.hasOwn(matcher, "exec") &&
+    !Object.hasOwn(matcher, "test") &&
+    RegExp.prototype.exec === regExpExec &&
+    RegExp.prototype.test === regExpTest
+  );
+}
+
+const regExpTest = RegExp.prototype.test;
 
 function matchRegExp(matcher: RegExp, text: string): boolean {
   const match = matcher.test(text);

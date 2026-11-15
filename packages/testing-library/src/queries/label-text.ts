@@ -1,9 +1,11 @@
 // Port of @testing-library/dom src/queries/label-text.ts (MIT).
 // https://github.com/testing-library/dom-testing-library/blob/main/src/queries/label-text.ts
 //
-// Same matching semantics as upstream; LabelContext resolves labels with one walk of the tree per query (aria's labelMapForTree).
+// Same matching semantics as upstream; LabelContext resolves labels from aria's labelMapForTree
+// (one walk of the tree, reused until the document changes).
 
 import { ariaAttr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
+import { isLabelable } from "@ctrl/dom/aria/internal";
 import { getConfig } from "../config.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext } from "../label-helpers.ts";
@@ -67,7 +69,8 @@ function queryAllByLabelText(
     if (n.type !== ELEMENT_NODE) continue;
     if (ariaAttr(n, "aria-label") !== null) ariaLabelled.push(n);
     // `getRealLabels(element).length || element.hasAttribute('aria-labelledby')`
-    if (ariaAttr(n, "aria-labelledby") === null && ctx.labelsOf(n).length === 0) continue;
+    // Only labelable elements have labels (the label map's keys): the rest skip the lookup.
+    if (ariaAttr(n, "aria-labelledby") === null && (!isLabelable(n) || ctx.labelsOf(n).length === 0)) continue;
     collectLabelled(ctx, n, selector, match, labelledElements);
   }
 

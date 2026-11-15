@@ -28,7 +28,7 @@ import {
   treeRoot,
   type NodeImpl,
 } from "@ctrl/dom/internal";
-import { $impl } from "@ctrl/dom/internal";
+import { $impl, $version, derivedCache } from "@ctrl/dom/internal";
 
 export { isLabelable };
 
@@ -175,6 +175,26 @@ export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
  */
 export function labelMapForTree(impl: NodeImpl): Map<NodeImpl, NodeImpl[]> {
   const root = treeRoot(impl);
+  // Every input to the map (the tree, `for` and `id` attributes, input types, a form-associated
+  // custom element's upgrade) bumps the document's version, so a map is reused until it moves:
+  // ByLabelText built it in a walk of the whole document on every query (~30% of the query).
+  // Kept in the document's derived caches (dropped on removal, nodes/derived.ts); callers treat
+  // the map and its lists as read-only.
+  const doc = root.doc;
+  const version = (doc as unknown as { [$version]: number })[$version];
+  const maps = derivedCache(doc, LABEL_MAPS, newLabelMaps);
+  const cached = maps.get(root);
+  if (cached !== undefined && cached.version === version) return cached.map;
+  const map = buildLabelMap(root);
+  maps.set(root, { version, map });
+  return map;
+}
+
+/** Owner token of the per-document cache (@ctrl/dom nodes/derived.ts): tree root → its label map. */
+const LABEL_MAPS = {};
+const newLabelMaps = (): WeakMap<NodeImpl, { version: number; map: Map<NodeImpl, NodeImpl[]> }> => new WeakMap();
+
+function buildLabelMap(root: NodeImpl): Map<NodeImpl, NodeImpl[]> {
   const map = new Map<NodeImpl, NodeImpl[]>();
   const labels: NodeImpl[] = [];
   let anyFor = false;
