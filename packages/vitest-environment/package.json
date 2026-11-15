@@ -9,7 +9,8 @@
     "./failure-snapshot": "./src/failure-snapshot.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
-    "./shared-workers": "./src/shared-workers.ts"
+    "./shared-workers": "./src/shared-workers.ts",
+    "./prewarm": "./src/prewarm.ts"
   },
   "files": [
     "dist",
@@ -45,6 +46,10 @@
       "./shared-workers": {
         "types": "./dist/types/shared-workers.d.ts",
         "default": "./dist/shared-workers.js"
+      },
+      "./prewarm": {
+        "types": "./dist/types/prewarm.d.ts",
+        "default": "./dist/prewarm.js"
       },
       "./package.json": "./package.json"
     }

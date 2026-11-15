@@ -13,7 +13,7 @@ import { existsSync, statSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { distMapEnv, workspacePackages, repoRoot } from "../../bench/lib/packages.ts";
-import { workerExecArgv } from "@ctrl/dom/vitest";
+import { enableWarmForks, workerExecArgv } from "@ctrl/dom/vitest";
 import type { Contender } from "./types.ts";
 
 const dist = new Map(workspacePackages().flatMap((p) => p.exports.map((e) => [e.specifier, e.dist] as const)));
@@ -111,6 +111,12 @@ export const ctrlDomStack: Contender = {
   environmentOptions: { "ctrl-dom": { compileCache: true } },
   // COMPARE_WORKER_FLAGS=0 leaves them out (to measure what they buy).
   execArgv: process.env.COMPARE_WORKER_FLAGS === "0" ? [] : workerExecArgv({ pool: "forks", compileCache: true }),
+  // ... and its warm workers (forks pool only), with the bundled preload. COMPARE_WARM_WORKERS=0
+  // leaves them out.
+  configureVitest: (project) =>
+    process.env.COMPARE_WORKER_FLAGS === "0" || process.env.COMPARE_WARM_WORKERS === "0"
+      ? false
+      : enableWarmForks(project as never, pathToFileURL(bundle("@ctrl/dom/vitest-environment/prewarm")).href),
   alias: [
     { find: /^@testing-library\/react$/, replacement: bundle("@ctrl/dom/react") },
     { find: /^@testing-library\/dom$/, replacement: bundle("@ctrl/dom/testing-library") },

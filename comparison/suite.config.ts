@@ -17,6 +17,14 @@ export default defineConfig({
   test: {
     projects: selectContenders(process.env.COMPARE_CONTENDERS).map((c) => ({
       resolve: { alias: c.alias ?? [] },
+      plugins: c.configureVitest
+        ? [
+            {
+              name: `compare:${c.id}`,
+              configureVitest: async ({ project }: { project: unknown }) => void (await c.configureVitest!(project)),
+            },
+          ]
+        : [],
       test: {
         name: c.id,
         root,

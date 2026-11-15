@@ -8,9 +8,10 @@
 
 import { realpathSync } from "node:fs";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Plugin } from "vitest/config";
 import type { CtrlDomEnvironmentOptions } from "./index.ts";
+import { enableWarmForks } from "./warm-forks.ts";
 
 export type { CtrlDomEnvironmentOptions };
 
@@ -49,6 +50,20 @@ export interface CtrlDomPluginOptions extends CtrlDomEnvironmentOptions {
    * (`testingLibrary`), and does nothing in the VM pools, which reuse workers already.
    */
   sharedWorkers?: boolean;
+  /**
+   * Fork the next test files' workers ahead of time, with the DOM already loaded (default true;
+   * ./warm-forks.ts). Vitest's default pool forks a process per test file when the file is
+   * scheduled, and the file then waits ~100 ms for Node, Vitest's runtime and the environment
+   * before its first test. Each file still gets its own fresh process, exactly as without this:
+   * only when the process starts changes. It uses cores Vitest leaves idle, so it speeds up runs
+   * with fewer workers than cores (`vitest` in watch mode, `maxWorkers`, CI machines with two
+   * cores and one worker: 100 React test files with 4 workers on 12 cores take 2.85 s instead of
+   * 4.39 s) and the first file of every run, and changes nothing when every core already has a
+   * worker. Applies to `pool: "forks"` (Vitest's default) when the project's environment is this
+   * one; off under a debugger or profiler (`--inspect`, `--cpu-prof`), and with
+   * `CTRL_DOM_WARM_WORKERS=0` in the environment (`=debug` prints how many workers started warm).
+   */
+  warmWorkers?: boolean;
 }
 
 // The environment and agent debug mode's failure snapshots (docs/agent-debugging.md: a setup file
@@ -58,6 +73,8 @@ const extension = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
 const environment = fileURLToPath(new URL(`./index${extension}`, import.meta.url));
 const failureSnapshot = fileURLToPath(new URL(`./failure-snapshot${extension}`, import.meta.url));
 const sharedWorkersSetup = fileURLToPath(new URL(`./shared-workers${extension}`, import.meta.url));
+/** The warm workers' preload (./prewarm.ts), as the URL `--import` takes. */
+const prewarm = pathToFileURL(fileURLToPath(new URL(`./prewarm${extension}`, import.meta.url))).href;
 /** React's JSX runtimes as ES modules without a default export (./jsx-runtime.ts has the reason). */
 const JSX_RUNTIMES: Record<string, string> = {
   "react/jsx-runtime": fileURLToPath(new URL(`./jsx-runtime${extension}`, import.meta.url)),
@@ -98,6 +115,12 @@ const COMPILE_CACHE_IMPORT =
   'enableCompileCache(tmpdir()+"/node-compile-cache-"+process.getuid())';
 
 /**
+ * @internal Warm workers for a project, as the plugin's `configureVitest` turns them on (./warm-forks.ts).
+ * Exported for comparison/, like workerExecArgv.
+ */
+export { enableWarmForks };
+
+/**
  * @internal The Node flags the plugin adds to a project's workers: the compile cache from process
  * start (with `compileCache`), in every pool. Exported for comparison/, which mirrors the plugin's
  * setup without loading Vitest's config machinery.
@@ -133,7 +156,14 @@ function resolvedFrom(from: string, specifier: string): string | null {
 
 /** @ctrl/dom's Vitest environment plus (by default) the Testing Library aliases. */
 export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
-  const { testingLibrary = true, debug, jsxRuntime = true, sharedWorkers = false, ...rest } = options;
+  const {
+    testingLibrary = true,
+    debug,
+    jsxRuntime = true,
+    sharedWorkers = false,
+    warmWorkers = true,
+    ...rest
+  } = options;
   if (sharedWorkers && !testingLibrary) {
     throw new Error(
       "@ctrl/dom: `sharedWorkers` needs `testingLibrary` (the default): stock @testing-library/react registers its cleanup for the first test file of a worker only.",
@@ -210,7 +240,7 @@ export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
       };
     },
     // Worker flags go on the resolved project config (a CLI `--pool` included), known only here.
-    configureVitest({ project, defineCacheKeyGenerator }) {
+    async configureVitest({ project, defineCacheKeyGenerator }) {
       const config = project.config;
       if (config.browser?.enabled) return;
       underVitest = true;
@@ -229,6 +259,12 @@ export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
         compileCache: environmentOptions.compileCache === true,
       });
       if (flags.length > 0) config.execArgv = [...(config.execArgv ?? []), ...flags];
+      // After the compile cache's flag, so what the preload loads comes from the cache. Only where
+      // this environment is the project's: a project of `environment: "node"` files with a few
+      // ctrl-dom docblocks would load the DOM in every worker for nothing.
+      const ours = config.environment === environment || config.environment === ENVIRONMENT_NAME;
+      if (warmWorkers && ours && process.env.CTRL_DOM_WARM_WORKERS !== "0")
+        await enableWarmForks(project as never, prewarm);
     },
   };
 }

@@ -25,6 +25,11 @@ export interface Contender {
   execArgv?: string[];
   /** Environment variables for its Vitest workers and cold-start processes. */
   env?: Record<string, string>;
+  /**
+   * For the Vitest suite: called from a plugin's `configureVitest` with the project, to do what
+   * the contender's own Vitest plugin does there (ctrlDom()'s warm workers).
+   */
+  configureVitest?: (project: unknown) => Promise<unknown> | unknown;
   /** Modules to load natively in Vitest (`server.deps.external`), as an installed package would be. */
   external?: RegExp[];
   /** For the cold-start runner: the environment object Vitest would load (import included). */

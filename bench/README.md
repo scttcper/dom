@@ -278,6 +278,37 @@ the change: whole stack 3.92 → 3.73 s wall (ctrl-dom with stock Testing Librar
   growing it from 1 MB skips most scavenges. Only for forked pools (`forks`, `vmForks`): worker
   threads reject V8 flags in `execArgv`.
 
+### Warm workers (`ctrlDom()`)
+
+Everything above is CPU a worker spends before its file's first test, and with `isolate: true`
+the file waits for it: Vitest's Pool forks a worker when a file is scheduled
+(`ForksPoolWorker.start()`). The plugin forks the next workers ahead of time
+(packages/vitest-environment/src/warm-forks.ts: `start()` is handed a spare forked from the same
+entry point, flags and environment variables), each still used for one file, with a preload
+(src/prewarm.ts) that loads the DOM and undici while the spare waits. The boot then overlaps the
+previous file's tests on cores Vitest leaves idle. comparison/'s suite, whole stack, medians of 7
+interleaved runs, pinned to the cores listed (i5-12600K, Node 26.13.1):
+
+| workers / cores | without | with | CPU without → with |
+| --- | ---: | ---: | ---: |
+| 4 / 12 | 4.22 s | 2.94 s | 20.9 → 23.3 s |
+| 8 / 16 | 3.10 s | 2.51 s | 25.7 → 26.0 s |
+| 15 / 16 (Vitest's default for `vitest run`) | 2.55 s | 2.42 s | 29.8 → 28.0 s |
+| 1 file | 0.94 s | 0.90 s | 1.25 → 1.27 s |
+
+Total CPU is the same work done earlier, so a saturated machine gains nothing; the number of
+spares is capped at the cores without a worker (at most 4, and never more than files remain), so
+they do not compete with tests either. `--pool threads` on the same suite: 3.78 s at 4 workers,
+without the process isolation. What it does not change: `spawn` blocks Vitest's main thread for
+~5.5 ms per fork on Linux (551 ms over 100 files in a main-process profile), spare or not.
+
+Things measured on the way and not shipped: V8 flags in workers (`--single-threaded-gc`,
+`--max-lazy`, `--no-opt`, `--v8-pool-size=1`, `--max-semi-space-size=32`: within noise at 4 and
+15 workers); Node's compile cache for Vitest's main process (`NODE_COMPILE_CACHE`: ~5% of a
+one-file run, and a plugin loads after the modules it would cache). Note for measuring here: on
+this machine's `powersave` governor the first batch of workers of every run takes twice the CPU
+time of later ones (cold cores), and `--cpu-prof` makes V8 reject the compile cache.
+
 The plugin adds only the compile-cache preload (with its Testing Library; it stays off for stock
 Testing Library, see `compileCache`), in `configureVitest`, where the resolved pool is known.
 The young generation flag is not shipped: −6% worker CPU did not show up as wall time on these

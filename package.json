@@ -49,6 +49,7 @@
     "./vitest-environment/jsx-runtime": "./packages/vitest-environment/src/jsx-runtime.ts",
     "./vitest-environment/jsx-dev-runtime": "./packages/vitest-environment/src/jsx-dev-runtime.ts",
     "./vitest-environment/shared-workers": "./packages/vitest-environment/src/shared-workers.ts",
+    "./vitest-environment/prewarm": "./packages/vitest-environment/src/prewarm.ts",
     "./vitest": "./packages/vitest-environment/src/plugin.ts",
     "./register": "./packages/register/src/index.ts",
     "./register/pure": "./packages/register/src/pure.ts",
