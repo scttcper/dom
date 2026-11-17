@@ -173,10 +173,9 @@ export class Mouse {
         this.endSelecting()
       }
 
-      const clickTarget = getTreeDiff(
-        this.buttonDownTarget[button],
-        target,
-      )[2][0] as Element | undefined
+      const downTarget = this.buttonDownTarget[button]
+      const clickTarget =
+        downTarget === target ? target : getTreeDiff(downTarget, target)[2][0]
       if (clickTarget) {
         const init = this.getEventInit('click', keyDef.button)
         if (init.detail) {

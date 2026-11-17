@@ -126,44 +126,30 @@ export function registerNodeIterator(it: IteratorState): void {
 }
 
 /** Drops collected entries and entries for ranges now filed elsewhere; keeps `list` attached. */
-function compact(home: RangeHome, list: RangeList): void {
+function compact(home: RangeHome, list: RangeList, update?: (range: LiveBoundaries) => void): void {
   const refs = list.refs;
   let w = 0;
   for (let i = 0; i < refs.length; i++) {
     const r = refs[i].deref();
     // Entries left behind by refileRange/rangesAdopt (the range now lives elsewhere) are dropped.
-    if (r !== undefined && r[$home] === home) refs[w++] = refs[i];
+    if (r !== undefined && r[$home] === home) {
+      refs[w++] = refs[i];
+      update?.(r);
+    }
   }
   liveRangeCount -= refs.length - w;
   refs.length = w;
 }
 
-/** Reused result buffer of liveRanges (the range update loops never re-enter it). */
-const scratch: LiveBoundaries[] = [];
-
-/**
- * Live ranges of `n`'s node document that are still alive, in a shared buffer valid until the
- * next call; compacts that document's list.
- */
-function liveRanges(n: NodeImpl): LiveBoundaries[] {
+/** Update ranges as their weak references are compacted, so a mutation never retains its ranges afterward. */
+function updateLiveRanges(n: NodeImpl, update: (range: LiveBoundaries) => void): void {
   const home = homeOf(n);
   const list = home[$ranges];
-  scratch.length = 0;
-  if (list === null) return scratch;
-  const refs = list.refs;
-  let w = 0;
-  for (let i = 0; i < refs.length; i++) {
-    const r = refs[i].deref();
-    if (r !== undefined && r[$home] === home) {
-      scratch.push(r);
-      refs[w++] = refs[i];
-    }
-  }
-  liveRangeCount -= refs.length - w;
-  refs.length = w;
-  if (w === 0) home[$ranges] = null;
-  else if (list.sweepAt > SWEEP_MIN && w * 4 < list.sweepAt) list.sweepAt = Math.max(SWEEP_MIN, w * 2);
-  return scratch;
+  if (list === null) return;
+  compact(home, list, update);
+  const remaining = list.refs.length;
+  if (remaining === 0) home[$ranges] = null;
+  else if (list.sweepAt > SWEEP_MIN && remaining * 4 < list.sweepAt) list.sweepAt = Math.max(SWEEP_MIN, remaining * 2);
 }
 
 /**
@@ -197,19 +183,15 @@ export function rangesAdopt(node: NodeImpl, oldDoc: object): void {
 
 /** https://dom.spec.whatwg.org/#concept-node-insert step 2 */
 export function rangesAfterInsert(parent: NodeImpl, index: number, count: number): void {
-  const list = liveRanges(parent);
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i];
+  updateLiveRanges(parent, (r) => {
     if (r[$sc] === parent && r[$so] > index) r[$so] += count;
     if (r[$ec] === parent && r[$eo] > index) r[$eo] += count;
-  }
+  });
 }
 
 /** https://dom.spec.whatwg.org/#concept-node-remove steps 4-7 */
 export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl, index: number): void {
-  const list = liveRanges(parent);
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i];
+  updateLiveRanges(parent, (r) => {
     if (isInclusiveAncestor(node, r[$sc])) {
       r[$sc] = parent;
       r[$so] = index;
@@ -222,28 +204,24 @@ export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl, index: numb
     }
     if (r[$sc] === parent && r[$so] > index) r[$so]--;
     if (r[$ec] === parent && r[$eo] > index) r[$eo]--;
-  }
+  });
 }
 
 /** https://dom.spec.whatwg.org/#concept-cd-replace steps 8-11 */
 export function rangesReplaceData(node: NodeImpl, offset: number, count: number, dataLength: number): void {
-  const list = liveRanges(node);
   const end = offset + count;
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i];
+  updateLiveRanges(node, (r) => {
     if (r[$sc] === node && r[$so] > offset && r[$so] <= end) r[$so] = offset;
     if (r[$ec] === node && r[$eo] > offset && r[$eo] <= end) r[$eo] = offset;
     if (r[$sc] === node && r[$so] > end) r[$so] += dataLength - count;
     if (r[$ec] === node && r[$eo] > end) r[$eo] += dataLength - count;
-  }
+  });
 }
 
 /** https://dom.spec.whatwg.org/#concept-text-split steps 7.2-7.5 */
 export function rangesSplitText(node: NodeImpl, newNode: NodeImpl, offset: number, parent: NodeImpl): void {
-  const list = liveRanges(node);
   const index = indexOf(node);
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i];
+  updateLiveRanges(node, (r) => {
     if (r[$sc] === node && r[$so] > offset) {
       r[$sc] = newNode;
       r[$so] -= offset;
@@ -256,18 +234,15 @@ export function rangesSplitText(node: NodeImpl, newNode: NodeImpl, offset: numbe
     }
     if (r[$sc] === parent && r[$so] === index + 1) r[$so]++;
     if (r[$ec] === parent && r[$eo] === index + 1) r[$eo]++;
-  }
+  });
 }
 
 /** https://dom.spec.whatwg.org/#dom-node-normalize steps 6.4.1-6.4.4 for one merged sibling. */
 export function rangesNormalizeMerge(node: NodeImpl, current: NodeImpl, length: number): void {
-  const list = liveRanges(node);
-  // `node` may become a boundary node (conservatively marked: the marks only gate work).
-  if (list.length !== 0) markBoundary(node);
   const parent = current.parent;
   const index = indexOf(current);
-  for (let i = 0; i < list.length; i++) {
-    const r = list[i];
+  updateLiveRanges(node, (r) => {
+    markBoundary(node);
     if (r[$sc] === current) {
       r[$so] += length;
       r[$sc] = node;
@@ -284,7 +259,7 @@ export function rangesNormalizeMerge(node: NodeImpl, current: NodeImpl, length: 
       r[$ec] = node;
       r[$eo] = length;
     }
-  }
+  });
 }
 
 /** https://dom.spec.whatwg.org/#nodeiterator-pre-removing-steps (for every iterator in node's document). */

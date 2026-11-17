@@ -137,6 +137,17 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("ranges adjusted during removal are collectable while the document stays open", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    const child = w.document.createElement("button");
+    w.document.body!.append(child);
+    for (let i = 0; i < 20; i++) tracker.track("range", w.document.createRange()).selectNodeContents(child);
+    child.remove();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
   test("a removed subtree is collectable although queries and label lookups on the document cached results that contained it", async () => {
     const w = createWindow({ html: HTML });
     const d = w.document;

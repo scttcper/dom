@@ -2,8 +2,9 @@
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/selection/setSelection.ts
 
 import type {HTMLInputElement, Node} from '../../dom-types.ts'
+import {hasOwnSelection} from '../../utils/index.ts'
 import {setUISelection} from '../../document/index.ts'
-import {getTargetTypeAndSelection} from './getTargetTypeAndSelection.ts'
+import {getElement} from './getTargetTypeAndSelection.ts'
 
 /**
  * Set the selection
@@ -20,9 +21,8 @@ export function setSelection({
   focusNode: Node
   focusOffset: number
 }) {
-  const typeAndSelection = getTargetTypeAndSelection(focusNode)
-
-  if (typeAndSelection.type === 'input') {
+  const element = getElement(focusNode)
+  if (element && hasOwnSelection(element)) {
     return setUISelection(focusNode as HTMLInputElement, {
       anchorOffset,
       focusOffset,

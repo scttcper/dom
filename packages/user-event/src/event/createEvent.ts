@@ -95,17 +95,6 @@ export function createEvent<K extends EventType>(
   const {EventType, defaultInit} = eventMap[type]
   const constructors = getEventConstructors(window)
 
-  if (
-    modifiers !== undefined &&
-    (implOf(target) === null || constructors.fallbacks.has(EventType))
-  ) {
-    // Upstream's path reads the members from `init`: merge like upstream's dispatchUIEvent.
-    const merged = {...init} as Record<string, unknown>
-    modifiers.assignUIEventModifiers(merged)
-    init = merged as unknown as EventTypeInit<K>
-    modifiers = undefined
-  }
-
   // A fallback class (the window lacks the interface, e.g. PointerEvent under
   // @ctrl/dom-jest-environment's jsdom 26 parity) takes upstream's path: its native superclass
   // constructor would drop the members only the initializers set (pointerType, width, ...).
@@ -118,6 +107,13 @@ export function createEvent<K extends EventType>(
       init,
       modifiers,
     ) as FixedDocumentEventMap[K]
+  }
+
+  if (modifiers !== undefined) {
+    // Upstream's path reads the members from `init`: merge like upstream's dispatchUIEvent.
+    const merged = {...init} as Record<string, unknown>
+    modifiers.assignUIEventModifiers(merged)
+    init = merged as unknown as EventTypeInit<K>
   }
 
   const event = new constructors[EventType](type, defaultInit)

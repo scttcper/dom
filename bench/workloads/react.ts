@@ -219,6 +219,105 @@ function bigFormWorkload(n: number): Workload {
   };
 }
 
+const editSearch: Workload = {
+  id: "react/type-search-filter",
+  title: "Append a clause to a long controlled search field",
+  kind: "react",
+  iterations: 30,
+  warmup: 5,
+  setup({ React, rtl, userEvent, document }) {
+    const filter = Array.from({ length: 200 }, (_, i) => `project:service-${i}`).join(" OR ");
+    const clause = " AND status:open";
+    let changes = 0;
+    function Search() {
+      const [value, setValue] = React.useState(filter);
+      return React.createElement("input", {
+        type: "search",
+        value,
+        onChange(event) {
+          changes++;
+          setValue(event.currentTarget.value);
+        },
+      });
+    }
+    let view: any;
+    let user: any;
+    let input: any;
+    return {
+      beforeEach() {
+        changes = 0;
+        user = userEvent.setup({ document });
+        view = rtl.render(React.createElement(Search));
+        input = view.getByRole("searchbox");
+      },
+      async run() {
+        await user.type(input, clause);
+      },
+      verify() {
+        eq(input.value, filter + clause, "edited filter");
+        eq(input.selectionStart, input.value.length, "caret");
+        eq(changes, clause.length, "onChange calls");
+      },
+      afterEach() {
+        view.unmount();
+        view.container.remove();
+        view = null;
+        input = null;
+      },
+    };
+  },
+};
+
+const clickRemove: Workload = {
+  id: "react/click-remove",
+  title: "Click 10 remove buttons in a keyed React list",
+  kind: "react",
+  iterations: 30,
+  warmup: 5,
+  setup({ React, rtl, userEvent, document }) {
+    const h = React.createElement;
+    const initial = Array.from({ length: 10 }, (_, i) => i);
+    function List() {
+      const [rows, setRows] = React.useState(initial);
+      return h(
+        "ul",
+        null,
+        rows.map((row) =>
+          h(
+            "li",
+            { key: row },
+            h(
+              "button",
+              { onClick: () => setRows((r) => r.filter((id) => id !== row)) },
+              h("span", null, `Remove row ${row}`),
+            ),
+          ),
+        ),
+      );
+    }
+    let view: any;
+    let user: any;
+    return {
+      beforeEach() {
+        user = userEvent.setup({ document });
+        view = rtl.render(h(List));
+        eq(view.container.querySelector("ul").childElementCount, initial.length, "initial rows");
+      },
+      async run() {
+        for (const label of view.container.querySelectorAll("button span")) await user.click(label);
+      },
+      verify() {
+        eq(view.container.querySelector("ul").childElementCount, 0, "remaining rows");
+      },
+      afterEach() {
+        view.unmount();
+        view.container.remove();
+        view = null;
+      },
+    };
+  },
+};
+
 const listSize = 1000;
 
 const keyedList: Workload = {
@@ -598,10 +697,12 @@ function styledFormWorkload(): Workload {
 export const reactWorkloads: Workload[] = [
   formWorkload(false),
   formWorkload(true),
+  editSearch,
   bigFormWorkload(20),
   bigFormWorkload(100),
   styledFormWorkload(),
   keyedList,
+  clickRemove,
   textQueries,
   asyncFlows,
   churn,

@@ -20,22 +20,11 @@ type Context = 'pointer' | 'keyboard'
  * You can then release the key per `{descriptor>3/}` or keep it pressed and continue with the next key.
  */
 export function readNextDescriptor(text: string, context: Context) {
-  let pos = 0
-  const startBracket =
-    text[pos] in bracketDict ? (text[pos] as keyof typeof bracketDict) : ''
-
-  pos += startBracket.length
-
-  const isEscapedChar = new RegExp(`^\\${startBracket}{2}`).test(text)
-
-  const type = isEscapedChar ? '' : startBracket
-
-  return {
-    type,
-    ...(type === ''
-      ? readPrintableChar(text, pos, context)
-      : readTag(text, pos, type, context)),
-  }
+  const bracket = text[0]
+  if (bracket !== '{' && bracket !== '[')
+    return readPrintableChar(text, 0, context)
+  if (text[1] === bracket) return readPrintableChar(text, 1, context)
+  return readTag(text, 1, bracket, context)
 }
 
 function readPrintableChar(text: string, pos: number, context: Context) {
@@ -46,6 +35,7 @@ function readPrintableChar(text: string, pos: number, context: Context) {
   pos += descriptor.length
 
   return {
+    type: '' as const,
     consumedLength: pos,
     descriptor,
     releasePrevious: false,
@@ -108,6 +98,7 @@ function readTag(
   pos += endBracket.length
 
   return {
+    type: startBracket,
     consumedLength: pos,
     descriptor,
     releasePrevious: !!releasePreviousModifier,

@@ -111,19 +111,23 @@ export function setUISelection(
   mode: 'replace' | 'modify' = 'replace',
 ) {
   const el = element as EditableElement
-  const valueLength = getUIValue(el).length
-  const sanitizeOffset = (o: number) => Math.max(0, Math.min(valueLength, o))
-
   if (hasCtrlDomUI(el)) {
-    // @ctrl/dom stores start/end/direction like the selection API. user-event also needs the
-    // anchor for 'modify' (shift-extend); it is remembered next to the DOM state and only
-    // trusted while the DOM selection still matches it (a programmatic change resets it).
+    // The DOM clamps the selection to the UI value. Its start/end already identify the
+    // anchor and focus for a forward or collapsed selection. Only remember backward ones.
     const anchorOffset =
       mode === 'replace'
-        ? sanitizeOffset(anchorOffsetParam)
+        ? Math.max(0, anchorOffsetParam)
         : getUISelection(el).anchorOffset
-    const focusOffset = sanitizeOffset(focusOffsetParam)
-    el[UISelection] = {anchorOffset, focusOffset}
+    const focusOffset = Math.max(0, focusOffsetParam)
+    if (anchorOffset > focusOffset) {
+      const length = ctrlDomUI!.getUIValue(el).length
+      el[UISelection] = {
+        anchorOffset: Math.min(anchorOffset, length),
+        focusOffset: Math.min(focusOffset, length),
+      }
+    } else if (el[UISelection] !== undefined) {
+      el[UISelection] = undefined
+    }
     // Same direction upstream ends up with: it calls `setSelectionRange(start, end)`.
     ctrlDomUI!.setUISelection(
       el,
@@ -134,6 +138,8 @@ export function setUISelection(
     return
   }
 
+  const valueLength = getUIValue(el).length
+  const sanitizeOffset = (o: number) => Math.max(0, Math.min(valueLength, o))
   const anchorOffset =
     mode === 'replace' || el[UISelection] === undefined
       ? sanitizeOffset(anchorOffsetParam)
@@ -173,21 +179,21 @@ export function getUISelection(
   element: HTMLInputElement | HTMLTextAreaElement,
 ): UISelectionRange {
   const el = element as EditableElement
-  let sel: UISelection
   if (hasCtrlDomUI(el)) {
     const {start, end} = ctrlDomUI!.getUISelection(el)
     const remembered = el[UISelection]
-    sel =
-      remembered !== undefined &&
-      Math.min(remembered.anchorOffset, remembered.focusOffset) === start &&
-      Math.max(remembered.anchorOffset, remembered.focusOffset) === end
-        ? remembered
-        : {anchorOffset: start, focusOffset: end}
-  } else {
-    sel = el[UISelection] ?? {
-      anchorOffset: el.selectionStart ?? 0,
-      focusOffset: el.selectionEnd ?? 0,
+    const backward =
+      remembered?.anchorOffset === end && remembered.focusOffset === start
+    return {
+      anchorOffset: backward ? end : start,
+      focusOffset: backward ? start : end,
+      startOffset: start,
+      endOffset: end,
     }
+  }
+  const sel = el[UISelection] ?? {
+    anchorOffset: el.selectionStart ?? 0,
+    focusOffset: el.selectionEnd ?? 0,
   }
   return {
     anchorOffset: sel.anchorOffset,

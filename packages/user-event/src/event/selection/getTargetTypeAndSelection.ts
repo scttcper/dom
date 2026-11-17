@@ -33,6 +33,6 @@ export function getTargetTypeAndSelection(node: Node) {
   } as const
 }
 
-function getElement(node: Node) {
+export function getElement(node: Node) {
   return node.nodeType === 1 ? (node as Element) : node.parentElement
 }

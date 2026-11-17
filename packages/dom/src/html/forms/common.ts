@@ -74,11 +74,7 @@ export function isWS(c: number): boolean {
 
 /** https://infra.spec.whatwg.org/#strip-newlines — returns the input when there is nothing to strip. */
 export function stripNewlines(s: string): string {
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c === 0x0a || c === 0x0d) return s.replace(/[\r\n]/g, "");
-  }
-  return s;
+  return s.includes("\n") || s.includes("\r") ? s.replace(/[\r\n]/g, "") : s;
 }
 
 /** https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace */

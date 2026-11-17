@@ -1,6 +1,8 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/pointer/cssPointerEvents.ts
 
+import {getComputedStyleOverride, pointerEvents} from '@ctrl/dom/internal'
+import {implOf} from '../../ctrl-dom.ts'
 import type {
   Element,
   HTMLInputElement,
@@ -16,16 +18,22 @@ export function hasPointerEvents(
   instance: Instance,
   element: Element,
 ): boolean {
-  return checkPointerEvents(instance, element)?.pointerEvents !== 'none'
+  return checkPointerEvents(instance, element) === undefined
 }
 
-function closestPointerEventsDeclaration(element: Element):
-  | {
-      pointerEvents: string
-      tree: Element[]
-    }
-  | undefined {
+function blockedPointerEventsTree(element: Element): Element[] | undefined {
   const window = getWindow(element)
+  const impl = implOf(element)
+  if (
+    impl &&
+    typeof window.getComputedStyle === 'function' &&
+    getComputedStyleOverride(impl) === null
+  ) {
+    // Our cascade resolves inheritance on the element itself. Only blocked interactions need a diagnostic tree.
+    const value = pointerEvents(impl)
+    if (value === 'none') return [element]
+    if (value && value !== 'inherit' && value !== 'unset') return undefined
+  }
 
   for (
     let el: Element | null = element, tree: Element[] = [];
@@ -35,7 +43,7 @@ function closestPointerEventsDeclaration(element: Element):
     tree.push(el)
     const pointerEvents = window.getComputedStyle(el).pointerEvents
     if (pointerEvents && !['inherit', 'unset'].includes(pointerEvents)) {
-      return {pointerEvents, tree}
+      return pointerEvents === 'none' ? tree : undefined
     }
   }
 
@@ -47,7 +55,7 @@ type PointerEventsCheckable = Element & {
   [PointerEventsCheck]?: {
     [k in ApiLevel]?: object
   } & {
-    result: ReturnType<typeof closestPointerEventsDeclaration>
+    result: Element[] | undefined
   }
 }
 
@@ -77,28 +85,28 @@ function checkPointerEvents(
     return lastCheck?.result
   }
 
-  const declaration = closestPointerEventsDeclaration(element)
+  const tree = blockedPointerEventsTree(element)
 
   element[PointerEventsCheck] = {
     [ApiLevel.Call]: getLevelRef(instance, ApiLevel.Call),
     [ApiLevel.Trigger]: getLevelRef(instance, ApiLevel.Trigger),
-    result: declaration,
+    result: tree,
   }
 
-  return declaration
+  return tree
 }
 
 export function assertPointerEvents(instance: Instance, element: Element) {
-  const declaration = checkPointerEvents(instance, element)
+  const tree = checkPointerEvents(instance, element)
 
-  if (declaration?.pointerEvents === 'none') {
+  if (tree) {
     throw new Error(
       [
         `Unable to perform pointer interaction as the element ${
-          declaration.tree.length > 1 ? 'inherits' : 'has'
+          tree.length > 1 ? 'inherits' : 'has'
         } \`pointer-events: none\`:`,
         '',
-        printTree(declaration.tree),
+        printTree(tree),
       ].join('\n'),
     )
   }

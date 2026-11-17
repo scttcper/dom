@@ -61,7 +61,7 @@ export const actRoots = new Set<object>();
 // Returns the errors React recorded (uncaught render errors) or a task threw: React checks
 // `thrownErrors` right after the callback and rethrows without closing its queue, so the caller
 // rethrows them once act has returned. Tasks after a throwing one stay for React's own flush.
-function flushReleasingSuspendedWork(queue: ActTask[]): unknown[] {
+function flushReleasingSuspendedWork(queue: ActTask[]): unknown[] | undefined {
   let suspended = false;
   let i = 0;
   try {
@@ -94,7 +94,7 @@ function flushReleasingSuspendedWork(queue: ActTask[]): unknown[] {
       }
     }
   }
-  return reactInternals.thrownErrors.splice(0);
+  if (reactInternals.thrownErrors.length > 0) return reactInternals.thrownErrors.splice(0);
 }
 
 function isThenable(value: unknown): value is PromiseLike<unknown> {
@@ -157,7 +157,7 @@ export function actReleasingSuspendedWork(callback: () => void): void {
     act(callback);
     return;
   }
-  let errors: unknown[] = [];
+  let errors: unknown[] | undefined;
   try {
     act(() => {
       const queue = reactInternals.actQueue!;
@@ -166,9 +166,11 @@ export function actReleasingSuspendedWork(callback: () => void): void {
     });
   } catch (actError) {
     // React's flush of the tasks left after a throwing one threw too.
+    if (errors === undefined) throw actError;
     errors.push(actError);
   }
   // As React's act: one error as is, several aggregated.
+  if (errors === undefined) return;
   if (errors.length === 1) throw errors[0];
   if (errors.length > 1) throw new AggregateError(errors);
 }

@@ -25,21 +25,16 @@ export function setSelectionPerMouseDown({
   }
   const targetHasOwnSelection = hasOwnSelection(target)
 
-  // On non-input elements the text selection per multiple click
-  // can extend beyond the target boundaries.
-  // The exact mechanism what is considered in the same line is unclear.
-  // Looks it might be every inline element.
-  // TODO: Check what might be considered part of the same line of text.
-  const text = String(
-    targetHasOwnSelection ? getUIValue(target) : target.textContent,
-  )
-
-  const [start, end] = node
-    ? // As offset is describing a DOMOffset it is non-trivial to determine
-      // which elements might be considered in the same line of text.
-      // TODO: support expanding initial range on multiple clicks if node is given
-      [offset, offset]
-    : getTextRange(text, offset, clickCount)
+  // Only a double or triple click at a text offset needs the target's full text.
+  const expand = !node && clickCount % 3 !== 1
+  const text = targetHasOwnSelection
+    ? String(getUIValue(target))
+    : expand
+      ? String(target.textContent)
+      : ''
+  const [start, end] = expand
+    ? getTextRange(text, offset, clickCount)
+    : [offset, offset]
 
   // TODO: implement modifying selection per shift/ctrl+mouse
   if (targetHasOwnSelection) {
@@ -53,21 +48,20 @@ export function setSelectionPerMouseDown({
       end: end ?? text.length,
     }
   } else {
-    const {node: startNode, offset: startOffset} = resolveCaretPosition({
+    const startPosition = resolveCaretPosition({
       target,
       node,
       offset: start,
     })
-    const {node: endNode, offset: endOffset} = resolveCaretPosition({
-      target,
-      node,
-      offset: end,
-    })
+    const endPosition =
+      start === end
+        ? startPosition
+        : resolveCaretPosition({target, node, offset: end})
 
     const range = target.ownerDocument.createRange()
     try {
-      range.setStart(startNode, startOffset)
-      range.setEnd(endNode, endOffset)
+      range.setStart(startPosition.node, startPosition.offset)
+      range.setEnd(endPosition.node, endPosition.offset)
     } catch {
       throw new Error('The given offset is out of bounds.')
     }
@@ -85,7 +79,7 @@ function getTextRange(
   pos: number | undefined,
   clickCount: number,
 ) {
-  if (clickCount % 3 === 1 || text.length === 0) {
+  if (text.length === 0) {
     return [pos, pos]
   }
 
