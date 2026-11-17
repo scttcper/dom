@@ -18,6 +18,7 @@ import {
   F_HAS_SHADOW,
   F_HAS_STYLE_ATTR,
   F_INERT_ATTR,
+  F_ROLE_ATTR,
   F_TABINDEX_ATTR,
 } from "./constants.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
@@ -98,7 +99,8 @@ function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
             F_TABINDEX_ATTR |
             F_CONTENTEDITABLE_ATTR |
             F_INERT_ATTR |
-            F_FORM_ATTR);
+            F_FORM_ATTR |
+            F_ROLE_ATTR);
         if ((node.flags & F_FORM_ATTR) !== 0) el.doc[$formAttrSeen] = true;
       }
       // Element-specific cloning steps (input value/checkedness, template contents, ...).

@@ -79,6 +79,8 @@ export const F_INERT_ATTR = 1 << 18;
  * (Document[$formAttrSeen]) has no form whose controls lie outside it (html/forms/form-associated.ts).
  */
 export const F_FORM_ATTR = 1 << 19;
+/** Element has a `role` attribute (any namespace), kept like F_ARIA_ATTRS. */
+export const F_ROLE_ATTR = 1 << 22;
 /**
  * Sticky marks for live ranges (traversal/live.ts): F_RANGE on a node that is or was a live
  * range's start or end node, F_RANGE_BELOW on every ancestor of such a node (link() carries it

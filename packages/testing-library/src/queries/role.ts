@@ -117,9 +117,10 @@ function queryAllByRole(
   const gcs = styleOverride(root);
   const memo = gcs !== null && hidden === false ? new Map<NodeImpl, boolean>() : null;
 
+  const matchesRole = aria.roleMatcher(role, queryFallbacks);
   for (let el = root.first; el !== null; el = nextInTree(el, root)) {
     if (el.type !== ELEMENT_NODE) continue;
-    if (!aria.roleMatches(el, role, queryFallbacks)) continue;
+    if (!matchesRole(el)) continue;
     if (!matchesState(el, state)) continue;
     if (hidden === false && (gcs === null ? isInaccessibleImpl(el) : aria.isInaccessibleWithStyle(el, gcs, memo)))
       continue;

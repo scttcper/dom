@@ -8,7 +8,7 @@ import { getComputedStyleOverride, type NodeImpl } from "@ctrl/dom/internal";
 import { roleSupportsProp, type GetComputedStyle } from "@ctrl/dom/aria";
 import {
   implicitRole as ariaImplicitRole,
-  tlRoleMatches,
+  tlRoleMatcher,
   computeAccessibleNameImpl,
   computeAccessibleDescriptionImpl,
   isInaccessibleImpl,
@@ -46,7 +46,7 @@ export const aria = {
     return r === "" ? null : r;
   },
   /** Testing Library's role filter (explicit first token / any token with queryFallbacks / implicit). */
-  roleMatches: tlRoleMatches,
+  roleMatcher: tlRoleMatcher,
   /** `roles.get(role)?.props[prop] !== undefined` (aria-query 5.3.0). */
   roleSupportsProp(role: unknown, prop: string): boolean {
     return typeof role === "string" && roleSupportsProp(role, prop);

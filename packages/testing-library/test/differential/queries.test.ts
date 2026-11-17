@@ -220,6 +220,18 @@ describe("ByLabelText", () => {
 describe("ByRole", () => {
   differential([
     { name: "button by name", html: FORM, run: (l, c) => l.getByRole(c, "button", { name: "Create" }) },
+    {
+      name: "implicit role candidates follow attribute changes in HTML and SVG",
+      html: '<button id="b"></button><input id="i" type="button"><a id="a"></a><svg><a id="s" href="#"></a></svg>',
+      run: (l, c) => {
+        const roles = () => ["button", "checkbox", "link"].map((role) => l.queryAllByRole(c, role).map((el) => el.id));
+        const before = roles();
+        c.querySelector("input").type = "checkbox";
+        c.querySelector("button").setAttribute("role", "");
+        c.querySelector("a").setAttribute("href", "#");
+        return [before, roles()];
+      },
+    },
     { name: "all buttons (hidden excluded)", html: FORM, run: (l, c) => l.getAllByRole(c, "button") },
     { name: "hidden: true", html: FORM, run: (l, c) => l.getAllByRole(c, "button", { hidden: true }) },
     { name: "textboxes", html: FORM, run: (l, c) => l.getAllByRole(c, "textbox") },

@@ -27,13 +27,13 @@
 import {
   $version,
   ELEMENT_NODE,
+  F_ROLE_ATTR,
   HTML_NS,
   T,
   ariaAttr,
   attr,
   nodeCache,
   tagId,
-  type NodeCache,
   type NodeImpl,
 } from "@ctrl/dom/internal";
 import { inputType, selectSize } from "./forms.ts";
@@ -64,30 +64,17 @@ function eqCI(v: string | null, lower: string): boolean {
  */
 export function implicitRole(impl: NodeImpl): string {
   if (impl.type !== ELEMENT_NODE) return "";
-  const c = roleCache(impl);
-  if (c.role === NOT_COMPUTED) c.role = implicitRoleImpl(impl, false);
-  return c.role;
+  const version = impl.doc[$version];
+  const cache = nodeCache(impl);
+  if (cache.roleVersion !== version) {
+    cache.role = implicitRoleImpl(impl, false);
+    cache.roleVersion = version;
+  }
+  return cache.role;
 }
 
-/** NodeCache.role of an element with a `role` attribute until something asks for the implicit role. */
-const NOT_COMPUTED = "\0";
-
-/**
- * The element's cache with its `role` attribute current, and its Testing Library implicit role
- * when it has no `role` attribute (else NOT_COMPUTED: ByRole matches against the attribute then):
- * every ByRole query asks for them for every element in the container, and both depend only on
- * the tag and attributes, so they are kept per document version.
- */
-export function roleCache(impl: NodeImpl): NodeCache {
-  const version = impl.doc[$version];
-  const c = impl.cache as NodeCache | null;
-  if (c !== null && c.roleVersion === version) return c;
-  const cache = c ?? nodeCache(impl);
-  const roleAttr = attr(impl, "role");
-  cache.roleAttr = roleAttr;
-  cache.role = roleAttr === null ? implicitRoleImpl(impl, false) : NOT_COMPUTED;
-  cache.roleVersion = version;
-  return cache;
+export function roleAttribute(impl: NodeImpl): string | null {
+  return (impl.flags & F_ROLE_ATTR) === 0 ? null : attr(impl, "role");
 }
 
 /** jest-dom@7's `getImplicitAriaRoles` variant (see module comment). */
@@ -303,13 +290,12 @@ export function getImplicitRoles(impl: NodeImpl): string[] {
  */
 export function tlRole(impl: NodeImpl): string {
   if (impl.type !== ELEMENT_NODE) return "";
-  const c = roleCache(impl);
-  const role = c.roleAttr;
+  const role = roleAttribute(impl);
   if (role !== null) {
     const sp = role.indexOf(" ");
     return sp === -1 ? role : role.slice(0, sp);
   }
-  return c.role;
+  return implicitRole(impl);
 }
 
 // -----------------------------------------------------------------------------------------
@@ -418,7 +404,7 @@ function hasGlobalAriaAttributes(impl: NodeImpl, role: string, flavor: Flavor): 
 
 /** dom-accessibility-api getExplicitRole: first " "-token of the trimmed role attribute, null when empty. */
 export function daaExplicitRole(impl: NodeImpl): string | null {
-  const role = attr(impl, "role");
+  const role = roleAttribute(impl);
   if (role === null) return null;
   const trimmed = role.trim();
   const sp = trimmed.indexOf(" ");

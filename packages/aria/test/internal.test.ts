@@ -156,6 +156,20 @@ describe("Testing Library role filter — https://w3c.github.io/aria/#document-h
     expect(getImplicitRole($("#c"))).toBe("button");
   });
 
+  test("cloning and removing role attributes preserves the null-namespace override", () => {
+    renderIntoDocument('<button role="switch">Toggle</button>');
+    const copy = $("button").cloneNode(true) as Element;
+    const n = impl(copy);
+    expect(tlRoleMatches(n, "switch", false)).toBe(true);
+    copy.setAttributeNS("urn:test", "test:role", "alert");
+    copy.removeAttributeNS("urn:test", "role");
+    expect(tlRoleMatches(n, "switch", false)).toBe(true);
+    copy.setAttributeNS("urn:test", "test:role", "alert");
+    copy.removeAttribute("role");
+    expect(tlRoleMatches(n, "alert", false)).toBe(false);
+    expect(tlRoleMatches(n, "button", false)).toBe(true);
+  });
+
   test("an element with a role attribute still answers its implicit role", () => {
     renderIntoDocument('<input id="s" role="switch" type="checkbox">');
     expect(tlRoleMatches(impl($("#s")), "switch", false)).toBe(true);

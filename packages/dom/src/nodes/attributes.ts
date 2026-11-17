@@ -11,6 +11,7 @@ import {
   F_HTML,
   F_FORM_ATTR,
   F_INERT_ATTR,
+  F_ROLE_ATTR,
   F_TABINDEX_ATTR,
 } from "./constants.ts";
 import type { Element } from "./Element.ts";
@@ -119,12 +120,13 @@ export function getAttribute(el: NodeImpl, qualifiedName: string): string | null
 /**
  * The presence bit an attribute local name sets on its element: F_ARIA_ATTRS / F_DATA_ATTRS for
  * names starting with `aria-` / `data-`, F_TABINDEX_ATTR, F_CONTENTEDITABLE_ATTR or F_INERT_ATTR
- * for those names, F_FORM_ATTR for `form`, else 0.
+ * for those names, F_FORM_ATTR / F_ROLE_ATTR for `form` / `role`, else 0.
  */
 export function prefixFlag(localName: string): number {
   switch (localName.length) {
     case 4:
       if (localName === "form") return F_FORM_ATTR;
+      if (localName === "role") return F_ROLE_ATTR;
       break;
     case 5:
       if (localName === "inert") return F_INERT_ATTR;

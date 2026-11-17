@@ -16,7 +16,7 @@ const SAMPLES = Number(process.env.SAMPLES ?? 5);
 const MEASURE_MS = Number(process.env.MEASURE_MS ?? 400);
 const IMPLS = (process.env.IMPLS ?? "ctrl-dom,jsdom,happy-dom").split(",");
 const SIZES = (process.env.SIZES ?? "100,1000").split(",").map(Number);
-const QUERIES = (process.env.QUERIES ?? "role,label,text,testid").split(",");
+const QUERIES = (process.env.QUERIES ?? "role,role-update,label,text,testid").split(",");
 
 function formHtml(elements: number): { html: string; last: number } {
   const groups = Math.max(1, Math.round(elements / 5));
@@ -54,6 +54,16 @@ function makeQuery(lib: any, container: any, query: string, last: number): () =>
   switch (query) {
     case "role":
       return () => lib.getByRole(container, "button", { name: `Action ${last}` });
+    case "role-update": {
+      const status = container.ownerDocument.createElement("output");
+      container.appendChild(status);
+      let saved = false;
+      return () => {
+        saved = !saved;
+        status.textContent = saved ? "Saved" : "Saving";
+        return lib.getByRole(container, "status");
+      };
+    }
     case "label":
       return () => lib.getByLabelText(container, `Field ${last}`);
     case "text":
