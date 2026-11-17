@@ -416,7 +416,9 @@ export function splitOnAsciiWhitespace(s: string): string[] {
     if (i >= len) break;
     const start = i;
     while (i < len && !isAsciiWhitespace(s.charCodeAt(i))) i++;
-    out.push(start === 0 && i === len ? s : s.slice(start, i));
+    // A single class is common. A one-element literal keeps the cached token list at its exact size.
+    if (start === 0 && i === len) return [s];
+    out.push(s.slice(start, i));
   }
   return out;
 }

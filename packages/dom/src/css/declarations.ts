@@ -27,7 +27,8 @@ export class DeclBlock {
   names: string[];
   /** Specified values, already normalized. */
   values: string[];
-  important: boolean[];
+  /** Created on the first !important declaration. Missing indices have normal priority. */
+  important: boolean[] | null;
   /** Set by put()/removeOne() when they change the block (setProperty's "updated" flag). */
   dirty: boolean;
   /**
@@ -54,7 +55,7 @@ export class DeclBlock {
   constructor() {
     this.names = [];
     this.values = [];
-    this.important = [];
+    this.important = null;
     this.dirty = false;
     this.namesSynced = 0;
     this.serialized = "";
@@ -73,10 +74,18 @@ export class DeclBlock {
     return -1;
   }
 
+  isImportant(index: number): boolean {
+    return this.important?.[index] === true;
+  }
+
+  private markImportant(index: number): void {
+    (this.important ??= new Array<boolean>(index + 1))[index] = true;
+  }
+
   clear(): void {
     this.names.length = 0;
     this.values.length = 0;
-    this.important.length = 0;
+    this.important = null;
     this.namesSynced = 0;
     this.serialized = "";
     this.serializedCount = 0;
@@ -90,9 +99,9 @@ export class DeclBlock {
     if (i === -1) {
       this.names.push(name);
       this.values.push(value);
-      this.important.push(important);
+      if (important) this.markImportant(this.names.length - 1);
       this.dirty = true;
-    } else if (this.values[i] !== value || this.important[i] !== important) {
+    } else if (this.values[i] !== value || this.isImportant(i) !== important) {
       // A declaration outside every shorthand family is serialized on its own whatever its value,
       // so in a plain serialization only its own text changes (floating-ui moving a popup).
       if (
@@ -103,7 +112,8 @@ export class DeclBlock {
         this.spliceSerialized(i, value, important);
       else this.serializedCount = -1;
       this.values[i] = value;
-      this.important[i] = important;
+      if (important) this.markImportant(i);
+      else if (this.important !== null && i < this.important.length) this.important[i] = false;
       this.dirty = true;
     }
   }
@@ -116,9 +126,15 @@ export class DeclBlock {
     const names = this.names;
     const values = this.values;
     const imp = this.important;
-    let start = 0;
-    for (let j = 0; j < i; j++) start += names[j].length + values[j].length + (imp[j] ? 15 : 4);
-    const end = start + names[i].length + values[i].length + (imp[i] ? 14 : 3);
+    // Each preceding declaration contributes ": " and "; ". A priority adds " !important".
+    let start = 4 * i;
+    for (let j = 0; j < i; j++) start += names[j].length + values[j].length;
+    if (imp !== null) {
+      for (let j = 0; j < i; j++) {
+        if (imp[j]) start += 11;
+      }
+    }
+    const end = start + names[i].length + values[i].length + (imp?.[i] ? 14 : 3);
     const text = this.serialized;
     this.serialized = text.slice(0, start) + serializeDeclaration(names[i], value, important) + text.slice(end);
   }
@@ -127,16 +143,16 @@ export class DeclBlock {
   putParsed(name: string, value: string, important: boolean): void {
     const i = this.indexOf(name);
     if (i !== -1) {
-      if (this.important[i] && !important) return;
+      if (this.isImportant(i) && !important) return;
       this.names.splice(i, 1);
       this.values.splice(i, 1);
-      this.important.splice(i, 1);
+      this.important?.splice(i, 1);
       if (i < this.namesSynced) this.namesSynced = i;
       this.serializedCount = -1;
     }
     this.names.push(name);
     this.values.push(value);
-    this.important.push(important);
+    if (important) this.markImportant(this.names.length - 1);
   }
 
   /** Removes `name`; returns true if it was present. */
@@ -145,7 +161,7 @@ export class DeclBlock {
     if (i === -1) return false;
     this.names.splice(i, 1);
     this.values.splice(i, 1);
-    this.important.splice(i, 1);
+    this.important?.splice(i, 1);
     this.dirty = true;
     if (i < this.namesSynced) this.namesSynced = i;
     this.serializedCount = -1;
@@ -229,7 +245,7 @@ export class DeclBlock {
     for (const l of longhands) {
       const j = this.indexOf(l);
       if (j === -1) return "";
-      const li = this.important[j] ? 1 : 0;
+      const li = this.isImportant(j) ? 1 : 0;
       if (imp === -1) imp = li;
       else if (imp !== li) return "";
       vals.push(this.values[j]);
@@ -239,14 +255,15 @@ export class DeclBlock {
 
   /** https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority */
   getPropertyPriority(property: string): string {
+    if (this.important === null) return "";
     property = canonicalPropertyName(property);
     const i = this.indexOf(property);
-    if (i !== -1) return this.important[i] ? "important" : "";
+    if (i !== -1) return this.isImportant(i) ? "important" : "";
     const longhands = longhandsOf(property);
     if (longhands === undefined) return "";
     for (const l of longhands) {
       const j = this.indexOf(l);
-      if (j === -1 || !this.important[j]) return "";
+      if (j === -1 || !this.isImportant(j)) return "";
     }
     return "important";
   }
@@ -312,11 +329,14 @@ export class DeclBlock {
     const n = names.length;
     lastSerializationGrouped = false;
     if (n === from) return "";
+    // A single declaration cannot combine into any of the expanded shorthands.
+    if (n === from + 1) return serializeDeclaration(names[from], this.values[from], this.isImportant(from));
     let out = "";
     let done: Set<string> | null = null;
     for (let i = from; i < n; i++) {
       const name = names[i];
       if (done !== null && done.has(name)) continue;
+      const important = this.isImportant(i);
       const shorthands = shorthandsContaining(name);
       let emitted = false;
       if (shorthands !== undefined) {
@@ -328,7 +348,7 @@ export class DeclBlock {
           let ok = longhands.length <= n - from;
           for (let k = 0; k < longhands.length && ok; k++) {
             const j = this.indexOf(longhands[k], from);
-            ok = j !== -1 && this.important[j] === this.important[i] && (done === null || !done.has(longhands[k]));
+            ok = j !== -1 && this.isImportant(j) === important && (done === null || !done.has(longhands[k]));
           }
           if (!ok) continue;
           const vals: string[] = new Array(longhands.length);
@@ -337,12 +357,12 @@ export class DeclBlock {
           if (v === "") continue;
           if (done === null) done = new Set();
           for (const l of longhands) done.add(l);
-          out += (out === "" ? "" : " ") + serializeDeclaration(sh, v, this.important[i]);
+          out += (out === "" ? "" : " ") + serializeDeclaration(sh, v, important);
           emitted = true;
         }
       }
       if (emitted) continue;
-      out += (out === "" ? "" : " ") + serializeDeclaration(name, this.values[i], this.important[i]);
+      out += (out === "" ? "" : " ") + serializeDeclaration(name, this.values[i], important);
     }
     lastSerializationGrouped = done !== null;
     return out;

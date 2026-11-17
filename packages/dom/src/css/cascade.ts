@@ -1021,9 +1021,8 @@ function bucketsFor(idx: RuleIndex, pseudo: number): RuleBuckets {
 function applyBlock(map: Map<string, string>, block: DeclBlock, important: boolean): void {
   const names = block.names;
   const values = block.values;
-  const imp = block.important;
   for (let i = 0; i < names.length; i++) {
-    if (imp[i] !== important) continue;
+    if (block.isImportant(i) !== important) continue;
     const name = names[i];
     const longhands = PENDING_LONGHANDS.get(name);
     if (longhands !== undefined) {
@@ -1041,6 +1040,7 @@ function applyBlock(map: Map<string, string>, block: DeclBlock, important: boole
 /** https://drafts.csswg.org/css-cascade-5/#cascade-sort over matched rules + inline style. */
 function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null, uaMatched: Matched[]): void {
   let map: Map<string, string> | null = null;
+  let anyImportant = false;
   if (uaMatched.length !== 0) {
     map = new Map();
     uaMatched.sort(normalOrder);
@@ -1050,21 +1050,21 @@ function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null,
   if (matched.length !== 0) {
     map ??= new Map();
     matched.sort(normalOrder);
-    for (const m of matched) applyBlock(map, blockOf(m.rule), false);
+    for (const m of matched) {
+      const block = blockOf(m.rule);
+      applyBlock(map, block, false);
+      anyImportant ||= block.important?.includes(true) === true;
+    }
   }
   if (inline !== null && inline.names.length !== 0) {
     map ??= new Map();
     applyBlock(map, inline, false);
   }
-  if (matched.length !== 0) {
-    let anyImportant = false;
-    for (const m of matched) if (blockOf(m.rule).important.indexOf(true) !== -1) anyImportant = true;
-    if (anyImportant) {
-      const imp = matched.slice().sort(importantOrder);
-      for (const m of imp) applyBlock(map!, blockOf(m.rule), true);
-    }
+  if (anyImportant) {
+    matched.sort(importantOrder);
+    for (const m of matched) applyBlock(map!, blockOf(m.rule), true);
   }
-  if (inline !== null && inline.important.indexOf(true) !== -1) applyBlock(map!, inline, true);
+  if (inline !== null && inline.important?.includes(true)) applyBlock(map!, inline, true);
   rec.decls = map;
 }
 
@@ -1143,9 +1143,8 @@ let winLayer = 0;
 /** The last declaration for `prop` in `block` at `important` (as applyBlock would leave it), recorded with `layer`. */
 function winnerIn(block: DeclBlock, important: boolean, prop: string, layer: number): void {
   const names = block.names;
-  const imp = block.important;
   for (let i = 0; i < names.length; i++) {
-    if (imp[i] !== important) continue;
+    if (block.isImportant(i) !== important) continue;
     const name = names[i];
     if (name === prop) {
       winValue = block.values[i];
@@ -1588,6 +1587,11 @@ function resolvePending(rec: StyleRecord, prop: string, pending: string): string
 
 /** The computed value of `prop` for a record (memoized). */
 export function computedValueOf(rec: StyleRecord, prop: string): string {
+  // Visibility checks need only these fields, including when the value comes from a parent.
+  // Keep them out of the general property map so a visibility check alone never creates it.
+  if (prop === "display") return computeDisplay(rec);
+  if (prop === "visibility") return (rec.visibility ||= cascadedToComputed(rec, prop, rec.decls?.get(prop)));
+  if (prop === "pointer-events") return (rec.pointerEvents ||= cascadedToComputed(rec, prop, rec.decls?.get(prop)));
   if (isCustomPropertyName(prop)) return customProps(rec)?.get(prop) ?? "";
   let memo = rec.computed;
   if (memo !== null) {
@@ -1609,8 +1613,6 @@ export function computedValueOf(rec: StyleRecord, prop: string): string {
         : isCascadeOnlyShorthand(prop)
           ? serializeCascadeShorthand(prop, vals)
           : serializeShorthand(prop, vals, prop !== "background");
-  } else if (prop === "display") {
-    result = computeDisplay(rec);
   } else {
     result = cascadedToComputed(rec, prop, rec.decls?.get(prop));
   }
@@ -1836,7 +1838,7 @@ export function isDisplayNoneInclusive(el: NodeImpl): boolean {
   return false;
 }
 
-function inheritedKeyword(el: NodeImpl, prop: string, field: "visibility" | "pointerEvents", fallback: string): string {
+function inheritedKeyword(el: NodeImpl, prop: string, fallback: string): string {
   // Without author styles the value comes from the nearest styled ancestor, else it is the initial
   // value; with no sheet and no inline style in the document there is no such ancestor to find.
   if (plain(el)) {
@@ -1846,16 +1848,12 @@ function inheritedKeyword(el: NodeImpl, prop: string, field: "visibility" | "poi
     if (p === null) return fallback;
     el = p;
   }
-  const rec = styleRecord(el);
-  if (rec[field] !== "") return rec[field];
-  const v = computedValueOf(rec, prop);
-  rec[field] = v;
-  return v;
+  return computedValueOf(styleRecord(el), prop);
 }
 
 /** Computed `visibility` (inherited): "visible" | "hidden" | "collapse". */
 export function computedVisibility(el: NodeImpl): string {
-  return inheritedKeyword(el, "visibility", "visibility", "visible");
+  return inheritedKeyword(el, "visibility", "visible");
 }
 
 export function isVisibilityHidden(el: NodeImpl): boolean {
@@ -1865,7 +1863,7 @@ export function isVisibilityHidden(el: NodeImpl): boolean {
 
 /** Computed `pointer-events` (inherited). */
 export function pointerEvents(el: NodeImpl): string {
-  return inheritedKeyword(el, "pointer-events", "pointerEvents", "auto");
+  return inheritedKeyword(el, "pointer-events", "auto");
 }
 
 export function pointerEventsNone(el: NodeImpl): boolean {

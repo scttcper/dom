@@ -5,11 +5,18 @@
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nodeCache } from "../nodes/cache.ts";
+import { DeclBlock } from "./declarations.ts";
 import { CSSStyleDeclaration } from "./CSSStyleDeclaration.ts";
 import { computedValue, customPropertyNames } from "./cascade.ts";
-import { computedPropertyNames, isCustomPropertyName } from "./properties.ts";
+import { computedPropertyNames } from "./properties.ts";
 import { indexGetterTable, ensureIndexGetters, type IndexGetterTable } from "../collections/indexed.ts";
 import { $el, $impl, $pseudo, $readonly } from "../keys.ts";
+
+// All computed declarations read from the cascade. Their inherited, read-only block stays empty.
+const EMPTY_BLOCK = new DeclBlock();
+Object.freeze(EMPTY_BLOCK.names);
+Object.freeze(EMPTY_BLOCK.values);
+Object.freeze(EMPTY_BLOCK);
 
 /**
  * Computed declarations enumerate every longhand (sorted, like browsers) and resolve values
@@ -20,7 +27,7 @@ export class CSSComputedStyleDeclaration extends CSSStyleDeclaration {
   [$pseudo]: string | null;
 
   constructor(el: NodeImpl, pseudo: string | null) {
-    super(null, null, null);
+    super(null, EMPTY_BLOCK);
     this[$el] = el;
     this[$pseudo] = pseudo;
     this[$readonly] = true;
@@ -28,9 +35,8 @@ export class CSSComputedStyleDeclaration extends CSSStyleDeclaration {
       table = indexGetterTable(
         CSSComputedStyleDeclaration.prototype,
         (self, i) => (self as CSSComputedStyleDeclaration).item(i),
-        0,
+        computedPropertyNames().length,
       );
-    ensureIndexGetters(table, computedPropertyNames().length);
   }
 
   override get length(): number {
@@ -50,8 +56,7 @@ export class CSSComputedStyleDeclaration extends CSSStyleDeclaration {
 
   override getPropertyValue(property: string): string {
     if (this[$pseudo] === INVALID) return "";
-    const p = String(property);
-    return computedValue(this[$el], isCustomPropertyName(p) ? p : p.toLowerCase(), this[$pseudo]);
+    return computedValue(this[$el], String(property), this[$pseudo]);
   }
 
   override getPropertyPriority(_property: string): string {

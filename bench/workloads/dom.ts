@@ -341,6 +341,36 @@ export const domWorkloads: Workload[] = [
     },
   },
   {
+    id: "dom/first-style-reads",
+    title: "Find 250 freshly mounted rows by class and check their visibility",
+    kind: "dom",
+    iterations: 30,
+    warmup: 5,
+    setup({ document, window }) {
+      const container = document.createElement("main");
+      document.body.append(container);
+      return {
+        beforeEach() {
+          container.innerHTML = rowsHtml;
+        },
+        run() {
+          let visible = 0;
+          for (const row of container.querySelectorAll(".row")) {
+            const style = window.getComputedStyle(row);
+            if (style.display !== "none" && style.visibility !== "hidden") visible++;
+          }
+          return visible;
+        },
+        verify(visible) {
+          eq(visible, 250, "visible rows");
+        },
+        close() {
+          container.remove();
+        },
+      };
+    },
+  },
+  {
     // getComputedStyle (and the accessibility tree's display/visibility checks) after a mutation:
     // every element's style is recomputed under rules scoped by ancestor classes.
     id: "dom/computed-style-mutation",

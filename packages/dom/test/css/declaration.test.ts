@@ -197,6 +197,18 @@ describe("§6.6 CSSStyleDeclaration methods — https://drafts.csswg.org/cssom/#
     expect(s.cssText).toBe("color: red !important;");
   });
 
+  test("priority follows its declaration through reordering, removal and priority-only edits", () => {
+    const s = div().style;
+    s.cssText = "top: 0px; left: 1px; color: red !important; top: 2px";
+    expect(s.cssText).toBe("left: 1px; color: red !important; top: 2px;");
+    s.removeProperty("left");
+    expect(s.getPropertyPriority("color")).toBe("important");
+    expect(s.getPropertyPriority("top")).toBe("");
+    s.setProperty("top", "2px", "important");
+    s.setProperty("color", "red");
+    expect(s.cssText).toBe("color: red; top: 2px !important;");
+  });
+
   test("shorthand with var() is stored as the shorthand (pending substitution)", () => {
     const s = div().style;
     s.padding = "var(--x) 1px";
