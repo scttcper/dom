@@ -21,10 +21,13 @@ export function replaceData(node: NodeImpl, offset: number, count: number, data:
   if (offset + count > length) count = length - offset;
   // Step 4.
   if (activeObservers !== 0) queueCharacterDataMutationRecord(node, old);
-  // Steps 5-7.
-  node.data = offset === 0 && count === length ? data : old.slice(0, offset) + data + old.slice(offset + count);
-  // Steps 8-11.
-  if (liveRangeCount !== 0 && (node.flags & F_RANGE) !== 0) rangesReplaceData(node, offset, count, data.length);
+  // Steps 5-11. No live boundary can lie beyond the old end of the data.
+  if (offset === length) {
+    node.data = old + data;
+  } else {
+    node.data = offset === 0 && count === length ? data : old.slice(0, offset) + data + old.slice(offset + count);
+    if (liveRangeCount !== 0 && (node.flags & F_RANGE) !== 0) rangesReplaceData(node, offset, count, data.length);
+  }
   // Step 12: children changed steps of the parent.
   const parent = node.parent;
   if (parent !== null && (parent.flags & F_CHILDREN_HOOK) !== 0) (parent.node as Element)._childrenChangedSteps();

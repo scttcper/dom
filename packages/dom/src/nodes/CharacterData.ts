@@ -68,7 +68,8 @@ export abstract class CharacterData extends Node {
   appendData(data: string): void {
     if (arguments.length < 1) arity("appendData", 1, 0);
     const impl = this[$impl];
-    replaceData(impl, impl.data.length, 0, String(data));
+    const suffix = String(data);
+    replaceData(impl, impl.data.length, 0, suffix);
   }
 
   insertData(offset: number, data: string): void {

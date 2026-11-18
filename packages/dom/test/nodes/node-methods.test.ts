@@ -439,6 +439,21 @@ describe("CharacterData — https://dom.spec.whatwg.org/#interface-characterdata
     },
   );
 
+  differential("appendData uses the end after argument conversion and preserves a range ending there", (w) => {
+    const t = w.document.createTextNode("a");
+    const r = w.document.createRange();
+    const observer = new w.MutationObserver(() => {});
+    observer.observe(t, { characterData: true, characterDataOldValue: true });
+    t.appendData({
+      toString() {
+        t.appendData("bc");
+        r.selectNodeContents(t);
+        return "d";
+      },
+    });
+    return [t.data, r.toString(), r.endOffset, observer.takeRecords().map((record: AnyWindow) => record.oldValue)];
+  });
+
   differential("replace data steps 8–11: live range boundaries inside, after and before the replaced span", (w) => {
     const d = w.document;
     const t = d.body.appendChild(d.createTextNode("0123456789"));
