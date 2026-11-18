@@ -1,10 +1,8 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/edit/setFiles.ts
 
+import {implOf} from '../../ctrl-dom.ts'
 import type {FileList, HTMLInputElement} from '../../dom-types.ts'
-// It is not possible to create a real FileList programmatically.
-// Therefore assigning `files` property with a programmatically created FileList results in an error.
-// Just assigning the property (as per fireEvent) breaks the interweaving with the `value` property.
 
 const fakeFiles = Symbol('files and value properties are mocked')
 
@@ -27,6 +25,13 @@ function restoreProperty<T extends object>(
 }
 
 export function setFiles(el: FakeFilesInput & {type: 'file'}, files: FileList) {
+  // The native setter lets form reset, type changes and constraint validation see the upload.
+  if (implOf(el)) {
+    el.files = files
+    return
+  }
+
+  // DOMs that reject constructed file lists need the matching files and value accessors.
   el[fakeFiles]?.restore()
 
   const typeDescr = Object.getOwnPropertyDescriptor(el, 'type')
@@ -34,6 +39,7 @@ export function setFiles(el: FakeFilesInput & {type: 'file'}, files: FileList) {
   const filesDescr = Object.getOwnPropertyDescriptor(el, 'files')
 
   function restore() {
+    delete el[fakeFiles]
     restoreProperty(el, 'type', typeDescr)
     restoreProperty(el, 'value', valueDescr)
     restoreProperty(el, 'files', filesDescr)

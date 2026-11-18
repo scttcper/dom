@@ -97,6 +97,35 @@ function Data({ promise }: { promise: Promise<string> }) {
 }
 
 describe("render → interact → cleanup — https://testing-library.com/docs/react-testing-library/api#cleanup", () => {
+  test("resetting a form or changing input type releases uploaded files while the controls stay mounted", async () => {
+    const tracker = new Tracker();
+    const user = setupUser();
+    render(
+      <form>
+        <input type="file" aria-label="Invoice" required />
+        <input type="file" aria-label="Receipt" />
+      </form>,
+    );
+    const invoice = screen.getByLabelText("Invoice") as HTMLInputElement;
+    const receipt = screen.getByLabelText("Receipt") as HTMLInputElement;
+    await (async () => {
+      for (const input of [invoice, receipt]) {
+        const file = tracker.track("upload", new File(["attachment"], "attachment.txt"));
+        await user.upload(input, file);
+        expect(input.files!.item(0)).toBe(file);
+        tracker.track("file list", input.files!);
+      }
+    })();
+    expect(invoice.validity.valueMissing).toBe(false);
+    receipt.setAttribute("type", "text");
+    invoice.form!.reset();
+    expect(await tracker.alive()).toEqual({});
+    expect(receipt.files).toBeNull();
+    expect(invoice.files).toHaveLength(0);
+    expect(invoice.value).toBe("");
+    expect(invoice.validity.valueMissing).toBe(true);
+  });
+
   test("a rejected upload releases its files while the input and user stay active", async () => {
     const tracker = new Tracker();
     const user = setupUser();

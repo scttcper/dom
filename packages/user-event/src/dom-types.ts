@@ -322,7 +322,7 @@ export interface HTMLInputElement extends HTMLElement {
   multiple: boolean
   accept: string
   maxLength: number
-  readonly files: FileList | null
+  files: FileList | null
   readonly form: HTMLFormElement | null
   readonly labels: NodeListOf<HTMLLabelElement> | null
   selectionStart: number | null
