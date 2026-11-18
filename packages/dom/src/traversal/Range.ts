@@ -82,41 +82,44 @@ function toNodeImpl(node: unknown, method: string, iface = "Range"): NodeImpl {
 /**
  * Position of boundary point (a, oa) relative to (b, ob): -1 before, 0 equal, 1 after.
  * https://dom.spec.whatwg.org/#concept-range-bp-position — computed from the two ancestor
- * chains (O(depth)) rather than by scanning tree order. The points must share a root.
+ * chains and sibling links. The points must share a root.
  */
 export function compareBoundaryPoints(a: NodeImpl, oa: number, b: NodeImpl, ob: number): number {
   if (a === b) return oa === ob ? 0 : oa < ob ? -1 : 1;
   if (a.parent === b.parent) return siblingPrecedes(a, b) ? -1 : 1;
-  let da = 0;
-  for (let n = a.parent; n !== null; n = n.parent) da++;
-  let db = 0;
-  for (let n = b.parent; n !== null; n = n.parent) db++;
-  let x = a;
-  let y = b;
-  let childX: NodeImpl | null = null;
-  let childY: NodeImpl | null = null;
-  while (da > db) {
-    childX = x;
-    x = x.parent!;
-    da--;
+  let difference = 0;
+  for (let child = a; child.parent !== null; child = child.parent) {
+    if (child.parent === b) return childBeforeOffset(child, ob) ? -1 : 1;
+    difference++;
   }
-  while (db > da) {
-    childY = y;
-    y = y.parent!;
-    db--;
+  for (let child = b; child.parent !== null; child = child.parent) {
+    if (child.parent === a) return childBeforeOffset(child, oa) ? 1 : -1;
+    difference--;
   }
-  while (x !== y) {
-    childX = x;
-    x = x.parent!;
-    childY = y;
-    y = y.parent!;
+  // Disjoint subtrees: align depths and compare the branches under the common parent.
+  for (; difference > 0; difference--) a = a.parent!;
+  for (; difference < 0; difference++) b = b.parent!;
+  while (a.parent !== b.parent) {
+    a = a.parent!;
+    b = b.parent!;
   }
-  // Step 4: a is an ancestor of b.
-  if (x === a) return indexOf(childY!) < oa ? 1 : -1;
-  // Mirror of step 4 (step 3 + 4): b is an ancestor of a.
-  if (x === b) return indexOf(childX!) < ob ? -1 : 1;
-  // Disjoint subtrees: sibling order of the children of the common ancestor.
-  return siblingPrecedes(childX!, childY!) ? -1 : 1;
+  return siblingPrecedes(a, b) ? -1 : 1;
+}
+
+/** Whether the child's index is less than a boundary offset in its parent. */
+function childBeforeOffset(child: NodeImpl, offset: number): boolean {
+  const after = child.parent!.childCount - offset;
+  // Test the smaller prefix or suffix. Reaching either edge identifies the child's side.
+  const limit = Math.min(offset, after);
+  let left = child;
+  let right = child;
+  for (let i = 0; i < limit; i++) {
+    if (left.prev === null) return true;
+    if (right.next === null) return false;
+    left = left.prev;
+    right = right.next;
+  }
+  return offset > after;
 }
 
 /** The child of `ancestor` that is an inclusive ancestor of `node` (node must be a descendant). */
