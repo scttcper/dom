@@ -119,6 +119,27 @@ describe("delivery — https://dom.spec.whatwg.org/#notify-mutation-observers", 
 });
 
 describe("transient registered observers — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("re-observing one root clears only that root's transient registrations", async () => {
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    const left = first.appendChild(document.createElement("span"));
+    const right = second.appendChild(document.createElement("span"));
+    const mo = new MutationObserver(() => {});
+    const options = { attributes: true, subtree: true };
+    mo.observe(first, options);
+    mo.observe(second, options);
+    left.remove();
+    right.remove();
+    mo.observe(first, options);
+    left.id = "left";
+    right.id = "right";
+    expect(mo.takeRecords().map((record) => record.target)).toEqual([right]);
+    await Promise.resolve();
+    right.id = "after-delivery";
+    expect(mo.takeRecords()).toEqual([]);
+    mo.disconnect();
+  });
+
   test("a removed subtree keeps reporting to subtree observers until the next delivery", async () => {
     const parent = document.createElement("div");
     const child = parent.appendChild(document.createElement("span"));

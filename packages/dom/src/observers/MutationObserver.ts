@@ -3,21 +3,18 @@
 // OWNER: dom-core. Algorithms (record queueing, delivery) live in observers/queue.ts.
 
 import type { Node } from "../nodes/Node.ts";
-import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { MutationRecord } from "./MutationRecord.ts";
 import {
   NormalizedOptions,
   RegisteredObserver,
-  activeObservers,
+  type ObservedNode,
   addRegistration,
   dropPending,
   registeredObserverList,
-  removeRegistrations,
-  setActiveObservers,
-  setSubtreeObservers,
-  subtreeObservers,
+  removeRegistration,
+  removeTransientRegistrations,
 } from "./queue.ts";
-import { $callback, $hasTransients, $id, $impl, $nodes, $records } from "../keys.ts";
+import { $callback, $transients, $id, $impl, $nodes, $records } from "../keys.ts";
 
 export interface MutationObserverInit {
   childList?: boolean;
@@ -41,9 +38,9 @@ export class MutationObserver {
   /** @internal https://dom.spec.whatwg.org/#concept-mo-queue */
   [$records]: MutationRecord[];
   /** @internal https://dom.spec.whatwg.org/#mutationobserver-node-list (nodes with a registration of this observer). */
-  [$nodes]: NodeImpl[];
-  /** @internal Whether `_nodes` may contain transient registrations. */
-  [$hasTransients]: boolean;
+  [$nodes]: Set<ObservedNode>;
+  /** @internal Temporary subtree registrations until the next delivery. */
+  [$transients]: RegisteredObserver[] | null;
 
   constructor(callback: MutationCallback) {
     if (typeof callback !== "function") {
@@ -52,8 +49,8 @@ export class MutationObserver {
     this[$id] = nextId++;
     this[$callback] = callback;
     this[$records] = [];
-    this[$nodes] = [];
-    this[$hasTransients] = false;
+    this[$nodes] = new Set();
+    this[$transients] = null;
   }
 
   /** https://dom.spec.whatwg.org/#dom-mutationobserver-observe */
@@ -96,37 +93,19 @@ export class MutationObserver {
       for (let i = 0; i < list.length; i++) {
         const registered = list[i];
         if (registered.observer !== this || registered.source !== null) continue;
-        for (const n of this[$nodes]) removeRegistrations(n, (r) => r.source === registered);
-        if (registered.options.subtree !== normalized.subtree)
-          setSubtreeObservers(subtreeObservers + (normalized.subtree ? 1 : -1));
-        registered.options = normalized;
+        removeTransientRegistrations(this, registered);
+        registered.updateOptions(normalized);
         return;
       }
     }
     // Step 8.
-    if (this[$nodes].length === 0) setActiveObservers(activeObservers + 1);
-    if (normalized.subtree) setSubtreeObservers(subtreeObservers + 1);
-    addRegistration(node, new RegisteredObserver(this, normalized, null));
-    this[$nodes].push(node);
+    addRegistration(node, new RegisteredObserver(node, this, normalized, null));
   }
 
   /** https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect */
   disconnect(): void {
-    const nodes = this[$nodes];
-    if (nodes.length !== 0) {
-      // A node listed twice (its own registration and a transient) has nothing left the second time.
-      let subtree = 0;
-      for (let i = 0; i < nodes.length; i++) {
-        const list = registeredObserverList(nodes[i]);
-        if (list !== null)
-          for (const r of list) if (r.observer === this && r.source === null && r.options.subtree) subtree++;
-        removeRegistrations(nodes[i], (r) => r.observer === this);
-      }
-      if (subtree !== 0) setSubtreeObservers(subtreeObservers - subtree);
-      this[$nodes] = [];
-      setActiveObservers(activeObservers - 1);
-    }
-    this[$hasTransients] = false;
+    for (const ref of this[$nodes]) removeRegistration(ref);
+    this[$transients] = null;
     this[$records] = [];
     dropPending(this);
   }

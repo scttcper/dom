@@ -14,6 +14,7 @@ import {
   currentWindowOrNull,
   installGlobals,
   MouseEvent,
+  MutationObserver,
   type HTMLFormElement,
   type HTMLInputElement,
   type ShadowRoot,
@@ -21,6 +22,7 @@ import {
 } from "@ctrl/dom";
 import { $css } from "@ctrl/dom/internal";
 import { queryAllByLabelText } from "@ctrl/dom/testing-library";
+import { activeObservers, subtreeObservers } from "../../../../packages/dom/src/observers/queue.ts";
 import { Tracker, collectGarbage, heapSlope } from "./gc.ts";
 
 const HTML = `<!doctype html><html><head><style>.a { color: red } @media (min-width: 10px) { .b { display: none } }</style></head>
@@ -169,6 +171,44 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("abandoned mutation observers release their callbacks and restore the idle mutation path", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    await collectGarbage();
+    const counts = [activeObservers, subtreeObservers];
+    (() => {
+      const row = tracker.track("observed row", w.document.createElement("div"));
+      const callback = tracker.track("callback", () => row.textContent);
+      const observer = tracker.track("observer", new MutationObserver(callback));
+      observer.observe(row, { subtree: true, attributes: true });
+      observer.observe(w.document.createElement("input"), { childList: true });
+      expect([activeObservers, subtreeObservers]).toEqual(counts.map((n) => n + 1));
+    })();
+    expect(await tracker.alive()).toEqual({});
+    await collectGarbage();
+    expect([activeObservers, subtreeObservers]).toEqual(counts);
+    w.close();
+  });
+
+  test("a mutation observer releases discarded targets and keeps observing reachable detached targets", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    const observer = new MutationObserver(() => {});
+    const live = w.document.createElement("div");
+    observer.observe(live, { attributes: true });
+    (() => {
+      const row = tracker.track("observed row", w.document.body!.appendChild(w.document.createElement("div")));
+      row.appendChild(tracker.track("row content", w.document.createElement("input")));
+      observer.observe(row, { attributes: true, subtree: true });
+      row.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    live.id = "updated";
+    expect(observer.takeRecords().map((r) => r.target)).toEqual([live]);
+    observer.disconnect();
+    w.close();
+  });
+
   test("a live abort signal releases discarded click targets and their callbacks", async () => {
     const w = createWindow();
     const controller = new AbortController();

@@ -13,40 +13,64 @@ import { reportException } from "../events/report.ts";
 import { Event } from "../events/Event.ts";
 import { MutationRecord } from "./MutationRecord.ts";
 import type { MutationObserver, MutationObserverInit } from "./MutationObserver.ts";
-import { $callback, $hasTransients, $id, $nodes, $records } from "../keys.ts";
+import { $callback, $transients, $id, $nodes, $records } from "../keys.ts";
 
-/** Number of MutationObservers with at least one (non-transient) registration. */
+/** Number of MutationObservers with registrations, including those awaiting transient cleanup. */
 export let activeObservers = 0;
 
-export function setActiveObservers(n: number): void {
-  activeObservers = n;
-}
-
-/**
- * Number of non-transient registrations with `subtree` (a transient one exists only while its
- * source does: disconnect() and re-observing remove it). With none, a mutation can interest only
- * observers registered on its target and a removal adds no transient observers, so neither walks
- * the target's ancestors. Base UI keeps childList- and attribute-only observers connected while
- * its lists are mounted, and every removal anywhere walked to the root: 145 ms in the
- * `interactions` preset's profiles, plus 53 ms in queueMutationRecord.
- */
+/** With no subtree registrations, neither queueing a record nor removing a child needs an ancestor walk. */
 export let subtreeObservers = 0;
 
-export function setSubtreeObservers(n: number): void {
-  subtreeObservers = n;
+/** The observer and the finalizer can enumerate these without retaining a target, callback, or document. */
+export class ObservedNode extends WeakRef<NodeImpl> {
+  readonly nodes: Set<ObservedNode>;
+  subtree: boolean;
+
+  constructor(node: NodeImpl, nodes: Set<ObservedNode>, subtree: boolean) {
+    super(node);
+    this.nodes = nodes;
+    this.subtree = subtree;
+    if (nodes.size === 0) activeObservers++;
+    nodes.add(this);
+    if (subtree) subtreeObservers++;
+  }
 }
+
+function forgetNode(ref: ObservedNode): void {
+  ref.nodes.delete(ref);
+  if (ref.nodes.size === 0) activeObservers--;
+  if (ref.subtree) subtreeObservers--;
+}
+
+const collected = new FinalizationRegistry<ObservedNode>(forgetNode);
 
 /** https://dom.spec.whatwg.org/#registered-observer (and transient registered observer when `source` is set). */
 export class RegisteredObserver {
-  observer: MutationObserver;
+  readonly observer: MutationObserver;
   options: NormalizedOptions;
-  /** Non-null for a transient registered observer. */
-  source: RegisteredObserver | null;
+  readonly source: RegisteredObserver | null;
+  readonly target: ObservedNode;
 
-  constructor(observer: MutationObserver, options: NormalizedOptions, source: RegisteredObserver | null) {
+  constructor(
+    node: NodeImpl,
+    observer: MutationObserver,
+    options: NormalizedOptions,
+    source: RegisteredObserver | null,
+  ) {
     this.observer = observer;
     this.options = options;
     this.source = source;
+    this.target = new ObservedNode(node, observer[$nodes], options.subtree);
+    if (source === null) collected.register(node, this.target, this.target);
+    else (observer[$transients] ??= []).push(this);
+  }
+
+  updateOptions(options: NormalizedOptions): void {
+    if (this.target.subtree !== options.subtree) {
+      subtreeObservers += options.subtree ? 1 : -1;
+      this.target.subtree = options.subtree;
+    }
+    this.options = options;
   }
 }
 
@@ -88,17 +112,20 @@ export function addRegistration(node: NodeImpl, registered: RegisteredObserver):
   list.push(registered);
 }
 
-/** Remove the registrations of `node` matching `predicate`. */
-export function removeRegistrations(node: NodeImpl, predicate: (r: RegisteredObserver) => boolean): void {
-  const list = registeredObserverList(node);
-  if (list === null) return;
-  let w = 0;
-  for (let i = 0; i < list.length; i++) if (!predicate(list[i])) list[w++] = list[i];
-  list.length = w;
-  if (w === 0) {
-    registrations.delete(node);
-    node.flags &= ~F_MO_REGISTERED;
+/** Release the observer's weak reference and the target's corresponding registration. */
+export function removeRegistration(ref: ObservedNode): void {
+  const node = ref.deref();
+  if (node !== undefined) {
+    const list = registrations.get(node)!;
+    const index = list.findIndex((r) => r.target === ref);
+    list.splice(index, 1);
+    if (list.length === 0) {
+      registrations.delete(node);
+      node.flags &= ~F_MO_REGISTERED;
+    }
   }
+  collected.unregister(ref);
+  forgetNode(ref);
 }
 
 // --- record queueing ----------------------------------------------------------------------
@@ -243,9 +270,7 @@ export function addTransientObservers(parent: NodeImpl, node: NodeImpl): void {
       // Step 1.4.
       if (hasTransientWithSource(node, source)) continue;
       // Steps 1.5-1.6.
-      addRegistration(node, new RegisteredObserver(observer, source.options, source));
-      observer[$nodes].push(node);
-      observer[$hasTransients] = true;
+      addRegistration(node, new RegisteredObserver(node, observer, source.options, source));
       // Steps 1.7-1.8: notify (and so drop the transients) even if no record gets queued.
       if (!pending.includes(observer)) pending.push(observer);
       queueMutationObserverMicrotask();
@@ -304,19 +329,17 @@ export function notifyMutationObservers(): void {
   }
 }
 
-/** Notify step 4.3: drop `mo`'s transient registrations from every node in its node list. */
-export function removeTransientRegistrations(mo: MutationObserver): void {
-  if (!mo[$hasTransients]) return;
-  mo[$hasTransients] = false;
-  const kept: NodeImpl[] = [];
-  const nodes = mo[$nodes];
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    removeRegistrations(node, (r) => r.observer === mo && r.source !== null);
-    const list = registeredObserverList(node);
-    if (list !== null && !kept.includes(node) && list.some((r) => r.observer === mo)) kept.push(node);
+/** Notify step 4.3 removes all transient registrations. Re-observing a target removes only its transients. */
+export function removeTransientRegistrations(mo: MutationObserver, source?: RegisteredObserver): void {
+  const transients = mo[$transients];
+  if (transients === null) return;
+  let kept = 0;
+  for (const r of transients) {
+    if (source === undefined || r.source === source) removeRegistration(r.target);
+    else transients[kept++] = r;
   }
-  mo[$nodes] = kept;
+  if (kept === 0) mo[$transients] = null;
+  else transients.length = kept;
 }
 
 /** @internal Drop `mo` from the pending list (disconnect). */
