@@ -64,6 +64,20 @@ describe("set the selection range — https://html.spec.whatwg.org/#set-the-sele
 });
 
 describe("input.files — https://html.spec.whatwg.org/#dom-input-files", () => {
+  test("FormData uses the files selected in the input", () => {
+    doc.body.innerHTML = '<form><input type="file" name="photos" multiple></form>';
+    const transfer = new win.DataTransfer();
+    const first = new win.File(["a"], "photo.jpg");
+    const second = new win.File(["b"], "photo.jpg");
+    transfer.items.add(first);
+    transfer.items.add(second);
+    doc.querySelector("input").files = transfer.files;
+    const photos = new win.FormData(doc.querySelector("form")).getAll("photos");
+    expect(photos).toHaveLength(2);
+    expect(photos[0]).toBe(first);
+    expect(photos[1]).toBe(second);
+  });
+
   test("file inputs return the same FileList; the setter takes a FileList and ignores null; other types return null and ignore sets", () => {
     doc.body.innerHTML = `<input id=f type=file><input id=t>`;
     const f = $("f");

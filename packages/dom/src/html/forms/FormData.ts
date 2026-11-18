@@ -75,8 +75,7 @@ export class FormData {
     const entries = constructEntryList(formImpl, submitterImpl, (list) => {
       for (let i = 0; i < list.length; i++) {
         const [name, value] = list[i];
-        if (typeof value === "string") self.append(name, value);
-        else self.append(name, value, value.name);
+        self.append(name, value);
       }
       // https://html.spec.whatwg.org/#constructing-the-form-data-set step 7: fire formdata.
       dispatchTrusted(form, new FormDataEvent("formdata", { bubbles: true, cancelable: false, formData: self }));
