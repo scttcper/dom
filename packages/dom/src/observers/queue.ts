@@ -126,8 +126,9 @@ function queueMutationRecord(
   previousSibling: NodeImpl | null,
   nextSibling: NodeImpl | null,
 ): void {
-  // Steps 1-3: interested observers → mapped old value. Usually 0 or 1 observer, so a pair of
-  // small arrays beats a Map.
+  // Steps 1-3: waitFor and component effects usually have just one interested observer.
+  let first: MutationObserver | null = null;
+  let firstOldValue: string | null = null;
   let observers: MutationObserver[] | null = null;
   let oldValues: (string | null)[] | null = null;
   // Ancestors only matter through subtree registrations.
@@ -150,6 +151,14 @@ function queueMutationRecord(
         continue;
       }
       const observer = registered.observer;
+      const wantsOldValue =
+        (type === TYPE_ATTRIBUTES && options.attributeOldValue) ||
+        (type === TYPE_CHARACTER_DATA && options.characterDataOldValue);
+      if (first === null || first === observer) {
+        first = observer;
+        if (wantsOldValue) firstOldValue = oldValue;
+        continue;
+      }
       if (observers === null) {
         observers = [];
         oldValues = [];
@@ -160,26 +169,22 @@ function queueMutationRecord(
         observers.push(observer);
         oldValues!.push(null);
       }
-      if (
-        (type === TYPE_ATTRIBUTES && options.attributeOldValue) ||
-        (type === TYPE_CHARACTER_DATA && options.characterDataOldValue)
-      ) {
-        oldValues![idx] = oldValue;
-      }
+      if (wantsOldValue) oldValues![idx] = oldValue;
     }
   }
-  if (observers === null) return;
+  if (first === null) return;
   // Step 4.
   const typeName =
     type === TYPE_ATTRIBUTES ? "attributes" : type === TYPE_CHARACTER_DATA ? "characterData" : "childList";
-  for (let i = 0; i < observers.length; i++) {
-    const observer = observers[i];
+  const count = 1 + (observers?.length ?? 0);
+  for (let i = 0; i < count; i++) {
+    const observer = i === 0 ? first : observers![i - 1];
     const record = new MutationRecord(
       typeName,
       target,
       name,
       namespace,
-      oldValues![i],
+      i === 0 ? firstOldValue : oldValues![i - 1],
       added,
       removed,
       previousSibling,

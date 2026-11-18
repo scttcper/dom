@@ -15,10 +15,8 @@ export class MutationRecord {
   #name: string | null;
   #namespace: string | null;
   #oldValue: string | null;
-  #added: NodeImpl[];
-  #removed: NodeImpl[];
-  #addedList: NodeList | null;
-  #removedList: NodeList | null;
+  #added: NodeImpl[] | NodeList;
+  #removed: NodeImpl[] | NodeList;
   #previousSibling: NodeImpl | null;
   #nextSibling: NodeImpl | null;
 
@@ -42,8 +40,6 @@ export class MutationRecord {
     this.#oldValue = oldValue;
     this.#added = added ?? NONE;
     this.#removed = removed ?? NONE;
-    this.#addedList = null;
-    this.#removedList = null;
     this.#previousSibling = previousSibling;
     this.#nextSibling = nextSibling;
   }
@@ -57,11 +53,13 @@ export class MutationRecord {
   }
 
   get addedNodes(): NodeList {
-    return (this.#addedList ??= NodeList._staticFromImpls(this.#added));
+    if (Array.isArray(this.#added)) this.#added = NodeList._staticFromImpls(this.#added);
+    return this.#added;
   }
 
   get removedNodes(): NodeList {
-    return (this.#removedList ??= NodeList._staticFromImpls(this.#removed));
+    if (Array.isArray(this.#removed)) this.#removed = NodeList._staticFromImpls(this.#removed);
+    return this.#removed;
   }
 
   get previousSibling(): Node | null {
