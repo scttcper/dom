@@ -15,6 +15,7 @@
 import { derivedCache, peekDerivedCache } from "../nodes/derived.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE, F_CONNECTED, F_HTML } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { connectingRoot } from "../nodes/tree.ts";
 import { classTokens } from "../nodes/attributes.ts";
 import { NodeList } from "../collections/NodeList.ts";
 import { OP_EQUALS, SelectorParser } from "./parser.ts";
@@ -277,16 +278,16 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
 
 /**
  * The only element with ID `id` under `root` from the document's id index: the element, null when
- * there is none, undefined when the index cannot tell (a disconnected root, or several elements
- * share the id) and the caller walks.
+ * there is none, undefined when the caller must walk. Connected shadow trees also register
+ * their IDs. During insertion the subtree is linked before all its IDs have been registered.
  */
 export function indexedDescendantById(root: NodeImpl, id: string): NodeImpl | null | undefined {
-  if ((root.flags & F_CONNECTED) === 0) return undefined;
+  if ((root.flags & F_CONNECTED) === 0 || connectingRoot() !== null) return undefined;
   const found = root.doc[$ids].get(id);
-  if (found === undefined) return root.type === DOCUMENT_NODE ? null : undefined;
+  if (found === undefined) return null;
   if (Array.isArray(found)) return undefined;
   for (let p = found.parent; p !== null; p = p.parent) if (p === root) return found;
-  return root.type === DOCUMENT_NODE ? null : undefined;
+  return null;
 }
 
 /**

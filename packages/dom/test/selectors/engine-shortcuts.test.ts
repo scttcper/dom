@@ -204,7 +204,22 @@ describe("[id=…] from the id index — https://drafts.csswg.org/selectors-4/#a
     });
   }
 
-  test("a detached root and a shadow root walk instead", () => {
+  test("a lookup during connection sees later siblings before their IDs are indexed", () => {
+    const container = document.createElement("section");
+    const input = document.createElement("input");
+    const target = document.createElement("span");
+    target.id = "later";
+    container.append(input, target);
+    const connected = input._connectedSteps.bind(input);
+    input._connectedSteps = () => {
+      connected();
+      expect(container.querySelector("#later")).toBe(target);
+      expect(document.querySelector("#later")).toBe(target);
+    };
+    document.body!.append(container);
+  });
+
+  test("a detached root and a shadow root resolve their own descendants", () => {
     const div = document.createElement("div") as AnyEl;
     div.innerHTML = "<span id=a></span>";
     expect(div.querySelector('[id="a"]')).toBe(div.firstChild);
