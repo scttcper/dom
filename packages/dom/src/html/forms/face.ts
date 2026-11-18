@@ -63,11 +63,10 @@ export class FaceState {
   state: unknown;
   flags: number;
   message: string;
-  anchor: Element | null;
   validity: ValidityState | null;
   labels: LabelsNodeList | null;
   /** Last form owner / disabledness reported through the callbacks. */
-  lastOwner: NodeImpl | null;
+  lastOwner: WeakRef<NodeImpl> | null;
   lastDisabled: boolean;
   // Validatable members (unused fields of the interface kept for shape).
   /** The custom validity error message; absent while it is the empty string. */
@@ -80,7 +79,6 @@ export class FaceState {
     this.state = null;
     this.flags = 0;
     this.message = "";
-    this.anchor = null;
     this.validity = null;
     this.labels = null;
     this.lastOwner = null;
@@ -213,7 +211,6 @@ export function internalsSetValidity(
   s.flags = bits;
   // Step 5: "normalize newlines" in the message.
   s.message = bits === 0 ? "" : String(message).replace(/\r\n?/g, "\n");
-  s.anchor = anchor ?? null;
 }
 
 export function internalsWillValidate(impl: NodeImpl): boolean {
@@ -282,8 +279,9 @@ export function flushFaceReactions(): void {
 export function faceStateMaybeChanged(impl: NodeImpl): void {
   const s = faceState(impl);
   const owner = formOwner(impl);
-  if (owner !== s.lastOwner) {
-    s.lastOwner = owner;
+  // A collected former owner still needs its transition to null reported.
+  if (owner !== (s.lastOwner === null ? null : s.lastOwner.deref())) {
+    s.lastOwner = owner === null ? null : new WeakRef(owner);
     invoke(impl, "formAssociatedCallback", [owner === null ? null : owner.node]);
   }
   const disabled = isActuallyDisabled(impl);

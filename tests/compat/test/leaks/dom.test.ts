@@ -450,6 +450,40 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
     w.close();
   });
 
+  test("a mounted custom field releases its removed validation anchor and former form", async () => {
+    const w = createWindow();
+    const doc = w.document;
+    const tracker = new Tracker();
+    const owners: (string | null)[] = [];
+    (w.customElements as CustomElementRegistry).define(
+      "x-form-field",
+      class extends HTMLElement {
+        static formAssociated = true;
+        formAssociatedCallback(owner: Element | null) {
+          owners.push(owner?.id ?? null);
+        }
+      },
+    );
+    const field = doc.body!.appendChild(doc.createElement("x-form-field")) as HTMLElement;
+    const internals = field.attachInternals();
+    (() => {
+      const form = tracker.track("former form", doc.body!.appendChild(doc.createElement("form")));
+      form.id = "owner";
+      field.setAttribute("form", "owner");
+      expect(internals.form).toBe(form);
+      const anchor = tracker.track("validation anchor", field.appendChild(doc.createElement("input")));
+      internals.setValidity({ customError: true }, "Invalid value", anchor);
+      anchor.remove();
+      form.remove();
+    })();
+    expect(internals.form).toBeNull();
+    expect(internals.validationMessage).toBe("Invalid value");
+    expect(await tracker.alive()).toEqual({});
+    field.removeAttribute("form");
+    expect(owners).toEqual(["owner", null]);
+    w.close();
+  });
+
   test("tracking a form attribute in a detached tree releases both control and form", async () => {
     const w = createWindow();
     const tracker = new Tracker();
