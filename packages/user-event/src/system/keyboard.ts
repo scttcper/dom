@@ -34,8 +34,8 @@ const modifierKeys = [
 ] as const
 type ModififierKey = (typeof modifierKeys)[number]
 
-function isModifierKey(key?: string): key is ModififierKey {
-  return modifierKeys.includes(key as ModififierKey)
+function isModifierKey(key: string): key is ModififierKey {
+  return key.length > 1 && modifierKeys.includes(key as ModififierKey)
 }
 
 const modifierLocks = [
@@ -47,8 +47,8 @@ const modifierLocks = [
 ] as const
 type ModififierLockKey = (typeof modifierLocks)[number]
 
-function isModifierLock(key?: string): key is ModififierLockKey {
-  return modifierLocks.includes(key as ModififierLockKey)
+function isModifierLock(key: string): key is ModififierLockKey {
+  return key.length > 1 && modifierLocks.includes(key as ModififierLockKey)
 }
 
 // Ours: a module-level class (upstream defines it inline, a new class per instance).
@@ -58,7 +58,7 @@ class PressedKeys {
       keyDef: keyboardKey
       unpreventedDefault: boolean
     }
-  } = {}
+  } = Object.create(null)
   add(code: string, keyDef: keyboardKey) {
     this.registry[code] ??= {
       keyDef,
@@ -80,10 +80,16 @@ class PressedKeys {
   delete(code: string) {
     delete this.registry[code]
   }
-  values() {
-    return Object.values(this.registry) as NonNullable<
-      (typeof this.registry)[string]
-    >[]
+  hasKey(key: string) {
+    for (const code in this.registry) {
+      if (this.registry[code]!.keyDef.key === key) return true
+    }
+    return false
+  }
+  keyDefs(): keyboardKey[] {
+    const defs: keyboardKey[] = []
+    for (const code in this.registry) defs.push(this.registry[code]!.keyDef)
+    return defs
   }
 }
 
@@ -107,17 +113,17 @@ export class KeyboardHost {
     Symbol: false,
     SymbolLock: false,
   }
-  private readonly pressed = new PressedKeys()
+  private pressed?: PressedKeys
   carryChar = ''
   private lastKeydownTarget?: WeakRef<Element>
   private readonly modifierLockStart: Record<string, boolean> = {}
 
   isKeyPressed(keyDef: keyboardKey) {
-    return this.pressed.has(String(keyDef.code))
+    return this.pressed?.has(String(keyDef.code)) ?? false
   }
 
   getPressedKeys() {
-    return this.pressed.values().map(p => p.keyDef)
+    return this.pressed?.keyDefs() ?? []
   }
 
   /** Press a key */
@@ -132,7 +138,8 @@ export class KeyboardHost {
     const target = getActiveElementOrBody(instance.config.document)
     this.setKeydownTarget(target)
 
-    this.pressed.add(code, keyDef)
+    const pressed = (this.pressed ??= new PressedKeys())
+    pressed.add(code, keyDef)
 
     if (isModifierKey(key)) {
       this.modifiers[key] = true
@@ -150,7 +157,7 @@ export class KeyboardHost {
     }
 
     if (unprevented) {
-      this.pressed.setUnprevented(code)
+      pressed.setUnprevented(code)
     }
 
     if (unprevented && this.hasKeyPress(key)) {
@@ -172,14 +179,11 @@ export class KeyboardHost {
     const key = String(keyDef.key)
     const code = String(keyDef.code)
 
-    const unprevented = this.pressed.isUnprevented(code)
+    const unprevented = this.pressed?.isUnprevented(code)
 
-    this.pressed.delete(code)
+    this.pressed?.delete(code)
 
-    if (
-      isModifierKey(key) &&
-      !this.pressed.values().find(p => p.keyDef.key === key)
-    ) {
+    if (isModifierKey(key) && !this.pressed?.hasKey(key)) {
       this.modifiers[key] = false
     }
 

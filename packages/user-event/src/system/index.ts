@@ -10,7 +10,11 @@ import {PointerHost} from './pointer/index.ts'
  */
 export class System {
   readonly keyboard = new KeyboardHost(this)
-  readonly pointer = new PointerHost(this)
+  #pointer?: PointerHost
+
+  get pointer(): PointerHost {
+    return (this.#pointer ??= new PointerHost(this))
+  }
 
   /** Write the modifier members into `init` (no intermediate object; see createEvent). */
   assignUIEventModifiers(init: Record<string, unknown>): void {
