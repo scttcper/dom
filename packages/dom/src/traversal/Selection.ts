@@ -258,7 +258,13 @@ export class Selection {
     const fo = Number(focusOffset) >>> 0;
     checkBoundary(a, ao);
     checkBoundary(f, fo);
-    if (!this.#inDocument(a) || !this.#inDocument(f)) return;
+    if (!this.#inDocument(a)) return;
+    if (a === f || (a.parent !== null && a.parent === f.parent)) {
+      if (compareBoundaryPoints(f, fo, a, ao) < 0) this.#setNewRange(f, fo, a, ao, DIR_BACKWARDS);
+      else this.#setNewRange(a, ao, f, fo, DIR_FORWARDS);
+      return;
+    }
+    if (!this.#inDocument(f)) return;
     const r = new Range(this.#doc);
     const backwards = compareBoundaryPoints(f, fo, a, ao) < 0;
     if (backwards) {
