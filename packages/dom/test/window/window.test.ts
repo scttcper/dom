@@ -319,6 +319,7 @@ describe("FileReader — https://w3c.github.io/FileAPI/#APIASynch", () => {
   function read(
     kind: "readAsText" | "readAsDataURL" | "readAsArrayBuffer" | "readAsBinaryString",
     blob: Blob,
+    encoding?: string,
   ): Promise<{ reader: FileReader; events: string[] }> {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -326,7 +327,7 @@ describe("FileReader — https://w3c.github.io/FileAPI/#APIASynch", () => {
       for (const type of ["loadstart", "progress", "load", "loadend"])
         reader.addEventListener(type, () => events.push(type));
       reader.addEventListener("loadend", () => resolve({ reader, events }));
-      reader[kind](blob);
+      reader[kind](blob, encoding);
       expect(reader.readyState).toBe(FileReader.LOADING);
     });
   }
@@ -343,11 +344,17 @@ describe("FileReader — https://w3c.github.io/FileAPI/#APIASynch", () => {
     expect(reader.result).toBe("data:text/plain;base64,aGk=");
   });
 
+  test("readAsText uses the requested encoding and falls back to UTF-8 for unknown labels", async () => {
+    expect((await read("readAsText", new Blob([Uint8Array.of(0x80)]), "windows-1252")).reader.result).toBe("€");
+    expect((await read("readAsText", new Blob(["é"]), "unknown-encoding")).reader.result).toBe("é");
+  });
+
   test("readAsArrayBuffer and readAsBinaryString", async () => {
     const buf = (await read("readAsArrayBuffer", new Blob([new Uint8Array([1, 2, 255])]))).reader.result as ArrayBuffer;
     expect([...new Uint8Array(buf)]).toEqual([1, 2, 255]);
-    const bin = (await read("readAsBinaryString", new Blob([new Uint8Array([65, 255])]))).reader.result;
-    expect(bin).toBe("Aÿ");
+    const allBytes = Uint8Array.from({ length: 256 }, (_, i) => i);
+    const bin = (await read("readAsBinaryString", new Blob([allBytes]))).reader.result;
+    expect(bin).toBe(String.fromCharCode(...allBytes));
   });
 
   test("onload handler attribute and abort()", async () => {

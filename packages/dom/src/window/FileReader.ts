@@ -156,22 +156,17 @@ function packageData(
   switch (kind) {
     case "ArrayBuffer":
       return buffer;
-    case "BinaryString": {
-      const bytes = new Uint8Array(buffer);
-      let s = "";
-      for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      return s;
-    }
+    case "BinaryString":
+      return Buffer.from(buffer).toString("latin1");
     case "Text": {
-      let label = "utf-8";
-      if (encoding !== undefined) {
-        try {
-          label = new TextDecoder(encoding).encoding;
-        } catch {
-          // Invalid labels fall back to UTF-8 (https://w3c.github.io/FileAPI/#encoding-determination).
-        }
+      let decoder: TextDecoder;
+      try {
+        decoder = new TextDecoder(encoding);
+      } catch {
+        // Invalid labels fall back to UTF-8 (https://w3c.github.io/FileAPI/#encoding-determination).
+        decoder = new TextDecoder();
       }
-      return new TextDecoder(label).decode(buffer);
+      return decoder.decode(buffer);
     }
     case "DataURL":
       return `data:${type || "application/octet-stream"};base64,${Buffer.from(buffer).toString("base64")}`;
