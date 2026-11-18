@@ -84,7 +84,7 @@ And real projects' own test suites on each DOM:
 | [Base UI](downstream/base-ui/README.md) (Vitest, jsdom 27.4.0) | 59.7 s · 467 MiB | 37.8 s · 391 MiB | **34.5 s** · 387 MiB |
 | [Radix Primitives](downstream/radix/README.md) (Vitest, jsdom 29.1.1) | 10.1 s · 261 MiB | **6.2 s** · 256 MiB | 6.5 s · 277 MiB |
 | [React Aria](downstream/react-aria/README.md) (Jest, jsdom 26.1.0) | 15.6 s · 964 MiB | 10.2 s · 811 MiB | **9.6 s** · 924 MiB |
-| [Sentry](downstream/sentry/README.md) (Jest, jsdom 30.1.1) | 140.7 s · 3.2 GiB | **103.2 s** · 2.3 GiB | 104.4 s · 2.5 GiB |
+| [Sentry](downstream/sentry/README.md) (Jest, jsdom 30.1.1) | 138.2 s · 2.8 GiB | 100.2 s · 2.8 GiB | **94.2 s** · 2.7 GiB |
 | [React Hook Form](downstream/react-hook-form/README.md) (Jest, jsdom 26.1.0) | 5.9 s · 460 MiB | 3.8 s · 414 MiB | **2.7 s** · 384 MiB |
 | [React Router](downstream/react-router/README.md) (Jest, jsdom 26.1.0) | 17.1 s · 959 MiB | 10.5 s · 979 MiB | **8.9 s** · 1.0 GiB |
 

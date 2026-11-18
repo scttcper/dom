@@ -142,20 +142,18 @@
     "commit": "503ad2e4e2a208a87d768a3e91bcfb55a778e7ba",
     "modes": {
       "jsdom": {
-        "passed": 23420,
-        "failed": 1,
+        "passed": 23421,
+        "failed": 0,
         "skipped": 5,
-        "failing": [
-          "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown"
-        ],
-        "wallMs": 140709,
-        "peakRssBytes": 3450126336,
+        "failing": [],
+        "wallMs": 138173,
+        "peakRssBytes": 2991030272,
         "jsdomVersion": "30.1.1",
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ],
-        "date": "2026-11-09"
+        "date": "2026-11-17"
       },
       "ctrl-dom": {
         "passed": 23407,
@@ -177,24 +175,25 @@
           "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error if the setupintent creation fails",
           "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error when confirmSetup fails"
         ],
-        "wallMs": 103179,
-        "peakRssBytes": 2493186048,
+        "wallMs": 100235,
+        "peakRssBytes": 2954805248,
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders",
           "static/app/components/seer/markdown/embeds/components/replay.spec.tsx::replay embed renders a replay player preview at block level with a timestamp",
           "static/app/views/performance/traceDetails/trace.spec.tsx::trace view reveals a hidden vital pill source node on click"
         ],
-        "date": "2026-11-09"
+        "date": "2026-11-17"
       },
       "ctrl-dom-full": {
-        "passed": 23407,
-        "failed": 14,
+        "passed": 23406,
+        "failed": 15,
         "skipped": 5,
         "failing": [
           "static/app/utils/requestError/getRequestErrorUserMessage.spec.tsx::getRequestErrorUserMessage returns message for generic Error instances",
           "static/app/views/automations/detail.spec.tsx::AutomationDetail displays connected projects and monitors",
           "static/app/views/dashboards/widgets/textWidget/textWidgetVisualization.spec.tsx::TextWidgetVisualization renders markdown code blocks",
+          "static/app/views/performance/traceDetails/trace.spec.tsx::trace view reveals a hidden vital pill source node on click",
           "static/app/views/settings/components/settingsBreadcrumb/settingsBreadcrumbSelector.spec.tsx::SettingsBreadcrumbSelector renders a label link and opens the parent menu from its separate icon button",
           "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification builds the payload from the refetched config, not the local one",
           "static/app/views/settings/organizationIntegrations/configureIntegration.spec.tsx::ConfigureIntegration GCP re-verification clears a failed manual check when saved settings trigger a new check",
@@ -207,16 +206,16 @@
           "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error if the setupintent creation fails",
           "static/gsApp/views/subscriptionPage/billingInformation.spec.tsx::Subscription > BillingInformation shows an error when confirmSetup fails"
         ],
-        "wallMs": 104414,
-        "peakRssBytes": 2733342720,
+        "wallMs": 94156,
+        "peakRssBytes": 2903359488,
         "flaky": [
           "static/app/components/core/modal/index.spec.tsx::GlobalModal does not close modal when pressing escape to close a select dropdown",
           "static/app/components/pageFilters/useStagedCompactSelect.spec.tsx::useStagedCompactSelect renders"
         ],
-        "date": "2026-11-09"
+        "date": "2026-11-17"
       }
     },
-    "date": "2026-11-09"
+    "date": "2026-11-17"
   },
   "tanstack-query": {
     "preset": "all",
