@@ -13,18 +13,51 @@
 // - an `aria-*` or `data-*` attribute changing while no style rule's selector that has been
 //   indexed mentions that attribute. Other attributes may be presentational hints or feed
 //   pseudo-classes (`disabled`, `href`, `lang`, `open`, `type`...), so they always count.
-//
-// Deliberately import-free: nodes/attributes.ts loads before everything else.
 
-/**
- * The `aria-*` and `data-*` attribute names in the selectors of indexed style rules. Only grows,
- * and stays empty in a suite whose style sheets never select on one: every attribute write asks.
- */
-const referenced = new Set<string>();
-let anyReferenced = false;
+import type { Document } from "../nodes/Document.ts";
+import { $css } from "../keys.ts";
+import type { DocCSS } from "./stylesheets.ts";
+
+/** Attribute dependencies from live shadow indexes in this document, including :host selectors. */
+export class ShadowAttributeUses {
+  readonly counts = new Map<string, number>();
+  readonly collected = new FinalizationRegistry<Set<string>>((names) => this.remove(names));
+
+  remove(names: Set<string>): void {
+    for (const name of names) {
+      const count = this.counts.get(name)!;
+      if (count === 1) this.counts.delete(name);
+      else this.counts.set(name, count - 1);
+    }
+  }
+}
+
+/** Each shadow index contributes a name once. Its registration contains only names. */
+export class ShadowAttributeNames extends Set<string> {
+  private readonly uses: ShadowAttributeUses;
+
+  constructor(uses: ShadowAttributeUses, index: object) {
+    super();
+    this.uses = uses;
+    uses.collected.register(index, this, this);
+  }
+
+  override add(name: string): this {
+    if (!this.has(name)) {
+      this.uses.counts.set(name, (this.uses.counts.get(name) ?? 0) + 1);
+      super.add(name);
+    }
+    return this;
+  }
+
+  release(): void {
+    this.uses.collected.unregister(this);
+    this.uses.remove(this);
+  }
+}
 
 /** `aria-` or `data-` at the start of `name`: most names fail on the fifth character. */
-function ariaOrData(name: string): boolean {
+export function ariaOrData(name: string): boolean {
   if (name.length < 6 || name.charCodeAt(4) !== 0x2d) return false;
   const c = name.charCodeAt(0);
   if (c === 0x61) return name.charCodeAt(1) === 0x72 && name.charCodeAt(2) === 0x69 && name.charCodeAt(3) === 0x61;
@@ -42,14 +75,9 @@ export function noteStyleRecordCached(): void {
   styleRecordsCached = true;
 }
 
-/** A style rule with `name` in an attribute selector was indexed (css/cascade.ts). */
-export function noteSelectorAttribute(name: string): void {
-  if (!ariaOrData(name)) return;
-  referenced.add(name);
-  anyReferenced = true;
-}
-
-/** Whether a change to attribute `localName` (no namespace) leaves every computed style as it was. */
-export function styleBlindAttribute(localName: string): boolean {
-  return ariaOrData(localName) && (!anyReferenced || !referenced.has(localName));
+/** Whether a change to a null-namespace attribute leaves the document's style records valid. */
+export function styleBlindAttribute(doc: Document, localName: string): boolean {
+  if (!ariaOrData(localName)) return false;
+  const css = doc[$css] as DocCSS | null;
+  return !css?.main.index?.attributeNames?.has(localName) && !css?.shadowAttributeUses?.counts.has(localName);
 }

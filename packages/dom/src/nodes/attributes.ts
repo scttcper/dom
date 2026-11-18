@@ -378,7 +378,7 @@ export function handleAttributeChanges(
   const doc = el.doc;
   doc[$version]++;
   // Computed styles survive a change no style rule can see (css/style-deps.ts).
-  if (styleRecordsCached && ns === null && styleBlindAttribute(a.localName)) doc[$benign]++;
+  if (styleRecordsCached && ns === null && styleBlindAttribute(doc, a.localName)) doc[$benign]++;
   if (ceReactionsPending) flushCEReactions(); // custom element reactions (html agent; see create.ts)
 }
 

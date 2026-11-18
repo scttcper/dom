@@ -39,7 +39,7 @@ import {
   type StateDeps,
   stateDepsHold,
 } from "../selectors/internal.ts";
-import { noteSelectorAttribute, noteStyleRecordCached } from "./style-deps.ts";
+import { ariaOrData, ShadowAttributeNames, ShadowAttributeUses, noteStyleRecordCached } from "./style-deps.ts";
 import { directionality, inputTypeName, predicates } from "../selectors/state.ts";
 import {
   appendableRule,
@@ -251,6 +251,7 @@ class LayerNode {
 }
 
 export class RuleIndex {
+  attributeNames: Set<string> | null = null;
   main: RuleBuckets;
   before: RuleBuckets;
   after: RuleBuckets;
@@ -300,7 +301,17 @@ class IndexBuilder {
   /** Adding rules to a finished index (extend): buckets that gain a rule are copied. */
   extending: boolean;
 
-  constructor(index: RuleIndex, env: MediaEnvironment) {
+  readonly noteAttribute: (name: string) => void;
+
+  constructor(index: RuleIndex, env: MediaEnvironment, shadowCSS: DocCSS | null) {
+    this.noteAttribute = (name) => {
+      if (!ariaOrData(name)) return;
+      const names = (index.attributeNames ??=
+        shadowCSS === null
+          ? new Set()
+          : new ShadowAttributeNames((shadowCSS.shadowAttributeUses ??= new ShadowAttributeUses()), index));
+      names.add(name);
+    };
     this.index = index;
     this.env = env;
     this.sheetIndex = 0;
@@ -370,7 +381,7 @@ class IndexBuilder {
     for (const sel of compiled.selectors) {
       const ir = new IndexedRule(sel, this.sheetIndex, order, block, layer, owner);
       // Changes to other aria-* / data-* attributes leave style records valid (./style-deps.ts).
-      selectorAttributeNames(sel, noteSelectorAttribute);
+      selectorAttributeNames(sel, this.noteAttribute);
       if (sel.volatile) this.index.volatile = true;
       const pe = sel.pseudoElement;
       if (pe === "") this.index.main.add(ir, this.extending);
@@ -453,8 +464,9 @@ export function ruleIndexFor(rs: RootStyles, doc: Document, styleVersion: number
     (idx.styleVersion === styleVersion || extendIndex(idx, rs, windowEnv(doc), styleVersion))
   )
     return idx.main.size + idx.before.size + idx.after.size === 0 ? null : idx;
+  rs.discardIndex();
   idx = new RuleIndex(styleVersion, quirks);
-  const b = new IndexBuilder(idx, windowEnv(doc));
+  const b = new IndexBuilder(idx, windowEnv(doc), rs.root.type === DOCUMENT_NODE ? null : docCSS(doc));
   const sheets = treeSheets(rs);
   for (let i = 0; i < sheets.length; i++) {
     b.sheetIndex = i;
@@ -745,7 +757,7 @@ let uaIndex: RuleIndex | null = null;
 function uaRuleIndex(): RuleIndex {
   if (uaIndex !== null) return uaIndex;
   uaIndex = new RuleIndex(0);
-  const b = new IndexBuilder(uaIndex, DEFAULT_MEDIA_ENV);
+  const b = new IndexBuilder(uaIndex, DEFAULT_MEDIA_ENV, null);
   for (const [selector, block] of uaRules()) b.add(compileSelectorList(selector), block, b.root);
   b.finish();
   return uaIndex;

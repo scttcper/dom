@@ -773,6 +773,22 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
 });
 
 describe("heap slope", () => {
+  test("replaced stylesheets release generated attribute selector names in a live document", async () => {
+    const w = createWindow();
+    const doc = w.document;
+    const style = doc.head!.appendChild(doc.createElement("style"));
+    const { bytesPerCycle } = await heapSlope(
+      (i) => {
+        const selectors = Array.from({ length: 64 }, (_, j) => `[data-option-${i}-${j}]`);
+        style.textContent = selectors.join("") + " { color: blue }";
+        void w.getComputedStyle(doc.body!).color;
+      },
+      { warmup: 80, samples: 6, every: 60 },
+    );
+    w.close();
+    expect(bytesPerCycle).toBeLessThan(1024);
+  });
+
   test("short-lived custom event subscriptions release their generated type names", async () => {
     const w = createWindow();
     const target = w.document.body!;

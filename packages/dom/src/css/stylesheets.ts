@@ -12,6 +12,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { DOCUMENT_NODE, F_SHADOW_ROOT } from "../nodes/constants.ts";
 import { compareTreeOrder } from "../nodes/traverse.ts";
 import { CSSStyleSheet, StyleSheetList } from "./cssom.ts";
+import { ShadowAttributeNames, type ShadowAttributeUses } from "./style-deps.ts";
 import type { RuleIndex } from "./cascade.ts";
 import { $constructed, $css, $doc, $impl, $ownerNode, $styleVersion } from "../keys.ts";
 
@@ -42,6 +43,12 @@ export class RootStyles {
     this.list = null;
     this.indexed = false;
     this.ref = null;
+    this.index = null;
+  }
+
+  discardIndex(): void {
+    const names = this.index?.attributeNames;
+    if (names instanceof ShadowAttributeNames) names.release();
     this.index = null;
   }
 
@@ -86,6 +93,7 @@ export class DocCSS {
    * with its host. Empty roots leave this index when their last sheet is removed.
    */
   shadows: RootRefs | null;
+  shadowAttributeUses: ShadowAttributeUses | null = null;
   /** Viewport the rule index was last validated against. */
   envWidth: number;
   envHeight: number;
@@ -150,18 +158,18 @@ const sheetRoots = new WeakMap<CSSStyleSheet, RootStyles>();
 export function discardSheetRuleIndexes(sheet: CSSStyleSheet): void {
   if (!sheet[$constructed]) {
     const rs = sheetRoots.get(sheet);
-    if (rs !== undefined) rs.index = null;
+    if (rs !== undefined) rs.discardIndex();
     return;
   }
   const doc = sheet[$doc];
   const css = doc === null ? null : existingDocCSS(doc);
   if (css === null) return;
-  if (css.main.index !== null && css.main.adopted.includes(sheet)) css.main.index = null;
+  if (css.main.index !== null && css.main.adopted.includes(sheet)) css.main.discardIndex();
   if (css.shadows === null) return;
   for (const ref of css.shadows.refs) {
     const rs = ref.deref();
     if (rs === undefined) css.shadows.refs.delete(ref);
-    else if (rs.index !== null && rs.adopted.includes(sheet)) rs.index = null;
+    else if (rs.index !== null && rs.adopted.includes(sheet)) rs.discardIndex();
   }
 }
 
@@ -206,7 +214,7 @@ export function unregisterOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): voi
   if (css !== null && rs !== undefined) {
     const i = rs.owners.indexOf(sheet);
     if (i !== -1) {
-      rs.index = null;
+      rs.discardIndex();
       rs.owners.splice(i, 1);
       rs.ownerNodes.splice(i, 1);
       syncList(rs);
@@ -272,7 +280,7 @@ class AdoptedSheetChanges extends WeakRef<RootStyles> implements ProxyHandler<CS
   private changed(sheets: CSSStyleSheet[], removed: boolean, added?: unknown): void {
     const rs = this.deref();
     if (rs === undefined || rs.adopted !== sheets) return;
-    if (removed) rs.index = null;
+    if (removed) rs.discardIndex();
     if (added instanceof CSSStyleSheet && added[$doc] === null) added[$doc] = rs.root.doc;
     syncShadowRegistration(rs);
     rs.root.doc[$styleVersion]++;
@@ -319,7 +327,7 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
     }
   }
   const rs = rootStylesFor(root, true)!;
-  if (rs.index !== null && rs.adopted.length !== 0) rs.index = null;
+  if (rs.index !== null && rs.adopted.length !== 0) rs.discardIndex();
   rs.adopted = list as CSSStyleSheet[];
   rs.adoptedView = null;
   for (const s of rs.adopted) if (s[$doc] === null) s[$doc] = root.doc;

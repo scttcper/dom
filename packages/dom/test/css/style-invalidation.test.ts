@@ -116,6 +116,39 @@ describe("changes that cannot change a computed style keep the cached style reco
     expect(window.getComputedStyle(note).display).toBe("block");
   });
 
+  test("attribute dependencies live with the applicable sheets of each document and shadow tree", () => {
+    const { window, document } = page();
+    const card = document.getElementById("card");
+    function mount(root: Any) {
+      const style = document.createElement("style");
+      style.textContent = "[aria-pressed] { display: grid }";
+      root.appendChild(style);
+      const button = root.appendChild(document.createElement("button"));
+      button.setAttribute("aria-pressed", "true");
+      expect(window.getComputedStyle(button).display).toBe("grid");
+      return style;
+    }
+    const mainSheet = mount(document.body);
+    const first = mount(card.attachShadow({ mode: "open" }));
+    const second = mount(document.getElementById("panel").attachShadow({ mode: "open" }));
+    const independent = page();
+    const other = record(independent.document, "card");
+    independent.document.body.setAttribute("aria-pressed", "");
+    expect(record(independent.document, "card")).toBe(other);
+
+    mainSheet.remove();
+    first.remove();
+    const withShadowRule = record(document, "card");
+    card.setAttribute("aria-pressed", "true");
+    expect(record(document, "card")).not.toBe(withShadowRule);
+    second.remove();
+    const withoutRule = record(document, "card");
+    card.removeAttribute("aria-pressed");
+    expect(record(document, "card")).toBe(withoutRule);
+    window.close();
+    independent.window.close();
+  });
+
   test("a sheet added later that mentions an attribute makes changes to it count from then on", () => {
     const { window, document } = page();
     const card = document.getElementById("card");
