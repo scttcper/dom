@@ -21,13 +21,11 @@ export class RootStyles {
   /** Owner sheets (<style>, <link>) in tree order. */
   owners: CSSStyleSheet[];
   ownerNodes: NodeImpl[];
-  /** The adoptedStyleSheets array handed out to script (may be mutated in place). */
+  /** Adopted sheets in cascade order. The public array view observes writes to this array. */
   adopted: CSSStyleSheet[];
-  /** Copy of `adopted` at the last validation (detects push/splice). */
-  adoptedSnapshot: CSSStyleSheet[];
+  /** The array view returned to script, allocated on the first read. */
+  adoptedView: CSSStyleSheet[] | null;
   list: StyleSheetList | null;
-  /** `adopted` was handed to script, which may mutate it in place (validateAdopted watches it). */
-  adoptedExposed: boolean;
   /** Listed in its document's DocCSS.shadows index. */
   indexed: boolean;
   /** The weak reference the document's RootRefs hold (created on first use). */
@@ -40,9 +38,8 @@ export class RootStyles {
     this.owners = [];
     this.ownerNodes = [];
     this.adopted = [];
-    this.adoptedSnapshot = [];
+    this.adoptedView = null;
     this.list = null;
-    this.adoptedExposed = false;
     this.indexed = false;
     this.ref = null;
     this.index = null;
@@ -85,15 +82,10 @@ export class DocCSS {
   doc: Document;
   main: RootStyles;
   /**
-   * Shadow roots with sheets, or whose `styleSheets` / `adoptedStyleSheets` script holds, for the
-   * "does any sheet apply?" fast paths. Weak: each shadow root owns its RootStyles (shadowStyles),
-   * so a shadow tree that goes away (custom elements rendered per test, Lit components adopting a
-   * shared sheet) is collected with its host. Entries leave when unused (releaseIfUnused) or
-   * collected (RootRefs prunes them).
+   * Shadow roots with active sheets. Each root owns its RootStyles and can be collected
+   * with its host. Empty roots leave this index when their last sheet is removed.
    */
   shadows: RootRefs | null;
-  /** Shadow roots whose adoptedStyleSheets array script holds (validateAdopted checks only these). */
-  watched: RootRefs | null;
   /** Viewport the rule index was last validated against. */
   envWidth: number;
   envHeight: number;
@@ -107,7 +99,6 @@ export class DocCSS {
     this.doc = doc;
     this.main = new RootStyles(doc[$impl]);
     this.shadows = null;
-    this.watched = null;
     this.envWidth = -1;
     this.envHeight = -1;
     this.envDpr = -1;
@@ -130,28 +121,26 @@ export function existingDocCSS(doc: Document): DocCSS | null {
 /** Each shadow root's RootStyles, owned by the shadow root (collected with it). */
 const shadowStyles = new WeakMap<NodeImpl, RootStyles>();
 
-/** RootStyles for a tree root (document or shadow root impl), created (and indexed) on demand. */
+/** RootStyles for a tree root (document or shadow root impl), created on demand. */
 export function rootStylesFor(root: NodeImpl, create: boolean): RootStyles | null {
   const doc = root.doc;
   const css = create ? docCSS(doc) : existingDocCSS(doc);
   if (css === null) return null;
   if (root.type === DOCUMENT_NODE) return css.main;
   let s = shadowStyles.get(root) ?? null;
-  if (create) {
-    if (s === null) shadowStyles.set(root, (s = new RootStyles(root)));
-    if (!s.indexed) {
-      (css.shadows ??= new RootRefs()).add(s);
-      s.indexed = true;
-    }
-  }
+  if (create && s === null) shadowStyles.set(root, (s = new RootStyles(root)));
   return s;
 }
 
-/** Unlist a shadow root once it has no sheets and script holds none of its collections. */
-function releaseIfUnused(css: DocCSS, rs: RootStyles): void {
-  if (rs === css.main || rs.hasSheets() || rs.list !== null || rs.adoptedExposed || !rs.indexed) return;
-  css.shadows?.delete(rs);
-  rs.indexed = false;
+/** Only trees with sheets need to be visited for document-wide style checks. */
+function syncShadowRegistration(rs: RootStyles): void {
+  if (rs.root.type === DOCUMENT_NODE) return;
+  const hasSheets = rs.hasSheets();
+  if (rs.indexed === hasSheets) return;
+  const css = docCSS(rs.root.doc);
+  if (hasSheets) (css.shadows ??= new RootRefs()).add(rs);
+  else css.shadows?.delete(rs);
+  rs.indexed = hasSheets;
 }
 
 /** The tree each registered owner sheet belongs to (its owner may have moved since). */
@@ -205,6 +194,7 @@ export function registerOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): void 
   rs.ownerNodes.splice(i, 0, owner);
   rs.owners.splice(i, 0, sheet);
   sheetRoots.set(sheet, rs);
+  syncShadowRegistration(rs);
   syncList(rs);
   owner.doc[$styleVersion]++;
 }
@@ -222,7 +212,7 @@ export function unregisterOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): voi
       syncList(rs);
     }
     sheetRoots.delete(sheet);
-    releaseIfUnused(css, rs);
+    syncShadowRegistration(rs);
   }
   sheet[$ownerNode] = null;
   owner.doc[$styleVersion]++;
@@ -259,15 +249,46 @@ export function styleSheetsOf(root: NodeImpl): StyleSheetList {
   return rs.list;
 }
 
+/** A held array may outlive its root. Only writes to the currently adopted array affect styles. */
+class AdoptedSheetChanges extends WeakRef<RootStyles> implements ProxyHandler<CSSStyleSheet[]> {
+  defineProperty(sheets: CSSStyleSheet[], key: PropertyKey, descriptor: PropertyDescriptor): boolean {
+    const oldLength = sheets.length;
+    const ok = Reflect.defineProperty(sheets, key, descriptor);
+    if (key === "length") {
+      // A failed truncation can still remove entries above a non-configurable index.
+      if (sheets.length !== oldLength) this.changed(sheets, sheets.length < oldLength);
+    } else if (ok && isSheetIndex(key)) {
+      this.changed(sheets, Number(key) < oldLength, descriptor.value);
+    }
+    return ok;
+  }
+
+  deleteProperty(sheets: CSSStyleSheet[], key: PropertyKey): boolean {
+    const ok = Reflect.deleteProperty(sheets, key);
+    if (ok && isSheetIndex(key)) this.changed(sheets, true);
+    return ok;
+  }
+
+  private changed(sheets: CSSStyleSheet[], removed: boolean, added?: unknown): void {
+    const rs = this.deref();
+    if (rs === undefined || rs.adopted !== sheets) return;
+    if (removed) rs.index = null;
+    if (added instanceof CSSStyleSheet && added[$doc] === null) added[$doc] = rs.root.doc;
+    syncShadowRegistration(rs);
+    rs.root.doc[$styleVersion]++;
+  }
+}
+
+function isSheetIndex(key: PropertyKey): boolean {
+  if (typeof key !== "string") return false;
+  const index = Number(key) >>> 0;
+  return index !== 0xffffffff && String(index) === key;
+}
+
 /** https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets (getter) */
 export function adoptedStyleSheetsOf(root: NodeImpl): CSSStyleSheet[] {
   const rs = rootStylesFor(root, true)!;
-  if (!rs.adoptedExposed) {
-    rs.adoptedExposed = true;
-    const css = docCSS(root.doc);
-    if (rs !== css.main) (css.watched ??= new RootRefs()).add(rs);
-  }
-  return rs.adopted;
+  return (rs.adoptedView ??= new Proxy(rs.adopted, new AdoptedSheetChanges(rs)));
 }
 
 /** Setter: every entry must be a constructed sheet of the same document. */
@@ -300,40 +321,8 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
   const rs = rootStylesFor(root, true)!;
   if (rs.index !== null && rs.adopted.length !== 0) rs.index = null;
   rs.adopted = list as CSSStyleSheet[];
-  rs.adoptedSnapshot = rs.adopted.slice();
-  // The new array is ours until the getter hands it out.
-  if (rs.adoptedExposed && rs !== docCSS(root.doc).main) {
-    rs.adoptedExposed = false;
-    docCSS(root.doc).watched?.delete(rs);
-  }
+  rs.adoptedView = null;
   for (const s of rs.adopted) if (s[$doc] === null) s[$doc] = root.doc;
   root.doc[$styleVersion]++;
-  releaseIfUnused(docCSS(root.doc), rs);
-}
-
-/**
- * Detects in-place mutation of adoptedStyleSheets arrays (push/splice) since the last check
- * and bumps the style version if so. Cheap: compares a few references.
- */
-export function validateAdopted(css: DocCSS): void {
-  if (checkAdopted(css.main)) css.doc[$styleVersion]++;
-  if (css.watched === null) return;
-  const refs = css.watched.refs;
-  for (const ref of refs) {
-    const rs = ref.deref();
-    if (rs === undefined) refs.delete(ref);
-    else if (checkAdopted(rs)) css.doc[$styleVersion]++;
-  }
-}
-
-function checkAdopted(rs: RootStyles): boolean {
-  const a = rs.adopted;
-  const snap = rs.adoptedSnapshot;
-  let changed = a.length !== snap.length;
-  if (!changed) for (let i = 0; i < a.length; i++) if (a[i] !== snap[i]) changed = true;
-  if (changed) {
-    rs.adoptedSnapshot = a.slice();
-    for (const s of a) if (s instanceof CSSStyleSheet && s[$doc] === null) s[$doc] = rs.root.doc;
-  }
-  return changed;
+  syncShadowRegistration(rs);
 }

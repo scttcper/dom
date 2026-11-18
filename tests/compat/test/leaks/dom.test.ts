@@ -683,6 +683,42 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
     },
   );
 
+  test("mutating the adopted sheet array releases its former sheets before another style read", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    const doc = w.document as typeof w.document & { adoptedStyleSheets: object[] };
+    const sheets = doc.adoptedStyleSheets;
+    (() => {
+      const sheet = new (w as unknown as Record<string, any>).CSSStyleSheet();
+      sheet.replaceSync("body { display: grid }");
+      tracker.track("sheet", sheet);
+      tracker.track("rule", sheet.cssRules[0]);
+      sheets.push(sheet);
+      expect(w.getComputedStyle(doc.body!).display).toBe("grid");
+      sheets.pop();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(w.getComputedStyle(doc.body!).display).toBe("block");
+    w.close();
+  });
+
+  test("holding an empty adopted sheet array releases its detached shadow root", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    const held = (() => {
+      const host = tracker.track("host", w.document.body!.appendChild(w.document.createElement("div")));
+      const root = tracker.track("shadow root", host.attachShadow({ mode: "open" })) as ShadowRoot & {
+        adoptedStyleSheets: object[];
+      };
+      const array = root.adoptedStyleSheets;
+      host.remove();
+      return array;
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(held).toHaveLength(0);
+    w.close();
+  });
+
   test("shadow roots that adopted a shared sheet (set, or read and pushed) are collectable once their hosts are removed", async () => {
     const w = createWindow({ html: HTML });
     const d = w.document;

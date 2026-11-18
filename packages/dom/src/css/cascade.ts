@@ -95,7 +95,7 @@ import {
   TK_RBRACKET,
 } from "./tokenizer.ts";
 import { inlineStyleCount } from "./inline-count.ts";
-import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor, validateAdopted } from "./stylesheets.ts";
+import { DocCSS, docCSS, existingDocCSS, type RootStyles, rootStylesFor } from "./stylesheets.ts";
 import {
   $benign,
   $block,
@@ -416,13 +416,11 @@ function windowEnv(doc: Document): MediaEnvironment {
 }
 
 /**
- * Validates the document's style state (adopted-sheet mutations, viewport changes for media
- * rules) and returns the current `_styleVersion`.
+ * Updates the style version after viewport changes that can affect media rules.
  */
 export function currentStyleVersion(doc: Document): number {
   const css = doc[$css] as DocCSS | null;
   if (css === null) return doc[$styleVersion];
-  validateAdopted(css);
   const w = doc[$window] as unknown as { innerWidth?: number; innerHeight?: number; devicePixelRatio?: number } | null;
   if (w !== null) {
     const width = w.innerWidth ?? 1024;
