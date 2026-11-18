@@ -32,10 +32,12 @@ export function markNamedAncestors(node: NodeImpl): void {
 
 export function rememberName(form: HTMLFormElement, name: string, el: NodeImpl): void {
   const names = (form[$pastNames] ??= new Map());
+  let binding = bindings.get(el);
+  if (binding?.names === name && binding.history === names) return;
   const previous = names.get(name);
   if (previous !== undefined) {
+    if (previous === binding) return;
     const old = previous.deref();
-    if (old === el) return;
     if (old !== undefined) {
       if (typeof previous.names === "string") releaseBinding(old, previous);
       else {
@@ -44,7 +46,6 @@ export function rememberName(form: HTMLFormElement, name: string, el: NodeImpl):
       }
     }
   }
-  let binding = bindings.get(el);
   if (binding === undefined) {
     binding = new PastName(names, name, el);
     bindings.set(el, binding);
@@ -65,34 +66,39 @@ class ExternalWatch extends WeakRef<NodeImpl> {
     this.registry = registry;
     this.key = key;
   }
+
+  check(): void {
+    const el = this.deref();
+    if (el !== undefined) checkNamedOwner(el);
+  }
 }
 
 export class ExternalNames {
-  groups = new Map<string | null, Set<ExternalWatch>>();
+  groups = new Map<string | null, ExternalWatch | Set<ExternalWatch>>();
   collected = new FinalizationRegistry<ExternalWatch>((watch) => this.remove(watch));
 
   add(el: NodeImpl, key: string | null): ExternalWatch {
-    let group = this.groups.get(key);
-    if (group === undefined) this.groups.set(key, (group = new Set()));
+    const group = this.groups.get(key);
     const watch = new ExternalWatch(el, this, key);
-    group.add(watch);
+    if (group === undefined) this.groups.set(key, watch);
+    else if (group instanceof Set) group.add(watch);
+    else this.groups.set(key, new Set([group, watch]));
     this.collected.register(el, watch, watch);
     return watch;
   }
 
   remove(watch: ExternalWatch): void {
     const group = this.groups.get(watch.key);
-    if (group?.delete(watch) && group.size === 0) this.groups.delete(watch.key);
+    if (group === watch || (group instanceof Set && group.delete(watch) && group.size === 0))
+      this.groups.delete(watch.key);
     this.collected.unregister(watch);
   }
 
   check(key: string | null): void {
     const group = this.groups.get(key);
-    if (group === undefined) return;
-    for (const watch of group) {
-      const el = watch.deref();
-      if (el !== undefined) checkNamedOwner(el);
-    }
+    if (group instanceof Set) {
+      for (const watch of group) watch.check();
+    } else group?.check();
   }
 }
 
