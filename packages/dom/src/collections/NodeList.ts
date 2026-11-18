@@ -45,7 +45,7 @@ import { CollectionIterator, collectionForEach, iterableTarget } from "./iterato
 import { $items, $version } from "../keys.ts";
 
 /** Index getter tables of lazy NodeList subclasses, by prototype. */
-const lazyTables = new Map<object, IndexGetterTable>();
+const lazyTables = new WeakMap<object, IndexGetterTable>();
 
 function lazyItem(self: object, i: number): unknown {
   const items = (self as NodeList)._snapshot();

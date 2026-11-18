@@ -15,6 +15,7 @@ import {
   installGlobals,
   MouseEvent,
   MutationObserver,
+  NodeList,
   type HTMLFormElement,
   type HTMLInputElement,
   type ShadowRoot,
@@ -138,6 +139,24 @@ test("a live window releases media queries when their last change listener goes 
     query().addEventListener("change", listener, { signal: controller.signal });
     query().addEventListener("change", listener, { once: true });
     w.innerWidth = 500;
+  })();
+  expect(await tracker.alive()).toEqual({});
+  w.close();
+});
+
+test("discarded NodeList subclasses release the DOM captured by their prototype", async () => {
+  const w = createWindow();
+  const tracker = new Tracker();
+  (() => {
+    const input = tracker.track("input", w.document.createElement("input"));
+    class InputList extends NodeList {
+      override _snapshot() {
+        return [input];
+      }
+    }
+    tracker.track("NodeList subclass", InputList);
+    const list = new InputList(null);
+    expect(list[0]).toBe(input);
   })();
   expect(await tracker.alive()).toEqual({});
   w.close();
