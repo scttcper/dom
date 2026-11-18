@@ -97,6 +97,45 @@ function Data({ promise }: { promise: Promise<string> }) {
 }
 
 describe("render → interact → cleanup — https://testing-library.com/docs/react-testing-library/api#cleanup", () => {
+  test("typing releases the original field when an input handler replaces it", async () => {
+    const tracker = new Tracker();
+    const paused = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const next = document.body.appendChild(document.createElement("input"));
+    const released: string[] = [];
+    next.addEventListener("keyup", (event) => released.push(event.key));
+    let replaced = false;
+    const user = userEvent.setup({
+      advanceTimers() {
+        if (replaced) {
+          paused.resolve();
+          return resume.promise;
+        }
+      },
+    }) as unknown as User;
+    const typing = (() => {
+      const field = tracker.track("original field", document.body.appendChild(document.createElement("input")));
+      field.addEventListener("input", () => {
+        next.focus();
+        field.remove();
+        replaced = true;
+      });
+      return user.type(field, "{Shift>}abc");
+    })();
+    try {
+      await Promise.race([paused.promise, typing]);
+      expect(replaced).toBe(true);
+      expect(next.value).toBe("");
+      expect(await tracker.alive()).toEqual({});
+    } finally {
+      resume.resolve();
+      await typing;
+      next.remove();
+    }
+    expect(next.value).toBe("bc");
+    expect(released.at(-1)).toBe("Shift");
+  });
+
   test("a pending pointer sequence releases a removed target after moving on", async () => {
     const tracker = new Tracker();
     const paused = Promise.withResolvers<void>();

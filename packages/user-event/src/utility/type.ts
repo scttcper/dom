@@ -41,9 +41,7 @@ export async function type(
     )
   }
 
-  await this.keyboard(text)
-
-  if (!skipAutoClose) {
-    await releaseAllKeys(this)
-  }
+  // Keyboard events follow focus. The original element is only needed for the click and selection.
+  const typing = this.keyboard(text)
+  return skipAutoClose ? typing : typing.then(() => releaseAllKeys(this))
 }
