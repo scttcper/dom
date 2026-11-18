@@ -1,7 +1,12 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utility/upload.ts
 
-import type {EventInit, File, HTMLElement} from '../dom-types.ts'
+import type {
+  EventInit,
+  File,
+  HTMLElement,
+  HTMLInputElement,
+} from '../dom-types.ts'
 import {
   createFileList,
   getWindow,
@@ -31,12 +36,31 @@ export async function upload(
   }
   if (isDisabled(element)) return
 
-  const files = (Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles])
-    .filter(
-      file => !this.config.applyAccept || isAcceptableFile(file, input.accept),
-    )
-    .slice(0, input.multiple ? undefined : 1)
+  const candidates = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles]
+  const accept = this.config.applyAccept && input.accept
+  const tokens = accept
+    ? normalize(accept)
+        .trim()
+        .split(/\s*,\s*/)
+    : null
+  const multiple = input.multiple
+  const files: File[] = []
+  for (let i = 0; i < candidates.length; i++) {
+    if (!(i in candidates)) continue
+    const file = candidates[i]
+    if (tokens && !isAcceptableFile(file, tokens)) continue
+    files.push(file)
+    if (!multiple) break
+  }
+  return openFileDialog(this, element, input, files)
+}
 
+async function openFileDialog(
+  instance: Instance,
+  element: HTMLElement,
+  input: HTMLInputElement & {type: 'file'},
+  files: File[],
+) {
   const fileDialog = () => {
     // do not fire an input event if the file selection does not change
     if (
@@ -47,13 +71,13 @@ export async function upload(
     }
 
     setFiles(input, createFileList(getWindow(element), files))
-    this.dispatchUIEvent(input, 'input')
-    this.dispatchUIEvent(input, 'change')
+    instance.dispatchUIEvent(input, 'input')
+    instance.dispatchUIEvent(input, 'change')
   }
 
   input.addEventListener('fileDialog', fileDialog)
   try {
-    await this.click(element)
+    await instance.click(element)
   } finally {
     input.removeEventListener('fileDialog', fileDialog)
   }
@@ -64,23 +88,19 @@ function normalize(nameOrType: string) {
   return nameOrType.toLowerCase().replace(/(\.|\/)jpg\b/g, '$1jpeg')
 }
 
-function isAcceptableFile(file: File, accept: string) {
-  if (!accept) {
-    return true
+function isAcceptableFile(file: File, tokens: string[]) {
+  let name: string | undefined
+  let type: string | undefined
+  for (const token of tokens) {
+    if (token.startsWith('.')) {
+      name ??= normalize(file.name)
+      if (name.endsWith(token)) return true
+    } else {
+      type ??= normalize(file.type)
+      if (token === 'audio/*' || token === 'image/*' || token === 'video/*') {
+        if (type.startsWith(token.slice(0, -1))) return true
+      } else if (type === token) return true
+    }
   }
-
-  const wildcards = ['audio/*', 'image/*', 'video/*']
-
-  return normalize(accept)
-    .trim()
-    .split(/\s*,\s*/)
-    .some(acceptToken => {
-      // tokens starting with a dot represent a file extension
-      if (acceptToken.startsWith('.')) {
-        return normalize(file.name).endsWith(acceptToken)
-      } else if (wildcards.includes(acceptToken)) {
-        return normalize(file.type).startsWith(acceptToken.replace('*', ''))
-      }
-      return normalize(file.type) === acceptToken
-    })
+  return false
 }

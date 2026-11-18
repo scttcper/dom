@@ -266,6 +266,37 @@ describe("render → interact → cleanup — https://testing-library.com/docs/r
     cleanup();
   });
 
+  test("a pending upload releases files excluded from the selection", async () => {
+    const tracker = new Tracker();
+    const paused = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const user = userEvent.setup({
+      advanceTimers() {
+        paused.resolve();
+        return resume.promise;
+      },
+    }) as unknown as User;
+    const input = document.body.appendChild(document.createElement("input"));
+    input.type = "file";
+    input.accept = ".png";
+    const chosen = new File(["image"], "chosen.png");
+    const uploading = (() => {
+      const rejected = tracker.track("rejected file", new File(["text"], "first.txt"));
+      const extra = tracker.track("surplus file", new File(["image"], "extra.png"));
+      return user.upload(input, [rejected, chosen, extra]);
+    })();
+    try {
+      await Promise.race([paused.promise, uploading]);
+      expect(input.files).toHaveLength(0);
+      expect(await tracker.alive()).toEqual({});
+    } finally {
+      resume.resolve();
+      await uploading;
+      input.remove();
+    }
+    expect(input.files?.item(0)).toBe(chosen);
+  });
+
   test("a rejected upload releases its files while the input and user stay active", async () => {
     const tracker = new Tracker();
     const user = setupUser();
