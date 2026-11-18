@@ -132,6 +132,17 @@ describe("block boxes in normal flow — https://drafts.csswg.org/css2/#normal-b
     expect(rect($("body"))).toEqual([0, 0, 800, 50]);
   });
 
+  test("an adopted element uses its new document's boxes and styles", () => {
+    const first = lite('<style>.row { height: 24px }</style><div class="row"></div>');
+    const second = lite('<style>.row { height: 48px }</style><div id="hidden" style="display:none"></div>');
+    const row = first.$(".row");
+    expect(row.offsetHeight).toBe(24);
+    second.$("#hidden").appendChild(row);
+    expect(row.offsetHeight).toBe(0);
+    second.$("body").appendChild(row);
+    expect(row.offsetHeight).toBe(48);
+  });
+
   test("margins, borders and padding: the border box is width + padding + border; margins offset it (no collapsing)", () => {
     const { $ } = lite(
       `<div id=o style="padding:10px;border:2px solid"><div id=i style="margin:5px 7px;padding:3px;height:10px"></div><div id=j style="margin-top:5px;height:1px"></div></div>`,

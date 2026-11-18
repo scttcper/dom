@@ -10,6 +10,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { createWindow, IntersectionObserver, ResizeObserver } from "@ctrl/dom";
+import { $impl } from "@ctrl/dom/internal";
+import { boxOf } from "../../../../packages/dom/src/css/layout.ts";
 import { Tracker } from "./gc.ts";
 
 const HTML = `<div id=s style="height:100px;overflow:auto"><div style="display:flex;flex-direction:column;height:2000px">
@@ -40,6 +42,24 @@ test("no-layout observers release removed targets while the observers stay live"
 });
 
 describe("layout-lite retention", () => {
+  test("removal and window close release layout boxes without another geometry read", async () => {
+    const w = createWindow({ layout: "lite" });
+    const tracker = new Tracker();
+    (() => {
+      const el = w.document.body!.appendChild(w.document.createElement("div"));
+      tracker.track("removed box", boxOf(el[$impl])!);
+      el.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    (() => {
+      const closed = createWindow({ layout: "lite" });
+      tracker.track("closed window box", boxOf(closed.document.body![$impl])!);
+      closed.close();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
   test("an active resize observer releases a removed target and continues watching the mounted target", async () => {
     const w = createWindow({ layout: "lite" });
     const tracker = new Tracker();

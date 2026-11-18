@@ -23,6 +23,7 @@
 
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { derivedCache, peekDerivedCache } from "../nodes/derived.ts";
 import {
   CDATA_SECTION_NODE,
   ELEMENT_NODE,
@@ -118,8 +119,6 @@ class LayoutState {
   vw: number;
   vh: number;
   gen: number;
-  boxes: WeakMap<NodeImpl, Box>;
-  styles: WeakMap<NodeImpl, Style>;
   /** Boxes of the current generation in layout order (subtrees are contiguous ranges). */
   list: Box[];
   constructor() {
@@ -128,13 +127,15 @@ class LayoutState {
     this.vw = -1;
     this.vh = -1;
     this.gen = 0;
-    this.boxes = new WeakMap();
-    this.styles = new WeakMap();
     this.list = [];
   }
 }
 
-const states = new WeakMap<Document, LayoutState>();
+// Removal drops the document's ordered list. Connected nodes can reuse their boxes and
+// styles on the next layout. A generation is unique across documents, including after adoption.
+const boxes = new WeakMap<NodeImpl, Box>();
+const styles = new WeakMap<NodeImpl, Style>();
+const createLayoutState = () => new LayoutState();
 
 /** Set by css/resize-observer.ts: called after a document is laid out again. */
 let relayoutListener: ((doc: Document) => void) | null = null;
@@ -151,8 +152,7 @@ export function layoutOn(doc: Document): boolean {
 
 /** The document's laid-out state, recomputed if the DOM, styles or viewport changed. */
 function ensure(doc: Document): LayoutState {
-  let st = states.get(doc);
-  if (st === undefined) states.set(doc, (st = new LayoutState()));
+  const st = derivedCache(doc, LayoutState, createLayoutState);
   const sv = currentStyleVersion(doc);
   const win = doc[$window] as Window;
   const vw = win[$innerWidth];
@@ -176,13 +176,15 @@ export function boxOf(el: NodeImpl): Box | null {
   const doc = el.doc;
   if (!layoutOn(doc)) return null;
   const st = ensure(doc);
-  const b = st.boxes.get(el);
+  const b = boxes.get(el);
   return b !== undefined && b.gen === st.gen ? b : null;
 }
 
 // --- per-run context ------------------------------------------------------------------------------
 
-let S: LayoutState = new LayoutState();
+let generation = 0;
+const emptyBoxList: Box[] = [];
+let currentBoxes = emptyBoxList;
 let authored = false;
 let rootFs = 16;
 let viewW = 1024;
@@ -211,20 +213,18 @@ const pendingAbs: PendingAbs[] = [];
 const pendingFixed: PendingAbs[] = [];
 
 function run(st: LayoutState, doc: Document, vw: number, vh: number): void {
-  st.gen++;
+  st.gen = ++generation;
   st.list.length = 0;
-  S = st;
   viewW = vw;
   viewH = vh;
-  authored = hasAuthorStyles(doc);
-  pendingAbs.length = 0;
-  pendingFixed.length = 0;
   let root: NodeImpl | null = null;
   for (let c = doc[$impl].first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) root = c;
   if (root === null) return;
-  rootFs = 16;
-  rootFs = fontSize(root, 16);
+  currentBoxes = st.list;
   try {
+    authored = hasAuthorStyles(doc);
+    rootFs = 16;
+    rootFs = fontSize(root, 16);
     // The root element's containing block is the initial containing block: the viewport at 0,0.
     // https://drafts.csswg.org/css2/#containing-block-details
     const d = computedDisplay(root);
@@ -239,7 +239,9 @@ function run(st: LayoutState, doc: Document, vw: number, vh: number): void {
     }
   } finally {
     REC = null as unknown as StyleRecord;
-    poolDepth = 0;
+    currentBoxes = emptyBoxList;
+    P_SRC = "";
+    while (poolDepth > 0) childPool[--poolDepth].length = 0;
     pendingAbs.length = 0;
     pendingFixed.length = 0;
   }
@@ -328,9 +330,9 @@ const PLAIN = new Style();
 
 function sty(el: NodeImpl): Style {
   if (plain(el) && !hasUAFontSize(el)) return PLAIN;
-  let s = S.styles.get(el);
-  if (s === undefined) S.styles.set(el, (s = new Style()));
-  if (s.gen !== S.gen) fillStyle(el, s);
+  let s = styles.get(el);
+  if (s === undefined) styles.set(el, (s = new Style()));
+  if (s.gen !== generation) fillStyle(el, s);
   return s;
 }
 
@@ -354,7 +356,7 @@ function gBorder(width: string, style: string): string {
 }
 
 function fillStyle(el: NodeImpl, s: Style): void {
-  s.gen = S.gen;
+  s.gen = generation;
   REC = styleRecord(el);
   s.position = g("position", "static");
   s.transform = g("transform", "none");
@@ -847,20 +849,20 @@ function releaseChildren(out: NodeImpl[]): void {
 // --- box allocation and shifting ------------------------------------------------------------------
 
 function newBox(el: NodeImpl, flags: number): Box {
-  let b = S.boxes.get(el);
-  if (b === undefined) S.boxes.set(el, (b = new Box()));
-  b.gen = S.gen;
-  b.idx = S.list.length;
+  let b = boxes.get(el);
+  if (b === undefined) boxes.set(el, (b = new Box()));
+  b.gen = generation;
+  b.idx = currentBoxes.length;
   b.end = b.idx + 1;
   b.flags = flags;
-  S.list.push(b);
+  currentBoxes.push(b);
   return b;
 }
 
 /** Moves a laid-out subtree (its box range); `visualOnly` moves only the transformed position. */
 function shift(b: Box, dx: number, dy: number, visualOnly: boolean): void {
   if (dx === 0 && dy === 0) return;
-  const list = S.list;
+  const list = currentBoxes;
   for (let i = b.idx; i < b.end; i++) {
     const d = list[i];
     d.vx += dx;
@@ -982,7 +984,7 @@ function layoutBox(
 
   if (isCB && (flags & BOX_ROOT) === 0)
     flushPending(mark, b.x + b.bl, b.y + b.bt, b.w - b.bl - b.br, b.h - b.bt - b.bb, false);
-  b.end = S.list.length;
+  b.end = currentBoxes.length;
 
   // https://drafts.csswg.org/css2/#relative-positioning (sticky boxes stay in place)
   if (position === "relative") {
@@ -1070,13 +1072,13 @@ function layoutAbs(item: PendingAbs, cbx: number, cby: number, cbw: number, cbh:
   const y = !Number.isNaN(top) ? cby + top : item.sy;
   const flags = item.fixed ? BOX_FIXED | BOX_FIXED_SELF : 0;
   layoutBox(el, x, y, cbw, cbh, item.fs, item.lh, forcedW, forcedH, false, flags);
-  const b = S.boxes.get(el)!;
+  const b = boxes.get(el)!;
   let dx = 0;
   let dy = 0;
   if (Number.isNaN(left) && !Number.isNaN(right)) dx = cbx + cbw - right - b.mr - b.w - b.x;
   if (Number.isNaN(top) && !Number.isNaN(bottom)) dy = cby + cbh - bottom - b.mb - b.h - b.y;
   shift(b, dx, dy, false);
-  if (item.fixed) for (let i = b.idx; i < b.end; i++) S.list[i].flags |= BOX_FIXED;
+  if (item.fixed) for (let i = b.idx; i < b.end; i++) currentBoxes[i].flags |= BOX_FIXED;
 }
 
 const TMP = new Box();
@@ -1199,7 +1201,7 @@ function layoutInline(el: NodeImpl, x: number, y: number, cw: number, pfs: numbe
   releaseChildren(kids);
   b.w = cursor + b.pr + b.br - b.x;
   b.h = lineH + b.pt + b.pb + b.bt + b.bb;
-  b.end = S.list.length;
+  b.end = currentBoxes.length;
   const position = plain(el) ? "static" : sty(el).position;
   if (position === "relative") {
     const left = length(sty(el).left, cw, fs);
@@ -1320,7 +1322,7 @@ function layoutFlex(
   }
   releaseChildren(kids);
 
-  const listMark = S.list.length;
+  const listMark = currentBoxes.length;
   const absMark = pendingAbs.length;
   const crossAvail = column ? cw : defH;
 
@@ -1335,7 +1337,7 @@ function layoutFlex(
     const stretchW = column && it.autoCross && it.align === "stretch" ? cw - crossMargins(it.el, cw, fs, true) : NaN;
     if (column) {
       const h = layoutBox(it.el, cx, pos, cw, defH, fs, lhStr, stretchW, it.main, Number.isNaN(stretchW), 0);
-      const b = S.boxes.get(it.el)!;
+      const b = boxes.get(it.el)!;
       if (Number.isNaN(it.main)) it.main = b.h;
       it.cross = outW;
       pos += h + gap;
@@ -1343,7 +1345,7 @@ function layoutFlex(
       const forcedH =
         it.autoCross && it.align === "stretch" && !Number.isNaN(defH) ? defH - crossMargins(it.el, cw, fs, false) : NaN;
       layoutBox(it.el, pos, cy, cw, defH, fs, lhStr, it.main, forcedH, Number.isNaN(it.main), 0);
-      const b = S.boxes.get(it.el)!;
+      const b = boxes.get(it.el)!;
       if (Number.isNaN(it.main)) it.main = b.w;
       it.cross = b.h + b.mt + b.mb;
       pos += outW + gap;
@@ -1425,7 +1427,7 @@ function layoutFlex(
 
   // Pass 2: final sizes and positions.
   if (changed) {
-    S.list.length = listMark;
+    currentBoxes.length = listMark;
     pendingAbs.length = absMark;
   }
   pos = (column ? cy : cx) + lead;
@@ -1438,7 +1440,7 @@ function layoutFlex(
       total += it.main + between;
       continue;
     }
-    const b = S.boxes.get(it.el)!;
+    const b = boxes.get(it.el)!;
     if (column) {
       const stretchW = it.autoCross && it.align === "stretch" ? cw - crossMargins(it.el, cw, fs, true) : NaN;
       if (changed) layoutBox(it.el, cx, pos, cw, defH, fs, lhStr, stretchW, it.main, Number.isNaN(stretchW), 0);
@@ -1545,7 +1547,7 @@ export function viewport(el: NodeImpl): Window {
 
 /** Content extent of a box's subtree (for scrollWidth/scrollHeight), relative to its padding edge. */
 export function scrollExtent(el: NodeImpl, b: Box, vertical: boolean): number {
-  const list = states.get(el.doc)!.list;
+  const list = peekDerivedCache<LayoutState>(el.doc, LayoutState)!.list;
   const originX = b.vx + b.bl;
   const originY = b.vy + b.bt;
   let max = 0;
@@ -1577,8 +1579,8 @@ export function clientHeightOf(b: Box, el: NodeImpl): number {
 
 /** The box of an element of a document boxOf() just validated (no revalidation: for ancestor walks). */
 export function knownBox(el: NodeImpl): Box | null {
-  const st = states.get(el.doc);
+  const st = peekDerivedCache<LayoutState>(el.doc, LayoutState);
   if (st === undefined) return null;
-  const b = st.boxes.get(el);
+  const b = boxes.get(el);
   return b !== undefined && b.gen === st.gen ? b : null;
 }
