@@ -191,19 +191,21 @@ export function rangesAfterInsert(parent: NodeImpl, index: number, count: number
 
 /** https://dom.spec.whatwg.org/#concept-node-remove steps 4-7 */
 export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl, index: number): void {
+  const hasBoundaryBelow = (node.flags & F_RANGE_BELOW) !== 0;
   updateLiveRanges(parent, (r) => {
-    if (isInclusiveAncestor(node, r[$sc])) {
+    const start = r[$sc];
+    const end = r[$ec];
+    const moveStart = start === node || (hasBoundaryBelow && isInclusiveAncestor(node, start));
+    const moveEnd = start === end ? moveStart : end === node || (hasBoundaryBelow && isInclusiveAncestor(node, end));
+    if (moveStart || moveEnd) markBoundary(parent);
+    if (moveStart) {
       r[$sc] = parent;
       r[$so] = index;
-      markBoundary(parent);
-    }
-    if (isInclusiveAncestor(node, r[$ec])) {
+    } else if (start === parent && r[$so] > index) r[$so]--;
+    if (moveEnd) {
       r[$ec] = parent;
       r[$eo] = index;
-      markBoundary(parent);
-    }
-    if (r[$sc] === parent && r[$so] > index) r[$so]--;
-    if (r[$ec] === parent && r[$eo] > index) r[$eo]--;
+    } else if (end === parent && r[$eo] > index) r[$eo]--;
   });
 }
 
