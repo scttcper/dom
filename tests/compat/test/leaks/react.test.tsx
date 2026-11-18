@@ -129,6 +129,42 @@ describe("render → interact → cleanup — https://testing-library.com/docs/r
     expect(next.selected).toBe(true);
   });
 
+  test.each([false, true])(
+    "a completed native selection releases its removed select during the final delay (multiple=%s)",
+    async (multiple) => {
+      const tracker = new Tracker();
+      const paused = Promise.withResolvers<void>();
+      const resume = Promise.withResolvers<void>();
+      let removed = false;
+      const user = userEvent.setup({
+        advanceTimers() {
+          if (removed) {
+            paused.resolve();
+            return resume.promise;
+          }
+        },
+      }) as unknown as User;
+      const selecting = (() => {
+        const select = tracker.track("removed select", document.body.appendChild(document.createElement("select")));
+        select.multiple = multiple;
+        const option = tracker.track("last option", select.appendChild(document.createElement("option")));
+        select.addEventListener("change", () => {
+          select.remove();
+          removed = true;
+        });
+        return user.selectOptions(select, option);
+      })();
+      try {
+        await Promise.race([paused.promise, selecting]);
+        expect(removed).toBe(true);
+        expect(await tracker.alive()).toEqual({});
+      } finally {
+        resume.resolve();
+        await selecting;
+      }
+    },
+  );
+
   test("typing releases the original field when an input handler replaces it", async () => {
     const tracker = new Tracker();
     const paused = Promise.withResolvers<void>();

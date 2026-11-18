@@ -116,7 +116,7 @@ async function performSelection(
           selectedOptions.pop() as HTMLOptionElement,
           newValue,
         )
-        await yieldBetweenActions(this.config)
+        if (selectedOptions.length) await yieldBetweenActions(this.config)
       }
     } else if (selectedOptions.length === 1) {
       const withPointerEvents =
@@ -148,14 +148,13 @@ async function performSelection(
         this.dispatchUIEvent(select, 'mouseup')
         this.dispatchUIEvent(select, 'click')
       }
-
-      await yieldBetweenActions(this.config)
     } else {
       throw getConfig().getElementError(
         `Cannot select multiple options on a non-multiple select`,
         select,
       )
     }
+    return finishSelection(this.config)
   } else if (select.getAttribute('role') === 'listbox') {
     selectedOptions.reverse()
     while (selectedOptions.length) {
@@ -169,6 +168,11 @@ async function performSelection(
       select,
     )
   }
+}
+
+// The final delay only needs the clock. Release the select and its subtree before waiting.
+async function finishSelection(config: Instance['config']) {
+  await yieldBetweenActions(config)
 }
 
 function selectOption(
