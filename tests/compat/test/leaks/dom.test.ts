@@ -12,10 +12,13 @@ import { describe, expect, test } from "vitest";
 import {
   createWindow,
   currentWindowOrNull,
+  HTMLElement,
   installGlobals,
   MouseEvent,
   MutationObserver,
   NodeList,
+  type CustomElementRegistry,
+  type Element,
   type HTMLFormElement,
   type HTMLInputElement,
   type ShadowRoot,
@@ -190,6 +193,43 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("mounted controls release removed ARIA targets after their reflected arrays were read", async () => {
+    const w = createWindow();
+    const d = w.document;
+    const tracker = new Tracker();
+    type Relations = { ariaControlsElements: readonly Element[] | null };
+    const field = d.body!.appendChild(d.createElement("input")) as Element & Relations;
+    const button = d.body!.appendChild(d.createElement("button")) as Element & Relations;
+    (w.customElements as CustomElementRegistry).define("x-aria-control", class extends HTMLElement {});
+    const custom = d.body!.appendChild(d.createElement("x-aria-control")) as HTMLElement;
+    const internals = custom.attachInternals() as unknown as Relations;
+    const stable = d.body!.appendChild(d.createElement("span"));
+    (() => {
+      const addPopup = (label: string) => tracker.track(label, d.body!.appendChild(d.createElement("div")));
+      const byId = addPopup("ID reference");
+      byId.id = "popup";
+      field.setAttribute("aria-controls", "popup");
+      const explicit = addPopup("explicit reference");
+      button.ariaControlsElements = [explicit];
+      const internal = addPopup("internals reference");
+      internals.ariaControlsElements = [stable, internal];
+      expect(field.ariaControlsElements).toEqual([byId]);
+      expect(button.ariaControlsElements).toEqual([explicit]);
+      expect(internals.ariaControlsElements).toEqual([stable, internal]);
+      byId.remove();
+      explicit.remove();
+      internal.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(field.ariaControlsElements).toEqual([]);
+    expect(button.ariaControlsElements).toEqual([]);
+    const snapshot = internals.ariaControlsElements;
+    await collectGarbage();
+    expect(internals.ariaControlsElements).toBe(snapshot);
+    expect(snapshot).toEqual([stable]);
+    w.close();
+  });
+
   test("abandoned mutation observers release their callbacks and restore the idle mutation path", async () => {
     const w = createWindow();
     const tracker = new Tracker();

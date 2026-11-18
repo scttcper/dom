@@ -60,13 +60,13 @@ interface ExplicitRefs {
   record: AttrRecord;
   elements: WeakRef<NodeImpl>[];
   /** The FrozenArray last returned by the getter ("cached attr-associated elements"). */
-  cached: readonly Element[] | null;
+  cached: WeakRef<readonly Element[]> | null;
 }
 
 /** element impl → content attribute name → explicit references. */
 const explicitRefs = new WeakMap<NodeImpl, Map<string, ExplicitRefs>>();
 /** element impl → content attribute name → cached FrozenArray for the content-attribute path. */
-const cachedArrays = new WeakMap<NodeImpl, Map<string, readonly Element[]>>();
+const cachedArrays = new WeakMap<NodeImpl, Map<string, WeakRef<readonly Element[]>>>();
 
 function findRecord(el: NodeImpl, localName: string): AttrRecord | null {
   const attrs = el.attrs;
@@ -223,17 +223,18 @@ for (const [idl, content] of ELEMENTS_REFS) {
       // "If the contents of elements is equal to the contents of element's cached
       // attr-associated elements, then return the cached attr-associated elements."
       const refs = liveExplicit(el, content);
-      let cache = refs === null ? cachedArrays.get(el)?.get(content) : refs.cached;
-      if (cache !== undefined && cache !== null && sameContents(cache, elements)) return cache;
+      const cached = (refs === null ? cachedArrays.get(el)?.get(content) : refs.cached)?.deref();
+      if (cached !== undefined && sameContents(cached, elements)) return cached;
       const frozen = Object.freeze(elements.map((n) => n.node as Element));
-      if (refs !== null) refs.cached = frozen;
+      // Preserve identity while a caller has the snapshot. The control can outlive its targets.
+      const ref = new WeakRef(frozen);
+      if (refs !== null) refs.cached = ref;
       else {
         let map = cachedArrays.get(el);
         if (map === undefined) cachedArrays.set(el, (map = new Map()));
-        map.set(content, frozen);
+        map.set(content, ref);
       }
-      cache = frozen;
-      return cache;
+      return frozen;
     },
     function (v) {
       const el = this[$impl];

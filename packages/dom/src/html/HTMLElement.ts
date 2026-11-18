@@ -647,7 +647,7 @@ for (const item of ARIA_STRING_ATTRIBUTES.split(" ")) {
 // FrozenArray<Element> cases). No in-scope filtering: internals have no content attribute.
 const internalsAriaElements = new WeakMap<
   ElementInternals,
-  Map<string, { refs: WeakRef<Element>[]; cached: readonly Element[] | null }>
+  Map<string, { refs: WeakRef<Element>[]; cached: WeakRef<readonly Element[]> | null }>
 >();
 for (const [name, many] of [
   ["ariaActiveDescendantElement", false],
@@ -671,14 +671,17 @@ for (const [name, many] of [
       const entry = internalsAriaElements.get(this)?.get(name);
       if (entry === undefined) return null;
       if (!many) return entry.refs[0]?.deref() ?? null;
+      // Only collection or reassignment changes this list. A live snapshot owns all its members.
+      const cached = entry.cached?.deref();
+      if (cached !== undefined) return cached;
       const live: Element[] = [];
       for (const r of entry.refs) {
         const e = r.deref();
         if (e !== undefined) live.push(e);
       }
-      const c = entry.cached;
-      if (c !== null && c.length === live.length && live.every((e, i) => c[i] === e)) return c;
-      return (entry.cached = Object.freeze(live));
+      const frozen = Object.freeze(live);
+      entry.cached = new WeakRef(frozen);
+      return frozen;
     },
     set(this: ElementInternals, v: unknown) {
       let map = internalsAriaElements.get(this);
