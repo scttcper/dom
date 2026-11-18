@@ -23,7 +23,7 @@
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createWindow, installGlobals, type Window } from "@ctrl/dom";
-import { $timers, VirtualClock, installClock } from "@ctrl/dom/internal";
+import { VirtualClock, installClock, trackGlobalTimers } from "@ctrl/dom/internal";
 
 let window: Window;
 
@@ -306,17 +306,37 @@ describe("setTimeout / setInterval — https://html.spec.whatwg.org/#timers", ()
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  test("fired and cleared timers are not retained (swept once the list grows)", async () => {
-    const w = window as unknown as Record<string, (...a: unknown[]) => unknown>;
-    for (let i = 0; i < 300; i++) w.setTimeout(() => {}, 0);
-    for (let i = 0; i < 300; i++) w.clearTimeout(w.setTimeout(() => {}, 1000));
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    const pending = w.setTimeout(() => {}, 1000);
-    for (let i = 0; i < 600; i++) w.setTimeout(() => {}, 0);
-    const handles = (window as unknown as Record<symbol, { handles: Map<unknown, unknown> }>)[$timers].handles;
-    expect(handles.has(pending)).toBe(true);
-    expect(handles.size).toBeLessThanOrEqual(602);
-    w.clearTimeout(pending);
+  test("a window timer on a tracked global is cleared once", () => {
+    const host = { setTimeout, clearTimeout: vi.fn(clearTimeout) };
+    const uninstall = installGlobals(window, host);
+    const restoreTimers = trackGlobalTimers(window, host);
+    try {
+      const handle = window.setTimeout(() => {}, 60_000);
+      window.close();
+      expect(host.clearTimeout).toHaveBeenCalledExactlyOnceWith(handle);
+    } finally {
+      restoreTimers();
+      uninstall();
+    }
+  });
+
+  test("a fired handle can refresh until close, which cancels its pending callback", async () => {
+    const { promise, resolve } = Promise.withResolvers<void>();
+    let calls = 0;
+    const timer = window.setTimeout(
+      function (this: unknown, value: number) {
+        expect(this).toBe(timer);
+        calls += value;
+        resolve();
+      },
+      1,
+      1,
+    ) as NodeJS.Timeout;
+    await promise;
+    timer.refresh();
+    window.close();
+    await new Promise((done) => setTimeout(done, 10));
+    expect(calls).toBe(1);
   });
 
   // https://webidl.spec.whatwg.org/#dfn-create-operation-function step 2.1: an undefined `this`

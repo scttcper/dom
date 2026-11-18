@@ -7,14 +7,14 @@
  * environments (constructor → setup → teardown, https://jestjs.io/docs/configuration#testenvironment-string).
  * HTML window.close() (https://html.spec.whatwg.org/#dom-window-close).
  */
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { VirtualClock } from "@ctrl/dom/internal";
+import { installClock, VirtualClock } from "@ctrl/dom/internal";
 import { createRequire } from "node:module";
 import { runInContext } from "node:vm";
 import environment from "@ctrl/dom/vitest-environment";
 import { createWindow, currentWindowOrNull, installGlobals } from "@ctrl/dom";
-import { Tracker, heapSlope } from "./gc.ts";
+import { collectGarbage, Tracker, heapSlope } from "./gc.ts";
 
 type AnyGlobal = Record<string, any>;
 
@@ -72,6 +72,64 @@ describe("virtual timer handles", () => {
       expect(await tracker.alive()).toEqual({});
       expect(handle.refresh()._destroyed).toBe(true);
       store.disable();
+    },
+  );
+});
+
+describe("timers on an open window", () => {
+  test("closing a window cancels a pending fake timer after the caller drops its handle and GC runs", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const w = createWindow();
+    try {
+      const callback = vi.fn();
+      w.setTimeout(callback, 60_000);
+      await collectGarbage();
+      expect(vi.getTimerCount()).toBe(1);
+      w.close();
+      expect(vi.getTimerCount()).toBe(0);
+      vi.advanceTimersByTime(60_000);
+      expect(callback).not.toHaveBeenCalled();
+    } finally {
+      w.close();
+      vi.useRealTimers();
+    }
+  });
+
+  test.each(["native", "virtual", "fake"] as const)(
+    "discarded %s timers release their handles, callbacks and arguments",
+    async (kind) => {
+      const w = createWindow();
+      const host: AnyGlobal = { setTimeout, clearTimeout, setInterval, clearInterval };
+      const uninstall = kind === "virtual" ? installGlobals(w, host) : undefined;
+      const installed = kind === "virtual" ? installClock(new VirtualClock(), host) : undefined;
+      if (kind === "fake") vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+      try {
+        const tracker = new Tracker();
+        const timers = w as unknown as AnyGlobal;
+        const { promise, resolve } = Promise.withResolvers<void>();
+        (() => {
+          const argument = tracker.track("fired argument", {});
+          const fired = tracker.track("fired callback", (value: object) => {
+            expect(value).toBe(argument);
+            resolve();
+          });
+          tracker.track("fired handle", timers.setTimeout(fired, 1, argument));
+          const canceled = tracker.track("cleared callback", () => {});
+          const handle = tracker.track(
+            "cleared handle",
+            timers.setInterval(canceled, 60_000, tracker.track("cleared argument", {})),
+          );
+          timers.clearInterval(handle);
+        })();
+        if (kind === "fake") vi.advanceTimersByTime(1);
+        await promise;
+        expect(await tracker.alive()).toEqual({});
+      } finally {
+        w.close();
+        installed?.uninstall();
+        uninstall?.();
+        if (kind === "fake") vi.useRealTimers();
+      }
     },
   );
 });

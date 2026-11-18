@@ -7,16 +7,10 @@
 //
 // @ctrl/dom's timers stay the *host's* (Node's, or a fake clock's): handles are Node Timeout
 // objects and Vitest/Jest fake timers replace the global functions (docs/deviations.md). What
-// we add is bookkeeping: every handle created through the window's setTimeout/setInterval (or
-// through the installed global's, see trackGlobalTimers) is remembered on the window together
-// with the clear function of the host that created it, and close() clears the ones still
-// pending. Without it, long app timers (TanStack Query's 5 min GC timers, polling intervals)
-// keep a finished Jest test file's vm context and module graph alive until they fire.
-//
-// Per-call cost is one Map.set. Fired one-shot and cleared Node timers are dropped lazily: when
-// the map reaches `sweepAt` entries, handles Node has marked `_destroyed` are removed and the
-// threshold doubles relative to what is left (amortized O(1), no callback wrapping, no
-// per-call closure). Handles without that flag (a fake clock's) stay until close().
+// we add is bookkeeping: a pending host timer owns its callback, while a window holds only a
+// weak reference to it. This also works on fake hosts that return a handle object distinct from
+// the timer they store. Fired or cancelled timers can release their arguments and async context
+// before the window closes. Pending timers are cleared with the function of the host that armed them.
 
 import type { Window } from "./Window.ts";
 import { $closed, $timers } from "../keys.ts";
@@ -24,35 +18,32 @@ import { $closed, $timers } from "../keys.ts";
 type ClearFunction = (handle: never) => void;
 type HostTimerFunction = (handler: unknown, timeout?: unknown, ...args: unknown[]) => unknown;
 
-const SWEEP_MIN = 256;
+let wrappedTimers: WeakMap<HostTimerFunction, Window> | undefined;
 
-/** The pending host timers of one window. */
+type TimerCallback = (this: unknown, ...args: unknown[]) => unknown;
+
+interface PendingTimer extends TimerCallback {
+  callback: TimerCallback | null;
+  clear: ClearFunction | null;
+  handle: unknown;
+}
+
 export class TimerList {
-  handles: Map<unknown, ClearFunction>;
-  sweepAt: number;
-
-  constructor() {
-    this.handles = new Map();
-    this.sweepAt = SWEEP_MIN;
-  }
+  readonly timers = new Set<WeakRef<PendingTimer>>();
+  readonly collected = new FinalizationRegistry<WeakRef<PendingTimer>>((ref) => this.timers.delete(ref));
+  /** Host extensions that accept a non-function handler have no callback to track weakly. */
+  other: Map<unknown, ClearFunction> | null = null;
 }
 
-/** Remember `handle` (created by a host whose clear function is `clear`) on `window`. */
-export function trackTimer(window: Window, handle: unknown, clear: ClearFunction): void {
-  const list = (window[$timers] ??= new TimerList());
-  const handles = list.handles;
-  if (handles.size >= list.sweepAt) sweep(list);
-  handles.set(handle, clear);
-}
-
-function sweep(list: TimerList): void {
-  const handles = list.handles;
-  for (const handle of handles.keys()) {
-    // Node sets `_destroyed` once a one-shot Timeout ran or any Timeout was cleared.
-    if (typeof handle === "object" && handle !== null && (handle as { _destroyed?: boolean })._destroyed === true)
-      handles.delete(handle);
-  }
-  list.sweepAt = Math.max(SWEEP_MIN, handles.size * 2);
+function pendingTimer(handler: TimerCallback, clear: ClearFunction): PendingTimer {
+  const timer: PendingTimer = function (this: unknown, ...args: unknown[]): unknown {
+    const callback = timer.callback;
+    if (callback !== null) return Reflect.apply(callback, this, args);
+  };
+  timer.callback = handler;
+  timer.clear = clear;
+  timer.handle = undefined;
+  return timer;
 }
 
 /** close(): clear every timer still pending on `window`. */
@@ -60,14 +51,27 @@ export function clearTimers(window: Window): void {
   const list = window[$timers];
   if (list === null) return;
   window[$timers] = null;
-  for (const [handle, clear] of list.handles) {
-    try {
-      clear(handle as never);
-    } catch {
-      // A fake clock that has since been uninstalled may refuse foreign handles; nothing pends there.
-    }
+  for (const ref of list.timers) {
+    const timer = ref.deref();
+    if (timer === undefined) continue;
+    timer.callback = null;
+    clearHandle(timer.clear!, timer.handle);
+    timer.clear = null;
+    timer.handle = undefined;
   }
-  list.handles.clear();
+  list.timers.clear();
+  if (list.other !== null) {
+    for (const [handle, clear] of list.other) clearHandle(clear, handle);
+    list.other.clear();
+  }
+}
+
+function clearHandle(clear: ClearFunction, handle: unknown): void {
+  try {
+    clear(handle as never);
+  } catch {
+    // A fake clock that has since been uninstalled may refuse foreign handles.
+  }
 }
 
 /**
@@ -98,35 +102,60 @@ export function startTimer(
   const ms = timerTimeout(timeout);
   if (window[$closed]) return 0;
   const start = host[repeat ? "setInterval" : "setTimeout"] as HostTimerFunction;
-  const handle = args.length === 0 ? start(handler, ms) : start(handler, ms, ...args);
-  trackTimer(window, handle, host[repeat ? "clearInterval" : "clearTimeout"] as ClearFunction);
+  const clear = host[repeat ? "clearInterval" : "clearTimeout"] as ClearFunction;
+  return schedule(window, start, clear, handler, ms, args);
+}
+
+function schedule(
+  window: Window,
+  start: HostTimerFunction,
+  clear: ClearFunction,
+  handler: unknown,
+  ms: number,
+  args: unknown[],
+): unknown {
+  if (wrappedTimers?.get(start) === window) return start(handler, ms, ...args);
+  if (typeof handler !== "function") {
+    // Delegate validation to the host. Node throws here.
+    const handle = start(handler, ms, ...args);
+    if (window[$closed]) {
+      clearHandle(clear, handle);
+      return handle;
+    }
+    const list = (window[$timers] ??= new TimerList());
+    (list.other ??= new Map()).set(handle, clear);
+    return handle;
+  }
+  const timer = pendingTimer(handler as TimerCallback, clear);
+  const handle = args.length === 0 ? start(timer, ms) : start(timer, ms, ...args);
+  if (window[$closed]) {
+    timer.callback = null;
+    clearHandle(clear, handle);
+    return handle;
+  }
+  timer.handle = handle;
+  const list = (window[$timers] ??= new TimerList());
+  const ref = new WeakRef(timer);
+  list.timers.add(ref);
+  list.collected.register(timer, ref);
   return handle;
 }
 
 function wrapTimer(window: Window, target: Record<string, unknown>, repeat: boolean): HostTimerFunction {
-  const original = target[repeat ? "setInterval" : "setTimeout"] as HostTimerFunction;
+  const name = repeat ? "setInterval" : "setTimeout";
+  const original = target[name] as HostTimerFunction;
   const clear = target[repeat ? "clearInterval" : "clearTimeout"] as ClearFunction;
-  // Method syntax: named like the original, not a constructor.
   const wrapper = {
-    setTimeout(handler: unknown, timeout?: unknown, ...args: unknown[]): unknown {
+    [name](handler: unknown, timeout?: unknown, ...args: unknown[]): unknown {
       const ms = timerTimeout(timeout);
-      if (window[$closed]) return 0;
-      const handle = args.length === 0 ? original(handler, ms) : original(handler, ms, ...args);
-      trackTimer(window, handle, clear);
-      return handle;
+      return window[$closed] ? 0 : schedule(window, original, clear, handler, ms, args);
     },
-    setInterval(handler: unknown, timeout?: unknown, ...args: unknown[]): unknown {
-      const ms = timerTimeout(timeout);
-      if (window[$closed]) return 0;
-      const handle = args.length === 0 ? original(handler, ms) : original(handler, ms, ...args);
-      trackTimer(window, handle, clear);
-      return handle;
-    },
-  }[repeat ? "setInterval" : "setTimeout"];
+  }[name];
   // Keep util.promisify.custom & co. (Node's timers carry symbol-keyed extras).
   for (const key of Object.getOwnPropertySymbols(original)) {
     Object.defineProperty(wrapper, key, Object.getOwnPropertyDescriptor(original, key)!);
   }
+  (wrappedTimers ??= new WeakMap()).set(wrapper, window);
   return wrapper;
 }
 
