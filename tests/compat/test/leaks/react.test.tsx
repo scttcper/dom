@@ -97,6 +97,38 @@ function Data({ promise }: { promise: Promise<string> }) {
 }
 
 describe("render → interact → cleanup — https://testing-library.com/docs/react-testing-library/api#cleanup", () => {
+  test("a pending pointer sequence releases a removed target after moving on", async () => {
+    const tracker = new Tracker();
+    const paused = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let waits = 0;
+    const user = userEvent.setup({
+      advanceTimers() {
+        if (++waits === 3) {
+          paused.resolve();
+          return resume.promise;
+        }
+      },
+    }) as unknown as User;
+    const sequence = (() => {
+      const target = tracker.track("hover target", document.body.appendChild(document.createElement("div")));
+      target.addEventListener("pointerover", () => target.remove());
+      return user.pointer([{ target }, { target: document.body }, { target: document.body }]);
+    })();
+    try {
+      await Promise.race([
+        paused.promise,
+        sequence.then(() => {
+          throw new Error("Sequence finished before pause");
+        }),
+      ]);
+      expect(await tracker.alive()).toEqual({});
+    } finally {
+      resume.resolve();
+      await sequence;
+    }
+  });
+
   test("resetting a form or changing input type releases uploaded files while the controls stay mounted", async () => {
     const tracker = new Tracker();
     const user = setupUser();

@@ -180,6 +180,18 @@ describe("act environment", () => {
     expect(g.IS_REACT_ACT_ENVIRONMENT).toBe(true);
   });
 
+  test("asyncWrapper restores the act environment when the callback throws or rejects", async () => {
+    const { getConfig } = await import("../src/dtl.ts");
+    const error = new Error("Action failed");
+    const fail = () => {
+      throw error;
+    };
+    for (const callback of [fail, () => Promise.reject(error)]) {
+      await expect(getConfig().asyncWrapper(callback)).rejects.toBe(error);
+      expect((globalThis as any).IS_REACT_ACT_ENVIRONMENT).toBe(true);
+    }
+  });
+
   test("asyncWrapper's drain on the idle-skipping clock: one event-loop turn without a 0 ms timer when nothing is due, and a timer due within the millisecond still runs before it resolves", async () => {
     const { getConfig } = await import("../src/dtl.ts");
     const original = globalThis.setTimeout;

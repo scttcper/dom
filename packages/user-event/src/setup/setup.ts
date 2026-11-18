@@ -155,12 +155,7 @@ function wrapAndBindImpl<
       const run = () =>
         wrapAsync(() => {
           markTimers(instance.config)
-          return impl.apply(instance, args).then(async ret => {
-            // Upstream: `await wait(instance.config)`. Same semantics unless no timer could run
-            // during that wait (see utils/misc/wait.ts).
-            await yieldBetweenActions(instance.config)
-            return ret
-          })
+          return waitAfterAction(instance, impl.apply(instance, args))
         })
       // Mixed setups (stock RTL + this package) resolve the config source once (see dtl.ts).
       const pending = resolveConfigSource()
@@ -176,6 +171,15 @@ function wrapAndBindImpl<
   }[impl.name]!
 
   return method
+}
+
+// The pending wait needs the instance and result. Keeping its callback outside the API
+// wrapper lets the caller's arguments be collected while a long-running action is pending.
+function waitAfterAction(instance: Instance, result: Promise<unknown>) {
+  return result.then(async ret => {
+    await yieldBetweenActions(instance.config)
+    return ret
+  })
 }
 
 /**

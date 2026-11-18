@@ -243,6 +243,32 @@ function drainWithTimer(resolve: () => void): void {
   advanceFakeTimersIfEnabled();
 }
 
+// Waiting in a separate frame releases the callback and its captured action arguments.
+async function finishAsyncWrapper(pending: Promise<unknown>, previousActEnvironment: boolean | undefined) {
+  try {
+    const result = await pending;
+    // Drain microtask queue.
+    // Otherwise we'll restore the previous act() environment, before we resolve the
+    // `waitFor` call. The caller would have no chance to wrap the in-flight Promises in
+    // `act()`.
+    await new Promise<void>((resolve) => {
+      // Ours: on @ctrl/dom's idle-skipping clock with real timers, an idle loop and nothing due
+      // within the timer's 1 ms, the same wait in one macrotask boundary instead of two turns
+      // (loopTurn: without the event-loop turn itself when it would run nothing). The check is
+      // repeated there, after the microtasks still queued now: work they schedule (React's,
+      // through setImmediate) gets the 0 ms timer's wait, as upstream.
+      if (canSkipZeroDelayWait(globalThis)) {
+        loopTurn(() => (skipZeroDelayWait(globalThis) ? resolve() : drainWithTimer(resolve)));
+        return;
+      }
+      drainWithTimer(resolve);
+    });
+    return result;
+  } finally {
+    setReactActEnvironment(previousActEnvironment);
+  }
+}
+
 let inEventWrapper = false;
 
 configureDTL({
@@ -252,30 +278,14 @@ configureDTL({
   // We just want to run `waitFor` without IS_REACT_ACT_ENVIRONMENT
   // But that's not necessarily how `asyncWrapper` is used since it's a public method.
   // Let's just hope nobody else is using it.
-  asyncWrapper: async (cb: () => Promise<unknown>) => {
+  asyncWrapper: (cb: () => Promise<unknown>) => {
     const previousActEnvironment = getIsReactActEnvironment();
     setReactActEnvironment(false);
     try {
-      const result = await cb();
-      // Drain microtask queue.
-      // Otherwise we'll restore the previous act() environment, before we resolve the
-      // `waitFor` call. The caller would have no chance to wrap the in-flight Promises in
-      // `act()`.
-      await new Promise<void>((resolve) => {
-        // Ours: on @ctrl/dom's idle-skipping clock with real timers, an idle loop and nothing due
-        // within the timer's 1 ms, the same wait in one macrotask boundary instead of two turns
-        // (loopTurn: without the event-loop turn itself when it would run nothing). The check is
-        // repeated there, after the microtasks still queued now: work they schedule (React's,
-        // through setImmediate) gets the 0 ms timer's wait, as upstream.
-        if (canSkipZeroDelayWait(globalThis)) {
-          loopTurn(() => (skipZeroDelayWait(globalThis) ? resolve() : drainWithTimer(resolve)));
-          return;
-        }
-        drainWithTimer(resolve);
-      });
-      return result;
-    } finally {
+      return finishAsyncWrapper(cb(), previousActEnvironment);
+    } catch (error) {
       setReactActEnvironment(previousActEnvironment);
+      return Promise.reject(error);
     }
   },
   eventWrapper: (cb: () => unknown) => {

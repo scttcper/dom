@@ -7,7 +7,7 @@ import {type Instance} from '../setup/index.ts'
 import {type pointerKey, type PointerPosition} from '../system/pointer/index.ts'
 import {PointerLocation} from '../system/pointer/shared.ts'
 import {ApiLevel, setLevelRef, yieldBetweenActions} from '../utils/index.ts'
-import {parseKeyDef} from './parseKeyDef.ts'
+import {appendKeyActions} from './parseKeyDef.ts'
 
 type PointerActionInput =
   | string
@@ -15,7 +15,7 @@ type PointerActionInput =
   | PointerAction
 export type PointerInput = PointerActionInput | Array<PointerActionInput>
 
-type PointerAction = PointerPressAction | PointerMoveAction
+export type PointerAction = PointerPressAction | PointerMoveAction
 
 type PointerActionPosition = {
   target?: Element
@@ -38,35 +38,43 @@ interface PointerMoveAction extends PointerActionPosition {
   pointerName?: string
 }
 
-export async function pointer(
-  this: Instance,
-  input: PointerInput,
-): Promise<void> {
-  const {pointerMap} = this.config
+export function pointer(this: Instance, input: PointerInput): Promise<void> {
+  try {
+    return performActions(this, parseActions(this.config.pointerMap, input))
+  } catch (error) {
+    return Promise.reject(error)
+  }
+}
 
+function parseActions(pointerMap: pointerKey[], input: PointerInput) {
   const actions: PointerAction[] = []
   ;(Array.isArray(input) ? input : [input]).forEach(actionInput => {
     if (typeof actionInput === 'string') {
-      actions.push(...parseKeyDef(pointerMap, actionInput))
+      appendKeyActions(pointerMap, actionInput, actions)
     } else if ('keys' in actionInput) {
-      actions.push(
-        ...parseKeyDef(pointerMap, actionInput.keys).map(i => ({
-          ...actionInput,
-          ...i,
-        })),
-      )
+      const start = actions.length
+      appendKeyActions(pointerMap, actionInput.keys, actions)
+      for (let i = start; i < actions.length; i++) {
+        actions[i] = {...actionInput, ...actions[i]}
+      }
     } else {
       actions.push(actionInput)
     }
   })
 
-  for (let i = 0; i < actions.length; i++) {
-    await yieldBetweenActions(this.config)
+  return actions
+}
 
-    await pointerAction(this, actions[i])
+async function performActions(instance: Instance, actions: PointerAction[]) {
+  // Pop completed actions so a pending delay only keeps future targets alive.
+  actions.reverse()
+  while (actions.length) {
+    await yieldBetweenActions(instance.config)
+
+    await pointerAction(instance, actions.pop()!)
   }
 
-  this.system.pointer.resetClickCount()
+  instance.system.pointer.resetClickCount()
 }
 
 async function pointerAction(instance: Instance, action: PointerAction) {
