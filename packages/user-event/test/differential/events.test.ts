@@ -447,6 +447,15 @@ const errorScenarios: Scenario[] = [
     run: (user, doc) => user.selectOptions(doc.getElementById('s')!, 'zzz'),
   },
   {
+    name: 'selectOptions rejects an option belonging to another select',
+    html: '<select id="s" multiple><option id="inside">A</option></select><select><option id="outside">A</option></select>',
+    run: (user, doc) =>
+      user.selectOptions(doc.getElementById('s')!, [
+        doc.getElementById('inside')!,
+        doc.getElementById('outside')!,
+      ]),
+  },
+  {
     name: 'upload on a non-file input',
     html: `<input id="a"/>`,
     run: (user, doc, window) =>

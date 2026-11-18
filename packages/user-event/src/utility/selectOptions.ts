@@ -4,10 +4,8 @@
 import type {
   Element,
   HTMLElement,
-  HTMLInputElement,
   HTMLOptionElement,
   HTMLSelectElement,
-  HTMLTextAreaElement,
 } from '../dom-types.ts'
 import {getConfig} from '../setup/dtl.ts'
 import {
@@ -35,6 +33,52 @@ export async function deselectOptions(
   return selectOptionsBase.call(this, false, select, values)
 }
 
+const optionSelector = 'option, [role="option"]'
+
+function resolveOptions(
+  select: Element,
+  values: HTMLElement | HTMLElement[] | string[] | string,
+): HTMLElement[] {
+  const requested = Array.isArray(values) ? values : [values]
+  if (
+    requested.every(
+      (value): value is HTMLElement =>
+        typeof value !== 'string' &&
+        value?.nodeType === 1 &&
+        value !== select &&
+        select.contains(value) &&
+        value.matches(optionSelector),
+    )
+  ) {
+    return requested
+  }
+
+  const options = select.querySelectorAll(optionSelector)
+  // A single lookup can stop at the match. Copy once for repeated indexed reads on foreign DOMs.
+  const candidates = requested.length === 1 ? options : Array.from(options)
+  return requested.map(value => {
+    if (
+      typeof value !== 'string' &&
+      Array.prototype.includes.call(candidates, value)
+    ) {
+      return value
+    }
+    for (let i = 0, length = candidates.length; i < length; i++) {
+      const option = candidates[i]
+      if (
+        (option as HTMLOptionElement).value === value ||
+        option.innerHTML === value
+      ) {
+        return option
+      }
+    }
+    throw getConfig().getElementError(
+      `Value "${String(value as string)}" not found in options`,
+      select,
+    )
+  })
+}
+
 async function selectOptionsBase(
   this: Instance,
   newValue: boolean,
@@ -47,31 +91,9 @@ async function selectOptionsBase(
       select,
     )
   }
-  const valArray = Array.isArray(values) ? values : [values]
-  const allOptions = Array.from(
-    select.querySelectorAll('option, [role="option"]'),
+  const selectedOptions = resolveOptions(select, values).filter(
+    option => !isDisabled(option),
   )
-  const selectedOptions = valArray
-    .map(val => {
-      if (typeof val !== 'string' && allOptions.includes(val)) {
-        return val
-      } else {
-        const matchingOption = allOptions.find(
-          o =>
-            (o as HTMLInputElement | HTMLTextAreaElement).value === val ||
-            o.innerHTML === val,
-        )
-        if (matchingOption) {
-          return matchingOption
-        } else {
-          throw getConfig().getElementError(
-            `Value "${String(val as string)}" not found in options`,
-            select,
-          )
-        }
-      }
-    })
-    .filter(option => !isDisabled(option))
 
   if (isDisabled(select) || !selectedOptions.length) return
 
