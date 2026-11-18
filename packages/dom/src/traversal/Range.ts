@@ -24,15 +24,7 @@ import type { Document } from "../nodes/Document.ts";
 import type { DocumentFragment } from "../nodes/DocumentFragment.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import {
-  childAt,
-  indexOf,
-  isInclusiveAncestor,
-  nextInTree,
-  nextSkippingChildren,
-  siblingPrecedes,
-  treeRoot,
-} from "../nodes/traverse.ts";
+import { childAt, indexOf, nextInTree, nextSkippingChildren, siblingPrecedes, treeRoot } from "../nodes/traverse.ts";
 import { append, ensurePreInsertionValidity, preInsert, remove, replaceAll } from "../nodes/tree.ts";
 import { cloneNode } from "../nodes/clone.ts";
 import { replaceData, splitText } from "../nodes/character-data.ts";
@@ -127,9 +119,32 @@ function childOfAncestor(node: NodeImpl, ancestor: NodeImpl): NodeImpl {
 }
 
 function commonAncestor(a: NodeImpl, b: NodeImpl): NodeImpl {
-  let c = a;
-  while (!isInclusiveAncestor(c, b)) c = c.parent!;
-  return c;
+  let x = a;
+  let y = b;
+  while (x !== y) {
+    const px = x.parent;
+    const py = y.parent;
+    if (px === b) return b;
+    if (py === a) return a;
+    if (px === null || py === null) break;
+    x = px;
+    y = py;
+  }
+  if (x === y) return x;
+  // One path reached the root first. Its counterpart has exactly the excess depth left.
+  while (x.parent !== null) {
+    x = x.parent;
+    a = a.parent!;
+  }
+  while (y.parent !== null) {
+    y = y.parent;
+    b = b.parent!;
+  }
+  while (a !== b) {
+    a = a.parent!;
+    b = b.parent!;
+  }
+  return a;
 }
 
 /** https://dom.spec.whatwg.org/#interface-abstractrange */
@@ -396,17 +411,8 @@ export class Range extends AbstractRange {
     // Step 4: contained nodes whose parent is not contained.
     const nodesToRemove = containedNodes(this, true);
     // Steps 5-6.
-    let newNode: NodeImpl;
-    let newOffset: number;
-    if (isInclusiveAncestor(osn, oen)) {
-      newNode = osn;
-      newOffset = oso;
-    } else {
-      let ref = osn;
-      while (ref.parent !== null && !isInclusiveAncestor(ref.parent, oen)) ref = ref.parent;
-      newNode = ref.parent!;
-      newOffset = indexOf(ref) + 1;
-    }
+    const newNode = commonAncestor(osn, oen);
+    const newOffset = newNode === osn ? oso : indexOf(childOfAncestor(osn, newNode)) + 1;
     // Step 7.
     if (isCharacterData(osn)) replaceData(osn, oso, osn.data.length - oso, "");
     // Step 8.
@@ -443,12 +449,12 @@ export class Range extends AbstractRange {
     // Step 1: a non-Text node partially contained in the range.
     const ca = commonAncestor(this[$sc], this[$ec]);
     for (let n: NodeImpl = this[$sc]; n !== ca; n = n.parent!) {
-      if (!isText(n) && !isInclusiveAncestor(n, this[$ec])) {
+      if (!isText(n)) {
         throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
       }
     }
     for (let n: NodeImpl = this[$ec]; n !== ca; n = n.parent!) {
-      if (!isText(n) && !isInclusiveAncestor(n, this[$sc])) {
+      if (!isText(n)) {
         throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
       }
     }
@@ -612,8 +618,8 @@ function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean
 /** Steps 5-10 of extract / clone: the partially contained children and the contained children of the common ancestor. */
 function rangeContents(sc: NodeImpl, so: number, ec: NodeImpl, eo: number) {
   const ca = commonAncestor(sc, ec);
-  const first = isInclusiveAncestor(sc, ec) ? null : childOfAncestor(sc, ca);
-  const last = isInclusiveAncestor(ec, sc) ? null : childOfAncestor(ec, ca);
+  const first = sc === ca ? null : childOfAncestor(sc, ca);
+  const last = ec === ca ? null : childOfAncestor(ec, ca);
   const contained: NodeImpl[] = [];
   let child = first === null ? childAt(ca, so) : first.next;
   const stop = last === null ? childAt(ca, eo) : last;
@@ -644,17 +650,8 @@ function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl,
   // Steps 5-10.
   const { first, last, contained } = rangeContents(osn, oso, oen, oeo);
   // Steps 11-12.
-  let newNode: NodeImpl;
-  let newOffset: number;
-  if (isInclusiveAncestor(osn, oen)) {
-    newNode = osn;
-    newOffset = oso;
-  } else {
-    let ref = osn;
-    while (ref.parent !== null && !isInclusiveAncestor(ref.parent, oen)) ref = ref.parent;
-    newNode = ref.parent!;
-    newOffset = indexOf(ref) + 1;
-  }
+  const newNode = first === null ? osn : first.parent!;
+  const newOffset = first === null || range === null ? oso : indexOf(first) + 1;
   // Steps 13-14.
   if (first !== null) {
     if (isCharacterData(first)) {
