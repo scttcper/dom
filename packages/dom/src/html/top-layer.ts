@@ -481,12 +481,21 @@ function lastIndexOfAncestor(list: NodeImpl[], node: NodeImpl, inclusive = false
   return -1;
 }
 
+/** The last member of a showing popover list, without taking a snapshot. */
+function lastShowingPopover(doc: Document, mode: number): NodeImpl | null {
+  const layer = states.get(doc)?.layer;
+  if (layer === undefined) return null;
+  for (let i = layer.length - 1; i >= 0; i--) {
+    const el = layer[i];
+    const r = popovers.get(el);
+    if (r?.showing && r.openedMode === mode) return el;
+  }
+  return null;
+}
+
 /** https://html.spec.whatwg.org/#topmost-auto-or-hint-popover */
 function topmostAutoOrHintPopover(doc: Document): NodeImpl | null {
-  const hints = showingPopoverList(doc, P_HINT);
-  if (hints.length !== 0) return hints[hints.length - 1];
-  const autos = showingPopoverList(doc, P_AUTO);
-  return autos.length !== 0 ? autos[autos.length - 1] : null;
+  return lastShowingPopover(doc, P_HINT) ?? lastShowingPopover(doc, P_AUTO);
 }
 
 /** https://html.spec.whatwg.org/#hide-popover-stack-until */
@@ -498,6 +507,8 @@ function hidePopoverStackUntil(
   fireEvents: boolean,
 ): void {
   // 1-4.
+  const last = lastShowingPopover(doc, stackType);
+  if (last === null || last === endpoint) return;
   const popoverList = showingPopoverList(doc, stackType);
   const endpointIndex = endpoint === null ? -1 : popoverList.indexOf(endpoint);
   const lastHideIndex = endpointIndex === -1 ? 0 : endpointIndex + 1;
@@ -522,7 +533,10 @@ export function hidePopoversUntil(
   fireEvents: boolean,
 ): void {
   // 1.
-  const endpointIsHint = endpoint !== null && showingPopoverList(doc, P_HINT).includes(endpoint);
+  const endpointIsHint =
+    endpoint !== null &&
+    popovers.get(endpoint)?.openedMode === P_HINT &&
+    showingPopoverList(doc, P_HINT).includes(endpoint);
   // 2.
   hidePopoverStackUntil(doc, endpoint, P_HINT, focusPreviousElement, fireEvents);
   // 3-4.
@@ -692,7 +706,7 @@ export function hidePopover(
     // 14-17.
     r.openedMode = P_NONE;
     r.showing = false;
-    if (el === s.hintStackParent || showingPopoverList(doc, P_HINT).length === 0) s.hintStackParent = null;
+    if (el === s.hintStackParent || lastShowingPopover(doc, P_HINT) === null) s.hintStackParent = null;
     // 18.
     if (fireEvents) queuePopoverToggle(el, "open", "closed", source);
     // 19-20.
@@ -772,7 +786,7 @@ function forceHidden(el: NodeImpl): void {
   }
   removeFromTopLayer(el);
   const s = states.get(el.doc);
-  if (s !== undefined && (el === s.hintStackParent || showingPopoverList(el.doc, P_HINT).length === 0))
+  if (s !== undefined && (el === s.hintStackParent || lastShowingPopover(el.doc, P_HINT) === null))
     s.hintStackParent = null;
 }
 
@@ -837,6 +851,8 @@ function popoverStackPosition(popover: NodeImpl | null): number {
 function topmostClickedPopover(node: NodeImpl): NodeImpl | null {
   const clickedPopover = nearestInclusiveOpenPopover(node);
   const targetPopover = nearestInclusiveTargetPopover(node);
+  if (clickedPopover === null || clickedPopover === targetPopover) return targetPopover;
+  if (targetPopover === null) return isInTopLayer(clickedPopover) ? clickedPopover : null;
   return popoverStackPosition(clickedPopover) > popoverStackPosition(targetPopover) ? clickedPopover : targetPopover;
 }
 
@@ -874,8 +890,8 @@ function postDispatch(event: Event, target: unknown): void {
   // A target removed during dispatch (e.g. by a pointerdown listener) hit nothing in this
   // document any more.
   if ((impl.flags & F_CONNECTED) === 0) return;
-  lightDismissOpenPopovers(doc, s, impl, type);
-  dialogLightDismissHook?.(s, impl, type);
+  if (s.layer.length !== 0) lightDismissOpenPopovers(doc, s, impl, type);
+  if (s.openDialogs.length !== 0) dialogLightDismissHook?.(s, impl, type);
 }
 
 /** Compare the endpoints of a light-dismiss gesture without retaining a removed overlay. */
