@@ -73,6 +73,10 @@ export class Selection {
     return root === this.#doc[$impl];
   }
 
+  #setNewRange(sc: NodeImpl, so: number, ec: NodeImpl, eo: number, direction: number): void {
+    this.#set(Range._create(this.#doc, sc, so, ec, eo), direction);
+  }
+
   #set(range: Range | null, direction: number): void {
     const old = this.#range;
     this.#range = range;
@@ -205,10 +209,7 @@ export class Selection {
     const o = Number(offset) >>> 0;
     checkBoundary(n, o);
     if (!this.#inDocument(n)) return;
-    const r = new Range(this.#doc);
-    r._setStart(n, o);
-    r._setEnd(n, o);
-    this.#set(r, DIR_FORWARDS);
+    this.#setNewRange(n, o, n, o, DIR_FORWARDS);
   }
 
   setPosition(node: Node | null, offset = 0): void {
@@ -219,19 +220,13 @@ export class Selection {
   collapseToStart(): void {
     const r = this.#range;
     if (r === null) throw new DOMException("There is no selection to collapse.", "InvalidStateError");
-    const n = new Range(this.#doc);
-    n._setStart(r[$sc], r[$so]);
-    n._setEnd(r[$sc], r[$so]);
-    this.#set(n, DIR_FORWARDS);
+    this.#setNewRange(r[$sc], r[$so], r[$sc], r[$so], DIR_FORWARDS);
   }
 
   collapseToEnd(): void {
     const r = this.#range;
     if (r === null) throw new DOMException("There is no selection to collapse.", "InvalidStateError");
-    const n = new Range(this.#doc);
-    n._setStart(r[$ec], r[$eo]);
-    n._setEnd(r[$ec], r[$eo]);
-    this.#set(n, DIR_FORWARDS);
+    this.#setNewRange(r[$ec], r[$eo], r[$ec], r[$eo], DIR_FORWARDS);
   }
 
   /** https://w3c.github.io/selection-api/#dom-selection-extend */
@@ -245,19 +240,13 @@ export class Selection {
     checkBoundary(n, o);
     const anchorNode = this.#direction === DIR_BACKWARDS ? r[$ec] : r[$sc];
     const anchorOffset = this.#direction === DIR_BACKWARDS ? r[$eo] : r[$so];
-    const nr = new Range(this.#doc);
-    if (treeRoot(n) !== r._treeRoot()) {
-      nr._setStart(n, o);
-      nr._setEnd(n, o);
-    } else if (compareBoundaryPoints(anchorNode, anchorOffset, n, o) <= 0) {
-      nr._setStart(anchorNode, anchorOffset);
-      nr._setEnd(n, o);
+    if (anchorNode !== n && treeRoot(anchorNode) !== treeRoot(n)) {
+      this.#setNewRange(n, o, n, o, DIR_FORWARDS);
+    } else if (compareBoundaryPoints(anchorNode, anchorOffset, n, o) > 0) {
+      this.#setNewRange(n, o, anchorNode, anchorOffset, DIR_BACKWARDS);
     } else {
-      nr._setStart(n, o);
-      nr._setEnd(anchorNode, anchorOffset);
+      this.#setNewRange(anchorNode, anchorOffset, n, o, DIR_FORWARDS);
     }
-    const backwards = treeRoot(n) === treeRoot(anchorNode) && compareBoundaryPoints(n, o, anchorNode, anchorOffset) < 0;
-    this.#set(nr, backwards ? DIR_BACKWARDS : DIR_FORWARDS);
   }
 
   /** https://w3c.github.io/selection-api/#dom-selection-setbaseandextent */
@@ -292,10 +281,7 @@ export class Selection {
     if (!this.#inDocument(n)) return;
     // 3-5. A new range from (node, 0) to (node, node's number of children) — the child count,
     // not the node's length (a Text node gets a collapsed range at offset 0).
-    const r = new Range(this.#doc);
-    r._setStart(n, 0);
-    r._setEnd(n, n.childCount);
-    this.#set(r, DIR_FORWARDS);
+    this.#setNewRange(n, 0, n, n.childCount, DIR_FORWARDS);
   }
 
   /** https://w3c.github.io/selection-api/#dom-selection-deletefromdocument */
