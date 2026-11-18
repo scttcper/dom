@@ -136,8 +136,9 @@ export class DataTransferItemList {
       }
       item = makeItem("file", asciiLowercase(data.type), "", data);
     }
+    const index = this[$items].length;
     this[$items].push(item);
-    this._changed();
+    this._changed(index, index);
     return item;
   }
 
@@ -147,14 +148,15 @@ export class DataTransferItemList {
     if (i >= this[$items].length) return;
     const [removed] = this[$items].splice(i, 1);
     disableItem(removed);
-    this._changed();
+    this._changed(i, this[$items].length + 1);
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransferitemlist-clear */
   clear(): void {
+    const oldLength = this[$items].length;
     for (const item of this[$items]) disableItem(item);
     this[$items].length = 0;
-    this._changed();
+    this._changed(0, oldLength);
   }
 
   [Symbol.iterator](): IterableIterator<DataTransferItem> {
@@ -162,13 +164,12 @@ export class DataTransferItemList {
   }
 
   /** @internal Re-sync own index properties and invalidate the owner's cached views. */
-  _changed(): void {
+  _changed(first: number, oldLength: number): void {
     const items = this[$items];
-    for (let i = 0; i < items.length; i++) {
+    for (let i = first; i < items.length; i++) {
       Object.defineProperty(this, i, { value: items[i], enumerable: true, configurable: true, writable: false });
     }
-    for (let i = items.length; Object.prototype.hasOwnProperty.call(this, i); i++)
-      delete (this as Record<number, unknown>)[i];
+    for (let i = items.length; i < oldLength; i++) delete this[i];
     if (this[$owner] !== null) {
       this[$owner][$types] = null;
       this[$owner][$files] = null;
@@ -271,29 +272,40 @@ export class DataTransfer {
   /** https://html.spec.whatwg.org/#dom-datatransfer-setdata */
   setData(format: string, data: string): void {
     const { type } = normalizeFormat(format);
+    const item = makeItem("string", type, String(data), null);
     const items = this[$items][$items];
-    for (let i = 0; i < items.length; i++) {
-      if (items[i][$kind] === "string" && items[i][$type] === type) {
-        disableItem(items[i]);
-        items.splice(i, 1);
+    const oldLength = items.length;
+    let index = 0;
+    for (; index < oldLength; index++) {
+      if (items[index][$kind] === "string" && items[index][$type] === type) {
+        disableItem(items[index]);
+        items.splice(index, 1);
         break;
       }
     }
-    items.push(makeItem("string", type, String(data), null));
-    this[$items]._changed();
+    items.push(item);
+    this[$items]._changed(index, oldLength);
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-cleardata */
   clearData(format?: string): void {
     const items = this[$items][$items];
     const type = format === undefined ? null : normalizeFormat(format).type;
-    for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i][$kind] === "string" && (type === null || items[i][$type] === type)) {
-        disableItem(items[i]);
-        items.splice(i, 1);
+    const oldLength = items.length;
+    let first = oldLength;
+    let kept = 0;
+    for (let i = 0; i < oldLength; i++) {
+      const item = items[i];
+      if (item[$kind] === "string" && (type === null || item[$type] === type)) {
+        if (kept === i) first = i;
+        disableItem(item);
+      } else {
+        if (kept !== i) items[kept] = item;
+        kept++;
       }
     }
-    this[$items]._changed();
+    items.length = kept;
+    this[$items]._changed(first, oldLength);
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransfer-files */

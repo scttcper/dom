@@ -127,6 +127,19 @@ describe("DataTransferItemList — https://html.spec.whatwg.org/#the-datatransfe
     expect(() => new DataTransfer().items.add({} as never)).toThrow(TypeError);
   });
 
+  test("indexed items follow replacements and removals among files", () => {
+    const transfer = new DataTransfer();
+    const { items } = transfer;
+    const a = items.add(new File([], "a"))!;
+    transfer.setData("text/plain", "first");
+    const b = items.add(new File([], "b"))!;
+    transfer.setData("text/html", "second");
+    transfer.setData("text/plain", "replacement");
+    expect([items[0], items[1], items[2].type, items[3].type]).toEqual([a, b, "text/html", "text/plain"]);
+    transfer.clearData();
+    expect([items.length, items[0], items[1], items[2], items[3]]).toEqual([2, a, b, undefined, undefined]);
+  });
+
   test("items and lists have no public constructors", () => {
     expect(() => new (DataTransferItemList as unknown as new () => object)()).toThrow(TypeError);
     expect(() => new (DataTransferItem as unknown as new () => object)()).toThrow(TypeError);
