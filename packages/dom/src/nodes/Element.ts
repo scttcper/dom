@@ -606,8 +606,45 @@ export function attachShadowRoot(
   return shadow;
 }
 
-/** Per-root cache of getElementsBy* collections (same object for the same root + key). */
-const collectionCache = new WeakMap<NodeImpl, Map<string, HTMLCollection>>();
+/** Keep observable collection identity while a caller holds it. The finalizer holds only
+ * weak collection references and string keys, so it cannot keep the root alive. */
+class CollectionEntry extends WeakRef<HTMLCollection> {
+  entries: Map<string, CollectionEntry>;
+  key: string;
+
+  constructor(collection: HTMLCollection, entries: Map<string, CollectionEntry>, key: string) {
+    super(collection);
+    this.entries = entries;
+    this.key = key;
+  }
+}
+
+const collectionCache = new WeakMap<NodeImpl, Map<string, CollectionEntry>>();
+const collected = new FinalizationRegistry<CollectionEntry>((entry) => {
+  if (entry.entries.get(entry.key) === entry) entry.entries.delete(entry.key);
+});
+
+function cachedCollectionFor(root: NodeImpl, key: string): HTMLCollection | undefined {
+  return collectionCache.get(root)?.get(key)?.deref();
+}
+
+function storeCollection(
+  root: NodeImpl,
+  key: string,
+  structural: boolean,
+  filter: ((el: NodeImpl) => boolean) | null,
+): HTMLCollection {
+  let entries = collectionCache.get(root);
+  if (entries === undefined) collectionCache.set(root, (entries = new Map()));
+  const collection = HTMLCollection._descendants(root, structural, filter);
+  const entry = new CollectionEntry(collection, entries, key);
+  entries.set(key, entry);
+  collected.register(collection, entry);
+  return collection;
+}
+
+/** Fixed document properties such as document.images preserve their wrapper and its expandos. */
+const documentCollections = new WeakMap<NodeImpl, Map<string, HTMLCollection>>();
 
 /** `structural`: `filter` reads only tag names and namespaces (HTMLCollection's module comment). */
 export function cachedCollection(
@@ -616,16 +653,19 @@ export function cachedCollection(
   structural: boolean,
   filter: ((el: NodeImpl) => boolean) | null,
 ): HTMLCollection {
-  let map = collectionCache.get(root);
-  if (map === undefined) collectionCache.set(root, (map = new Map()));
-  let c = map.get(key);
-  if (c === undefined) map.set(key, (c = HTMLCollection._descendants(root, structural, filter)));
-  return c;
+  let entries = documentCollections.get(root);
+  if (entries === undefined) documentCollections.set(root, (entries = new Map()));
+  let collection = entries.get(key);
+  if (collection === undefined) entries.set(key, (collection = HTMLCollection._descendants(root, structural, filter)));
+  return collection;
 }
 
 /** https://dom.spec.whatwg.org/#concept-getelementsbytagname */
 export function getElementsByTagName(root: NodeImpl, qualifiedName: string): HTMLCollection {
-  if (qualifiedName === "*") return cachedCollection(root, "t*", true, null);
+  const key = "t" + qualifiedName;
+  const cached = cachedCollectionFor(root, key);
+  if (cached !== undefined) return cached;
+  if (qualifiedName === "*") return storeCollection(root, key, true, null);
   const lower = asciiLowercase(qualifiedName);
   const isHTMLDoc = root.doc[$isHTML];
   const colon = qualifiedName.indexOf(":");
@@ -633,7 +673,7 @@ export function getElementsByTagName(root: NodeImpl, qualifiedName: string): HTM
   const local = colon === -1 ? qualifiedName : qualifiedName.slice(colon + 1);
   const lprefix = colon === -1 ? null : lower.slice(0, colon);
   const llocal = colon === -1 ? lower : lower.slice(colon + 1);
-  return cachedCollection(root, "t" + qualifiedName, true, (el) => {
+  return storeCollection(root, key, true, (el) => {
     if (isHTMLDoc && el.ns === HTML_NS) return el.name === llocal && el.prefix === lprefix;
     return el.name === local && el.prefix === prefix;
   });
@@ -643,21 +683,26 @@ export function getElementsByTagName(root: NodeImpl, qualifiedName: string): HTM
 export function getElementsByTagNameNS(root: NodeImpl, namespace: string | null, localName: string): HTMLCollection {
   const ns = namespace === "" || namespace === undefined ? null : namespace === null ? null : String(namespace);
   const key = "n" + (ns ?? "") + "\u0000" + (ns === null ? "0" : "1") + localName;
-  if (ns === "*" && localName === "*") return cachedCollection(root, key, true, null);
-  if (ns === "*") return cachedCollection(root, key, true, (el) => el.name === localName);
-  if (localName === "*") return cachedCollection(root, key, true, (el) => el.ns === ns);
-  return cachedCollection(root, key, true, (el) => el.ns === ns && el.name === localName);
+  const cached = cachedCollectionFor(root, key);
+  if (cached !== undefined) return cached;
+  if (ns === "*" && localName === "*") return storeCollection(root, key, true, null);
+  if (ns === "*") return storeCollection(root, key, true, (el) => el.name === localName);
+  if (localName === "*") return storeCollection(root, key, true, (el) => el.ns === ns);
+  return storeCollection(root, key, true, (el) => el.ns === ns && el.name === localName);
 }
 
 /** https://dom.spec.whatwg.org/#concept-getelementsbyclassname */
 export function getElementsByClassName(root: NodeImpl, classNames: string): HTMLCollection {
+  const quirks = root.doc[$mode] === "quirks";
+  const key = (quirks ? "q" : "c") + classNames;
+  const cached = cachedCollectionFor(root, key);
+  if (cached !== undefined) return cached;
   const wanted: string[] = [];
   for (const t of splitOnAsciiWhitespace(classNames)) if (!wanted.includes(t)) wanted.push(t);
-  if (wanted.length === 0) return cachedCollection(root, "c", true, () => false);
-  const quirks = root.doc[$mode] === "quirks";
+  if (wanted.length === 0) return cachedCollectionFor(root, "c") ?? storeCollection(root, "c", true, () => false);
   if (quirks) {
     const lowered = wanted.map(asciiLowercase);
-    return cachedCollection(root, "q" + classNames, false, (el) => {
+    return storeCollection(root, key, false, (el) => {
       const have = classTokens(el);
       outer: for (let i = 0; i < lowered.length; i++) {
         for (let j = 0; j < have.length; j++) if (asciiLowercase(have[j]) === lowered[i]) continue outer;
@@ -668,13 +713,13 @@ export function getElementsByClassName(root: NodeImpl, classNames: string): HTML
   }
   if (wanted.length === 1) {
     const w = wanted[0];
-    return cachedCollection(root, "c" + classNames, false, (el) => {
+    return storeCollection(root, key, false, (el) => {
       const have = classTokens(el);
       for (let j = 0; j < have.length; j++) if (have[j] === w) return true;
       return false;
     });
   }
-  return cachedCollection(root, "c" + classNames, false, (el) => {
+  return storeCollection(root, key, false, (el) => {
     const have = classTokens(el);
     for (let i = 0; i < wanted.length; i++) if (!have.includes(wanted[i])) return false;
     return true;

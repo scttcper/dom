@@ -359,6 +359,23 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
     w.close();
   });
 
+  test("a mounted root releases discarded getElementsBy collections and keeps held collections live", async () => {
+    const w = createWindow();
+    const root = w.document.body!;
+    const tracker = new Tracker();
+    const held = root.getElementsByClassName("active row");
+    for (let i = 0; i < 20; i++) {
+      tracker.track("class collection", root.getElementsByClassName(`class-${i}`));
+      tracker.track("tag collection", root.getElementsByTagName(`tag-${i}`));
+      tracker.track("namespace collection", root.getElementsByTagNameNS("*", `tag-${i}`));
+    }
+    expect(await tracker.alive()).toEqual({});
+    root.appendChild(w.document.createElement("div")).className = "row active";
+    expect(root.getElementsByClassName("active row")).toBe(held);
+    expect(held.item(0)).toBe(root.firstChild);
+    w.close();
+  });
+
   test("a detached tree whose live collections were read is collectable without any later removal", async () => {
     const w = createWindow({ html: HTML });
     const d = w.document;
