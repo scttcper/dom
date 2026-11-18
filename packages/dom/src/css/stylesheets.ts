@@ -129,6 +129,15 @@ export class DocCSS {
         rs.adopted = [];
         rs.adoptedView = null;
       }
+    } else {
+      // A carried sheet still belongs to its constructor document. Its edits must reach this root too.
+      for (const sheet of rs.adopted) {
+        if (!(sheet instanceof CSSStyleSheet) || sheet[$doc] === doc) continue;
+        templateAdopters ??= new WeakMap();
+        let roots = templateAdopters.get(sheet);
+        if (roots === undefined) templateAdopters.set(sheet, (roots = new RootRefs()));
+        roots.add(rs);
+      }
     }
     for (const sheet of rs.owners) sheet[$doc] = doc;
     syncShadowRegistration(rs);
@@ -174,6 +183,25 @@ function syncShadowRegistration(rs: RootStyles): void {
 
 /** The tree each registered owner sheet belongs to (its owner may have moved since). */
 const sheetRoots = new WeakMap<CSSStyleSheet, RootStyles>();
+
+/** Shadow roots using a constructed sheet across a template contents boundary. */
+let templateAdopters: WeakMap<CSSStyleSheet, RootRefs> | undefined;
+
+export function sheetChanged(sheet: CSSStyleSheet): void {
+  const doc = sheet[$doc];
+  if (doc !== null) doc[$styleVersion]++;
+  const roots = templateAdopters?.get(sheet);
+  if (roots === undefined) return;
+  for (const ref of roots.refs) {
+    const rs = ref.deref();
+    if (rs === undefined || rs.root.doc === doc || !rs.adopted.includes(sheet)) roots.refs.delete(ref);
+    else {
+      rs.discardIndex();
+      rs.root.doc[$styleVersion]++;
+    }
+  }
+  if (roots.refs.size === 0) templateAdopters!.delete(sheet);
+}
 
 /** A rule index holds the CSS rules it matched. Release deleted rules before another style read. */
 export function discardSheetRuleIndexes(sheet: CSSStyleSheet): void {

@@ -22,6 +22,7 @@ import {
   type HTMLDialogElement,
   type HTMLFormElement,
   type HTMLInputElement,
+  type HTMLTemplateElement,
   type ShadowRoot,
   type Window,
 } from "@ctrl/dom";
@@ -699,6 +700,26 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
     })();
     expect(await tracker.alive()).toEqual({});
     expect(w.getComputedStyle(doc.body!).display).toBe("block");
+    w.close();
+  });
+
+  test("a rule deleted while its shadow host is in template contents is collectible before the next style read", async () => {
+    const w = createWindow();
+    const doc = w.document;
+    const host = doc.body!.appendChild(doc.createElement("div"));
+    const root = host.attachShadow({ mode: "open" }) as ShadowRoot & { adoptedStyleSheets: object[] };
+    const target = root.appendChild(doc.createElement("button"));
+    const sheet = new (w as unknown as Record<string, any>).CSSStyleSheet();
+    sheet.replaceSync("button { display: grid }");
+    root.adoptedStyleSheets.push(sheet);
+    const template = doc.createElement("template") as HTMLTemplateElement;
+    template.content.appendChild(host);
+    expect(w.getComputedStyle(target).display).toBe("grid");
+    const tracker = new Tracker();
+    tracker.track("deleted rule", sheet.cssRules[0]);
+    sheet.deleteRule(0);
+    expect(await tracker.alive()).toEqual({});
+    expect(w.getComputedStyle(target).display).not.toBe("grid");
     w.close();
   });
 

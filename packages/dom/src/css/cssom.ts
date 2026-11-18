@@ -38,7 +38,7 @@ import {
   TK_URL,
   COMP_SPACE,
 } from "./values.ts";
-import { discardSheetRuleIndexes } from "./stylesheets.ts";
+import { discardSheetRuleIndexes, sheetChanged } from "./stylesheets.ts";
 import { evaluateSupportsCondition } from "./supports.ts";
 import { currentWindowOrNull } from "../window/current.ts";
 import {
@@ -77,7 +77,6 @@ import {
   $sheet,
   $sheets,
   $style,
-  $styleVersion,
   $supportsText,
   $title,
   $uri,
@@ -386,16 +385,14 @@ export class CSSStyleSheet extends StyleSheet {
   override _changed(): void {
     this[$version]++;
     this[$rebuildVersion] = this[$version];
-    const doc = this[$doc];
-    if (doc !== null) doc[$styleVersion]++;
+    sheetChanged(this);
   }
 
   /** _changed() for a rule inserted at `index`: an appended appendableRule leaves $rebuildVersion. */
   _inserted(rule: CSSRule, index: number): void {
     if (index !== this[$rules].length - 1 || !appendableRule(rule)) return this._changed();
     this[$version]++;
-    const doc = this[$doc];
-    if (doc !== null) doc[$styleVersion]++;
+    sheetChanged(this);
   }
 
   /** Replaces all rules from stylesheet text (no @import fetching). */
