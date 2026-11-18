@@ -224,6 +224,8 @@ const namedProperties: ProxyHandler<HTMLCollection> = {
     // result needs `in` to tell an absent key, which may be a name, from a member that is undefined.
     const value = key === "length" ? target.length : target[key as keyof HTMLCollection];
     if (value !== undefined || typeof key === "symbol" || key in target) return value;
+    // A large index can arrive before any snapshot has installed its prototype getter.
+    if (isArrayIndex(key)) return target.item(Number(key)) ?? undefined;
     return target.namedItem(key) ?? undefined;
   },
   has(target, key) {

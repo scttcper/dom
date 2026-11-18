@@ -1,3 +1,4 @@
+import type { ExternalNames } from "../html/forms/past-names.ts";
 // https://dom.spec.whatwg.org/#interface-document
 // https://html.spec.whatwg.org/#the-document-object
 
@@ -54,9 +55,11 @@ import {
   $css,
   $derived,
   $doc,
+  $externalFormNames,
   $focused,
   $forLabels,
   $formAttrSeen,
+  $formControlsVersion,
   $forms,
   $ids,
   $impl,
@@ -118,6 +121,10 @@ export class Document extends Node {
   declare [$forLabels]: ElementIndex | null;
   /** An element of this document has had a `form` attribute (never reset): formOwnerScope. */
   declare [$formAttrSeen]: boolean;
+  /** Non-structural changes to form ownership or the category of listed controls. */
+  declare [$formControlsVersion]: number;
+  /** Named controls whose form owner can change on a mutation elsewhere in the tree. */
+  declare [$externalFormNames]?: ExternalNames;
   /**
    * Connected radio buttons with a non-empty name, by name, each list in no particular order, or
    * null before the first (html/forms/HTMLInputElement.ts). A radio's group is looked up here
@@ -164,6 +171,7 @@ export class Document extends Node {
     defineHidden(this, $derived, null);
     defineHidden(this, $forLabels, null);
     defineHidden(this, $formAttrSeen, false);
+    defineHidden(this, $formControlsVersion, 0);
     defineHidden(this, $radios, null);
     defineHidden(this, $forms, null);
     defineHidden(this, $aboutBase, null);

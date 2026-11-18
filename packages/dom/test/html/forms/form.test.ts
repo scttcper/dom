@@ -77,6 +77,15 @@ describe("form.elements — https://html.spec.whatwg.org/#dom-form-elements", ()
     list.value = "1";
     expect(list[0].checked).toBe(true);
   });
+
+  test("named lookups and high numeric indices work before reading the collection length", () => {
+    document.body!.innerHTML = `<form id=f>${"<input>".repeat(800)}<input id=last name=9000></form>`;
+    const controls = $("f").elements;
+    expect(controls.namedItem("last")).toBe($("last"));
+    expect(controls[800]).toBe($("last"));
+    expect(controls.namedItem("9000")).toBe($("last"));
+    expect(controls[9000]).toBeUndefined();
+  });
 });
 
 // formControls walks only an ID-less form's subtree (formOwnerScope); each case checks
@@ -148,6 +157,26 @@ describe("form owner scope — https://html.spec.whatwg.org/#form-owner", () => 
     check();
   });
 
+  test("cached controls reflect image type changes and a form-associated custom element upgrade", () => {
+    document.body!.innerHTML = "<form id=f><input id=i name=edit><x-form-entry id=custom></x-form-entry></form>";
+    const f = $("f"),
+      i = $("i");
+    expect(f.length).toBe(1);
+    i.type = "image";
+    expect(f.elements.namedItem("edit")).toBeNull();
+    expect(f.length).toBe(0);
+    i.type = "text";
+    expect(f.elements.namedItem("edit")).toBe(i);
+    window.customElements.define(
+      "x-form-entry",
+      class extends window.HTMLElement {
+        static formAssociated = true;
+      },
+    );
+    expect(f.length).toBe(2);
+    expect(f.elements.namedItem("custom")).toBe($("custom"));
+  });
+
   test("a control the parser associated from outside the form is listed", () => {
     // Document parsing only: fragment parsing never uses the form element pointer.
     window = createWindow({ html: "<div><form id=p></div><input id=after><input type=radio name=r id=r1>" });
@@ -190,6 +219,111 @@ describe("form named properties — https://html.spec.whatwg.org/#the-form-eleme
     expect(f.renamed).toBe($("e"));
     expect("email" in f).toBe(true);
     expect(f.action).toBe(document.URL); // built-ins are never shadowed
+  });
+
+  test("old names survive a move within the form and expire when the control leaves it", () => {
+    document.body!.innerHTML = "<form id=f><div><input id=i name=original></div><section></section></form>";
+    const f = $("f"),
+      input = $("i"),
+      row = input.parentNode;
+    expect(f.original).toBe(input);
+    expect(f.i).toBe(input);
+    input.name = "next";
+    input.id = "updated";
+    f.querySelector("section").moveBefore(row, null);
+    expect(f.original).toBe(input);
+    expect(f.i).toBe(input);
+    row.remove();
+    f.append(row);
+    expect(f.original).toBeUndefined();
+    expect(f.i).toBeUndefined();
+    expect(f.next).toBe(input);
+  });
+
+  test("a past name overwritten by another control stays with its new owner", () => {
+    document.body!.innerHTML = "<form id=f><input id=a name=edit><input id=b></form>";
+    const f = $("f"),
+      a = $("a"),
+      b = $("b");
+    expect(f.edit).toBe(a);
+    expect(f.a).toBe(a);
+    a.name = "renamed";
+    b.name = "edit";
+    expect(f.edit).toBe(b);
+    b.name = "other";
+    a.remove();
+    expect(f.edit).toBe(b);
+    b.remove();
+    f.append(b);
+    expect(f.edit).toBeUndefined();
+  });
+
+  test("a temporary change of external owner expires its past names", () => {
+    document.body!.innerHTML = "<form id=f></form><input id=i name=edit form=f>";
+    const f = $("f"),
+      input = $("i");
+    expect(f.edit).toBe(input);
+    input.name = "next";
+    f.id = "renamed";
+    f.id = "f";
+    expect(f.edit).toBeUndefined();
+    expect(f.next).toBe(input);
+    input.name = "last";
+    const blocker = document.createElement("div");
+    blocker.id = "f";
+    f.before(blocker);
+    blocker.remove();
+    expect(f.next).toBeUndefined();
+    expect(f.last).toBe(input);
+    input.name = "end";
+    input.removeAttribute("form");
+    input.setAttribute("form", "f");
+    expect(f.last).toBeUndefined();
+  });
+
+  test("an adopted form tracks name changes after its controls reconnect in a shadow tree", () => {
+    const f = document.createElement("form") as any;
+    const input = document.createElement("input") as any;
+    f.id = "target";
+    input.name = "field";
+    input.setAttribute("form", "target");
+    f.append(input);
+    expect(f.field).toBe(input);
+    input.name = "renamed";
+    const other = createWindow().document;
+    other.adoptNode(f);
+    const host = other.createElement("div");
+    const root = host.attachShadow({ mode: "open" });
+    root.append(f);
+    other.body!.append(host);
+    expect(f.field).toBe(input);
+    const duplicate = other.createElement("div");
+    duplicate.id = "target";
+    root.insertBefore(duplicate, f);
+    duplicate.remove();
+    expect(f.field).toBeUndefined();
+    expect(f.renamed).toBe(input);
+  });
+
+  test("held named lists stay live and distinguish listed controls from legacy images", () => {
+    document.body!.innerHTML = "<form id=f><img name=photo><img name=photo></form>";
+    const f = $("f"),
+      images = f.photo;
+    expect([...images].map((el) => el.localName)).toEqual(["img", "img"]);
+    expect(f.elements.namedItem("photo")).toBeNull();
+    f.insertAdjacentHTML("beforeend", "<input name=photo><input name=photo>");
+    const inputs = f.elements.namedItem("photo");
+    expect(f.photo).toBe(inputs);
+    expect(f.elements.photo).toBe(inputs);
+    expect(images).not.toBe(inputs);
+    f.replaceChildren();
+    expect(images.length).toBe(0);
+    expect(inputs.length).toBe(0);
+    f.innerHTML = "<img name=photo><img name=photo>";
+    expect(f.photo).toBe(images);
+    expect(inputs.length).toBe(0);
+    f.innerHTML = "<input name=photo><input name=photo>";
+    expect(f.photo).toBe(inputs);
   });
 
   test("the form wrapper is the same object everywhere", () => {

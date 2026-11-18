@@ -371,6 +371,58 @@ const dragTextSelection: Workload = {
   },
 };
 
+const validateNamedFields: Workload = {
+  id: "react/validate-named-fields",
+  title: "Read related fields by name on each edit in a 250-field form",
+  kind: "react",
+  warmup: 5,
+  iterations: 30,
+  setup({ React, rtl, userEvent, document }) {
+    const h = React.createElement;
+    const fields = Array.from({ length: 250 }, (_, i) =>
+      h("input", { key: i, name: `setting-${i}`, defaultValue: "on" }),
+    );
+    let validated = 0;
+    const view = rtl.render(
+      h(
+        "form",
+        {
+          onChange(event: any) {
+            const controls = event.currentTarget.elements;
+            if (
+              controls.namedItem("setting-0").value === "on" &&
+              controls.namedItem("setting-125").value === "on" &&
+              controls.namedItem("setting-249").value === event.target.value
+            )
+              validated++;
+          },
+        },
+        fields,
+      ),
+    );
+    const input = view.container.querySelector('[name="setting-249"]');
+    const user = userEvent.setup({ document });
+    const suffix = "xxxxxxxxxx";
+    return {
+      beforeEach() {
+        validated = 0;
+        input.value = "on";
+      },
+      async run() {
+        await user.type(input, suffix);
+      },
+      verify() {
+        eq(validated, suffix.length, "validated edits");
+        eq(input.value, "on" + suffix, "edited setting");
+      },
+      close() {
+        view.unmount();
+        view.container.remove();
+      },
+    };
+  },
+};
+
 const editLabelledFields: Workload = {
   id: "react/edit-labelled-fields",
   title: "Find and type into six fields by label in a 200-field form",
@@ -925,6 +977,7 @@ export const reactWorkloads: Workload[] = [
   clickRemove,
   dragTextSelection,
   editLabelledFields,
+  validateNamedFields,
   tabRadioGroups,
   chooseProject,
   textQueries,

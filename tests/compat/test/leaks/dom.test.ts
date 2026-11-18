@@ -177,6 +177,59 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
     w.close();
   });
 
+  test("named field lookups release removed rows and discarded live lists while the form stays mounted", async () => {
+    const w = createWindow({ html: "<form id=f></form>" });
+    const form = w.document.getElementById("f") as HTMLFormElement & Record<string, any>;
+    const tracker = new Tracker();
+    (() => {
+      for (let i = 0; i < 20; i++) {
+        const name = `field-${i}`;
+        const row = tracker.track("row", w.document.createElement("label"));
+        const input = tracker.track("input", w.document.createElement("input") as HTMLInputElement);
+        input.name = name;
+        row.append(input);
+        form.append(row);
+        expect(form[name]).toBe(input);
+        row.append(input.cloneNode());
+        expect(tracker.track("list", form[name]).length).toBe(2);
+        row.remove();
+      }
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(form.length).toBe(0);
+    w.close();
+  });
+
+  test("tracking a form attribute in a detached tree releases both control and form", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    (() => {
+      const form = tracker.track("form", w.document.createElement("form") as HTMLFormElement & { field?: unknown });
+      const input = tracker.track("input", w.document.createElement("input") as HTMLInputElement);
+      form.id = "example";
+      input.name = "field";
+      input.setAttribute("form", form.id);
+      form.append(input);
+      expect(form.field).toBe(input);
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
+  test("a parser-associated input releases its removed form without another owner lookup", async () => {
+    const w = createWindow({ html: "<div><form id=f></div><input id=i>" });
+    const tracker = new Tracker();
+    const input = w.document.getElementById("i") as HTMLInputElement;
+    (() => {
+      const form = tracker.track("form", w.document.getElementById("f")!);
+      expect(input.form).toBe(form);
+      form.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(input.form).toBeNull();
+    w.close();
+  });
+
   test("ranges adjusted during removal are collectable while the document stays open", async () => {
     const w = createWindow();
     const tracker = new Tracker();

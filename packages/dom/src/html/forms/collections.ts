@@ -18,7 +18,8 @@ import { NodeList } from "../../collections/NodeList.ts";
 import { T } from "../../nodes/tags.ts";
 import { firstElementChild, nextElementInTree } from "../../nodes/traverse.ts";
 import { attr } from "../../nodes/attributes.ts";
-import { labelsFor } from "./form-associated.ts";
+import type { HTMLFormElement } from "./HTMLFormElement.ts";
+import { formOwner, formOwnerScope, labelsFor } from "./form-associated.ts";
 import { I_RADIO, inputType } from "./input-type.ts";
 import { HTML_NS } from "../../nodes/constants.ts";
 import { $el, $form, $impl, $name, $version } from "../../keys.ts";
@@ -118,6 +119,59 @@ export class NameNodeList extends ComputedNodeList {
 
 // --- RadioNodeList --------------------------------------------------------------------------
 
+// A caller can keep a live list across name and membership changes. Only the caller needs to
+// keep it alive. Finalization also removes obsolete names from a long-lived form's index.
+class NamedLists {
+  refs = new Map<string, WeakRef<RadioNodeList>>();
+  collected = new FinalizationRegistry<string>((name) => {
+    if (this.refs.get(name)?.deref() === undefined) this.refs.delete(name);
+  });
+}
+
+const controlLists = new WeakMap<NodeImpl, NamedLists>();
+const imageLists = new WeakMap<NodeImpl, NamedLists>();
+const imagesOnly = new WeakSet<RadioNodeList>();
+
+function namedList(form: NodeImpl, name: string, images: boolean): RadioNodeList {
+  const cache = images ? imageLists : controlLists;
+  let lists = cache.get(form);
+  if (lists === undefined) cache.set(form, (lists = new NamedLists()));
+  let list = lists.refs.get(name)?.deref();
+  if (list === undefined) {
+    list = new RadioNodeList(form, name);
+    if (images) imagesOnly.add(list);
+    lists.refs.set(name, new WeakRef(list));
+    lists.collected.register(list, name);
+  }
+  return list;
+}
+
+export function namedControl(form: NodeImpl, controls: NodeImpl[], name: string): NodeImpl | RadioNodeList | null {
+  let first: NodeImpl | null = null;
+  for (const c of controls) {
+    if (c.id !== name && attr(c, "name") !== name) continue;
+    if (first !== null) return namedList(form, name, false);
+    first = c;
+  }
+  return first;
+}
+
+function matchesNamedImage(el: NodeImpl, form: NodeImpl, name: string): boolean {
+  return el.tag === T.img && (el.id === name || attr(el, "name") === name) && formOwner(el) === form;
+}
+
+/** Images supply legacy named properties only when no listed control matches. */
+export function namedImage(form: NodeImpl, name: string): NodeImpl | RadioNodeList | null {
+  let first: NodeImpl | null = null;
+  const root = formOwnerScope(form, false);
+  for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
+    if (!matchesNamedImage(n, form, name)) continue;
+    if (first !== null) return namedList(form, name, true);
+    first = n;
+  }
+  return first;
+}
+
 /** https://html.spec.whatwg.org/#radionodelist — live list of a form's controls with a given name/id. */
 export class RadioNodeList extends ComputedNodeList {
   declare [$form]: NodeImpl;
@@ -135,9 +189,17 @@ export class RadioNodeList extends ComputedNodeList {
   }
 
   _compute(): Node[] {
-    const controls = (this[$form].node as unknown as { _controls(): NodeImpl[] })._controls();
-    const items: Node[] = [];
+    const form = this[$form];
     const name = this[$name];
+    const items: Node[] = [];
+    if (imagesOnly.has(this)) {
+      const root = formOwnerScope(form, false);
+      for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
+        if (matchesNamedImage(n, form, name)) items.push(n.node);
+      }
+      return items;
+    }
+    const controls = (form.node as HTMLFormElement)._controls();
     for (let i = 0; i < controls.length; i++) {
       const c = controls[i];
       if (c.id === name || attr(c, "name") === name) items.push(c.node);
@@ -185,7 +247,7 @@ export class HTMLFormControlsCollection extends HTMLCollection {
   }
 
   override _collect(out: Element[]): void {
-    const controls = (this._s.root.node as unknown as { _controls(): NodeImpl[] })._controls();
+    const controls = (this._s.root.node as HTMLFormElement)._controls();
     for (let i = 0; i < controls.length; i++) out.push(controls[i].node as Element);
   }
 
@@ -193,19 +255,10 @@ export class HTMLFormControlsCollection extends HTMLCollection {
   override namedItem(name: string): Element | null {
     const n = String(name);
     if (n === "") return null;
-    const items = this._snapshot();
-    let first: Element | null = null;
-    let count = 0;
-    for (let i = 0; i < items.length; i++) {
-      const impl = items[i][$impl];
-      if (impl.id === n || attr(impl, "name") === n) {
-        if (count === 0) first = items[i];
-        count++;
-        if (count > 1) break;
-      }
-    }
-    if (count <= 1) return first;
-    return new RadioNodeList(this._s.root, n) as unknown as Element;
+    const form = this._s.root;
+    const controls = (form.node as HTMLFormElement)._controls();
+    const match = namedControl(form, controls, n);
+    return match instanceof RadioNodeList ? (match as unknown as Element) : ((match?.node as Element) ?? null);
   }
 }
 Object.defineProperty(HTMLFormControlsCollection.prototype, Symbol.toStringTag, {

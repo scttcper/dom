@@ -17,22 +17,27 @@ import { reportNotImplemented, stubbedMethod } from "../../window/not-implemente
 
 /** jsdom reports form.submit() as not implemented (window/not-implemented.ts). */
 const SUBMIT_NOT_IMPLEMENTED = stubbedMethod("HTMLFormElement", "submit");
+import { rememberName, type PastName } from "./past-names.ts";
 import { reflectActionURL } from "./common.ts";
-import { formControls, formOwner, formOwnerScope } from "./form-associated.ts";
-import { createFormControlsCollection, RadioNodeList, type HTMLFormControlsCollection } from "./collections.ts";
+import { formControls } from "./form-associated.ts";
+import {
+  createFormControlsCollection,
+  namedControl,
+  namedImage,
+  RadioNodeList,
+  type HTMLFormControlsCollection,
+} from "./collections.ts";
 import { contentAttr } from "../reflect.ts";
-import { T } from "../../nodes/tags.ts";
-import { nextElementInTree } from "../../nodes/traverse.ts";
 import { formCheckValidity, isSubmitButton, resetForm, submitForm } from "./form-submission.ts";
 import {
-  $assocGen,
   $constructingEntryList,
   $elements,
   $firingSubmissionEvents,
   $impl,
   $lockedForReset,
   $pastNames,
-  $version,
+  $formControlsVersion,
+  $treeVersion,
   $window,
 } from "../../keys.ts";
 
@@ -52,10 +57,8 @@ export class HTMLFormElement extends HTMLElement {
   [$lockedForReset]: boolean;
   /** https://html.spec.whatwg.org/#constructing-entry-list */
   [$constructingEntryList]: boolean;
-  /** Bumped when the form is disconnected: parser associations made before end (form-associated.ts). */
-  [$assocGen]: number;
   /** https://html.spec.whatwg.org/#past-names-map */
-  [$pastNames]: Map<string, NodeImpl> | null;
+  [$pastNames]: Map<string, PastName> | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
@@ -65,66 +68,32 @@ export class HTMLFormElement extends HTMLElement {
     this[$lockedForReset] = false;
     this[$constructingEntryList] = false;
     this[$pastNames] = null;
-    this[$assocGen] = 0;
     const proxy = new Proxy(this, formHandler);
     this[$impl].node = proxy;
     // biome-ignore lint: returning the proxy from the constructor is the point
     return proxy;
   }
 
-  /** "When a form element is removed, reset the form owner" of elements it no longer shares a tree with. */
-  override _disconnectedSteps(): void {
-    super._disconnectedSteps();
-    this[$assocGen]++;
-  }
-
   /** https://html.spec.whatwg.org/#dom-form-nameditem — element, RadioNodeList, or undefined. */
   _namedProperty(name: string): unknown {
+    if (name === "") return undefined;
     const form = this[$impl];
-    const candidates: NodeImpl[] = [];
-    const controls = this._controls();
-    for (let i = 0; i < controls.length; i++) {
-      const c = controls[i];
-      if (c.id === name || contentAttr(c, "name") === name) candidates.push(c);
-    }
-    if (candidates.length === 0) {
-      // img elements whose form owner is this form.
-      const root = formOwnerScope(form, false);
-      for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) {
-        if (n.tag === T.img && (n.id === name || contentAttr(n, "name") === name) && formOwner(n) === form)
-          candidates.push(n);
-      }
-    }
-    if (candidates.length === 0) {
-      const past = this[$pastNames]?.get(name);
-      if (past === undefined) return undefined;
-      // Entries for elements that left the form are dropped.
-      if (formOwner(past) !== form) {
-        this[$pastNames]!.delete(name);
-        return undefined;
-      }
-      return past.node;
-    }
-    if (candidates.length > 1) {
-      // The same live RadioNodeList each time (browsers cache it; desc.value === form.d).
-      let lists = radioLists.get(form);
-      if (lists === undefined) radioLists.set(form, (lists = new Map()));
-      let list = lists.get(name);
-      if (list === undefined) lists.set(name, (list = new RadioNodeList(form, name)));
-      return list;
-    }
-    (this[$pastNames] ??= new Map()).set(name, candidates[0]);
-    return candidates[0].node;
+    const match = namedControl(form, this._controls(), name) ?? namedImage(form, name);
+    if (match === null) return this[$pastNames]?.get(name)?.deref()?.node;
+    if (match instanceof RadioNodeList) return match;
+    rememberName(this, name, match);
+    return match.node;
   }
 
   /** @internal Listed controls whose form owner is this form (image buttons excluded), tree order. */
   _controls(): NodeImpl[] {
     const form = this[$impl];
     const doc = form.doc;
-    const cached = cachedSnapshot<NodeImpl>(doc, form, doc[$version]);
+    const version = doc[$treeVersion] + doc[$formControlsVersion];
+    const cached = cachedSnapshot<NodeImpl>(doc, form, version);
     if (cached !== undefined) return cached;
     const items = formControls(form, [], false);
-    storeSnapshot(doc, form, doc[$version], items);
+    storeSnapshot(doc, form, version, items);
     return items;
   }
 
@@ -216,9 +185,6 @@ enumerated(HTMLFormElement, "enctype", ENCTYPE);
 enumerated(HTMLFormElement, "method", METHOD);
 enumerated(HTMLFormElement, "autocomplete", AUTOCOMPLETE);
 tokenList(HTMLFormElement, "relList", "rel", ["noopener", "noreferrer", "opener"]);
-
-/** RadioNodeLists handed out by form named getters, per form and name (lazy, collectable with the form). */
-const radioLists = new WeakMap<NodeImpl, Map<string, RadioNodeList>>();
 
 /** Supported property names (https://html.spec.whatwg.org/#the-form-element:supported-property-names), tree order, deduplicated. */
 function supportedNames(form: HTMLFormElement): string[] {

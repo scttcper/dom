@@ -76,6 +76,7 @@ export const $elements: unique symbol = Symbol.for("ctrl-dom.elements");
 export const $entries: unique symbol = Symbol.for("ctrl-dom.entries");
 export const $eo: unique symbol = Symbol.for("ctrl-dom.eo");
 export const $error: unique symbol = Symbol.for("ctrl-dom.error");
+export const $externalFormNames: unique symbol = Symbol.for("ctrl-dom.externalFormNames");
 export const $file: unique symbol = Symbol.for("ctrl-dom.file");
 export const $files: unique symbol = Symbol.for("ctrl-dom.files");
 export const $fill: unique symbol = Symbol.for("ctrl-dom.fill");
@@ -83,6 +84,7 @@ export const $filter: unique symbol = Symbol.for("ctrl-dom.filter");
 export const $firingSubmissionEvents: unique symbol = Symbol.for("ctrl-dom.firingSubmissionEvents");
 export const $focused: unique symbol = Symbol.for("ctrl-dom.focused");
 export const $form: unique symbol = Symbol.for("ctrl-dom.form");
+export const $formControlsVersion: unique symbol = Symbol.for("ctrl-dom.formControlsVersion");
 /** Document: an element of it has had a `form` attribute (sticky; html/forms/form-associated.ts formOwnerScope). */
 export const $formAttrSeen: unique symbol = Symbol.for("ctrl-dom.formAttrSeen");
 export const $forLabels: unique symbol = Symbol.for("ctrl-dom.forLabels");

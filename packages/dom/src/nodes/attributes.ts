@@ -11,6 +11,8 @@ import {
   F_HTML,
   F_FORM_ATTR,
   F_INERT_ATTR,
+  F_PAST_NAMES,
+  F_PARSER_FORM,
   F_ROLE_ATTR,
   F_TABINDEX_ATTR,
 } from "./constants.ts";
@@ -21,7 +23,9 @@ import { styleBlindAttribute, styleRecordsCached } from "../css/style-deps.ts";
 import { activeObservers, queueAttributeMutationRecord } from "../observers/queue.ts";
 import { slotAssignmentActive, slotsAttributeChanged } from "./slots.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
-import { $benign, $formAttrSeen, $style, $version } from "../keys.ts";
+import { clearParserAssociation, isListed } from "../html/forms/form-associated.ts";
+import { checkNamedOwner } from "../html/forms/past-names.ts";
+import { $externalFormNames, $benign, $formAttrSeen, $formControlsVersion, $style, $version } from "../keys.ts";
 
 /** Connected elements keyed by an attribute value. Allocate a list only when a key is shared. */
 export type ElementIndex = Map<string, NodeImpl | NodeImpl[]>;
@@ -356,6 +360,16 @@ export function handleAttributeChanges(
     // skipping them on `oldValue === newValue` cost 1.5–2 ns on every changed-value write, which
     // React does far more often, for 1–3 ns saved here.
     coreAttributeSteps(el, a.localName, newValue);
+    if ((a.localName === "form" || (a.localName === "id" && el.doc[$formAttrSeen])) && oldValue !== newValue) {
+      el.doc[$formControlsVersion]++;
+      if (a.localName === "form") {
+        if ((el.flags & F_PARSER_FORM) !== 0 && isListed(el)) clearParserAssociation(el);
+        if ((el.flags & F_PAST_NAMES) !== 0) checkNamedOwner(el);
+      } else if (el.doc[$externalFormNames] !== undefined) {
+        if (oldValue) el.doc[$externalFormNames].check(oldValue);
+        if (newValue) el.doc[$externalFormNames].check(newValue);
+      }
+    }
     if (slotAssignmentActive !== 0) slotsAttributeChanged(el, a.localName, oldValue, newValue);
   }
   if ((el.flags & F_ATTR_HOOK) !== 0) {

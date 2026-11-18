@@ -107,7 +107,17 @@ import { FileList, createFileList } from "../../window/FileList.ts";
 import { queueElementTask } from "../events.ts";
 import { popoverTargetAttributeActivation } from "../invokers.ts";
 import type { EventTarget } from "../../events/EventTarget.ts";
-import { $control, $customValidity, $impl, $labels, $radios, $userValidity, $validity, $version } from "../../keys.ts";
+import {
+  $control,
+  $customValidity,
+  $formControlsVersion,
+  $impl,
+  $labels,
+  $radios,
+  $userValidity,
+  $validity,
+  $version,
+} from "../../keys.ts";
 import { ControlState } from "./control-state.ts";
 
 /** Accept a FileList or any array-like of File (user-event and tests build lists by hand). */
@@ -1057,6 +1067,7 @@ export class HTMLInputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#input-type-change */
   _typeChange(oldType: number, newType: number): void {
     const impl = this[$impl];
+    if (oldType === I_IMAGE || newType === I_IMAGE) impl.doc[$formControlsVersion]++;
     const oldMode = valueMode(oldType);
     const newMode = valueMode(newType);
     if (oldMode === MODE_VALUE && (newMode === MODE_DEFAULT || newMode === MODE_DEFAULT_ON)) {

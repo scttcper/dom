@@ -91,3 +91,7 @@ export const F_ROLE_ATTR = 1 << 22;
 export const F_RANGE = 1 << 20;
 export const F_RANGE_BELOW = 1 << 21;
 export const F_RANGE_MARKS = F_RANGE | F_RANGE_BELOW;
+/** Sticky: this subtree has held a control accessed through a form named property. */
+export const F_PAST_NAMES = 1 << 23;
+/** A parser form pointer is registered for this control or form. */
+export const F_PARSER_FORM = 1 << 24;

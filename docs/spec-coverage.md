@@ -715,7 +715,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [parsing-main-intemplate](https://html.spec.whatwg.org/#parsing-main-intemplate) | `dom/parser/treebuilder.ts` | **untested** |
 | [parsing-main-intr](https://html.spec.whatwg.org/#parsing-main-intr) | `dom/parser/treebuilder.ts` | WPT: `html/semantics/forms/the-form-element/form-elements-nameditem-02.html` |
 | [parsing-template-contents](https://html.spec.whatwg.org/#parsing-template-contents) | `dom/parser/treebuilder.ts` | **untested** |
-| [past-names-map](https://html.spec.whatwg.org/#past-names-map) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [past-names-map](https://html.spec.whatwg.org/#past-names-map) | `dom/html/forms/HTMLFormElement.ts`, `dom/html/forms/past-names.ts` | `compat/forms/form-algorithms.test.ts` |
 | [placeholder-label-option](https://html.spec.whatwg.org/#placeholder-label-option) | `dom/html/forms/HTMLSelectElement.ts` | WPT: `html/semantics/forms/the-select-element/select-validity-option-descendants.html` |
 | [plaintext-state](https://html.spec.whatwg.org/#plaintext-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [popover-close-watcher](https://html.spec.whatwg.org/#popover-close-watcher) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |

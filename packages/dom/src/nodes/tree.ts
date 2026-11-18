@@ -18,6 +18,7 @@ import {
   F_FORM_ATTR,
   F_HAS_SHADOW,
   F_HTML,
+  F_PAST_NAMES,
   F_RANGE,
   F_RANGE_MARKS,
   F_SHADOW_ROOT,
@@ -47,6 +48,7 @@ import { slotsAfterInsert, slotsAfterRemove, slotAssignmentActive } from "./slot
 import {
   $childNodes,
   $derived,
+  $externalFormNames,
   $focused,
   $formAttrSeen,
   $host,
@@ -56,6 +58,7 @@ import {
   $treeVersion,
   $version,
 } from "../keys.ts";
+import { checkExternalSubtree, checkNamesInSubtree, markNamedAncestors } from "../html/forms/past-names.ts";
 
 function hierarchyError(message: string): DOMException {
   return new DOMException(message, "HierarchyRequestError");
@@ -246,6 +249,7 @@ export function append(node: NodeImpl, parent: NodeImpl): NodeImpl {
 /** Link `node` (already detached) into `parent` before `child` (or last). No bookkeeping. */
 function link(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null): void {
   node.parent = parent;
+  if ((node.flags & F_PAST_NAMES) !== 0) markNamedAncestors(parent);
   if ((node.flags & F_RANGE_MARKS) !== 0) markRangeAncestors(parent);
   if (child === null) {
     const last = parent.last;
@@ -352,6 +356,11 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
   childrenChanged(parent);
   doc[$version]++;
   doc[$treeVersion]++;
+  const external = doc[$externalFormNames];
+  if (external?.groups.size) {
+    if (nodes === null) checkExternalSubtree(node, external);
+    else for (const inserted of nodes) checkExternalSubtree(inserted, external);
+  }
   // Custom element reactions queued by hooks above (html agent; see create.ts). Keep last.
   if (ceReactionsPending) flushCEReactions();
 }
@@ -407,6 +416,7 @@ export function connectDetachedChildren(docImpl: NodeImpl): void {
   for (let c = docImpl.first; c !== null; c = c.next) connectSubtree(c, doc);
   doc[$version]++;
   doc[$treeVersion]++;
+  if (doc[$externalFormNames]?.groups.size) checkExternalSubtree(docImpl, doc[$externalFormNames]);
 }
 
 function disconnectSubtree(root: NodeImpl, doc: Document): void {
@@ -453,6 +463,7 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   // Steps 14-15 (+ this implementation's connectedness/id/focus bookkeeping).
   const wasConnected = (node.flags & F_CONNECTED) !== 0;
   if (wasConnected) disconnectSubtree(node, doc);
+  if ((node.flags & F_PAST_NAMES) !== 0) checkNamesInSubtree(node);
   if (activeObservers !== 0) {
     // Step 16: transient registered observers.
     addTransientObservers(parent, node);
@@ -463,6 +474,7 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   childrenChanged(parent);
   doc[$version]++;
   doc[$treeVersion]++;
+  if (doc[$externalFormNames]?.groups.size) checkExternalSubtree(node, doc[$externalFormNames]);
   // Version-stamped derived caches may still reference the removed subtree: drop them now
   // instead of on their next (maybe never) lookup (nodes/derived.ts).
   doc[$derived] = null;
@@ -540,6 +552,7 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
     if (n.type === ELEMENT_NODE && (n.flags & F_CONNECT_HOOK) !== 0)
       (n.node as Element)._movingSteps(n === node, oldParent);
   }
+  if ((node.flags & F_PAST_NAMES) !== 0) checkNamesInSubtree(node);
   // Steps 25-26.
   if (activeObservers !== 0) {
     queueTreeMutationRecord(oldParent, [], [node], oldPreviousSibling, oldNextSibling);
@@ -550,6 +563,7 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   if (newParent !== oldParent) childrenChanged(newParent);
   doc[$version]++;
   doc[$treeVersion]++;
+  if (doc[$externalFormNames]?.groups.size) checkExternalSubtree(node, doc[$externalFormNames]);
   if (ceReactionsPending) flushCEReactions();
 }
 
@@ -657,6 +671,7 @@ export function adopt(node: NodeImpl, doc: Document): void {
         if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)[$shadowRoot]![$impl], doc);
       }
     }
+    if (oldDoc[$externalFormNames]?.groups.size) checkExternalSubtree(node, oldDoc[$externalFormNames]);
     if (liveRangeCount !== 0) rangesAdopt(node, oldDoc);
     // Step 3.2: adopting steps (template contents, custom element adoptedCallback via the html
     // agent's hook). Run after re-homing the whole subtree, in tree order.

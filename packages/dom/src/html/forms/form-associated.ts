@@ -10,13 +10,20 @@
 // form-element-pointer association (misnested markup like `<form><table><tr><td><input>` or
 // a `</form>`-less form) is recorded separately (`parserAssociateForm`) and consulted first.
 
-import { ELEMENT_NODE, F_CONNECTED, F_CONNECT_HOOK, F_FACE, DOCUMENT_NODE } from "../../nodes/constants.ts";
+import {
+  ELEMENT_NODE,
+  F_CONNECTED,
+  F_CONNECT_HOOK,
+  F_PARSER_FORM,
+  F_FACE,
+  DOCUMENT_NODE,
+} from "../../nodes/constants.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import { T } from "../../nodes/tags.ts";
 import { attr } from "../../nodes/attributes.ts";
 import { compareTreeOrder, nextElementInTree, treeRoot } from "../../nodes/traverse.ts";
 import { I_HIDDEN, I_IMAGE, inputType } from "./input-type.ts";
-import { $assocGen, $forLabels, $formAttrSeen } from "../../keys.ts";
+import { $forLabels, $formControlsVersion, $formAttrSeen } from "../../keys.ts";
 
 // --- categories ---------------------------------------------------------------------------
 
@@ -93,13 +100,17 @@ function walkForId(root: NodeImpl, id: string): NodeImpl | null {
  * (computed per https://html.spec.whatwg.org/#reset-the-form-owner, steps 3–4).
  */
 export function formOwner(el: NodeImpl): NodeImpl | null {
-  if (parserAssocCount !== 0) {
-    const a = parserAssoc.get(el);
-    if (a !== undefined) {
-      if (parserAssociationValid(el, a)) return a.form;
-      parserAssoc.delete(el);
-      parserAssocCount--;
-    }
+  if ((el.flags & F_PARSER_FORM) !== 0 && el.tag !== T.form) {
+    const ref = parserLinks.get(el)!;
+    const form = ref.deref();
+    if (
+      form !== undefined &&
+      parserLinks.get(form) === ref &&
+      (el.tag === T.img || attr(el, "form") === null) &&
+      treeRoot(el) === treeRoot(form)
+    )
+      return form;
+    clearParserAssociation(el);
   }
   if (el.tag !== T.img) {
     const formId = attr(el, "form");
@@ -120,53 +131,26 @@ export function formOwner(el: NodeImpl): NodeImpl | null {
 
 // --- parser association ------------------------------------------------------------------
 // https://html.spec.whatwg.org/#association-of-controls-and-forms ("parser inserted" with the
-// form element pointer). Zero cost unless the parser made an association: `parserAssocCount`
-// gates every lookup.
+// form element pointer). The form and its controls share a weak reference. Disconnecting the form
+// invalidates that reference for every control, including ones outside its former subtree.
+const parserLinks = new WeakMap<NodeImpl, WeakRef<NodeImpl>>();
 
-class ParserAssociation {
-  form: NodeImpl;
-  /** The form's removal generation when associated (`HTMLFormElement._assocGen`). */
-  gen: number;
-  constructor(form: NodeImpl, gen: number) {
-    this.form = form;
-    this.gen = gen;
-  }
-}
-
-const parserAssoc = new WeakMap<NodeImpl, ParserAssociation>();
-let parserAssocCount = 0;
-
-function formGeneration(form: NodeImpl): number {
-  return (form.node as unknown as { [$assocGen]: number })[$assocGen];
-}
-
-/**
- * Called by the parser (`_parserAssociateForm`) for a form-associated element created while
- * the form element pointer was set. Listed elements with a `form` attribute are never passed.
- */
 export function parserAssociateForm(el: NodeImpl, form: NodeImpl): void {
   if (form.tag !== T.form) return;
-  if (!parserAssoc.has(el)) parserAssocCount++;
-  parserAssoc.set(el, new ParserAssociation(form, formGeneration(form)));
-  // Disconnection (the element or an ancestor removed) resets the form owner.
-  el.flags |= F_CONNECT_HOOK;
-  form.flags |= F_CONNECT_HOOK;
+  let ref = parserLinks.get(form);
+  if (ref === undefined) parserLinks.set(form, (ref = new WeakRef(form)));
+  parserLinks.set(el, ref);
+  el.doc[$formControlsVersion]++;
+  el.flags |= F_PARSER_FORM | F_CONNECT_HOOK;
+  form.flags |= F_PARSER_FORM | F_CONNECT_HOOK;
 }
 
-/** The element's ancestor chain changed (https://html.spec.whatwg.org/#reset-the-form-owner): drop the association. */
+/** The element or form's removal steps reset parser ownership. */
 export function clearParserAssociation(el: NodeImpl): void {
-  if (parserAssocCount !== 0 && parserAssoc.delete(el)) parserAssocCount--;
-}
-
-/**
- * Reset-the-form-owner conditions that end the association without a hook on the element:
- * a `form` attribute appeared, the form was removed since (generation changed), or the two are
- * no longer in the same tree.
- */
-function parserAssociationValid(el: NodeImpl, a: ParserAssociation): boolean {
-  if (isListed(el) && attr(el, "form") !== null) return false;
-  if (formGeneration(a.form) !== a.gen) return false;
-  return treeRoot(el) === treeRoot(a.form);
+  if ((el.flags & F_PARSER_FORM) !== 0) {
+    el.flags &= ~F_PARSER_FORM;
+    parserLinks.delete(el);
+  }
 }
 
 /**
@@ -178,7 +162,9 @@ function parserAssociationValid(el: NodeImpl, a: ParserAssociation): boolean {
  * (in a 10,000-node page, `form.elements` after a mutation 119 → 4 µs).
  */
 export function formOwnerScope(form: NodeImpl, listed: boolean): NodeImpl {
-  return parserAssocCount === 0 && (!listed || form.id === "" || !form.doc[$formAttrSeen]) ? form : treeRoot(form);
+  return (form.flags & F_PARSER_FORM) === 0 && (!listed || form.id === "" || !form.doc[$formAttrSeen])
+    ? form
+    : treeRoot(form);
 }
 
 /** All listed elements (excluding image buttons) whose form owner is `form`, in tree order: form.elements. */
