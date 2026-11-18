@@ -52,10 +52,11 @@ export async function upload(
   }
 
   input.addEventListener('fileDialog', fileDialog)
-
-  await this.click(element)
-
-  input.removeEventListener('fileDialog', fileDialog)
+  try {
+    await this.click(element)
+  } finally {
+    input.removeEventListener('fileDialog', fileDialog)
+  }
 }
 
 // When matching files, browsers ignore case and consider jpeg/jpg interchangeable.

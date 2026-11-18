@@ -21,7 +21,7 @@ import { createWindow, currentWindowOrNull, setCurrentWindow } from "@ctrl/dom";
 
 // @ctrl/dom/user-event declares its own structural DOM types; @ctrl/dom/react returns @ctrl/dom's.
 type User = Record<
-  "type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover" | "pointer",
+  "type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover" | "pointer" | "upload",
   (...args: any[]) => Promise<void>
 >;
 const setupUser = (): User => userEvent.setup() as unknown as User;
@@ -97,6 +97,22 @@ function Data({ promise }: { promise: Promise<string> }) {
 }
 
 describe("render → interact → cleanup — https://testing-library.com/docs/react-testing-library/api#cleanup", () => {
+  test("a rejected upload releases its files while the input and user stay active", async () => {
+    const tracker = new Tracker();
+    const user = setupUser();
+    render(<input type="file" aria-label="Attachment" style={{ pointerEvents: "none" }} />);
+    const input = screen.getByLabelText("Attachment") as HTMLInputElement;
+    await (async () => {
+      const file = tracker.track("rejected file", new File(["photo"], "photo.jpg"));
+      const message = await user.upload(input, file).catch((error: Error) => error.message);
+      expect(message).toMatch(/pointer-events/);
+    })();
+    expect(await tracker.alive()).toEqual({});
+    input.style.pointerEvents = "auto";
+    await user.click(input);
+    expect(input.files).toHaveLength(0);
+  });
+
   test("a blocked pointer target releases the ancestors used in its diagnostic", async () => {
     const tracker = new Tracker();
     const button = document.createElement("button");
