@@ -122,6 +122,7 @@ export const $labels: unique symbol = Symbol.for("ctrl-dom.labels");
 export const $layerName: unique symbol = Symbol.for("ctrl-dom.layerName");
 export const $list: unique symbol = Symbol.for("ctrl-dom.list");
 export const $listeners: unique symbol = Symbol.for("ctrl-dom.listeners");
+export const $listenerTypesChanged: unique symbol = Symbol.for("ctrl-dom.listenerTypesChanged");
 export const $localStorage: unique symbol = Symbol.for("ctrl-dom.localStorage");
 export const $location: unique symbol = Symbol.for("ctrl-dom.location");
 export const $lockedForReset: unique symbol = Symbol.for("ctrl-dom.lockedForReset");

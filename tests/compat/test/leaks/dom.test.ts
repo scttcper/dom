@@ -118,6 +118,29 @@ function localStorageTouch(w: Window): void {
   void w.navigator.userAgent;
 }
 
+test("a live window releases media queries when their last change listener goes away", async () => {
+  const w = createWindow();
+  const tracker = new Tracker();
+  const listener = () => {};
+  (() => {
+    const query = () => tracker.track("media query", w.matchMedia("(max-width: 600px)"));
+    const legacy = query();
+    legacy.addListener(listener);
+    legacy.removeListener(listener);
+    const property = query();
+    property.onchange = listener;
+    property.onchange = null;
+    const controller = new AbortController();
+    query().addEventListener("change", listener, { signal: controller.signal });
+    controller.abort();
+    query().addEventListener("change", listener, { signal: controller.signal });
+    query().addEventListener("change", listener, { once: true });
+    w.innerWidth = 500;
+  })();
+  expect(await tracker.alive()).toEqual({});
+  w.close();
+});
+
 describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", () => {
   test("closed windows, their documents, nodes, observers, ranges, iframes and custom element classes are collectable", async () => {
     const tracker = new Tracker();

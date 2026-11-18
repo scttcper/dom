@@ -14,7 +14,7 @@ import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEven
 import { addEventListener, removeEventListener, type ListenerSlots } from "./listeners.ts";
 import { dispatch } from "./dispatch.ts";
 import { toDOMString } from "./convert.ts";
-import { $listeners } from "../keys.ts";
+import { $listeners, $listenerTypesChanged } from "../keys.ts";
 
 export class EventTarget {
   /**
@@ -22,6 +22,8 @@ export class EventTarget {
    * because React delegates to its root container, so the field is added on first registration.
    */
   declare [$listeners]?: ListenerSlots | null;
+  /** @internal Called when a type gains its first listener or loses its last. */
+  [$listenerTypesChanged]?(): void;
 
   /** https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget */
   constructor() {}

@@ -119,6 +119,22 @@ describe("change events — https://drafts.csswg.org/cssom-view/#evaluate-media-
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  test("expiry of one listener preserves the others and a new subscription starts at the current width", () => {
+    const mql = window.matchMedia("(max-width: 600px)");
+    const persistent = vi.fn();
+    const once = vi.fn();
+    mql.addListener(persistent);
+    mql.addEventListener("change", once, { once: true });
+    window.innerWidth = 500;
+    window.innerWidth = 900;
+    mql.removeListener(persistent);
+    window.innerWidth = 500;
+    mql.addListener(persistent);
+    window.innerWidth = 900;
+    expect(once).toHaveBeenCalledTimes(1);
+    expect(persistent.mock.calls.map(([e]) => e.matches)).toEqual([true, false, false]);
+  });
+
   test("devicePixelRatio changes are reported", () => {
     const mql = window.matchMedia("(min-resolution: 2dppx)");
     const spy = vi.fn();

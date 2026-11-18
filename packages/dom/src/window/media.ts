@@ -8,11 +8,12 @@
 // viewport size or devicePixelRatio is changed (assigning innerWidth, resizeTo, ...).
 
 import { EventTarget } from "../events/EventTarget.ts";
-import type { AddEventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
+import { hasListeners } from "../events/listeners.ts";
+import type { EventListenerOrEventListenerObject } from "../webidl.ts";
 import { windowHooks, type MediaFeatureEnvironment } from "./hooks.ts";
 import { MediaQueryListEvent } from "./events.ts";
 import type { Window } from "./Window.ts";
-import { $matches, $media, $mediaQueryLists, $onchange, $options, $window } from "../keys.ts";
+import { $listenerTypesChanged, $matches, $media, $mediaQueryLists, $onchange, $options, $window } from "../keys.ts";
 
 export class MediaQueryList extends EventTarget {
   [$window]: Window;
@@ -48,15 +49,6 @@ export class MediaQueryList extends EventTarget {
     this.removeEventListener("change", callback);
   }
 
-  override addEventListener(
-    type: string,
-    callback: EventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions,
-  ): void {
-    super.addEventListener(type, callback, options);
-    if (callback !== null && type === "change") this._watch();
-  }
-
   get onchange(): EventListenerOrEventListenerObject | null {
     return this[$onchange];
   }
@@ -64,17 +56,16 @@ export class MediaQueryList extends EventTarget {
   set onchange(value: EventListenerOrEventListenerObject | null) {
     if (this[$onchange] !== null) super.removeEventListener("change", this[$onchange]);
     this[$onchange] = typeof value === "function" || (value !== null && typeof value === "object") ? value : null;
-    if (this[$onchange] !== null) {
-      super.addEventListener("change", this[$onchange]);
-      this._watch();
-    }
+    if (this[$onchange] !== null) super.addEventListener("change", this[$onchange]);
   }
 
-  _watch(): void {
+  [$listenerTypesChanged](): void {
     const watched = this[$window][$mediaQueryLists];
-    if (watched.has(this)) return;
-    this[$matches] = this.matches;
-    watched.add(this);
+    if (!hasListeners(this, "change")) watched.delete(this);
+    else if (!watched.has(this)) {
+      this[$matches] = this.matches;
+      watched.add(this);
+    }
   }
 
   get [Symbol.toStringTag](): string {

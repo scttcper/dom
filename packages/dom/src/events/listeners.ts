@@ -25,7 +25,7 @@ import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEven
 import type { EventTarget } from "./EventTarget.ts";
 import { DOCUMENT_NODE, F_MO_REGISTERED } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { $impl, $listeners, $shadowRoot, $window } from "../keys.ts";
+import { $impl, $listeners, $listenerTypesChanged, $shadowRoot, $window } from "../keys.ts";
 
 // Listener.flags bits: the spec's capture, once, passive and removed.
 export const LISTENER_CAPTURE = 1;
@@ -344,6 +344,7 @@ function addFlattened(
   else setFirstListener(target, slots, id, listener);
   // Install one abort hook per signal, after the target owns its first registration.
   if (signal !== null && (listener as SignalListener).ref.next === null) addAbortListener(signal, runAbortSteps);
+  if (tail === undefined) target[$listenerTypesChanged]?.();
 }
 
 /** https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener */
@@ -395,8 +396,10 @@ function unlink(
   // Step 2: set removed (an in-progress dispatch standing before it will skip it).
   markRemoved(listener);
   // `listener.next` stays: a dispatch standing on it continues from there (see the header).
-  if (prev === null) setFirstListener(target, slots, id, listener.next ?? undefined);
-  else prev.next = listener.next;
+  if (prev === null) {
+    setFirstListener(target, slots, id, listener.next ?? undefined);
+    if (listener.next === null) target[$listenerTypesChanged]?.();
+  } else prev.next = listener.next;
 }
 
 function markRemoved(listener: Listener): void {
@@ -416,6 +419,7 @@ export function removeAllEventListeners(target: EventTarget): void {
   eachHead(slots, (head) => {
     for (let l: Listener | null = head; l !== null; l = l.next) markRemoved(l);
   });
+  target[$listenerTypesChanged]?.();
 }
 
 /** Whether `target` has at least one listener for `type` (internal fast check for other areas). */
