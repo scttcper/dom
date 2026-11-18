@@ -91,11 +91,15 @@ class TimerRecord {
     this.realDue = 0;
     this.context = new AsyncResource("Timeout");
   }
+  invoke(): void {
+    if (this.args.length === 0) this.context.runInAsyncScope(this.callback, this.handle);
+    else this.context.runInAsyncScope(Reflect.apply, null, this.callback, this.handle, this.args);
+  }
 }
 
 /** Only completed one-shots need records outside the clock's active timer map. */
 class FiredTimers {
-  records = new WeakMap<VirtualTimeout, TimerRecord>();
+  records: WeakMap<VirtualTimeout, TimerRecord> | null = new WeakMap();
 }
 
 const timerRecord = Symbol("timerRecord");
@@ -115,17 +119,17 @@ export class VirtualTimeout {
 
   get [timerRecord](): TimerRecord | undefined {
     const state = this.#state;
-    return state instanceof FiredTimers ? state.records.get(this) : (state ?? undefined);
+    return state instanceof FiredTimers ? state.records?.get(this) : (state ?? undefined);
   }
 
   [timerFired](record: TimerRecord, fired: FiredTimers): void {
     if (this.#state === fired) return;
-    fired.records.set(this, record);
+    fired.records!.set(this, record);
     this.#state = fired;
   }
 
   [timerCleared](): void {
-    if (this.#state instanceof FiredTimers) this.#state.records.delete(this);
+    if (this.#state instanceof FiredTimers) this.#state.records?.delete(this);
     this.#state = null;
   }
 
@@ -276,6 +280,7 @@ export class VirtualClock {
     let ms = Number(delay) | 0;
     if (ms < 1) ms = 1;
     const record = new TimerRecord(this, this.nextId++, this.now() + ms, this.seq++, ms, repeat, callback, args);
+    // A closed window schedules no further work (https://html.spec.whatwg.org/#close-a-browsing-context).
     if (this.disposed) {
       record.handle[timerCleared]();
       return record.handle;
@@ -376,7 +381,7 @@ export class VirtualClock {
     if (this.disposed || !this.byId.has(record.id)) return;
     if (record.repeat) this.toRealTrack(record, record.delay);
     else this.complete(record);
-    record.context.runInAsyncScope(Reflect.apply, null, record.callback, record.handle, record.args);
+    record.invoke();
   }
 
   private complete(record: TimerRecord): void {
@@ -415,7 +420,7 @@ export class VirtualClock {
   clearAll(): void {
     if (this.fired !== null) {
       // Invalidate the refresh() data of all completed handles without retaining the handles.
-      this.fired.records = new WeakMap();
+      this.fired.records = null;
       this.fired = null;
     }
     for (const record of this.indexed?.values() ?? this.heap) {
@@ -522,7 +527,7 @@ export class VirtualClock {
     }
     // Last, so a throwing callback (reported by Node as an uncaught exception, as before)
     // leaves the clock consistent.
-    first.context.runInAsyncScope(Reflect.apply, null, first.callback, first.handle, first.args);
+    first.invoke();
   }
 
   // --- skipping -----------------------------------------------------------------------------
