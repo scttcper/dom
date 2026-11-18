@@ -524,12 +524,11 @@ export class Range extends AbstractRange {
   intersectsNode(node: Node): boolean {
     const n = toNodeImpl(node, "intersectsNode");
     if (treeRoot(n) !== this._treeRoot()) return false;
-    const parent = n.parent;
-    if (parent === null) return true;
-    const offset = indexOf(n);
+    if (n.parent === null) return true;
+    // The node's first and last internal points lie immediately inside its parent boundaries.
     return (
-      compareBoundaryPoints(parent, offset, this[$ec], this[$eo]) < 0 &&
-      compareBoundaryPoints(parent, offset + 1, this[$sc], this[$so]) > 0
+      compareBoundaryPoints(n, 0, this[$ec], this[$eo]) <= 0 &&
+      compareBoundaryPoints(n, nodeLength(n), this[$sc], this[$so]) >= 0
     );
   }
 
