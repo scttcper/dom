@@ -8,6 +8,8 @@
  * HTML window.close() (https://html.spec.whatwg.org/#dom-window-close).
  */
 import { describe, expect, test } from "vitest";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { VirtualClock } from "@ctrl/dom/internal";
 import { createRequire } from "node:module";
 import { runInContext } from "node:vm";
 import environment from "@ctrl/dom/vitest-environment";
@@ -28,6 +30,51 @@ function useDocument(global: AnyGlobal, tracker: Tracker | null): void {
   global.requestAnimationFrame(() => {});
   global.matchMedia("(min-width: 1px)").addEventListener("change", () => {});
 }
+
+describe("virtual timer handles", () => {
+  test.each(["clear", "clearAll", "dispose"] as const)(
+    "a handle releases its callback, arguments, context and clock after %s",
+    async (method) => {
+      const tracker = new Tracker();
+      const store = new AsyncLocalStorage<object>();
+      const handle = (() => {
+        const clock = tracker.track("clock", new VirtualClock());
+        const callback = tracker.track("callback", () => {});
+        const argument = tracker.track("argument", {});
+        const context = tracker.track("async context", {});
+        const timer = store.run(context, () => clock.schedule(callback, 60_000, [argument], false));
+        if (method === "clear") clock.clear(Number(timer));
+        else clock[method]();
+        return timer;
+      })();
+      expect(await tracker.alive()).toEqual({});
+      expect(handle._destroyed).toBe(true);
+      expect(handle.refresh().unref().hasRef()).toBe(false);
+      expect(handle.ref().hasRef()).toBe(true);
+      store.disable();
+    },
+  );
+  test.each(["clearAll", "dispose"] as const)(
+    "a completed timer releases its callback and context at %s",
+    async (method) => {
+      const tracker = new Tracker();
+      const store = new AsyncLocalStorage<object>();
+      const handle = await (async () => {
+        const clock = tracker.track("clock", new VirtualClock());
+        const context = tracker.track("async context", {});
+        const { promise, resolve } = Promise.withResolvers<void>();
+        const callback = tracker.track("callback", () => resolve());
+        const timer = store.run(context, () => clock.schedule(callback, 1, [], false));
+        await promise;
+        clock[method]();
+        return timer;
+      })();
+      expect(await tracker.alive()).toEqual({});
+      expect(handle.refresh()._destroyed).toBe(true);
+      store.disable();
+    },
+  );
+});
 
 describe("@ctrl/dom/vitest-environment setup/teardown ×N", () => {
   test("every window, document and node is collectable after teardown; no current window remains", async () => {

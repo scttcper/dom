@@ -57,22 +57,17 @@ class TimerRecord {
   ref: boolean;
   /** Index in the heap, -1 when not scheduled (fired one-shot, cleared, real-time track). */
   index: number;
-  handle: VirtualTimeout | null;
+  clock: VirtualClock;
+  handle: VirtualTimeout;
   /** Real host timer while on the real-time track (unref'd while skipping), else null. */
   real: ReturnType<typeof setTimeout> | null;
   /** realNow() at which `real` fires. */
   realDue: number;
-  /** Cleared (or its clock disposed): Node's refresh() then does nothing. */
-  cleared: boolean;
-  /**
-   * The async context setTimeout was called in (https://nodejs.org/api/async_context.html):
-   * Node runs a timer's callback in it, while this clock fires from its own host timer or driver.
-   * An AsyncResource, as Node's own Timeout is: ~0.015 µs to capture, 30x less than
-   * AsyncLocalStorage.snapshot()'s bound closure.
-   */
+  /** The async context in which this timer was scheduled. */
   context: AsyncResource;
 
   constructor(
+    clock: VirtualClock,
     id: number,
     due: number,
     seq: number,
@@ -90,60 +85,88 @@ class TimerRecord {
     this.args = args;
     this.ref = true;
     this.index = -1;
-    this.handle = null;
+    this.clock = clock;
+    this.handle = new VirtualTimeout(clock, this);
     this.real = null;
     this.realDue = 0;
-    this.cleared = false;
     this.context = new AsyncResource("Timeout");
   }
 }
 
+/** Only completed one-shots need records outside the clock's active timer map. */
+class FiredTimers {
+  records = new WeakMap<VirtualTimeout, TimerRecord>();
+}
+
+const timerFired = Symbol("timerFired");
+const timerCleared = Symbol("timerCleared");
+
 /** The handle setTimeout/setInterval return: Node's Timeout API surface. */
 export class VirtualTimeout {
-  #clock: VirtualClock;
-  #record: TimerRecord;
+  #state: TimerRecord | FiredTimers | null;
+  #id: number;
+  #ref = true;
 
-  constructor(clock: VirtualClock, record: TimerRecord) {
-    this.#clock = clock;
-    this.#record = record;
+  constructor(_clock: VirtualClock, record: TimerRecord) {
+    this.#state = record;
+    this.#id = record.id;
+  }
+
+  get #record(): TimerRecord | undefined {
+    const state = this.#state;
+    return state instanceof FiredTimers ? state.records.get(this) : (state ?? undefined);
+  }
+
+  [timerFired](record: TimerRecord, fired: FiredTimers): void {
+    if (this.#state === fired) return;
+    fired.records.set(this, record);
+    this.#state = fired;
+  }
+
+  [timerCleared](): void {
+    if (this.#state instanceof FiredTimers) this.#state.records.delete(this);
+    this.#state = null;
   }
 
   ref(): this {
-    this.#clock._setRef(this.#record, true);
+    this.#ref = true;
+    const record = this.#record;
+    record?.clock._setRef(record, true);
     return this;
   }
 
   unref(): this {
-    this.#clock._setRef(this.#record, false);
+    this.#ref = false;
+    const record = this.#record;
+    record?.clock._setRef(record, false);
     return this;
   }
 
   hasRef(): boolean {
-    return this.#record.ref;
+    return this.#ref;
   }
 
-  /** Node's flag for a one-shot that ran or any cleared timer (window/timers.ts sweeps on it). */
   get _destroyed(): boolean {
-    return !this.#clock.byId.has(this.#record.id);
+    return this.#record?.clock.byId.has(this.#id) !== true;
   }
 
-  /** Restart the timer with its original delay from now. */
   refresh(): this {
-    this.#clock._refresh(this.#record);
+    const record = this.#record;
+    record?.clock._refresh(record);
     return this;
   }
 
   close(): this {
-    this.#clock.clear(this.#record.id);
+    this.#record?.clock.clear(this.#id);
     return this;
   }
 
   [Symbol.toPrimitive](): number {
-    return this.#record.id;
+    return this.#id;
   }
 
   [Symbol.dispose](): void {
-    this.#clock.clear(this.#record.id);
+    this.#record?.clock.clear(this.#id);
   }
 }
 
@@ -161,6 +184,7 @@ export interface VirtualClockOptions {
  * skips. One clock per window/test file; dispose() drops every pending timer.
  */
 export class VirtualClock {
+  private fired: FiredTimers | null = null;
   /** ms added to real time by skipping. */
   skipped: number;
   /** Date.now() - performance.now() when the clock was created (epoch of now() = 0). */
@@ -250,16 +274,17 @@ export class VirtualClock {
   schedule(callback: Callback, delay: unknown, args: unknown[], repeat: boolean): VirtualTimeout {
     let ms = Number(delay) | 0;
     if (ms < 1) ms = 1;
-    const record = new TimerRecord(this.nextId++, this.now() + ms, this.seq++, ms, repeat, callback, args);
-    const handle = new VirtualTimeout(this, record);
-    record.handle = handle;
-    if (this.disposed) return handle; // closed window: nothing runs (https://html.spec.whatwg.org/#close-a-browsing-context)
+    const record = new TimerRecord(this, this.nextId++, this.now() + ms, this.seq++, ms, repeat, callback, args);
+    if (this.disposed) {
+      record.handle[timerCleared]();
+      return record.handle;
+    }
     this.byId.set(record.id, record);
     this.refCount++;
     this.push(record);
     this.armHost();
     this.kickDriver();
-    return handle;
+    return record.handle;
   }
 
   /** clearTimeout/clearInterval: a VirtualTimeout or its numeric id. Returns false for foreign handles. */
@@ -268,7 +293,7 @@ export class VirtualClock {
     const record = this.byId.get(id);
     if (record === undefined) return false;
     this.byId.delete(id);
-    record.cleared = true;
+    record.handle[timerCleared]();
     if (record.ref) this.refCount--;
     if (record.real !== null) {
       hostClearTimeout(record.real);
@@ -335,12 +360,17 @@ export class VirtualClock {
     record.real = null;
     if (this.disposed || !this.byId.has(record.id)) return;
     if (record.repeat) this.toRealTrack(record, record.delay);
-    else this.byId.delete(record.id);
+    else this.complete(record);
     record.context.runInAsyncScope(Reflect.apply, null, record.callback, record.handle, record.args);
   }
 
+  private complete(record: TimerRecord): void {
+    this.byId.delete(record.id);
+    record.handle[timerFired](record, (this.fired ??= new FiredTimers()));
+  }
+
   _refresh(record: TimerRecord): void {
-    if (record.cleared || this.disposed) return;
+    if (this.disposed) return;
     if (record.real !== null) {
       hostClearTimeout(record.real);
       record.real = null;
@@ -368,10 +398,15 @@ export class VirtualClock {
 
   /** Drop every pending timer; the clock goes on (a test file ended in a worker the next one shares). */
   clearAll(): void {
+    if (this.fired !== null) {
+      // Invalidate the refresh() data of all completed handles without retaining the handles.
+      this.fired.records = new WeakMap();
+      this.fired = null;
+    }
     for (const record of this.byId.values()) {
       if (record.real !== null) hostClearTimeout(record.real);
       record.real = null;
-      record.cleared = true;
+      record.handle[timerCleared]();
       record.index = -1;
     }
     if (this.hostTimer !== null) hostClearTimeout(this.hostTimer);
@@ -458,7 +493,7 @@ export class VirtualClock {
       first.seq = this.seq++;
       this.push(first);
     } else {
-      this.byId.delete(first.id);
+      this.complete(first);
       if (first.ref) this.refCount--;
     }
     const next = this.heap[0];
