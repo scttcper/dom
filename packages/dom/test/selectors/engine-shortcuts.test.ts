@@ -31,6 +31,23 @@ beforeEach(() => {
   document = createWindow().document;
 });
 
+test("type-only lists follow tree order and mixed lists see attribute changes", () => {
+  document.body!.innerHTML = '<section><button id="a"></button><input id="b"></section>';
+  const section = document.querySelector("section")!;
+  const input = document.getElementById("b")!;
+  const types = "section > button, input";
+  const mixed = "button, section.active > input";
+  const original = section.querySelectorAll(types);
+  expect(ids(original)).toEqual(["a", "b"]);
+  expect($$(mixed)).toEqual(["a"]);
+  section.className = "active";
+  expect($$(mixed)).toEqual(["a", "b"]);
+  section.prepend(input);
+  expect($$(types, section)).toEqual(["b", "a"]);
+  expect(section.querySelector(types)).toBe(input);
+  expect(ids(original)).toEqual(["a", "b"]);
+});
+
 const hashes = (sel: string) => {
   const s = compileSelectorList(sel)!.selectors[0];
   return [s.h0, s.h1, s.h2, s.h3].filter((h) => h >= 0).length;

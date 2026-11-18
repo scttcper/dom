@@ -282,6 +282,8 @@ export type Matcher = (el: NodeImpl) => boolean;
 
 /** Results of a compilation besides the program itself. */
 export class CompileInfo {
+  /** Every selector uses only element types, universal selectors and tree combinators. */
+  treeOnly = true;
   /** Contains state pseudo-classes whose value is not covered by Document._version. */
   volatile: boolean;
   /** Contains :scope. */
@@ -509,6 +511,7 @@ function needsImpliedNamespace(c: Compound, end: number): boolean {
 }
 
 function compileSimple(s: Simple, info: CompileInfo): Test | null {
+  if (s.kind !== S_TYPE && s.kind !== S_UNIVERSAL) info.treeOnly = false;
   switch (s.kind) {
     case S_UNIVERSAL:
     case S_TYPE: {

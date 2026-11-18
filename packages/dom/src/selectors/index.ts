@@ -320,20 +320,18 @@ const NO_OUT: NodeImpl[] = [];
 // polling, repeated getBy* calls). Results of selectors whose outcome depends only on the tree
 // and attributes (CompileInfo.volatile === false) are reused while Document._version is unchanged
 // (https://dom.spec.whatwg.org's mutation algorithms bump it in nodes/tree.ts, attributes.ts,
-// CharacterData.ts). Kept per document in Document[$derived] (nodes/derived.ts), keyed weakly by
-// the root, so cached results never keep a document or a removed subtree alive.
+// CharacterData.ts). Type-only selectors need just the tree version. Entries live in the
+// document's derived cache under weak root keys. Removing a subtree drops the cache.
 
 class ResultEntry {
   version: number;
-  doc: object;
   /** All matches (querySelectorAll), or null if only `first` is known. */
   all: NodeImpl[] | null;
   /** First match (querySelector); undefined = unknown. */
   first: NodeImpl | null | undefined;
 
-  constructor(version: number, doc: object) {
+  constructor(version: number) {
     this.version = version;
-    this.doc = doc;
     this.all = null;
     this.first = undefined;
   }
@@ -401,17 +399,16 @@ function cachedEntry(root: NodeImpl, q: Query, create: boolean): ResultEntry | n
     m = new Map();
     results.set(root, m);
   }
-  const version = doc[$version];
+  const version = q.info.treeOnly ? doc[$treeVersion] : doc[$version];
   let e = m.get(q);
-  if (e !== undefined && e.version === version && e.doc === doc) return e;
+  if (e !== undefined && e.version === version) return e;
   if (!create) return null;
   if (e === undefined) {
     if (m.size >= MAX_ENTRIES_PER_ROOT) m.clear();
-    e = new ResultEntry(version, doc);
+    e = new ResultEntry(version);
     m.set(q, e);
   } else {
     e.version = version;
-    e.doc = doc;
     e.all = null;
     e.first = undefined;
   }
