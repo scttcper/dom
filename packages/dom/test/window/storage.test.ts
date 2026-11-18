@@ -58,6 +58,22 @@ describe("Storage methods — https://html.spec.whatwg.org/#the-storage-interfac
     );
   });
 
+  test("shared tabs enforce one quota and reuse space freed by either tab", () => {
+    const peer = createWindow({ url: "http://localhost:3000/", shareStorageWith: window });
+    const first = window.localStorage;
+    const second = peer.localStorage;
+    const full = "x".repeat(4_999_999);
+    first.setItem("a", full);
+    expect(() => second.setItem("b", "")).toThrow(expect.objectContaining({ name: "QuotaExceededError" }));
+    expect(first.getItem("b")).toBeNull();
+    second.removeItem("a");
+    first.setItem("c", full);
+    second.clear();
+    first.setItem("d", full);
+    expect(second.length).toBe(1);
+    peer.close();
+  });
+
   test("Storage is not constructible", () => {
     expect(() => new (Storage as unknown as new () => unknown)()).toThrow(TypeError);
   });

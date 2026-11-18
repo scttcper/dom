@@ -15,7 +15,7 @@ import { $closed, $parentWindow, $url } from "../keys.ts";
 /** https://storage.spec.whatwg.org/#storage-shed */
 export class StorageShed {
   /** origin → local storage area (a "storage bottle map") */
-  readonly areas = new Map<string, Map<string, string>>();
+  readonly areas = new Map<string, StorageArea>();
   readonly windows = new Set<StoragePeer>();
   readonly collected = new FinalizationRegistry<StoragePeer>((ref) => this.windows.delete(ref));
 }
@@ -43,11 +43,15 @@ const QUOTA = 5_000_000;
 const kState = Symbol("storage");
 const kConstruct = Symbol("construct");
 
+/** Shared quota usage in UTF-16 code units, including keys and values. */
+class StorageArea extends Map<string, string> {
+  codeUnits = 0;
+}
+
 interface StorageState {
-  map: Map<string, string>;
+  map: StorageArea;
   window: Window;
   type: "local" | "session";
-  size: number;
 }
 
 function state(storage: Storage): StorageState {
@@ -144,11 +148,9 @@ function requireArgs(count: number, required: number, method: string): void {
 }
 
 export class Storage {
-  constructor(token?: symbol, window?: Window, type?: "local" | "session", map?: Map<string, string>) {
+  constructor(token?: symbol, window?: Window, type?: "local" | "session", map?: StorageArea) {
     if (token !== kConstruct) throw new TypeError("Illegal constructor");
-    let size = 0;
-    for (const [k, v] of map!) size += k.length + v.length;
-    const s: StorageState = { map: map!, window: window!, type: type!, size };
+    const s: StorageState = { map: map!, window: window!, type: type! };
     Object.defineProperty(this, kState, { value: s, writable: false, enumerable: false, configurable: false });
     const proxy = new Proxy(this, handler);
     proxies.set(this, proxy);
@@ -187,7 +189,7 @@ export class Storage {
     const old = s.map.get(k);
     // Step 2: if the value is unchanged, return (no event).
     if (old === v) return;
-    const newSize = s.size - (old === undefined ? 0 : k.length + old.length) + k.length + v.length;
+    const newSize = s.map.codeUnits - (old === undefined ? 0 : k.length + old.length) + k.length + v.length;
     // Step 3: throw a QuotaExceededError when the bottle's quota would be exceeded
     // (https://webidl.spec.whatwg.org/#quotaexceedederror; quota and requested stay null).
     if (newSize > QUOTA) {
@@ -196,7 +198,7 @@ export class Storage {
       throw Quota === undefined ? new DOMException(message, "QuotaExceededError") : new Quota(message);
     }
     s.map.set(k, v);
-    s.size = newSize;
+    s.map.codeUnits = newSize;
     broadcast(s, k, old ?? null, v);
   }
 
@@ -208,7 +210,7 @@ export class Storage {
     const old = s.map.get(k);
     if (old === undefined) return;
     s.map.delete(k);
-    s.size -= k.length + old.length;
+    s.map.codeUnits -= k.length + old.length;
     broadcast(s, k, old, null);
   }
 
@@ -217,7 +219,7 @@ export class Storage {
     const s = state(this);
     if (s.map.size === 0) return;
     s.map.clear();
-    s.size = 0;
+    s.map.codeUnits = 0;
     broadcast(s, null, null, null);
   }
 
@@ -267,12 +269,12 @@ export function createLocalStorage(window: Window): Storage {
   const shed = window._storageShed;
   const origin = windowOrigin(window);
   let area = shed.areas.get(origin);
-  if (area === undefined) shed.areas.set(origin, (area = new Map()));
+  if (area === undefined) shed.areas.set(origin, (area = new StorageArea()));
   return new Storage(kConstruct, window, "local", area);
 }
 
 /** top-level window → origin → session storage area (https://html.spec.whatwg.org/#session-storage-holder) */
-const sessionAreas = new WeakMap<Window, Map<string, Map<string, string>>>();
+const sessionAreas = new WeakMap<Window, Map<string, StorageArea>>();
 
 /** @internal Create a window's sessionStorage: shared with same-origin frames of its top-level window. */
 export function createSessionStorage(window: Window): Storage {
@@ -281,6 +283,6 @@ export function createSessionStorage(window: Window): Storage {
   if (byOrigin === undefined) sessionAreas.set(top, (byOrigin = new Map()));
   const origin = windowOrigin(window);
   let area = byOrigin.get(origin);
-  if (area === undefined) byOrigin.set(origin, (area = new Map()));
+  if (area === undefined) byOrigin.set(origin, (area = new StorageArea()));
   return new Storage(kConstruct, window, "session", area);
 }
