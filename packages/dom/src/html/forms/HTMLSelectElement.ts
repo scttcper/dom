@@ -16,7 +16,13 @@ import { nextInTree, nextSkippingChildren } from "../../nodes/traverse.ts";
 import { HTMLCollection } from "../../collections/HTMLCollection.ts";
 import { bool, contentAttr, parseNonNegativeInteger, str, ulong } from "../reflect.ts";
 import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
-import { addOptionIndexHost, HTMLOptionsCollection, LabelsNodeList, listOfOptions } from "./collections.ts";
+import {
+  addOptionIndexHost,
+  HTMLOptionsCollection,
+  LabelsNodeList,
+  listOfOptions,
+  scanOptions,
+} from "./collections.ts";
 import {
   installConstraintValidation,
   MSG_SELECT,
@@ -43,6 +49,10 @@ function opt(o: NodeImpl): HTMLOptionElement {
   return o.node as HTMLOptionElement;
 }
 
+function firstSelectedOption(select: NodeImpl): NodeImpl | undefined {
+  return scanOptions(select, (option) => (opt(option)._selectednessNow() ? option : undefined));
+}
+
 /**
  * React appends options one by one. Walk direct options without allocating the list each time.
  * An explicit selection wins over its siblings. Otherwise a single existing selection is already
@@ -66,9 +76,9 @@ function settleFlatOptions(select: NodeImpl, selected: NodeImpl | undefined): bo
 /** select.selectedOptions: https://html.spec.whatwg.org/#dom-select-selectedoptions */
 class SelectedOptionsCollection extends HTMLCollection {
   override _collect(out: Element[]): void {
-    const options = listOfOptions(this._s.root, []);
-    for (let i = 0; i < options.length; i++)
-      if (opt(options[i])._selectednessNow()) out.push(options[i].node as Element);
+    scanOptions(this._s.root, (option) => {
+      if (opt(option)._selectednessNow()) out.push(option.node as Element);
+    });
   }
 }
 
@@ -145,7 +155,11 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   get length(): number {
-    return listOfOptions(this[$impl], []).length;
+    let count = 0;
+    scanOptions(this[$impl], () => {
+      count++;
+    });
+    return count;
   }
 
   set length(value: number) {
@@ -183,31 +197,23 @@ export class HTMLSelectElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#dom-select-selectedindex */
   get selectedIndex(): number {
-    const options = listOfOptions(this[$impl], []);
-    for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) return i;
-    return -1;
+    return scanOptions(this[$impl], (option, index) => (opt(option)._selectednessNow() ? index : undefined)) ?? -1;
   }
 
   set selectedIndex(value: number) {
     const index = Number(value) | 0;
-    const options = listOfOptions(this[$impl], []);
-    for (let i = 0; i < options.length; i++) opt(options[i])._setSelectedness(false);
-    if (index >= 0 && index < options.length) {
-      const o = opt(options[index]);
-      o._setSelectedness(true);
-      o[$dirtiness] = true;
-    }
+    scanOptions(this[$impl], (option, i) => {
+      const selected = i === index;
+      opt(option)._setSelectedness(selected);
+      if (selected) opt(option)[$dirtiness] = true;
+    });
     this._updateSelectedContent();
   }
 
   /** https://html.spec.whatwg.org/#dom-select-value */
   get value(): string {
-    const options = listOfOptions(this[$impl], []);
-    for (let i = 0; i < options.length; i++) {
-      const o = opt(options[i]);
-      if (o._selectednessNow()) return o.value;
-    }
-    return "";
+    const selected = firstSelectedOption(this[$impl]);
+    return selected === undefined ? "" : opt(selected).value;
   }
 
   set value(v: string) {
@@ -262,8 +268,9 @@ export class HTMLSelectElement extends HTMLElement {
    */
   _deselectOthers(selected: NodeImpl): void {
     if (!this._isSingle()) return;
-    const options = listOfOptions(this[$impl], []);
-    for (let i = 0; i < options.length; i++) if (options[i] !== selected) opt(options[i])._setSelectedness(false);
+    scanOptions(this[$impl], (option) => {
+      if (option !== selected) opt(option)._setSelectedness(false);
+    });
   }
 
   /** https://html.spec.whatwg.org/#selectedness-setting-algorithm */
@@ -279,23 +286,18 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   _runSelectedness(): void {
-    const options = listOfOptions(this[$impl], []);
     let selected: HTMLOptionElement | undefined;
-    for (let i = 0; i < options.length; i++) {
-      const option = opt(options[i]);
+    scanOptions(this[$impl], (node) => {
+      const option = opt(node);
       if (option._selectednessNow()) {
         selected?._setSelectedness(false);
         selected = option;
       }
-    }
+    });
     if (selected === undefined) {
       // Select the first non-disabled option in tree order, if any.
-      for (let i = 0; i < options.length; i++) {
-        if (!isActuallyDisabled(options[i])) {
-          opt(options[i])._setSelectedness(true);
-          return;
-        }
-      }
+      const first = scanOptions(this[$impl], (node) => (isActuallyDisabled(node) ? undefined : opt(node)));
+      first?._setSelectedness(true);
     }
   }
 
@@ -328,16 +330,9 @@ export class HTMLSelectElement extends HTMLElement {
     if (sc === null) return;
     this[$updatingSelectedContent] = true;
     try {
-      const options = listOfOptions(this[$impl], []);
-      let selected: NodeImpl | null = null;
-      for (let i = 0; i < options.length; i++) {
-        if (opt(options[i])._selectednessNow()) {
-          selected = options[i];
-          break;
-        }
-      }
+      const selected = firstSelectedOption(this[$impl]);
       const target = sc.node as Element;
-      if (selected === null) {
+      if (selected === undefined) {
         target.replaceChildren();
         return;
       }
@@ -394,10 +389,8 @@ export class HTMLSelectElement extends HTMLElement {
   _placeholderLabelOption(): NodeImpl | null {
     const impl = this[$impl];
     if (contentAttr(impl, "required") === null || !this._isSingle() || this._displaySize() !== 1) return null;
-    const options = listOfOptions(impl, []);
-    if (options.length === 0) return null;
-    const first = options[0];
-    if (first.parent !== impl) return null;
+    const first = scanOptions(impl, (option) => option);
+    if (first?.parent !== impl) return null;
     return opt(first).value === "" ? first : null;
   }
 

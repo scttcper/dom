@@ -278,11 +278,15 @@ export function createFormControlsCollection(form: NodeImpl): HTMLFormControlsCo
  * https://html.spec.whatwg.org/#concept-select-option-list — option descendants in tree order,
  * not looking inside select, hr, option and datalist elements or an optgroup nested in another
  * optgroup (within the select). The common shapes (options and optgroups as children) stay a
- * walk over children.
+ * walk over children. A visitor can return a result to stop at the current option.
  */
-export function listOfOptions(select: NodeImpl, out: NodeImpl[]): NodeImpl[] {
+export function scanOptions<T>(
+  select: NodeImpl,
+  visit: (option: NodeImpl, index: number) => T | undefined,
+): T | undefined {
   // Step 2.
   let node = select.first;
+  let index = 0;
   let optgroupDepth = 0; // number of optgroup ancestors of `node` inside the select
   // Step 3.
   while (node !== null) {
@@ -290,8 +294,10 @@ export function listOfOptions(select: NodeImpl, out: NodeImpl[]): NodeImpl[] {
     if (node.type === 1) {
       const html = node.ns === HTML_NS;
       const tag = html ? node.tag : 0;
-      if (tag === T.option) out.push(node); // Step 3.1.
-      else if (tag === T.optgroup) descend = optgroupDepth === 0;
+      if (tag === T.option) {
+        const result = visit(node, index++);
+        if (result !== undefined) return result;
+      } else if (tag === T.optgroup) descend = optgroupDepth === 0;
       else descend = tag !== T.select && tag !== T.hr && tag !== T.datalist;
     }
     if (descend && node.first !== null) {
@@ -302,12 +308,18 @@ export function listOfOptions(select: NodeImpl, out: NodeImpl[]): NodeImpl[] {
     // Next node skipping descendants, leaving finished ancestors (never above the select).
     while (node !== null && node.next === null) {
       node = node.parent;
-      if (node === select || node === null) return out;
+      if (node === select || node === null) return;
       if (node.ns === HTML_NS && node.tag === T.optgroup) optgroupDepth--;
     }
-    if (node === null) return out;
+    if (node === null) return;
     node = node.next;
   }
+}
+
+export function listOfOptions(select: NodeImpl, out: NodeImpl[]): NodeImpl[] {
+  scanOptions(select, (option) => {
+    out.push(option);
+  });
   return out;
 }
 
@@ -320,8 +332,9 @@ export class HTMLOptionsCollection extends HTMLCollection {
   }
 
   override _collect(out: Element[]): void {
-    const options = listOfOptions(this._s.root, []);
-    for (let i = 0; i < options.length; i++) out.push(options[i].node as Element);
+    scanOptions(this._s.root, (option) => {
+      out.push(option.node as Element);
+    });
     ensureOptionIndexAccessors(out.length + 1);
   }
 

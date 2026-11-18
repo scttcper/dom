@@ -9,7 +9,7 @@ import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import { F_ATTR_HOOK, F_CHILDREN_HOOK, TEXT_NODE, CDATA_SECTION_NODE, SVG_NS, HTML_NS } from "../../nodes/constants.ts";
-import { listOfOptions } from "./collections.ts";
+import { scanOptions } from "./collections.ts";
 import { T } from "../../nodes/tags.ts";
 import { nextInTree, nextSkippingChildren } from "../../nodes/traverse.ts";
 import { bool, contentAttr, str } from "../reflect.ts";
@@ -128,8 +128,7 @@ export class HTMLOptionElement extends HTMLElement {
   get index(): number {
     const select = optionSelect(this[$impl]);
     if (select === null) return 0;
-    const i = listOfOptions(select, []).indexOf(this[$impl]);
-    return i === -1 ? 0 : i;
+    return scanOptions(select, (option, index) => (option === this[$impl] ? index : undefined)) ?? 0;
   }
 
   /** https://html.spec.whatwg.org/#dom-option-form */
