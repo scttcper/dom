@@ -31,7 +31,7 @@ import { EventTarget } from "../events/EventTarget.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { NodeImpl } from "./NodeImpl.ts";
-import { nextInTree, siblingPrecedes, treeRoot } from "./traverse.ts";
+import { nextInTree, relativeTreePosition, treeRoot } from "./traverse.ts";
 import { preInsert, preRemove, replace, replaceAll } from "./tree.ts";
 import { cloneNode, isEqualNode } from "./clone.ts";
 import { NodeList } from "../collections/NodeList.ts";
@@ -353,25 +353,25 @@ export abstract class Node extends EventTarget {
         }
       }
     }
-    if (node1 !== null && node2 !== null && node1 !== node2 && node1.parent !== null && node1.parent === node2.parent) {
-      return siblingPrecedes(node1, node2) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING;
+    if (node1 !== null && node2 !== null) {
+      if (node1 === node2) {
+        return attr1 !== null
+          ? DOCUMENT_POSITION_CONTAINED_BY | DOCUMENT_POSITION_FOLLOWING
+          : DOCUMENT_POSITION_CONTAINS | DOCUMENT_POSITION_PRECEDING;
+      }
+      const position = relativeTreePosition(node2, node1);
+      if (position !== DOCUMENT_POSITION_DISCONNECTED) {
+        // An attribute precedes its owner's descendants without containing them.
+        if (attr1 !== null && position & DOCUMENT_POSITION_CONTAINS) return DOCUMENT_POSITION_PRECEDING;
+        if (attr2 !== null && position & DOCUMENT_POSITION_CONTAINED_BY) return DOCUMENT_POSITION_FOLLOWING;
+        return position;
+      }
     }
-    if (node1 === null || node2 === null || treeRoot(node1) !== treeRoot(node2)) {
-      return (
-        DOCUMENT_POSITION_DISCONNECTED |
-        DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC |
-        (stableOrder(node1 ?? attr1!, node2 ?? attr2!) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING)
-      );
-    }
-    if (isAncestor(node1, node2) || (attr2 !== null && node1 === node2)) {
-      if (attr1 !== null) return DOCUMENT_POSITION_PRECEDING;
-      return DOCUMENT_POSITION_CONTAINS | DOCUMENT_POSITION_PRECEDING;
-    }
-    if (isAncestor(node2, node1) || (attr1 !== null && node1 === node2)) {
-      if (attr2 !== null) return DOCUMENT_POSITION_FOLLOWING;
-      return DOCUMENT_POSITION_CONTAINED_BY | DOCUMENT_POSITION_FOLLOWING;
-    }
-    return precedes(node1, node2) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING;
+    return (
+      DOCUMENT_POSITION_DISCONNECTED |
+      DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC |
+      (stableOrder(node1 ?? attr1!, node2 ?? attr2!) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING)
+    );
   }
 
   /** https://dom.spec.whatwg.org/#dom-node-contains */
@@ -527,29 +527,6 @@ function locateNamespace(n: NodeImpl, prefix: string | null): string | null {
 function ownerElementImpl(attr: NodeImpl): NodeImpl | null {
   const el = (attr.node as unknown as { ownerElement: Element | null }).ownerElement;
   return el === null ? null : el[$impl];
-}
-
-function isAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n = b.parent; n !== null; n = n.parent) if (n === a) return true;
-  return false;
-}
-
-/** Whether `a` precedes `b` in tree order (same tree, neither is an ancestor of the other). */
-function precedes(a: NodeImpl, b: NodeImpl): boolean {
-  // Find the children of the common ancestor on each path, then compare sibling order.
-  const pathA: NodeImpl[] = [];
-  for (let n: NodeImpl | null = a; n !== null; n = n.parent) pathA.push(n);
-  const pathB: NodeImpl[] = [];
-  for (let n: NodeImpl | null = b; n !== null; n = n.parent) pathB.push(n);
-  let i = pathA.length - 1;
-  let j = pathB.length - 1;
-  while (i > 0 && j > 0 && pathA[i - 1] === pathB[j - 1]) {
-    i--;
-    j--;
-  }
-  const ca = pathA[i - 1];
-  const cb = pathB[j - 1];
-  return siblingPrecedes(ca, cb);
 }
 
 // Consistent ordering for disconnected nodes (spec: implementation-specific but consistent).

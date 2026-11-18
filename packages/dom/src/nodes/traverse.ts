@@ -1,4 +1,11 @@
-import { ELEMENT_NODE } from "./constants.ts";
+import {
+  DOCUMENT_POSITION_CONTAINED_BY,
+  DOCUMENT_POSITION_CONTAINS,
+  DOCUMENT_POSITION_DISCONNECTED,
+  DOCUMENT_POSITION_FOLLOWING,
+  DOCUMENT_POSITION_PRECEDING,
+  ELEMENT_NODE,
+} from "./constants.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 
 // Allocation-free tree-order (preorder) iteration helpers over NodeImpl.
@@ -119,27 +126,33 @@ export function childAt(parent: NodeImpl, index: number): NodeImpl | null {
   return c;
 }
 
-function ancestors(n: NodeImpl): NodeImpl[] {
-  const out: NodeImpl[] = [];
-  for (let p: NodeImpl | null = n; p !== null; p = p.parent) out.push(p);
-  return out;
+/** Position of b relative to a in the ordinary (not shadow-including) tree. */
+export function relativeTreePosition(a: NodeImpl, b: NodeImpl): number {
+  if (a === b) return 0;
+  if (a.parent !== b.parent) {
+    // Align the depths before looking for the children of the common ancestor.
+    let difference = 0;
+    for (let n = a.parent; n !== null; n = n.parent) {
+      if (n === b) return DOCUMENT_POSITION_CONTAINS | DOCUMENT_POSITION_PRECEDING;
+      difference++;
+    }
+    for (let n = b.parent; n !== null; n = n.parent) {
+      if (n === a) return DOCUMENT_POSITION_CONTAINED_BY | DOCUMENT_POSITION_FOLLOWING;
+      difference--;
+    }
+    for (; difference > 0; difference--) a = a.parent!;
+    for (; difference < 0; difference++) b = b.parent!;
+    while (a.parent !== b.parent) {
+      a = a.parent!;
+      b = b.parent!;
+    }
+  }
+  if (a.parent === null) return DOCUMENT_POSITION_DISCONNECTED;
+  return siblingPrecedes(a, b) ? DOCUMENT_POSITION_FOLLOWING : DOCUMENT_POSITION_PRECEDING;
 }
 
 /** Negative if a precedes b in tree order (https://dom.spec.whatwg.org/#concept-tree-order). */
 export function compareTreeOrder(a: NodeImpl, b: NodeImpl): number {
-  if (a === b) return 0;
-  const pa = ancestors(a);
-  const pb = ancestors(b);
-  let i = pa.length - 1;
-  let j = pb.length - 1;
-  while (i >= 0 && j >= 0 && pa[i] === pb[j]) {
-    i--;
-    j--;
-  }
-  if (i < 0) return -1; // a is an ancestor of b
-  if (j < 0) return 1;
-  const ca = pa[i];
-  const cb = pb[j];
-  for (let s = ca.next; s !== null; s = s.next) if (s === cb) return -1;
-  return 1;
+  const position = relativeTreePosition(a, b);
+  return position === 0 ? 0 : position & DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
 }
