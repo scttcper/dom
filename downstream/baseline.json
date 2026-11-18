@@ -8,45 +8,47 @@
         "failed": 0,
         "skipped": 1578,
         "failing": [],
-        "wallMs": 57918,
-        "peakRssBytes": 538165248,
+        "wallMs": 60943,
+        "peakRssBytes": 529711104,
         "jsdomVersion": "27.4.0",
         "flaky": [],
-        "date": "2026-11-09"
+        "date": "2026-11-17"
       },
       "ctrl-dom": {
-        "passed": 9199,
-        "failed": 0,
+        "passed": 9198,
+        "failed": 1,
         "skipped": 1578,
-        "failing": [],
-        "wallMs": 42527,
-        "peakRssBytes": 425066496,
+        "failing": [
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+        ],
+        "wallMs": 38601,
+        "peakRssBytes": 424542208,
         "flaky": [
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/menu/filter-root/MenuFilterRoot.scoping.test.tsx::<Menu.FilterProvider><Menu.Root/></Menu.FilterProvider> does not extend to a plain submenu inside the filterable menu"
         ],
-        "date": "2026-11-09"
+        "date": "2026-11-17"
       },
       "ctrl-dom-full": {
         "passed": 9198,
         "failed": 1,
         "skipped": 1578,
         "failing": [
-          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
+          "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "wallMs": 33457,
-        "peakRssBytes": 418021376,
+        "wallMs": 37646,
+        "peakRssBytes": 407797760,
         "flaky": [
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using contained triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger",
           "packages/react/src/popover/root/PopoverRoot.test.tsx::<Popover.Root /> when using multiple detached triggers focus management with focusable elements between the trigger and the popup closes and moves focus before the trigger when tabbing backward from the focused trigger"
         ],
-        "date": "2026-11-09"
+        "date": "2026-11-17"
       }
     },
-    "date": "2026-11-09"
+    "date": "2026-11-17"
   },
   "radix": {
     "preset": "all",
