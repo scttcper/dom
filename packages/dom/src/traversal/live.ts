@@ -181,16 +181,25 @@ export function rangesAdopt(node: NodeImpl, oldDoc: object): void {
   if (w === 0) oldHome[$ranges] = null;
 }
 
+/** The two ends of a parent need no sibling walk; interior offsets share one lookup per mutation. */
+function offsetAfterChild(offset: number, parent: NodeImpl, getIndex: () => number): boolean {
+  return offset > 0 && (offset === parent.childCount || offset > getIndex());
+}
+
 /** https://dom.spec.whatwg.org/#concept-node-insert step 2 */
-export function rangesAfterInsert(parent: NodeImpl, index: number, count: number): void {
+export function rangesAfterInsert(parent: NodeImpl, child: NodeImpl, count: number): void {
+  let index: number | undefined;
+  const getIndex = () => (index ??= indexOf(child));
   updateLiveRanges(parent, (r) => {
-    if (r[$sc] === parent && r[$so] > index) r[$so] += count;
-    if (r[$ec] === parent && r[$eo] > index) r[$eo] += count;
+    if (r[$sc] === parent && offsetAfterChild(r[$so], parent, getIndex)) r[$so] += count;
+    if (r[$ec] === parent && offsetAfterChild(r[$eo], parent, getIndex)) r[$eo] += count;
   });
 }
 
 /** https://dom.spec.whatwg.org/#concept-node-remove steps 4-7 */
-export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl, index: number): void {
+export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl): void {
+  let index: number | undefined;
+  const getIndex = () => (index ??= indexOf(node));
   const hasBoundaryBelow = (node.flags & F_RANGE_BELOW) !== 0;
   updateLiveRanges(parent, (r) => {
     const start = r[$sc];
@@ -200,12 +209,12 @@ export function rangesBeforeRemove(node: NodeImpl, parent: NodeImpl, index: numb
     if (moveStart || moveEnd) markBoundary(parent);
     if (moveStart) {
       r[$sc] = parent;
-      r[$so] = index;
-    } else if (start === parent && r[$so] > index) r[$so]--;
+      r[$so] = getIndex();
+    } else if (start === parent && offsetAfterChild(r[$so], parent, getIndex)) r[$so]--;
     if (moveEnd) {
       r[$ec] = parent;
-      r[$eo] = index;
-    } else if (end === parent && r[$eo] > index) r[$eo]--;
+      r[$eo] = getIndex();
+    } else if (end === parent && offsetAfterChild(r[$eo], parent, getIndex)) r[$eo]--;
   });
 }
 

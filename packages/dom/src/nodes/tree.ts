@@ -32,7 +32,7 @@ import type { DocCSS } from "../css/stylesheets.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
-import { indexOf, nextInTree, snapshotChildren, treeRoot } from "./traverse.ts";
+import { nextInTree, snapshotChildren, treeRoot } from "./traverse.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
 import { activeObservers, addTransientObservers, queueTreeMutationRecord } from "../observers/queue.ts";
 import { NodeList } from "../collections/NodeList.ts";
@@ -328,8 +328,7 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
   }
 
   // Step 2: live range boundary points after the insertion point move right by count.
-  if (liveRangeCount !== 0 && child !== null && (parent.flags & F_RANGE) !== 0)
-    rangesAfterInsert(parent, indexOf(child), count);
+  if (liveRangeCount !== 0 && child !== null && (parent.flags & F_RANGE) !== 0) rangesAfterInsert(parent, child, count);
 
   // Step 6: previousSibling.
   const previousSibling = child === null ? parent.last : child.prev;
@@ -450,7 +449,7 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   const doc = parent.doc;
   // Steps 2-6: live ranges and NodeIterator pre-removing steps (only when any exist).
   if (liveRangeCount !== 0 && ((node.flags & F_RANGE_MARKS) !== 0 || (parent.flags & F_RANGE) !== 0))
-    rangesBeforeRemove(node, parent, indexOf(node));
+    rangesBeforeRemove(node, parent);
   if (nodeIteratorCount !== 0) iteratorsBeforeRemove(node);
   // Steps 7-8.
   const oldPrevious = node.prev;
@@ -528,7 +527,7 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   const doc = newParent.doc;
   // Steps 9-10: live range and NodeIterator pre-remove steps.
   if (liveRangeCount !== 0 && ((node.flags & F_RANGE_MARKS) !== 0 || (oldParent.flags & F_RANGE) !== 0))
-    rangesBeforeRemove(node, oldParent, indexOf(node));
+    rangesBeforeRemove(node, oldParent);
   if (nodeIteratorCount !== 0) iteratorsBeforeRemove(node);
   // Steps 11-13.
   const oldPreviousSibling = node.prev;
@@ -540,7 +539,7 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   if (activeObservers !== 0) addTransientObservers(oldParent, node);
   // Step 18: live ranges after the insertion point.
   if (liveRangeCount !== 0 && child !== null && (newParent.flags & F_RANGE) !== 0)
-    rangesAfterInsert(newParent, indexOf(child), 1);
+    rangesAfterInsert(newParent, child, 1);
   // Steps 19-20.
   const newPreviousSibling = child === null ? newParent.last : child.prev;
   link(node, newParent, child);
