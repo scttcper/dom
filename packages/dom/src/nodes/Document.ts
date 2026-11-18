@@ -70,6 +70,7 @@ import {
   $ranges,
   $selection,
   $styleVersion,
+  $templateContentsOwner,
   $treeVersion,
   $url,
   $version,
@@ -102,6 +103,7 @@ export class Document extends Node {
   declare [$implementation]: DOMImplementation | null;
   /** Opaque per-document state owned by src/css (style sheet list, rule index). */
   declare [$css]: object | null;
+  declare [$templateContentsOwner]?: Document;
   /** Markup written since document.open() (null when no open() is in effect). */
   declare [$writeBuffer]: string | null;
   /** https://w3c.github.io/selection-api/#dfn-selection — created on first getSelection(). */

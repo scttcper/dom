@@ -187,6 +187,8 @@ export const $supportsText: unique symbol = Symbol.for("ctrl-dom.supportsText");
 export const $systemId: unique symbol = Symbol.for("ctrl-dom.systemId");
 export const $target: unique symbol = Symbol.for("ctrl-dom.target");
 export const $tasks: unique symbol = Symbol.for("ctrl-dom.tasks");
+/** Document's appropriate template contents owner, allocated on first use. */
+export const $templateContentsOwner: unique symbol = Symbol.for("ctrl-dom.templateContentsOwner");
 export const $timers: unique symbol = Symbol.for("ctrl-dom.timers");
 export const $title: unique symbol = Symbol.for("ctrl-dom.title");
 export const $transients: unique symbol = Symbol.for("ctrl-dom.transients");

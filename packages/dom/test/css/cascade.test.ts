@@ -12,7 +12,15 @@
  *   Media Queries 5 — https://drafts.csswg.org/mediaqueries-5/#evaluating
  */
 import { beforeEach, describe, expect, test } from "vitest";
-import { createWindow, CSS, CSSStyleSheet, type Window, type Document, type Element } from "@ctrl/dom";
+import {
+  createWindow,
+  CSS,
+  CSSStyleSheet,
+  type HTMLTemplateElement,
+  type Window,
+  type Document,
+  type Element,
+} from "@ctrl/dom";
 import {
   computedValue,
   computedVisibility,
@@ -317,6 +325,30 @@ describe("style sheet changes invalidate computed styles — https://drafts.cssw
     other.replaceSync(".a{width:20px}");
     d.adoptedStyleSheets.push(other);
     expect(cs("#e").width).toBe("20px");
+  });
+
+  test("a shadow host keeps its adopted sheets on a round trip through its document's template contents", () => {
+    const template = document.createElement("template") as HTMLTemplateElement;
+    const host = document.body!.appendChild(document.createElement("div"));
+    const root = host.attachShadow({ mode: "open" });
+    const target = root.appendChild(document.createElement("button"));
+    const owner = root.appendChild(document.createElement("style"));
+    owner.textContent = "button { color: green }";
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync("[aria-pressed] { display: grid }");
+    const sheets = (root as typeof root & { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets;
+    sheets.push(sheet);
+    target.setAttribute("aria-pressed", "");
+    expect(window.getComputedStyle(target).display).toBe("grid");
+
+    template.content.appendChild(host);
+    expect(sheets[0]).toBe(sheet);
+    sheet.replaceSync("[aria-pressed] { display: flex }");
+    document.body!.appendChild(host);
+    expect(window.getComputedStyle(target).color).toBe("green");
+    expect(window.getComputedStyle(target).display).toBe("flex");
+    target.removeAttribute("aria-pressed");
+    expect(window.getComputedStyle(target).display).not.toBe("flex");
   });
 
   test("shadow trees that come and go leave no style bookkeeping behind (https://drafts.csswg.org/cssom/#remove-a-css-style-sheet)", () => {

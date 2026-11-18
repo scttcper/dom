@@ -702,6 +702,37 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
     w.close();
   });
 
+  test("moving a styled shadow host to another document releases its former window and constructed sheet", async () => {
+    const tracker = new Tracker();
+    const { destination, root, target } = (() => {
+      const source = tracker.track("source window", createWindow());
+      tracker.track("source document", source.document);
+      const group = source.document.body!.appendChild(source.document.createElement("section"));
+      const host = group.appendChild(source.document.createElement("div"));
+      const root = host.attachShadow({ mode: "open" }) as ShadowRoot & { adoptedStyleSheets: object[] };
+      const target = root.appendChild(source.document.createElement("button"));
+      const sheet = new (source as unknown as Record<string, any>).CSSStyleSheet();
+      sheet.replaceSync("[aria-pressed] { display: grid }");
+      root.adoptedStyleSheets.push(tracker.track("constructed sheet", sheet));
+      target.setAttribute("aria-pressed", "");
+      expect(source.getComputedStyle(target).display).toBe("grid");
+      source.document.adoptNode(group);
+      expect(root.adoptedStyleSheets[0]).toBe(sheet);
+      const destination = createWindow();
+      destination.document.body!.appendChild(group);
+      return { destination, root, target };
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(root.adoptedStyleSheets).toHaveLength(0);
+    const sheet = new (destination as unknown as Record<string, any>).CSSStyleSheet();
+    sheet.replaceSync("[aria-pressed] { display: flex }");
+    root.adoptedStyleSheets.push(sheet);
+    expect(destination.getComputedStyle(target).display).toBe("flex");
+    target.removeAttribute("aria-pressed");
+    expect(destination.getComputedStyle(target).display).not.toBe("flex");
+    destination.close();
+  });
+
   test("holding an empty adopted sheet array releases its detached shadow root", async () => {
     const w = createWindow();
     const tracker = new Tracker();

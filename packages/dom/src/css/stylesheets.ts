@@ -14,7 +14,7 @@ import { compareTreeOrder } from "../nodes/traverse.ts";
 import { CSSStyleSheet, StyleSheetList } from "./cssom.ts";
 import { ShadowAttributeNames, type ShadowAttributeUses } from "./style-deps.ts";
 import type { RuleIndex } from "./cascade.ts";
-import { $constructed, $css, $doc, $impl, $ownerNode, $styleVersion } from "../keys.ts";
+import { $constructed, $css, $doc, $impl, $ownerNode, $styleVersion, $templateContentsOwner } from "../keys.ts";
 
 /** Style sheets of one tree (a document or a shadow root). */
 export class RootStyles {
@@ -113,6 +113,27 @@ export class DocCSS {
     this.authorVersion = -1;
     this.authorStyleVersion = -1;
     this.authorResult = false;
+  }
+
+  /** A shadow tree moved to a different node document. Its constructor-bound sheets stay behind. */
+  adoptShadowRoot(root: NodeImpl): void {
+    const rs = shadowStyles.get(root);
+    if (rs === undefined || !rs.hasSheets()) return;
+    rs.discardIndex();
+    this.shadows?.delete(rs);
+    rs.indexed = false;
+    const doc = root.doc;
+    // A template's inert contents and their host document share the adopted sheets on transfer.
+    if (this.doc[$templateContentsOwner] !== doc && doc[$templateContentsOwner] !== this.doc) {
+      if (!Reflect.set(rs.adopted, "length", 0)) {
+        rs.adopted = [];
+        rs.adoptedView = null;
+      }
+    }
+    for (const sheet of rs.owners) sheet[$doc] = doc;
+    syncShadowRegistration(rs);
+    this.doc[$styleVersion]++;
+    doc[$styleVersion]++;
   }
 }
 

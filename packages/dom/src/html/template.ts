@@ -20,19 +20,18 @@ import { cloneNode } from "../nodes/clone.ts";
 import { F_ADOPT_HOOK } from "../nodes/constants.ts";
 import { appendDetached } from "../nodes/tree.ts";
 import { bool, enumerated } from "./reflect.ts";
-import { $contentType, $host, $impl, $isHTML } from "../keys.ts";
-
-const owners = new WeakMap<Document, Document>();
+import { defineHidden } from "../webidl-runtime.ts";
+import { $contentType, $host, $impl, $isHTML, $templateContentsOwner } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#appropriate-template-contents-owner-document */
 export function templateContentsOwner(doc: Document): Document {
-  const existing = owners.get(doc);
+  const existing = doc[$templateContentsOwner];
   if (existing !== undefined) return existing;
   const owner = doc[$isHTML] ? Document._createHTML(null) : new Document();
   if (!doc[$isHTML]) owner[$contentType] = doc[$contentType];
   // An owner document is its own owner.
-  owners.set(owner, owner);
-  owners.set(doc, owner);
+  defineHidden(owner, $templateContentsOwner, owner);
+  defineHidden(doc, $templateContentsOwner, owner);
   return owner;
 }
 

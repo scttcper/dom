@@ -28,6 +28,7 @@ import {
   COMMENT_NODE,
   PROCESSING_INSTRUCTION_NODE,
 } from "./constants.ts";
+import type { DocCSS } from "../css/stylesheets.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
@@ -47,6 +48,7 @@ import {
 import { slotsAfterInsert, slotsAfterRemove, slotAssignmentActive } from "./slots.ts";
 import {
   $childNodes,
+  $css,
   $derived,
   $externalFormNames,
   $focused,
@@ -677,6 +679,7 @@ function runAdoptingSteps(root: NodeImpl, oldDoc: Document): void {
 
 /** Shadow-including re-homing of a shadow tree (shadow roots have no parent to remove from). */
 function adoptShadowTree(root: NodeImpl, doc: Document): void {
+  const oldCSS = root.doc[$css] as DocCSS | null;
   for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
     n.doc = doc;
     if (n.type === ELEMENT_NODE) {
@@ -693,6 +696,7 @@ function adoptShadowTree(root: NodeImpl, doc: Document): void {
       if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)[$shadowRoot]![$impl], doc);
     }
   }
+  oldCSS?.adoptShadowRoot(root);
 }
 
 /**
