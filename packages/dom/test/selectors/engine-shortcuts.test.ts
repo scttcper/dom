@@ -175,6 +175,18 @@ describe("Element.matches without per-call setup — https://dom.spec.whatwg.org
   });
 });
 
+test("closest keeps :scope at the starting element and refreshes positional matches", () => {
+  document.body!.innerHTML = "<ul><li></li><li id=b><span></span></li></ul>";
+  const b = document.getElementById("b")!;
+  const span = b.firstElementChild!;
+  expect(span.closest("button,li")).toBe(b);
+  expect(span.closest(":scope")).toBe(span);
+  expect(span.closest("li:scope")).toBeNull();
+  expect(span.closest("li:nth-child(2)")).toBe(b);
+  b.parentElement!.prepend(b);
+  expect(span.closest("li:nth-child(2)")).toBeNull();
+});
+
 // `[id="x"]` (stock Testing Library's aria-labelledby lookup) is answered from the document's id
 // index like `#x`, but case-sensitively in every mode, and never for an empty value.
 describe("[id=…] from the id index — https://drafts.csswg.org/selectors-4/#attribute-representation (differential: jsdom)", () => {

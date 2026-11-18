@@ -483,16 +483,21 @@ export function closest(el: NodeImpl, selectors: string): NodeImpl | null {
   const q = getQuery(selectors, "closest", el);
   const list = q.list;
   if (list.items.length === 0) return null;
+  if (!q.info.usesScope && !q.hasMemos) return closestMatch(el, list);
   const prevScope = setScope(el);
   try {
-    for (let n: NodeImpl | null = el; n !== null && n.type === ELEMENT_NODE; n = n.parent) {
-      if (matchList(list, n)) return n;
-    }
-    return null;
+    return closestMatch(el, list);
   } finally {
     setScope(prevScope);
     if (q.hasMemos) resetMemos(q.info);
   }
+}
+
+function closestMatch(el: NodeImpl, list: CList): NodeImpl | null {
+  for (let n: NodeImpl | null = el; n !== null && n.type === ELEMENT_NODE; n = n.parent) {
+    if (list.fn(n)) return n;
+  }
+  return null;
 }
 
 /** Whether `selectors` parses as a valid selector list (no exception). */

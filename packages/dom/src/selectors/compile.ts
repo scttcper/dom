@@ -879,11 +879,12 @@ function listFn(list: CList): Matcher {
     return (el) => cx.fn(el);
   }
   const byTag = tagDispatch(items);
-  if (byTag !== null) return byTag;
-  return (el) => {
-    for (let i = 0; i < items.length; i++) if (items[i].fn(el)) return true;
-    return false;
-  };
+  return byTag ?? ((el) => matchesAnyItem(items, el));
+}
+
+function matchesAnyItem(items: CComplex[], el: NodeImpl): boolean {
+  for (let i = 0; i < items.length; i++) if (items[i].fn(el)) return true;
+  return false;
 }
 
 /** Type test of a subject compound usable for tag dispatch: no namespace constraint, a known HTML tag. */
@@ -912,16 +913,22 @@ function subjectTagTest(cx: CComplex): Test | null {
 function tagDispatch(items: CComplex[]): Matcher | null {
   let maxTag = 0;
   let keyed = 0;
+  let bareCount = 0;
   for (let i = 0; i < items.length; i++) {
     const t = subjectTagTest(items[i]);
     if (t !== null) {
       keyed++;
+      if (items[i].last === 0 && items[i].comps[0].length === 1) bareCount++;
       if (t.a > maxTag) maxTag = t.a;
     }
   }
   if (keyed === 0) return null;
   /** 1 = an item that is just this tag (`h1`): the element matches. */
   const bare = new Uint8Array(maxTag + 1);
+  if (bareCount === items.length) {
+    for (const cx of items) bare[cx.comps[0][0].a] = 1;
+    return (el) => ((el.flags & F_HTML) !== 0 ? bare[el.tag] === 1 : matchesAnyItem(items, el));
+  }
   const buckets: (CComplex[] | undefined)[] = new Array(maxTag + 1).fill(undefined);
   const rest: CComplex[] = [];
   for (let i = 0; i < items.length; i++) {
@@ -932,10 +939,7 @@ function tagDispatch(items: CComplex[]): Matcher | null {
     else (buckets[t.a] ??= []).push(cx);
   }
   return (el) => {
-    if ((el.flags & F_HTML) === 0) {
-      for (let i = 0; i < items.length; i++) if (items[i].fn(el)) return true;
-      return false;
-    }
+    if ((el.flags & F_HTML) === 0) return matchesAnyItem(items, el);
     const tag = el.tag;
     if (tag !== 0 && tag <= maxTag) {
       if (bare[tag] === 1) return true;
