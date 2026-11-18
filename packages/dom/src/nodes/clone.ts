@@ -21,6 +21,7 @@ import {
   F_ROLE_ATTR,
   F_TABINDEX_ATTR,
 } from "./constants.ts";
+import { findAttributeByNamespace } from "./attributes.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
@@ -147,19 +148,22 @@ export function isEqualNode(a: NodeImpl, b: NodeImpl): boolean {
     }
     case ELEMENT_NODE: {
       if (a.ns !== b.ns || a.prefix !== b.prefix || a.name !== b.name) return false;
-      const aa = a.attrs ?? [];
-      const ba = b.attrs ?? [];
-      if (aa.length !== ba.length) return false;
-      outer: for (let i = 0; i < aa.length; i++) {
+      const aa = a.attrs;
+      const ba = b.attrs;
+      if (aa === ba) break;
+      if (aa === null || ba === null || aa.length !== ba.length) return false;
+      // Clones and repeated renders usually preserve attribute order.
+      let i = 0;
+      for (; i < aa.length; i++) {
         const x = aa[i];
-        for (let j = 0; j < ba.length; j++) {
-          const y = ba[j];
-          if (x.ns === y.ns && x.localName === y.localName) {
-            if (x.value !== y.value) return false;
-            continue outer;
-          }
-        }
-        return false;
+        const y = ba[i];
+        if (x.localName !== y.localName || x.ns !== y.ns) break;
+        if (x.value !== y.value) return false;
+      }
+      for (; i < aa.length; i++) {
+        const x = aa[i];
+        const match = findAttributeByNamespace(b, x.ns, x.localName);
+        if (match === null || match.value !== x.value) return false;
       }
       break;
     }
