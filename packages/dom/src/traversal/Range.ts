@@ -650,6 +650,9 @@ function containedNodes(range: AbstractRange, common: NodeImpl): NodeImpl[] {
 
 /** Steps 5-10 of extract / clone: the partially contained children and the contained children of the common ancestor. */
 function rangeContents(sc: NodeImpl, so: number, ec: NodeImpl, eo: number) {
+  // An interior end offset would need a second sibling walk. Documents still require the doctype check below.
+  if (sc === ec && sc.type !== DOCUMENT_NODE && so < eo && eo < sc.childCount)
+    return { first: null, last: null, contained: snapshotChildren(sc, so, eo) };
   const ca = commonAncestor(sc, ec);
   const first = sc === ca ? null : childOfAncestor(sc, ca);
   const last = ec === ca ? null : childOfAncestor(ec, ca);
