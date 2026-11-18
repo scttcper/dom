@@ -95,8 +95,8 @@ const STALE_MS = 50
 interface PendingTimer {
   due: number
   interval: number
-  /** The host handle (key in timerByHandle), so pruning a stale timer drops both entries. */
-  handle: unknown
+  objectHandle: WeakRef<HostHandle> | null
+  primitiveHandle: unknown
 }
 
 type TimerGlobals = {
@@ -108,8 +108,33 @@ type TimerGlobals = {
 type AnyFn = (...args: unknown[]) => unknown
 
 const pendingTimers = new Set<PendingTimer>()
-const timerByHandle = new Map<unknown, PendingTimer>()
-const wrappers: Partial<TimerGlobals> = {}
+type HostHandle = {hasRef?: () => boolean; _destroyed?: boolean}
+function isObjectHandle(handle: unknown): handle is HostHandle {
+  return (
+    (typeof handle === 'object' && handle !== null) ||
+    typeof handle === 'function'
+  )
+}
+const objectTimers = new WeakMap<HostHandle, PendingTimer>()
+const primitiveTimers = new Map<unknown, PendingTimer>()
+// A host may cancel the timer through an old clear function, a numeric ID or Symbol.dispose.
+// Once the scheduled callback is gone, its deadline can go too.
+const collected = new FinalizationRegistry<PendingTimer>(forgetTimer)
+
+function forgetTimer(timer: PendingTimer) {
+  if (!pendingTimers.delete(timer)) return
+  collected.unregister(timer)
+  if (timer.objectHandle === null) {
+    if (primitiveTimers.get(timer.primitiveHandle) === timer)
+      primitiveTimers.delete(timer.primitiveHandle)
+  } else {
+    const handle = timer.objectHandle.deref()
+    if (handle !== undefined && objectTimers.get(handle) === timer)
+      objectTimers.delete(handle)
+  }
+}
+
+const observed = new WeakMap<TimerFn, keyof TimerGlobals>()
 
 function copyProps(wrapper: object, original: object) {
   // keep `util.promisify.custom`, `__promisify__`, name, length
@@ -120,7 +145,7 @@ function wrapSchedule(name: 'setTimeout' | 'setInterval') {
   const g = globalThis as unknown as TimerGlobals
   const current = g[name]
   if (
-    current === wrappers[name] ||
+    observed.get(current) === name ||
     typeof current !== 'function' ||
     isFaked(current)
   )
@@ -128,40 +153,50 @@ function wrapSchedule(name: 'setTimeout' | 'setInterval') {
   const original = current as unknown as AnyFn
   const isInterval = name === 'setInterval'
   // The clock's timers need no tracking: it knows their deadlines (canYieldWithImmediate).
-  const clockOwned = isClockTimer(original)
+  if (isClockTimer(original)) {
+    observed.set(current, name)
+    return
+  }
   const wrapper = function (
     this: unknown,
     callback: unknown,
     delay?: unknown,
     ...args: unknown[]
   ) {
-    if (clockOwned || typeof callback !== 'function') {
+    if (typeof callback !== 'function') {
       return original.call(this, callback, delay, ...args)
     }
     const ms = Math.max(1, Number(delay) || 0)
     const timer: PendingTimer = {
       due: performance.now() + ms,
       interval: isInterval ? ms : 0,
-      handle: undefined,
+      objectHandle: null,
+      primitiveHandle: undefined,
+    }
+    let completed = false
+    const run = function (this: unknown, ...runArgs: unknown[]) {
+      if (isInterval) timer.due = performance.now() + timer.interval
+      else {
+        completed = true
+        forgetTimer(timer)
+      }
+      return Reflect.apply(callback, this, runArgs)
+    }
+    const handle = original.call(this, run, delay, ...args)
+    if (completed) return handle
+    if (isObjectHandle(handle)) {
+      timer.objectHandle = new WeakRef(handle)
+      objectTimers.set(handle, timer)
+    } else {
+      timer.primitiveHandle = handle
+      primitiveTimers.set(handle, timer)
     }
     pendingTimers.add(timer)
-    let handle: unknown
-    const run = function (this: unknown, ...runArgs: unknown[]) {
-      if (isInterval) {
-        timer.due = performance.now() + timer.interval
-      } else {
-        pendingTimers.delete(timer)
-        timerByHandle.delete(handle)
-      }
-      return (callback as AnyFn).apply(this, runArgs)
-    }
-    handle = original.call(this, run, delay, ...args)
-    timer.handle = handle
-    timerByHandle.set(handle, timer)
+    collected.register(run, timer, timer)
     return handle
   } as unknown as TimerFn
   copyProps(wrapper, original)
-  wrappers[name] = wrapper
+  observed.set(wrapper, name)
   g[name] = wrapper
 }
 
@@ -169,22 +204,21 @@ function wrapClear(name: 'clearTimeout' | 'clearInterval') {
   const g = globalThis as unknown as TimerGlobals
   const current = g[name]
   if (
-    current === wrappers[name] ||
+    observed.get(current) === name ||
     typeof current !== 'function' ||
     isFaked(current)
   )
     return
   const original = current as unknown as AnyFn
   const wrapper = function (this: unknown, handle: unknown) {
-    const timer = timerByHandle.get(handle)
-    if (timer !== undefined) {
-      pendingTimers.delete(timer)
-      timerByHandle.delete(handle)
-    }
+    const timer = isObjectHandle(handle)
+      ? objectTimers.get(handle)
+      : primitiveTimers.get(handle)
+    if (timer !== undefined) forgetTimer(timer)
     return original.call(this, handle)
   } as unknown as TimerFn
   copyProps(wrapper, original)
-  wrappers[name] = wrapper
+  observed.set(wrapper, name)
   g[name] = wrapper
 }
 
@@ -198,24 +232,27 @@ function observeTimerGlobals() {
 function timerGlobalsObserved(): boolean {
   const g = globalThis as unknown as TimerGlobals
   return (
-    wrappers.setTimeout !== undefined &&
-    g.setTimeout === wrappers.setTimeout &&
-    g.setInterval === wrappers.setInterval &&
-    g.clearTimeout === wrappers.clearTimeout &&
-    g.clearInterval === wrappers.clearInterval
+    observed.get(g.setTimeout) === 'setTimeout' &&
+    observed.get(g.setInterval) === 'setInterval' &&
+    observed.get(g.clearTimeout) === 'clearTimeout' &&
+    observed.get(g.clearInterval) === 'clearInterval'
   )
 }
 
 /** Whether a timer created through the wrappers may be due within upstream's wait. */
 function trackedTimerDueSoon(): boolean {
+  if (pendingTimers.size === 0) return false
   const now = performance.now()
   for (const timer of pendingTimers) {
     if (timer.due <= now + DUE_SOON_MS) {
-      if (timer.interval === 0 && timer.due < now - STALE_MS) {
-        // Cleared through a reference captured before the wrappers: forget it entirely (the
-        // handle would otherwise keep the timer's callback, and whatever it closes over, alive).
-        pendingTimers.delete(timer)
-        timerByHandle.delete(timer.handle)
+      const destroyed = timer.objectHandle?.deref()?._destroyed
+      if (
+        destroyed === true ||
+        (destroyed === undefined &&
+          timer.interval === 0 &&
+          timer.due < now - STALE_MS)
+      ) {
+        forgetTimer(timer)
         continue
       }
       return true
@@ -234,14 +271,10 @@ let untrackedBaseline = -1
 function untrackedTimeouts(): number {
   const live = countTimeouts()
   let trackedRefed = 0
-  for (const handle of timerByHandle.keys()) {
-    if (
-      typeof handle !== 'object' ||
-      handle === null ||
-      (handle as {hasRef?: () => boolean}).hasRef?.() !== false
-    ) {
-      trackedRefed++
-    }
+  for (const timer of pendingTimers) {
+    const handle = timer.objectHandle?.deref()
+    if (handle?._destroyed === true) forgetTimer(timer)
+    else if (handle?.hasRef?.() !== false) trackedRefed++
   }
   return live - trackedRefed
 }
