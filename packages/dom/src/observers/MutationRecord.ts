@@ -1,13 +1,20 @@
 // https://dom.spec.whatwg.org/#interface-mutationrecord
 //
-// OWNER: dom-core. `addedNodes` / `removedNodes` NodeLists are created on first read from the
-// NodeImpl arrays the mutation algorithms pass in (shared between observers; never mutated).
+// OWNER: dom-core. Materialize addedNodes and removedNodes on first read. Most tree
+// mutations need only one node reference. Fragment and batch mutations supply a snapshot.
 
 import { NodeList } from "../collections/NodeList.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 
-const NONE: NodeImpl[] = [];
+export type MutationNodes = NodeImpl | NodeImpl[] | null;
+
+function recordNodeList(nodes: MutationNodes): NodeList {
+  if (Array.isArray(nodes)) return NodeList._staticFromImpls(nodes);
+  const list = new NodeList(null);
+  if (nodes !== null) NodeList._appended(list, nodes.node);
+  return list;
+}
 
 export class MutationRecord {
   #type: string;
@@ -15,8 +22,8 @@ export class MutationRecord {
   #name: string | null;
   #namespace: string | null;
   #oldValue: string | null;
-  #added: NodeImpl[] | NodeList;
-  #removed: NodeImpl[] | NodeList;
+  #added: MutationNodes | NodeList;
+  #removed: MutationNodes | NodeList;
   #previousSibling: NodeImpl | null;
   #nextSibling: NodeImpl | null;
 
@@ -27,8 +34,8 @@ export class MutationRecord {
     name: string | null,
     namespace: string | null,
     oldValue: string | null,
-    added: NodeImpl[] | null,
-    removed: NodeImpl[] | null,
+    added: MutationNodes,
+    removed: MutationNodes,
     previousSibling: NodeImpl | null,
     nextSibling: NodeImpl | null,
   ) {
@@ -38,8 +45,8 @@ export class MutationRecord {
     this.#name = name;
     this.#namespace = namespace;
     this.#oldValue = oldValue;
-    this.#added = added ?? NONE;
-    this.#removed = removed ?? NONE;
+    this.#added = added;
+    this.#removed = removed;
     this.#previousSibling = previousSibling;
     this.#nextSibling = nextSibling;
   }
@@ -53,12 +60,12 @@ export class MutationRecord {
   }
 
   get addedNodes(): NodeList {
-    if (Array.isArray(this.#added)) this.#added = NodeList._staticFromImpls(this.#added);
+    if (!NodeList._isNodeList(this.#added)) this.#added = recordNodeList(this.#added);
     return this.#added;
   }
 
   get removedNodes(): NodeList {
-    if (Array.isArray(this.#removed)) this.#removed = NodeList._staticFromImpls(this.#removed);
+    if (!NodeList._isNodeList(this.#removed)) this.#removed = recordNodeList(this.#removed);
     return this.#removed;
   }
 

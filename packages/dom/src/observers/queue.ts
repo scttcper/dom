@@ -11,7 +11,7 @@ import { F_MO_REGISTERED } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { reportException } from "../events/report.ts";
 import { Event } from "../events/Event.ts";
-import { MutationRecord } from "./MutationRecord.ts";
+import { MutationRecord, type MutationNodes } from "./MutationRecord.ts";
 import type { MutationObserver, MutationObserverInit } from "./MutationObserver.ts";
 import { $callback, $transients, $id, $nodes, $records } from "../keys.ts";
 
@@ -148,8 +148,8 @@ function queueMutationRecord(
   name: string | null,
   namespace: string | null,
   oldValue: string | null,
-  added: NodeImpl[] | null,
-  removed: NodeImpl[] | null,
+  added: MutationNodes,
+  removed: MutationNodes,
   previousSibling: NodeImpl | null,
   nextSibling: NodeImpl | null,
 ): void {
@@ -227,8 +227,8 @@ function queueMutationRecord(
 
 export function queueTreeMutationRecord(
   target: NodeImpl,
-  added: NodeImpl[],
-  removed: NodeImpl[],
+  added: MutationNodes,
+  removed: MutationNodes,
   previousSibling: NodeImpl | null,
   nextSibling: NodeImpl | null,
 ): void {

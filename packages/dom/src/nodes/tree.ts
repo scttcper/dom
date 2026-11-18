@@ -307,6 +307,13 @@ function resumeChildList(n: NodeImpl, bit: number): void {
   }
 }
 
+function snapshotChildren(parent: NodeImpl): NodeImpl[] {
+  const nodes = new Array<NodeImpl>(parent.childCount);
+  let i = 0;
+  for (let c = parent.first; c !== null; c = c.next) nodes[i++] = c;
+  return nodes;
+}
+
 /** https://dom.spec.whatwg.org/#concept-node-insert */
 export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null, suppressObservers: boolean): void {
   const isFragment = node.type === DOCUMENT_FRAGMENT_NODE;
@@ -316,16 +323,13 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
 
   let nodes: NodeImpl[] | null = null;
   if (isFragment) {
-    // Exact size (`count` children): `push` onto `[]` would allocate 17 slots for `append(a, b)`.
-    nodes = new Array(count);
-    let i = 0;
-    for (let c = node.first; c !== null; c = c.next) nodes[i++] = c;
+    nodes = snapshotChildren(node);
     // Step 4.1: remove the fragment's children with the suppress observers flag set.
     const fragBit = suspendChildList(node);
     for (let i = 0; i < nodes.length; i++) remove(nodes[i], true);
     resumeChildList(node, fragBit);
     // Step 4.2: queue a tree mutation record for the fragment.
-    if (activeObservers !== 0) queueTreeMutationRecord(node, [], nodes, null, null);
+    if (activeObservers !== 0) queueTreeMutationRecord(node, null, nodes, null, null);
   }
 
   // Step 2: live range boundary points after the insertion point move right by count.
@@ -350,7 +354,7 @@ export function insert(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null,
 
   // Step 8: queue a tree mutation record for parent.
   if (!suppressObservers && activeObservers !== 0) {
-    queueTreeMutationRecord(parent, nodes === null ? [node] : nodes, [], previousSibling, child);
+    queueTreeMutationRecord(parent, nodes ?? node, null, previousSibling, child);
   }
   // Step 9: children changed steps.
   childrenChanged(parent);
@@ -468,7 +472,7 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
     // Step 16: transient registered observers.
     addTransientObservers(parent, node);
     // Step 17.
-    if (!suppressObservers) queueTreeMutationRecord(parent, [], [node], oldPrevious, oldNext);
+    if (!suppressObservers) queueTreeMutationRecord(parent, null, node, oldPrevious, oldNext);
   }
   // Step 18.
   childrenChanged(parent);
@@ -555,8 +559,8 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
   if ((node.flags & F_PAST_NAMES) !== 0) checkNamesInSubtree(node);
   // Steps 25-26.
   if (activeObservers !== 0) {
-    queueTreeMutationRecord(oldParent, [], [node], oldPreviousSibling, oldNextSibling);
-    queueTreeMutationRecord(newParent, [node], [], newPreviousSibling, child);
+    queueTreeMutationRecord(oldParent, null, node, oldPreviousSibling, oldNextSibling);
+    queueTreeMutationRecord(newParent, node, null, newPreviousSibling, child);
   }
   // This implementation's state that depends on child lists (<option>, <style>, <title>, ...).
   childrenChanged(oldParent);
@@ -598,18 +602,12 @@ export function replace(child: NodeImpl, node: NodeImpl, parent: NodeImpl): Node
   // Step 11: adopt node (removing it from its old parent, with a mutation record).
   if (node.parent !== null || node.doc !== parent.doc) adopt(node, parent.doc);
   // Steps 12-13.
-  let removed: NodeImpl[] = [];
+  let removed: NodeImpl | null = null;
   if (child.parent !== null) {
-    removed = [child];
+    removed = child;
     remove(child, true);
   }
-  let added: NodeImpl[];
-  if (node.type === DOCUMENT_FRAGMENT_NODE) {
-    added = [];
-    for (let c = node.first; c !== null; c = c.next) added.push(c);
-  } else {
-    added = [node];
-  }
+  const added = node.type === DOCUMENT_FRAGMENT_NODE ? snapshotChildren(node) : node;
   insert(node, parent, reference, true);
   if (activeObservers !== 0) queueTreeMutationRecord(parent, added, removed, previousSibling, reference);
   return child;
@@ -623,23 +621,13 @@ export function replaceAll(node: NodeImpl | null, parent: NodeImpl): void {
     if (node !== null) insert(node, parent, null, false);
     return;
   }
-  const removed: NodeImpl[] = [];
-  for (let c: NodeImpl | null = first; c !== null; c = c.next) removed.push(c);
-  let added: NodeImpl[] = [];
-  if (node !== null) {
-    if (node.type === DOCUMENT_FRAGMENT_NODE) {
-      for (let c = node.first; c !== null; c = c.next) added.push(c);
-    } else {
-      added = [node];
-    }
-  }
+  const removed = snapshotChildren(parent);
+  const added = node?.type === DOCUMENT_FRAGMENT_NODE ? snapshotChildren(node) : node;
   const bit = suspendChildList(parent);
   for (let i = 0; i < removed.length; i++) remove(removed[i], true);
   if (node !== null) insert(node, parent, null, true);
   resumeChildList(parent, bit);
-  if (activeObservers !== 0 && (added.length !== 0 || removed.length !== 0)) {
-    queueTreeMutationRecord(parent, added, removed, null, null);
-  }
+  if (activeObservers !== 0) queueTreeMutationRecord(parent, added, removed, null, null);
 }
 
 /** https://dom.spec.whatwg.org/#concept-node-adopt */

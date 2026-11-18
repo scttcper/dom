@@ -86,6 +86,11 @@ export class NodeList {
     return list;
   }
 
+  /** @internal Brand check for lazily materialized mutation records. */
+  static _isNodeList(value: object | null): value is NodeList {
+    return value !== null && #length in value;
+  }
+
   /** @internal A static NodeList over NodeImpls (avoids an intermediate wrapper array). */
   static _staticFromImpls(items: readonly NodeImpl[]): NodeList {
     const list = new NodeList(null);

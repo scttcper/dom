@@ -163,6 +163,25 @@ describe("MutationObserver methods — https://dom.spec.whatwg.org/#interface-mu
 });
 
 describe("MutationRecord — https://dom.spec.whatwg.org/#interface-mutationrecord", () => {
+  test("each record keeps the same addedNodes and removedNodes objects after first access", () => {
+    const parent = document.createElement("div");
+    const child = document.createElement("span");
+    const mo = new MutationObserver(() => {});
+    mo.observe(parent, { childList: true });
+    parent.append(child);
+    child.remove();
+    const [addition, removal] = mo.takeRecords();
+    const added = addition.addedNodes;
+    const removed = addition.removedNodes;
+    expect(added[0]).toBe(child);
+    expect(removed).not.toBe(removal.addedNodes);
+    Object.setPrototypeOf(added, null);
+    Object.setPrototypeOf(removed, null);
+    expect(addition.addedNodes).toBe(added);
+    expect(addition.removedNodes).toBe(removed);
+    mo.disconnect();
+  });
+
   differential(
     "childList records carry static NodeLists and the siblings around the change; other fields are null",
     (w) => {
