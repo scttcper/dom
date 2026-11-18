@@ -19,7 +19,7 @@
 //   those values are only observable from listeners and after dispatch, so `invoke` runs (and
 //   writes them) only for items with a matching chain or a possible legacy alias. Final values are applied
 //   once at the end from the last struct the bubbling pass would have visited.
-// - An event type nobody has ever listened for (`typeIdOf` is -1) has no listener to run on any
+// - A platform event type nobody has ever listened for (`typeIdOf` is -1) has no listener to run on any
 //   item: both passes are skipped (activation behavior and legacy webkit* types still apply).
 // - Root tracking: computing "the root of X" for every path entry would be O(depth²). Walking
 //   up through plain parent links keeps the same root, so it is recomputed only when the
@@ -72,6 +72,7 @@ import {
   removeListener,
   typeIdOf,
   type Listener,
+  type ListenerType,
 } from "./listeners.ts";
 import { noteChangeDispatch } from "../html/forms/user-validity.ts";
 import { $globalObject, $host, $impl, $listeners } from "../keys.ts";
@@ -121,7 +122,7 @@ export function setAssignedSlotLookup(fn: ((impl: NodeImpl) => EventTarget | nul
 /** Listener chains seen during capture, indexed by path offset. Cleared when dispatch returns. */
 const HEADS: (Listener | undefined)[] = [];
 
-function listenerHead(target: EventTarget, id: number): Listener | undefined {
+function listenerHead(target: EventTarget, id: ListenerType): Listener | undefined {
   const slots = target[$listeners];
   return slots == null ? undefined : firstListener(slots, id);
 }

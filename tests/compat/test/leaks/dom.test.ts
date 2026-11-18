@@ -579,6 +579,26 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
 });
 
 describe("heap slope", () => {
+  test("short-lived custom event subscriptions release their generated type names", async () => {
+    const w = createWindow();
+    const target = w.document.body!;
+    const listener = () => {};
+    const { bytesPerCycle } = await heapSlope(
+      (i) => {
+        const row = w.document.createElement("button");
+        for (let j = 0; j < 50; j++) {
+          const type = `validation:${i}:${j}`;
+          target.addEventListener(type, listener);
+          target.removeEventListener(type, listener);
+          row.addEventListener(type, listener);
+        }
+      },
+      { warmup: 60, samples: 6, every: 60 },
+    );
+    w.close();
+    expect(bytesPerCycle).toBeLessThan(512);
+  });
+
   test("ranges and NodeIterators created without mutations do not accumulate registry entries", async () => {
     const w = createWindow({ html: HTML });
     const d = w.document;

@@ -3,14 +3,9 @@
 // https://dom.spec.whatwg.org/#add-an-event-listener
 // https://dom.spec.whatwg.org/#remove-an-event-listener
 //
-// Layout: every event type gets a small integer id the first time anything listens for it
-// (`typeIds`, shared by the whole process). `EventTarget[$listeners]` is null until the first
-// addEventListener (the common case for almost every node) and then, once it listens for more
-// than a few types (ListenerSlots has the compact layout before that), a sparse array indexed by
-// type id, each slot the head of that type's listeners as a singly linked list in insertion
-// order. React's root container (142 listeners over 87 types via `listenToAllSupportedEvents`)
-// is then one array plus 142 listeners: no per-target hash table, no per-type list objects, and
-// dispatch resolves the type's id once per event instead of hashing it at every path entry.
+// Platform event names use small integer IDs so React's delegated listeners fit in an indexed
+// array on each root. Custom names belong to their target and disappear on removal or collection.
+// Each slot holds a linked list of callbacks in registration order.
 //
 // Removal during dispatch: the spec clones the listener list before invoking it and skips
 // listeners whose `removed` flag (LISTENER_REMOVED) is set. Instead of cloning, each listener
@@ -20,6 +15,7 @@
 // Chains are in seq order (appends go to the tail and nothing is reinserted), so that walk sees
 // exactly the clone: listeners present when it started, minus those removed since.
 
+import { GLOBAL_EVENT_HANDLER_EVENTS, WINDOW_EVENT_HANDLER_EVENTS } from "./handler-names.ts";
 import { addAbortListener } from "node:events";
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
@@ -54,9 +50,9 @@ export class Listener {
   /** The next listener of the same type on the same target, in insertion order. */
   next: Listener | null;
   seq: number;
-  id: number;
+  id: ListenerType;
 
-  constructor(id: number, callback: EventListenerOrEventListenerObject, flags: number) {
+  constructor(id: ListenerType, callback: EventListenerOrEventListenerObject, flags: number) {
     this.callback = callback;
     this.flags = flags;
     this.next = null;
@@ -72,7 +68,7 @@ class SignalListener extends Listener {
   ref: AbortRef;
 
   constructor(
-    id: number,
+    id: ListenerType,
     callback: EventListenerOrEventListenerObject,
     flags: number,
     target: EventTarget,
@@ -153,42 +149,76 @@ export function listenerAborted(listener: Listener): boolean {
  * type's listener chain directly. Two to four types use an array of chain heads. From
  * the fifth type on, a sparse array indexed by type ID serves large targets like React roots.
  */
-type SlotArray = (Listener | undefined)[];
+export type ListenerType = number | string;
+type SlotArray = (Listener | undefined)[] & { custom?: Map<string, Listener> };
 export type ListenerSlots = Listener | SlotArray;
 
 const COMPACT_TYPES = 4;
 
+// Only names supplied by the platform get process-wide slots. Assign IDs on first use so
+// React's root types stay packed regardless of which other events the platform supports.
 const typeIds = new Map<string, number>();
+for (const name of [
+  ...GLOBAL_EVENT_HANDLER_EVENTS,
+  ...WINDOW_EVENT_HANDLER_EVENTS,
+  "compositionend",
+  "compositionstart",
+  "compositionupdate",
+  "dragexit",
+  "encrypted",
+  "focusin",
+  "focusout",
+  "fullscreenchange",
+  "fullscreenerror",
+  "readystatechange",
+  "textInput",
+  "visibilitychange",
+  "webkitAnimationEnd",
+  "webkitAnimationIteration",
+  "webkitAnimationStart",
+  "webkitTransitionEnd",
+])
+  typeIds.set(name, -1);
+let nextTypeId = 0;
 
-export function idForType(type: string): number {
-  let id = typeIds.get(type);
-  if (id === undefined) {
-    id = typeIds.size;
-    typeIds.set(type, id);
-  }
-  return id;
+export function idForType(type: string): ListenerType {
+  const id = typeIds.get(type);
+  if (id !== -1) return id ?? type;
+  typeIds.set(type, nextTypeId);
+  return nextTypeId++;
 }
 
-/** `type`'s id, or -1 when nothing has ever listened for it (so no target has a listener). */
-export function typeIdOf(type: string): number {
-  const id = typeIds.get(type);
-  return id === undefined ? -1 : id;
+/** A platform ID (-1 before the first subscription), or the original custom event name. */
+export function typeIdOf(type: string): ListenerType {
+  return typeIds.get(type) ?? type;
 }
 
 /** The first listener for type id `id` (-1 included) on a target whose slots are `slots`. */
-export function firstListener(slots: ListenerSlots, id: number): Listener | undefined {
+export function firstListener(slots: ListenerSlots, id: ListenerType): Listener | undefined {
   if (!Array.isArray(slots)) return slots.id === id ? slots : undefined;
   const length = slots.length;
   if (length <= COMPACT_TYPES) {
     for (let i = 0; i < length; i++) if (slots[i]!.id === id) return slots[i];
     return undefined;
   }
+  if (typeof id === "string") return slots.custom?.get(id);
   // `>>> 0` sends -1 out of range instead of reading the property "-1".
   return id >>> 0 < length ? slots[id] : undefined;
 }
 
+function setIndexedHead(slots: SlotArray, id: ListenerType, head: Listener | undefined): void {
+  if (typeof id === "number") slots[id] = head;
+  else if (head !== undefined) (slots.custom ??= new Map()).set(id, head);
+  else if (slots.custom?.delete(id) && slots.custom.size === 0) slots.custom = undefined;
+}
+
 /** Replace a chain head on removal, or add the first listener for a new type. */
-function setFirstListener(target: EventTarget, slots: ListenerSlots, id: number, head: Listener | undefined): void {
+function setFirstListener(
+  target: EventTarget,
+  slots: ListenerSlots,
+  id: ListenerType,
+  head: Listener | undefined,
+): void {
   if (!Array.isArray(slots)) {
     if (slots.id === id) target[$listeners] = head;
     else if (head !== undefined) target[$listeners] = [slots, head];
@@ -196,7 +226,7 @@ function setFirstListener(target: EventTarget, slots: ListenerSlots, id: number,
   }
   const length = slots.length;
   if (length > COMPACT_TYPES) {
-    slots[id] = head;
+    setIndexedHead(slots, id, head);
     return;
   }
   for (let i = 0; i < length; i++) {
@@ -214,10 +244,10 @@ function setFirstListener(target: EventTarget, slots: ListenerSlots, id: number,
     next[length] = head;
     target[$listeners] = next;
   } else {
-    // Five distinct IDs guarantee the indexed array is longer than any compact list.
-    const indexed: SlotArray = [];
-    for (const listener of slots) indexed[listener!.id] = listener;
-    indexed[id] = head;
+    // Length distinguishes layouts even when all five types are custom.
+    const indexed: SlotArray = new Array(COMPACT_TYPES + 1);
+    for (const listener of slots) setIndexedHead(indexed, listener!.id, listener);
+    setIndexedHead(indexed, id, head);
     target[$listeners] = indexed;
   }
 }
@@ -226,6 +256,7 @@ function setFirstListener(target: EventTarget, slots: ListenerSlots, id: number,
 function eachHead(slots: ListenerSlots, visit: (head: Listener) => void): void {
   if (!Array.isArray(slots)) return visit(slots);
   for (const head of slots) if (head !== undefined) visit(head);
+  slots.custom?.forEach(visit);
 }
 
 /** https://dom.spec.whatwg.org/#concept-flatten-options */
@@ -389,7 +420,7 @@ export function removeListener(target: EventTarget, listener: Listener): void {
 function unlink(
   target: EventTarget,
   slots: ListenerSlots,
-  id: number,
+  id: ListenerType,
   prev: Listener | null,
   listener: Listener,
 ): void {

@@ -769,6 +769,19 @@ describe("listener storage: compact for a few event types, indexed by type after
     expect(calls).toEqual(TYPES.flatMap((type) => [`${type} 1`, `${type} 2`]));
   });
 
+  test("platform events and arbitrary custom names remain distinct on the same target", () => {
+    const et = new EventTarget();
+    const names = ["click", "change", "0", "length", "__proto__", "constructor", "keydown"];
+    const seen: string[] = [];
+    const listener = (event: Event) => seen.push(event.type);
+    for (const name of names) et.addEventListener(name, listener);
+    for (const name of names) et.dispatchEvent(new Event(name));
+    expect(seen).toEqual(names);
+    for (const name of names) et.removeEventListener(name, listener);
+    for (const name of names) et.dispatchEvent(new Event(name));
+    expect(seen).toEqual(names);
+  });
+
   test("remove-an-event-listener in the compact layout: the last listener of a type leaves, the type can be listened for again, and the others are untouched", () => {
     const et = new EventTarget();
     const calls: string[] = [];
