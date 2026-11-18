@@ -21,7 +21,7 @@ import {
   requiredApplies,
 } from "./input-type.ts";
 import { V_RANGE_OVERFLOW, V_RANGE_UNDERFLOW, type Validatable } from "./validation.ts";
-import { defaultButton } from "./form-submission.ts";
+import { defaultButton, isSubmitButton } from "./form-submission.ts";
 import { hasUserValidity } from "./user-validity.ts";
 import { isFACE, validatableOf } from "./face.ts";
 import type { HTMLInputElement } from "./HTMLInputElement.ts";
@@ -223,6 +223,7 @@ export function isDefault(el: NodeImpl): boolean {
 }
 
 function isDefaultButton(el: NodeImpl): boolean {
+  if (!isSubmitButton(el)) return false;
   const node = el.node as unknown as { form: { [$impl]: NodeImpl } | null };
   const form = node.form;
   return form !== null && defaultButton(form[$impl]) === el;

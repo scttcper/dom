@@ -11,6 +11,7 @@ import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { F_CONNECTED } from "../../nodes/constants.ts";
 import { T } from "../../nodes/tags.ts";
+import { nextElementInTree } from "../../nodes/traverse.ts";
 import { asciiLowercase, attr } from "../../nodes/attributes.ts";
 import { Event } from "../../events/Event.ts";
 import { SubmitEvent } from "../../events/events.ts";
@@ -18,6 +19,8 @@ import type { EnumSpec } from "../reflect.ts";
 import { dispatchTrusted, fireEvent } from "./common.ts";
 import {
   formControls,
+  formOwner,
+  formOwnerScope,
   hasDatalistAncestor,
   isActuallyDisabled,
   isResettable,
@@ -106,8 +109,10 @@ export function buttonType(el: NodeImpl): "submit" | "reset" | "button" {
 
 /** https://html.spec.whatwg.org/#default-button — first submit button in tree order whose form owner is form. */
 export function defaultButton(form: NodeImpl): NodeImpl | null {
-  const controls = formControls(form, [], true);
-  for (let i = 0; i < controls.length; i++) if (isSubmitButton(controls[i])) return controls[i];
+  const root = formOwnerScope(form, true);
+  for (let n: NodeImpl | null = root; n !== null; n = nextElementInTree(n, root)) {
+    if (isSubmitButton(n) && formOwner(n) === form) return n;
+  }
   return null;
 }
 

@@ -113,6 +113,23 @@ describe("textarea wrapping transformation — https://html.spec.whatwg.org/#tex
 });
 
 describe("implicit submission — https://html.spec.whatwg.org/#field-that-blocks-implicit-submission", () => {
+  test("an external image submitter wins in tree order and follows form ownership changes", () => {
+    doc.body.innerHTML = `<input id=image type=image form=f><form id=f><button id=button>Save</button></form><form id=g></form>`;
+    const image = $("image");
+    const button = $("button");
+    const clicked: string[] = [];
+    doc.body.addEventListener("click", (e: any) => {
+      e.preventDefault();
+      clicked.push(e.target.id);
+    });
+    expect([image.matches(":default"), button.matches(":default")]).toEqual([true, false]);
+    implicitSubmission($("f")[$impl]);
+    image.setAttribute("form", "g");
+    expect([image.matches(":default"), button.matches(":default")]).toEqual([true, true]);
+    implicitSubmission($("f")[$impl]);
+    expect(clicked).toEqual(["image", "button"]);
+  });
+
   test("with no default button, one blocking field submits and two block it; non-blocking types do not count", () => {
     doc.body.innerHTML = `<form id=one><input><input type=checkbox><input type=range></form><form id=two><input><input type=email></form>`;
     const log: string[] = [];
