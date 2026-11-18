@@ -24,7 +24,6 @@ import {
   addToTopLayer,
   type CloseWatcher,
   destroyCloseWatcher,
-  dialogPointerdownTarget,
   establishCloseWatcher,
   flatParent,
   getPreviouslyFocused,
@@ -32,6 +31,7 @@ import {
   isFullyActive,
   isInTopLayer,
   isPopoverShowing,
+  matchesLightDismissTarget,
   matchesModal,
   openDialogsList,
   removeFromTopLayer,
@@ -39,6 +39,7 @@ import {
   setModal,
   setPreviouslyFocused,
   setTopLayerDialogHooks,
+  type TopLayerState,
   topmostPopoverAncestor,
 } from "./top-layer.ts";
 import { setDialogCommandSteps } from "./invokers.ts";
@@ -556,20 +557,13 @@ function nearestClickedDialog(target: NodeImpl): NodeImpl | null {
 }
 
 /** https://html.spec.whatwg.org/#light-dismiss-open-dialogs */
-function lightDismissOpenDialogs(doc: Document, target: NodeImpl, type: string): void {
+function lightDismissOpenDialogs(s: TopLayerState, target: NodeImpl, type: string): void {
   // 3.
-  const list = openDialogsList(doc);
+  const list = s.openDialogs;
   if (list.length === 0) return;
-  // 4-5.
+  // 4-6.
   const ancestor = nearestClickedDialog(target);
-  if (type === "pointerdown") {
-    dialogPointerdownTarget(doc, ancestor);
-    return;
-  }
-  // 6.
-  const sameTarget = ancestor === dialogPointerdownTarget(doc);
-  dialogPointerdownTarget(doc, null);
-  if (!sameTarget) return;
+  if (!matchesLightDismissTarget(s, "dialogPointerdownTarget", type, ancestor)) return;
   const topmostDialog = list[list.length - 1];
   if (ancestor === topmostDialog) return;
   if (computedClosedBy(topmostDialog) !== "any") return;

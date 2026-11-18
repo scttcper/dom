@@ -40,7 +40,7 @@ export interface CloseWatcher {
   doc: Document;
 }
 
-interface TopLayerState {
+export interface TopLayerState {
   /** https://html.spec.whatwg.org/#top-layer — bottom to top. */
   layer: NodeImpl[];
   /** Open dialogs whose `is modal` flag is set, in the order they were shown. */
@@ -53,9 +53,9 @@ interface TopLayerState {
    */
   watchers: CloseWatcher[];
   /** https://html.spec.whatwg.org/#popover-pointerdown-target */
-  popoverPointerdownTarget: NodeImpl | null;
+  popoverPointerdownTarget: WeakRef<NodeImpl> | null;
   /** https://html.spec.whatwg.org/#dialog-pointerdown-target */
-  dialogPointerdownTarget: NodeImpl | null;
+  dialogPointerdownTarget: WeakRef<NodeImpl> | null;
   /** https://html.spec.whatwg.org/#hint-stack-parent */
   hintStackParent: NodeImpl | null;
   /** https://html.spec.whatwg.org/#document-showing-popover */
@@ -125,15 +125,15 @@ export function isInTopLayer(el: NodeImpl): boolean {
 // --- previously focused element (shared by dialogs and popovers) ----------------------------
 
 /** https://html.spec.whatwg.org/#previously-focused-element */
-const previouslyFocused = new WeakMap<NodeImpl, NodeImpl>();
+const previouslyFocused = new WeakMap<NodeImpl, WeakRef<NodeImpl>>();
 
 export function getPreviouslyFocused(el: NodeImpl): NodeImpl | null {
-  return previouslyFocused.get(el) ?? null;
+  return previouslyFocused.get(el)?.deref() ?? null;
 }
 
 export function setPreviouslyFocused(el: NodeImpl, focused: NodeImpl | null): void {
   if (focused === null) previouslyFocused.delete(el);
-  else previouslyFocused.set(el, focused);
+  else previouslyFocused.set(el, new WeakRef(focused));
 }
 
 // --- modal dialogs ------------------------------------------------------------------------
@@ -337,8 +337,6 @@ interface ToggleTracker {
 interface PopoverRecord {
   /** https://html.spec.whatwg.org/#popover-visibility-state (true = showing). */
   showing: boolean;
-  /** https://html.spec.whatwg.org/#popover-trigger */
-  trigger: NodeImpl | null;
   /** https://html.spec.whatwg.org/#popover-hiding */
   hiding: boolean;
   /** https://html.spec.whatwg.org/#opened-in-popover-mode (P_AUTO / P_HINT / P_NONE). */
@@ -354,7 +352,7 @@ const popovers = new WeakMap<NodeImpl, PopoverRecord>();
 function record(el: NodeImpl): PopoverRecord {
   let r = popovers.get(el);
   if (r === undefined) {
-    r = { showing: false, trigger: null, hiding: false, openedMode: P_NONE, toggleTracker: null, closeWatcher: null };
+    r = { showing: false, hiding: false, openedMode: P_NONE, toggleTracker: null, closeWatcher: null };
     popovers.set(el, r);
   }
   return r;
@@ -630,7 +628,6 @@ export function showPopover(el: NodeImpl, throwExceptions: boolean, source: Node
     s.hintStackParent = ancestor;
   // 20-22.
   r.showing = true;
-  r.trigger = source;
   // 23.
   popoverFocusingSteps(el);
   // 24.
@@ -693,7 +690,6 @@ export function hidePopover(
     // 12.4 / 13. Request removal from the top layer (no overlay transitions: immediately).
     removeFromTopLayer(el);
     // 14-17.
-    r.trigger = null;
     r.openedMode = P_NONE;
     r.showing = false;
     if (el === s.hintStackParent || showingPopoverList(doc, P_HINT).length === 0) s.hintStackParent = null;
@@ -738,7 +734,7 @@ function popoverFocusingSteps(el: NodeImpl): void {
 let focusHook: ((el: NodeImpl) => void) | null = null;
 let autofocusDelegateHook: ((el: NodeImpl) => NodeImpl | null) | null = null;
 let dialogFocusingHook: ((el: NodeImpl) => void) | null = null;
-let dialogLightDismissHook: ((doc: Document, target: NodeImpl, type: string) => void) | null = null;
+let dialogLightDismissHook: ((s: TopLayerState, target: NodeImpl, type: string) => void) | null = null;
 
 export function setTopLayerFocusHooks(
   focus: (el: NodeImpl) => void,
@@ -750,7 +746,7 @@ export function setTopLayerFocusHooks(
 
 export function setTopLayerDialogHooks(
   focusing: (el: NodeImpl) => void,
-  lightDismiss: (doc: Document, target: NodeImpl, type: string) => void,
+  lightDismiss: (s: TopLayerState, target: NodeImpl, type: string) => void,
 ): void {
   dialogFocusingHook = focusing;
   dialogLightDismissHook = lightDismiss;
@@ -769,7 +765,6 @@ export function topLayerRemovingSteps(el: NodeImpl): void {
 function forceHidden(el: NodeImpl): void {
   const r = record(el);
   r.showing = false;
-  r.trigger = null;
   r.openedMode = P_NONE;
   if (r.closeWatcher !== null) {
     destroyCloseWatcher(r.closeWatcher);
@@ -849,17 +844,10 @@ function topmostClickedPopover(node: NodeImpl): NodeImpl | null {
 function lightDismissOpenPopovers(doc: Document, s: TopLayerState, target: NodeImpl, type: string): void {
   // 4.
   if (topmostAutoOrHintPopover(doc) === null) return;
-  // 5.
-  if (type === "pointerdown") {
-    s.popoverPointerdownTarget = topmostClickedPopover(target);
-    return;
-  }
-  // 6.
+  // 5-6.
   const ancestor = topmostClickedPopover(target);
-  const sameTarget = ancestor === s.popoverPointerdownTarget;
-  s.popoverPointerdownTarget = null;
-  if (!sameTarget) return;
-  hidePopoversUntil(doc, ancestor, false, true);
+  if (matchesLightDismissTarget(s, "popoverPointerdownTarget", type, ancestor))
+    hidePopoversUntil(doc, ancestor, false, true);
 }
 
 /**
@@ -887,12 +875,22 @@ function postDispatch(event: Event, target: unknown): void {
   // document any more.
   if ((impl.flags & F_CONNECTED) === 0) return;
   lightDismissOpenPopovers(doc, s, impl, type);
-  dialogLightDismissHook?.(doc, impl, type);
+  dialogLightDismissHook?.(s, impl, type);
 }
 
-/** https://html.spec.whatwg.org/#dialog-pointerdown-target accessor for interactive.ts. */
-export function dialogPointerdownTarget(doc: Document, value?: NodeImpl | null): NodeImpl | null {
-  const s = state(doc);
-  if (value !== undefined) s.dialogPointerdownTarget = value;
-  return s.dialogPointerdownTarget;
+/** Compare the endpoints of a light-dismiss gesture without retaining a removed overlay. */
+export function matchesLightDismissTarget(
+  s: TopLayerState,
+  key: "dialogPointerdownTarget" | "popoverPointerdownTarget",
+  type: string,
+  ancestor: NodeImpl | null,
+): boolean {
+  if (type === "pointerdown") {
+    s[key] = ancestor === null ? null : new WeakRef(ancestor);
+    return false;
+  }
+  const pressed = s[key];
+  s[key] = null;
+  // A collected overlay differs from a press outside every overlay (null).
+  return pressed === null ? ancestor === null : pressed.deref() === ancestor;
 }

@@ -19,6 +19,7 @@ import {
   NodeList,
   type CustomElementRegistry,
   type Element,
+  type HTMLDialogElement,
   type HTMLFormElement,
   type HTMLInputElement,
   type ShadowRoot,
@@ -193,6 +194,70 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test.each(["dialog", "popover"] as const)(
+    "a removed %s releases its pressed subtree before pointerup",
+    async (kind) => {
+      const w = createWindow();
+      const body = w.document.body!;
+      const tracker = new Tracker();
+      function open() {
+        if (kind === "dialog") {
+          const dialog = body.appendChild(w.document.createElement("dialog")) as HTMLDialogElement;
+          dialog.closedBy = "any";
+          dialog.show();
+          return dialog;
+        }
+        const popover = body.appendChild(w.document.createElement("div")) as HTMLElement;
+        popover.setAttribute("popover", "auto");
+        popover.showPopover();
+        return popover;
+      }
+      (() => {
+        const overlay = tracker.track(kind, open());
+        const child = overlay.appendChild(tracker.track("pressed button", w.document.createElement("button")));
+        child.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+        overlay.remove();
+      })();
+      const next = open();
+      expect(await tracker.alive()).toEqual({});
+      const isOpen = () => (kind === "dialog" ? next.hasAttribute("open") : next.matches(":popover-open"));
+      body.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+      expect(isOpen()).toBe(true);
+      body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+      body.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+      expect(isOpen()).toBe(false);
+      w.close();
+    },
+  );
+
+  test("open overlays release discarded invokers and focus restoration targets", async () => {
+    const w = createWindow();
+    const body = w.document.body!;
+    const tracker = new Tracker();
+    const dialog = body.appendChild(w.document.createElement("dialog")) as HTMLDialogElement;
+    const popover = body.appendChild(w.document.createElement("div")) as HTMLElement;
+    popover.setAttribute("popover", "manual");
+    (() => {
+      const opener = tracker.track(
+        "previously focused",
+        body.appendChild(w.document.createElement("button")) as HTMLElement & { focus(): void },
+      );
+      opener.focus();
+      dialog.show();
+      opener.remove();
+      const source = tracker.track(
+        "popover source",
+        body.appendChild(w.document.createElement("button")) as HTMLElement,
+      );
+      popover.showPopover({ source });
+      source.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    dialog.close();
+    popover.hidePopover();
+    w.close();
+  });
+
   test("mounted controls release removed ARIA targets after their reflected arrays were read", async () => {
     const w = createWindow();
     const d = w.document;
