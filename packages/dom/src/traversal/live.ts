@@ -222,7 +222,7 @@ export function rangesReplaceData(node: NodeImpl, offset: number, count: number,
 
 /** https://dom.spec.whatwg.org/#concept-text-split steps 7.2-7.5 */
 export function rangesSplitText(node: NodeImpl, newNode: NodeImpl, offset: number, parent: NodeImpl): void {
-  const index = indexOf(node);
+  let afterNode: number | undefined;
   updateLiveRanges(node, (r) => {
     if (r[$sc] === node && r[$so] > offset) {
       r[$sc] = newNode;
@@ -234,33 +234,35 @@ export function rangesSplitText(node: NodeImpl, newNode: NodeImpl, offset: numbe
       r[$eo] -= offset;
       markBoundary(newNode);
     }
-    if (r[$sc] === parent && r[$so] === index + 1) r[$so]++;
-    if (r[$ec] === parent && r[$eo] === index + 1) r[$eo]++;
+    if (r[$sc] === parent || r[$ec] === parent) {
+      afterNode ??= indexOf(node) + 1;
+      if (r[$sc] === parent && r[$so] === afterNode) r[$so]++;
+      if (r[$ec] === parent && r[$eo] === afterNode) r[$eo]++;
+    }
   });
 }
 
 /** https://dom.spec.whatwg.org/#dom-node-normalize steps 6.4.1-6.4.4 for one merged sibling. */
 export function rangesNormalizeMerge(node: NodeImpl, current: NodeImpl, length: number): void {
   const parent = current.parent;
-  const index = indexOf(current);
+  let index: number | undefined;
   updateLiveRanges(node, (r) => {
-    markBoundary(node);
+    if (r[$sc] === parent || r[$ec] === parent) index ??= indexOf(current);
     if (r[$sc] === current) {
       r[$so] += length;
       r[$sc] = node;
+    } else if (r[$sc] === parent && r[$so] === index) {
+      r[$sc] = node;
+      r[$so] = length;
     }
     if (r[$ec] === current) {
       r[$eo] += length;
       r[$ec] = node;
-    }
-    if (r[$sc] === parent && r[$so] === index) {
-      r[$sc] = node;
-      r[$so] = length;
-    }
-    if (r[$ec] === parent && r[$eo] === index) {
+    } else if (r[$ec] === parent && r[$eo] === index) {
       r[$ec] = node;
       r[$eo] = length;
     }
+    if (r[$sc] === node || r[$ec] === node) markBoundary(node);
   });
 }
 
