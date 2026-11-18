@@ -167,16 +167,26 @@ export function formOwnerScope(form: NodeImpl, listed: boolean): NodeImpl {
     : treeRoot(form);
 }
 
+/** The listed-control scan also covers every possible legacy named image. */
+export interface FormControlsSnapshot extends Array<NodeImpl> {
+  hasImage?: true;
+}
+
 /** All listed elements (excluding image buttons) whose form owner is `form`, in tree order: form.elements. */
-export function formControls(form: NodeImpl, out: NodeImpl[], includeImages: boolean): NodeImpl[] {
+export function formControls(
+  form: NodeImpl,
+  out: FormControlsSnapshot,
+  includeImageButtons: boolean,
+): FormControlsSnapshot {
   const root = formOwnerScope(form, true);
   for (
     let n = root.type === ELEMENT_NODE ? root : nextElementInTree(root, root);
     n !== null;
     n = nextElementInTree(n, root)
   ) {
+    if (n.tag === T.img && !includeImageButtons) out.hasImage = true;
     if (!isListed(n)) continue;
-    if (!includeImages && n.tag === T.input && inputType(n) === I_IMAGE) continue;
+    if (!includeImageButtons && n.tag === T.input && inputType(n) === I_IMAGE) continue;
     if (formOwner(n) === form) out.push(n);
   }
   return out;

@@ -19,7 +19,7 @@ import { reportNotImplemented, stubbedMethod } from "../../window/not-implemente
 const SUBMIT_NOT_IMPLEMENTED = stubbedMethod("HTMLFormElement", "submit");
 import { rememberName, type PastName } from "./past-names.ts";
 import { reflectActionURL } from "./common.ts";
-import { formControls } from "./form-associated.ts";
+import { formControls, type FormControlsSnapshot } from "./form-associated.ts";
 import {
   createFormControlsCollection,
   namedControl,
@@ -78,7 +78,8 @@ export class HTMLFormElement extends HTMLElement {
   _namedProperty(name: string): unknown {
     if (name === "") return undefined;
     const form = this[$impl];
-    const match = namedControl(form, this._controls(), name) ?? namedImage(form, name);
+    const controls = this._controls();
+    const match = namedControl(form, controls, name) ?? (controls.hasImage ? namedImage(form, name) : null);
     if (match === null) return this[$pastNames]?.get(name)?.deref()?.node;
     if (match instanceof RadioNodeList) return match;
     rememberName(this, name, match);
@@ -86,7 +87,7 @@ export class HTMLFormElement extends HTMLElement {
   }
 
   /** @internal Listed controls whose form owner is this form (image buttons excluded), tree order. */
-  _controls(): NodeImpl[] {
+  _controls(): FormControlsSnapshot {
     const form = this[$impl];
     const doc = form.doc;
     const version = doc[$treeVersion] + doc[$formControlsVersion];

@@ -305,6 +305,19 @@ describe("form named properties — https://html.spec.whatwg.org/#the-form-eleme
     expect(f.renamed).toBe(input);
   });
 
+  test("an image added after a named lookup miss becomes visible by name", () => {
+    document.body!.innerHTML = "<form id=f><input name=field></form>";
+    const form = $("f");
+    expect(form.photo).toBeUndefined();
+    const img = document.createElement("img");
+    form.append(img);
+    expect(form.photo).toBeUndefined();
+    img.setAttribute("name", "photo");
+    expect(form.photo).toBe(img);
+    img.remove();
+    expect(form.photo).toBeUndefined();
+  });
+
   test("held named lists stay live and distinguish listed controls from legacy images", () => {
     document.body!.innerHTML = "<form id=f><img name=photo><img name=photo></form>";
     const f = $("f"),
