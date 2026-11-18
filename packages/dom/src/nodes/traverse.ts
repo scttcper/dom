@@ -107,6 +107,7 @@ export function isInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
 
 /** Index of `n` among its siblings. https://dom.spec.whatwg.org/#concept-tree-index */
 export function indexOf(n: NodeImpl): number {
+  if (n.next === null && n.parent !== null) return n.parent.childCount - 1;
   let i = 0;
   for (let c = n.prev; c !== null; c = c.prev) i++;
   return i;
