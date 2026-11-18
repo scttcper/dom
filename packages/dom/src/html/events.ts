@@ -69,9 +69,60 @@ export function fireSyntheticClick(target: EventTarget): boolean {
  * file's vm global): user-event's post-click wait on the virtual clock then resolved before a
  * <details> `toggle` fired. Documents without a browsing context use the current window.
  */
-export function queueElementTask(element: NodeImpl | EventTarget, fn: () => void): void {
+function elementTaskWindow(element: NodeImpl | EventTarget) {
   const impl = "doc" in element ? (element as NodeImpl) : (element as unknown as { [$impl]: NodeImpl })[$impl];
-  const window = impl.doc[$window] ?? currentWindowOrNull();
+  return impl.doc[$window] ?? currentWindowOrNull();
+}
+
+export function queueElementTask(element: NodeImpl | EventTarget, fn: () => void): void {
+  const window = elementTaskWindow(element);
   if (window !== null) window._task(fn, 0);
   else setTimeout(fn, 0);
+}
+
+type FireToggle = (oldState: string) => void;
+interface ToggleDelivery {
+  fire: FireToggle;
+  cancel?: () => void;
+}
+export interface ToggleTask {
+  oldState: string;
+  delivery: WeakRef<ToggleDelivery>;
+}
+
+/** Replace the pending task at the back of the queue, preserving the first old state.
+ * The timer owns its callback. A tracker on an adopted element must not keep the previous
+ * window, timer or invoker alive after that window closes. */
+export function queueToggleTask(
+  element: NodeImpl,
+  previous: ToggleTask | null | undefined,
+  oldState: string,
+  fire: FireToggle,
+): ToggleTask {
+  const pending = previous?.delivery.deref();
+  let delivery: ToggleDelivery;
+  let tracker: ToggleTask;
+  if (previous && pending?.cancel) {
+    pending.cancel();
+    pending.fire = fire;
+    delivery = pending;
+    tracker = previous;
+  } else {
+    delivery = { fire };
+    tracker = { oldState: previous?.oldState ?? oldState, delivery: new WeakRef(delivery) };
+  }
+  const run = () => {
+    delivery.cancel = undefined;
+    delivery.fire(tracker.oldState);
+  };
+  const window = elementTaskWindow(element);
+  if (window === null) {
+    const clear = clearTimeout;
+    const handle = setTimeout(run, 0);
+    delivery.cancel = () => clear(handle);
+  } else {
+    const task = window._task(run, 0);
+    delivery.cancel = task === null ? undefined : () => window._cancelTask(task);
+  }
+  return tracker;
 }

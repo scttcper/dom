@@ -39,7 +39,7 @@
  * jsdom implements none of these (no popovers, invokers or dialog methods), so they assert the
  * spec directly. Radix, React Aria and Headless UI menus, dialogs and disclosures sit on them.
  */
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWindow } from "@ctrl/dom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -424,6 +424,23 @@ describe("dialog IDL — https://html.spec.whatwg.org/#dom-dialog-close", () => 
 });
 
 describe("details — https://html.spec.whatwg.org/#the-details-element:concept-element-attributes-change-ext", () => {
+  test("replacing a toggle moves it behind intervening tasks and keeps only the final timer", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const el = doc.body.appendChild(doc.createElement("details"));
+      const events: string[] = [];
+      el.ontoggle = (e: any) => events.push(`${e.oldState}->${e.newState}`);
+      el.open = true;
+      setTimeout(() => events.push("timer"), 0);
+      el.open = false;
+      expect(vi.getTimerCount()).toBe(2);
+      vi.runAllTimers();
+      expect(events).toEqual(["timer", "closed->closed"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("opening one details of a name group closes the open one, with toggle events for both", async () => {
     doc.body.innerHTML = `<details id=a name=g open><summary>a</summary></details><details id=b name=g><summary>b</summary></details>`;
     await nextTask();

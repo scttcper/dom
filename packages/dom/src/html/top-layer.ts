@@ -23,7 +23,7 @@ import { T } from "../nodes/tags.ts";
 import { assignedSlotForEventPath } from "../nodes/slots.ts";
 import { setPostDispatchHook } from "../events/dispatch.ts";
 import { contentAttr } from "./reflect.ts";
-import { fireToggleEvent, queueElementTask } from "./events.ts";
+import { fireToggleEvent, queueToggleTask, type ToggleTask } from "./events.ts";
 import { targetPopover } from "./invokers.ts";
 import { $focused, $host, $impl, $styleVersion, $window } from "../keys.ts";
 
@@ -328,11 +328,6 @@ function popoverKeyword(v: string): number {
   return P_MANUAL;
 }
 
-interface ToggleTracker {
-  oldState: string;
-  cancelled: boolean;
-}
-
 /** Per-element popover state (https://html.spec.whatwg.org/#the-popover-attribute). */
 interface PopoverRecord {
   /** https://html.spec.whatwg.org/#popover-visibility-state (true = showing). */
@@ -342,7 +337,7 @@ interface PopoverRecord {
   /** https://html.spec.whatwg.org/#opened-in-popover-mode (P_AUTO / P_HINT / P_NONE). */
   openedMode: number;
   /** https://html.spec.whatwg.org/#popover-toggle-task-tracker */
-  toggleTracker: ToggleTracker | null;
+  toggleTracker: ToggleTask | null;
   /** https://html.spec.whatwg.org/#popover-close-watcher */
   closeWatcher: CloseWatcher | null;
 }
@@ -427,27 +422,18 @@ function validity(
 /** https://html.spec.whatwg.org/#queue-a-popover-toggle-event-task */
 function queuePopoverToggle(el: NodeImpl, oldState: string, newState: string, source: NodeImpl | null): void {
   const r = record(el);
-  // 1.
-  if (r.toggleTracker !== null) {
-    oldState = r.toggleTracker.oldState;
-    r.toggleTracker.cancelled = true;
-    r.toggleTracker = null;
-  }
-  // 2-3.
-  const tracker: ToggleTracker = { oldState, cancelled: false };
-  r.toggleTracker = tracker;
-  queueElementTask(el, () => {
-    if (tracker.cancelled) return;
+  const tracker = queueToggleTask(el, r.toggleTracker, oldState, (initial) => {
     fireToggleEvent(
       el.node as Element,
       "toggle",
-      oldState,
+      initial,
       newState,
       false,
       source === null ? null : (source.node as Element),
     );
     if (r.toggleTracker === tracker) r.toggleTracker = null;
   });
+  r.toggleTracker = tracker;
 }
 
 /** https://html.spec.whatwg.org/#topmost-popover-ancestor */

@@ -8,7 +8,7 @@
  * DOM remove (https://dom.spec.whatwg.org/#concept-node-remove); CSSOM adoptedStyleSheets
  * (https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets).
  */
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
   createWindow,
   currentWindowOrNull,
@@ -185,6 +185,24 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
     expect(await tracker.alive()).toEqual({});
   });
 
+  test("an adopted dialog releases its closed window and the invoker of its undelivered toggle", async () => {
+    const destination = createWindow();
+    const tracker = new Tracker();
+    (() => {
+      const origin = tracker.track("old window", createWindow());
+      origin.document.body!.innerHTML =
+        '<button commandfor="panel" command="show-modal"></button><dialog id="panel"></dialog>';
+      const opener = tracker.track("old invoker", origin.document.querySelector("button") as HTMLElement);
+      opener.click();
+      const panel = origin.document.querySelector("dialog")!;
+      origin.close();
+      destination.document.body!.append(panel);
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(destination.document.querySelector("dialog")?.id).toBe("panel");
+    destination.close();
+  });
+
   test("shared storage releases discarded tabs while live peers keep the stored data", async () => {
     const original = createWindow();
     const tracker = new Tracker();
@@ -216,6 +234,45 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test.each(["dialog", "popover"] as const)(
+    "a superseded %s toggle releases its original button before timers run",
+    async (kind) => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const w = createWindow();
+      const d = w.document;
+      const tracker = new Tracker();
+      try {
+        const panel = d.body!.appendChild(d.createElement(kind === "dialog" ? "dialog" : "div"));
+        panel.id = "panel";
+        if (kind === "popover") panel.setAttribute("popover", "manual");
+        const addButton = (command: string) => {
+          const button = d.body!.appendChild(d.createElement("button")) as HTMLElement;
+          button.setAttribute("commandfor", "panel");
+          button.setAttribute("command", command);
+          return button;
+        };
+        (() => {
+          const opener = tracker.track(
+            "superseded button",
+            addButton(kind === "dialog" ? "show-modal" : "show-popover"),
+          );
+          opener.click();
+          opener.remove();
+        })();
+        const closer = addButton(kind === "dialog" ? "close" : "hide-popover");
+        closer.click();
+        expect(await tracker.alive()).toEqual({});
+        const delivered: unknown[] = [];
+        panel.addEventListener("toggle", (e) => delivered.push((e as unknown as { source: Element }).source));
+        vi.runAllTimers();
+        expect(delivered).toEqual([closer]);
+      } finally {
+        w.close();
+        vi.useRealTimers();
+      }
+    },
+  );
+
   test("manual assignment releases removed children and slots independently", async () => {
     const w = createWindow();
     const d = w.document;

@@ -19,7 +19,7 @@ import type { Event } from "../events/Event.ts";
 import { removeAttribute, setAttribute } from "../nodes/attributes.ts";
 import { T } from "../nodes/tags.ts";
 import { nextInTree, treeRoot } from "../nodes/traverse.ts";
-import { fireEvent, fireToggleEvent, queueElementTask } from "./events.ts";
+import { fireEvent, fireToggleEvent, queueElementTask, queueToggleTask, type ToggleTask } from "./events.ts";
 import {
   addToTopLayer,
   type CloseWatcher,
@@ -49,22 +49,15 @@ import { $focused, $host, $impl } from "../keys.ts";
 
 // --- <details> ------------------------------------------------------------------------------
 
-const detailsTrackers = new WeakMap<NodeImpl, { oldState: string; cancelled: boolean }>();
+const detailsTrackers = new WeakMap<NodeImpl, ToggleTask>();
 
 /** https://html.spec.whatwg.org/#queue-a-details-toggle-event-task */
 function queueDetailsToggle(el: NodeImpl, oldState: string, newState: string): void {
-  const prev = detailsTrackers.get(el);
-  if (prev !== undefined) {
-    oldState = prev.oldState;
-    prev.cancelled = true;
-  }
-  const tracker = { oldState, cancelled: false };
-  detailsTrackers.set(el, tracker);
-  queueElementTask(el, () => {
-    if (tracker.cancelled) return;
+  const tracker = queueToggleTask(el, detailsTrackers.get(el), oldState, (initial) => {
     detailsTrackers.delete(el);
-    fireToggleEvent(el.node as HTMLElement, "toggle", oldState, newState, false);
+    fireToggleEvent(el.node as HTMLElement, "toggle", initial, newState, false);
   });
+  detailsTrackers.set(el, tracker);
 }
 
 /** https://html.spec.whatwg.org/#details-name-group — other details in the same tree with the same name. */
@@ -215,7 +208,7 @@ interface DialogRecord {
   /** https://html.spec.whatwg.org/#dom-dialog-returnvalue */
   returnValue: string;
   /** https://html.spec.whatwg.org/#dialog-toggle-task-tracker */
-  toggleTracker: { oldState: string; cancelled: boolean } | null;
+  toggleTracker: ToggleTask | null;
   /** https://html.spec.whatwg.org/#dialog-close-watcher */
   closeWatcher: CloseWatcher | null;
   /** https://html.spec.whatwg.org/#request-close-return-value */
@@ -251,20 +244,11 @@ function nodeOf(impl: NodeImpl | null): HTMLElement | null {
 /** https://html.spec.whatwg.org/#queue-a-dialog-toggle-event-task */
 function queueDialogToggle(el: NodeImpl, oldState: string, newState: string, source: NodeImpl | null): void {
   const r = dialogRecord(el);
-  // 1.
-  if (r.toggleTracker !== null) {
-    oldState = r.toggleTracker.oldState;
-    r.toggleTracker.cancelled = true;
-    r.toggleTracker = null;
-  }
-  // 2-3.
-  const tracker = { oldState, cancelled: false };
-  r.toggleTracker = tracker;
-  queueElementTask(el, () => {
-    if (tracker.cancelled) return;
-    fireToggleEvent(el.node as HTMLElement, "toggle", oldState, newState, false, nodeOf(source));
+  const tracker = queueToggleTask(el, r.toggleTracker, oldState, (initial) => {
+    fireToggleEvent(el.node as HTMLElement, "toggle", initial, newState, false, nodeOf(source));
     if (r.toggleTracker === tracker) r.toggleTracker = null;
   });
+  r.toggleTracker = tracker;
 }
 
 /** https://html.spec.whatwg.org/#computed-closed-by-state — "any", "closerequest" or "none". */

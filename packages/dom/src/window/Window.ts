@@ -819,8 +819,7 @@ export class Window extends EventTarget {
   }
 
   _cancelTask(task: PendingTask): void {
-    this[$tasks]?.delete(task);
-    task.clear(task.handle as never);
+    if (this[$tasks]?.delete(task)) task.clear(task.handle as never);
   }
 
   // --- messaging & errors --------------------------------------------------------------------
