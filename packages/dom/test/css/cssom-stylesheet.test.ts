@@ -189,6 +189,26 @@ describe("replace / replaceSync — https://drafts.csswg.org/cssom/#synchronousl
     expect(color(".t")).toBe("green");
   });
 
+  test("in-place adoption rejects foreign sheets and keeps the current styles", () => {
+    const local = sheet(".t { color: green }");
+    document.body!.innerHTML = '<p class="t">x</p>';
+    (document as any).adoptedStyleSheets = [local];
+    const sheets = (document as any).adoptedStyleSheets;
+    const other = createWindow();
+    const foreign = sheet(".t { color: red }");
+    (other.document as any).adoptedStyleSheets = [foreign];
+
+    const denied = expect.objectContaining({ name: "NotAllowedError" });
+    expect(() => sheets.push(foreign)).toThrow(denied);
+    expect(() => (sheets[0] = styleElementSheet(".x {}"))).toThrow(denied);
+    expect(() => sheets.push({})).toThrow(TypeError);
+    expect(Reflect.defineProperty(sheets, "0", { get: () => foreign })).toBe(false);
+    expect(sheets).toHaveLength(1);
+    expect(sheets[0]).toBe(local);
+    expect(color(".t")).toBe("green");
+    other.close();
+  });
+
   test("adopting a non-constructed sheet throws NotAllowedError", () => {
     const s = styleElementSheet(".a {}");
     expect(() => ((document as any).adoptedStyleSheets = [s])).toThrow(

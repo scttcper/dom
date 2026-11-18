@@ -281,31 +281,39 @@ export function styleSheetsOf(root: NodeImpl): StyleSheetList {
 /** A held array may outlive its root. Only writes to the currently adopted array affect styles. */
 class AdoptedSheetChanges extends WeakRef<RootStyles> implements ProxyHandler<CSSStyleSheet[]> {
   defineProperty(sheets: CSSStyleSheet[], key: PropertyKey, descriptor: PropertyDescriptor): boolean {
+    const rs = this.deref();
+    if (rs === undefined || rs.adopted !== sheets) return Reflect.defineProperty(sheets, key, descriptor);
     const oldLength = sheets.length;
-    const ok = Reflect.defineProperty(sheets, key, descriptor);
-    if (key === "length") {
-      // A failed truncation can still remove entries above a non-configurable index.
-      if (sheets.length !== oldLength) this.changed(sheets, sheets.length < oldLength);
-    } else if (ok && isSheetIndex(key)) {
-      this.changed(sheets, Number(key) < oldLength, descriptor.value);
+    if (isSheetIndex(key)) {
+      if ("get" in descriptor || "set" in descriptor) return false;
+      if (!("value" in descriptor) && Object.hasOwn(sheets, key))
+        return Reflect.defineProperty(sheets, key, descriptor);
+      const sheet = validateAdoptedSheet(descriptor.value, rs.root.doc);
+      if (!Reflect.defineProperty(sheets, key, descriptor)) return false;
+      if (sheet[$doc] === null) sheet[$doc] = rs.root.doc;
+      adoptedSheetsChanged(rs, Number(key) < oldLength);
+      return true;
     }
+    const ok = Reflect.defineProperty(sheets, key, descriptor);
+    // A failed truncation can still remove entries above a non-configurable index.
+    if (key === "length" && sheets.length !== oldLength) adoptedSheetsChanged(rs, sheets.length < oldLength);
     return ok;
   }
 
   deleteProperty(sheets: CSSStyleSheet[], key: PropertyKey): boolean {
     const ok = Reflect.deleteProperty(sheets, key);
-    if (ok && isSheetIndex(key)) this.changed(sheets, true);
+    if (ok && isSheetIndex(key)) {
+      const rs = this.deref();
+      if (rs !== undefined && rs.adopted === sheets) adoptedSheetsChanged(rs, true);
+    }
     return ok;
   }
+}
 
-  private changed(sheets: CSSStyleSheet[], removed: boolean, added?: unknown): void {
-    const rs = this.deref();
-    if (rs === undefined || rs.adopted !== sheets) return;
-    if (removed) rs.discardIndex();
-    if (added instanceof CSSStyleSheet && added[$doc] === null) added[$doc] = rs.root.doc;
-    syncShadowRegistration(rs);
-    rs.root.doc[$styleVersion]++;
-  }
+function adoptedSheetsChanged(rs: RootStyles, removed: boolean): void {
+  if (removed) rs.discardIndex();
+  syncShadowRegistration(rs);
+  rs.root.doc[$styleVersion]++;
 }
 
 function isSheetIndex(key: PropertyKey): boolean {
@@ -328,25 +336,7 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
     );
   }
   const list = Array.from(value as ArrayLike<unknown>);
-  for (const s of list) {
-    if (!(s instanceof CSSStyleSheet)) {
-      throw new TypeError(
-        "Failed to set the 'adoptedStyleSheets' property: Failed to convert value to 'CSSStyleSheet'.",
-      );
-    }
-    if (!s[$constructed]) {
-      throw new DOMException(
-        "Failed to set the 'adoptedStyleSheets' property: Can't adopt non-constructed stylesheets.",
-        "NotAllowedError",
-      );
-    }
-    if (s[$doc] !== null && s[$doc] !== root.doc) {
-      throw new DOMException(
-        "Failed to set the 'adoptedStyleSheets' property: Sharing constructed stylesheets in multiple documents is not allowed",
-        "NotAllowedError",
-      );
-    }
-  }
+  for (const s of list) validateAdoptedSheet(s, root.doc);
   const rs = rootStylesFor(root, true)!;
   if (rs.index !== null && rs.adopted.length !== 0) rs.discardIndex();
   rs.adopted = list as CSSStyleSheet[];
@@ -354,4 +344,23 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
   for (const s of rs.adopted) if (s[$doc] === null) s[$doc] = root.doc;
   root.doc[$styleVersion]++;
   syncShadowRegistration(rs);
+}
+
+function validateAdoptedSheet(s: unknown, doc: Document): CSSStyleSheet {
+  if (!(s instanceof CSSStyleSheet)) {
+    throw new TypeError("Failed to set the 'adoptedStyleSheets' property: Failed to convert value to 'CSSStyleSheet'.");
+  }
+  if (!s[$constructed]) {
+    throw new DOMException(
+      "Failed to set the 'adoptedStyleSheets' property: Can't adopt non-constructed stylesheets.",
+      "NotAllowedError",
+    );
+  }
+  if (s[$doc] !== null && s[$doc] !== doc) {
+    throw new DOMException(
+      "Failed to set the 'adoptedStyleSheets' property: Sharing constructed stylesheets in multiple documents is not allowed",
+      "NotAllowedError",
+    );
+  }
+  return s;
 }
