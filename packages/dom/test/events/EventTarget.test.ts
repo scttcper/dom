@@ -573,6 +573,40 @@ describe("signal option — https://dom.spec.whatwg.org/#dom-addeventlisteneropt
     expect(count).toBe(6);
   });
 
+  test("a stopped abort event still removes listeners before an abort handler can dispatch or re-register them", () => {
+    const old = new AbortController();
+    const next = new AbortController();
+    const target = new EventTarget();
+    const calls: string[] = [];
+    const click = () => calls.push("click");
+    old.signal.addEventListener("abort", (event) => {
+      event.stopImmediatePropagation();
+      target.dispatchEvent(new Event("click"));
+      target.addEventListener("click", click, { signal: next.signal });
+      target.dispatchEvent(new Event("click"));
+    });
+    target.addEventListener("click", click, { signal: old.signal });
+    old.abort();
+    target.dispatchEvent(new Event("click"));
+    next.abort();
+    target.dispatchEvent(new Event("click"));
+    expect(calls).toEqual(["click", "click"]);
+  });
+
+  test("a synthetic abort event leaves a signal's existing listeners active", () => {
+    const controller = new AbortController();
+    const targets = [new EventTarget(), new EventTarget()];
+    const calls: number[] = [];
+    for (const [i, target] of targets.entries()) {
+      target.addEventListener("click", () => calls.push(i), { signal: controller.signal });
+    }
+    controller.signal.dispatchEvent(new globalThis.Event("abort"));
+    for (const target of targets) target.dispatchEvent(new Event("click"));
+    controller.abort();
+    for (const target of targets) target.dispatchEvent(new Event("click"));
+    expect(calls).toEqual([0, 1]);
+  });
+
   test("null as the signal throws TypeError (even with a null listener)", () => {
     const et = new EventTarget();
     expect(() => et.addEventListener("foo", () => {}, { signal: null as never })).toThrow(TypeError);
@@ -706,17 +740,21 @@ describe("listener list mutation during dispatch — https://dom.spec.whatwg.org
 
 describe("listener storage: compact for a few event types, indexed by type after that — https://dom.spec.whatwg.org/#concept-event-listener", () => {
   const TYPES = ["s-a", "s-b", "s-c", "s-d", "s-e", "s-f", "s-g"];
-  const isCompact = (et: EventTarget) => typeof (et as any)[$listeners][0] === "number";
+  const isCompact = (et: EventTarget) => {
+    const slots = et[$listeners];
+    return Array.isArray(slots) && slots.length <= 4;
+  };
 
-  test("a target with up to four event types holds [id, first listener] pairs at their exact size", () => {
+  test("a single event type uses its listener chain directly, and two to four use exact-size arrays", () => {
     const et = new EventTarget();
     et.addEventListener(TYPES[0], () => {});
-    expect((et as any)[$listeners].length).toBe(2);
+    const head = et[$listeners];
+    expect(Array.isArray(head)).toBe(false);
     et.addEventListener(TYPES[0], () => {});
-    expect((et as any)[$listeners].length).toBe(2);
+    expect(et[$listeners]).toBe(head);
     for (const type of TYPES.slice(1, 4)) et.addEventListener(type, () => {});
     expect(isCompact(et)).toBe(true);
-    expect((et as any)[$listeners].length).toBe(8);
+    expect(et[$listeners]).toHaveLength(4);
   });
 
   test("add-an-event-listener step 6 appends in order across the switch to the indexed layout, and every type still dispatches to its own listeners", () => {
@@ -743,7 +781,7 @@ describe("listener storage: compact for a few event types, indexed by type after
     et.dispatchEvent(new Event(TYPES[1]));
     expect(calls).toEqual(["b"]);
     et.addEventListener(TYPES[0], a);
-    expect((et as any)[$listeners].length).toBe(4);
+    expect(et[$listeners]).toHaveLength(2);
     et.dispatchEvent(new Event(TYPES[0]));
     expect(calls).toEqual(["b", "a"]);
   });

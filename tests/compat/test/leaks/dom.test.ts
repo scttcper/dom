@@ -146,6 +146,69 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("a live abort signal releases discarded click targets and their callbacks", async () => {
+    const w = createWindow();
+    const controller = new AbortController();
+    const tracker = new Tracker();
+    function addRow() {
+      const row = tracker.track("button", w.document.createElement("button"));
+      const click = tracker.track("click handler", () => row.classList.toggle("active"));
+      w.document.body!.append(row);
+      row.addEventListener("click", click, { signal: controller.signal });
+      row.remove();
+    }
+    for (let i = 0; i < 20; i++) addRow();
+    expect(await tracker.alive()).toEqual({});
+    controller.abort();
+    w.close();
+  });
+
+  test("removing the last abortable listener releases its signal and application abort handlers", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    const target = w.document.body!;
+    (() => {
+      const controller = new AbortController();
+      const signal = tracker.track("signal", controller.signal);
+      signal.addEventListener(
+        "abort",
+        tracker.track("abort handler", () => {}),
+      );
+      const click = () => {};
+      target.addEventListener("click", click, { signal });
+      target.removeEventListener("click", click);
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
+  test("aborting releases a live target's callbacks even if an earlier abort handler stops propagation", async () => {
+    const w = createWindow();
+    const controller = new AbortController();
+    controller.signal.addEventListener("abort", (event) => event.stopImmediatePropagation());
+    const tracker = new Tracker();
+    (() => {
+      const click = tracker.track("click handler", () => {});
+      w.document.addEventListener("click", click, { signal: controller.signal });
+    })();
+    controller.abort();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
+  test("an abort handler that captures its discarded target lets both sides be collected", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    (() => {
+      const button = tracker.track("button", w.document.createElement("button"));
+      const signal = tracker.track("signal", new AbortController().signal);
+      signal.addEventListener("abort", () => button.remove());
+      button.addEventListener("click", () => {}, { signal });
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
   test("a composed click releases its detached shadow host after dispatch", async () => {
     const w = createWindow();
     const tracker = new Tracker();

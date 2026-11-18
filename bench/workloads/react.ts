@@ -328,6 +328,53 @@ const clickRemove: Workload = {
   },
 };
 
+// Base UI's toast swipe installs document listeners on pointerdown and aborts them on release.
+const pointerRelease: Workload = {
+  id: "react/pointer-release",
+  title: "Press and release a control with abortable document listeners",
+  kind: "react",
+  warmup: 10,
+  iterations: 50,
+  setup({ React, rtl, userEvent, document, window }) {
+    let releases = 0;
+    const view = rtl.render(
+      React.createElement(
+        "button",
+        {
+          onPointerDown() {
+            const controller = new window.AbortController();
+            const finish = () => {
+              releases++;
+              controller.abort();
+            };
+            document.addEventListener("pointerup", finish, { signal: controller.signal });
+            document.addEventListener("pointercancel", finish, { signal: controller.signal });
+          },
+        },
+        "Hold",
+      ),
+    );
+    const button = view.container.firstChild;
+    const user = userEvent.setup({ document });
+    return {
+      beforeEach() {
+        releases = 0;
+      },
+      async run() {
+        for (let i = 0; i < 5; i++) await user.click(button);
+      },
+      verify() {
+        document.dispatchEvent(new window.Event("pointercancel"));
+        eq(releases, 5, "each press releases once");
+      },
+      close() {
+        view.unmount();
+        view.container.remove();
+      },
+    };
+  },
+};
+
 const dragTextSelection: Workload = {
   id: "react/drag-text-selection",
   title: "Drag to select a line of syntax-highlighted code",
@@ -975,6 +1022,7 @@ export const reactWorkloads: Workload[] = [
   styledFormWorkload(),
   keyedList,
   clickRemove,
+  pointerRelease,
   dragTextSelection,
   editLabelledFields,
   validateNamedFields,

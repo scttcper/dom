@@ -1,8 +1,7 @@
 // https://dom.spec.whatwg.org/#interface-eventtarget
 //
 // Contract with the rest of the DOM:
-//   - `Node extends EventTarget`; `_listeners` is the FIRST field of every wrapper and stays
-//     null until the first addEventListener (most nodes never get one: zero cost).
+//   - `Node extends EventTarget`; its listener storage is allocated on first registration.
 //   - `_getTheParent(event)` is the propagation-path hook
 //     (https://dom.spec.whatwg.org/#get-the-parent). Node delegates to
 //     `nodeGetTheParent` (dispatch.ts: assigned slot / shadow root host / parent),
@@ -18,10 +17,9 @@ import { toDOMString } from "./convert.ts";
 import { $listeners } from "../keys.ts";
 
 export class EventTarget {
-  /** @internal Event type id → first listener, or null when there are no listeners (see listeners.ts). */
   /**
-   * Added on first addEventListener (absent otherwise): most nodes never get a listener (React
-   * delegates to its root container), and an always-initialized field cost every node a slot.
+   * @internal Listener chains by event type (see listeners.ts). Most nodes never get a listener
+   * because React delegates to its root container, so the field is added on first registration.
    */
   declare [$listeners]?: ListenerSlots | null;
 

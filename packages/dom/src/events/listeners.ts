@@ -20,6 +20,7 @@
 // Chains are in seq order (appends go to the tail and nothing is reinserted), so that walk sees
 // exactly the clone: listeners present when it started, minus those removed since.
 
+import { addAbortListener } from "node:events";
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { DOCUMENT_NODE, F_MO_REGISTERED } from "../nodes/constants.ts";
@@ -32,16 +33,7 @@ export const LISTENER_ONCE = 2;
 export const LISTENER_PASSIVE = 4;
 export const LISTENER_REMOVED = 8;
 
-/** A listener's signal and the abort algorithm registered on it, kept so removal can unregister it. */
-class AbortBinding {
-  signal: AbortSignal;
-  onAbort: () => void;
-
-  constructor(signal: AbortSignal, onAbort: () => void) {
-    this.signal = signal;
-    this.onAbort = onAbort;
-  }
-}
+const LISTENER_SIGNAL = 16;
 
 /** Insertion counter behind Listener.seq. */
 let nextSeq = 0;
@@ -62,43 +54,113 @@ export class Listener {
   /** The next listener of the same type on the same target, in insertion order. */
   next: Listener | null;
   seq: number;
-  /** Null unless added with a signal. */
-  abort: AbortBinding | null;
+  id: number;
 
-  constructor(callback: EventListenerOrEventListenerObject, flags: number) {
+  constructor(id: number, callback: EventListenerOrEventListenerObject, flags: number) {
     this.callback = callback;
     this.flags = flags;
     this.next = null;
     this.seq = nextSeq++;
-    this.abort = null;
+    this.id = id;
   }
 }
 
+/** A live target owns its listener. A shared signal must not keep that target or its callback alive. */
+class SignalListener extends Listener {
+  target: EventTarget;
+  signal: AbortSignal;
+  ref: AbortRef;
+
+  constructor(
+    id: number,
+    callback: EventListenerOrEventListenerObject,
+    flags: number,
+    target: EventTarget,
+    signal: AbortSignal,
+  ) {
+    super(id, callback, flags | LISTENER_SIGNAL);
+    this.target = target;
+    this.signal = signal;
+    this.ref = new AbortRef(this);
+  }
+}
+
+/** The signal owns only weak references. The finalizer can drop a dead registration without
+ * keeping either its signal (which may have application abort handlers) or its target alive. */
+class AbortRef extends WeakRef<SignalListener> {
+  signal: WeakRef<AbortSignal>;
+  previous: AbortRef | null = null;
+  next: AbortRef | null;
+
+  constructor(listener: SignalListener) {
+    super(listener);
+    const signal = listener.signal;
+    this.next = abortHeads.get(signal) ?? null;
+    if (this.next === null) {
+      this.signal = new WeakRef(signal);
+    } else {
+      this.signal = this.next.signal;
+      this.next.previous = this;
+    }
+    abortHeads.set(signal, this);
+    collected.register(listener, this, this);
+  }
+}
+
+const abortHeads = new WeakMap<AbortSignal, AbortRef>();
+const collected = new FinalizationRegistry<AbortRef>((ref) => {
+  const signal = ref.signal.deref();
+  if (signal !== undefined) dropAbortStep(signal, ref);
+});
+
+function dropAbortStep(signal: AbortSignal, ref: AbortRef): void {
+  if (ref.previous !== null) ref.previous.next = ref.next;
+  else if (ref.next !== null) abortHeads.set(signal, ref.next);
+  else {
+    abortHeads.delete(signal);
+    signal.removeEventListener("abort", runAbortSteps);
+  }
+  if (ref.next !== null) ref.next.previous = ref.previous;
+  ref.previous = ref.next = null;
+}
+
+function runAbortSteps(this: AbortSignal): void {
+  // A synthetic event consumes Node's once listener without aborting the signal.
+  if (!this.aborted) {
+    addAbortListener(this, runAbortSteps);
+    return;
+  }
+  let ref: AbortRef | null = abortHeads.get(this) ?? null;
+  if (ref === null) return;
+  // Visit in registration order. Unlinking many listeners of the same type from one
+  // target then removes each from the front of its listener chain.
+  while (ref.next !== null) ref = ref.next;
+  while (ref !== null) {
+    const next: AbortRef | null = ref.previous;
+    const listener = ref.deref();
+    if (listener !== undefined) removeListener(listener.target, listener);
+    ref = next;
+  }
+}
+
+/** Abort algorithms take effect before application abort handlers can dispatch another event. */
+export function listenerAborted(listener: Listener): boolean {
+  return (listener.flags & LISTENER_SIGNAL) !== 0 && (listener as SignalListener).signal.aborted;
+}
+
 /**
- * A target's listeners, in one of two layouts:
- *
- * - compact, while it has listened for at most COMPACT_TYPES event types: `[id, head, id, head…]`,
- *   exactly as long as its pairs. Nearly every target with a listener has one or two types (React
- *   adds `invalid` to every input, select and textarea, `load`/`error` to images, `toggle` to
- *   details), and an array indexed by type id is as long as that id plus V8's growth slack: one
- *   `invalid` listener cost 641 B, 64 B of it the listener. Compact, 128 B.
- * - indexed by type id (a hole or undefined: no listener of that type), from the type after that:
- *   React's root container, with 87.
- *
- * A compact array's first element is a number, an indexed one's never is. Adding a type to a
- * compact target replaces the array; removing one leaves its pair with an undefined head.
+ * React adds just one event type (invalid) to each input, select and textarea. Store that
+ * type's listener chain directly. Two to four types use an array of chain heads. From
+ * the fifth type on, a sparse array indexed by type ID serves large targets like React roots.
  */
-export type ListenerSlots = (Listener | number | undefined)[];
+type SlotArray = (Listener | undefined)[];
+export type ListenerSlots = Listener | SlotArray;
 
 const COMPACT_TYPES = 4;
 
-function isCompact(slots: ListenerSlots): boolean {
-  return slots.length !== 0 && typeof slots[0] === "number";
-}
-
 const typeIds = new Map<string, number>();
 
-function idForType(type: string): number {
+export function idForType(type: string): number {
   let id = typeIds.get(type);
   if (id === undefined) {
     id = typeIds.size;
@@ -115,67 +177,56 @@ export function typeIdOf(type: string): number {
 
 /** The first listener for type id `id` (-1 included) on a target whose slots are `slots`. */
 export function firstListener(slots: ListenerSlots, id: number): Listener | undefined {
+  if (!Array.isArray(slots)) return slots.id === id ? slots : undefined;
   const length = slots.length;
-  if (length !== 0 && typeof slots[0] === "number") {
-    for (let i = 0; i < length; i += 2) if (slots[i] === id) return slots[i + 1] as Listener | undefined;
+  if (length <= COMPACT_TYPES) {
+    for (let i = 0; i < length; i++) if (slots[i]!.id === id) return slots[i];
     return undefined;
   }
   // `>>> 0` sends -1 out of range instead of reading the property "-1".
-  return id >>> 0 < length ? (slots[id] as Listener | undefined) : undefined;
+  return id >>> 0 < length ? slots[id] : undefined;
 }
 
-/** Make `head` the first listener for type id `id`, which has none (addFlattened, unlink). */
+/** Replace a chain head on removal, or add the first listener for a new type. */
 function setFirstListener(target: EventTarget, slots: ListenerSlots, id: number, head: Listener | undefined): void {
-  if (!isCompact(slots)) {
-    // Ids at or past the length grow the array (a gap leaves holes) rather than presizing it. A
-    // target's array is as long as the highest id it uses, ~8 bytes per id below it. Ids stay
-    // small because event types are a small vocabulary (React's 87 plus a few dozen); a process
-    // listening for over a thousand distinct types would push later targets past V8's
-    // 1,024-element gap into slower dictionary arrays.
-    slots[id] = head;
+  if (!Array.isArray(slots)) {
+    if (slots.id === id) target[$listeners] = head;
+    else if (head !== undefined) target[$listeners] = [slots, head];
     return;
   }
   const length = slots.length;
-  for (let i = 0; i < length; i += 2) {
-    if (slots[i] === id) {
-      slots[i + 1] = head;
-      return;
-    }
+  if (length > COMPACT_TYPES) {
+    slots[id] = head;
+    return;
+  }
+  for (let i = 0; i < length; i++) {
+    if (slots[i]!.id !== id) continue;
+    if (head !== undefined) slots[i] = head;
+    else if (length === 2) target[$listeners] = slots[1 - i];
+    else slots.splice(i, 1);
+    return;
   }
   if (head === undefined) return;
-  let next: ListenerSlots;
-  if (length < COMPACT_TYPES * 2) {
-    // One more pair, at the exact size (a push would leave ~16 slots of slack).
-    next = new Array(length + 2);
+  if (length < COMPACT_TYPES) {
+    // Keep small lists at their exact size (push leaves spare capacity).
+    const next = new Array<Listener | undefined>(length + 1);
     for (let i = 0; i < length; i++) next[i] = slots[i];
-    next[length] = id;
-    next[length + 1] = head;
+    next[length] = head;
+    target[$listeners] = next;
   } else {
-    next = [];
-    for (let i = 0; i < length; i += 2) next[slots[i] as number] = slots[i + 1];
-    next[id] = head;
+    // Five distinct IDs guarantee the indexed array is longer than any compact list.
+    const indexed: SlotArray = [];
+    for (const listener of slots) indexed[listener!.id] = listener;
+    indexed[id] = head;
+    target[$listeners] = indexed;
   }
-  target[$listeners] = next;
 }
 
 /** Calls `visit` with the first listener of every type that has one. */
 function eachHead(slots: ListenerSlots, visit: (head: Listener) => void): void {
-  const compact = isCompact(slots);
-  for (let i = compact ? 1 : 0; i < slots.length; i += compact ? 2 : 1) {
-    const head = slots[i] as Listener | undefined;
-    if (head !== undefined) visit(head);
-  }
+  if (!Array.isArray(slots)) return visit(slots);
+  for (const head of slots) if (head !== undefined) visit(head);
 }
-
-interface Flattened {
-  capture: boolean;
-  once: boolean;
-  passive: boolean | null;
-  signal: AbortSignal | null;
-}
-
-// Reused result object for flattenMore (no allocation per addEventListener call).
-const flat: Flattened = { capture: false, once: false, passive: null, signal: null };
 
 /** https://dom.spec.whatwg.org/#concept-flatten-options */
 export function flattenCapture(options: boolean | EventListenerOptions | undefined | null): boolean {
@@ -183,43 +234,6 @@ export function flattenCapture(options: boolean | EventListenerOptions | undefin
   if (options === undefined || options === null) return false;
   if (typeof options !== "object" && typeof options !== "function") return !!options;
   return !!options.capture;
-}
-
-/** https://dom.spec.whatwg.org/#event-flatten-more */
-function flattenMore(options: boolean | AddEventListenerOptions | undefined | null): Flattened {
-  flat.capture = false;
-  flat.once = false;
-  flat.passive = null;
-  flat.signal = null;
-  if (options === undefined || options === null) return flat;
-  if (typeof options !== "object" && typeof options !== "function") {
-    // A boolean (or any other primitive, converted per the (AddEventListenerOptions or boolean) union).
-    flat.capture = !!options;
-    return flat;
-  }
-  // Read every member before writing `flat` (getters may re-enter addEventListener).
-  const capture = !!options.capture;
-  const once = !!options.once;
-  const passive = options.passive;
-  const signal = options.signal;
-  flat.capture = capture;
-  flat.once = once;
-  flat.passive = passive === undefined ? null : !!passive;
-  flat.signal = null;
-  if (signal !== undefined) {
-    if (
-      signal === null ||
-      typeof signal !== "object" ||
-      typeof (signal as AbortSignal).aborted !== "boolean" ||
-      typeof signal.addEventListener !== "function"
-    ) {
-      throw new TypeError(
-        "Failed to execute 'addEventListener' on 'EventTarget': member signal is not of type 'AbortSignal'.",
-      );
-    }
-    flat.signal = signal;
-  }
-  return flat;
 }
 
 /** https://dom.spec.whatwg.org/#default-passive-value */
@@ -260,22 +274,34 @@ export function addEventListener(
   callback: EventListenerOrEventListenerObject | null | undefined,
   options: boolean | AddEventListenerOptions | undefined | null,
 ): void {
-  // React passes a boolean for all but 6 of its 142 root listeners: a boolean flattens to
-  // (capture, false, null, null) without reading any member, so skip flattenMore.
-  if (typeof options === "boolean") {
-    // Step 3.
-    if (callback === null || callback === undefined) return;
+  if (options === null || (typeof options !== "object" && typeof options !== "function")) {
+    if (callback == null) return;
     checkCallback(callback, "addEventListener");
-    addFlattened(target, type, callback, options, false, null, null);
+    addFlattened(target, type, callback, !!options, false, null, null);
     return;
   }
-  const { capture, once, passive, signal } = flattenMore(options);
-  // Step 2.
-  if (signal !== null && signal.aborted) return;
-  // Step 3.
-  if (callback === null || callback === undefined) return;
+  // https://dom.spec.whatwg.org/#event-flatten-more
+  // Keep these local: getters can re-enter, and a signal may own application state.
+  const capture = !!options.capture;
+  const once = !!options.once;
+  const passive = options.passive;
+  const signal = options.signal;
+  if (signal !== undefined) {
+    if (
+      signal === null ||
+      typeof signal !== "object" ||
+      typeof signal.aborted !== "boolean" ||
+      typeof signal.addEventListener !== "function"
+    ) {
+      throw new TypeError(
+        "Failed to execute 'addEventListener' on 'EventTarget': member signal is not of type 'AbortSignal'.",
+      );
+    }
+    if (signal.aborted) return;
+  }
+  if (callback == null) return;
   checkCallback(callback, "addEventListener");
-  addFlattened(target, type, callback, capture, once, passive, signal);
+  addFlattened(target, type, callback, capture, once, passive === undefined ? null : !!passive, signal ?? null);
 }
 
 /** https://dom.spec.whatwg.org/#add-an-event-listener steps 4-6, with flattened options. */
@@ -295,28 +321,29 @@ function addFlattened(
   let tail = slots == null ? undefined : firstListener(slots, id);
   if (tail !== undefined) {
     for (;;) {
-      if (tail.callback === callback && (tail.flags & LISTENER_CAPTURE) === captureBit) return;
+      if (tail.callback === callback && (tail.flags & LISTENER_CAPTURE) === captureBit) {
+        if (!listenerAborted(tail)) return;
+        // An earlier abort handler is re-registering this callback with a new signal.
+        removeListener(target, tail);
+        return addFlattened(target, type, callback, capture, once, passive, signal);
+      }
       const next: Listener | null = tail.next;
       if (next === null) break;
       tail = next;
     }
   }
   // Step 4.
-  const listener = new Listener(
-    callback,
+  const flags =
     captureBit |
-      (once ? LISTENER_ONCE : 0) |
-      ((passive === null ? defaultPassiveValue(type, target) : passive) ? LISTENER_PASSIVE : 0),
-  );
+    (once ? LISTENER_ONCE : 0) |
+    ((passive === null ? defaultPassiveValue(type, target) : passive) ? LISTENER_PASSIVE : 0);
+  const listener =
+    signal === null ? new Listener(id, callback, flags) : new SignalListener(id, callback, flags, target, signal);
   if (tail !== undefined) tail.next = listener;
-  else if (slots == null) target[$listeners] = [id, listener];
+  else if (slots == null) target[$listeners] = listener;
   else setFirstListener(target, slots, id, listener);
-  // Step 6.
-  if (signal !== null) {
-    const onAbort = () => removeListener(target, type, listener);
-    listener.abort = new AbortBinding(signal, onAbort);
-    signal.addEventListener("abort", onAbort, { once: true });
-  }
+  // Install one abort hook per signal, after the target owns its first registration.
+  if (signal !== null && (listener as SignalListener).ref.next === null) addAbortListener(signal, runAbortSteps);
 }
 
 /** https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener */
@@ -342,11 +369,11 @@ export function removeEventListener(
 }
 
 /** https://dom.spec.whatwg.org/#remove-an-event-listener */
-export function removeListener(target: EventTarget, type: string, listener: Listener): void {
+export function removeListener(target: EventTarget, listener: Listener): void {
   if ((listener.flags & LISTENER_REMOVED) !== 0) return;
   const slots = target[$listeners];
   if (slots != null) {
-    const id = typeIdOf(type);
+    const id = listener.id;
     let prev: Listener | null = null;
     for (let l = firstListener(slots, id) ?? null; l !== null; prev = l, l = l.next) {
       if (l === listener) {
@@ -374,10 +401,10 @@ function unlink(
 
 function markRemoved(listener: Listener): void {
   listener.flags |= LISTENER_REMOVED;
-  const abort = listener.abort;
-  if (abort !== null) {
-    abort.signal.removeEventListener("abort", abort.onAbort);
-    listener.abort = null;
+  if ((listener.flags & LISTENER_SIGNAL) !== 0) {
+    const l = listener as SignalListener;
+    collected.unregister(l.ref);
+    dropAbortStep(l.signal, l.ref);
   }
 }
 

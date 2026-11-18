@@ -17,7 +17,7 @@
 //   through a <form> Proxy or prototype-chain misses on <div>/<body>/Document/Window.
 // - The spec updates event.target/relatedTarget/touch targets and eventPhase at *every* struct;
 //   those values are only observable from listeners and after dispatch, so `invoke` runs (and
-//   writes them) only for items that have a listener array, and the final values are applied
+//   writes them) only for items with a matching chain or a possible legacy alias. Final values are applied
 //   once at the end from the last struct the bubbling pass would have visited.
 // - An event type nobody has ever listened for (`typeIdOf` is -1) has no listener to run on any
 //   item: both passes are skipped (activation behavior and legacy webkit* types still apply).
@@ -66,11 +66,12 @@ import {
   LISTENER_PASSIVE,
   LISTENER_REMOVED,
   firstListener,
+  idForType,
   listenerSeqLimit,
+  listenerAborted,
   removeListener,
   typeIdOf,
   type Listener,
-  type ListenerSlots,
 } from "./listeners.ts";
 import { noteChangeDispatch } from "../html/forms/user-validity.ts";
 import { $globalObject, $host, $impl, $listeners } from "../keys.ts";
@@ -117,11 +118,13 @@ export function setAssignedSlotLookup(fn: ((impl: NodeImpl) => EventTarget | nul
   assignedSlotLookup = fn;
 }
 
-/**
- * Parallel to `PATH`, indexed by struct offset: the listener array the capturing pass read for
- * that struct's item (null when it had none), reused by the bubbling pass — see `dispatch`.
- */
-const SLOTS: (ListenerSlots | null | undefined)[] = [];
+/** Listener chains seen during capture, indexed by path offset. Cleared when dispatch returns. */
+const HEADS: (Listener | undefined)[] = [];
+
+function listenerHead(target: EventTarget, id: number): Listener | undefined {
+  const slots = target[$listeners];
+  return slots == null ? undefined : firstListener(slots, id);
+}
 
 /** Only children of shadow hosts (F_HAS_SHADOW) can be assigned to a slot: gate the lookup on it. */
 function assignedSlot(impl: NodeImpl): EventTarget | null {
@@ -442,22 +445,22 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
       // Resolved once for the whole path (listeners.ts: slots are indexed by type id). -1 means
       // no target anywhere listens for the type: nothing to invoke unless a legacy webkit* alias
       // of a trusted event's type is listened for.
-      const id = typeIdOf(s.type);
-      if (id !== -1 || ((s.flags & EF_TRUSTED) !== 0 && legacyTypeListened(s.type))) {
-        // Each item's listener array is a megamorphic keyed load (a Proxy trap on a <form>), so
-        // the capturing pass records what it read in SLOTS for the bubbling pass. A target's
-        // first listener of any type is a new Listener, which advances the insertion counter:
-        // while it has not moved, a null stays null (and a stale array only holds listeners
-        // marked removed, which inner invoke skips), so the cache matches a fresh read.
+      let id = typeIdOf(s.type);
+      const legacy = (s.flags & EF_TRUSTED) === 0 ? null : legacyType(s.type);
+      // A legacy handler can register the unprefixed type during capture.
+      if (id === -1 && legacy !== null && typeIdOf(legacy) !== -1) id = idForType(s.type);
+      if (id !== -1) {
+        // Removals mark the chain and preserve its links. Only an addition can require a
+        // fresh lookup in the bubbling pass. Each nested dispatch has its own path offsets.
         const seq = listenerSeqLimit();
         // Step 6.13: capturing.
         let stopped = false;
         for (let o = end - STRIDE; o >= base; o -= STRIDE) {
-          const slots = (PATH[o] as EventTarget)[$listeners];
-          SLOTS[o] = slots;
-          if (slots == null) continue;
+          const head = listenerHead(PATH[o] as EventTarget, id);
+          HEADS[o] = head;
+          if (head === undefined && legacy === null) continue;
           s.eventPhase = ((PATH[o + 4] as number) & PF_HAS_SHADOW_ADJUSTED_TARGET) !== 0 ? AT_TARGET : CAPTURING_PHASE;
-          invoke(event, s, o, slots, CAPTURING_PHASE, id);
+          invoke(event, s, o, head, CAPTURING_PHASE, legacy);
           // Once stopped, the remaining invokes only write target/relatedTarget (applied below).
           if ((s.flags & EF_STOP_PROPAGATION) !== 0) {
             stopped = true;
@@ -469,10 +472,10 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
           for (let o = base; o < end; o += STRIDE) {
             const f = PATH[o + 4] as number;
             if ((f & PF_HAS_SHADOW_ADJUSTED_TARGET) === 0 && !bubbles) continue;
-            const slots = listenerSeqLimit() === seq ? SLOTS[o] : (PATH[o] as EventTarget)[$listeners];
-            if (slots == null) continue;
+            const head = listenerSeqLimit() === seq ? HEADS[o] : listenerHead(PATH[o] as EventTarget, id);
+            if (head === undefined && legacy === null) continue;
             s.eventPhase = (f & PF_HAS_SHADOW_ADJUSTED_TARGET) !== 0 ? AT_TARGET : BUBBLING_PHASE;
-            invoke(event, s, o, slots, BUBBLING_PHASE, id);
+            invoke(event, s, o, head, BUBBLING_PHASE, legacy);
             if ((s.flags & EF_STOP_PROPAGATION) !== 0) break;
           }
         }
@@ -491,7 +494,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
     for (let o = base, end = pathStack.top; o < end; o += STRIDE) {
       PATH[o] = null;
       PATH[o + 1] = null;
-      SLOTS[o] = null;
+      HEADS[o] = undefined;
       if (!plain) {
         PATH[o + 2] = null;
         PATH[o + 3] = null;
@@ -538,17 +541,15 @@ function legacyType(type: string): string | null {
   }
 }
 
-/** Whether some target has ever listened for `type`'s legacy webkit* alias. */
-function legacyTypeListened(type: string): boolean {
-  const legacy = legacyType(type);
-  return legacy !== null && typeIdOf(legacy) !== -1;
-}
-
-/**
- * https://dom.spec.whatwg.org/#concept-event-listener-invoke — `slots` is the item's (non-null)
- * listener array and `id` is `s.type`'s type id.
- */
-function invoke(event: Event, s: EventState, o: number, slots: ListenerSlots, phase: number, id: number): void {
+/** https://dom.spec.whatwg.org/#concept-event-listener-invoke */
+function invoke(
+  event: Event,
+  s: EventState,
+  o: number,
+  head: Listener | undefined,
+  phase: number,
+  legacy: string | null,
+): void {
   const item = PATH[o] as EventTarget;
   // Steps 1-3.
   s.target = PATH[o + 1] as EventTarget;
@@ -562,18 +563,15 @@ function invoke(event: Event, s: EventState, o: number, slots: ListenerSlots, ph
   s.currentTarget = currentTarget;
   const inShadow = (f & PF_IN_SHADOW_TREE) !== 0;
   // Steps 6-7.
-  const type = s.type;
-  const head = firstListener(slots, id);
-  const found = head !== undefined && innerInvoke(event, s, item, currentTarget, type, head, phase, inShadow);
+  const found = head !== undefined && innerInvoke(event, s, item, currentTarget, head, phase, inShadow);
   // Step 8.
-  if (!found && (s.flags & EF_TRUSTED) !== 0) {
-    const legacy = legacyType(type);
-    if (legacy === null) return;
-    const legacyHead = firstListener(slots, typeIdOf(legacy));
+  if (!found && legacy !== null) {
+    const legacyHead = listenerHead(item, typeIdOf(legacy));
     if (legacyHead === undefined) return;
+    const type = s.type;
     s.type = legacy;
     try {
-      innerInvoke(event, s, item, currentTarget, legacy, legacyHead, phase, inShadow);
+      innerInvoke(event, s, item, currentTarget, legacyHead, phase, inShadow);
     } finally {
       s.type = type;
     }
@@ -589,7 +587,6 @@ function innerInvoke(
   s: EventState,
   item: EventTarget,
   currentTarget: EventTarget,
-  type: string,
   head: Listener,
   phase: number,
   inShadow: boolean,
@@ -600,12 +597,12 @@ function innerInvoke(
   for (let listener: Listener | null = head; listener !== null && listener.seq < limit; listener = listener.next) {
     const flags = listener.flags;
     // Step 2.1-2.3.
-    if ((flags & LISTENER_REMOVED) !== 0) continue;
+    if ((flags & LISTENER_REMOVED) !== 0 || listenerAborted(listener)) continue;
     found = true;
     // Step 2.4.
     if ((flags & LISTENER_CAPTURE) !== 0 ? phase !== CAPTURING_PHASE : phase === CAPTURING_PHASE) continue;
     // Step 2.5.
-    if ((flags & LISTENER_ONCE) !== 0) removeListener(item, type, listener);
+    if ((flags & LISTENER_ONCE) !== 0) removeListener(item, listener);
     // Steps 2.6-2.8: window.event.
     const previousEvent = currentEvent;
     if (!inShadow) currentEvent = event;

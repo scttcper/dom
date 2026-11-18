@@ -133,8 +133,8 @@ Memory rules for per-node state (every rendered element pays them):
   exact size: the first `push` onto `[]` allocates a 17-slot backing store. Event listeners avoid
   per-type lists altogether: a target holds one array indexed by a process-wide event type id,
   each slot the head of a linked list (`events/listeners.ts`), so a React root container's 142
-  listeners over 87 types are one array plus the listeners themselves. A target with up to four
-  types holds `[id, head]` pairs instead (React's own `invalid` listener on every input: 641 → 128 B).
+  listeners over 87 types are one array plus the listeners themselves. A target with one type stores the list head directly,
+  as on each React input with its own `invalid` listener. Two to four types use a compact array of heads.
   Measure allocation with `pnpm bench` (`allocMB`/`gcMs` extras) when touching hot paths.
 - A wrapper React defines an own accessor on must have few own properties. React tracks every
   `<input>` and `<textarea>` it mounts by defining an own `value`/`checked` accessor with closures
