@@ -386,27 +386,17 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   /** https://html.spec.whatwg.org/#placeholder-label-option */
-  _placeholderLabelOption(): NodeImpl | null {
-    const impl = this[$impl];
-    if (contentAttr(impl, "required") === null || !this._isSingle() || this._displaySize() !== 1) return null;
-    const first = scanOptions(impl, (option) => option);
-    if (first?.parent !== impl) return null;
-    return opt(first).value === "" ? first : null;
+  private _isPlaceholderLabelOption(first: NodeImpl): boolean {
+    return first.parent === this[$impl] && this._isSingle() && this._displaySize() === 1 && opt(first).value === "";
   }
 
   _validityFlags(): number {
     let flags = this[$customValidity] ? V_CUSTOM_ERROR : 0;
     if (contentAttr(this[$impl], "required") !== null) {
-      const options = listOfOptions(this[$impl], []);
-      let selected: NodeImpl | null = null;
-      let count = 0;
-      for (let i = 0; i < options.length; i++) {
-        if (opt(options[i])._selectednessNow()) {
-          if (count === 0) selected = options[i];
-          count++;
-        }
-      }
-      if (count === 0 || (count === 1 && selected === this._placeholderLabelOption())) flags |= V_VALUE_MISSING;
+      const hasValue = scanOptions(this[$impl], (option, index) => {
+        if (opt(option)._selectednessNow() && (index !== 0 || !this._isPlaceholderLabelOption(option))) return true;
+      });
+      if (!hasValue) flags |= V_VALUE_MISSING;
     }
     return flags;
   }
