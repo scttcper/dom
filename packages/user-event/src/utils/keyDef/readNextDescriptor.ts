@@ -23,7 +23,7 @@ export function readNextDescriptor(text: string, context: Context, offset = 0) {
   const char = text[offset]
   if (char === '{' || char === '[') {
     if (text[offset + 1] !== char) {
-      return readTag(text.slice(offset), 1, char, context)
+      return readTag(text, offset, char, context)
     }
     return printableChar(char, 2)
   }
@@ -44,64 +44,79 @@ function printableChar(descriptor: string, consumedLength: number) {
 
 function readTag(
   text: string,
-  pos: number,
+  offset: number,
   startBracket: keyof typeof bracketDict,
   context: Context,
 ) {
-  const releasePreviousModifier = text[pos] === '/' ? '/' : ''
+  let pos = offset + 1
+  const releasePrevious = text[pos] === '/'
+  if (releasePrevious) pos++
 
-  pos += releasePreviousModifier.length
+  const escaped = startBracket === '{' && text[pos] === '\\'
+  if (escaped) pos++
+  const start = pos
+  if (!escaped) {
+    while (isWordChar(text.charCodeAt(pos))) pos++
+  }
+  if (pos === start) {
+    const char = text[pos]
+    if (
+      !char ||
+      (!escaped &&
+        (startBracket === '[' || char === '}' || char === '>' || char === '/'))
+    ) {
+      throw new Error(
+        getErrorMessage('key descriptor', char, text.slice(offset), context),
+      )
+    }
+    pos++
+  }
+  const descriptor = text.slice(start, pos)
 
-  const escapedDescriptor = startBracket === '{' && text[pos] === '\\'
-
-  pos += Number(escapedDescriptor)
-
-  const descriptor = escapedDescriptor
-    ? text[pos]
-    : text.slice(pos).match(startBracket === '{' ? /^\w+|^[^}>/]/ : /^\w+/)?.[0]
-
-  assertDescriptor(descriptor, text, pos, context)
-
-  pos += descriptor.length
-
-  const repeatModifier = text.slice(pos).match(/^>\d+/)?.[0] ?? ''
-
-  pos += repeatModifier.length
+  let repeat: number | undefined
+  if (text[pos] === '>' && isDigit(text.charCodeAt(pos + 1))) {
+    const digits = pos + 1
+    pos = digits + 1
+    while (isDigit(text.charCodeAt(pos))) pos++
+    repeat = Math.max(Number(text.slice(digits, pos)), 1)
+  }
 
   const releaseSelfModifier =
-    text[pos] === '/' || (!repeatModifier && text[pos] === '>') ? text[pos] : ''
+    text[pos] === '/' || (repeat === undefined && text[pos] === '>')
+      ? text[pos]
+      : ''
 
   pos += releaseSelfModifier.length
 
   const expectedEndBracket = bracketDict[startBracket]
-  const endBracket = text[pos] === expectedEndBracket ? expectedEndBracket : ''
-
-  if (!endBracket) {
+  if (text[pos] !== expectedEndBracket) {
     throw new Error(
       getErrorMessage(
         [
-          !repeatModifier && 'repeat modifier',
+          repeat === undefined && 'repeat modifier',
           !releaseSelfModifier && 'release modifier',
           `"${expectedEndBracket}"`,
         ]
           .filter(Boolean)
           .join(' or '),
         text[pos],
-        text,
+        text.slice(offset),
         context,
       ),
     )
   }
 
-  pos += endBracket.length
+  let releaseSelf: boolean | undefined
+  if (releaseSelfModifier || repeat !== undefined)
+    releaseSelf = releaseSelfModifier === '/'
 
   return {
     type: startBracket,
-    consumedLength: pos,
+    consumedLength: pos + 1 - offset,
     descriptor,
-    releasePrevious: !!releasePreviousModifier,
-    repeat: repeatModifier ? Math.max(Number(repeatModifier.substr(1)), 1) : 1,
-    releaseSelf: hasReleaseSelf(releaseSelfModifier, repeatModifier),
+    releasePrevious,
+    repeat: repeat ?? 1,
+    releaseSelf,
   }
 }
 
@@ -116,14 +131,18 @@ function assertDescriptor(
   }
 }
 
-function hasReleaseSelf(releaseSelfModifier: string, repeatModifier: string) {
-  if (releaseSelfModifier) {
-    return releaseSelfModifier === '/'
-  }
+function isDigit(code: number) {
+  return code >= 48 && code <= 57
+}
 
-  if (repeatModifier) {
-    return false
-  }
+/** ASCII word characters allowed in unescaped key and code names. */
+function isWordChar(code: number) {
+  return (
+    isDigit(code) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    code === 95
+  )
 }
 
 function getErrorMessage(

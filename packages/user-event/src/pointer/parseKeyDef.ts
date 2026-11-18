@@ -11,21 +11,22 @@ export function parseKeyDef(pointerMap: pointerKey[], keys: string) {
     releaseSelf: boolean
   }> = []
 
+  let offset = 0
   do {
     const {
       descriptor,
       consumedLength,
       releasePrevious,
       releaseSelf = true,
-    } = readNextDescriptor(keys, 'pointer')
+    } = readNextDescriptor(keys, 'pointer', offset)
     const keyDef = pointerMap.find(p => p.name === descriptor)
 
     if (keyDef) {
       defs.push({keyDef, releasePrevious, releaseSelf})
     }
 
-    keys = keys.slice(consumedLength)
-  } while (keys)
+    offset += consumedLength
+  } while (offset < keys.length)
 
   return defs
 }
