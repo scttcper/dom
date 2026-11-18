@@ -13,14 +13,28 @@ import { windowOrigin } from "./origin.ts";
 import { $closed, $parentWindow, $url } from "../keys.ts";
 
 /** https://storage.spec.whatwg.org/#storage-shed */
-export interface StorageShed {
+export class StorageShed {
   /** origin → local storage area (a "storage bottle map") */
-  areas: Map<string, Map<string, string>>;
-  windows: Set<Window>;
+  readonly areas = new Map<string, Map<string, string>>();
+  readonly windows = new Set<StoragePeer>();
+  readonly collected = new FinalizationRegistry<StoragePeer>((ref) => this.windows.delete(ref));
 }
 
-export function createStorageShed(): StorageShed {
-  return { areas: new Map(), windows: new Set() };
+/** A shared storage area can broadcast to a tab for as long as the tab is reachable. */
+export class StoragePeer extends WeakRef<Window> {
+  readonly shed: StorageShed;
+
+  constructor(window: Window, shed = new StorageShed()) {
+    super(window);
+    this.shed = shed;
+    shed.windows.add(this);
+    shed.collected.register(window, this, this);
+  }
+
+  leave(): void {
+    this.shed.windows.delete(this);
+    this.shed.collected.unregister(this);
+  }
 }
 
 // jsdom and browsers use a 5 MiB-ish per-origin quota measured in code units.
@@ -235,8 +249,9 @@ function broadcast(s: StorageState, key: string | null, oldValue: string | null,
   const origin = windowOrigin(source);
   const url = source[$url].href;
   const top = s.type === "session" ? topWindow(source) : null;
-  for (const other of shed.windows) {
-    if (other === source || other[$closed] || windowOrigin(other) !== origin) continue;
+  for (const ref of shed.windows) {
+    const other = ref.deref();
+    if (other === undefined || other === source || other[$closed] || windowOrigin(other) !== origin) continue;
     if (top !== null && topWindow(other) !== top) continue;
     const local = s.type === "local";
     other._task(() => {

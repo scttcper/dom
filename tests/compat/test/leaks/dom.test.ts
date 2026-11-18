@@ -181,6 +181,24 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
     expect(await tracker.alive()).toEqual({});
   });
 
+  test("shared storage releases discarded tabs while live peers keep the stored data", async () => {
+    const original = createWindow();
+    const tracker = new Tracker();
+    function openTab(i: number) {
+      const tab = tracker.track("shared tab", createWindow({ shareStorageWith: original }));
+      tracker.track("tab document", tab.document);
+      tab.localStorage.setItem("step", String(i));
+    }
+    for (let i = 0; i < 12; i++) openTab(i);
+    const peer = createWindow({ shareStorageWith: original });
+    expect(peer.localStorage.getItem("step")).toBe("11");
+    expect(await tracker.alive()).toEqual({});
+    original.localStorage.setItem("step", "done");
+    expect(peer.localStorage.getItem("step")).toBe("done");
+    original.close();
+    peer.close();
+  });
+
   test("without close(), only the current window (the most recently created) stays reachable", async () => {
     const tracker = new Tracker();
     for (let i = 0; i < 5; i++) exercise(tracker, { close: false });

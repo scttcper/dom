@@ -27,13 +27,7 @@ import { Location } from "./Location.ts";
 import { History } from "./History.ts";
 import { Navigator } from "./Navigator.ts";
 import { Screen, VisualViewport } from "./Screen.ts";
-import {
-  type StorageShed,
-  type Storage,
-  createStorageShed,
-  createLocalStorage,
-  createSessionStorage,
-} from "./Storage.ts";
+import { type StorageShed, type Storage, StoragePeer, createLocalStorage, createSessionStorage } from "./Storage.ts";
 import { MediaQueryList, reportMediaQueryChanges } from "./media.ts";
 import { CookieJar } from "./cookies.ts";
 import { installEventHandlers } from "../events/handlers.ts";
@@ -283,7 +277,7 @@ export class Window extends EventTarget {
   declare readonly visualViewport?: VisualViewport;
   declare [$localStorage]: Storage | null;
   declare [$sessionStorage]: Storage | null;
-  declare [$shed]: StorageShed | null;
+  declare [$shed]: StoragePeer | null;
   declare [$customElements]: unknown;
   declare [$cookieJar]: CookieJar | null;
   /** MediaQueryLists with change listeners (https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes). */
@@ -365,7 +359,9 @@ export class Window extends EventTarget {
     this[$visualViewport] = null;
     this[$localStorage] = null;
     this[$sessionStorage] = null;
-    this[$shed] = options.shareStorageWith === undefined ? null : options.shareStorageWith._storageShed;
+    // Join eagerly so storage events reach tabs and frames before their first storage access.
+    const storageParent = nested?.parent ?? options.shareStorageWith;
+    this[$shed] = storageParent === undefined ? null : new StoragePeer(this, storageParent._storageShed);
     this[$customElements] = null;
     this[$cookieJar] = null;
     this[$mediaQueryLists] = new Set();
@@ -389,7 +385,6 @@ export class Window extends EventTarget {
     this[$frameElement] = null;
     this[$childWindows] = null;
     this[$globalObject] = null;
-    if (this[$shed] !== null) this[$shed].windows.add(this);
     if (options.visualViewport ?? compatExposes(this[$options].compat, "visualViewport")) {
       Object.defineProperty(this, "visualViewport", {
         get: visualViewportGetter,
@@ -404,10 +399,6 @@ export class Window extends EventTarget {
       this[$frameElement] = nested.frameElement;
       this[$host] = nested.parent[$host];
       (nested.parent[$childWindows] ??= new Set()).add(this);
-      // Same storage shed as the parent (same user agent "tab"), joined eagerly so `storage`
-      // events reach frames that never touched storage themselves.
-      this[$shed] = nested.parent._storageShed;
-      this[$shed].windows.add(this);
       if (nested.srcdoc !== null) {
         parseDocument(nested.srcdoc, doc);
       } else {
@@ -548,11 +539,7 @@ export class Window extends EventTarget {
 
   /** @internal */
   get _storageShed(): StorageShed {
-    if (this[$shed] === null) {
-      this[$shed] = createStorageShed();
-      this[$shed].windows.add(this);
-    }
-    return this[$shed];
+    return (this[$shed] ??= new StoragePeer(this)).shed;
   }
 
   /** @internal */
@@ -947,7 +934,7 @@ export class Window extends EventTarget {
     this[$frameTask] = null;
     this[$idleCallbacks] = null;
     this[$mediaQueryLists].clear();
-    this[$shed]?.windows.delete(this);
+    this[$shed]?.leave();
     if (this[$childWindows] !== null) {
       for (const child of this[$childWindows]) child.close();
       this[$childWindows] = null;
