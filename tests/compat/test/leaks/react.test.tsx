@@ -97,6 +97,38 @@ function Data({ promise }: { promise: Promise<string> }) {
 }
 
 describe("render → interact → cleanup — https://testing-library.com/docs/react-testing-library/api#cleanup", () => {
+  test("selectOptions releases completed options while the next selection is pending", async () => {
+    const tracker = new Tracker();
+    const paused = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const select = document.body.appendChild(document.createElement("select"));
+    select.multiple = true;
+    const next = document.createElement("option");
+    const user = userEvent.setup({
+      advanceTimers() {
+        paused.resolve();
+        return resume.promise;
+      },
+    }) as unknown as User;
+    const selecting = (() => {
+      const first = tracker.track("removed option", document.createElement("option"));
+      select.append(first, next);
+      first.addEventListener("click", () => first.remove());
+      return user.selectOptions(select, [first, next]);
+    })();
+    try {
+      await Promise.race([paused.promise, selecting]);
+      expect(select.options.length).toBe(1);
+      expect(next.selected).toBe(false);
+      expect(await tracker.alive()).toEqual({});
+    } finally {
+      resume.resolve();
+      await selecting;
+      select.remove();
+    }
+    expect(next.selected).toBe(true);
+  });
+
   test("typing releases the original field when an input handler replaces it", async () => {
     const tracker = new Tracker();
     const paused = Promise.withResolvers<void>();
