@@ -22,7 +22,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 787 | 608 | 54 | 125 |
+| [HTML Standard](#html-standard) | 786 | 607 | 54 | 125 |
 | [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
 | [CSS: geometry](#css-geometry) | 61 | 54 | 3 | 4 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1688 | 1165 | 123 | 400 |
+| **All** | 1687 | 1164 | 123 | 400 |
 
 ## Web-platform-tests fixtures
 
@@ -163,7 +163,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 787 sections implemented, 608 tested, 54 by WPT only, 125 untested.
+<https://html.spec.whatwg.org/> — 786 sections implemented, 607 tested, 54 by WPT only, 125 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -614,7 +614,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [get-the-text-steps](https://html.spec.whatwg.org/#get-the-text-steps) | `dom/html/innerText.ts` | `dom/html/global-attributes-focus.test.ts` |
 | [getting-the-current-value-of-the-event-handler](https://html.spec.whatwg.org/#getting-the-current-value-of-the-event-handler) | `dom/events/handlers.ts` | **untested** |
 | [global-attributes](https://html.spec.whatwg.org/#global-attributes) | `dom/html/HTMLElement.ts` | `dom/html/elements.test.ts`, `dom/html/wpt-html-dom.test.ts`, `compat/html/global-attributes.test.ts` |
-| [globaleventhandlers](https://html.spec.whatwg.org/#globaleventhandlers) | `dom/events/handlers.ts`, `dom/window/Window.ts` | `dom/html/forms/controls-details.test.ts` |
+| [globaleventhandlers](https://html.spec.whatwg.org/#globaleventhandlers) | `dom/events/handler-names.ts`, `dom/events/handlers.ts`, `dom/window/Window.ts` | `dom/html/forms/controls-details.test.ts` |
 | [has-a-reversed-range](https://html.spec.whatwg.org/#has-a-reversed-range) | `dom/html/forms/HTMLInputElement.ts` | WPT: `html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html` |
 | [has-an-element-in-scope](https://html.spec.whatwg.org/#has-an-element-in-scope) | `dom/parser/treebuilder.ts` | **untested** |
 | [has-an-element-in-the-specific-scope](https://html.spec.whatwg.org/#has-an-element-in-the-specific-scope) | `dom/parser/treebuilder.ts` | **untested** |
@@ -727,7 +727,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [popover-target-attribute-activation-behavior](https://html.spec.whatwg.org/#popover-target-attribute-activation-behavior) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popover-target-element](https://html.spec.whatwg.org/#popover-target-element) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popover-toggle-task-tracker](https://html.spec.whatwg.org/#popover-toggle-task-tracker) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
-| [popover-trigger](https://html.spec.whatwg.org/#popover-trigger) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popover-visibility-state](https://html.spec.whatwg.org/#popover-visibility-state) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [popoverinvokerelement](https://html.spec.whatwg.org/#popoverinvokerelement) | `dom/html/registry.ts` | `dom/html/elements.test.ts` |
 | [preprocessing-the-input-stream](https://html.spec.whatwg.org/#preprocessing-the-input-stream) | `dom/parser/tokenizer.ts` | **untested** |
@@ -952,7 +951,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [validitystate](https://html.spec.whatwg.org/#validitystate) | `dom/html/forms/validation.ts` | `dom/html/forms/validation.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [value-sanitization-algorithm](https://html.spec.whatwg.org/#value-sanitization-algorithm) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-value.test.ts` |
 | [week-number-of-the-last-day](https://html.spec.whatwg.org/#week-number-of-the-last-day) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
-| [windoweventhandlers](https://html.spec.whatwg.org/#windoweventhandlers) | `dom/events/handlers.ts` | **untested** |
+| [windoweventhandlers](https://html.spec.whatwg.org/#windoweventhandlers) | `dom/events/handler-names.ts`, `dom/events/handlers.ts` | **untested** |
 | [xml-fragment-parsing-algorithm](https://html.spec.whatwg.org/#xml-fragment-parsing-algorithm) | `dom/parser/xml.ts` | `dom/serializer/serializer.test.ts` |
 
 ## DOM Standard
@@ -1640,7 +1639,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-selection-selectallchildren](https://w3c.github.io/selection-api/#dom-selection-selectallchildren) | `dom/traversal/Selection.ts` | **untested** |
 | [dom-selection-setbaseandextent](https://w3c.github.io/selection-api/#dom-selection-setbaseandextent) | `dom/traversal/Selection.ts` | **untested** |
 | [dom-window-getselection](https://w3c.github.io/selection-api/#dom-window-getselection) | `dom/window/Window.ts` | **untested** |
-| [extensions-to-globaleventhandlers-interface](https://w3c.github.io/selection-api/#extensions-to-globaleventhandlers-interface) | `dom/events/handlers.ts` | **untested** |
+| [extensions-to-globaleventhandlers-interface](https://w3c.github.io/selection-api/#extensions-to-globaleventhandlers-interface) | `dom/events/handler-names.ts` | **untested** |
 | [firing-selectionhange-event](https://w3c.github.io/selection-api/#firing-selectionhange-event) | `dom/traversal/Selection.ts` | **untested** |
 | [scheduling-selectionhange-event](https://w3c.github.io/selection-api/#scheduling-selectionhange-event) | `dom/traversal/Selection.ts` | `dom/traversal/selection.test.ts` |
 | [selection-interface](https://w3c.github.io/selection-api/#selection-interface) | `dom/traversal/Selection.ts` | `dom/traversal/range-mutations-fuzz.test.ts`, `dom/traversal/selection.test.ts`, `dom/traversal/wpt-selection.test.ts` |
@@ -1901,7 +1900,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-pointerevent-constructor](https://w3c.github.io/pointerevents/#dom-pointerevent-constructor) | `dom/events/UIEvents.ts` | **untested** |
 | [dom-pointerevent-getcoalescedevents](https://w3c.github.io/pointerevents/#dom-pointerevent-getcoalescedevents) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts` |
 | [dom-pointerevent-getpredictedevents](https://w3c.github.io/pointerevents/#dom-pointerevent-getpredictedevents) | `dom/events/UIEvents.ts` | **untested** |
-| [extensions-to-the-globaleventhandlers-mixin](https://w3c.github.io/pointerevents/#extensions-to-the-globaleventhandlers-mixin) | `dom/events/handlers.ts` | **untested** |
+| [extensions-to-the-globaleventhandlers-mixin](https://w3c.github.io/pointerevents/#extensions-to-the-globaleventhandlers-mixin) | `dom/events/handler-names.ts` | **untested** |
 | [extensions-to-the-navigator-interface](https://w3c.github.io/pointerevents/#extensions-to-the-navigator-interface) | `dom/window/Navigator.ts` | **untested** |
 | [pointerevent-interface](https://w3c.github.io/pointerevents/#pointerevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts`, `user-event/event/fallback-constructors.test.ts` |
 
@@ -1927,7 +1926,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [interface-animationevent](https://drafts.csswg.org/css-animations/#interface-animationevent) | `dom/events/events.ts` | **untested** |
 | [interface-csskeyframerule](https://drafts.csswg.org/css-animations/#interface-csskeyframerule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSKeyframeRule.html` |
 | [interface-csskeyframesrule](https://drafts.csswg.org/css-animations/#interface-csskeyframesrule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSKeyframesRule-indexed-getter.html` |
-| [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-animations/#interface-globaleventhandlers-idl) | `dom/events/handlers.ts` | **untested** |
+| [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-animations/#interface-globaleventhandlers-idl) | `dom/events/handler-names.ts` | **untested** |
 | [typedef-keyframe-selector](https://drafts.csswg.org/css-animations/#typedef-keyframe-selector) | `dom/css/cssom.ts` | **untested** |
 
 ## CSS: css-display
@@ -2030,7 +2029,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-transitions/#interface-globaleventhandlers-idl) | `dom/events/handlers.ts` | **untested** |
+| [interface-globaleventhandlers-idl](https://drafts.csswg.org/css-transitions/#interface-globaleventhandlers-idl) | `dom/events/handler-names.ts` | **untested** |
 | [interface-transitionevent](https://drafts.csswg.org/css-transitions/#interface-transitionevent) | `dom/events/events.ts` | **untested** |
 | [the-cssstartingstylerule-interface](https://drafts.csswg.org/css-transitions/#the-cssstartingstylerule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [transition-shorthand-property](https://drafts.csswg.org/css-transitions/#transition-shorthand-property) | `dom/css/values.ts` | `dom/css/wpt-css-parsing.test.ts`; WPT: `css/css-transitions/parsing/transition-invalid.html`, `css/css-transitions/parsing/transition-valid.html` |
@@ -2074,7 +2073,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [extensions-to-the-globaleventhandlers-mixin](https://w3c.github.io/touch-events/#extensions-to-the-globaleventhandlers-mixin) | `dom/events/handlers.ts` | **untested** |
+| [extensions-to-the-globaleventhandlers-mixin](https://w3c.github.io/touch-events/#extensions-to-the-globaleventhandlers-mixin) | `dom/events/handler-names.ts` | **untested** |
 | [touch-interface](https://w3c.github.io/touch-events/#touch-interface) | `dom/events/UIEvents.ts` | **untested** |
 | [touchevent-interface](https://w3c.github.io/touch-events/#touchevent-interface) | `dom/events/UIEvents.ts` | `dom/events/shape.test.ts`, `dom/events/uievents.test.ts` |
 | [touchlist-interface](https://w3c.github.io/touch-events/#touchlist-interface) | `dom/events/UIEvents.ts` | **untested** |
