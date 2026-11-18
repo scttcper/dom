@@ -4,7 +4,7 @@
 import {type pointerKey} from './shared.ts'
 
 export class Buttons {
-  private readonly pressed: Record<string, pointerKey[]> = {}
+  private readonly pressed: Record<number, pointerKey | pointerKey[]> = {}
   /** `MouseEvent.buttons` of `pressed`, kept up to date instead of recomputed per event. */
   private mask = 0
 
@@ -15,12 +15,14 @@ export class Buttons {
   down(keyDef: pointerKey) {
     const button = getMouseButtonId(keyDef.button)
 
-    if (button in this.pressed) {
-      this.pressed[button].push(keyDef)
+    const pressed = this.pressed[button]
+    if (pressed !== undefined) {
+      if (Array.isArray(pressed)) pressed.push(keyDef)
+      else this.pressed[button] = [pressed, keyDef]
       return undefined
     }
 
-    this.pressed[button] = [keyDef]
+    this.pressed[button] = keyDef
     this.mask |= 2 ** button
     return button
   }
@@ -28,18 +30,20 @@ export class Buttons {
   up(keyDef: pointerKey) {
     const button = getMouseButtonId(keyDef.button)
 
-    if (button in this.pressed) {
-      this.pressed[button] = this.pressed[button].filter(
-        k => k.name !== keyDef.name,
-      )
-      if (this.pressed[button].length === 0) {
-        delete this.pressed[button]
-        this.mask &= ~(2 ** button)
-        return button
+    const pressed = this.pressed[button]
+    if (Array.isArray(pressed)) {
+      const remaining = pressed.filter(k => k.name !== keyDef.name)
+      if (remaining.length) {
+        this.pressed[button] =
+          remaining.length === 1 ? remaining[0]! : remaining
+        return undefined
       }
+    } else if (pressed === undefined || pressed.name !== keyDef.name) {
+      return undefined
     }
-
-    return undefined
+    delete this.pressed[button]
+    this.mask &= ~(2 ** button)
+    return button
   }
 }
 

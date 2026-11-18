@@ -23,38 +23,32 @@ import {
  */
 // Ours: a module-level class (upstream defines it inline, a new class per instance).
 class ClickCount {
-  private down: Record<number, number | undefined> = {}
-  private count: Record<number, number | undefined> = {}
+  private button?: string
+  private downDetail = 0
+  private count?: number
 
   incOnClick(button: number) {
-    const current =
-      this.down[button] === undefined
-        ? undefined
-        : Number(this.down[button]) + 1
-
-    this.count =
-      this.count[button] === undefined
-        ? {}
-        : {[button]: Number(this.count[button]) + 1}
-
-    return current
+    const detail = this.getOnUp(button)
+    if (detail === undefined) this.count = undefined
+    else if (this.count !== undefined) this.count++
+    return detail
   }
 
   getOnDown(button: number) {
-    this.down = {[button]: this.count[button] ?? 0}
-    this.count = {[button]: this.count[button] ?? 0}
-
-    return Number(this.count[button]) + 1
+    const key = String(button)
+    if (key !== this.button || this.count === undefined) this.count = 0
+    this.button = key
+    this.downDetail = this.count + 1
+    return this.downDetail
   }
 
   getOnUp(button: number) {
-    return this.down[button] === undefined
-      ? undefined
-      : Number(this.down[button]) + 1
+    return String(button) === this.button ? this.downDetail : undefined
   }
 
   reset() {
-    this.count = {}
+    // A button held across calls still gets its original mouseup detail.
+    this.count = undefined
   }
 }
 
