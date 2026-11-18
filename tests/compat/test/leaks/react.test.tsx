@@ -124,6 +124,7 @@ describe("render → interact → cleanup — https://testing-library.com/docs/r
     expect(invoice.files).toHaveLength(0);
     expect(invoice.value).toBe("");
     expect(invoice.validity.valueMissing).toBe(true);
+    cleanup();
   });
 
   test("a rejected upload releases its files while the input and user stay active", async () => {
