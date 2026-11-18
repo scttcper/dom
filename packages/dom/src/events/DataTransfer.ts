@@ -101,7 +101,8 @@ function disableItem(item: DataTransferItem): void {
 export class DataTransferItemList {
   [index: number]: DataTransferItem;
   declare [$items]: DataTransferItem[];
-  declare [$owner]: DataTransfer | null;
+  /** Only needed to invalidate the transfer's cached files and types. */
+  declare [$owner]: WeakRef<DataTransfer> | null;
 
   constructor() {
     if (!internal) throw new TypeError("Illegal constructor");
@@ -170,9 +171,10 @@ export class DataTransferItemList {
       Object.defineProperty(this, i, { value: items[i], enumerable: true, configurable: true, writable: false });
     }
     for (let i = items.length; i < oldLength; i++) delete this[i];
-    if (this[$owner] !== null) {
-      this[$owner][$types] = null;
-      this[$owner][$files] = null;
+    const owner = this[$owner]?.deref();
+    if (owner !== undefined) {
+      owner[$types] = null;
+      owner[$files] = null;
     }
   }
 }
@@ -181,12 +183,10 @@ Object.defineProperty(DataTransferItemList.prototype, Symbol.toStringTag, {
   configurable: true,
 });
 
-function makeList(owner: DataTransfer): DataTransferItemList {
+function makeList(): DataTransferItemList {
   internal = true;
   try {
-    const list = new DataTransferItemList();
-    list[$owner] = owner;
-    return list;
+    return new DataTransferItemList();
   } finally {
     internal = false;
   }
@@ -211,7 +211,7 @@ export class DataTransfer {
   constructor() {
     defineHidden(this, $dropEffect, "none");
     defineHidden(this, $effectAllowed, "uninitialized");
-    defineHidden(this, $items, makeList(this));
+    defineHidden(this, $items, makeList());
     defineHidden(this, $types, null);
     defineHidden(this, $files, null);
   }
@@ -244,6 +244,7 @@ export class DataTransfer {
   /** https://html.spec.whatwg.org/#dom-datatransfer-types */
   get types(): readonly string[] {
     if (this[$types] !== null) return this[$types];
+    this[$items][$owner] ??= new WeakRef(this);
     const out: string[] = [];
     let hasFiles = false;
     for (const item of this[$items][$items]) {
@@ -311,6 +312,7 @@ export class DataTransfer {
   /** https://html.spec.whatwg.org/#dom-datatransfer-files */
   get files(): FileList {
     if (this[$files] !== null) return this[$files];
+    this[$items][$owner] ??= new WeakRef(this);
     const files: File[] = [];
     for (const item of this[$items][$items])
       if (item[$kind] === "file" && item[$file] !== null) files.push(item[$file]);

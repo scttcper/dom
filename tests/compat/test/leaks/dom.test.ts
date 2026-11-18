@@ -854,6 +854,21 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
 });
 
 describe("file lifetimes", () => {
+  test("keeping drag items leaves their transfer and cached views collectible", async () => {
+    const tracker = new Tracker();
+    const items = (() => {
+      const transfer = tracker.track("transfer", new DataTransfer());
+      transfer.items.add(new File(["payload"], "kept.txt"));
+      tracker.track("file list", transfer.files);
+      tracker.track("types", transfer.types);
+      return transfer.items;
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(items[0].getAsFile()?.name).toBe("kept.txt");
+    items.clear();
+    expect(items.length).toBe(0);
+  });
+
   test.each(["remove", "clear"] as const)("a retained drag item releases its file after %s", async (method) => {
     const tracker = new Tracker();
     const transfer = new DataTransfer();
