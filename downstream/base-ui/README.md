@@ -18,9 +18,9 @@ Presets: `smoke` (6 files), `interactions` (13 components) and `all` (what the r
 
 | mode | passed | failed | skipped | wall time | peak RSS |
 | --- | --: | --: | --: | --: | --: |
-| jsdom 27.4.0 | 9,199 | 0 | 1,578 | 60.9 s | 505 MiB |
-| ctrl-dom | 9,198 | 1 | 1,578 | 38.6 s (−37%) | 405 MiB (−20%) |
-| ctrl-dom-full | 9,198 | 1 | 1,578 | 37.6 s (−38%) | 389 MiB (−23%) |
+| jsdom 27.4.0 | 9,199 | 0 | 1,578 | 59.7 s | 467 MiB |
+| ctrl-dom | 9,198 | 1 | 1,578 | 37.8 s (−37%) | 391 MiB (−16%) |
+| ctrl-dom-full | 9,198 | 1 | 1,578 | 34.5 s (−42%) | 387 MiB (−17%) |
 
 **jsdom**: the project's own setup. **ctrl-dom**: `@ctrl/dom` as the test environment, the project's Testing Library packages unchanged. **ctrl-dom-full**: `@ctrl/dom` with its own Testing Library, user-event and jest-dom.
 
