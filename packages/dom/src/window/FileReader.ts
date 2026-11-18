@@ -10,6 +10,19 @@ import { $error, $generation, $readyState, $result } from "../keys.ts";
 
 type ReadKind = "ArrayBuffer" | "BinaryString" | "Text" | "DataURL";
 
+interface ReadOperation {
+  reader: FileReader | null;
+  source: Blob | null;
+}
+
+function finishRead(reader: FileReader): void {
+  const operation = reader[$generation]!;
+  operation.reader = null;
+  operation.source = null;
+  reader[$generation] = null;
+  reader[$readyState] = 2;
+}
+
 export class FileReader extends EventTarget {
   static readonly EMPTY = 0;
   static readonly LOADING = 1;
@@ -18,15 +31,15 @@ export class FileReader extends EventTarget {
   [$readyState]: number;
   [$result]: string | ArrayBuffer | null;
   [$error]: DOMException | null;
-  /** Incremented by abort() and every new read so stale completions are dropped. */
-  [$generation]: number;
+  /** Abort disconnects pending byte callbacks from this reader and its source. */
+  [$generation]: ReadOperation | null;
 
   constructor() {
     super();
     this[$readyState] = 0;
     this[$result] = null;
     this[$error] = null;
-    this[$generation] = 0;
+    this[$generation] = null;
   }
 
   get readyState(): number {
@@ -58,8 +71,7 @@ export class FileReader extends EventTarget {
       this[$result] = null;
       return;
     }
-    this[$generation]++;
-    this[$readyState] = 2;
+    finishRead(this);
     this[$result] = null;
     this._fire("abort");
     if (this[$readyState] !== 1) this._fire("loadend");
@@ -80,27 +92,29 @@ export class FileReader extends EventTarget {
     this[$readyState] = 1;
     this[$result] = null;
     this[$error] = null;
-    const generation = ++this[$generation];
-    queueMicrotask(() => {
-      if (generation === this[$generation]) this._fire("loadstart");
-    });
+    const operation: ReadOperation = { reader: this, source: kind === "DataURL" ? blob : null };
+    this[$generation] = operation;
+    queueMicrotask(() => operation.reader?._fire("loadstart"));
     blob.arrayBuffer().then(
       (buffer) => {
-        if (generation !== this[$generation]) return;
+        const reader = operation.reader;
+        if (reader === null) return;
         const total = buffer.byteLength;
-        this._fire("progress", total, total);
-        if (generation !== this[$generation]) return;
-        this[$readyState] = 2;
-        this[$result] = packageData(buffer, kind, blob.type, encoding);
-        this._fire("load", total, total);
-        if (this[$readyState] !== 1) this._fire("loadend", total, total);
+        reader._fire("progress", total, total);
+        if (operation.reader === null) return;
+        const source = operation.source;
+        finishRead(reader);
+        reader[$result] = packageData(buffer, kind, source?.type ?? "", encoding);
+        reader._fire("load", total, total);
+        if (reader[$readyState] !== 1) reader._fire("loadend", total, total);
       },
       (error: unknown) => {
-        if (generation !== this[$generation]) return;
-        this[$readyState] = 2;
-        this[$error] = error instanceof DOMException ? error : new DOMException(String(error), "NotReadableError");
-        this._fire("error");
-        if (this[$readyState] !== 1) this._fire("loadend");
+        const reader = operation.reader;
+        if (reader === null) return;
+        finishRead(reader);
+        reader[$error] = error instanceof DOMException ? error : new DOMException(String(error), "NotReadableError");
+        reader._fire("error");
+        if (reader[$readyState] !== 1) reader._fire("loadend");
       },
     );
   }

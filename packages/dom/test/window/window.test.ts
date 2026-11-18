@@ -370,6 +370,19 @@ describe("FileReader — https://w3c.github.io/FileAPI/#APIASynch", () => {
     reader.readAsText(new Blob(["x"]));
     expect(() => reader.readAsText(new Blob(["y"]))).toThrow(expect.objectContaining({ name: "InvalidStateError" }));
   });
+
+  test("a new read from an abort handler survives the old progress callback", async () => {
+    const reader = new FileReader();
+    const loads: unknown[] = [];
+    reader.addEventListener("progress", () => reader.abort(), { once: true });
+    reader.addEventListener("abort", () => reader.readAsText(new Blob(["replacement"])));
+    reader.addEventListener("load", () => loads.push(reader.result));
+    const done = new Promise<void>((resolve) => reader.addEventListener("loadend", () => resolve(), { once: true }));
+    reader.readAsText(new Blob(["original"]));
+    await done;
+    expect(loads).toEqual(["replacement"]);
+    expect(reader.result).toBe("replacement");
+  });
 });
 
 describe("FileList — https://w3c.github.io/FileAPI/#filelist-section", () => {

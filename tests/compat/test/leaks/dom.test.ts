@@ -13,6 +13,7 @@ import {
   createWindow,
   currentWindowOrNull,
   DataTransfer,
+  FileReader,
   HTMLElement,
   installGlobals,
   MouseEvent,
@@ -868,6 +869,27 @@ describe("file lifetimes", () => {
     expect(item.getAsFile()).toBeNull();
     expect(item.type).toBe("");
     expect(transfer.files.length).toBe(0);
+  });
+
+  test("an aborted file read releases the reader and blob before its bytes settle", async () => {
+    const tracker = new Tracker();
+    const bytes = Promise.withResolvers<ArrayBuffer>();
+    const events: string[] = [];
+    (() => {
+      const blob = tracker.track("aborted blob", new Blob(["payload"]));
+      blob.arrayBuffer = () => bytes.promise;
+      const reader = tracker.track("aborted reader", new FileReader());
+      for (const type of ["load", "abort", "loadend"]) reader.addEventListener(type, () => events.push(type));
+      reader.readAsDataURL(blob);
+      reader.abort();
+    })();
+    try {
+      expect(await tracker.alive()).toEqual({});
+    } finally {
+      bytes.resolve(new ArrayBuffer(0));
+      await bytes.promise;
+    }
+    expect(events).toEqual(["abort", "loadend"]);
   });
 });
 
