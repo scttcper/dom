@@ -31,7 +31,7 @@ import { EventTarget } from "../events/EventTarget.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { NodeImpl } from "./NodeImpl.ts";
-import { nextInTree, relativeTreePosition, treeRoot } from "./traverse.ts";
+import { isInclusiveAncestor, nextInTree, relativeTreePosition, treeRoot } from "./traverse.ts";
 import { preInsert, preRemove, replace, replaceAll } from "./tree.ts";
 import { cloneNode, isEqualNode } from "./clone.ts";
 import { NodeList } from "../collections/NodeList.ts";
@@ -376,10 +376,7 @@ export abstract class Node extends EventTarget {
 
   /** https://dom.spec.whatwg.org/#dom-node-contains */
   contains(other: Node | null): boolean {
-    if (other === null) return false;
-    const self = this[$impl];
-    for (let n: NodeImpl | null = other[$impl]; n !== null; n = n.parent) if (n === self) return true;
-    return false;
+    return this === other || (other !== null && isInclusiveAncestor(this[$impl], other[$impl]));
   }
 
   /** https://dom.spec.whatwg.org/#dom-node-lookupprefix */

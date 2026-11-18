@@ -97,10 +97,12 @@ export function treeRoot(n: NodeImpl): NodeImpl {
 
 /** Whether `a` is an inclusive ancestor of `b`. */
 export function isInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  let cur: NodeImpl | null = b;
-  while (cur !== null) {
+  if (a === b) return true;
+  const parent = b.parent;
+  if (parent === a) return true;
+  if (parent === null || a.first === null || a.parent === parent || a.doc !== b.doc) return false;
+  for (let cur = parent.parent; cur !== null; cur = cur.parent) {
     if (cur === a) return true;
-    cur = cur.parent;
   }
   return false;
 }
