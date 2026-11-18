@@ -187,23 +187,6 @@ enumerated(HTMLFormElement, "method", METHOD);
 enumerated(HTMLFormElement, "autocomplete", AUTOCOMPLETE);
 tokenList(HTMLFormElement, "relList", "rel", ["noopener", "noreferrer", "opener"]);
 
-/** Supported property names (https://html.spec.whatwg.org/#the-form-element:supported-property-names), tree order, deduplicated. */
-function supportedNames(form: HTMLFormElement): string[] {
-  const names: string[] = [];
-  const controls = form._controls();
-  for (let i = 0; i < controls.length; i++) {
-    const c = controls[i];
-    if (c.id !== "" && !names.includes(c.id)) names.push(c.id);
-    const name = contentAttr(c, "name");
-    if (name !== null && name !== "" && !names.includes(name)) names.push(name);
-  }
-  const past = form[$pastNames];
-  if (past !== null)
-    for (const name of past.keys())
-      if (!names.includes(name) && form._namedProperty(name) !== undefined) names.push(name);
-  return names;
-}
-
 /**
  * The indexed or named property value for `key` (https://webidl.spec.whatwg.org/#legacy-platform-object-getownproperty
  * steps 1-2), or undefined. The caller has established that `key` is neither an own nor an
@@ -309,11 +292,31 @@ const formHandler: ProxyHandler<HTMLFormElement> = {
   // https://webidl.spec.whatwg.org/#legacy-platform-object-ownpropertykeys — indices, visible
   // names, then the object's own keys.
   ownKeys(target) {
+    const controls = target._controls();
+    const past = target[$pastNames];
+    const own = Reflect.ownKeys(target);
+    if (controls.length === 0 && past === null) return own;
+
     const keys: (string | symbol)[] = [];
-    const n = target._controls().length;
-    for (let i = 0; i < n; i++) keys.push(String(i));
-    for (const name of supportedNames(target)) if (!Object.hasOwn(target, name)) keys.push(name);
-    for (const k of Reflect.ownKeys(target)) keys.push(k);
+    const names = new Set<string>();
+    // https://html.spec.whatwg.org/#the-form-element:supported-property-names
+    for (let i = 0; i < controls.length; i++) {
+      keys.push(String(i));
+      const control = controls[i];
+      if (control.id !== "") names.add(control.id);
+      const name = contentAttr(control, "name");
+      if (name !== null && name !== "") names.add(name);
+    }
+    if (past !== null) {
+      for (const [name, binding] of past) {
+        if (!names.has(name) && binding.deref() !== undefined) names.add(name);
+      }
+    }
+    for (const name of names) {
+      const index = arrayIndex(name);
+      if ((index === -1 || index >= controls.length) && !(name in target)) keys.push(name);
+    }
+    for (const key of own) keys.push(key);
     return keys;
   },
 };

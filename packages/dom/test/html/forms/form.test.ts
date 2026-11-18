@@ -221,6 +221,21 @@ describe("form named properties — https://html.spec.whatwg.org/#the-form-eleme
     expect(f.action).toBe(document.URL); // built-ins are never shadowed
   });
 
+  test("enumeration lists indices, visible names, past names and expandos once and in order", () => {
+    document.body!.innerHTML =
+      '<form id=f><input name="1" id="email"><input name="email" id="original"><input name="submit"></form>';
+    const form = $("f");
+    const second = form.original;
+    second.id = "current";
+    form.extra = true;
+    second.name = "extra";
+    expect(Object.getOwnPropertyNames(form)).toEqual(["0", "1", "2", "email", "current", "original", "extra"]);
+    expect(Object.keys(form)).toEqual(["0", "1", "2", "extra"]);
+    expect(form[1]).toBe(second);
+    second.remove();
+    expect(Object.getOwnPropertyNames(form)).toEqual(["0", "1", "email", "extra"]);
+  });
+
   test("old names survive a move within the form and expire when the control leaves it", () => {
     document.body!.innerHTML = "<form id=f><div><input id=i name=original></div><section></section></form>";
     const f = $("f"),
