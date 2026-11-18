@@ -13,7 +13,7 @@ import type { Element } from "../nodes/Element.ts";
 import type { EventTarget } from "../events/EventTarget.ts";
 import { ELEMENT_NODE, F_CONNECTED, F_SHADOW_ROOT, HTML_NS } from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
-import { treeRoot, nextElementInTree } from "../nodes/traverse.ts";
+import { treeRoot } from "../nodes/traverse.ts";
 import { removeAttribute, setAttribute } from "../nodes/attributes.ts";
 import { contentAttr, defineAccessor, enumerated } from "./reflect.ts";
 import { hidePopover, isPopoverShowing, P_NONE, popoverState, showPopover } from "./top-layer.ts";
@@ -22,7 +22,7 @@ import { Event } from "../events/Event.ts";
 import { setToStringTag } from "../events/Event.ts";
 import { requireArgs } from "../events/UIEvents.ts";
 import { retarget } from "../events/dispatch.ts";
-import { isActuallyDisabled, formOwner } from "./forms/form-associated.ts";
+import { elementByIdInTree, formOwner, isActuallyDisabled } from "./forms/form-associated.ts";
 import { isSubmitButton } from "./forms/form-submission.ts";
 import { inputType, I_BUTTON, I_IMAGE, I_RESET, I_SUBMIT } from "./forms/input-type.ts";
 import { $host, $impl } from "../keys.ts";
@@ -57,10 +57,7 @@ function attrAssociated(el: NodeImpl, attr: string): NodeImpl | null {
   }
   // 3. Else the first element in the same tree with the content attribute's value as its id.
   const id = contentAttr(el, attr);
-  if (id === null || id === "") return null;
-  const root = treeRoot(el);
-  for (let n = nextElementInTree(root, root); n !== null; n = nextElementInTree(n, root)) if (n.id === id) return n;
-  return null;
+  return id === null ? null : elementByIdInTree(el, id);
 }
 
 /** Element-valued reflection (https://html.spec.whatwg.org/#reflecting-content-attributes-in-idl-attributes, Element?). */

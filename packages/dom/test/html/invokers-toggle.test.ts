@@ -212,6 +212,20 @@ describe("popover target attributes — https://html.spec.whatwg.org/#popover-ta
     expect($("p").matches(":popover-open")).toBe(true);
   });
 
+  test("ID-based invokers follow tree order and stay within their current root", () => {
+    doc.body.innerHTML = `<button popovertarget=p commandfor=p></button><div id=p></div><div id=p></div>`;
+    const [button, first, second] = doc.body.children;
+    const targets = () => [button.popoverTargetElement, button.commandForElement];
+    expect(targets()).toEqual([first, first]);
+    first.before(second);
+    expect(targets()).toEqual([second, second]);
+    const shadow = doc.body.appendChild(doc.createElement("div")).attachShadow({ mode: "open" });
+    shadow.append(button);
+    expect(targets()).toEqual([null, null]);
+    shadow.append(first);
+    expect(targets()).toEqual([first, first]);
+  });
+
   test("an explicitly set element wins over the attribute and sets it to '' (https://html.spec.whatwg.org/#explicitly-set-attr-element)", () => {
     doc.body.innerHTML = `<div id=p popover></div><div id=q popover></div><button id=b popovertarget=q></button>`;
     $("b").popoverTargetElement = $("p");
