@@ -407,14 +407,6 @@ export class Range extends AbstractRange {
     }
   }
 
-  /** https://dom.spec.whatwg.org/#contained */
-  _contains(n: NodeImpl): boolean {
-    return (
-      compareBoundaryPoints(n, 0, this[$sc], this[$so]) > 0 &&
-      compareBoundaryPoints(n, nodeLength(n), this[$ec], this[$eo]) < 0
-    );
-  }
-
   /** https://dom.spec.whatwg.org/#dom-range-deletecontents */
   deleteContents(): void {
     if (this.collapsed) return;
@@ -428,9 +420,9 @@ export class Range extends AbstractRange {
       return;
     }
     // Step 4: contained nodes whose parent is not contained.
-    const nodesToRemove = osn === oen ? snapshotChildren(osn, oso, oeo) : containedNodes(this);
-    // Steps 5-6.
     const newNode = commonAncestor(osn, oen);
+    const nodesToRemove = osn === oen ? snapshotChildren(osn, oso, oeo) : containedNodes(this, newNode);
+    // Steps 5-6.
     const newOffset = newNode === osn ? oso : indexOf(childOfAncestor(osn, newNode)) + 1;
     // Step 7.
     if (isCharacterData(osn)) replaceData(osn, oso, osn.data.length - oso, "");
@@ -619,26 +611,39 @@ Object.defineProperty(Range.prototype, Symbol.toStringTag, { value: "Range", con
 Object.defineProperty(StaticRange.prototype, Symbol.toStringTag, { value: "StaticRange", configurable: true });
 
 /** First node in tree order at or after boundary point (node, offset) (null at the end of the tree). */
-function afterBoundary(node: NodeImpl, offset: number): NodeImpl | null {
+function afterBoundary(node: NodeImpl, offset: number, root: NodeImpl | null = null): NodeImpl | null {
   if (!isCharacterData(node)) {
     const child = childAt(node, offset);
     if (child !== null) return child;
   }
-  return nextSkippingChildren(node, null);
+  return nextSkippingChildren(node, root);
 }
 
-/** Outermost nodes contained in the range, in tree order. */
-function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean }): NodeImpl[] {
+/** Outermost nodes contained in the range, in tree order. https://dom.spec.whatwg.org/#contained */
+function containedNodes(range: AbstractRange, common: NodeImpl): NodeImpl[] {
   const out: NodeImpl[] = [];
-  const end = isCharacterData(range[$ec]) ? range[$ec] : afterBoundary(range[$ec], range[$eo]);
-  let n = afterBoundary(range[$sc], range[$so]);
-  while (n !== null && n !== end) {
-    if (range._contains(n)) {
-      out.push(n);
-      n = nextSkippingChildren(n, null);
-    } else {
-      n = nextInTree(n, null);
-    }
+  const ec = range[$ec];
+  const stop = ec === common ? childAt(ec, range[$eo]) : childOfAncestor(ec, common);
+  // Before the end branch, each visited subtree is wholly selected.
+  let n = afterBoundary(range[$sc], range[$so], common);
+  while (n !== null && n !== stop) {
+    out.push(n);
+    n = nextSkippingChildren(n, common);
+  }
+  if (ec === common) return out;
+
+  // Collect the end branch's selected siblings from the inside out, then restore tree order.
+  const rightStart = out.length;
+  let sibling = isCharacterData(ec) ? null : childAt(ec, range[$eo] - 1);
+  for (let container = ec; ; container = container.parent!) {
+    for (; sibling !== null; sibling = sibling.prev) out.push(sibling);
+    if (container === stop) break;
+    sibling = container.prev;
+  }
+  for (let left = rightStart, right = out.length - 1; left < right; left++, right--) {
+    const first = out[left];
+    out[left] = out[right];
+    out[right] = first;
   }
   return out;
 }
