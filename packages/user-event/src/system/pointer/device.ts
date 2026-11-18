@@ -4,21 +4,28 @@
 import {type pointerKey} from './index.ts'
 
 export class Device {
-  private pressedKeys = new Set<string>()
+  private first?: string
+  private additional?: Set<string>
 
   get countPressed() {
-    return this.pressedKeys.size
+    return Number(this.first !== undefined) + (this.additional?.size ?? 0)
   }
 
-  isPressed(keyDef: pointerKey) {
-    return this.pressedKeys.has(keyDef.name)
+  isPressed({name}: pointerKey) {
+    return this.first === name || (this.additional?.has(name) ?? false)
   }
 
-  addPressed(keyDef: pointerKey) {
-    return this.pressedKeys.add(keyDef.name)
+  addPressed({name}: pointerKey) {
+    if (this.first === undefined) {
+      if (!this.additional?.has(name)) this.first = name
+    } else if (this.first !== name) {
+      ;(this.additional ??= new Set()).add(name)
+    }
   }
 
-  removePressed(keyDef: pointerKey) {
-    return this.pressedKeys.delete(keyDef.name)
+  removePressed({name}: pointerKey) {
+    if (this.first !== name) return this.additional?.delete(name) ?? false
+    this.first = undefined
+    return true
   }
 }
