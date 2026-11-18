@@ -79,6 +79,23 @@ describe("real-time mode (timeSkip: false) — https://html.spec.whatwg.org/#tim
     expect(n).toBe(3);
   });
 
+  test("two clocks can clear their own handles even when their numeric IDs coincide", () => {
+    const first = new VirtualClock();
+    const second = new VirtualClock();
+    try {
+      const a = first.schedule(() => {}, 60_000, [], false);
+      const b = second.schedule(() => {}, 60_000, [], false);
+      expect(Number(a)).toBe(Number(b));
+      expect(first.clear(b)).toBe(false);
+      expect(first.size).toBe(1);
+      expect(second.clear(b)).toBe(true);
+      expect(first.clear(Number(a))).toBe(true);
+    } finally {
+      first.dispose();
+      second.dispose();
+    }
+  });
+
   test("Timeout handle API: hasRef/unref/ref/refresh; arguments are passed through", async () => {
     const g = setup(false);
     const h = g.setTimeout(() => {}, 5);

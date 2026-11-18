@@ -98,6 +98,7 @@ class FiredTimers {
   records = new WeakMap<VirtualTimeout, TimerRecord>();
 }
 
+const timerRecord = Symbol("timerRecord");
 const timerFired = Symbol("timerFired");
 const timerCleared = Symbol("timerCleared");
 
@@ -112,7 +113,7 @@ export class VirtualTimeout {
     this.#id = record.id;
   }
 
-  get #record(): TimerRecord | undefined {
+  get [timerRecord](): TimerRecord | undefined {
     const state = this.#state;
     return state instanceof FiredTimers ? state.records.get(this) : (state ?? undefined);
   }
@@ -130,14 +131,14 @@ export class VirtualTimeout {
 
   ref(): this {
     this.#ref = true;
-    const record = this.#record;
+    const record = this[timerRecord];
     record?.clock._setRef(record, true);
     return this;
   }
 
   unref(): this {
     this.#ref = false;
-    const record = this.#record;
+    const record = this[timerRecord];
     record?.clock._setRef(record, false);
     return this;
   }
@@ -147,17 +148,18 @@ export class VirtualTimeout {
   }
 
   get _destroyed(): boolean {
-    return this.#record?.clock.byId.has(this.#id) !== true;
+    const record = this[timerRecord];
+    return record === undefined || (record.index === -1 && record.real === null);
   }
 
   refresh(): this {
-    const record = this.#record;
+    const record = this[timerRecord];
     record?.clock._refresh(record);
     return this;
   }
 
   close(): this {
-    this.#record?.clock.clear(this.#id);
+    this[timerRecord]?.clock.clear(this);
     return this;
   }
 
@@ -166,7 +168,7 @@ export class VirtualTimeout {
   }
 
   [Symbol.dispose](): void {
-    this.#record?.clock.clear(this.#id);
+    this[timerRecord]?.clock.clear(this);
   }
 }
 
@@ -191,7 +193,7 @@ export class VirtualClock {
   epochOffset: number;
   skip: boolean;
   heap: TimerRecord[];
-  byId: Map<number, TimerRecord>;
+  private indexed: Map<number, TimerRecord> | null = null;
   nextId: number;
   seq: number;
   refCount: number;
@@ -219,7 +221,6 @@ export class VirtualClock {
     this.epochOffset = Date.now() - realNow();
     this.skip = options.skip === true;
     this.heap = [];
-    this.byId = new Map();
     this.nextId = 1;
     this.seq = 0;
     this.refCount = 0;
@@ -279,7 +280,7 @@ export class VirtualClock {
       record.handle[timerCleared]();
       return record.handle;
     }
-    this.byId.set(record.id, record);
+    this.indexed?.set(record.id, record);
     this.refCount++;
     this.push(record);
     this.armHost();
@@ -287,12 +288,24 @@ export class VirtualClock {
     return record.handle;
   }
 
+  /** Most callers keep the handle. Build the numeric index when it or an off-heap timer needs it. */
+  get byId(): Map<number, TimerRecord> {
+    if (this.indexed !== null) return this.indexed;
+    const indexed = new Map<number, TimerRecord>();
+    for (const record of this.heap) indexed.set(record.id, record);
+    return (this.indexed = indexed);
+  }
+
   /** clearTimeout/clearInterval: a VirtualTimeout or its numeric id. Returns false for foreign handles. */
   clear(handle: unknown): boolean {
-    const id = typeof handle === "number" ? handle : handle instanceof VirtualTimeout ? Number(handle) : NaN;
-    const record = this.byId.get(id);
-    if (record === undefined) return false;
-    this.byId.delete(id);
+    const record =
+      handle instanceof VirtualTimeout
+        ? handle[timerRecord]
+        : typeof handle === "number"
+          ? this.byId.get(handle)
+          : undefined;
+    if (record === undefined || record.clock !== this || (record.index === -1 && record.real === null)) return false;
+    this.indexed?.delete(record.id);
     record.handle[timerCleared]();
     if (record.ref) this.refCount--;
     if (record.real !== null) {
@@ -319,13 +332,13 @@ export class VirtualClock {
 
   /** Pending (scheduled) timers. */
   get size(): number {
-    return this.byId.size;
+    return this.indexed?.size ?? this.heap.length;
   }
 
   _setRef(record: TimerRecord, ref: boolean): void {
     if (record.ref === ref) return;
     record.ref = ref;
-    const live = this.byId.has(record.id);
+    const live = record.index !== -1 || record.real !== null;
     if (live) this.refCount += ref ? 1 : -1;
     if (live && this.skip) {
       if (!ref && record.index !== -1) this.toRealTrack(record, Math.max(0, record.due - this.now()));
@@ -336,6 +349,8 @@ export class VirtualClock {
 
   /** Move `record` off the heap onto its own unref'd real host timer firing in `delay` ms. */
   toRealTrack(record: TimerRecord, delay: number): void {
+    // Off-heap timers still belong to the clock and clearAll() must be able to find them.
+    this.byId.set(record.id, record);
     if (record.index !== -1) {
       this.remove(record);
       this.armHost();
@@ -365,7 +380,7 @@ export class VirtualClock {
   }
 
   private complete(record: TimerRecord): void {
-    this.byId.delete(record.id);
+    this.indexed?.delete(record.id);
     record.handle[timerFired](record, (this.fired ??= new FiredTimers()));
   }
 
@@ -377,16 +392,16 @@ export class VirtualClock {
       this.toRealTrack(record, record.delay);
       return;
     }
-    if (!this.byId.has(record.id)) {
+    if (record.index === -1) {
       // Node: refresh() on a fired one-shot reschedules it.
-      this.byId.set(record.id, record);
+      this.indexed?.set(record.id, record);
       if (record.ref) this.refCount++;
       else if (this.skip) {
         // Unref'd timers stay on real time while skipping (see _setRef).
         this.toRealTrack(record, record.delay);
         return;
       }
-    } else if (record.index !== -1) {
+    } else {
       this.remove(record);
     }
     record.due = this.now() + record.delay;
@@ -403,7 +418,7 @@ export class VirtualClock {
       this.fired.records = new WeakMap();
       this.fired = null;
     }
-    for (const record of this.byId.values()) {
+    for (const record of this.indexed?.values() ?? this.heap) {
       if (record.real !== null) hostClearTimeout(record.real);
       record.real = null;
       record.handle[timerCleared]();
@@ -413,7 +428,7 @@ export class VirtualClock {
     this.hostTimer = null;
     this.hostDue = Infinity;
     this.heap.length = 0;
-    this.byId.clear();
+    this.indexed?.clear();
     this.refCount = 0;
   }
 
