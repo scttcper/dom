@@ -23,6 +23,26 @@ import { slotAssignmentActive, slotsAttributeChanged } from "./slots.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
 import { $benign, $formAttrSeen, $style, $version } from "../keys.ts";
 
+/** Connected elements keyed by an attribute value. Allocate a list only when a key is shared. */
+export type ElementIndex = Map<string, NodeImpl | NodeImpl[]>;
+
+export function addToElementIndex(index: ElementIndex, key: string, el: NodeImpl): void {
+  const entry = index.get(key);
+  if (entry === undefined) index.set(key, el);
+  else if (Array.isArray(entry)) entry.push(el);
+  else index.set(key, [entry, el]);
+}
+
+export function removeFromElementIndex(index: ElementIndex, key: string, el: NodeImpl): void {
+  const entry = index.get(key);
+  if (entry === el) index.delete(key);
+  else if (Array.isArray(entry)) {
+    const i = entry.indexOf(el);
+    if (i !== -1) entry.splice(i, 1);
+    if (entry.length === 1) index.set(key, entry[0]);
+  }
+}
+
 /** ASCII-lowercase without allocating when the input is already lowercase (the common case). */
 export function asciiLowercase(s: string): string {
   const len = s.length;

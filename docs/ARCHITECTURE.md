@@ -233,10 +233,9 @@ observers, ranges, iframes' nested windows and custom element definitions are co
 `installGlobals()`'s uninstall restores every host global. Within a live document, removing a
 subtree releases it: version-stamped caches that could still reference removed nodes (selector
 results per root, live collection / computed NodeList snapshots, a form's
-listed controls) are kept in `Document[$derived]` or registered with `holdSnapshot`
-(nodes/derived.ts) and dropped by `remove()`. Snapshots rooted in a detached node are never
-registered, so a detached tree (a clone, an unmounted container) is not kept alive by the
-document. Intentionally retained:
+listed controls) live in `Document[$derived]` (nodes/derived.ts). Weak keys let a collection
+and its detached tree be collected together. Removal drops the document's cache, and adoption
+drops the previous document's cache. Intentionally retained:
 
 - the current window (`window/current.ts`) until it is closed or another window is created;
 - a window's own state while it is open (its custom element registry, storage, history);

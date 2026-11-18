@@ -265,30 +265,7 @@ export function labeledControl(label: NodeImpl): NodeImpl | null {
   return null;
 }
 
-/**
- * Per-document indexes of connected elements by a string key, in no particular order, kept by the
- * elements' connected, disconnected and attribute change steps: Document[$forLabels], the labels
- * by `for` value, and Document[$radios], the radios by name.
- *
- * A `for` value nearly always has one label, which never moves: an array. A radio leaves and
- * rejoins its group constantly: on every update React sets its `name` to "" and back
- * (react-dom's updateInput, so the radio is out of its group while its checkedness changes), and
- * splicing each one out of an array made a re-render of a group of 500 radios 250,000 element
- * moves (8% of a click's CPU there). A set, which costs a few hundred bytes per name: fine for
- * radio groups, 11% more allocation building 1,000 labelled rows when the labels had one each.
- */
-export function indexAdd(index: Map<string, NodeImpl[]>, key: string, el: NodeImpl): void {
-  const list = index.get(key);
-  if (list === undefined) index.set(key, [el]);
-  else list.push(el);
-}
-
-export function indexRemove(index: Map<string, NodeImpl[]>, key: string, el: NodeImpl): void {
-  const list = index.get(key)!;
-  if (list.length === 1) index.delete(key);
-  else list.splice(list.indexOf(el), 1);
-}
-
+/** A controlled radio leaves and rejoins its name on each React update. A set keeps removal O(1). */
 export function radioIndexAdd(index: Map<string, Set<NodeImpl>>, name: string, el: NodeImpl): void {
   const set = index.get(name);
   if (set === undefined) index.set(name, new Set<NodeImpl>().add(el));
@@ -326,7 +303,11 @@ export function labelsFor(el: NodeImpl): NodeImpl[] {
   const named = el.id === "" ? undefined : el.doc[$forLabels]?.get(el.id);
   if (named === undefined) return out;
   // labeledControl resolves `for` in the label's own tree, so a match shares el's tree.
-  for (let i = 0; i < named.length; i++) if (labeledControl(named[i]) === el) out.push(named[i]);
+  if (Array.isArray(named)) {
+    for (const label of named) if (labeledControl(label) === el) out.push(label);
+  } else if (labeledControl(named) === el) {
+    out.push(named);
+  }
   if (out.length > 1) out.sort(compareTreeOrder);
   return out;
 }

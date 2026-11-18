@@ -56,7 +56,7 @@ import {
   type EventState,
 } from "./Event.ts";
 import type { EventTarget } from "./EventTarget.ts";
-import { mayHaveActivationBehavior, type ActivationTarget } from "./activation.ts";
+import { mayHaveActivationBehavior, type ActivationTarget, type InputActivationState } from "./activation.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_SHADOW, F_SHADOW_ROOT, TEXT_NODE } from "../nodes/constants.ts";
 import { reportException } from "./report.ts";
@@ -143,9 +143,6 @@ function treeRoot(n: NodeImpl): NodeImpl {
 
 // --- get the parent -------------------------------------------------------------------------
 
-/** Out-parameter of `nodeParentOf`: the NodeImpl of the target it returned (undefined for a host that is not a node, or null). */
-let nextImpl: NodeImpl | undefined = undefined;
-
 /**
  * "Get the parent" for a node whose NodeImpl is `impl` (`node` is its wrapper).
  * https://dom.spec.whatwg.org/#get-the-parent — Node: its assigned slot, if any, else its
@@ -157,30 +154,17 @@ function nodeParentOf(impl: NodeImpl, node: EventTarget, event: Event): EventTar
   const parent = impl.parent;
   if (parent !== null && (parent.flags & F_HAS_SHADOW) !== 0) {
     const slot = assignedSlot(impl);
-    if (slot !== null) {
-      nextImpl = (slot as NodeLike)[$impl];
-      return slot;
-    }
+    if (slot !== null) return slot;
   }
   if ((impl.flags & F_SHADOW_ROOT) !== 0) {
     const s = event._s;
     if ((s.flags & EF_COMPOSED) === 0 && s.pathLength > 0) {
       const first = (PATH[s.pathStart] as MaybeNode)[$impl];
-      if (first !== undefined && treeRoot(first) === impl) {
-        nextImpl = undefined;
-        return null;
-      }
+      if (first !== undefined && treeRoot(first) === impl) return null;
     }
-    const host = (node as unknown as ShadowRootLike)[$host];
-    nextImpl = host === null ? undefined : (host as MaybeNode)[$impl];
-    return host;
+    return (node as unknown as ShadowRootLike)[$host];
   }
-  if (parent === null) {
-    nextImpl = undefined;
-    return null;
-  }
-  nextImpl = parent;
-  return parent.node;
+  return parent?.node ?? null;
 }
 
 /** `Node._getTheParent` delegates here (the dispatch algorithm itself inlines it). */
@@ -310,6 +294,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
     : target;
   // Step 3.
   let activationTarget: EventTarget | null = null;
+  let activationState: InputActivationState | undefined;
   // Step 4.
   const eventRelatedTarget = s.relatedTarget;
   const relatedSlow = inShadowTree(eventRelatedTarget);
@@ -382,7 +367,7 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
             sameRoot = true;
           } else {
             parent = nodeParentOf(itemImpl, item, event);
-            pi = nextImpl;
+            pi = parent === null ? undefined : (parent as MaybeNode)[$impl];
             sameRoot = pi !== undefined && pi === p;
           }
         }
@@ -452,7 +437,8 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
         }
       }
       // Step 6.12.
-      if (activationTarget !== null) (activationTarget as ActivationTarget)._legacyPreActivationBehavior?.();
+      if (activationTarget !== null)
+        activationState = (activationTarget as ActivationTarget)._legacyPreActivationBehavior?.();
       // Resolved once for the whole path (listeners.ts: slots are indexed by type id). -1 means
       // no target anywhere listens for the type: nothing to invoke unless a legacy webkit* alias
       // of a trusted event's type is listened for.
@@ -528,8 +514,8 @@ export function dispatch(event: Event, target: EventTarget, legacyTargetOverride
   // Step 12.
   if (activationTarget !== null) {
     const at = activationTarget as ActivationTarget;
-    if ((s.flags & EF_CANCELED) === 0) at._activationBehavior?.(event);
-    else at._legacyCanceledActivationBehavior?.();
+    if ((s.flags & EF_CANCELED) === 0) at._activationBehavior?.(event, activationState);
+    else at._legacyCanceledActivationBehavior?.(activationState);
   }
   if (postDispatchHook !== null) postDispatchHook(event, originalTarget);
   // Step 13.

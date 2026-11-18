@@ -27,9 +27,8 @@
 // Everything else (length, item, namedItem, indexed access, iteration) goes through
 // `_snapshot()`.
 
-import { holdSnapshot } from "../nodes/derived.ts";
+import { cachedSnapshot, storeSnapshot } from "../nodes/derived.ts";
 import { ELEMENT_NODE, HTML_NS } from "../nodes/constants.ts";
-import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { attr } from "../nodes/attributes.ts";
@@ -48,25 +47,12 @@ export class CollectionState {
   filter: ElementFilter | null;
   /** Members depend only on the tree and tag names: stamped with Document[$treeVersion]. */
   structural: boolean;
-  items: Element[];
-  doc: Document | null;
-  version: number;
 
   constructor(root: NodeImpl, childrenOnly: boolean, filter: ElementFilter | null, structural: boolean) {
     this.root = root;
     this.childrenOnly = childrenOnly;
     this.filter = filter;
     this.structural = structural;
-    this.items = [];
-    this.doc = null;
-    this.version = -1;
-  }
-
-  /** nodes/derived.ts: release the (stale) members once a node was removed from the document. */
-  _dropSnapshot(): void {
-    this.items = [];
-    this.doc = null;
-    this.version = -1;
   }
 }
 
@@ -135,13 +121,11 @@ export class HTMLCollection {
     const s = this[$coll];
     const doc = s.root.doc;
     const version = s.structural ? doc[$treeVersion] : doc[$version];
-    if (s.version === version && s.doc === doc) return s.items;
+    const cached = cachedSnapshot<Element>(doc, s, version);
+    if (cached !== undefined) return cached;
     const items: Element[] = [];
     this._collect(items);
-    s.items = items;
-    s.doc = doc;
-    s.version = version;
-    if (items.length !== 0) holdSnapshot(doc, s, s.root);
+    storeSnapshot(doc, s, version, items);
     if (items.length > table!.count) ensureIndexGetters(table!, items.length);
     return items;
   }
@@ -231,54 +215,56 @@ function isArrayIndex(key: string): boolean {
  * justify the per-read Proxy cost (form.elements, document.forms).
  */
 export function withNamedProperties<C extends HTMLCollection>(collection: C): C {
-  return new Proxy(collection, {
-    get(target, key, _receiver) {
-      // One chain walk for members and index getters (the common reads); only an undefined
-      // result needs `in` to tell an absent key, which may be a name, from a member that is undefined.
-      const value = Reflect.get(target, key, target);
-      if (value !== undefined || typeof key === "symbol" || key in target) return value;
-      return target.namedItem(key) ?? undefined;
-    },
-    has(target, key) {
-      if (typeof key === "string" && !(key in target)) {
-        return isArrayIndex(key) ? Number(key) < target.length : target.namedItem(key) !== null;
-      }
-      if (typeof key === "string" && isArrayIndex(key)) return Number(key) < target.length;
-      return Reflect.has(target, key);
-    },
-    ownKeys(target) {
-      const keys: (string | symbol)[] = [];
-      const n = target.length;
-      for (let i = 0; i < n; i++) keys.push(String(i));
-      for (const name of target._supportedPropertyNames()) if (!(name in target)) keys.push(name);
-      for (const k of Reflect.ownKeys(target)) keys.push(k);
-      return keys;
-    },
-    getOwnPropertyDescriptor(target, key) {
-      if (typeof key === "string") {
-        if (isArrayIndex(key)) {
-          const item = target.item(Number(key));
-          return item === null ? undefined : { value: item, writable: false, enumerable: true, configurable: true };
-        }
-        if (!(key in target)) {
-          const item = target.namedItem(key);
-          if (item !== null) return { value: item, writable: false, enumerable: false, configurable: true };
-        }
-      }
-      return Reflect.getOwnPropertyDescriptor(target, key);
-    },
-    set(target, key, value) {
-      if (typeof key === "string" && (isArrayIndex(key) || target.namedItem(key) !== null)) return false;
-      return Reflect.set(target, key, value, target);
-    },
-    defineProperty(target, key, descriptor) {
-      if (typeof key === "string" && (isArrayIndex(key) || target.namedItem(key) !== null)) return false;
-      return Reflect.defineProperty(target, key, descriptor);
-    },
-    deleteProperty(target, key) {
-      if (typeof key === "string" && isArrayIndex(key)) return Number(key) >= target.length;
-      if (typeof key === "string" && !(key in target) && target.namedItem(key) !== null) return false;
-      return Reflect.deleteProperty(target, key);
-    },
-  });
+  return new Proxy<C>(collection, namedProperties);
 }
+
+const namedProperties: ProxyHandler<HTMLCollection> = {
+  get(target, key) {
+    // One chain walk for members and index getters (the common reads); only an undefined
+    // result needs `in` to tell an absent key, which may be a name, from a member that is undefined.
+    const value = key === "length" ? target.length : target[key as keyof HTMLCollection];
+    if (value !== undefined || typeof key === "symbol" || key in target) return value;
+    return target.namedItem(key) ?? undefined;
+  },
+  has(target, key) {
+    if (typeof key === "string" && !(key in target)) {
+      return isArrayIndex(key) ? Number(key) < target.length : target.namedItem(key) !== null;
+    }
+    if (typeof key === "string" && isArrayIndex(key)) return Number(key) < target.length;
+    return Reflect.has(target, key);
+  },
+  ownKeys(target) {
+    const keys: (string | symbol)[] = [];
+    const n = target.length;
+    for (let i = 0; i < n; i++) keys.push(String(i));
+    for (const name of target._supportedPropertyNames()) if (!(name in target)) keys.push(name);
+    for (const k of Reflect.ownKeys(target)) keys.push(k);
+    return keys;
+  },
+  getOwnPropertyDescriptor(target, key) {
+    if (typeof key === "string") {
+      if (isArrayIndex(key)) {
+        const item = target.item(Number(key));
+        return item === null ? undefined : { value: item, writable: false, enumerable: true, configurable: true };
+      }
+      if (!(key in target)) {
+        const item = target.namedItem(key);
+        if (item !== null) return { value: item, writable: false, enumerable: false, configurable: true };
+      }
+    }
+    return Reflect.getOwnPropertyDescriptor(target, key);
+  },
+  set(target, key, value) {
+    if (typeof key === "string" && (isArrayIndex(key) || target.namedItem(key) !== null)) return false;
+    return Reflect.set(target, key, value, target);
+  },
+  defineProperty(target, key, descriptor) {
+    if (typeof key === "string" && (isArrayIndex(key) || target.namedItem(key) !== null)) return false;
+    return Reflect.defineProperty(target, key, descriptor);
+  },
+  deleteProperty(target, key) {
+    if (typeof key === "string" && isArrayIndex(key)) return Number(key) >= target.length;
+    if (typeof key === "string" && !(key in target) && target.namedItem(key) !== null) return false;
+    return Reflect.deleteProperty(target, key);
+  },
+};

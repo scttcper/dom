@@ -2,7 +2,7 @@
 /**
  * Retention after Testing Library cleanup: render → interact → cleanup must leave nothing of the
  * rendered tree reachable (elements, React roots/fibers, listeners, per-node caches, waitFor
- * observers). The emptied containers render() created stay, for the document's later renders.
+ * observers), including the containers created by render().
  *
  * Specs: ECMAScript WeakRef / FinalizationRegistry liveness
  *   https://tc39.es/ecma262/#sec-weak-ref-objects — an object is collectable once no strong
@@ -12,16 +12,16 @@
  */
 import { Suspense, createContext, lazy, use, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { cleanup, render, renderHook, screen, waitFor, act, fireEvent } from "@ctrl/dom/react";
-import { userEvent } from "@ctrl/dom/user-event";
-import { Tracker, heapSlope } from "./gc.ts";
+import { PointerEventsCheckLevel, userEvent } from "@ctrl/dom/user-event";
+import { collectGarbage, Tracker, heapSlope } from "./gc.ts";
 import { getByRole, prettyDOM } from "@ctrl/dom/testing-library";
 import { createWindow, currentWindowOrNull, setCurrentWindow } from "@ctrl/dom";
 
 // @ctrl/dom/user-event declares its own structural DOM types; @ctrl/dom/react returns @ctrl/dom's.
 type User = Record<
-  "type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover",
+  "type" | "click" | "keyboard" | "selectOptions" | "tab" | "hover" | "pointer",
   (...args: any[]) => Promise<void>
 >;
 const setupUser = (): User => userEvent.setup() as unknown as User;
@@ -97,6 +97,145 @@ function Data({ promise }: { promise: Promise<string> }) {
 }
 
 describe("render → interact → cleanup — https://testing-library.com/docs/react-testing-library/api#cleanup", () => {
+  test("a blocked pointer target releases the ancestors used in its diagnostic", async () => {
+    const tracker = new Tracker();
+    const button = document.createElement("button");
+    const user = userEvent.setup({ pointerEventsCheck: PointerEventsCheckLevel.EachTarget }) as unknown as User;
+    // Vitest retains errors passed to .rejects, including the pointer dispatch stack.
+    const clickMessage = () => user.click(button).catch((error: Error) => error.message);
+    const style = vi.spyOn(window, "getComputedStyle").mockImplementation((el) => {
+      return { pointerEvents: el === button ? "inherit" : "none" } as CSSStyleDeclaration;
+    });
+    try {
+      await (async () => {
+        const parent = tracker.track("previous parent", document.body.appendChild(document.createElement("section")));
+        parent.id = "previous";
+        parent.appendChild(button);
+        const first = await clickMessage();
+        expect(first).toMatch(/SECTION#previous[^\n]*\n +BUTTON/);
+        expect(await clickMessage()).toBe(first);
+        button.remove();
+        parent.remove();
+      })();
+    } finally {
+      style.mockRestore();
+    }
+    expect(await tracker.alive()).toEqual({});
+    expect(await clickMessage()).toContain("BUTTON");
+  });
+
+  test("removing a focused DOM input releases the keyboard target without another action", async () => {
+    const user = setupUser();
+    const tracker = new Tracker();
+    await (async () => {
+      const input = tracker.track("focused input", document.body.appendChild(document.createElement("input")));
+      input.focus();
+      await user.keyboard("x");
+      input.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    await user.keyboard("y");
+  });
+
+  test("the keyboard releases a blurred input after unmount while the user stays active", async () => {
+    const tracker = new Tracker();
+    const user = setupUser();
+    await (async () => {
+      const view = render(<input />);
+      const input = tracker.track("keyboard target", view.getByRole("textbox"));
+      input.focus();
+      await user.keyboard("x");
+      input.blur();
+      cleanup();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    await user.keyboard("y");
+  });
+
+  test("an effect cleanup error still releases every root and container", async () => {
+    const tracker = new Tracker();
+    const failure = new Error("unmount failed");
+    const unmounted: string[] = [];
+    function Item({ name }: { name: string }) {
+      useEffect(
+        () => () => {
+          unmounted.push(name);
+          if (name === "first") throw failure;
+        },
+        [name],
+      );
+      return <p>{name}</p>;
+    }
+    for (const name of ["first", "second"]) {
+      tracker.track(name, render(<Item name={name} />).container);
+    }
+    expect(cleanup).toThrow(failure);
+    expect(unmounted).toEqual(["first", "second"]);
+    expect(document.body.childNodes.length).toBe(0);
+    expect(await tracker.alive()).toEqual({});
+  });
+
+  test("unmount releases initial props and manually detached containers before cleanup", async () => {
+    const tracker = new Tracker();
+    function Row({ data }: { data: { name: string } }) {
+      return <p>{data.name}</p>;
+    }
+    for (const detach of [false, true]) {
+      (() => {
+        const data = tracker.track("initial props", { name: "row" });
+        const view = render(<Row data={data} />);
+        view.unmount();
+        if (detach) tracker.track("detached container", view.container).remove();
+      })();
+    }
+    expect(document.body.childNodes.length).toBe(1);
+    expect(await tracker.alive()).toEqual({});
+    cleanup();
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test("a released mouse button lets its unmounted target be collected while the user stays active", async () => {
+    const tracker = new Tracker();
+    const user = setupUser();
+    await (async () => {
+      const view = render(<button>Remove</button>);
+      const button = tracker.track("clicked button", view.getByRole("button"));
+      await user.click(button);
+      cleanup();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    await user.click(document.body);
+  });
+
+  test.each(["[MouseLeft>]", "[TouchA]"])(
+    "pointer state after %s releases the target and explicit caret",
+    async (keys) => {
+      const tracker = new Tracker();
+      const user = setupUser();
+      await (async () => {
+        const view = render(<p>Item</p>);
+        const target = tracker.track("pointer target", view.getByText("Item"));
+        const node = tracker.track("caret", target.firstChild!);
+        await user.pointer({ keys, target, node, offset: 1 });
+        cleanup();
+      })();
+      expect(await tracker.alive()).toEqual({});
+      if (keys === "[MouseLeft>]") await user.pointer("[/MouseLeft]");
+      await user.click(document.body);
+    },
+  );
+
+  test("a drag across calls keeps its anchor while its target is still reachable", async () => {
+    const user = setupUser();
+    const view = render(<p>example</p>);
+    const target = view.getByText("example");
+    await user.pointer({ keys: "[MouseLeft>]", target, offset: 2 });
+    document.getSelection()!.removeAllRanges();
+    await collectGarbage();
+    await user.pointer([{ offset: 5 }, "[/MouseLeft]"]);
+    expect(document.getSelection()!.toString()).toBe("amp");
+  });
+
   test("rendered elements, containers, React roots, portals and Suspense trees are collectable after cleanup()", async () => {
     const tracker = new Tracker();
     for (let i = 0; i < 4; i++) {
@@ -147,12 +286,7 @@ describe("render → interact → cleanup — https://testing-library.com/docs/r
       })();
     }
     expect(document.body.childNodes.length).toBe(0);
-    // Containers render() created are kept for later renders in this document, empty and detached
-    // (packages/react/src/pure.ts, reusableContainers); nothing rendered into them is.
-    const { container, ...rest } = await tracker.alive();
-    expect(rest).toEqual({});
-    expect(container).toBeGreaterThan(0);
-    expect(container).toBeLessThanOrEqual(4);
+    expect(await tracker.alive()).toEqual({});
   });
 
   test("renderHook results and waitFor observers are collectable after cleanup()", async () => {

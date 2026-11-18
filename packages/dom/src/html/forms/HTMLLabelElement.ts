@@ -6,10 +6,10 @@ import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Event } from "../../events/Event.ts";
 import type { Document } from "../../nodes/Document.ts";
 import { ELEMENT_NODE, F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED } from "../../nodes/constants.ts";
-import { attr } from "../../nodes/attributes.ts";
+import { addToElementIndex, attr, removeFromElementIndex } from "../../nodes/attributes.ts";
 import { T } from "../../nodes/tags.ts";
 import { contentAttr, str } from "../reflect.ts";
-import { formOwner, indexAdd, indexRemove, isActuallyDisabled, labeledControl } from "./form-associated.ts";
+import { formOwner, isActuallyDisabled, labeledControl } from "./form-associated.ts";
 import { I_HIDDEN, inputType } from "./input-type.ts";
 import { syntheticClick } from "./form-submission.ts";
 import { $forLabels, $impl } from "../../keys.ts";
@@ -54,14 +54,14 @@ export class HTMLLabelElement extends HTMLElement {
     super._connectedSteps();
     const impl = this[$impl];
     const forValue = attr(impl, "for");
-    if (forValue !== null) indexAdd((impl.doc[$forLabels] ??= new Map()), forValue, impl);
+    if (forValue !== null) addToElementIndex((impl.doc[$forLabels] ??= new Map()), forValue, impl);
   }
 
   override _disconnectedSteps(): void {
     super._disconnectedSteps();
     const impl = this[$impl];
     const forValue = attr(impl, "for");
-    if (forValue !== null) indexRemove(impl.doc[$forLabels]!, forValue, impl);
+    if (forValue !== null) removeFromElementIndex(impl.doc[$forLabels]!, forValue, impl);
   }
 
   override _attributeChangedSteps(
@@ -73,8 +73,8 @@ export class HTMLLabelElement extends HTMLElement {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     const impl = this[$impl];
     if (localName !== "for" || namespace !== null || oldValue === value || (impl.flags & F_CONNECTED) === 0) return;
-    if (oldValue !== null) indexRemove(impl.doc[$forLabels]!, oldValue, impl);
-    if (value !== null) indexAdd((impl.doc[$forLabels] ??= new Map()), value, impl);
+    if (oldValue !== null) removeFromElementIndex(impl.doc[$forLabels]!, oldValue, impl);
+    if (value !== null) addToElementIndex((impl.doc[$forLabels] ??= new Map()), value, impl);
   }
 
   /** https://html.spec.whatwg.org/#dom-label-control */

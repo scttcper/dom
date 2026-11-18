@@ -183,6 +183,36 @@ describe("ByLabelText", () => {
     { name: "for/id", html: FORM, run: (l, c) => l.getByLabelText(c, "First name") },
     { name: "wrapping label", html: FORM, run: (l, c) => l.getByLabelText(c, "Last name") },
     { name: "aria-labelledby", html: FORM, run: (l, c) => l.getByLabelText(c, "Email") },
+    {
+      name: "aria-labelledby resolves the first matching descendant of a connected or detached container",
+      html: '<span id="title">Outside</span><section id="scope"><b id="title">First</b><b id="title">Second</b><input aria-labelledby="title"><input aria-labelledby="scope"></section>',
+      run: (l, c) => {
+        const scope = c.querySelector("section");
+        const names = () => {
+          const seen: string[] = [];
+          l.queryAllByLabelText(scope, (name) => {
+            seen.push(name);
+            return false;
+          });
+          return seen;
+        };
+        const connected = names();
+        scope.firstChild.remove();
+        c.firstChild.remove();
+        const unique = names();
+        scope.remove();
+        return [connected, unique, names()];
+      },
+    },
+    {
+      name: "aria-labelledby in a shadow root resolves its own label when the document shares the id",
+      html: '<span id="title">Outside</span><div></div>',
+      run: (l, c) => {
+        const shadow = c.querySelector("div").attachShadow({ mode: "open" });
+        shadow.innerHTML = '<span id="title">Inside</span><input aria-labelledby="title">';
+        return [l.queryByLabelText(shadow, "Inside"), l.queryByLabelText(shadow, "Outside")];
+      },
+    },
     { name: "aria-label", html: FORM, run: (l, c) => l.getByLabelText(c, "Phone") },
     { name: "checkbox label with text after", html: FORM, run: (l, c) => l.getByLabelText(c, /agree/) },
     { name: "regex many", html: FORM, run: (l, c) => l.getAllByLabelText(c, /name/i) },

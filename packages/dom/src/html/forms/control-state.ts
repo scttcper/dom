@@ -9,14 +9,10 @@
 // through it were 6x slower. Here it is one own property of the wrapper, and these fields stay in
 // a fast object with one hidden class for both elements.
 
-import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { FileList } from "../../window/FileList.ts";
 
 export class ControlState {
-  /**
-   * The value while the dirty value flag is set: an input's in value mode "value", a textarea's
-   * raw value.
-   */
+  /** A dirty input's value in value mode, or a dirty textarea's newline-normalized API value. */
   value: string;
   /** https://html.spec.whatwg.org/#concept-input-value-dirty-flag, https://html.spec.whatwg.org/#concept-textarea-dirty */
   dirtyValue: boolean;
@@ -36,12 +32,6 @@ export class ControlState {
   badInput: boolean;
   /** User-event's UI value (raw typed text) — null when it equals the value. See ui.ts. */
   uiValue: string | null;
-  // Legacy-pre-activation state (https://html.spec.whatwg.org/#legacy-pre-activation-behavior).
-  preChecked: boolean;
-  preIndeterminate: boolean;
-  preCheckedRadio: NodeImpl | null;
-  /** Legacy-pre-activation ran (and changed state) for the current dispatch. */
-  preApplied: boolean;
 
   constructor() {
     this.value = "";
@@ -57,9 +47,5 @@ export class ControlState {
     this.userEdited = false;
     this.badInput = false;
     this.uiValue = null;
-    this.preChecked = false;
-    this.preIndeterminate = false;
-    this.preCheckedRadio = null;
-    this.preApplied = false;
   }
 }

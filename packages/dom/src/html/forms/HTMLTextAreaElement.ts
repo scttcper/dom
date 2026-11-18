@@ -2,7 +2,8 @@
 //
 // The raw value follows the child text content (the default value) until the dirty value flag
 // is set; that is derived on read, so no children-changed hook is needed and parser-built
-// textareas work without hooks. The API value is the raw value with newlines normalized.
+// textareas work without hooks. Once dirty, store the newline-normalized API value: selection,
+// validity and submission all use that representation.
 
 import { HTMLElement } from "../HTMLElement.ts";
 import { installAutocomplete } from "./autofill.ts";
@@ -63,14 +64,9 @@ export class HTMLTextAreaElement extends HTMLElement {
     this.textContent = String(value);
   }
 
-  /** https://html.spec.whatwg.org/#concept-textarea-raw-value */
-  _rawValueNow(): string {
-    return this[$control].dirtyValue ? this[$control].value : this.defaultValue;
-  }
-
   /** https://html.spec.whatwg.org/#concept-fe-api-value */
   _apiValue(): string {
-    return normalizeNewlines(this._rawValueNow());
+    return this[$control].dirtyValue ? this[$control].value : normalizeNewlines(this.defaultValue);
   }
 
   /** https://html.spec.whatwg.org/#dom-textarea-value */
@@ -79,16 +75,15 @@ export class HTMLTextAreaElement extends HTMLElement {
   }
 
   set value(v: string) {
-    const value = v === null ? "" : String(v); // [LegacyNullToEmptyString]
+    const value = v === null ? "" : normalizeNewlines(String(v)); // [LegacyNullToEmptyString]
     const old = this._apiValue();
     this[$impl].doc[$version]++;
     this[$control].value = value;
     this[$control].dirtyValue = true;
     this[$control].userEdited = false;
-    const now = this._apiValue();
-    if (now !== old) {
-      this[$control].selStart = now.length;
-      this[$control].selEnd = now.length;
+    if (value !== old) {
+      this[$control].selStart = value.length;
+      this[$control].selEnd = value.length;
       this[$control].selDir = "none";
     }
   }
@@ -180,7 +175,7 @@ export class HTMLTextAreaElement extends HTMLElement {
       arguments.length,
     );
     this[$impl].doc[$version]++;
-    this[$control].value = result.value;
+    this[$control].value = normalizeNewlines(result.value);
     this[$control].dirtyValue = true;
     setSelection(this, result.start, result.end, "none");
   }

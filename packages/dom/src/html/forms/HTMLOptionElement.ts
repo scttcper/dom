@@ -1,8 +1,8 @@
 // https://html.spec.whatwg.org/#the-option-element
 // https://html.spec.whatwg.org/#the-optgroup-element
 //
-// Selectedness is authoritative once set (`_selSet`); before that it derives from the
-// `selected` content attribute, which the parser attaches without running attribute hooks.
+// The parser attaches the `selected` attribute without running hooks. It supplies the
+// initial selectedness until the option's state is resolved.
 
 import { HTMLElement } from "../HTMLElement.ts";
 import type { Document } from "../../nodes/Document.ts";
@@ -16,7 +16,7 @@ import { bool, contentAttr, str } from "../reflect.ts";
 import { stripAndCollapseWS } from "./common.ts";
 import { currentDocument } from "../../window/current.ts";
 import type { HTMLSelectElement } from "./HTMLSelectElement.ts";
-import { $dirtiness, $impl, $selSet, $selectedness, $settled, $version } from "../../keys.ts";
+import { $dirtiness, $impl, $selectedness, $settled, $version } from "../../keys.ts";
 
 /**
  * The select element an option belongs to, its "nearest ancestor select":
@@ -38,9 +38,8 @@ export function optionSelect(option: NodeImpl): NodeImpl | null {
 }
 
 export class HTMLOptionElement extends HTMLElement {
-  /** https://html.spec.whatwg.org/#concept-option-selectedness (authoritative when `_selSet`). */
-  [$selectedness]: boolean;
-  [$selSet]: boolean;
+  /** https://html.spec.whatwg.org/#concept-option-selectedness — initially derives from the attribute. */
+  [$selectedness]: boolean | undefined;
   /** https://html.spec.whatwg.org/#concept-option-dirtiness */
   [$dirtiness]: boolean;
 
@@ -48,30 +47,25 @@ export class HTMLOptionElement extends HTMLElement {
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$impl].flags |= F_ATTR_HOOK;
-    this[$selectedness] = false;
-    this[$selSet] = false;
     this[$dirtiness] = false;
   }
 
   _selectednessNow(): boolean {
-    if (this[$selSet]) return this[$selectedness];
+    if (this[$selectedness] !== undefined) return this[$selectedness];
     const select = optionSelect(this[$impl]);
     if (select !== null) {
-      const s = select.node as HTMLSelectElement;
-      if (!s[$settled]) {
-        s._selectednessSettingAlgorithm();
-        if (this[$selSet]) return this[$selectedness];
-      }
+      (select.node as HTMLSelectElement)._ensureSettled();
+      // Subsequent attribute changes go through _attributeChangedSteps.
+      return (this[$selectedness] ??= contentAttr(this[$impl], "selected") !== null);
     }
     return contentAttr(this[$impl], "selected") !== null;
   }
 
   /** Set selectedness without dirtiness or a reset (used by the select's algorithms). */
   _setSelectedness(value: boolean): void {
-    if (this[$selSet] && this[$selectedness] === value) return;
+    if (this[$selectedness] === value) return;
     this[$impl].doc[$version]++;
     this[$selectedness] = value;
-    this[$selSet] = true;
   }
 
   /** https://html.spec.whatwg.org/#dom-option-selected */
@@ -85,8 +79,7 @@ export class HTMLOptionElement extends HTMLElement {
     const select = optionSelect(this[$impl]);
     if (select !== null) {
       const s = select.node as HTMLSelectElement;
-      if (value) s._deselectOthers(this[$impl]);
-      s._selectednessSettingAlgorithm();
+      s._selectednessSettingAlgorithm(value ? this[$impl] : undefined);
     }
   }
 
@@ -166,8 +159,7 @@ export class HTMLOptionElement extends HTMLElement {
     const select = optionSelect(this[$impl]);
     if (select !== null) {
       const s = select.node as HTMLSelectElement;
-      if (value !== null) s._deselectOthers(this[$impl]);
-      s._selectednessSettingAlgorithm();
+      s._selectednessSettingAlgorithm(value !== null ? this[$impl] : undefined);
     }
   }
 
@@ -175,7 +167,6 @@ export class HTMLOptionElement extends HTMLElement {
   override _cloningSteps(copy: Element): void {
     const c = copy as HTMLOptionElement;
     c[$selectedness] = this._selectednessNow();
-    c[$selSet] = true;
     c[$dirtiness] = this[$dirtiness];
   }
 }

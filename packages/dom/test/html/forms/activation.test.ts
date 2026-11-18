@@ -63,6 +63,23 @@ describe("checkbox and radio — https://html.spec.whatwg.org/#the-input-element
     $("b").click();
     expect([$("a").checked, $("b").checked]).toEqual([true, false]);
   });
+
+  test("a nested click on the same radio preserves the outer click's cancellation state", () => {
+    document.body!.innerHTML = "<input type=radio name=r id=a checked><input type=radio name=r id=b>";
+    const b = $("b");
+    const log: string[] = [];
+    record(b, ["input", "change"], log);
+    b.addEventListener(
+      "click",
+      (event: Event) => {
+        b.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+        event.preventDefault();
+      },
+      { once: true },
+    );
+    b.click();
+    expect([$("a").checked, b.checked, log]).toEqual([true, false, []]);
+  });
 });
 
 describe("submit and reset buttons — https://html.spec.whatwg.org/#the-button-element:activation-behaviour", () => {

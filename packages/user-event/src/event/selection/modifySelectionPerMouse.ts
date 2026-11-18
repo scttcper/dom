@@ -53,6 +53,6 @@ export function modifySelectionPerMouseMove(
 
     const selection = document.getSelection()
     selection?.removeAllRanges()
-    selection?.addRange(range.cloneRange())
+    selection?.addRange(range)
   }
 }

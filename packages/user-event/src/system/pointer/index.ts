@@ -7,7 +7,11 @@ import {Buttons} from './buttons.ts'
 import {Device} from './device.ts'
 import {Mouse} from './mouse.ts'
 import {Pointer} from './pointer.ts'
-import {type pointerKey, type PointerPosition} from './shared.ts'
+import {
+  PointerLocation,
+  type pointerKey,
+  type PointerPosition,
+} from './shared.ts'
 
 export type {pointerKey, PointerPosition} from './shared.ts'
 
@@ -102,9 +106,10 @@ export class PointerHost {
         : this.pointers.get(pointerName)
 
     // TODO: deprecate the following implicit setting of position
-    pointer.position = position
+    const location = PointerLocation.from(position)
+    pointer.position = location
     if (pointer.pointerType !== 'touch') {
-      this.mouse.position = position
+      this.mouse.position = location
     }
 
     if (pointer.pointerType === 'touch') {
@@ -129,11 +134,12 @@ export class PointerHost {
     // This interweaving of events is probably unnecessary.
     // While the order of mouse (or pointer) events is defined per spec,
     // the order in which they interweave/follow on a user interaction depends on the implementation.
-    const pointermove = pointer.move(instance, position)
+    const location = PointerLocation.from(position)
+    const pointermove = pointer.move(instance, location)
     const mousemove =
       pointer.pointerType === 'touch'
         ? undefined
-        : this.mouse.move(instance, position, pointer.isPrevented)
+        : this.mouse.move(instance, location, pointer.isPrevented)
 
     pointermove?.leave()
     mousemove?.leave()
@@ -158,9 +164,10 @@ export class PointerHost {
     const isPrevented = pointer.isPrevented
 
     // TODO: deprecate the following implicit setting of position
-    pointer.position = position
+    const location = PointerLocation.from(position)
+    pointer.position = location
     if (pointer.pointerType !== 'touch') {
-      this.mouse.position = position
+      this.mouse.position = location
     }
 
     if (device.countPressed === 0) {
@@ -172,7 +179,7 @@ export class PointerHost {
     }
 
     if (pointer.pointerType === 'touch' && !pointer.isMultitouch) {
-      const mousemove = this.mouse.move(instance, position, isPrevented)
+      const mousemove = this.mouse.move(instance, location, isPrevented)
       mousemove?.leave()
       mousemove?.enter()
       mousemove?.move()
@@ -180,7 +187,7 @@ export class PointerHost {
       this.mouse.down(instance, keyDef, isPrevented)
     }
     if (!pointer.isMultitouch) {
-      const mousemove = this.mouse.move(instance, position, isPrevented)
+      const mousemove = this.mouse.move(instance, location, isPrevented)
       mousemove?.leave()
       mousemove?.enter()
       mousemove?.move()
@@ -208,7 +215,7 @@ export class PointerHost {
   }
 
   setMousePosition(position: PointerPosition) {
-    this.mouse.position = position
-    this.pointers.get('mouse').position = position
+    this.mouse.position = this.pointers.get('mouse').position =
+      PointerLocation.from(position)
   }
 }

@@ -3,27 +3,28 @@
 
 import type {Element} from '../../dom-types.ts'
 export function getTreeDiff(a: Element | null, b: Element | null) {
-  const treeA = []
-  for (let el = a; el; el = el.parentElement) {
-    treeA.push(el)
-  }
-  const treeB = []
-  for (let el = b; el; el = el.parentElement) {
-    treeB.push(el)
-  }
-  let i = 0
-  for (; ; i++) {
-    if (
-      i >= treeA.length ||
-      i >= treeB.length ||
-      treeA[treeA.length - 1 - i] !== treeB[treeB.length - 1 - i]
-    ) {
-      break
+  const leave: Element[] = []
+  const enter: Element[] = []
+  // Paths at the same depth meet without visiting ancestors above their common parent.
+  while (a !== b) {
+    if (a) {
+      leave.push(a)
+      a = a.parentElement
+    }
+    if (b) {
+      enter.push(b)
+      b = b.parentElement
     }
   }
-  return [
-    treeA.slice(0, treeA.length - i),
-    treeB.slice(0, treeB.length - i),
-    treeB.slice(treeB.length - i),
-  ] as const
+  // Different depths reach the root at different times. Trim any common ancestors from the ends.
+  let common = a
+  while (
+    leave.length &&
+    enter.length &&
+    leave[leave.length - 1] === enter[enter.length - 1]
+  ) {
+    common = leave.pop()!
+    enter.pop()
+  }
+  return [leave, enter, common] as const
 }

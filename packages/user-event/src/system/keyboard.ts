@@ -109,7 +109,7 @@ export class KeyboardHost {
   }
   private readonly pressed = new PressedKeys()
   carryChar = ''
-  private lastKeydownTarget: Element | undefined = undefined
+  private lastKeydownTarget?: WeakRef<Element>
   private readonly modifierLockStart: Record<string, boolean> = {}
 
   isKeyPressed(keyDef: keyboardKey) {
@@ -203,10 +203,10 @@ export class KeyboardHost {
   }
 
   private setKeydownTarget(target: Element) {
-    if (target !== this.lastKeydownTarget) {
+    if (target !== this.lastKeydownTarget?.deref()) {
       this.carryChar = ''
+      this.lastKeydownTarget = new WeakRef(target)
     }
-    this.lastKeydownTarget = target
   }
 
   private hasKeyPress(key: string) {

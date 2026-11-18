@@ -13,6 +13,7 @@
  */
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWindow, type Document } from "@ctrl/dom";
+import { setUIValue } from "../../../src/html/forms/ui.ts";
 
 // biome-ignore lint: untyped DOM surface in tests
 let window: any;
@@ -70,6 +71,26 @@ describe("selectedness setting algorithm — https://html.spec.whatwg.org/#selec
     b.defaultSelected = true;
     s.appendChild(b);
     expect(s.value).toBe("b");
+  });
+
+  test("appending options preserves selection across attribute changes, dirty options and optgroups", () => {
+    const s = select("<option>A</option><option>B</option>");
+    const [a, b] = s.options;
+    b.defaultSelected = true;
+    s.appendChild(new window.Option("C"));
+    expect(s.value).toBe("B");
+    b.selected = false;
+    b.defaultSelected = false;
+    b.defaultSelected = true;
+    expect(s.value).toBe("A");
+
+    const group = document.createElement("optgroup");
+    group.appendChild(new window.Option("D", "D", true, true));
+    s.appendChild(group);
+    expect(s.value).toBe("D");
+    a.selected = true;
+    expect([...s.selectedOptions]).toEqual([a]);
+    expect(s.cloneNode(true).value).toBe("A");
   });
 });
 
@@ -196,6 +217,24 @@ describe("the textarea element — https://html.spec.whatwg.org/#the-textarea-el
     expect(t.value).toBe("hEYlo");
     t.select();
     expect([t.selectionStart, t.selectionEnd]).toEqual([0, 5]);
+  });
+
+  test("UI edits and range replacements normalize newlines while reset restores the live default", () => {
+    document.body!.innerHTML = "<form id=f><textarea id=t></textarea></form>";
+    const t = $("t");
+    t.defaultValue = "default\r\ntext";
+    setUIValue(t, "a\r\nb\rc");
+    expect(t.value).toBe("a\nb\nc");
+    t.setSelectionRange(1, 3);
+    t.value = "a\rb\r\nc";
+    expect([t.selectionStart, t.selectionEnd]).toEqual([1, 3]);
+    t.setRangeText("X\r\nY", 1, 3);
+    expect(t.cloneNode(true).value).toBe("aX\nY\nc");
+    expect(t.defaultValue).toBe("default\r\ntext");
+    $("f").reset();
+    expect(t.value).toBe("default\ntext");
+    t.firstChild.data = "new\rdefault";
+    expect(t.value).toBe("new\ndefault");
   });
 
   test("rows/cols are limited to positive numbers with fallback: 0 writes the default", () => {

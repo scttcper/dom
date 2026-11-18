@@ -152,14 +152,18 @@ export default act;
  * act queue. The exported `act` keeps React's semantics.
  */
 export function actReleasingSuspendedWork(callback: () => void): void {
-  // Only the outermost act flushes; nested ones leave the queue to it. Opted out: React's act.
-  if (reactInternals.actQueue !== null || !releaseSuspendedWorkEnabled()) {
-    act(callback);
-    return;
-  }
+  // RTL's render and event callbacks are synchronous, so the environment can be restored
+  // as soon as React's act returns, including when the callback or the flush throws.
+  const previousActEnvironment = getIsReactActEnvironment();
+  setReactActEnvironment(true);
   let errors: unknown[] | undefined;
   try {
-    act(() => {
+    // Only the outermost act flushes. Nested ones and the opt-out keep React's own queue handling.
+    if (reactInternals.actQueue !== null || !releaseSuspendedWorkEnabled()) {
+      reactAct(callback);
+      return;
+    }
+    reactAct(() => {
       const queue = reactInternals.actQueue!;
       callback();
       errors = flushReleasingSuspendedWork(queue);
@@ -168,6 +172,8 @@ export function actReleasingSuspendedWork(callback: () => void): void {
     // React's flush of the tasks left after a throwing one threw too.
     if (errors === undefined) throw actError;
     errors.push(actError);
+  } finally {
+    setReactActEnvironment(previousActEnvironment);
   }
   // As React's act: one error as is, several aggregated.
   if (errors === undefined) return;

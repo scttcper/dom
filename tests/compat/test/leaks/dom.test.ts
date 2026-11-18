@@ -9,7 +9,16 @@
  * (https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets).
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, currentWindowOrNull, installGlobals, type ShadowRoot, type Window } from "@ctrl/dom";
+import {
+  createWindow,
+  currentWindowOrNull,
+  installGlobals,
+  MouseEvent,
+  type HTMLFormElement,
+  type HTMLInputElement,
+  type ShadowRoot,
+  type Window,
+} from "@ctrl/dom";
 import { $css } from "@ctrl/dom/internal";
 import { queryAllByLabelText } from "@ctrl/dom/testing-library";
 import { Tracker, collectGarbage, heapSlope } from "./gc.ts";
@@ -137,6 +146,37 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("a composed click releases its detached shadow host after dispatch", async () => {
+    const w = createWindow();
+    const tracker = new Tracker();
+    (() => {
+      const host = tracker.track("host", w.document.body!.appendChild(w.document.createElement("article")));
+      const shadow = tracker.track("shadow root", host.attachShadow({ mode: "closed" }));
+      const button = tracker.track("button", shadow.appendChild(w.document.createElement("button")));
+      button.dispatchEvent(new MouseEvent("click", { composed: true, bubbles: true }));
+      host.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
+  test("a checked radio releases the previous radio and its detached subtree", async () => {
+    const w = createWindow({
+      html: "<form><label><input type=radio name=g checked>Old</label><input id=current type=radio name=g></form>",
+    });
+    const tracker = new Tracker();
+    const current = w.document.getElementById("current") as HTMLInputElement;
+    (() => {
+      const label = tracker.track("previous label", w.document.querySelector("label")!);
+      tracker.track("previous radio", label.firstChild!);
+      current.click();
+      label.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(current.checked).toBe(true);
+    w.close();
+  });
+
   test("ranges adjusted during removal are collectable while the document stays open", async () => {
     const w = createWindow();
     const tracker = new Tracker();
@@ -190,7 +230,7 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
       const clone = box.cloneNode(true) as typeof box;
       tracker.track("detached tree", box);
       tracker.track("clone", clone);
-      // Snapshots of collections rooted in a detached node are not registered with the document.
+      // The document keys snapshots weakly by their owner, including those read on detached trees.
       void box.children.length;
       void clone.children[0];
       void clone.getElementsByTagName("span").length;
@@ -199,6 +239,34 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
     expect(await tracker.alive()).toEqual({});
     w.close();
   });
+
+  test.each([false, true])(
+    "a live detached form releases removed collection members (adopted: %s)",
+    async (adopted) => {
+      const w = createWindow();
+      const other = adopted ? createWindow() : null;
+      const tracker = new Tracker();
+      const form = w.document.createElement("form") as HTMLFormElement;
+      const input = w.document.createElement("input") as HTMLInputElement;
+      (() => {
+        const label = tracker.track("label", w.document.createElement("label"));
+        const button = tracker.track("button", w.document.createElement("button"));
+        label.append(input, button);
+        form.append(label);
+        expect(form.children.length).toBe(1);
+        expect(form.elements.length).toBe(2);
+        expect(input.labels!.length).toBe(1);
+        other?.document.adoptNode(form);
+        input.remove();
+        label.remove();
+      })();
+      expect(await tracker.alive()).toEqual({});
+      expect(form.elements.length).toBe(0);
+      expect(input.labels!.length).toBe(0);
+      other?.close();
+      w.close();
+    },
+  );
 });
 
 describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets", () => {

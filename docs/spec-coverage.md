@@ -659,7 +659,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [is-modal](https://html.spec.whatwg.org/#is-modal) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
 | [labeled-control](https://html.spec.whatwg.org/#labeled-control) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` | `aria/internal.test.ts`, `testing-library/unit/label-map-cache.test.ts`, `compat/forms/form-algorithms.test.ts` |
 | [language](https://html.spec.whatwg.org/#language) | `dom/html/innerText.ts`, `dom/selectors/state.ts` | `dom/selectors/html-state.test.ts` |
-| [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/html/forms/control-state.ts` | `compat/html/activation.test.ts` |
+| [legacy-pre-activation-behavior](https://html.spec.whatwg.org/#legacy-pre-activation-behavior) | `dom/events/activation.ts` | `compat/html/activation.test.ts` |
 | [light-dismiss-open-dialogs](https://html.spec.whatwg.org/#light-dismiss-open-dialogs) | `dom/html/interactive.ts` | `dom/html/top-layer.test.ts` |
 | [light-dismiss-open-popovers](https://html.spec.whatwg.org/#light-dismiss-open-popovers) | `dom/html/top-layer.ts` | `dom/html/top-layer.test.ts` |
 | [list-of-animation-frame-callbacks](https://html.spec.whatwg.org/#list-of-animation-frame-callbacks) | `dom/window/Window.ts` | `dom/window/window-apis.test.ts` |

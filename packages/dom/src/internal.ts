@@ -39,7 +39,7 @@ export {
   splitOnAsciiWhitespace,
   isAsciiWhitespace,
 } from "./nodes/attributes.ts";
-export { matches, closest, querySelector, querySelectorAll } from "./selectors/index.ts";
+export { matches, closest, querySelector, querySelectorAll, indexedDescendantById } from "./selectors/index.ts";
 export { serializeChildren, serializeNode } from "./serializer/index.ts";
 export { parseFragment } from "./parser/index.ts";
 

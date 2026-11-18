@@ -17,9 +17,9 @@
 //   }
 //   class HTMLInputElement extends HTMLElement {
 //     get _hasActivationBehavior() { ... depends on type ... }
-//     _legacyPreActivationBehavior() { ...checkbox: toggle checkedness, radio: check... }
-//     _activationBehavior(event) { ...fire input + change, submit form, ... }
-//     _legacyCanceledActivationBehavior() { ...restore checkedness... }
+//     _legacyPreActivationBehavior() { ...toggle/check and return the previous state... }
+//     _activationBehavior(event, state) { ...fire input + change, submit form, ... }
+//     _legacyCanceledActivationBehavior(state) { ...restore checkedness... }
 //   }
 //
 // Rules:
@@ -32,8 +32,8 @@
 // - `_legacyPreActivationBehavior()` runs after the path is built and before any listener
 //   (checkbox/radio toggling, so listeners observe the new state).
 // - After dispatch finishes (event path cleared, phase NONE): if the event was not canceled,
-//   `_activationBehavior(event)` runs; otherwise `_legacyCanceledActivationBehavior()` runs
-//   if defined (restore the state saved by the pre-activation step).
+//   `_activationBehavior(event, state)` runs; otherwise `_legacyCanceledActivationBehavior(state)` runs
+//   if defined. The saved state lives only on this dispatch's stack.
 // - Disabled form controls: "A form control that is disabled must prevent any click events
 //   that are queued on the user interaction task source from being dispatched on the element"
 //   (https://html.spec.whatwg.org/#enabling-and-disabling-form-controls:-the-disabled-attribute)
@@ -45,6 +45,7 @@
 //   "not trusted flag", and respects the click-in-progress flag (owners keep that flag).
 
 import type { Event } from "./Event.ts";
+import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
 
 /** Indexed by `NodeImpl.tag`: 1 for the element tags whose classes implement ActivationTarget. */
@@ -56,9 +57,16 @@ export function mayHaveActivationBehavior(tag: number): boolean {
   return ACTIVATION_TAGS[tag] === 1;
 }
 
+/** State for one click's legacy pre-activation behavior (https://html.spec.whatwg.org/#legacy-pre-activation-behavior). */
+export interface InputActivationState {
+  checked: boolean;
+  indeterminate: boolean;
+  previousRadio: NodeImpl | null;
+}
+
 export interface ActivationTarget {
   readonly _hasActivationBehavior?: boolean;
-  _activationBehavior?(event: Event): void;
-  _legacyPreActivationBehavior?(): void;
-  _legacyCanceledActivationBehavior?(): void;
+  _activationBehavior?(event: Event, state?: InputActivationState): void;
+  _legacyPreActivationBehavior?(): InputActivationState | undefined;
+  _legacyCanceledActivationBehavior?(state?: InputActivationState): void;
 }

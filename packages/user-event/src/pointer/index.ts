@@ -5,6 +5,7 @@ import type {Element, Node} from '../dom-types.ts'
 import {type PointerCoords} from '../event/index.ts'
 import {type Instance} from '../setup/index.ts'
 import {type pointerKey, type PointerPosition} from '../system/pointer/index.ts'
+import {PointerLocation} from '../system/pointer/shared.ts'
 import {ApiLevel, setLevelRef, yieldBetweenActions} from '../utils/index.ts'
 import {parseKeyDef} from './parseKeyDef.ts'
 
@@ -78,20 +79,25 @@ async function pointerAction(instance: Instance, action: PointerAction) {
 
   const previousPosition =
     instance.system.pointer.getPreviousPosition(pointerName)
-  const position: PointerPosition = {
-    target: action.target ?? getPrevTarget(instance, previousPosition),
-    coords: action.coords ?? previousPosition?.coords,
-    caret: {
-      node:
-        action.node ??
-        (hasCaretPosition(action) ? undefined : previousPosition?.caret?.node),
-      offset:
-        action.offset ??
-        (hasCaretPosition(action)
-          ? undefined
-          : previousPosition?.caret?.offset),
+  const position = new PointerLocation(
+    {
+      target: action.target ?? getPrevTarget(instance, previousPosition),
+      coords: action.coords ?? previousPosition?.coords,
+      caret: {
+        node:
+          action.node ??
+          (hasCaretPosition(action)
+            ? undefined
+            : previousPosition?.caret?.node),
+        offset:
+          action.offset ??
+          (hasCaretPosition(action)
+            ? undefined
+            : previousPosition?.caret?.offset),
+      },
     },
-  }
+    previousPosition,
+  )
 
   if ('keyDef' in action) {
     if (instance.system.pointer.isKeyPressed(action.keyDef)) {

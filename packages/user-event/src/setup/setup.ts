@@ -10,6 +10,7 @@ import {defaultKeyMap as defaultPointerMap} from '../pointer/keyMap.ts'
 import {type Options, PointerEventsCheckLevel} from '../options.ts'
 import {
   ApiLevel,
+  type LevelRefs,
   attachClipboardStubToView,
   getDocumentFromNode,
   getWindow,
@@ -75,7 +76,7 @@ export type Instance = UserEventApi & {
   dispatchEvent: OmitThisParameter<typeof dispatchEvent>
   dispatchUIEvent: OmitThisParameter<typeof dispatchUIEvent>
   system: System
-  levelRefs: Record<number, object | undefined>
+  levelRefs: LevelRefs
 }
 
 export type Config = Required<Options>
@@ -224,7 +225,7 @@ export function createInstance(
   instance.dispatchEvent = dispatchEvent.bind(instance)
   instance.dispatchUIEvent = dispatchUIEvent.bind(instance)
   instance[$system] = system
-  instance.levelRefs = {}
+  instance.levelRefs = {call: 0, trigger: 0}
 
   const api = {...API_TEMPLATE}
   for (let i = 0; i < API_NAMES.length; i++) {

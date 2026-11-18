@@ -15,7 +15,7 @@ import {Buttons, getMouseEventButton, MouseButton} from './buttons.ts'
 import {
   isDifferentPointerPosition,
   type pointerKey,
-  type PointerPosition,
+  PointerLocation,
 } from './shared.ts'
 
 /**
@@ -59,10 +59,11 @@ class ClickCount {
 }
 
 export class Mouse {
-  position: PointerPosition = {}
+  position = new PointerLocation({})
   private readonly buttons = new Buttons()
-  private selecting?: Range | SelectionRange
-  private buttonDownTarget = {} as Record<number, Element>
+  private selecting?: WeakRef<Element>
+  private selections?: WeakMap<Element, Range | SelectionRange>
+  private buttonDownTarget: Record<number, WeakRef<Element>> = {}
 
   // According to spec the `detail` on click events should be the number
   // of *consecutive* clicks with a specific button.
@@ -78,7 +79,7 @@ export class Mouse {
 
   move(
     instance: Instance,
-    position: PointerPosition,
+    position: PointerLocation,
     /** Whether `preventDefault()` has been called on the `pointerdown` event */
     isPrevented: boolean,
   ) {
@@ -134,15 +135,19 @@ export class Mouse {
       return
     }
 
-    const target = this.getTarget(instance)
-    this.buttonDownTarget[button] = target
+    const positionedTarget = this.position.target
+    const target = positionedTarget ?? instance.config.document.body
+    const downTarget = positionedTarget
+      ? this.position.targetRef!
+      : new WeakRef(target)
+    this.buttonDownTarget[button] = downTarget
     const init = this.getEventInit('mousedown', keyDef.button)
     const disabled = isDisabled(target)
     if (
       !isPrevented &&
       (disabled || instance.dispatchUIEvent(target, 'mousedown', init))
     ) {
-      this.startSelecting(instance, init.detail as number)
+      this.startSelecting(instance, init.detail as number, target, downTarget)
       focusElement(target)
     }
     if (!disabled && getMouseEventButton(keyDef.button) === 2) {
@@ -165,17 +170,21 @@ export class Mouse {
     if (button === undefined) {
       return
     }
+    const downTarget = this.buttonDownTarget[button].deref() ?? null
+    delete this.buttonDownTarget[button]
     const target = this.getTarget(instance)
-    if (!isDisabled(target)) {
-      if (!isPrevented) {
-        const mouseUpInit = this.getEventInit('mouseup', keyDef.button)
-        instance.dispatchUIEvent(target, 'mouseup', mouseUpInit)
-        this.endSelecting()
-      }
+    const disabled = isDisabled(target)
+    if (!disabled && !isPrevented) {
+      const mouseUpInit = this.getEventInit('mouseup', keyDef.button)
+      instance.dispatchUIEvent(target, 'mouseup', mouseUpInit)
+    }
+    this.endSelecting()
 
-      const downTarget = this.buttonDownTarget[button]
+    if (!disabled) {
       const clickTarget =
-        downTarget === target ? target : getTreeDiff(downTarget, target)[2][0]
+        downTarget === target
+          ? target
+          : downTarget && getTreeDiff(downTarget, target)[2]
       if (clickTarget) {
         const init = this.getEventInit('click', keyDef.button)
         if (init.detail) {
@@ -222,23 +231,38 @@ export class Mouse {
     return this.position.target ?? instance.config.document.body
   }
 
-  private startSelecting(instance: Instance, clickCount: number) {
+  private startSelecting(
+    instance: Instance,
+    clickCount: number,
+    target: Element,
+    targetRef: WeakRef<Element>,
+  ) {
     // TODO: support extending range (shift)
 
-    this.selecting = setSelectionPerMouseDown({
+    const selection = setSelectionPerMouseDown({
       document: instance.config.document,
-      target: this.getTarget(instance),
+      target,
       node: this.position.caret?.node,
       offset: this.position.caret?.offset,
       clickCount,
     })
+    this.endSelecting()
+    if (selection) {
+      // Keep the live drag anchor as long as its target exists. An input selection itself
+      // points back to the input, so a strong field would keep a removed subtree alive.
+      this.selections ??= new WeakMap()
+      this.selections.set(target, selection)
+      this.selecting = targetRef
+    }
   }
 
   private modifySelecting(instance: Instance) {
-    if (!this.selecting) {
+    const target = this.selecting?.deref()
+    const selection = target && this.selections?.get(target)
+    if (!selection) {
       return
     }
-    modifySelectionPerMouseMove(this.selecting, {
+    modifySelectionPerMouseMove(selection, {
       document: instance.config.document,
       target: this.getTarget(instance),
       node: this.position.caret?.node,
@@ -247,6 +271,8 @@ export class Mouse {
   }
 
   private endSelecting() {
+    const target = this.selecting?.deref()
+    if (target) this.selections?.delete(target)
     this.selecting = undefined
   }
 }

@@ -301,21 +301,20 @@ interface RootHandle {
   unmount(): void;
 }
 
-// Ideally we'd just use a WeakMap where containers are keys and roots are values. We use two
-// variables so that we can bail out in constant time when we render with a new container
-// (most common use case).
-const mountedContainers = new Set<unknown>();
-const mountedRootEntries: Array<{ container: any; root: RootHandle }> = [];
+// Active React roots own their containers. After an explicit unmount, cleanup still visits
+// containers that exist, without keeping a detached one or its React listeners alive.
+const mountedRoots = new WeakMap<object, RootHandle>();
+const mountedContainers: WeakRef<object>[] = [];
 
 /**
  * Containers render() created, waiting for another render() in the same document. React's
  * `createRoot` adds 142 event listeners to a container it has not seen (`listenToAllSupportedEvents`,
  * 142 bound functions on its side and as many listener records on ours) and nothing to one it has:
  * a warm render + unmount of a small tree takes 12.8 µs in a reused container against 18.8 µs in a
- * new one. Only for @ctrl/dom elements. Keyed weakly by document and holding only that document's
- * elements, so nothing here outlives a window.
+ * new one. Only for @ctrl/dom elements. Both the document and the detached containers are weakly
+ * referenced so a window can stay open without keeping an old React container and its listeners.
  */
-const reusableContainers = new WeakMap<object, unknown[]>();
+const reusableContainers = new WeakMap<object, WeakRef<object>[]>();
 /** What a container render() created had once React made it a root: listeners and own keys. */
 const ownContainers = new WeakMap<object, { listeners: number; keys: number }>();
 const MAX_REUSABLE_CONTAINERS = 8;
@@ -359,7 +358,7 @@ function createConcurrentRoot(
         actRoots.add(root);
       });
     } catch (error) {
-      // The root never reaches mountedRootEntries, so cleanup() would not unregister it.
+      // The root never reaches mountedRoots, so cleanup() would not unregister it.
       actRoots.delete(root);
       throw error;
     }
@@ -371,6 +370,12 @@ function createConcurrentRoot(
     actRoots.add(root);
   }
 
+  return wrapRoot(root, hydrate);
+}
+
+// Root methods survive rerenders and unmount. Keep the initial UI and hydration options
+// out of their closure so the root handle cannot retain the initial element's props.
+function wrapRoot(root: ReactDOMClient.Root, hydrate: boolean): RootHandle {
   return {
     hydrate() {
       if (!hydrate) {
@@ -382,8 +387,11 @@ function createConcurrentRoot(
       root.render(element);
     },
     unmount() {
-      root.unmount();
-      actRoots.delete(root);
+      try {
+        root.unmount();
+      } finally {
+        actRoots.delete(root);
+      }
     },
   };
 }
@@ -633,13 +641,14 @@ function renderUntraced(
   }
   let created = false;
   if (!container) {
-    const reused = reusableContainers.get(document)?.pop();
-    created = reused === undefined;
-    container = baseElement.appendChild(reused ?? document.createElement("div"));
+    const pool = reusableContainers.get(document);
+    while (pool?.length && !container) container = pool.pop()!.deref();
+    created = !container;
+    container = baseElement.appendChild(container ?? document.createElement("div"));
   }
 
-  let root: RootHandle | undefined;
-  if (!mountedContainers.has(container)) {
+  let root = mountedRoots.get(container);
+  if (root === undefined) {
     root = createConcurrentRoot(container, {
       hydrate,
       onCaughtError,
@@ -651,16 +660,8 @@ function renderUntraced(
     if (created) {
       ownContainers.set(container, { listeners: listenerCount(container), keys: Object.keys(container).length });
     }
-    mountedRootEntries.push({ container, root });
-    // we'll add it to the mounted containers regardless of whether it's actually added to
-    // document.body so the cleanup method works regardless of whether they're passing us a
-    // custom container or not.
-    mountedContainers.add(container);
-  } else {
-    for (let i = 0; i < mountedRootEntries.length; i++) {
-      const rootEntry = mountedRootEntries[i];
-      if (rootEntry.container === container) root = rootEntry.root;
-    }
+    mountedRoots.set(container, root);
+    mountedContainers.push(new WeakRef(container));
   }
 
   return renderRoot(ui, {
@@ -669,7 +670,7 @@ function renderUntraced(
     queries,
     hydrate,
     wrapper,
-    root: root!,
+    root,
     reactStrictMode,
   });
 }
@@ -678,33 +679,41 @@ function renderUntraced(
  * Unmounts React trees that were mounted with render.
  */
 export function cleanup(): void {
-  for (let i = 0; i < mountedRootEntries.length; i++) {
-    const { root, container } = mountedRootEntries[i];
-    act(() => {
-      root.unmount();
-    });
-    if (container.parentNode === document.body) {
-      document.body.removeChild(container);
-      // Reused by a later render() while it is what a new <div> would be, the listeners
-      // createRoot added and React's two keys aside: no attributes, children, observers, or
-      // listeners and properties of the test's or the app's.
-      const own = ownContainers.get(container);
-      // React's commit sets `onclick` on a root container that has none (a no-op, for Safari's
-      // click delegation) and leaves it there; cleared, the next mount sets it again.
-      if (own !== undefined) container.onclick = null;
-      if (
-        own !== undefined &&
-        reusableElement(container, own.listeners) &&
-        Object.keys(container).length === own.keys
-      ) {
-        let reusable = reusableContainers.get(document);
-        if (reusable === undefined) reusableContainers.set(document, (reusable = []));
-        if (reusable.length < MAX_REUSABLE_CONTAINERS) reusable.push(container);
-      }
+  let errors: unknown[] | undefined;
+  for (const ref of mountedContainers) {
+    const container = ref.deref();
+    if (container === undefined) continue;
+    const root = mountedRoots.get(container);
+    if (root === undefined) continue;
+    try {
+      act(() => root.unmount());
+    } catch (error) {
+      (errors ??= []).push(error);
+      ownContainers.delete(container);
     }
+    try {
+      removeContainer(container, ref);
+    } catch (error) {
+      (errors ??= []).push(error);
+    }
+    mountedRoots.delete(container);
   }
-  mountedRootEntries.length = 0;
-  mountedContainers.clear();
+  mountedContainers.length = 0;
+  if (errors !== undefined) throw errors.length === 1 ? errors[0] : new AggregateError(errors, "React cleanup failed");
+}
+
+function removeContainer(container: any, ref: WeakRef<object>): void {
+  if (container.parentNode !== document.body) return;
+  document.body.removeChild(container);
+  const own = ownContainers.get(container);
+  if (own === undefined) return;
+  // React leaves a no-op onclick for Safari's click delegation. It reinstalls it on the next mount.
+  container.onclick = null;
+  if (reusableElement(container, own.listeners) && Object.keys(container).length === own.keys) {
+    let reusable = reusableContainers.get(document);
+    if (reusable === undefined) reusableContainers.set(document, (reusable = []));
+    if (reusable.length < MAX_REUSABLE_CONTAINERS) reusable.push(ref);
+  }
 }
 
 // Ours: where test files share a window and this module (Vitest with `isolate: false`, the
@@ -712,8 +721,11 @@ export function cleanup(): void {
 // one starts (@ctrl/dom window/file-reset.ts).
 registerTestHooks("react", {
   fileEnd() {
-    cleanup();
-    dropHoistedResources();
+    try {
+      cleanup();
+    } finally {
+      dropHoistedResources();
+    }
   },
 });
 

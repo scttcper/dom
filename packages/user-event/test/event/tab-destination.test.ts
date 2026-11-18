@@ -8,7 +8,7 @@
  *   (user-event approximates it; the oracle here is upstream, not the spec)
  * Upstream: https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/focus/getTabDestination.ts
  */
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 import {getTabDestination} from '../../src/utils/focus/getTabDestination.ts'
 import {FOCUSABLE_SELECTOR} from '../../src/utils/focus/selector.ts'
 import {isDisabled} from '../../src/utils/misc/isDisabled.ts'
@@ -100,6 +100,60 @@ function outcome(f: () => unknown): unknown {
 const TABINDEX = [null, null, null, '0', '-1', '1', '2', '3', 'x', ' 2 ', '1e1']
 
 describe('getTabDestination — https://html.spec.whatwg.org/#sequential-focus-navigation-order', () => {
+  test('matches upstream across forms, disabled groups and reordered radios', () => {
+    document.body.innerHTML = `
+      <button>First</button>
+      <form><input type="radio" name="delivery" checked tabindex="2"></form>
+      <fieldset disabled>
+        <legend><button>Legend</button></legend>
+        <input type="radio" name="plan" checked>
+      </fieldset>
+      <form>
+        <input type="radio" name="plan">
+        <input type="radio" name="delivery" checked tabindex="1">
+        <input type="radio" name="plan">
+        <input type="radio" name="constructor">
+      </form>
+      <button>Last</button>
+    `
+    const controls = [
+      document.body,
+      ...document.querySelectorAll('button, input'),
+    ]
+    for (const explicitTabOrder of [true, false]) {
+      if (!explicitTabOrder) {
+        for (const el of controls) el.removeAttribute('tabindex')
+      }
+      for (const el of controls) {
+        for (const shift of [false, true]) {
+          expect(outcome(() => getTabDestination(el as any, shift))).toBe(
+            outcome(() => upstream(el, shift)),
+          )
+        }
+      }
+    }
+  })
+
+  test('checks visibility on ancestors and honors a replacement getComputedStyle', () => {
+    document.body.innerHTML = `
+      <div style="visibility: hidden"><button style="visibility: visible">Hidden</button></div>
+      <button style="visibility: collapse">Collapsed</button>
+      <button>Last</button>
+    `
+    const [hidden, collapsed, last] = document.querySelectorAll('button')
+    expect(getTabDestination(document.body as any, false)).toBe(collapsed)
+
+    const view = document.defaultView!
+    const style = view.getComputedStyle.bind(view)
+    using override = vi
+      .spyOn(view, 'getComputedStyle')
+      .mockImplementation(el =>
+        el === collapsed ? style(hidden.parentElement!) : style(el),
+      )
+    expect(getTabDestination(document.body as any, false)).toBe(last)
+    expect(override).toHaveBeenCalledWith(collapsed)
+  })
+
   test('picks what upstream picks from every element, both directions, over 200 random forms', () => {
     const rnd = mulberry32(7)
     for (let round = 0; round < 200; round++) {

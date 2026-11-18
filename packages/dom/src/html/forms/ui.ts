@@ -30,6 +30,7 @@ import {
   valueMode,
 } from "./input-type.ts";
 import { isMutable } from "./state.ts";
+import { normalizeNewlines } from "./common.ts";
 import { sanitizeValue, type HTMLInputElement } from "./HTMLInputElement.ts";
 import type { HTMLTextAreaElement } from "./HTMLTextAreaElement.ts";
 import type { ControlState } from "./control-state.ts";
@@ -109,7 +110,7 @@ export function setUIValue(el: El, value: string): void {
   if (impl.tag === T.textarea) {
     const ta = impl.node as HTMLTextAreaElement;
     impl.doc[$version]++;
-    ta[$control].value = value;
+    ta[$control].value = normalizeNewlines(value);
     ta[$control].dirtyValue = true;
     ta[$control].userEdited = true;
   }

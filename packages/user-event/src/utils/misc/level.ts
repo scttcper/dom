@@ -4,17 +4,16 @@
 import {type Instance} from '../../setup/index.ts'
 
 export const ApiLevel = {
-  Trigger: 2,
-  Call: 1,
+  Trigger: 'trigger',
+  Call: 'call',
 } as const
 export type ApiLevel = (typeof ApiLevel)[keyof typeof ApiLevel]
 
-export type LevelRefs = Record<ApiLevel, object | undefined>
+export type LevelRefs = Record<ApiLevel, number>
+
+// A target's last check can be consulted by a different user-event instance.
+let nextLevel = 0
 
 export function setLevelRef(instance: Instance, level: ApiLevel) {
-  instance.levelRefs[level] = {}
-}
-
-export function getLevelRef(instance: Instance, level: ApiLevel) {
-  return instance.levelRefs[level]
+  instance.levelRefs[level] = ++nextLevel
 }

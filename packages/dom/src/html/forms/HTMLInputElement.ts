@@ -17,6 +17,7 @@ import type { Document } from "../../nodes/Document.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { Event } from "../../events/Event.ts";
+import type { InputActivationState } from "../../events/activation.ts";
 import { F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, ELEMENT_NODE } from "../../nodes/constants.ts";
 import { T } from "../../nodes/tags.ts";
 import { attr, setAttribute } from "../../nodes/attributes.ts";
@@ -492,14 +493,14 @@ export class HTMLInputElement extends HTMLElement {
     return this[$control].checkedSet ? this[$control].checked : attr(this[$impl], "checked") !== null;
   }
 
-  /** Set checkedness; when it becomes true on a radio, uncheck the rest of its group. */
-  _setCheckedness(value: boolean, dirty: boolean): void {
+  /** Set checkedness and return the previously checked peer when updating a radio group. */
+  _setCheckedness(value: boolean, dirty: boolean): NodeImpl | null {
     // State that selectors (:checked), collections and aria caches observe: bump the version.
     this[$impl].doc[$version]++;
     this[$control].checked = value;
     this[$control].checkedSet = true;
     if (dirty) this[$control].dirtyChecked = true;
-    if (value && inputType(this[$impl]) === I_RADIO) uncheckOtherRadios(this[$impl]);
+    return value && inputType(this[$impl]) === I_RADIO ? uncheckOtherRadios(this[$impl]) : null;
   }
 
   /** https://html.spec.whatwg.org/#dom-input-checked */
@@ -1117,10 +1118,8 @@ export class HTMLInputElement extends HTMLElement {
     c[$control].indeterminate = this[$control].indeterminate;
   }
 
-  // --- activation behavior (called by the events agent's dispatch algorithm) ------------------
+  // --- activation behavior (https://dom.spec.whatwg.org/#concept-event-dispatch) --------------
   // https://html.spec.whatwg.org/#the-input-element:activation-behaviour
-  // TODO(events): dispatch must call _legacyPreActivationBehavior / _legacyCanceledActivationBehavior /
-  // _activationBehavior on the activation target (https://dom.spec.whatwg.org/#concept-event-dispatch steps 11–13).
 
   /**
    * "An input element has activation behavior if its type attribute's state defines input
@@ -1144,40 +1143,36 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:legacy-pre-activation-behavior */
-  _legacyPreActivationBehavior(): void {
+  _legacyPreActivationBehavior(): InputActivationState | undefined {
     const impl = this[$impl];
     const type = inputType(impl);
-    this[$control].preApplied = false;
     // Disabled controls: user interaction never dispatches clicks to them (HTMLElement.click()
     // and user-event filter), but a script-dispatched click still activates them.
     if (type === I_CHECKBOX) {
-      this[$control].preApplied = true;
-      this[$control].preChecked = this._checkedness();
-      this[$control].preIndeterminate = this[$control].indeterminate;
-      this._setCheckedness(!this[$control].preChecked, true);
+      const checked = this._checkedness();
+      const indeterminate = this[$control].indeterminate;
+      this._setCheckedness(!checked, true);
       this[$control].indeterminate = false;
+      return { checked, indeterminate, previousRadio: null };
     } else if (type === I_RADIO) {
-      this[$control].preApplied = true;
-      this[$control].preChecked = this._checkedness();
-      this[$control].preCheckedRadio = checkedRadioInGroup(impl);
-      this._setCheckedness(true, true);
+      const checked = this._checkedness();
+      const previous = this._setCheckedness(true, true);
+      return { checked, indeterminate: false, previousRadio: checked ? impl : previous };
     }
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:legacy-canceled-activation-behavior */
-  _legacyCanceledActivationBehavior(): void {
-    if (!this[$control].preApplied) return;
-    this[$control].preApplied = false;
+  _legacyCanceledActivationBehavior(state?: InputActivationState): void {
+    if (state === undefined) return;
     const impl = this[$impl];
     const type = inputType(impl);
     impl.doc[$version]++;
     if (type === I_CHECKBOX) {
-      this[$control].checked = this[$control].preChecked;
+      this[$control].checked = state.checked;
       this[$control].checkedSet = true;
-      this[$control].indeterminate = this[$control].preIndeterminate;
+      this[$control].indeterminate = state.indeterminate;
     } else if (type === I_RADIO) {
-      const prev = this[$control].preCheckedRadio;
-      this[$control].preCheckedRadio = null;
+      const prev = state.previousRadio;
       if (prev !== null && prev !== impl && inSameRadioGroup(impl, prev)) {
         (prev.node as HTMLInputElement)._setCheckedness(true, false);
       } else if (prev !== impl) {
@@ -1188,13 +1183,13 @@ export class HTMLInputElement extends HTMLElement {
   }
 
   /** https://html.spec.whatwg.org/#the-input-element:activation-behaviour */
-  _activationBehavior(_event: Event | null): void {
+  _activationBehavior(_event: Event | null, state?: InputActivationState): void {
     const impl = this[$impl];
     const type = inputType(impl);
     if (type === I_CHECKBOX || type === I_RADIO) {
       // https://html.spec.whatwg.org/#checkbox-state-(type=checkbox):input-activation-behavior
       if ((impl.flags & F_CONNECTED) === 0) return;
-      if (type === I_RADIO && this[$control].preChecked) return; // clicking a checked radio changes nothing
+      if (type === I_RADIO && state?.checked) return; // clicking a checked radio changes nothing
       fireEvent(this, "input", true, false, true);
       fireEvent(this, "change", true, false);
       return;
@@ -1410,12 +1405,14 @@ function radioInserted(el: NodeImpl): void {
   else uncheckOtherRadios(el);
 }
 
-function uncheck(radio: NodeImpl): void {
+function uncheck(radio: NodeImpl): boolean {
   const w = radio.node as HTMLInputElement;
-  if (w[$control].checkedSet && !w[$control].checked) return;
+  if (w[$control].checkedSet && !w[$control].checked) return false;
+  const checked = w._checkedness();
   radio.doc[$version]++;
   w[$control].checked = false;
   w[$control].checkedSet = true;
+  return checked;
 }
 
 function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): void {
@@ -1448,11 +1445,13 @@ function forEachInRadioGroup(el: NodeImpl, fn: (other: NodeImpl) => boolean): vo
 }
 
 /** Set checkedness false on every other member of el's radio button group. */
-export function uncheckOtherRadios(el: NodeImpl): void {
+export function uncheckOtherRadios(el: NodeImpl): NodeImpl | null {
+  let previous: NodeImpl | null = null;
   forEachInRadioGroup(el, (other) => {
-    uncheck(other);
+    if (uncheck(other) && previous === null) previous = other;
     return false;
   });
+  return previous;
 }
 
 function checkedRadioInGroup(el: NodeImpl): NodeImpl | null {

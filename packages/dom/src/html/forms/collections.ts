@@ -8,8 +8,7 @@
 // never invalidated by walking). The HTMLCollection subclasses override `_collect()`; the
 // NodeLists use their own snapshot plus prototype index getters.
 
-import type { Document as OwnerDocument } from "../../nodes/Document.ts";
-import { holdSnapshot } from "../../nodes/derived.ts";
+import { cachedSnapshot, storeSnapshot } from "../../nodes/derived.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { Node } from "../../nodes/Node.ts";
@@ -22,48 +21,28 @@ import { attr } from "../../nodes/attributes.ts";
 import { labelsFor } from "./form-associated.ts";
 import { I_RADIO, inputType } from "./input-type.ts";
 import { HTML_NS } from "../../nodes/constants.ts";
-import { $cache, $el, $form, $impl, $name, $version } from "../../keys.ts";
+import { $el, $form, $impl, $name, $version } from "../../keys.ts";
 
 // --- live NodeLists ----------------------------------------------------------------------------
-
-/** Version-stamped members of a computed NodeList (dropped on node removal, nodes/derived.ts). */
-class SnapshotCache {
-  items: Node[] = [];
-  version = -1;
-  doc: object | null = null;
-  _dropSnapshot(): void {
-    this.items = [];
-    this.version = -1;
-    this.doc = null;
-  }
-}
 
 /**
  * Base for the live NodeLists computed from the tree (labels, RadioNodeList): a version-stamped
  * snapshot plus Proxy-free prototype index getters (collections/indexed.ts).
  */
 abstract class ComputedNodeList extends NodeList {
-  declare [$cache]: SnapshotCache;
-
   constructor() {
     super(null);
-    Object.defineProperty(this, $cache, { value: new SnapshotCache() });
   }
 
   abstract _compute(): Node[];
-  abstract _ownerDocument(): { [$version]: number };
-  /** The node whose tree the members come from (derived.ts holdSnapshot). */
   abstract _root(): NodeImpl;
 
   _snapshot(): Node[] {
-    const c = this[$cache];
-    const doc = this._ownerDocument();
-    if (c.version === doc[$version] && c.doc === doc) return c.items;
+    const doc = this._root().doc;
+    const cached = cachedSnapshot<Node>(doc, this, doc[$version]);
+    if (cached !== undefined) return cached;
     const items = this._compute();
-    c.items = items;
-    c.version = doc[$version];
-    c.doc = doc;
-    if (items.length !== 0) holdSnapshot(doc as unknown as OwnerDocument, c, this._root());
+    storeSnapshot(doc, this, doc[$version], items);
     if (items.length > nodeListIndex.count) ensureIndexGetters(nodeListIndex, items.length);
     return items;
   }
@@ -94,10 +73,6 @@ export class LabelsNodeList extends ComputedNodeList {
     Object.defineProperty(this, $el, { value: el });
   }
 
-  _ownerDocument(): { [$version]: number } {
-    return this[$el].doc;
-  }
-
   _root(): NodeImpl {
     return this[$el];
   }
@@ -124,10 +99,6 @@ export class NameNodeList extends ComputedNodeList {
     super();
     Object.defineProperty(this, $el, { value: doc });
     Object.defineProperty(this, $name, { value: name });
-  }
-
-  _ownerDocument(): { [$version]: number } {
-    return this[$el].doc;
   }
 
   _root(): NodeImpl {
@@ -157,10 +128,6 @@ export class RadioNodeList extends ComputedNodeList {
     super();
     Object.defineProperty(this, $form, { value: form });
     Object.defineProperty(this, $name, { value: name });
-  }
-
-  _ownerDocument(): { [$version]: number } {
-    return this[$form].doc;
   }
 
   _root(): NodeImpl {

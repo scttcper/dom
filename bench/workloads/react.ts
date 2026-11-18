@@ -219,54 +219,64 @@ function bigFormWorkload(n: number): Workload {
   };
 }
 
-const editSearch: Workload = {
-  id: "react/type-search-filter",
-  title: "Append a clause to a long controlled search field",
-  kind: "react",
-  iterations: 30,
-  warmup: 5,
-  setup({ React, rtl, userEvent, document }) {
-    const filter = Array.from({ length: 200 }, (_, i) => `project:service-${i}`).join(" OR ");
-    const clause = " AND status:open";
-    let changes = 0;
-    function Search() {
-      const [value, setValue] = React.useState(filter);
-      return React.createElement("input", {
-        type: "search",
-        value,
-        onChange(event) {
-          changes++;
-          setValue(event.currentTarget.value);
+function editTextWorkload(
+  field: "input" | "textarea",
+  id: string,
+  title: string,
+  initialText: () => string,
+  suffix: string,
+): Workload {
+  return {
+    id,
+    title,
+    kind: "react",
+    iterations: 30,
+    warmup: 5,
+    setup({ React, rtl, userEvent, document }) {
+      const initial = initialText();
+      let expected: string;
+      let changes = 0;
+      function Editor() {
+        const [value, setValue] = React.useState(initial);
+        return React.createElement(field, {
+          type: field === "input" ? "search" : undefined,
+          value,
+          onChange(event: { currentTarget: { value: string } }) {
+            changes++;
+            setValue(event.currentTarget.value);
+          },
+        });
+      }
+      let view: any;
+      let user: any;
+      let control: any;
+      return {
+        beforeEach() {
+          changes = 0;
+          user = userEvent.setup({ document });
+          view = rtl.render(React.createElement(Editor));
+          control = view.getByRole(field === "input" ? "searchbox" : "textbox");
+          // Each DOM exposes its own initial textarea line endings.
+          expected = control.value + suffix;
         },
-      });
-    }
-    let view: any;
-    let user: any;
-    let input: any;
-    return {
-      beforeEach() {
-        changes = 0;
-        user = userEvent.setup({ document });
-        view = rtl.render(React.createElement(Search));
-        input = view.getByRole("searchbox");
-      },
-      async run() {
-        await user.type(input, clause);
-      },
-      verify() {
-        eq(input.value, filter + clause, "edited filter");
-        eq(input.selectionStart, input.value.length, "caret");
-        eq(changes, clause.length, "onChange calls");
-      },
-      afterEach() {
-        view.unmount();
-        view.container.remove();
-        view = null;
-        input = null;
-      },
-    };
-  },
-};
+        async run() {
+          await user.type(control, suffix);
+        },
+        verify() {
+          eq(control.value, expected, "edited value");
+          eq(control.selectionStart, expected.length, "caret");
+          eq(changes, suffix.length, "onChange calls");
+        },
+        afterEach() {
+          view.unmount();
+          view.container.remove();
+          view = null;
+          control = null;
+        },
+      };
+    },
+  };
+}
 
 const clickRemove: Workload = {
   id: "react/click-remove",
@@ -312,6 +322,203 @@ const clickRemove: Workload = {
       afterEach() {
         view.unmount();
         view.container.remove();
+        view = null;
+      },
+    };
+  },
+};
+
+const dragTextSelection: Workload = {
+  id: "react/drag-text-selection",
+  title: "Drag to select a line of syntax-highlighted code",
+  kind: "react",
+  warmup: 5,
+  iterations: 30,
+  setup({ React, rtl, userEvent, document }) {
+    const h = React.createElement;
+    const tokens = ["const", " name", " =", " user", ".", "profile", "?.", "name", " ??", ' "Guest"', ";"];
+    const view = rtl.render(
+      h(
+        "pre",
+        null,
+        h(
+          "code",
+          null,
+          tokens.map((token, i) => h("span", { key: i }, token)),
+        ),
+      ),
+    );
+    const spans = Array.from(view.container.querySelectorAll("span")) as HTMLElement[];
+    const user = userEvent.setup({ document });
+    const actions = [
+      { target: spans[0], offset: 0, keys: "[MouseLeft>]" },
+      ...spans.slice(1).map((target) => ({ target })),
+      "[/MouseLeft]",
+    ];
+    return {
+      run: () => user.pointer(actions),
+      verify() {
+        const selection = document.getSelection();
+        eq(selection.toString(), tokens.join(""), "selected text");
+        eq(selection.anchorNode, spans[0].firstChild, "selection start");
+        eq(selection.focusNode, spans.at(-1)!.firstChild, "selection end");
+      },
+      close() {
+        view.unmount();
+        view.container.remove();
+      },
+    };
+  },
+};
+
+const editLabelledFields: Workload = {
+  id: "react/edit-labelled-fields",
+  title: "Find and type into six fields by label in a 200-field form",
+  kind: "react",
+  warmup: 5,
+  iterations: 30,
+  setup({ React, rtl, userEvent, document }) {
+    const h = React.createElement;
+    const rows = Array.from({ length: 200 }, (_, i) => {
+      const id = `field-${i}`;
+      const text = `Setting ${i}`;
+      if (i % 3 === 0) return h("label", { key: id }, text, h("input", { id }));
+      if (i % 3 === 1) return h("div", { key: id }, h("label", { htmlFor: id }, text), h("input", { id }));
+      const title = `title-${i}`;
+      return h("div", { key: id }, h("span", { id: title }, text), h("input", { id, "aria-labelledby": title }));
+    });
+    let changes = 0;
+    const view = rtl.render(h("form", { onChange: () => changes++ }, rows));
+    const user = userEvent.setup({ document });
+    const picks = [0, 28, 65, 99, 142, 197];
+    const inputs = picks.map((i) => view.container.querySelector(`#field-${i}`));
+    return {
+      beforeEach() {
+        changes = 0;
+        for (const input of inputs) input.value = "";
+      },
+      async run() {
+        for (const i of picks) await user.type(view.getByLabelText(`Setting ${i}`), "on");
+      },
+      verify() {
+        for (const input of inputs) eq(input.value, "on", input.id);
+        eq(changes, 12, "change events");
+      },
+      close() {
+        view.unmount();
+        view.container.remove();
+      },
+    };
+  },
+};
+
+const tabRadioGroups: Workload = {
+  id: "react/tab-radio-groups",
+  title: "Tab through 8 checked radios in a 50-group form",
+  kind: "react",
+  iterations: 50,
+  warmup: 10,
+  setup({ React, rtl, userEvent, document }) {
+    const h = React.createElement;
+    const groups = Array.from({ length: 50 }, (_, i) =>
+      h(
+        "fieldset",
+        { key: i },
+        h("legend", null, `Project ${i} notifications`),
+        ["None", "Mentions", "All"].map((value) =>
+          h(
+            "label",
+            { key: value },
+            h("input", { type: "radio", name: `project-${i}`, value, defaultChecked: value === "Mentions" }),
+            value,
+          ),
+        ),
+      ),
+    );
+    const focused: string[] = [];
+    const view = rtl.render(
+      h(
+        "form",
+        {
+          onFocus(event) {
+            const input = event.target as HTMLInputElement;
+            focused.push(`${input.name}/${input.value}`);
+          },
+        },
+        groups,
+      ),
+    );
+    const first = view.container.querySelector("input:checked");
+    const user = userEvent.setup({ document });
+    return {
+      beforeEach() {
+        first.focus();
+        focused.length = 0;
+      },
+      async run() {
+        for (let i = 0; i < 8; i++) await user.tab();
+      },
+      verify() {
+        eq(focused.length, 8, "focus events");
+        for (let i = 0; i < 8; i++) eq(focused[i], `project-${i + 1}/Mentions`, "focused radio");
+      },
+      close() {
+        view.unmount();
+        view.container.remove();
+      },
+    };
+  },
+};
+
+const chooseProject: Workload = {
+  id: "react/select-project",
+  title: "Render a 250-option project picker and change the selection",
+  kind: "react",
+  iterations: 30,
+  warmup: 5,
+  setup({ React, rtl, userEvent, document }) {
+    const h = React.createElement;
+    const projects = Array.from({ length: 250 }, (_, i) => h("option", { key: i, value: String(i) }, `Project ${i}`));
+    let changes = 0;
+    function Picker() {
+      const [value, setValue] = React.useState("0");
+      return h(
+        "label",
+        null,
+        "Project",
+        h(
+          "select",
+          {
+            value,
+            onChange(event: React.ChangeEvent<HTMLSelectElement>) {
+              changes++;
+              setValue(event.currentTarget.value);
+            },
+          },
+          projects,
+        ),
+      );
+    }
+    const user = userEvent.setup({ document });
+    let view: any;
+    let select: any;
+    return {
+      beforeEach() {
+        changes = 0;
+      },
+      async run() {
+        view = rtl.render(h(Picker));
+        select = view.getByRole("combobox", { name: "Project" });
+        await user.selectOptions(select, "249");
+      },
+      verify() {
+        eq(select.value, "249", "selected project");
+        eq(changes, 1, "onChange calls");
+      },
+      afterEach() {
+        view.unmount();
+        view.container.remove();
+        select = null;
         view = null;
       },
     };
@@ -697,12 +904,29 @@ function styledFormWorkload(): Workload {
 export const reactWorkloads: Workload[] = [
   formWorkload(false),
   formWorkload(true),
-  editSearch,
+  editTextWorkload(
+    "input",
+    "react/type-search-filter",
+    "Append a clause to a long controlled search field",
+    () => Array.from({ length: 200 }, (_, i) => `project:service-${i}`).join(" OR "),
+    " AND status:open",
+  ),
+  editTextWorkload(
+    "textarea",
+    "react/type-multiline-notes",
+    "Append to a controlled textarea with 1,000 lines of CRLF text",
+    () => Array.from({ length: 1_000 }, (_, i) => `Release note ${i} lists the changes for the editor.`).join("\r\n"),
+    " published",
+  ),
   bigFormWorkload(20),
   bigFormWorkload(100),
   styledFormWorkload(),
   keyedList,
   clickRemove,
+  dragTextSelection,
+  editLabelledFields,
+  tabRadioGroups,
+  chooseProject,
   textQueries,
   asyncFlows,
   churn,

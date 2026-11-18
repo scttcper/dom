@@ -175,7 +175,7 @@ function isQuirks(root: NodeImpl): boolean {
 /** Collect (or find the first of, when `first`) the matching descendants of `root` in tree order. */
 function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImpl | null {
   if (q.indexedId !== "" && (q.fast !== FAST_ID || !isQuirks(root))) {
-    const hit = byIdIndex(root, q.indexedId);
+    const hit = indexedDescendantById(root, q.indexedId);
     if (hit !== undefined) {
       if (hit !== null) {
         if (first) return hit;
@@ -280,7 +280,7 @@ function run(root: NodeImpl, q: Query, first: boolean, out: NodeImpl[]): NodeImp
  * there is none, undefined when the index cannot tell (a disconnected root, or several elements
  * share the id) and the caller walks.
  */
-function byIdIndex(root: NodeImpl, id: string): NodeImpl | null | undefined {
+export function indexedDescendantById(root: NodeImpl, id: string): NodeImpl | null | undefined {
   if ((root.flags & F_CONNECTED) === 0) return undefined;
   const found = root.doc[$ids].get(id);
   if (found === undefined) return root.type === DOCUMENT_NODE ? null : undefined;

@@ -6,7 +6,7 @@
 // elements pay for it (the wrapper returned by the constructor IS the proxy, and
 // `NodeImpl.node` points at it so every internal path hands out the same object).
 
-import { holdSnapshot } from "../../nodes/derived.ts";
+import { cachedSnapshot, storeSnapshot } from "../../nodes/derived.ts";
 import { HTMLElement } from "../HTMLElement.ts";
 import { flushFaceReactions } from "./face.ts";
 import type { Document } from "../../nodes/Document.ts";
@@ -27,9 +27,6 @@ import { formCheckValidity, isSubmitButton, resetForm, submitForm } from "./form
 import {
   $assocGen,
   $constructingEntryList,
-  $controlsCache,
-  $controlsDoc,
-  $controlsVersion,
   $elements,
   $firingSubmissionEvents,
   $impl,
@@ -49,10 +46,6 @@ const AUTOCOMPLETE: EnumSpec = { keywords: ["on", "off"], missing: "on", invalid
 
 export class HTMLFormElement extends HTMLElement {
   [$elements]: HTMLFormControlsCollection | null;
-  /** Version-stamped cache of the listed controls (excluding image buttons) in tree order. */
-  [$controlsCache]: NodeImpl[];
-  [$controlsVersion]: number;
-  [$controlsDoc]: Document | null;
   /** https://html.spec.whatwg.org/#firing-submission-events */
   [$firingSubmissionEvents]: boolean;
   /** https://html.spec.whatwg.org/#locked-for-reset */
@@ -68,9 +61,6 @@ export class HTMLFormElement extends HTMLElement {
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
     super(doc, localName, ns, prefix);
     this[$elements] = null;
-    this[$controlsCache] = [];
-    this[$controlsVersion] = -1;
-    this[$controlsDoc] = null;
     this[$firingSubmissionEvents] = false;
     this[$lockedForReset] = false;
     this[$constructingEntryList] = false;
@@ -129,21 +119,13 @@ export class HTMLFormElement extends HTMLElement {
 
   /** @internal Listed controls whose form owner is this form (image buttons excluded), tree order. */
   _controls(): NodeImpl[] {
-    const doc = this[$impl].doc;
-    if (this[$controlsVersion] === doc[$version] && this[$controlsDoc] === doc) return this[$controlsCache];
-    const list = formControls(this[$impl], [], false);
-    this[$controlsCache] = list;
-    this[$controlsVersion] = doc[$version];
-    this[$controlsDoc] = doc;
-    if (list.length !== 0) holdSnapshot(doc, this, this[$impl]);
-    return list;
-  }
-
-  /** nodes/derived.ts: release the (stale) control list once a node was removed. */
-  _dropSnapshot(): void {
-    this[$controlsCache] = [];
-    this[$controlsVersion] = -1;
-    this[$controlsDoc] = null;
+    const form = this[$impl];
+    const doc = form.doc;
+    const cached = cachedSnapshot<NodeImpl>(doc, form, doc[$version]);
+    if (cached !== undefined) return cached;
+    const items = formControls(form, [], false);
+    storeSnapshot(doc, form, doc[$version], items);
+    return items;
   }
 
   /** https://html.spec.whatwg.org/#dom-form-elements */

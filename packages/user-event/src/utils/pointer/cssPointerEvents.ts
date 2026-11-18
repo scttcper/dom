@@ -12,7 +12,7 @@ import {PointerEventsCheckLevel} from '../../options.ts'
 import {type Instance} from '../../setup/index.ts'
 import {getWindow} from '../misc/getWindow.ts'
 import {isElementType} from '../misc/isElementType.ts'
-import {ApiLevel, getLevelRef} from '../misc/level.ts'
+import type {LevelRefs} from '../misc/level.ts'
 
 export function hasPointerEvents(
   instance: Instance,
@@ -21,7 +21,11 @@ export function hasPointerEvents(
   return checkPointerEvents(instance, element) === undefined
 }
 
-function blockedPointerEventsTree(element: Element): Element[] | undefined {
+// Most blocked checks resolve on the target. A fallback style implementation may
+// require walking ancestors. A target can outlive any of those ancestors.
+type Blocked = true | WeakRef<Element>[]
+
+function blockedPointerEventsTree(element: Element): Blocked | undefined {
   const window = getWindow(element)
   const impl = implOf(element)
   if (
@@ -31,20 +35,25 @@ function blockedPointerEventsTree(element: Element): Element[] | undefined {
   ) {
     // Our cascade resolves inheritance on the element itself. Only blocked interactions need a diagnostic tree.
     const value = pointerEvents(impl)
-    if (value === 'none') return [element]
+    if (value === 'none') return true
     if (value && value !== 'inherit' && value !== 'unset') return undefined
   }
 
   for (
-    let el: Element | null = element, tree: Element[] = [];
+    let el: Element | null = element, ancestors: Element[] | undefined;
     el?.ownerDocument;
     el = el.parentElement
   ) {
-    tree.push(el)
+    if (el !== element) (ancestors ??= []).push(el)
     const pointerEvents = window.getComputedStyle(el).pointerEvents
-    if (pointerEvents && !['inherit', 'unset'].includes(pointerEvents)) {
-      return pointerEvents === 'none' ? tree : undefined
-    }
+    if (pointerEvents === 'none')
+      return ancestors?.map(ancestor => new WeakRef(ancestor)) ?? true
+    if (
+      pointerEvents &&
+      pointerEvents !== 'inherit' &&
+      pointerEvents !== 'unset'
+    )
+      break
   }
 
   return undefined
@@ -52,11 +61,7 @@ function blockedPointerEventsTree(element: Element): Element[] | undefined {
 
 const PointerEventsCheck = Symbol('Last check for pointer-events')
 type PointerEventsCheckable = Element & {
-  [PointerEventsCheck]?: {
-    [k in ApiLevel]?: object
-  } & {
-    result: Element[] | undefined
-  }
+  [PointerEventsCheck]?: LevelRefs & {result: Blocked | undefined}
 }
 
 function checkPointerEvents(
@@ -64,42 +69,40 @@ function checkPointerEvents(
   element: PointerEventsCheckable,
 ) {
   const lastCheck = element[PointerEventsCheck]
+  const {call, trigger} = instance.levelRefs
+  const level = instance.config.pointerEventsCheck
 
   const needsCheck =
-    instance.config.pointerEventsCheck !==
-      (PointerEventsCheckLevel.Never as number) &&
+    level !== PointerEventsCheckLevel.Never &&
     (!lastCheck ||
-      (hasBitFlag(
-        instance.config.pointerEventsCheck,
-        PointerEventsCheckLevel.EachApiCall,
-      ) &&
-        lastCheck[ApiLevel.Call] !== getLevelRef(instance, ApiLevel.Call)) ||
-      (hasBitFlag(
-        instance.config.pointerEventsCheck,
-        PointerEventsCheckLevel.EachTrigger,
-      ) &&
-        lastCheck[ApiLevel.Trigger] !==
-          getLevelRef(instance, ApiLevel.Trigger)))
+      (hasBitFlag(level, PointerEventsCheckLevel.EachApiCall) &&
+        lastCheck.call !== call) ||
+      (hasBitFlag(level, PointerEventsCheckLevel.EachTrigger) &&
+        lastCheck.trigger !== trigger))
 
   if (!needsCheck) {
     return lastCheck?.result
   }
 
-  const tree = blockedPointerEventsTree(element)
-
-  element[PointerEventsCheck] = {
-    [ApiLevel.Call]: getLevelRef(instance, ApiLevel.Call),
-    [ApiLevel.Trigger]: getLevelRef(instance, ApiLevel.Trigger),
-    result: tree,
+  const result = blockedPointerEventsTree(element)
+  if (lastCheck) {
+    lastCheck.call = call
+    lastCheck.trigger = trigger
+    lastCheck.result = result
+  } else {
+    element[PointerEventsCheck] = {call, trigger, result}
   }
-
-  return tree
+  return result
 }
 
 export function assertPointerEvents(instance: Instance, element: Element) {
-  const tree = checkPointerEvents(instance, element)
+  const blocked = checkPointerEvents(instance, element)
 
-  if (tree) {
+  if (blocked) {
+    const tree =
+      blocked === true
+        ? [element]
+        : [...blocked.map(ref => ref.deref()).reverse(), element]
     throw new Error(
       [
         `Unable to perform pointer interaction as the element ${
@@ -112,17 +115,16 @@ export function assertPointerEvents(instance: Instance, element: Element) {
   }
 }
 
-function printTree(tree: Element[]) {
+function printTree(tree: Array<Element | undefined>) {
   return tree
-    .reverse()
     .map((el, i) =>
       [
         ''.padEnd(i),
-        el.tagName,
-        el.id && `#${el.id}`,
-        el.hasAttribute('data-testid') &&
+        el?.tagName ?? '(removed element)',
+        el?.id && `#${el.id}`,
+        el?.hasAttribute('data-testid') &&
           `(testId=${el.getAttribute('data-testid')})`,
-        getLabelDescr(el),
+        el && getLabelDescr(el),
         tree.length > 1 &&
           i === 0 &&
           '  <-- This element declared `pointer-events: none`',

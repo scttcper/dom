@@ -8,7 +8,7 @@ import { ariaAttr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/int
 import { isLabelable } from "@ctrl/dom/aria/internal";
 import { getConfig } from "../config.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
-import { getLabelContentImpl, getLabelsImpl, LabelContext } from "../label-helpers.ts";
+import { getLabelContentImpl, getLabelsImpl, LabelContext, labelledFormControl } from "../label-helpers.ts";
 import { makeNormalizer, textMatcher, type Matcher, type NormalizerFn } from "../matches.ts";
 import {
   makeFindQuery,
@@ -70,8 +70,8 @@ function queryAllByLabelText(
     if (ariaAttr(n, "aria-label") !== null) ariaLabelled.push(n);
     // `getRealLabels(element).length || element.hasAttribute('aria-labelledby')`
     // Only labelable elements have labels (the label map's keys): the rest skip the lookup.
-    if (ariaAttr(n, "aria-labelledby") === null && (!isLabelable(n) || ctx.labelsOf(n).length === 0)) continue;
-    collectLabelled(ctx, n, selector, match, labelledElements);
+    const labelledBy = ariaAttr(n, "aria-labelledby");
+    if (labelledBy !== null || isLabelable(n)) collectLabelled(ctx, n, labelledBy, selector, match, labelledElements);
   }
 
   for (let i = 0; i < ariaLabelled.length; i++) {
@@ -79,29 +79,37 @@ function queryAllByLabelText(
     if (match(ariaAttr(n, "aria-label"), n.node)) labelledElements.push(n.node);
   }
 
-  const unique = Array.from(new Set(labelledElements));
+  const unique = labelledElements.length > 1 ? Array.from(new Set(labelledElements)) : labelledElements;
   return selector === "*" ? unique : unique.filter((element) => matchesSelector(element[$impl], selector));
 }
 
 function collectLabelled(
   ctx: LabelContext,
   labelledElement: NodeImpl,
+  labelledBy: string | null,
   selector: string,
   match: (textToMatch: string | null, node: any) => boolean,
   labelledElements: any[],
 ): void {
-  const labelList = getLabelsImpl(ctx, labelledElement, selector);
-  if (labelList.length === 1) {
-    const label = labelList[0];
-    if (label.formControl && match(label.content, label.formControl.node)) {
-      labelledElements.push(label.formControl.node);
+  if (!labelledBy) {
+    const labels = ctx.labelsOf(labelledElement);
+    if (labels.length === 0 && labelledBy === null) return;
+    if (labels.length === 1) {
+      const label = labels[0];
+      const content = getLabelContentImpl(label);
+      const control = labelledFormControl(label, selector);
+      if (control && match(content, control.node)) labelledElements.push(control.node);
+      if (match(content, labelledElement.node)) labelledElements.push(labelledElement.node);
+      return;
     }
-    // Keep join's coercion for aria-labelledby nodes with an overridden value.
-    if (match(`${label.content || ""}`, labelledElement.node)) {
-      labelledElements.push(labelledElement.node);
-    }
+  } else if (!labelledBy.includes(" ")) {
+    const label = ctx.byIdInContainer(labelledBy);
+    const content = label === null ? "" : getLabelContentImpl(label);
+    // The general path joins label contents, coercing even an overridden value to a string.
+    if (match(`${content || ""}`, labelledElement.node)) labelledElements.push(labelledElement.node);
     return;
   }
+  const labelList = getLabelsImpl(ctx, labelledElement, selector);
   for (const label of labelList) {
     if (!label.formControl) continue;
     const formControl = label.formControl.node;

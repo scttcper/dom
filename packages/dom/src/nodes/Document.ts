@@ -12,7 +12,14 @@ import { DocumentFragment } from "./DocumentFragment.ts";
 import { DocumentType } from "./DocumentType.ts";
 import { Attr } from "./Attr.ts";
 import { ceReactionsPending, createElementImplSync, flushCEReactions } from "./create.ts";
-import { asciiLowercase, attr, isValidAttributeLocalName } from "./attributes.ts";
+import {
+  addToElementIndex,
+  removeFromElementIndex,
+  asciiLowercase,
+  attr,
+  isValidAttributeLocalName,
+  type ElementIndex,
+} from "./attributes.ts";
 import { firstElementChild, nextElementInTree } from "./traverse.ts";
 import { cloneNode } from "./clone.ts";
 import { adopt } from "./tree.ts";
@@ -82,7 +89,7 @@ export class Document extends Node {
   /** Version bumps that left every computed style as it was (css/style-deps.ts). */
   declare [$benign]: number;
   /** Connected elements by id. A value is an array only when several connected elements share an id. */
-  declare [$ids]: Map<string, NodeImpl | NodeImpl[]>;
+  declare [$ids]: ElementIndex;
   /** Focused element (https://html.spec.whatwg.org/#focused-area-of-the-document), null = viewport/body. */
   declare [$focused]: NodeImpl | null;
   declare [$isHTML]: boolean;
@@ -103,13 +110,12 @@ export class Document extends Node {
    * nodes/derived.ts. Dropped whenever a node is removed from a tree of this document, so caches
    * never keep removed subtrees alive.
    */
-  declare [$derived]: Map<object, unknown> | null;
+  declare [$derived]: WeakMap<object, unknown> | null;
   /**
-   * Connected <label> elements by `for` attribute value, each list in no particular order, or null
-   * before the first (html/forms/HTMLLabelElement.ts). Lets `element.labels` find the labels naming
-   * an ID without walking the tree.
+   * Connected <label> elements by `for` attribute value, or null before the first. Multiple labels
+   * for one ID are stored in no particular order. Used by `element.labels`.
    */
-  declare [$forLabels]: Map<string, NodeImpl[]> | null;
+  declare [$forLabels]: ElementIndex | null;
   /** An element of this document has had a `form` attribute (never reset): formOwnerScope. */
   declare [$formAttrSeen]: boolean;
   /**
@@ -181,25 +187,12 @@ export class Document extends Node {
 
   /** @internal */
   _idAdd(el: NodeImpl): void {
-    const id = el.id;
-    const existing = this[$ids].get(id);
-    if (existing === undefined) this[$ids].set(id, el);
-    else if (Array.isArray(existing)) existing.push(el);
-    else this[$ids].set(id, [existing, el]);
+    addToElementIndex(this[$ids], el.id, el);
   }
 
   /** @internal */
   _idRemove(el: NodeImpl): void {
-    const id = el.id;
-    const existing = this[$ids].get(id);
-    if (existing === undefined) return;
-    if (existing === el) {
-      this[$ids].delete(id);
-    } else if (Array.isArray(existing)) {
-      const i = existing.indexOf(el);
-      if (i !== -1) existing.splice(i, 1);
-      if (existing.length === 1) this[$ids].set(id, existing[0]);
-    }
+    removeFromElementIndex(this[$ids], el.id, el);
   }
 
   /** @internal First connected element in tree order with this id. */

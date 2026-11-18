@@ -3,7 +3,7 @@
 //
 // Label associations (https://html.spec.whatwg.org/#labeled-control) share aria's
 // version-stamped index, dropped on removal so it cannot retain a removed subtree.
-// aria-labelledby ids remain container-scoped through LabelContext's lazy id map.
+// aria-labelledby ids use the document's id index when it resolves a unique descendant.
 
 import {
   asciiLowercase,
@@ -11,6 +11,7 @@ import {
   attr,
   ELEMENT_NODE,
   HTML_NS,
+  indexedDescendantById,
   nextInTree,
   T,
   TEXT_NODE,
@@ -39,26 +40,16 @@ export function isLabelable(impl: NodeImpl): boolean {
   return false;
 }
 
-/** `labelledNodeNames` upstream: elements whose text is excluded from a label's content. */
+const FORM_CONTROL_TAGS = new Set(["button", "input", "meter", "output", "progress", "select", "textarea"]);
+
+/** Upstream excludes these node names and their descendants from a label's text. */
 function isLabelledNodeName(impl: NodeImpl): boolean {
-  if (impl.prefix !== null) return false;
-  switch (asciiLowercase(impl.name)) {
-    case "button":
-    case "meter":
-    case "output":
-    case "progress":
-    case "select":
-    case "textarea":
-    case "input":
-      return true;
-  }
-  return false;
+  return impl.prefix === null && FORM_CONTROL_TAGS.has(impl.tag === 0 ? asciiLowercase(impl.name) : impl.name);
 }
 
-/** First element (tree order) per id in `root`'s subtree, root excluded unless `inclusive`. */
-function buildIdMap(root: NodeImpl, inclusive: boolean): Map<string, NodeImpl> {
+/** First descendant in tree order per nonempty id. */
+function buildIdMap(root: NodeImpl): Map<string, NodeImpl> {
   const ids = new Map<string, NodeImpl>();
-  if (inclusive && root.type === ELEMENT_NODE && root.id !== "") ids.set(root.id, root);
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type === ELEMENT_NODE && n.id !== "" && !ids.has(n.id)) ids.set(n.id, n);
   }
@@ -93,26 +84,29 @@ export class LabelContext {
 
   /** `container.querySelector('[id="…"]')` */
   byIdInContainer(id: string): NodeImpl | null {
-    let ids = this.containerIds;
-    if (ids === null) ids = this.containerIds = buildIdMap(this.container, false);
-    return ids.get(id) ?? null;
+    if (id === "") return null;
+    if (this.containerIds === null) {
+      const found = indexedDescendantById(this.container, id);
+      if (found !== undefined) return found;
+      this.containerIds = buildIdMap(this.container);
+    }
+    return this.containerIds.get(id) ?? null;
   }
 }
 
 const EMPTY: NodeImpl[] = [];
 
 function getTextContent(node: NodeImpl): string {
-  if (node.type === ELEMENT_NODE && isLabelledNodeName(node)) return "";
-  if (node.type === TEXT_NODE) return node.data;
   let text = "";
-  for (let c = node.first; c !== null; c = c.next) text += getTextContent(c);
+  for (let c = node.first; c !== null; c = c.next) {
+    if (c.type === TEXT_NODE) text += c.data;
+    else if (c.first !== null && (c.type !== ELEMENT_NODE || !isLabelledNodeName(c))) text += getTextContent(c);
+  }
   return text;
 }
 
 export function getLabelContentImpl(element: NodeImpl): string | null {
-  if (element.tag === T.label && element.ns === HTML_NS) {
-    return getTextContent(element);
-  }
+  if (element.tag === T.label && element.ns === HTML_NS) return getTextContent(element);
   const node = element.node as any;
   return node.value || node.textContent;
 }
@@ -123,10 +117,8 @@ export interface LabelEntry {
   formControl: NodeImpl | null | undefined;
 }
 
-const FORM_CONTROL_TAGS = new Set(["button", "input", "meter", "output", "progress", "select", "textarea"]);
-
 /** `label.querySelectorAll('button, input, meter, output, progress, select, textarea')` filtered by `selector`, first hit. */
-function labelledFormControl(label: NodeImpl, selector: string): NodeImpl | undefined {
+export function labelledFormControl(label: NodeImpl, selector: string): NodeImpl | undefined {
   for (let n = label.first; n !== null; n = nextInTree(n, label)) {
     if (n.type !== ELEMENT_NODE) continue;
     // Type selectors compare the local name (HTML names are already lowercase).
@@ -138,9 +130,8 @@ function labelledFormControl(label: NodeImpl, selector: string): NodeImpl | unde
 
 export function getLabelsImpl(ctx: LabelContext, element: NodeImpl, selector = "*"): LabelEntry[] {
   const ariaLabelledBy = ariaAttr(element, "aria-labelledby");
-  const labelsId = ariaLabelledBy ? ariaLabelledBy.split(" ") : [];
-  if (labelsId.length) {
-    return labelsId.map((labelId) => {
+  if (ariaLabelledBy) {
+    return ariaLabelledBy.split(" ").map((labelId) => {
       const labellingElement = ctx.byIdInContainer(labelId);
       return labellingElement
         ? { content: getLabelContentImpl(labellingElement), formControl: null }

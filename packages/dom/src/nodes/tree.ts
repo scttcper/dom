@@ -5,7 +5,6 @@
 // (connectedness, id index, focus fixup, mutation records, document version, element hooks)
 // lives in exactly one place.
 
-import { dropDerivedCaches } from "./derived.ts";
 import {
   DOCUMENT_FRAGMENT_NODE,
   DOCUMENT_NODE,
@@ -466,7 +465,7 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   doc[$treeVersion]++;
   // Version-stamped derived caches may still reference the removed subtree: drop them now
   // instead of on their next (maybe never) lookup (nodes/derived.ts).
-  if (doc[$derived] !== null) dropDerivedCaches(doc);
+  doc[$derived] = null;
   // Custom element reactions queued by hooks above (html agent; see create.ts). Keep last.
   // Only a connected removal can have queued any (disconnectedCallback); reactions queued
   // earlier by the calling API (e.g. for the fragment children an insert detaches first) wait
@@ -634,6 +633,8 @@ export function adopt(node: NodeImpl, doc: Document): void {
   const oldDoc = node.doc;
   if (node.parent !== null) remove(node, false);
   if (oldDoc !== doc) {
+    // A detached root can still have live collection snapshots in its previous document.
+    oldDoc[$derived] = null;
     // Per-node caches (style, roles, names, hidden bits) are stamped with the node document's
     // version. Versions only grow, so moving past the old document's means no entry stamped
     // there can ever match one of this document's.

@@ -91,6 +91,17 @@ describe("render result", () => {
     expect(a.queryByText("in body")).toBeNull();
     host.remove();
   });
+
+  test("removing a focused input during cleanup leaves focus on the body without firing blur", () => {
+    const onBlur = vi.fn();
+    const view = main.render(<input onBlur={onBlur} />);
+    const field = view.getByRole("textbox");
+    field.focus();
+    expect(document.activeElement).toBe(field);
+    main.cleanup();
+    expect(document.activeElement).toBe(document.body);
+    expect(onBlur).not.toHaveBeenCalled();
+  });
 });
 
 describe("container reuse", () => {

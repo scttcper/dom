@@ -30,6 +30,22 @@ export function resolveCaretPosition({
     }
   }
 
+  // The usual click lands after the last character. Follow the last child directly when
+  // that path ends in text, without materializing live childNodes lists or joining subtree text.
+  if (offset === undefined) {
+    let end: Node = target
+    while (end.nodeType === 1) {
+      const child = end.lastChild
+      if (!child) {
+        if (end === target) return {node: target, offset: 0}
+        break
+      }
+      end = child
+    }
+    if (end.nodeType === 3 && end.nodeValue)
+      return {node: end, offset: end.nodeValue.length}
+  }
+
   return findNodeAtTextOffset(target, offset)
 }
 

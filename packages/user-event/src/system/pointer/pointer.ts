@@ -8,7 +8,7 @@ import {
   getTreeDiff,
   hasPointerEvents,
 } from '../../utils/index.ts'
-import {isDifferentPointerPosition, type PointerPosition} from './shared.ts'
+import {isDifferentPointerPosition, PointerLocation} from './shared.ts'
 import {Buttons, getMouseEventButton, MouseButton} from './buttons.ts'
 
 type PointerInit = {
@@ -38,7 +38,7 @@ export class Pointer {
   isDown: boolean = false
   isPrevented: boolean = false
 
-  position: PointerPosition = {}
+  position = new PointerLocation({})
 
   init(instance: Instance) {
     const target = this.getTarget(instance)
@@ -53,7 +53,7 @@ export class Pointer {
     return this
   }
 
-  move(instance: Instance, position: PointerPosition) {
+  move(instance: Instance, position: PointerLocation) {
     const prevPosition = this.position
     const prevTarget = this.getTarget(instance)
 

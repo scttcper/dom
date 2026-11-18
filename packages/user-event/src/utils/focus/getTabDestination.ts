@@ -1,7 +1,8 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utils/focus/getTabDestination.ts
 
-import type {Element, HTMLInputElement} from '../../dom-types.ts'
+import {F_TABINDEX_ATTR} from '@ctrl/dom/internal'
+import type {Element} from '../../dom-types.ts'
 import {implAttr, implOf} from '../../ctrl-dom.ts'
 import {isDisabled} from '../misc/isDisabled.ts'
 import {isElementType} from '../misc/isElementType.ts'
@@ -11,9 +12,10 @@ import {FOCUSABLE_SELECTOR} from './selector.ts'
 /** `Number(el.getAttribute('tabindex'))`, off the wrapper on @ctrl/dom. */
 function tabIndexAttr(el: Element): number {
   const impl = implAttr === undefined ? null : implOf(el)
-  return Number(
-    impl === null ? el.getAttribute('tabindex') : implAttr!(impl, 'tabindex'),
-  )
+  if (impl === null) return Number(el.getAttribute('tabindex'))
+  return (impl.flags & F_TABINDEX_ATTR) === 0
+    ? 0
+    : Number(implAttr!(impl, 'tabindex'))
 }
 
 /** Upstream's sort comparator, over the tabindex values. */
@@ -32,89 +34,89 @@ export function getTabDestination(activeElement: Element, shift: boolean) {
   const document = activeElement.ownerDocument
   const focusableElements = document.querySelectorAll(FOCUSABLE_SELECTOR)
 
-  // Ours: each tabindex is read once (upstream's comparator read two per comparison, so a Tab in
-  // a 1,000-control form did ~20,000 getAttribute calls), and the sort is skipped when every
-  // value is 0: the comparator then returns 0 throughout and the stable sort keeps the order.
-  let enabledElements: Element[] = []
-  const tabIndexes: number[] = []
-  let anyNonZero = false
-  for (let k = 0; k < focusableElements.length; k++) {
+  // Most forms use document order. Only save explicit nonzero values if we need to sort.
+  let elements: Element[] = []
+  let tabIndexes: number[] | undefined
+  for (let k = 0, n = focusableElements.length; k < n; k++) {
     const el = focusableElements[k] as Element
     const tabIndex = tabIndexAttr(el)
-    if (el === activeElement || !(tabIndex < 0 || isDisabled(el))) {
-      enabledElements.push(el)
-      tabIndexes.push(tabIndex)
-      if (tabIndex !== 0) anyNonZero = true
+    if (el === activeElement || !(tabIndex < 0)) {
+      if (tabIndex !== 0) {
+        tabIndexes ??= []
+        tabIndexes[elements.length] = tabIndex
+      }
+      elements.push(el)
     }
   }
 
   // tabindex has no effect if the active element has negative tabindex
-  if (anyNonZero && tabIndexAttr(activeElement) >= 0) {
-    const order = enabledElements.map((el, k) => ({
-      el,
-      tabIndex: tabIndexes[k]!,
-    }))
-    order.sort((a, b) => compareTabIndex(a.tabIndex, b.tabIndex))
-    enabledElements = order.map(o => o.el)
+  if (tabIndexes && tabIndexAttr(activeElement) >= 0) {
+    // Invalid tabindex values compare as NaN. Match the upstream stable sort by removing
+    // disabled elements first. In document order we can skip them as we look for the next stop.
+    const indexes = tabIndexes
+    const order: number[] = []
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i]!
+      if (el === activeElement || !isDisabled(el)) order.push(i)
+    }
+    order.sort((a, b) => compareTabIndex(indexes[a] ?? 0, indexes[b] ?? 0))
+    elements = order.map(i => elements[i]!)
   }
 
-  const checkedRadio: Record<string, HTMLInputElement> = {}
-  let prunedElements = [document.body]
-  const activeRadioGroup = isElementType(activeElement, 'input', {
-    type: 'radio',
-  })
-    ? activeElement.name
-    : undefined
-  enabledElements.forEach(currentElement => {
-    const el = currentElement as HTMLInputElement
-
-    // For radio groups keep only the active radio
-    // If there is no active radio, keep only the checked radio
-    // If there is no checked radio, treat like everything else
-    if (isElementType(el, 'input', {type: 'radio'}) && el.name) {
-      // If the active element is part of the group, add only that
-      if (el === activeElement) {
-        prunedElements.push(el)
-        return
-      } else if (el.name === activeRadioGroup) {
-        return
-      }
-
-      // If we stumble upon a checked radio, remove the others
-      if (el.checked) {
-        prunedElements = prunedElements.filter(
-          e => !isElementType(e, 'input', {type: 'radio', name: el.name}),
-        )
-        prunedElements.push(el)
-        checkedRadio[el.name] = el
-        return
-      }
-
-      // If we already found the checked one, skip
-      if (typeof checkedRadio[el.name] !== 'undefined') {
-        return
-      }
-    }
-
-    prunedElements.push(el)
-  })
-
-  for (let index = prunedElements.findIndex(el => el === activeElement); ;) {
+  elements.unshift(document.body)
+  const stops = pruneRadioGroups(elements, activeElement)
+  for (let index = stops.indexOf(activeElement); ;) {
     index += shift ? -1 : 1
 
     // loop at overflow
-    if (index === prunedElements.length) {
+    if (index === stops.length) {
       index = 0
     } else if (index === -1) {
-      index = prunedElements.length - 1
+      index = stops.length - 1
     }
 
-    if (
-      prunedElements[index] === activeElement ||
-      prunedElements[index] === document.body ||
-      isVisible(prunedElements[index])
-    ) {
-      return prunedElements[index]
-    }
+    const el = stops[index]
+    if (el === null) continue
+    if (el === activeElement || el === document.body) return el
+    if (!isDisabled(el) && isVisible(el)) return el
   }
+}
+
+/** Mark skipped radios in place. A checked radio only supersedes earlier stops in its own group. */
+function pruneRadioGroups(stops: (Element | null)[], active: Element) {
+  const activeGroup =
+    isElementType(active, 'input') && active.type === 'radio'
+      ? active.name
+      : undefined
+  // Upstream's plain object also affects radio names such as "constructor".
+  const checked: Record<string, Element> = {}
+  let positions: Map<string, number[]> | undefined
+  // The body at index zero is always a stop.
+  for (let i = 1; i < stops.length; i++) {
+    const el = stops[i]!
+    if (!isElementType(el, 'input') || el.type !== 'radio' || el === active)
+      continue
+    const name = el.name
+    if (!name) continue
+    if (name === activeGroup || isDisabled(el)) {
+      stops[i] = null
+      continue
+    }
+    positions ??= new Map()
+    const group = positions.get(name)
+    if (el.checked) {
+      // Across forms, multiple radios of the same name can be checked. Keep the last in tab order.
+      checked[name] = el
+      if (group) {
+        for (const index of group) stops[index] = null
+        group.length = 0
+      }
+    } else if (checked[name] !== undefined) {
+      stops[i] = null
+      continue
+    }
+    if (group) group.push(i)
+    else positions.set(name, [i])
+  }
+  return stops
 }

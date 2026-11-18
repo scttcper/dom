@@ -165,7 +165,6 @@ export const $screen: unique symbol = Symbol.for("ctrl-dom.screen");
 export const $scrollRestoration: unique symbol = Symbol.for("ctrl-dom.scrollRestoration");
 export const $scrollX: unique symbol = Symbol.for("ctrl-dom.scrollX");
 export const $scrollY: unique symbol = Symbol.for("ctrl-dom.scrollY");
-export const $selSet: unique symbol = Symbol.for("ctrl-dom.selSet");
 export const $selectedOptions: unique symbol = Symbol.for("ctrl-dom.selectedOptions");
 export const $selectedness: unique symbol = Symbol.for("ctrl-dom.selectedness");
 export const $selection: unique symbol = Symbol.for("ctrl-dom.selection");

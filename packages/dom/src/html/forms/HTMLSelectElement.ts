@@ -43,6 +43,26 @@ function opt(o: NodeImpl): HTMLOptionElement {
   return o.node as HTMLOptionElement;
 }
 
+/**
+ * React appends options one by one. Walk direct options without allocating the list each time.
+ * An explicit selection wins over its siblings. Otherwise a single existing selection is already
+ * settled. A flat menu also has no selectedcontent to update.
+ */
+function settleFlatOptions(select: NodeImpl, selected: NodeImpl | undefined): boolean {
+  let hasSelection = false;
+  for (let child = select.first; child !== null; child = child.next) {
+    if (child.type !== 1) continue;
+    if (child.tag !== T.option) return false;
+    if (selected !== undefined) {
+      if (child !== selected) opt(child)._setSelectedness(false);
+    } else if (opt(child)._selectednessNow()) {
+      if (hasSelection) return false;
+      hasSelection = true;
+    }
+  }
+  return selected !== undefined || hasSelection;
+}
+
 /** select.selectedOptions: https://html.spec.whatwg.org/#dom-select-selectedoptions */
 class SelectedOptionsCollection extends HTMLCollection {
   override _collect(out: Element[]): void {
@@ -247,18 +267,28 @@ export class HTMLSelectElement extends HTMLElement {
   }
 
   /** https://html.spec.whatwg.org/#selectedness-setting-algorithm */
-  _selectednessSettingAlgorithm(): void {
+  _selectednessSettingAlgorithm(selected?: NodeImpl): void {
     this[$settled] = true;
-    this._runSelectedness();
+    if (!this._isSingle()) return;
+    if (selected !== undefined || this._displaySize() === 1) {
+      if (settleFlatOptions(this[$impl], selected)) return;
+      if (selected !== undefined) this._deselectOthers(selected);
+      else this._runSelectedness();
+    }
     this._updateSelectedContent();
   }
 
   _runSelectedness(): void {
-    if (!this._isSingle() || this._displaySize() !== 1) return;
     const options = listOfOptions(this[$impl], []);
-    let selectedCount = 0;
-    for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) selectedCount++;
-    if (selectedCount === 0) {
+    let selected: HTMLOptionElement | undefined;
+    for (let i = 0; i < options.length; i++) {
+      const option = opt(options[i]);
+      if (option._selectednessNow()) {
+        selected?._setSelectedness(false);
+        selected = option;
+      }
+    }
+    if (selected === undefined) {
       // Select the first non-disabled option in tree order, if any.
       for (let i = 0; i < options.length; i++) {
         if (!isActuallyDisabled(options[i])) {
@@ -266,13 +296,6 @@ export class HTMLSelectElement extends HTMLElement {
           return;
         }
       }
-      return;
-    }
-    if (selectedCount > 1) {
-      // Keep only the last selected option.
-      let last = -1;
-      for (let i = 0; i < options.length; i++) if (opt(options[i])._selectednessNow()) last = i;
-      for (let i = 0; i < options.length; i++) if (i !== last) opt(options[i])._setSelectedness(false);
     }
   }
 
