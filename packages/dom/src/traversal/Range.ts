@@ -229,6 +229,14 @@ export class StaticRange extends AbstractRange {
   }
 }
 
+/** Recognize boundary containers and siblings before walking to the root. */
+function hasSameRoot(range: Range, node: NodeImpl): boolean {
+  const start = range[$sc];
+  if (node === start || node === range[$ec]) return true;
+  if (node.parent !== null && node.parent === start.parent) return true;
+  return node.doc === start.doc && treeRoot(node) === treeRoot(start);
+}
+
 /** https://dom.spec.whatwg.org/#interface-range */
 export class Range extends AbstractRange {
   static readonly START_TO_START = START_TO_START;
@@ -273,7 +281,7 @@ export class Range extends AbstractRange {
     if (node.type === DOCUMENT_TYPE_NODE)
       throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
-    if (treeRoot(node) !== this._treeRoot() || compareBoundaryPoints(node, offset, this[$ec], this[$eo]) > 0) {
+    if (!hasSameRoot(this, node) || compareBoundaryPoints(node, offset, this[$ec], this[$eo]) > 0) {
       this[$ec] = node;
       this[$eo] = offset;
     }
@@ -286,7 +294,7 @@ export class Range extends AbstractRange {
     if (node.type === DOCUMENT_TYPE_NODE)
       throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
-    if (treeRoot(node) !== this._treeRoot() || compareBoundaryPoints(node, offset, this[$sc], this[$so]) < 0) {
+    if (!hasSameRoot(this, node) || compareBoundaryPoints(node, offset, this[$sc], this[$so]) < 0) {
       this[$sc] = node;
       this[$so] = offset;
     }
@@ -385,7 +393,7 @@ export class Range extends AbstractRange {
     if (!(sourceRange instanceof Range)) {
       throw new TypeError("Failed to execute 'compareBoundaryPoints' on 'Range': parameter 2 is not of type 'Range'.");
     }
-    if (this._treeRoot() !== sourceRange._treeRoot())
+    if (!hasSameRoot(this, sourceRange[$sc]))
       throw new DOMException("The two Ranges are not in the same tree.", "WrongDocumentError");
     switch (h) {
       case START_TO_START:
@@ -497,7 +505,7 @@ export class Range extends AbstractRange {
   isPointInRange(node: Node, offset: number): boolean {
     const n = toNodeImpl(node, "isPointInRange");
     const o = Number(offset) >>> 0;
-    if (treeRoot(n) !== this._treeRoot()) return false;
+    if (!hasSameRoot(this, n)) return false;
     if (n.type === DOCUMENT_TYPE_NODE)
       throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
     if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
@@ -510,7 +518,7 @@ export class Range extends AbstractRange {
   comparePoint(node: Node, offset: number): number {
     const n = toNodeImpl(node, "comparePoint");
     const o = Number(offset) >>> 0;
-    if (treeRoot(n) !== this._treeRoot())
+    if (!hasSameRoot(this, n))
       throw new DOMException("The node provided and the Range are not in the same tree.", "WrongDocumentError");
     if (n.type === DOCUMENT_TYPE_NODE)
       throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
@@ -523,7 +531,7 @@ export class Range extends AbstractRange {
   /** https://dom.spec.whatwg.org/#dom-range-intersectsnode */
   intersectsNode(node: Node): boolean {
     const n = toNodeImpl(node, "intersectsNode");
-    if (treeRoot(n) !== this._treeRoot()) return false;
+    if (!hasSameRoot(this, n)) return false;
     if (n.parent === null) return true;
     // The node's first and last internal points lie immediately inside its parent boundaries.
     return (
