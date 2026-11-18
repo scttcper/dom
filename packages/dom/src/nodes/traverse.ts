@@ -14,15 +14,15 @@ import type { NodeImpl } from "./NodeImpl.ts";
 // Typical loop over the descendants of `root` (excluding root):
 //   for (let n = root.first; n !== null; n = nextInTree(n, root)) { ... }
 
-/** Next node in tree order within `root`'s subtree, or null. */
-export function nextInTree(n: NodeImpl, root: NodeImpl): NodeImpl | null {
+/** Next node in tree order within the subtree (or the whole tree when unbounded). */
+export function nextInTree(n: NodeImpl, root: NodeImpl | null): NodeImpl | null {
   const first = n.first;
   if (first !== null) return first;
   return nextSkippingChildren(n, root);
 }
 
-/** Next node in tree order within `root`'s subtree that is not a descendant of `n`, or null. */
-export function nextSkippingChildren(n: NodeImpl, root: NodeImpl): NodeImpl | null {
+/** Next node in tree order after the subtree of `n`, optionally bounded by `root`. */
+export function nextSkippingChildren(n: NodeImpl, root: NodeImpl | null): NodeImpl | null {
   let cur: NodeImpl | null = n;
   while (cur !== null && cur !== root) {
     const next: NodeImpl | null = cur.next;

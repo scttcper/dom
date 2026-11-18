@@ -560,9 +560,8 @@ export class Range extends AbstractRange {
       return s;
     }
     if (isText(sc)) s += sc.data.slice(this[$so]);
-    const root = treeRoot(sc);
-    const end = isCharacterData(ec) ? ec : afterBoundary(ec, this[$eo], root);
-    for (let n = afterBoundary(sc, this[$so], root); n !== null && n !== end; n = nextInTree(n, root)) {
+    const end = isCharacterData(ec) ? ec : afterBoundary(ec, this[$eo]);
+    for (let n = afterBoundary(sc, this[$so]); n !== null && n !== end; n = nextInTree(n, null)) {
       if (isText(n)) s += n.data;
     }
     if (isText(ec)) s += ec.data.slice(0, this[$eo]);
@@ -620,26 +619,25 @@ Object.defineProperty(Range.prototype, Symbol.toStringTag, { value: "Range", con
 Object.defineProperty(StaticRange.prototype, Symbol.toStringTag, { value: "StaticRange", configurable: true });
 
 /** First node in tree order at or after boundary point (node, offset) (null at the end of the tree). */
-function afterBoundary(node: NodeImpl, offset: number, root: NodeImpl): NodeImpl | null {
+function afterBoundary(node: NodeImpl, offset: number): NodeImpl | null {
   if (!isCharacterData(node)) {
     const child = childAt(node, offset);
     if (child !== null) return child;
   }
-  return nextSkippingChildren(node, root);
+  return nextSkippingChildren(node, null);
 }
 
 /** Outermost nodes contained in the range, in tree order. */
 function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean }): NodeImpl[] {
   const out: NodeImpl[] = [];
-  const root = treeRoot(range[$sc]);
-  const end = isCharacterData(range[$ec]) ? range[$ec] : afterBoundary(range[$ec], range[$eo], root);
-  let n = afterBoundary(range[$sc], range[$so], root);
+  const end = isCharacterData(range[$ec]) ? range[$ec] : afterBoundary(range[$ec], range[$eo]);
+  let n = afterBoundary(range[$sc], range[$so]);
   while (n !== null && n !== end) {
     if (range._contains(n)) {
       out.push(n);
-      n = nextSkippingChildren(n, root);
+      n = nextSkippingChildren(n, null);
     } else {
-      n = nextInTree(n, root);
+      n = nextInTree(n, null);
     }
   }
   return out;
