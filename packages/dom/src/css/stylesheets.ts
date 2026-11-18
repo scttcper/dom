@@ -157,6 +157,25 @@ function releaseIfUnused(css: DocCSS, rs: RootStyles): void {
 /** The tree each registered owner sheet belongs to (its owner may have moved since). */
 const sheetRoots = new WeakMap<CSSStyleSheet, RootStyles>();
 
+/** A rule index holds the CSS rules it matched. Release deleted rules before another style read. */
+export function discardSheetRuleIndexes(sheet: CSSStyleSheet): void {
+  if (!sheet[$constructed]) {
+    const rs = sheetRoots.get(sheet);
+    if (rs !== undefined) rs.index = null;
+    return;
+  }
+  const doc = sheet[$doc];
+  const css = doc === null ? null : existingDocCSS(doc);
+  if (css === null) return;
+  if (css.main.index !== null && css.main.adopted.includes(sheet)) css.main.index = null;
+  if (css.shadows === null) return;
+  for (const ref of css.shadows.refs) {
+    const rs = ref.deref();
+    if (rs === undefined) css.shadows.refs.delete(ref);
+    else if (rs.index !== null && rs.adopted.includes(sheet)) rs.index = null;
+  }
+}
+
 /** Top of the (shadow-scoped) tree containing `n`. */
 export function treeTop(n: NodeImpl): NodeImpl {
   let p = n;
@@ -197,6 +216,7 @@ export function unregisterOwnerSheet(owner: NodeImpl, sheet: CSSStyleSheet): voi
   if (css !== null && rs !== undefined) {
     const i = rs.owners.indexOf(sheet);
     if (i !== -1) {
+      rs.index = null;
       rs.owners.splice(i, 1);
       rs.ownerNodes.splice(i, 1);
       syncList(rs);
@@ -278,6 +298,7 @@ export function setAdoptedStyleSheets(root: NodeImpl, value: unknown): void {
     }
   }
   const rs = rootStylesFor(root, true)!;
+  if (rs.index !== null && rs.adopted.length !== 0) rs.index = null;
   rs.adopted = list as CSSStyleSheet[];
   rs.adoptedSnapshot = rs.adopted.slice();
   // The new array is ours until the getter hands it out.

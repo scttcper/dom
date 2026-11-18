@@ -38,6 +38,7 @@ import {
   TK_URL,
   COMP_SPACE,
 } from "./values.ts";
+import { discardSheetRuleIndexes } from "./stylesheets.ts";
 import { evaluateSupportsCondition } from "./supports.ts";
 import { currentWindowOrNull } from "../window/current.ts";
 import {
@@ -401,6 +402,7 @@ export class CSSStyleSheet extends StyleSheet {
   _setText(text: string): void {
     // https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet: the
     // old rules are detached (their parentStyleSheet becomes null).
+    if (this[$rules].length !== 0) discardSheetRuleIndexes(this);
     for (const old of this[$rules]) old[$sheet] = null;
     this[$rules] = [];
     this[$namespaces] = null;
@@ -550,6 +552,7 @@ export class CSSStyleSheet extends StyleSheet {
       );
     }
     const [removed] = this[$rules].splice(i, 1);
+    discardSheetRuleIndexes(this);
     removed[$sheet] = null;
     this[$list]?._sync(i);
     this._changed();
@@ -765,6 +768,8 @@ export class CSSGroupingRule extends CSSRule {
       );
     }
     const [removed] = this[$rules].splice(i, 1);
+    const sheet = this.parentStyleSheet;
+    if (sheet !== null) discardSheetRuleIndexes(sheet);
     removed[$parent] = null;
     this[$list]?._sync(i);
     this._changed();
@@ -1341,6 +1346,8 @@ export class CSSKeyframesRule extends CSSRule {
     const i = this._findIndex(String(select));
     if (i === -1) return;
     const [removed] = this[$rules].splice(i, 1);
+    const sheet = this.parentStyleSheet;
+    if (sheet !== null) discardSheetRuleIndexes(sheet);
     removed[$parent] = null;
     this[$list]?._sync(i);
     this._changed();

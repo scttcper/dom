@@ -642,6 +642,47 @@ describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
 });
 
 describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets", () => {
+  test.each(["owner removal", "rule deletion", "adopted replacement", "adopted rule replacement"])(
+    "active trees release sheets and rules after %s without another style read",
+    async (operation) => {
+      const w = createWindow();
+      const doc = w.document;
+      const tracker = new Tracker();
+      const host = doc.body!.appendChild(doc.createElement("div"));
+      const root = host.attachShadow({ mode: "open" }) as ShadowRoot;
+      const target = root.appendChild(doc.createElement("div"));
+      const win = w as unknown as Record<string, any>;
+      (() => {
+        if (operation === "owner removal" || operation === "rule deletion") {
+          const style = doc.createElement("style");
+          style.textContent = "div { display: grid } div { color: red }";
+          root.appendChild(style);
+          const sheet = (style as any).sheet;
+          tracker.track("rule", sheet.cssRules[0]);
+          expect(w.getComputedStyle(target).display).toBe("grid");
+          if (operation === "owner removal") {
+            tracker.track("sheet", sheet);
+            style.remove();
+          } else sheet.deleteRule(0);
+        } else {
+          const sheet = new win.CSSStyleSheet();
+          sheet.replaceSync("div { display: grid }");
+          tracker.track("rule", sheet.cssRules[0]);
+          const scope = root as ShadowRoot & { adoptedStyleSheets: object[] };
+          scope.adoptedStyleSheets = [sheet];
+          expect(w.getComputedStyle(target).display).toBe("grid");
+          if (operation === "adopted replacement") {
+            tracker.track("sheet", sheet);
+            scope.adoptedStyleSheets = [];
+          } else sheet.replaceSync("div { display: flex }");
+        }
+      })();
+      expect(await tracker.alive()).toEqual({});
+      expect(w.getComputedStyle(target).display).toBe(operation === "adopted rule replacement" ? "flex" : "block");
+      w.close();
+    },
+  );
+
   test("shadow roots that adopted a shared sheet (set, or read and pushed) are collectable once their hosts are removed", async () => {
     const w = createWindow({ html: HTML });
     const d = w.document;
