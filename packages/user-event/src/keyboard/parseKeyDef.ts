@@ -22,6 +22,7 @@ export function parseKeyDef(keyboardMap: keyboardKey[], text: string) {
     repeat: number
   }> = []
 
+  let offset = 0
   do {
     const {
       type,
@@ -30,16 +31,9 @@ export function parseKeyDef(keyboardMap: keyboardKey[], text: string) {
       releasePrevious,
       releaseSelf = true,
       repeat,
-    } = readNextDescriptor(text, 'keyboard')
+    } = readNextDescriptor(text, 'keyboard', offset)
 
-    const keyDef = keyboardMap.find(def => {
-      if (type === '[') {
-        return def.code?.toLowerCase() === descriptor.toLowerCase()
-      } else if (type === '{') {
-        return def.key?.toLowerCase() === descriptor.toLowerCase()
-      }
-      return def.key === descriptor
-    }) ?? {
+    const keyDef = findKey(keyboardMap, type, descriptor) ?? {
       key: 'Unknown',
       code: 'Unknown',
       [type === '[' ? 'code' : 'key']: descriptor,
@@ -47,8 +41,21 @@ export function parseKeyDef(keyboardMap: keyboardKey[], text: string) {
 
     defs.push({keyDef, releasePrevious, releaseSelf, repeat})
 
-    text = text.slice(consumedLength)
-  } while (text)
+    offset += consumedLength
+  } while (offset < text.length)
 
   return defs
+}
+
+function findKey(
+  keyboardMap: keyboardKey[],
+  type: '' | '[' | '{',
+  descriptor: string,
+) {
+  if (type === '') return keyboardMap.find(def => def.key === descriptor)
+
+  const lower = descriptor.toLowerCase()
+  return type === '['
+    ? keyboardMap.find(def => def.code?.toLowerCase() === lower)
+    : keyboardMap.find(def => def.key?.toLowerCase() === lower)
 }

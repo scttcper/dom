@@ -19,24 +19,22 @@ type Context = 'pointer' | 'keyboard'
  * When keeping the key pressed you can choose how long the key is pressed `{descriptor>3}`.
  * You can then release the key per `{descriptor>3/}` or keep it pressed and continue with the next key.
  */
-export function readNextDescriptor(text: string, context: Context) {
-  const bracket = text[0]
-  if (bracket !== '{' && bracket !== '[')
-    return readPrintableChar(text, 0, context)
-  if (text[1] === bracket) return readPrintableChar(text, 1, context)
-  return readTag(text, 1, bracket, context)
+export function readNextDescriptor(text: string, context: Context, offset = 0) {
+  const char = text[offset]
+  if (char === '{' || char === '[') {
+    if (text[offset + 1] !== char) {
+      return readTag(text.slice(offset), 1, char, context)
+    }
+    return printableChar(char, 2)
+  }
+  assertDescriptor(char, text, offset, context)
+  return printableChar(char, 1)
 }
 
-function readPrintableChar(text: string, pos: number, context: Context) {
-  const descriptor = text[pos]
-
-  assertDescriptor(descriptor, text, pos, context)
-
-  pos += descriptor.length
-
+function printableChar(descriptor: string, consumedLength: number) {
   return {
     type: '' as const,
-    consumedLength: pos,
+    consumedLength,
     descriptor,
     releasePrevious: false,
     releaseSelf: true,
