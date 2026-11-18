@@ -281,6 +281,19 @@ describe("contained and partially contained — https://dom.spec.whatwg.org/#con
     },
   );
 
+  test("a range inside a comment or processing instruction excludes following text", () => {
+    const { document } = createWindow();
+    const range = document.createRange();
+    for (const node of [document.createComment("abc"), document.createProcessingInstruction("test", "abc")]) {
+      document.body!.append(node, "following text");
+      range.setStart(node, 1);
+      range.setEnd(node, 2);
+      expect(range.toString()).toBe("");
+      range.collapse(true);
+      expect(range.toString()).toBe("");
+    }
+  });
+
   differential(
     "toString: the Text data between the boundary points, in tree order (https://dom.spec.whatwg.org/#dom-range-stringifier)",
     (w) => {

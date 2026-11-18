@@ -526,13 +526,25 @@ export class Range extends AbstractRange {
   toString(): string {
     const sc = this[$sc];
     const ec = this[$ec];
-    if (sc === ec && isText(sc)) return sc.data.slice(this[$so], this[$eo]);
     let s = "";
+    if (sc === ec) {
+      const start = this[$so];
+      const end = this[$eo];
+      if (isText(sc)) return sc.data.slice(start, end);
+      if (start === end || isCharacterData(sc)) return "";
+      // Walk only the selected child subtrees, starting with one indexed lookup.
+      let remaining = end - start;
+      for (let child = childAt(sc, start); child !== null && remaining > 0; child = child.next, remaining--) {
+        for (let n: NodeImpl | null = child; n !== null; n = nextInTree(n, child)) {
+          if (isText(n)) s += n.data;
+        }
+      }
+      return s;
+    }
     if (isText(sc)) s += sc.data.slice(this[$so]);
     const root = treeRoot(sc);
     const end = isCharacterData(ec) ? ec : afterBoundary(ec, this[$eo], root);
     for (let n = afterBoundary(sc, this[$so], root); n !== null && n !== end; n = nextInTree(n, root)) {
-      // Every Text node strictly between the boundary points is contained.
       if (isText(n)) s += n.data;
     }
     if (isText(ec)) s += ec.data.slice(0, this[$eo]);
