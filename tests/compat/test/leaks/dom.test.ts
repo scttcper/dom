@@ -22,6 +22,7 @@ import {
   type HTMLDialogElement,
   type HTMLFormElement,
   type HTMLInputElement,
+  type HTMLSlotElement,
   type HTMLTemplateElement,
   type ShadowRoot,
   type Window,
@@ -213,6 +214,32 @@ describe("window.close() — https://html.spec.whatwg.org/#dom-window-close", ()
 });
 
 describe("remove — https://dom.spec.whatwg.org/#concept-node-remove", () => {
+  test("manual assignment releases removed children and slots independently", async () => {
+    const w = createWindow();
+    const d = w.document;
+    const host = d.body!.appendChild(d.createElement("div"));
+    const root = host.attachShadow({ mode: "open", slotAssignment: "manual" });
+    const slot = root.appendChild(d.createElement("slot")) as HTMLSlotElement;
+    const survivor = host.appendChild(d.createTextNode("kept"));
+    const tracker = new Tracker();
+    (() => {
+      const removed = tracker.track("removed child", host.appendChild(d.createElement("button")));
+      slot.assign(removed, survivor);
+      removed.remove();
+      const other = tracker.track("removed slot", root.appendChild(d.createElement("slot")) as HTMLSlotElement);
+      other.assign(survivor);
+      other.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(slot.assignedNodes()).toEqual([]);
+    expect(survivor.assignedSlot).toBeNull();
+    slot.assign(survivor);
+    survivor.remove();
+    host.append(survivor);
+    expect(survivor.assignedSlot).toBe(slot);
+    w.close();
+  });
+
   test.each(["dialog", "popover"] as const)(
     "a removed %s releases its pressed subtree before pointerup",
     async (kind) => {

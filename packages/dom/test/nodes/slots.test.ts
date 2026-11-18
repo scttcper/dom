@@ -252,11 +252,13 @@ describe("manual slot assignment — https://dom.spec.whatwg.org/#slot-manually-
   test("find a slot step 4: in manual mode the slot attribute is ignored; only assign() assigns", () => {
     const { named, other, b, i } = manual();
     expect(named.assignedNodes()).toEqual([]);
-    named.assign(i, b);
+    named.assign(i, b, i);
     // find slottables step 4: manually assigned nodes whose parent is the host, in assign() order.
     expect(named.assignedNodes()).toEqual([i, b]);
     expect(b.assignedSlot).toBe(named);
     expect(other.assignedNodes()).toEqual([]);
+    named.assign(b, i, b);
+    expect(named.assignedNodes()).toEqual([b, i]);
   });
 
   test("assign() step 1–2: a node assigned to another slot moves; reassigning replaces the whole list (https://dom.spec.whatwg.org/#slottable-manual-slot-assignment)", () => {

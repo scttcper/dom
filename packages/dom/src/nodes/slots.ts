@@ -29,10 +29,21 @@ export function _shadowRootAttached(): void {
 const assignedNodesOf = new WeakMap<NodeImpl, NodeImpl[]>();
 /** slottable → assigned slot (https://dom.spec.whatwg.org/#slotable-assigned-slot). */
 const assignedSlotOf = new WeakMap<NodeImpl, NodeImpl>();
-/** slot → manually assigned nodes (https://dom.spec.whatwg.org/#slot-manually-assigned-nodes). */
-const manuallyAssignedOf = new WeakMap<NodeImpl, NodeImpl[]>();
-/** slottable → slot that manually assigned it (https://dom.spec.whatwg.org/#slottable-manual-slot-assignment). */
-const manualSlotOf = new WeakMap<NodeImpl, NodeImpl>();
+// A manual assignment survives detachment so that moving the node back restores it.
+// Either endpoint can outlive the other, even when they belong to different documents.
+class ManualAssignment extends WeakRef<NodeImpl> {
+  slot: WeakRef<NodeImpl>;
+  constructor(node: NodeImpl, slot: WeakRef<NodeImpl>) {
+    super(node);
+    this.slot = slot;
+  }
+}
+const manuallyAssignedOf = new WeakMap<NodeImpl, Set<ManualAssignment>>();
+const manualSlotOf = new WeakMap<NodeImpl, ManualAssignment>();
+const collectedSlottables = new FinalizationRegistry<ManualAssignment>((assignment) => {
+  const slot = assignment.slot.deref();
+  if (slot !== undefined) manuallyAssignedOf.get(slot)?.delete(assignment);
+});
 
 const EMPTY: NodeImpl[] = [];
 
@@ -67,10 +78,8 @@ export function findSlot(slottable: NodeImpl, open: boolean): NodeImpl | null {
   if (open && shadow.mode !== "open") return null;
   const root = shadow[$impl];
   if (shadow.slotAssignment === "manual") {
-    for (let n = root.first; n !== null; n = nextInTree(n, root)) {
-      if (isSlot(n) && (manuallyAssignedOf.get(n) ?? EMPTY).includes(slottable)) return n;
-    }
-    return null;
+    const slot = manualSlotOf.get(slottable)?.slot.deref();
+    return slot !== undefined && treeRoot(slot) === root ? slot : null;
   }
   const name = slottableName(slottable);
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
@@ -88,7 +97,12 @@ export function findSlottables(slot: NodeImpl): NodeImpl[] {
   const host = shadow[$host]![$impl];
   if (shadow.slotAssignment === "manual") {
     const manual = manuallyAssignedOf.get(slot);
-    if (manual !== undefined) for (const s of manual) if (s.parent === host) result.push(s);
+    if (manual !== undefined) {
+      for (const assignment of manual) {
+        const node = assignment.deref();
+        if (node?.parent === host) result.push(node);
+      }
+    }
     return result;
   }
   // Find a slot for each slottable child, from one walk of the shadow tree instead of one per child.
@@ -286,34 +300,46 @@ export function assignedElements(slot: NodeImpl, flatten: boolean): NodeImpl[] {
 
 /** https://html.spec.whatwg.org/#dom-slot-assign */
 export function assignManually(slot: NodeImpl, nodes: NodeImpl[]): void {
-  // 1.
-  const previous = manuallyAssignedOf.get(slot) ?? EMPTY;
-  for (const n of previous) manualSlotOf.delete(n);
-  // 2–3.
-  const set: NodeImpl[] = [];
-  let otherSlots: NodeImpl[] | null = null;
-  for (const n of nodes) {
-    const prevSlot = manualSlotOf.get(n);
-    if (prevSlot !== undefined && prevSlot !== slot) {
-      const list = manuallyAssignedOf.get(prevSlot);
-      if (list !== undefined) {
-        const i = list.indexOf(n);
-        if (i !== -1) list.splice(i, 1);
+  const previous = manuallyAssignedOf.get(slot);
+  const next = new Set<ManualAssignment>();
+  let slotRef: WeakRef<NodeImpl> | undefined;
+  let otherSlots: Set<NodeImpl> | undefined;
+  for (const node of nodes) {
+    let assignment = manualSlotOf.get(node);
+    if (assignment === undefined) {
+      assignment = new ManualAssignment(node, (slotRef ??= new WeakRef(slot)));
+      manualSlotOf.set(node, assignment);
+      collectedSlottables.register(node, assignment, assignment);
+    } else {
+      const oldSlot = assignment.slot.deref();
+      if (oldSlot !== slot) {
+        if (oldSlot !== undefined) {
+          manuallyAssignedOf.get(oldSlot)!.delete(assignment);
+          (otherSlots ??= new Set()).add(oldSlot);
+        }
+        assignment.slot = slotRef ??= new WeakRef(slot);
+      } else {
+        slotRef ??= assignment.slot;
       }
-      if (otherSlots === null) otherSlots = [];
-      if (!otherSlots.includes(prevSlot)) otherSlots.push(prevSlot);
     }
-    if (!set.includes(n)) set.push(n);
-    manualSlotOf.set(n, slot);
+    next.add(assignment);
   }
-  // 4.
-  manuallyAssignedOf.set(slot, set);
+  if (previous !== undefined) {
+    for (const assignment of previous) {
+      if (next.has(assignment)) continue;
+      const node = assignment.deref();
+      if (node !== undefined) manualSlotOf.delete(node);
+      collectedSlottables.unregister(assignment);
+    }
+  }
+  if (next.size === 0) manuallyAssignedOf.delete(slot);
+  else manuallyAssignedOf.set(slot, next);
   // 5. Assign slottables for a tree with this's root (signals slot changes in tree order).
   const root = treeRoot(slot);
   if ((root.flags & F_SHADOW_ROOT) !== 0) assignSlottablesForTree(root);
   // Slots in other shadow trees that lost a node (the spec's step 5 only covers this's tree;
   // browsers and WPT imperative-slot-api-cross-shadow-root.html update them too).
-  if (otherSlots !== null) {
+  if (otherSlots !== undefined) {
     for (const other of otherSlots) if (treeRoot(other) !== root) assignSlottables(other);
   }
 }
