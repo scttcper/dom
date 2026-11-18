@@ -38,7 +38,9 @@ class ManualAssignment extends WeakRef<NodeImpl> {
     this.slot = slot;
   }
 }
+/** https://dom.spec.whatwg.org/#slot-manually-assigned-nodes */
 const manuallyAssignedOf = new WeakMap<NodeImpl, Set<ManualAssignment>>();
+/** https://dom.spec.whatwg.org/#slottable-manual-slot-assignment */
 const manualSlotOf = new WeakMap<NodeImpl, ManualAssignment>();
 const collectedSlottables = new FinalizationRegistry<ManualAssignment>((assignment) => {
   const slot = assignment.slot.deref();
@@ -183,9 +185,8 @@ export function assignASlot(slottable: NodeImpl): void {
 }
 
 // A slot's assigned nodes are always its find-slottables result (every mutation that can change
-// one reassigns it), so with named assignment two common changes edit the list in place instead
-// of recomputing it: a slottable appended as the host's last child joins the end of its slot's
-// list (tree order), and a removed one leaves it.
+// one reassigns it). Removing a child preserves the order of the remaining assignments in
+// either mode. With named assignment, appending the host's last child also preserves that order.
 
 /** Assign a slottable just appended as the host's last child; false when the full algorithm must run. */
 function assignAppended(slottable: NodeImpl, shadow: ShadowRoot): boolean {
@@ -247,10 +248,7 @@ export function slotsAfterInsert(parent: NodeImpl, node: NodeImpl | null, nodes:
 /** https://dom.spec.whatwg.org/#concept-node-remove steps 11-13 (after unlinking). */
 export function slotsAfterRemove(node: NodeImpl, parent: NodeImpl): void {
   const slot = assignedSlotOf.get(node);
-  if (slot !== undefined) {
-    if (shadowOf(parent)?.slotAssignment === "manual") assignSlottables(slot);
-    else unassignRemoved(node, slot);
-  }
+  if (slot !== undefined) unassignRemoved(node, slot);
   if (isEmptyShadowSlot(parent)) signalSlotChange(parent);
   if (hasSlotDescendant(node)) {
     const parentRoot = treeRoot(parent);

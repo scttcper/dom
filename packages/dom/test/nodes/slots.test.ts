@@ -259,6 +259,9 @@ describe("manual slot assignment — https://dom.spec.whatwg.org/#slot-manually-
     expect(other.assignedNodes()).toEqual([]);
     named.assign(b, i, b);
     expect(named.assignedNodes()).toEqual([b, i]);
+    i.remove();
+    expect(named.assignedNodes()).toEqual([b]);
+    expect(i.assignedSlot).toBeNull();
   });
 
   test("assign() step 1–2: a node assigned to another slot moves; reassigning replaces the whole list (https://dom.spec.whatwg.org/#slottable-manual-slot-assignment)", () => {
