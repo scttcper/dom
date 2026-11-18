@@ -134,6 +134,20 @@ describe("DataTransferItemList — https://html.spec.whatwg.org/#the-datatransfe
 });
 
 describe("DataTransferItem — https://html.spec.whatwg.org/#the-datatransferitem-interface", () => {
+  test.each(["replace", "clear"] as const)(
+    "%s disables a string item while its queued callback keeps the original data",
+    async (operation) => {
+      const transfer = new DataTransfer();
+      const item = transfer.items.add("original", "text/plain")!;
+      const pending = new Promise<string>((resolve) => item.getAsString(resolve));
+      if (operation === "replace") transfer.setData("text/plain", "replacement");
+      else transfer.clearData("text/plain");
+      expect(item.kind).toBe("");
+      expect(item.type).toBe("");
+      expect(await pending).toBe("original");
+    },
+  );
+
   test("getAsString calls back asynchronously with the data (string items only)", async () => {
     const dt = new DataTransfer();
     dt.setData("text/plain", "payload");

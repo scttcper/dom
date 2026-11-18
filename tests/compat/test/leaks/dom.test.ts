@@ -12,6 +12,7 @@ import { describe, expect, test } from "vitest";
 import {
   createWindow,
   currentWindowOrNull,
+  DataTransfer,
   HTMLElement,
   installGlobals,
   MouseEvent,
@@ -848,6 +849,25 @@ describe("adoptedStyleSheets — https://drafts.csswg.org/cssom/#dom-documentors
     // Adding prunes collected entries whenever the index doubles: well under 2 × 200 entries.
     expect(indexed()).toBeLessThanOrEqual(264);
     w.close();
+  });
+});
+
+describe("file lifetimes", () => {
+  test.each(["remove", "clear"] as const)("a retained drag item releases its file after %s", async (method) => {
+    const tracker = new Tracker();
+    const transfer = new DataTransfer();
+    const item = (() => {
+      const file = tracker.track("dragged file", new File(["payload"], "drag.txt", { type: "text/plain" }));
+      const item = transfer.items.add(file)!;
+      expect(transfer.files.item(0)).toBe(file);
+      if (method === "remove") transfer.items.remove(0);
+      else transfer.items.clear();
+      return item;
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(item.getAsFile()).toBeNull();
+    expect(item.type).toBe("");
+    expect(transfer.files.length).toBe(0);
   });
 });
 

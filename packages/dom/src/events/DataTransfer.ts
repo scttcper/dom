@@ -90,6 +90,13 @@ function makeItem(kind: string, type: string, data: string, file: File | null): 
   }
 }
 
+function disableItem(item: DataTransferItem): void {
+  item[$kind] = "";
+  item[$type] = "";
+  item[$data] = "";
+  item[$file] = null;
+}
+
 /** https://html.spec.whatwg.org/#the-datatransferitemlist-interface */
 export class DataTransferItemList {
   [index: number]: DataTransferItem;
@@ -139,13 +146,13 @@ export class DataTransferItemList {
     const i = index >>> 0;
     if (i >= this[$items].length) return;
     const [removed] = this[$items].splice(i, 1);
-    removed[$kind] = "";
+    disableItem(removed);
     this._changed();
   }
 
   /** https://html.spec.whatwg.org/#dom-datatransferitemlist-clear */
   clear(): void {
-    for (const item of this[$items]) item[$kind] = "";
+    for (const item of this[$items]) disableItem(item);
     this[$items].length = 0;
     this._changed();
   }
@@ -267,7 +274,7 @@ export class DataTransfer {
     const items = this[$items][$items];
     for (let i = 0; i < items.length; i++) {
       if (items[i][$kind] === "string" && items[i][$type] === type) {
-        items[i][$kind] = "";
+        disableItem(items[i]);
         items.splice(i, 1);
         break;
       }
@@ -282,7 +289,7 @@ export class DataTransfer {
     const type = format === undefined ? null : normalizeFormat(format).type;
     for (let i = items.length - 1; i >= 0; i--) {
       if (items[i][$kind] === "string" && (type === null || items[i][$type] === type)) {
-        items[i][$kind] = "";
+        disableItem(items[i]);
         items.splice(i, 1);
       }
     }
