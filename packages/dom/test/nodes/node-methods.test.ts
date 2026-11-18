@@ -100,11 +100,12 @@ describe("compareDocumentPosition — https://dom.spec.whatwg.org/#dom-node-comp
         // Step 8: an attribute's "node1" is replaced by its element, so a child of the element
         // follows the attribute and is not contained by it.
         childToAttr: x.compareDocumentPosition(child),
+        attrToChild: child.compareDocumentPosition(x),
       };
     },
     {
       jsdomFix: {
-        fix: (o) => ({ ...o, elementToAttr: 10, attrToElement: 20, childToAttr: 4 }),
+        fix: (o) => ({ ...o, elementToAttr: 10, attrToElement: 20, childToAttr: 4, attrToChild: 2 }),
         spec: "https://dom.spec.whatwg.org/#dom-node-comparedocumentposition",
         reason:
           "jsdom returns 0 between an attribute and its own element (steps 7–8 give CONTAINS|PRECEDING / CONTAINED_BY|FOLLOWING) and treats the element's children as contained by its attributes (step 8 needs attr2 to be null)",

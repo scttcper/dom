@@ -31,7 +31,7 @@ import { EventTarget } from "../events/EventTarget.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { NodeImpl } from "./NodeImpl.ts";
-import { nextInTree, treeRoot } from "./traverse.ts";
+import { nextInTree, siblingPrecedes, treeRoot } from "./traverse.ts";
 import { preInsert, preRemove, replace, replaceAll } from "./tree.ts";
 import { cloneNode, isEqualNode } from "./clone.ts";
 import { NodeList } from "../collections/NodeList.ts";
@@ -353,6 +353,9 @@ export abstract class Node extends EventTarget {
         }
       }
     }
+    if (node1 !== null && node2 !== null && node1 !== node2 && node1.parent !== null && node1.parent === node2.parent) {
+      return siblingPrecedes(node1, node2) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING;
+    }
     if (node1 === null || node2 === null || treeRoot(node1) !== treeRoot(node2)) {
       return (
         DOCUMENT_POSITION_DISCONNECTED |
@@ -360,10 +363,12 @@ export abstract class Node extends EventTarget {
         (stableOrder(node1 ?? attr1!, node2 ?? attr2!) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING)
       );
     }
-    if ((attr1 === null && isAncestor(node1, node2)) || (attr2 !== null && node1 === node2)) {
+    if (isAncestor(node1, node2) || (attr2 !== null && node1 === node2)) {
+      if (attr1 !== null) return DOCUMENT_POSITION_PRECEDING;
       return DOCUMENT_POSITION_CONTAINS | DOCUMENT_POSITION_PRECEDING;
     }
-    if ((attr2 === null && isAncestor(node2, node1)) || (attr1 !== null && node1 === node2)) {
+    if (isAncestor(node2, node1) || (attr1 !== null && node1 === node2)) {
+      if (attr2 !== null) return DOCUMENT_POSITION_FOLLOWING;
       return DOCUMENT_POSITION_CONTAINED_BY | DOCUMENT_POSITION_FOLLOWING;
     }
     return precedes(node1, node2) ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING;
@@ -544,8 +549,7 @@ function precedes(a: NodeImpl, b: NodeImpl): boolean {
   }
   const ca = pathA[i - 1];
   const cb = pathB[j - 1];
-  for (let n = ca.next; n !== null; n = n.next) if (n === cb) return true;
-  return false;
+  return siblingPrecedes(ca, cb);
 }
 
 // Consistent ordering for disconnected nodes (spec: implementation-specific but consistent).

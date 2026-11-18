@@ -30,6 +30,7 @@ import {
   isInclusiveAncestor,
   nextInTree,
   nextSkippingChildren,
+  siblingPrecedes,
   treeRoot,
 } from "../nodes/traverse.ts";
 import { append, ensurePreInsertionValidity, preInsert, remove, replaceAll } from "../nodes/tree.ts";
@@ -85,6 +86,7 @@ function toNodeImpl(node: unknown, method: string, iface = "Range"): NodeImpl {
  */
 export function compareBoundaryPoints(a: NodeImpl, oa: number, b: NodeImpl, ob: number): number {
   if (a === b) return oa === ob ? 0 : oa < ob ? -1 : 1;
+  if (a.parent === b.parent) return siblingPrecedes(a, b) ? -1 : 1;
   let da = 0;
   for (let n = a.parent; n !== null; n = n.parent) da++;
   let db = 0;
@@ -114,8 +116,7 @@ export function compareBoundaryPoints(a: NodeImpl, oa: number, b: NodeImpl, ob: 
   // Mirror of step 4 (step 3 + 4): b is an ancestor of a.
   if (x === b) return indexOf(childX!) < ob ? -1 : 1;
   // Disjoint subtrees: sibling order of the children of the common ancestor.
-  for (let n = childX!.next; n !== null; n = n.next) if (n === childY) return -1;
-  return 1;
+  return siblingPrecedes(childX!, childY!) ? -1 : 1;
 }
 
 /** The child of `ancestor` that is an inclusive ancestor of `node` (node must be a descendant). */

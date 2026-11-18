@@ -65,6 +65,22 @@ export function previousElementSibling(n: NodeImpl): NodeImpl | null {
   return c;
 }
 
+/** Whether a precedes b, given two distinct children of the same parent. */
+export function siblingPrecedes(a: NodeImpl, b: NodeImpl): boolean {
+  if (b.next === null) return true;
+  if (b.prev === null) return false;
+  // Search outward from a. Reaching an end rules out that whole direction.
+  let following = a.next;
+  let preceding = a.prev;
+  while (following !== null && preceding !== null) {
+    if (following === b) return true;
+    if (preceding === b) return false;
+    following = following.next;
+    preceding = preceding.prev;
+  }
+  return preceding === null;
+}
+
 /** Root of the tree containing `n` (not shadow-including). https://dom.spec.whatwg.org/#concept-tree-root */
 export function treeRoot(n: NodeImpl): NodeImpl {
   let cur = n;
