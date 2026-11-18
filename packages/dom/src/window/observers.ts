@@ -2,14 +2,15 @@
 // https://w3c.github.io/IntersectionObserver/#intersection-observer-interface
 //
 // There is no layout, so nothing is ever observed to resize or intersect: these are
-// well-behaved no-ops (argument validation, observe/unobserve/disconnect bookkeeping,
+// well-behaved no-ops (argument validation, observe/unobserve/disconnect,
 // takeRecords) for the many component libraries that construct them unconditionally.
 // Callbacks are never invoked (docs/deviations.md). Tests that need entries mock them.
 // Exception: with `layout: "lite"` (docs/layout.md) css/resize-observer.ts registers
 // `resizeObserverHooks` and delivers ResizeObserver entries from layout-lite boxes.
 
 import type { Element } from "../nodes/Element.ts";
-import { $callback, $targets } from "../keys.ts";
+import { layoutEnabled } from "../css/layout-mode.ts";
+import { $callback } from "../keys.ts";
 import { DOMRectReadOnly, type DOMRectInit } from "./geometry.ts";
 import { defineInterfaceShape, exposeMembers } from "../webidl-runtime.ts";
 
@@ -25,32 +26,29 @@ export const resizeObserverHooks: {
 
 export class ResizeObserver {
   [$callback]: ResizeObserverCallback;
-  [$targets]: Set<Element>;
 
   constructor(callback: ResizeObserverCallback) {
     if (typeof callback !== "function") {
       throw new TypeError("Failed to construct 'ResizeObserver': parameter 1 is not of type 'ResizeObserverCallback'.");
     }
     this[$callback] = callback;
-    this[$targets] = new Set();
   }
 
   observe(target: Element, options?: { box?: string }): void {
     if (target === null || typeof target !== "object") {
       throw new TypeError("Failed to execute 'observe' on 'ResizeObserver': parameter 1 is not of type 'Element'.");
     }
-    this[$targets].add(target);
-    resizeObserverHooks.observe?.(this, target, options?.box === undefined ? "content-box" : String(options.box));
+    const box = options?.box;
+    const observedBox = box === undefined ? "content-box" : String(box);
+    if (layoutEnabled) resizeObserverHooks.observe?.(this, target, observedBox);
   }
 
   unobserve(target: Element): void {
-    this[$targets].delete(target);
-    resizeObserverHooks.unobserve?.(this, target);
+    if (layoutEnabled) resizeObserverHooks.unobserve?.(this, target);
   }
 
   disconnect(): void {
-    this[$targets].clear();
-    resizeObserverHooks.disconnect?.(this);
+    if (layoutEnabled) resizeObserverHooks.disconnect?.(this);
   }
 
   get [Symbol.toStringTag](): string {
@@ -66,8 +64,6 @@ export interface IntersectionObserverInit {
 }
 
 export class IntersectionObserver {
-  [$callback]: IntersectionObserverCallback;
-  [$targets]: Set<Element>;
   readonly root: Element | null;
   readonly rootMargin: string;
   readonly scrollMargin: string;
@@ -79,8 +75,6 @@ export class IntersectionObserver {
         "Failed to construct 'IntersectionObserver': parameter 1 is not of type 'IntersectionObserverCallback'.",
       );
     }
-    this[$callback] = callback;
-    this[$targets] = new Set();
     this.root = options.root ?? null;
     this.rootMargin = normalizeMargin(options.rootMargin ?? "0px");
     this.scrollMargin = normalizeMargin(options.scrollMargin ?? "0px");
@@ -96,17 +90,11 @@ export class IntersectionObserver {
     this.thresholds = Object.freeze(thresholds.sort((a, b) => a - b));
   }
 
-  observe(target: Element): void {
-    this[$targets].add(target);
-  }
+  observe(_target: Element): void {}
 
-  unobserve(target: Element): void {
-    this[$targets].delete(target);
-  }
+  unobserve(_target: Element): void {}
 
-  disconnect(): void {
-    this[$targets].clear();
-  }
+  disconnect(): void {}
 
   takeRecords(): unknown[] {
     return [];

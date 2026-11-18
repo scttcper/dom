@@ -513,4 +513,26 @@ describe("ResizeObserver — https://drafts.csswg.org/resize-observer/#broadcast
     await Promise.resolve();
     expect(calls).toBe(0);
   });
+
+  test("an observer shared by two documents keeps delivering for the remaining document", async () => {
+    const first = lite('<div id="a" style="height:10px"></div>');
+    const second = lite('<div id="b" style="height:20px"></div>');
+    const a = first.$("#a");
+    const b = second.$("#b");
+    const sizes: number[] = [];
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) sizes.push((e as { contentRect: Rect }).contentRect.height);
+    });
+    ro.observe(a as never);
+    ro.observe(b as never);
+    await Promise.resolve();
+    ro.unobserve(a as never);
+    b.style.height = "30px";
+    void b.offsetHeight;
+    await Promise.resolve();
+    ro.disconnect();
+    ro.observe(a as never);
+    await Promise.resolve();
+    expect(sizes).toEqual([10, 20, 30, 10]);
+  });
 });

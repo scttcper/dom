@@ -187,7 +187,6 @@ export const $styleVersion: unique symbol = Symbol.for("ctrl-dom.styleVersion");
 export const $supportsText: unique symbol = Symbol.for("ctrl-dom.supportsText");
 export const $systemId: unique symbol = Symbol.for("ctrl-dom.systemId");
 export const $target: unique symbol = Symbol.for("ctrl-dom.target");
-export const $targets: unique symbol = Symbol.for("ctrl-dom.targets");
 export const $tasks: unique symbol = Symbol.for("ctrl-dom.tasks");
 export const $timers: unique symbol = Symbol.for("ctrl-dom.timers");
 export const $title: unique symbol = Symbol.for("ctrl-dom.title");

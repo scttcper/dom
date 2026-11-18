@@ -9,7 +9,7 @@
  * (https://drafts.csswg.org/resize-observer/).
  */
 import { describe, expect, test } from "vitest";
-import { createWindow, ResizeObserver } from "@ctrl/dom";
+import { createWindow, IntersectionObserver, ResizeObserver } from "@ctrl/dom";
 import { Tracker } from "./gc.ts";
 
 const HTML = `<div id=s style="height:100px;overflow:auto"><div style="display:flex;flex-direction:column;height:2000px">
@@ -23,7 +23,63 @@ interface El {
   remove(): void;
 }
 
+test("no-layout observers release removed targets while the observers stay live", async () => {
+  const w = createWindow();
+  const tracker = new Tracker();
+  const observers = [new ResizeObserver(() => {}), new IntersectionObserver(() => {})];
+  (() => {
+    for (const observer of observers) {
+      const el = tracker.track("observed element", w.document.body!.appendChild(w.document.createElement("div")));
+      observer.observe(el);
+      el.remove();
+    }
+  })();
+  expect(await tracker.alive()).toEqual({});
+  for (const observer of observers) observer.disconnect();
+  w.close();
+});
+
 describe("layout-lite retention", () => {
+  test("an active resize observer releases a removed target and continues watching the mounted target", async () => {
+    const w = createWindow({ layout: "lite" });
+    const tracker = new Tracker();
+    const mounted = w.document.body!.appendChild(w.document.createElement("div"));
+    let delivered = 0;
+    (() => {
+      const removed = tracker.track("removed target", w.document.body!.appendChild(w.document.createElement("div")));
+      const observer = new ResizeObserver((entries) => {
+        if (entries.some((entry) => (entry as { target: object }).target === mounted)) delivered++;
+      });
+      observer.observe(mounted);
+      observer.observe(removed);
+      removed.remove();
+    })();
+    expect(await tracker.alive()).toEqual({});
+    expect(delivered).toBe(1);
+    mounted.setAttribute("style", "height:42px");
+    void mounted.getBoundingClientRect();
+    await Promise.resolve();
+    expect(delivered).toBe(2);
+    w.close();
+  });
+
+  test("stopping the last resize observation releases its callback without another layout", async () => {
+    const w = createWindow({ layout: "lite", html: HTML });
+    const el = w.document.getElementById("r")!;
+    const tracker = new Tracker();
+    await (async () => {
+      const disconnected = new ResizeObserver(tracker.track("disconnected callback", () => {}));
+      const unobserved = new ResizeObserver(tracker.track("unobserved callback", () => {}));
+      disconnected.observe(el);
+      unobserved.observe(el);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      disconnected.disconnect();
+      unobserved.unobserve(el);
+    })();
+    expect(await tracker.alive()).toEqual({});
+    w.close();
+  });
+
   test("a closed layout-lite window, its document, nodes and ResizeObservers are collectable", async () => {
     const tracker = new Tracker();
     await (async () => {
