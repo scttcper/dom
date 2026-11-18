@@ -32,7 +32,7 @@ import type { DocCSS } from "../css/stylesheets.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
-import { indexOf, nextInTree, treeRoot } from "./traverse.ts";
+import { indexOf, nextInTree, snapshotChildren, treeRoot } from "./traverse.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
 import { activeObservers, addTransientObservers, queueTreeMutationRecord } from "../observers/queue.ts";
 import { NodeList } from "../collections/NodeList.ts";
@@ -307,13 +307,6 @@ function resumeChildList(n: NodeImpl, bit: number): void {
     n.flags |= F_CHILD_LIST;
     NodeList._rebuild(n.node[$childNodes]!);
   }
-}
-
-function snapshotChildren(parent: NodeImpl): NodeImpl[] {
-  const nodes = new Array<NodeImpl>(parent.childCount);
-  let i = 0;
-  for (let c = parent.first; c !== null; c = c.next) nodes[i++] = c;
-  return nodes;
 }
 
 /** https://dom.spec.whatwg.org/#concept-node-insert */

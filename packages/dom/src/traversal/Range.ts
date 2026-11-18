@@ -24,7 +24,15 @@ import type { Document } from "../nodes/Document.ts";
 import type { DocumentFragment } from "../nodes/DocumentFragment.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
-import { childAt, indexOf, nextInTree, nextSkippingChildren, siblingPrecedes, treeRoot } from "../nodes/traverse.ts";
+import {
+  childAt,
+  indexOf,
+  nextInTree,
+  nextSkippingChildren,
+  siblingPrecedes,
+  snapshotChildren,
+  treeRoot,
+} from "../nodes/traverse.ts";
 import { append, ensurePreInsertionValidity, preInsert, remove, replaceAll } from "../nodes/tree.ts";
 import { cloneNode } from "../nodes/clone.ts";
 import { replaceData, splitText } from "../nodes/character-data.ts";
@@ -409,7 +417,7 @@ export class Range extends AbstractRange {
       return;
     }
     // Step 4: contained nodes whose parent is not contained.
-    const nodesToRemove = containedNodes(this, true);
+    const nodesToRemove = osn === oen ? snapshotChildren(osn, oso, oeo) : containedNodes(this);
     // Steps 5-6.
     const newNode = commonAncestor(osn, oen);
     const newOffset = newNode === osn ? oso : indexOf(childOfAncestor(osn, newNode)) + 1;
@@ -610,8 +618,8 @@ function afterBoundary(node: NodeImpl, offset: number, root: NodeImpl): NodeImpl
   return nextSkippingChildren(node, root);
 }
 
-/** Nodes contained in the range in tree order; with `outermost`, omit nodes whose parent is contained. */
-function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean }, outermost: boolean): NodeImpl[] {
+/** Outermost nodes contained in the range, in tree order. */
+function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean }): NodeImpl[] {
   const out: NodeImpl[] = [];
   const root = treeRoot(range[$sc]);
   const end = isCharacterData(range[$ec]) ? range[$ec] : afterBoundary(range[$ec], range[$eo], root);
@@ -619,7 +627,7 @@ function containedNodes(range: AbstractRange & { _contains(n: NodeImpl): boolean
   while (n !== null && n !== end) {
     if (range._contains(n)) {
       out.push(n);
-      n = outermost ? nextSkippingChildren(n, root) : nextInTree(n, root);
+      n = nextSkippingChildren(n, root);
     } else {
       n = nextInTree(n, root);
     }

@@ -126,6 +126,17 @@ export function childAt(parent: NodeImpl, index: number): NodeImpl | null {
   return c;
 }
 
+/** Snapshot a child interval before mutations can change sibling links. */
+export function snapshotChildren(parent: NodeImpl, start = 0, end = parent.childCount): NodeImpl[] {
+  const nodes = new Array<NodeImpl>(end - start);
+  let child = start === 0 ? parent.first : childAt(parent, start);
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i] = child!;
+    child = child!.next;
+  }
+  return nodes;
+}
+
 /** Position of b relative to a in the ordinary (not shadow-including) tree. */
 export function relativeTreePosition(a: NodeImpl, b: NodeImpl): number {
   if (a === b) return 0;
