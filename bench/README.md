@@ -748,6 +748,13 @@ steady state per workload). None of these was worth its change:
   them; now only for the checked ones, 3%, the row itself 0.318 → 0.308 ms); `edit-labelled-fields`: `buildLabelMap` 5%; `styled-form-rerender`: about 20% in the
   cascade, since a class or tree change still invalidates every record.
 
+- `type-multiline-notes`: `normalizeNewlines` was 14% of the profile with its regular expression,
+  most of it outside the timed part, in the mount: a textarea whose value is not dirty joined
+  and normalized its child text on every read, and the value setter reads the old value first.
+  A textarea now remembers the last string it normalized and the result (the two strings are
+  ones the text node and the control hold anyway): 426 → 160 ms of a 2.4 s profile. The timed
+  row does not move (0.551 → 0.543 ms): its ten keystrokes write text that has no CR left.
+
 Looked at and dropped: user-event's two `Object.defineProperty` calls per event with a behavior
 (0.45% of `fill-10-submit`), `replaceAll` for `normalizeNewlines` (27 against the regular
 expression's 22 µs on 1,000 CRLF lines), defining the CSSStyleDeclaration accessors in one

@@ -38,6 +38,9 @@ export class ControlState {
   uiValue: string | null;
   /** The accessor React's value tracker defined on the element (window/shared-accessors.ts). */
   tracker: PropertyDescriptor | null;
+  /** The last string a textarea normalized the newlines of, and the result (HTMLTextAreaElement.ts normalized). */
+  rawText: string | null;
+  apiText: string;
 
   constructor() {
     this.value = "";
@@ -54,5 +57,7 @@ export class ControlState {
     this.badInput = false;
     this.uiValue = null;
     this.tracker = null;
+    this.rawText = null;
+    this.apiText = "";
   }
 }

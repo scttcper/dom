@@ -379,3 +379,117 @@ describe("selectedness after appends, differential — https://html.spec.whatwg.
     }
   });
 });
+
+// A textarea remembers the last text it normalized the newlines of and the result
+// (HTMLTextAreaElement.ts `normalized`). Whatever changes the child text or the value, a read has
+// to return what normalizing afresh returns.
+describe("textarea value after child text changes, differential vs jsdom — https://html.spec.whatwg.org/#concept-textarea-raw-value", () => {
+  function mulberry32(seed: number): (n: number) => number {
+    let a = seed >>> 0;
+    return (n) => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((((t ^ (t >>> 14)) >>> 0) / 4294967296) * n) | 0;
+    };
+  }
+  const TEXTS = ["a", "b\r\nc", "d\re", "f\ng", "", "long line\r\n", "\r", "\n"];
+
+  // biome-ignore lint: untyped DOM surface in tests
+  function edit(doc: any, form: any, textarea: any, random: (n: number) => number): string {
+    const text = () => TEXTS[random(TEXTS.length)];
+    const child = () => textarea.childNodes[random(textarea.childNodes.length)];
+    const op = random(textarea.childNodes.length === 0 ? 6 : 16);
+    switch (op) {
+      case 0:
+        textarea.appendChild(doc.createTextNode(text()));
+        return "append text";
+      case 1:
+        textarea.textContent = text();
+        return "textContent";
+      case 2:
+        textarea.defaultValue = text();
+        return "defaultValue";
+      case 3:
+        textarea.innerHTML = `${text()}<b>x</b>${text()}`.replace(/\r/g, "&#13;");
+        return "innerHTML";
+      case 4:
+        textarea.value = text();
+        return "value";
+      case 5:
+        form.reset();
+        return "reset";
+      case 6:
+        child().remove();
+        return "remove child";
+      case 7: {
+        const node = child();
+        if (node.nodeType === 3) node.data = text();
+        return "data";
+      }
+      case 8: {
+        const node = child();
+        if (node.nodeType === 3) node.appendData(text());
+        return "appendData";
+      }
+      case 9: {
+        const node = child();
+        if (node.nodeType === 3 && node.data.length > 0) node.deleteData(0, 1);
+        return "deleteData";
+      }
+      case 10: {
+        const node = child();
+        if (node.nodeType === 3 && node.data.length > 1) node.splitText(1);
+        return "splitText";
+      }
+      case 11:
+        textarea.normalize();
+        return "normalize";
+      case 12:
+        textarea.insertBefore(doc.createTextNode(text()), child());
+        return "insert text";
+      case 13: {
+        const node = child();
+        if (node.nodeType === 3) node.nodeValue = text();
+        return "nodeValue";
+      }
+      case 14:
+        textarea.replaceChildren(doc.createTextNode(text()), doc.createTextNode(text()));
+        return "replaceChildren";
+      default:
+        textarea.prepend(text());
+        return "prepend";
+    }
+  }
+
+  test("50 seeds of 80 edits, reading value, defaultValue and textLength after each", () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const sides = [new JSDOM("<!doctype html><body></body>").window.document, createWindow().document].map(
+        // biome-ignore lint: untyped DOM surface in tests
+        (doc: any) => {
+          doc.body.innerHTML = "<form><textarea></textarea></form>";
+          return { doc, form: doc.body.firstChild, textarea: doc.body.firstChild.firstChild, random: mulberry32(seed) };
+        },
+      );
+      const history: string[] = [];
+      for (let step = 0; step < 80; step++) {
+        const did = sides.map((s) => edit(s.doc, s.form, s.textarea, s.random));
+        history.push(did[0]);
+        const read = sides.map((s) => [s.textarea.value, s.textarea.defaultValue, s.textarea.textLength]);
+        expect(read[1], `seed ${seed}: ${history.slice(-10).join(", ")}`).toEqual(read[0]);
+      }
+    }
+  });
+
+  test("a clone and a parsed textarea have their own value", () => {
+    document.body!.innerHTML = "<textarea>one\r\ntwo</textarea>";
+    const original = document.body!.firstChild as any;
+    expect(original.value).toBe("one\ntwo");
+    const copy = original.cloneNode(true);
+    copy.firstChild.data = "three";
+    expect([original.value, copy.value]).toEqual(["one\ntwo", "three"]);
+    original.textContent = "four";
+    expect([original.value, copy.value]).toEqual(["four", "three"]);
+  });
+});

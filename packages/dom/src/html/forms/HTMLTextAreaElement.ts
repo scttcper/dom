@@ -30,6 +30,21 @@ import {
 import { $control, $customValidity, $impl, $labels, $userValidity, $validity, $version } from "../../keys.ts";
 import { ControlState } from "./control-state.ts";
 
+/**
+ * https://infra.spec.whatwg.org/#normalize-newlines of `raw`, or the control's last result when
+ * `raw` is the string it was for. React writes a controlled textarea's text twice per update,
+ * to `value` and to `defaultValue`, and the value setter reads the old value first: with a long
+ * CRLF text that was three passes over it per keystroke instead of one. The strings are the
+ * ones the text node and the control hold anyway.
+ */
+function normalized(control: ControlState, raw: string): string {
+  if (raw === control.rawText) return control.apiText;
+  const api = normalizeNewlines(raw);
+  control.rawText = raw;
+  control.apiText = api;
+  return api;
+}
+
 export class HTMLTextAreaElement extends HTMLElement {
   /** Value, checkedness, selection and UI state (./control-state.ts). */
   [$control]: ControlState;
@@ -66,7 +81,8 @@ export class HTMLTextAreaElement extends HTMLElement {
 
   /** https://html.spec.whatwg.org/#concept-fe-api-value */
   _apiValue(): string {
-    return this[$control].dirtyValue ? this[$control].value : normalizeNewlines(this.defaultValue);
+    const control = this[$control];
+    return control.dirtyValue ? control.value : normalized(control, this.defaultValue);
   }
 
   /** https://html.spec.whatwg.org/#dom-textarea-value */
@@ -75,8 +91,9 @@ export class HTMLTextAreaElement extends HTMLElement {
   }
 
   set value(v: string) {
-    const value = v === null ? "" : normalizeNewlines(String(v)); // [LegacyNullToEmptyString]
+    // The old value first: it is usually the text `normalized` was last asked about.
     const old = this._apiValue();
+    const value = v === null ? "" : normalized(this[$control], String(v)); // [LegacyNullToEmptyString]
     this[$impl].doc[$version]++;
     this[$control].value = value;
     this[$control].dirtyValue = true;

@@ -1808,7 +1808,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [ascii-case-insensitive](https://infra.spec.whatwg.org/#ascii-case-insensitive) | `dom/html/forms/input-type.ts` | **untested** |
 | [ascii-uppercase](https://infra.spec.whatwg.org/#ascii-uppercase) | `dom/nodes/Node.ts` | **untested** |
 | [namespaces](https://infra.spec.whatwg.org/#namespaces) | `dom/nodes/constants.ts` | **untested** |
-| [normalize-newlines](https://infra.spec.whatwg.org/#normalize-newlines) | `dom/html/forms/common.ts` | **untested** |
+| [normalize-newlines](https://infra.spec.whatwg.org/#normalize-newlines) | `dom/html/forms/HTMLTextAreaElement.ts`, `dom/html/forms/common.ts` | **untested** |
 | [ordered-set](https://infra.spec.whatwg.org/#ordered-set) | `dom/collections/DOMTokenList.ts` | **untested** |
 | [set-replace](https://infra.spec.whatwg.org/#set-replace) | `dom/collections/DOMTokenList.ts` | **untested** |
 | [split-on-ascii-whitespace](https://infra.spec.whatwg.org/#split-on-ascii-whitespace) | `dom/nodes/attributes.ts` | **untested** |
