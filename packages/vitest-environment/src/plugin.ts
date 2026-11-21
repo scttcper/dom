@@ -246,7 +246,9 @@ export function ctrlDom(options: CtrlDomPluginOptions = {}): Plugin {
       underVitest = true;
       // What these options resolve imports to is in the transforms Vitest keeps on disk: a key
       // per combination, or a file transformed under one would be reused under another.
-      defineCacheKeyGenerator(() => `@ctrl/dom testingLibrary=${testingLibrary} jsxRuntime=${jsxRuntime}`);
+      // The extension too: in this workspace the plugin runs from sources and from its bundle, and
+      // each resolves JSX to its own copy of the runtime.
+      defineCacheKeyGenerator(() => `@ctrl/dom testingLibrary=${testingLibrary} jsxRuntime=${jsxRuntime}${extension}`);
       // First, so each file starts from the reset: before the project's setup files import anything.
       if (sharedWorkers && config.pool !== "vmThreads" && config.pool !== "vmForks") {
         config.setupFiles = [sharedWorkersSetup, ...config.setupFiles];

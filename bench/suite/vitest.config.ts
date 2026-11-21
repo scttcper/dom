@@ -26,9 +26,11 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 const distEntry = new Map(workspacePackages().flatMap((p) => p.exports.map((e) => [e.specifier, e.dist] as const)));
 const target = (specifier: string) => (dist ? distEntry.get(specifier)! : specifier);
 // *-dist: the plugin's bundle, which loads the environment's bundle next to it, as users installing the
-// packages get them.
+// packages get them. jsdom and happy-dom get the bundle too: from sources the plugin resolves JSX
+// to a TypeScript copy of React's runtime, which Vitest's VM pools cannot load.
+const sourcePlugin = benchEnv === "ctrl-dom" || benchEnv === "ctrl-dom-full";
 const { ctrlDom } = (await import(
-  dist ? distEntry.get("@ctrl/dom/vitest")! : "@ctrl/dom/vitest"
+  sourcePlugin ? "@ctrl/dom/vitest" : distEntry.get("@ctrl/dom/vitest")!
 )) as typeof import("@ctrl/dom/vitest");
 const fullStackAliases = [
   { find: /^@testing-library\/react$/, replacement: target("@ctrl/dom/react") },
