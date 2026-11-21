@@ -702,7 +702,12 @@ React's inline style writes 0.76%, computed style reads 0.54% (floating-ui's `is
 is 152 of those 368 ms), the environment's `setup` 0.65%, Testing Library queries 0.52%, and the
 first `element.style` of each file 0.37%: 1.4 ms a file, which every file that imports react-dom
 pays, since it probes `document.createElement("div").style` for vendor prefixes when it loads
-(`buildTable` 0.27 ms, defining the 1,700 accessors 0.7 ms, their names 0.26 ms). Sentry's
+(`buildTable` 0.27 ms, defining the 1,700 accessors 0.7 ms, their names 0.26 ms). Property
+metadata is now built per property on first use and the accessors defined with less ceremony:
+from the bundle with a warm compile cache, that first `element.style` went 1.65 → 1.28 ms. What
+is left is V8 defining 1,700 accessors on a dictionary (0.4 ms) and their 1,400 closures; a Proxy
+at the end of the prototype chain could define them on demand, but every new index or field
+store on a declaration would then reach its `set` trap. Sentry's
 `perf` preset, one worker (37.9 s sampled): ours 12.6%, 7.6 points of it that same native
 `defineProperty` work under the guard in isolation.ts; after it the virtual `Date` at 0.4% and
 nothing else above 0.15%. React's five `defineProperty` calls and two `Object.freeze` cost 430 ns

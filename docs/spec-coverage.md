@@ -66,7 +66,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-properties-values-api](#css-css-properties-values-api) | 3 | 0 | 0 | 3 |
 | [CSS: css-scoping](#css-css-scoping) | 3 | 0 | 1 | 2 |
 | [CSS: css-transforms](#css-css-transforms) | 3 | 1 | 0 | 2 |
-| [Compatibility Standard](#compatibility-standard) | 2 | 1 | 0 | 1 |
+| [Compatibility Standard](#compatibility-standard) | 2 | 2 | 0 | 0 |
 | [CSS: css-align](#css-css-align) | 2 | 1 | 0 | 1 |
 | [CSS: css-backgrounds](#css-css-backgrounds) | 2 | 1 | 0 | 1 |
 | [CSS: css-images](#css-css-images) | 2 | 2 | 0 | 0 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1687 | 1164 | 123 | 400 |
+| **All** | 1687 | 1165 | 123 | 399 |
 
 ## Web-platform-tests fixtures
 
@@ -1247,7 +1247,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-shorthands-preferred-order](https://drafts.csswg.org/cssom/#concept-shorthands-preferred-order) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts` |
 | [css-declaration-blocks](https://drafts.csswg.org/cssom/#css-declaration-blocks) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts`; WPT: `css/cssom/css-style-attr-decl-block.html` |
 | [css-object-model](https://drafts.csswg.org/cssom/#css-object-model) | `dom/css/cssom.ts` | **untested** |
-| [css-property-to-idl-attribute](https://drafts.csswg.org/cssom/#css-property-to-idl-attribute) | `dom/css/properties.ts` | `dom/css/cssom-declaration.test.ts` |
+| [css-property-to-idl-attribute](https://drafts.csswg.org/cssom/#css-property-to-idl-attribute) | `dom/css/properties.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/properties.test.ts` |
 | [css-style-sheet-collections](https://drafts.csswg.org/cssom/#css-style-sheet-collections) | `dom/css/stylesheets.ts` | WPT: `css/cssom/StyleSheetList-constructable-shadow-with-style-recalc.html`, `css/cssom/StyleSheetList-constructable-shadow.html` +2 |
 | [dom-cssgroupingrule-deleterule](https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [dom-cssgroupingrule-insertrule](https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule) | `dom/css/cssom.ts` | WPT: `css/cssom/CSSGroupingRule-insertRule-computed.html` |
@@ -1275,7 +1275,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-medialist-appendmedium](https://drafts.csswg.org/cssom/#dom-medialist-appendmedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-appendmedium-parse-single-and-dedup.html` |
 | [dom-medialist-deletemedium](https://drafts.csswg.org/cssom/#dom-medialist-deletemedium) | `dom/css/cssom.ts` | WPT: `css/cssom/medialist-deletemedium-parse-and-remove-all.html` |
 | [dom-stylesheet-title](https://drafts.csswg.org/cssom/#dom-stylesheet-title) | `dom/css/cssom.ts` | WPT: `css/cssom/link-element-stylesheet-title.html` |
-| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +4; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
+| [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +5; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
 | [extensions-to-the-document-or-shadow-root-interface](https://drafts.csswg.org/cssom/#extensions-to-the-document-or-shadow-root-interface) | `dom/css/index.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-cssRules.html`, `css/cssom/CSSStyleSheet-constructable-invalidation.html` +4 |
 | [insert-a-css-rule](https://drafts.csswg.org/cssom/#insert-a-css-rule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/at-namespace.html` |
 | [namespacedef-css](https://drafts.csswg.org/cssom/#namespacedef-css) | `dom/css/CSS.ts`, `dom/window/fallbacks.ts` | WPT: `css/cssom/CSS-namespace-object-class-string.html` |
@@ -1755,7 +1755,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [defaulting-keywords](https://drafts.csswg.org/css-cascade/#defaulting-keywords) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [dom-cssscoperule-end](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-end) | `dom/css/cssom.ts` | **untested** |
 | [dom-cssscoperule-start](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-start) | `dom/css/cssom.ts` | **untested** |
-| [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/computed-values.test.ts` |
+| [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/computed-values.test.ts`, `dom/css/properties.test.ts` |
 | [layer-apis](https://drafts.csswg.org/css-cascade/#layer-apis) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [legacy-name-alias](https://drafts.csswg.org/css-cascade/#legacy-name-alias) | `dom/css/properties.ts` | **untested** |
 | [revert-layer](https://drafts.csswg.org/css-cascade/#revert-layer) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
@@ -2120,12 +2120,12 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## Compatibility Standard
 
-<https://compat.spec.whatwg.org/> — 2 sections implemented, 1 tested, 0 by WPT only, 1 untested.
+<https://compat.spec.whatwg.org/> — 2 sections implemented, 2 tested, 0 by WPT only, 0 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [css-media-queries-webkit-device-pixel-ratio](https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio) | `dom/css/media.ts` | `dom/css/media-queries.test.ts` |
-| [css-simple-aliases](https://compat.spec.whatwg.org/#css-simple-aliases) | `dom/css/properties.ts` | **untested** |
+| [css-simple-aliases](https://compat.spec.whatwg.org/#css-simple-aliases) | `dom/css/properties.ts` | `dom/css/properties.test.ts` |
 
 ## CSS: css-align
 

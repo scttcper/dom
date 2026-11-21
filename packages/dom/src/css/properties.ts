@@ -187,43 +187,55 @@ export function canonicalPropertyName(lower: string): string {
   return lower.charCodeAt(0) === 0x2d ? (LEGACY_ALIASES.get(lower) ?? lower) : lower;
 }
 
-// Built on first use (startup: ~0.2 ms of module evaluation otherwise).
-let info: Map<string, PropInfo> = null as never;
-let allNames: string[] = null as never;
+// Metadata is built per property on first use, and the name list without it: every test file
+// that imports react-dom needs the names (react-dom probes `createElement("div").style` for vendor
+// prefixes as it loads, which installs CSSStyleDeclaration's accessors), few need more than a
+// dozen properties' metadata, and building all 821 was 0.27 ms of each file.
+const info = new Map<string, PropInfo>();
+let allNames: string[] | null = null;
 
-function buildTable(): void {
-  info = new Map();
-  allNames = [];
-  for (let i = 0; i < PROPERTY_TABLE.length; i += 4) {
-    const name = PROPERTY_TABLE[i] as string;
-    const inherited = PROPERTY_TABLE[i + 1] === 1;
-    const initial = COMPUTED_INITIAL[name] ?? (PROPERTY_TABLE[i + 2] as string);
-    const lh = PROPERTY_TABLE[i + 3] as string;
-    info.set(name, new PropInfo(name, inherited, initial, lh === "" ? null : lh.split(" ")));
-    allNames.push(name);
+/** Offset of `name`'s row in PROPERTY_TABLE (sorted by name; properties.test.ts checks), or -1. */
+function tableOffset(name: string): number {
+  let lo = 0;
+  let hi = PROPERTY_TABLE.length / 4 - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const candidate = PROPERTY_TABLE[mid * 4] as string;
+    if (candidate === name) return mid * 4;
+    if (candidate < name) lo = mid + 1;
+    else hi = mid - 1;
   }
-  // Legacy -webkit- aliases (https://compat.spec.whatwg.org/#css-simple-aliases) carry no data
-  // of their own; borrow inheritance/initial values from the unprefixed property.
-  for (const name of allNames) {
-    if (!name.startsWith("-webkit-")) continue;
-    const p = info.get(name)!;
-    const base = info.get(name.slice(8));
-    if (base !== undefined && p.initial === "" && p.specLonghands === null) {
-      p.inherited = base.inherited;
-      p.initial = base.initial;
-    }
-  }
+  return -1;
 }
 
 /** Metadata for a lowercase property name, or undefined if unsupported. */
 export function propertyInfo(name: string): PropInfo | undefined {
-  if (info === null) buildTable();
-  return info.get(name);
+  let p = info.get(name);
+  if (p !== undefined) return p;
+  const i = tableOffset(name);
+  if (i === -1) return undefined;
+  const lh = PROPERTY_TABLE[i + 3] as string;
+  p = new PropInfo(
+    name,
+    PROPERTY_TABLE[i + 1] === 1,
+    COMPUTED_INITIAL[name] ?? (PROPERTY_TABLE[i + 2] as string),
+    lh === "" ? null : lh.split(" "),
+  );
+  // Legacy -webkit- aliases (https://compat.spec.whatwg.org/#css-simple-aliases) carry no data
+  // of their own; borrow inheritance/initial values from the unprefixed property.
+  if (p.initial === "" && p.specLonghands === null && name.startsWith("-webkit-")) {
+    const base = propertyInfo(name.slice(8));
+    if (base !== undefined) {
+      p.inherited = base.inherited;
+      p.initial = base.initial;
+    }
+  }
+  info.set(name, p);
+  return p;
 }
 
 export function isSupportedProperty(name: string): boolean {
-  if (info === null) buildTable();
-  return info.has(name);
+  return propertyInfo(name) !== undefined;
 }
 
 export function isCustomPropertyName(name: string): boolean {
@@ -232,14 +244,16 @@ export function isCustomPropertyName(name: string): boolean {
 
 export function isInherited(name: string): boolean {
   if (isCustomPropertyName(name)) return true;
-  if (info === null) buildTable();
-  const p = info.get(name);
+  const p = propertyInfo(name);
   return p !== undefined && p.inherited;
 }
 
 /** All supported property names (sorted). */
 export function allPropertyNames(): readonly string[] {
-  if (allNames === null) buildTable();
+  if (allNames === null) {
+    allNames = new Array(PROPERTY_TABLE.length / 4);
+    for (let i = 0; i < allNames.length; i++) allNames[i] = PROPERTY_TABLE[i * 4] as string;
+  }
   return allNames;
 }
 
@@ -252,10 +266,9 @@ let computedNames: string[] | null = null;
 export function computedPropertyNames(): readonly string[] {
   if (computedNames !== null) return computedNames;
   computedNames = [];
-  if (info === null) buildTable();
-  for (const name of allNames) {
-    const p = info.get(name)!;
-    if (name.charCodeAt(0) === 0x2d || p.specLonghands !== null) continue;
+  for (let i = 0; i < PROPERTY_TABLE.length; i += 4) {
+    const name = PROPERTY_TABLE[i] as string;
+    if (name.charCodeAt(0) === 0x2d || PROPERTY_TABLE[i + 3] !== "") continue;
     computedNames.push(name);
   }
   return computedNames;

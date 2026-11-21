@@ -214,6 +214,8 @@ export class CSSStyleDeclaration {
 }
 
 let accessorsInstalled = false;
+// The builtin: a test realm's Object.defineProperty is wrapped (window/shared-accessors.ts).
+const defineProperty = Object.defineProperty;
 
 /**
  * Defines the camel-cased, webkit-cased and dashed attributes for every supported property
@@ -226,12 +228,16 @@ let accessorsInstalled = false;
 function installAccessors(): void {
   accessorsInstalled = true;
   const proto = CSSStyleDeclaration.prototype;
-  const holder = Object.create(null) as object;
+  const holder = Object.create(null) as Record<string, unknown>;
+  // The first of the dashed, camel-cased and webkit-cased names to claim a key keeps it, and
+  // the interface's own members (cssFloat, cssText, ...) win over all of them.
   const define = (key: string, descriptor: PropertyDescriptor): void => {
-    if (Object.hasOwn(holder, key) || Object.hasOwn(proto, key)) return;
-    Object.defineProperty(holder, key, descriptor);
+    if (key in holder || Object.hasOwn(proto, key)) return;
+    defineProperty(holder, key, descriptor);
   };
-  for (const name of allPropertyNames()) {
+  const names = allPropertyNames();
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     // One getter/setter pair per property, shared by its dashed, camel-cased and webkit-cased names.
     const descriptor: PropertyDescriptor = {
       get(this: CSSStyleDeclaration): string {
@@ -246,7 +252,7 @@ function installAccessors(): void {
     define(name, descriptor);
     if (name.indexOf("-") === -1) continue;
     define(cssPropertyToIDLAttribute(name, false), descriptor);
-    if (name.startsWith("-webkit-")) define(cssPropertyToIDLAttribute(name, true), descriptor);
+    if (name.charCodeAt(0) === 0x2d) define(cssPropertyToIDLAttribute(name, true), descriptor);
   }
   Object.setPrototypeOf(holder, Object.getPrototypeOf(proto));
   Object.setPrototypeOf(proto, holder);
