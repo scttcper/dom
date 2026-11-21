@@ -6,21 +6,21 @@ Measured 2026-11-21 on Apple M4 Max, 14 cores, 36 GB, darwin arm64, Node 26.13.1
 
 3 runs per contender, 4 workers, Vitest's default pool (a fresh worker per file): median [min–max] over runs, speedup vs jsdom in parentheses.
 
-|  | jsdom 31.0.1 | happy-dom 21.0.4 | ctrl-dom 23e598b | ctrl-dom + its Testing Library 23e598b |
+|  | jsdom 31.0.1 | happy-dom 21.0.4 | ctrl-dom 12db107 | ctrl-dom + its Testing Library 12db107 |
 | --- | ---: | ---: | ---: | ---: |
-| Wall time | 11.59 s [11.58 s–11.67 s] | 8.56 s (1.4×) [8.55 s–8.59 s] | 6.17 s (1.9×) [6.16 s–6.19 s] | **2.35 s** (4.9×) [2.24 s–2.38 s] |
-| Environment setup per file (Vitest's mean) | 238 ms [237 ms–239 ms] | 134 ms (1.8×) [133 ms–135 ms] | 32.0 ms (7.4×) [32.0 ms–32.1 ms] | **4.76 ms** (50×) [4.75 ms–5.15 ms] |
-| Worker RSS after a file (median) | 170 MB [170 MB–170 MB] | 128 MB [127 MB–128 MB] | 126 MB [124 MB–126 MB] | **111 MB** [110 MB–111 MB] |
+| Wall time | 12.59 s [12.39 s–12.78 s] | 9.29 s (1.4×) [9.28 s–9.32 s] | 6.55 s (1.9×) [6.50 s–6.64 s] | **2.42 s** (5.2×) [2.41 s–2.51 s] |
+| Environment setup per file (Vitest's mean) | 259 ms [253 ms–262 ms] | 147 ms (1.8×) [145 ms–148 ms] | 33.8 ms (7.7×) [33.5 ms–34.1 ms] | **5.13 ms** (50×) [5.05 ms–5.16 ms] |
+| Worker RSS after a file (median) | 171 MB [171 MB–171 MB] | 129 MB [129 MB–129 MB] | 122 MB [122 MB–122 MB] | **111 MB** [111 MB–111 MB] |
 
 ## `vitest run --pool vmForks`, 100 React test files
 
 The same files in Vitest's VM pool: 4 long-lived workers, a fresh vm context and environment per file. 3 runs per contender, median [min–max], speedup vs jsdom in parentheses.
 
-|  | jsdom 31.0.1 | happy-dom 21.0.4 | ctrl-dom 23e598b | ctrl-dom + its Testing Library 23e598b |
+|  | jsdom 31.0.1 | happy-dom 21.0.4 | ctrl-dom 12db107 | ctrl-dom + its Testing Library 12db107 |
 | --- | ---: | ---: | ---: | ---: |
-| Wall time | 1.85 s [1.85 s–1.89 s] | 1.78 s (1.0×) [1.78 s–1.78 s] | 1.35 s (1.4×) [1.35 s–1.35 s] | **1.22 s** (1.5×) [1.22 s–1.24 s] |
-| Environment setup per file (Vitest's mean) | 12.9 ms [12.9 ms–13.0 ms] | 6.66 ms (1.9×) [6.55 ms–6.70 ms] | 1.73 ms (7.5×) [1.72 ms–1.73 ms] | **1.37 ms** (9.4×) [1.34 ms–1.91 ms] |
-| Worker RSS after a file (median) | 311 MB [279 MB–313 MB] | 268 MB [268 MB–269 MB] | **247 MB** [231 MB–249 MB] | 258 MB [255 MB–260 MB] |
+| Wall time | 1.94 s [1.94 s–1.99 s] | 1.84 s (1.1×) [1.84 s–1.87 s] | 1.40 s (1.4×) [1.40 s–1.44 s] | **1.26 s** (1.5×) [1.25 s–1.26 s] |
+| Environment setup per file (Vitest's mean) | 13.4 ms [13.1 ms–14.5 ms] | 6.76 ms (2.0×) [6.75 ms–7.11 ms] | 1.78 ms (7.5×) [1.76 ms–1.84 ms] | **1.39 ms** (9.6×) [1.38 ms–1.93 ms] |
+| Worker RSS after a file (median) | 294 MB [293 MB–294 MB] | 269 MB [268 MB–269 MB] | **245 MB** [229 MB–245 MB] | 265 MB [263 MB–267 MB] |
 
 ## `jest`, 100 React test files
 
