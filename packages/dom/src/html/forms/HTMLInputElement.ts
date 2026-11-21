@@ -111,6 +111,7 @@ import {
   $control,
   $customValidity,
   $formControlsVersion,
+  $labelsVersion,
   $impl,
   $labels,
   $radios,
@@ -1068,6 +1069,8 @@ export class HTMLInputElement extends HTMLElement {
   _typeChange(oldType: number, newType: number): void {
     const impl = this[$impl];
     if (oldType === I_IMAGE || newType === I_IMAGE) impl.doc[$formControlsVersion]++;
+    // A hidden input is not labelable.
+    if (oldType === I_HIDDEN || newType === I_HIDDEN) impl.doc[$labelsVersion]++;
     const oldMode = valueMode(oldType);
     const newMode = valueMode(newType);
     if (oldMode === MODE_VALUE && (newMode === MODE_DEFAULT || newMode === MODE_DEFAULT_ON)) {

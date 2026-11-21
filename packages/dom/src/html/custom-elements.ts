@@ -57,6 +57,7 @@ import { reportException as reportError } from "../events/report.ts";
 import { elementClassFor, isBuiltinInterface, localNamesForInterface } from "./registry.ts";
 import {
   $formControlsVersion,
+  $labelsVersion,
   $version,
   $byCtor,
   $byName,
@@ -821,6 +822,7 @@ function upgrade(el: Element, def: CustomElementDefinition): void {
   // Version-stamped caches (form.elements, fieldset.elements, ...) now see it as listed.
   if (def.formAssociated) {
     impl.doc[$formControlsVersion]++;
+    impl.doc[$labelsVersion]++;
     impl.doc[$version]++;
     if (faceUpgraded !== null) faceUpgraded(impl);
   }

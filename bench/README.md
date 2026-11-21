@@ -745,9 +745,16 @@ steady state per workload). None of these was worth its change:
   1.640 ms, `drag-text-selection` 0.813 → 0.801): they never held that many. Still registered
   until collected: ranges a caller creates, and the one range the mouse keeps per press.
 - `tab-radio-groups`: `pruneRadioGroups` 13% self, `isDisabledImpl` 8% (a climb per radio, 400 of
-  them; now only for the checked ones, 3%, the row itself 0.318 → 0.308 ms); `edit-labelled-fields`: `buildLabelMap` 5%; `styled-form-rerender`: about 20% in the
-  cascade, since a class or tree change still invalidates every record.
-
+  them; now only for the checked ones, 3%, the row itself 0.318 → 0.308 ms).
+- `edit-labelled-fields`: `buildLabelMap` was 5% self. ByLabelText's map of the tree's label
+  associations was stamped with the document's version, so every keystroke threw it away and
+  the next query walked the whole document for labels again. Its inputs are the tree and four
+  other things (an `id`, a label's `for`, an input turning hidden, a form-associated custom
+  element's upgrade), which `Document[$labelsVersion]` now counts; stamped with that and the
+  tree version the map survives typing and class changes. The row: 0.976 → 0.881 ms.
+- `styled-form-rerender`: about 20% in the cascade, since a class or tree change still
+  invalidates every record. `currentStyleVersion` reads the window's size for each record (2%):
+  tests replace `innerWidth` with `Object.defineProperty`, so there is no write to hook.
 - `type-multiline-notes`: `normalizeNewlines` was 14% of the profile with its regular expression,
   most of it outside the timed part, in the mount: a textarea whose value is not dirty joined
   and normalized its child text on every read, and the value setter reads the old value first.

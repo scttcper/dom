@@ -101,6 +101,86 @@ describe("label lookups agree — https://html.spec.whatwg.org/multipage/forms.h
     matchesTreeWalk(body);
   });
 
+  test("the map is kept across changes that cannot move a label and rebuilt after those that can: 40 seeds of 120 edits", () => {
+    // The map is stamped with the tree and label versions, not the document's: every kind of edit
+    // that feeds it has to move one of them, and labelsOf (no cache) is the oracle.
+    const mulberry32 = (seed: number) => {
+      let a = seed >>> 0;
+      return (n: number) => {
+        a = (a + 0x6d2b79f5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((((t ^ (t >>> 14)) >>> 0) / 4294967296) * n) | 0;
+      };
+    };
+    const ids = ["a", "b", "c", "d", ""];
+    const controls = ["input", "select", "textarea", "button", "meter", "div"];
+    const types = ["text", "hidden", "checkbox", "hidden"];
+    for (let seed = 1; seed <= 40; seed++) {
+      const random = mulberry32(seed);
+      renderIntoDocument("<div></div>");
+      const body = document.body as unknown as Element;
+      const any = () => {
+        const all = body.querySelectorAll("*") as unknown as Element[];
+        return all[random(all.length)];
+      };
+      const history: string[] = [];
+      for (let step = 0; step < 120; step++) {
+        const op = random(14);
+        const target = any();
+        if (op < 2) {
+          const label = document.createElement("label");
+          if (random(2) === 0) label.setAttribute("for", ids[random(ids.length)]);
+          label.textContent = `L${step}`;
+          target.appendChild(label);
+          history.push("add label");
+        } else if (op < 4) {
+          const control = document.createElement(controls[random(controls.length)]);
+          if (random(2) === 0) control.setAttribute("id", ids[random(ids.length)]);
+          if (random(4) === 0) control.setAttribute("type", types[random(types.length)]);
+          target.appendChild(control);
+          history.push("add control");
+        } else if (op === 4) {
+          target.setAttribute("for", ids[random(ids.length)]);
+          history.push("for");
+        } else if (op === 5) {
+          target.setAttribute("id", ids[random(ids.length)]);
+          history.push("id");
+        } else if (op === 6) {
+          target.setAttribute("type", types[random(types.length)]);
+          history.push("type");
+        } else if (op === 7) {
+          if (target.parentNode !== body) target.remove();
+          history.push("remove");
+        } else if (op === 8) {
+          target.removeAttribute(random(2) === 0 ? "for" : "id");
+          history.push("remove attribute");
+        } else if (op === 9) {
+          const other = any();
+          if (!target.contains(other) && !other.contains(target) && other.parentNode !== null) {
+            other.parentNode.insertBefore(target, other);
+          }
+          history.push("move");
+        } else {
+          // Edits that leave every association alone: the map survives them.
+          target.setAttribute("value", `v${step}`);
+          target.setAttribute("class", `c${step}`);
+          target.setAttribute("name", `n${step % 3}`);
+          history.push("unrelated");
+        }
+        const map = labelMapForTree(impl(body));
+        for (const el of body.querySelectorAll("*") as unknown as Element[]) {
+          const n = impl(el);
+          if (isLabelable(n))
+            expect(labelsOf(n), `seed ${seed}: ${history.slice(-8).join(", ")}`).toEqual(map.get(n) ?? []);
+        }
+        // Asked again with nothing changed: the same map.
+        expect(labelMapForTree(impl(body))).toBe(map);
+      }
+    }
+  });
+
   test("a detached tree and a shadow tree resolve for within themselves", () => {
     renderIntoDocument('<input id="x"><div id="host"></div>');
     const detached = document.createElement("div");

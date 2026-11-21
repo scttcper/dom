@@ -28,7 +28,7 @@ import {
   treeRoot,
   type NodeImpl,
 } from "@ctrl/dom/internal";
-import { $impl, $version, derivedCache } from "@ctrl/dom/internal";
+import { $impl, $labelsVersion, $treeVersion, derivedCache } from "@ctrl/dom/internal";
 
 export { isLabelable };
 
@@ -175,13 +175,16 @@ export function labelsOf(impl: NodeImpl): NodeImpl[] | null {
  */
 export function labelMapForTree(impl: NodeImpl): Map<NodeImpl, NodeImpl[]> {
   const root = treeRoot(impl);
-  // Every input to the map (the tree, `for` and `id` attributes, input types, a form-associated
-  // custom element's upgrade) bumps the document's version, so a map is reused until it moves:
-  // ByLabelText built it in a walk of the whole document on every query (~30% of the query).
+  // The inputs to the map are the tree (Document[$treeVersion]) and what Document[$labelsVersion]
+  // counts: `for` and `id` attributes, an input turning hidden or back, a form-associated custom
+  // element's upgrade. Both only grow, so their sum stamps the map, and it is reused until one
+  // moves: typing into a field or toggling a class keeps it, where the document's version threw
+  // it away and the next ByLabelText walked the whole document again.
   // Kept in the document's derived caches (dropped on removal, nodes/derived.ts); callers treat
   // the map and its lists as read-only.
   const doc = root.doc;
-  const version = (doc as unknown as { [$version]: number })[$version];
+  const versions = doc as unknown as { [$treeVersion]: number; [$labelsVersion]: number };
+  const version = versions[$treeVersion] + versions[$labelsVersion];
   const maps = derivedCache(doc, LABEL_MAPS, newLabelMaps);
   const cached = maps.get(root);
   if (cached !== undefined && cached.version === version) return cached.map;

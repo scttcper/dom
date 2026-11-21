@@ -12,7 +12,7 @@ import { contentAttr, str } from "../reflect.ts";
 import { formOwner, isActuallyDisabled, labeledControl } from "./form-associated.ts";
 import { I_HIDDEN, inputType } from "./input-type.ts";
 import { syntheticClick } from "./form-submission.ts";
-import { $forLabels, $impl } from "../../keys.ts";
+import { $forLabels, $impl, $labelsVersion } from "../../keys.ts";
 
 /** https://html.spec.whatwg.org/#interactive-content */
 export function isInteractiveContent(el: NodeImpl): boolean {
@@ -72,7 +72,9 @@ export class HTMLLabelElement extends HTMLElement {
   ): void {
     super._attributeChangedSteps(localName, oldValue, value, namespace);
     const impl = this[$impl];
-    if (localName !== "for" || namespace !== null || oldValue === value || (impl.flags & F_CONNECTED) === 0) return;
+    if (localName !== "for" || namespace !== null || oldValue === value) return;
+    impl.doc[$labelsVersion]++;
+    if ((impl.flags & F_CONNECTED) === 0) return;
     if (oldValue !== null) removeFromElementIndex(impl.doc[$forLabels]!, oldValue, impl);
     if (value !== null) addToElementIndex((impl.doc[$forLabels] ??= new Map()), value, impl);
   }

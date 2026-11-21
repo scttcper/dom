@@ -32,6 +32,7 @@ import {
   $controlNamesVersion,
   $formAttrSeen,
   $formControlsVersion,
+  $labelsVersion,
   $nameBlanked,
   $nameBlankedValue,
   $style,
@@ -431,7 +432,10 @@ function coreAttributeSteps(el: NodeImpl, localName: string, oldValue: string | 
       if (connected && el.id !== "") el.doc._idRemove(el);
       el.id = value ?? "";
       if (connected && el.id !== "") el.doc._idAdd(el);
-      if (oldValue !== value) noteNameChange(el, localName, oldValue, value);
+      if (oldValue !== value) {
+        el.doc[$labelsVersion]++;
+        noteNameChange(el, localName, oldValue, value);
+      }
       break;
     }
     case "class":

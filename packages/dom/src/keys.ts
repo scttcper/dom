@@ -85,6 +85,12 @@ export const $firingSubmissionEvents: unique symbol = Symbol.for("ctrl-dom.firin
 export const $focused: unique symbol = Symbol.for("ctrl-dom.focused");
 export const $form: unique symbol = Symbol.for("ctrl-dom.form");
 export const $formControlsVersion: unique symbol = Symbol.for("ctrl-dom.formControlsVersion");
+/**
+ * Document: counts what besides the tree decides which label labels which control: an `id`, a
+ * label's `for`, an input becoming or ceasing to be hidden, a form-associated custom element's
+ * upgrade (@ctrl/dom/aria forms.ts labelMapForTree).
+ */
+export const $labelsVersion: unique symbol = Symbol.for("ctrl-dom.labelsVersion");
 /** Document: counts `id` and `name` attribute changes (html/forms/collections.ts namedControl). */
 export const $controlNamesVersion: unique symbol = Symbol.for("ctrl-dom.controlNamesVersion");
 /** Document: the element whose `name` was just set to "", and the name it had (nodes/attributes.ts noteNameChange). */
