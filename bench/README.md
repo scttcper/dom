@@ -669,7 +669,8 @@ inside react-dom and 53,000 inside our DOM and user-event. They have one cause, 
   `validate-named-fields` unchanged. Sentry's `perf` preset did not move (three interleaved
   pairs, ctrl-dom-full: 62.5 and 62.0 s of CPU, 12.3 → 12.0 s, inside the spread between runs;
   665 passed both ways): 141,571 of its 23.0 million `Object.defineProperty` calls define a key
-  getter. The win is for tests that re-render keyed lists and forms.
+  getter. Base UI's `interactions` preset did not move either (three pairs, 118.8 and 119.0 s of
+  CPU). The win is for tests that re-render keyed lists and forms.
 - **Owner stacks look large here and are not.** `createElement`/`jsxDEV` capture
   `Error("react-stack-top-frame")` per element: 1.2 µs of an unkeyed element's 1.7 µs. React
   limits itself to 10,000 a second (`recentlyCreatedOwnerStacks`, reset in `prepareFreshStack`
@@ -692,6 +693,22 @@ inside react-dom and 53,000 inside our DOM and user-event. They have one cause, 
   in `ReactElement`: 12.6% of `fill-10-submit` without the key getters and owner stacks, and the 23.0
   million calls of Sentry's `perf` preset (some 4.6 million elements). Native code, the same on
   jsdom, and nothing a DOM can take out.
+
+**Real suites after those changes** (same day, at 336bb8f). Base UI's `interactions` preset,
+ctrl-dom-full, a profile per worker (153 files, 68.6 s sampled): ours 11.1%, of which 1.3 points
+are React's native `defineProperty` work, now charged to the wrapper in shared-accessors.ts
+(`sharedAccessor` itself: 0.14%). Nothing else of ours is above 0.15% self. By entry point:
+React's inline style writes 0.76%, computed style reads 0.54% (floating-ui's `isOverflowElement`
+is 152 of those 368 ms), the environment's `setup` 0.65%, Testing Library queries 0.52%, and the
+first `element.style` of each file 0.37%: 1.4 ms a file, which every file that imports react-dom
+pays, since it probes `document.createElement("div").style` for vendor prefixes when it loads
+(`buildTable` 0.27 ms, defining the 1,700 accessors 0.7 ms, their names 0.26 ms). Sentry's
+`perf` preset, one worker (37.9 s sampled): ours 12.6%, 7.6 points of it that same native
+`defineProperty` work under the guard in isolation.ts; after it the virtual `Date` at 0.4% and
+nothing else above 0.15%. React's five `defineProperty` calls and two `Object.freeze` cost 430 ns
+an element in the main realm and the same in the `DONT_CONTEXTIFY` realm our Jest environment
+makes (920 ns in a contextified one, which resolves every `Object` through the sandbox's
+interceptors); our wrapper adds 22 ns an element, the guard 35.
 
 **Outliers of ours, by workload** (same day; `--cpu-prof-interval 100`, two seconds or more of
 steady state per workload). None of these was worth its change:
