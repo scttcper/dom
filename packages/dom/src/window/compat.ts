@@ -92,6 +92,12 @@ export const COMPAT: readonly CompatEntry[] = [
       "The geometry spec's legacy alias of DOMMatrix, which no jsdom has. Libraries that find it parse computed `transform` strings with it (Swiper's getTranslate) instead of their string fallback, and our parser throws SyntaxError on values jsdom-era suites never exercised.",
   },
   {
+    members: on("Document", ["elementFromPoint", "elementsFromPoint"]),
+    profiles: MODERN,
+    reason:
+      "No jsdom has the Document hit-test methods, and without layout ours find nothing. axe-core's isModalOpen calls `document.elementsFromPoint` once it has found no visible dialog: where the method is missing the check throws and axe reports it as incomplete, where it returns [] the check fails and `aria-hidden-focus` becomes a violation on the content a modal hides (Radix's Dialog and AlertDialog tests with jest-axe).",
+  },
+  {
     globals: ["visualViewport"],
     profiles: MODERN,
     reason:
@@ -213,8 +219,8 @@ export const COMPAT: readonly CompatEntry[] = [
   {
     members: [
       ...on("Document", [
-        "adoptedStyleSheets", "alinkColor", "bgColor", "designMode", "domain", "elementFromPoint", "elementsFromPoint",
-        "fgColor", "linkColor", "moveBefore", "scrollingElement", "vlinkColor",
+        "adoptedStyleSheets", "alinkColor", "bgColor", "designMode", "domain", "fgColor", "linkColor", "moveBefore",
+        "scrollingElement", "vlinkColor",
       ]),
       "Document.static.parseHTMLUnsafe",
       "DocumentFragment.moveBefore",

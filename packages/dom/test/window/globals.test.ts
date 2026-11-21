@@ -328,6 +328,27 @@ describe("compat profiles — src/window/compat.ts (jsdom parity, docs/deviation
     expect(el.hasAttribute("inert")).toBe(true);
   });
 
+  test("the Document hit-test methods are modern only: axe-core's isModalOpen must find none under the jsdom profiles (downstream/radix)", () => {
+    // jest-axe's aria-hidden-focus on Radix's Dialog: with `document.elementsFromPoint` missing
+    // the check throws and is incomplete, as on jsdom; an empty result made it a violation.
+    for (const compat of ["jsdom-30", "jsdom-26"] as const) {
+      const window = createWindow({ compat });
+      const uninstall = installGlobals(window, {});
+      expect("elementsFromPoint" in window.document || "elementFromPoint" in window.document, compat).toBe(false);
+      // The DocumentOrShadowRoot pair on a shadow root was there before and stays.
+      const root = window.document.createElement("div").attachShadow({ mode: "open" });
+      expect(root.elementsFromPoint(0, 0)).toEqual([]);
+      uninstall();
+      window.close();
+    }
+    const window = createWindow({ compat: "modern" });
+    const uninstall = installGlobals(window, {});
+    expect(window.document.elementsFromPoint(0, 0)).toEqual([]);
+    expect(window.document.elementFromPoint(0, 0)).toBeNull();
+    uninstall();
+    window.close();
+  });
+
   test("jsdom-26 leaves out PointerEvent and every onpointer* handler (global and prototypes); uninstall() restores them", () => {
     const window = createWindow({ compat: "jsdom-26" });
     const target: G = {};

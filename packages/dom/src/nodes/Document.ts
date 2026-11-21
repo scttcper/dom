@@ -501,8 +501,8 @@ export class Document extends Node {
   /**
    * https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint — the DocumentOrShadowRoot
    * hit test (ShadowRoot.ts has the same pair). With no layout there is no box at any point, so
-   * the result is null, as for a point outside the viewport. jsdom has neither method
-   * (window/compat.ts).
+   * the result is null, as for a point outside the viewport. jsdom has neither method, and
+   * axe-core depends on that, so only the "modern" profile exposes them (window/compat.ts).
    */
   elementFromPoint(_x: number, _y: number): Element | null {
     return null;
