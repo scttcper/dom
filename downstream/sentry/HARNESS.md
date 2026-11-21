@@ -121,7 +121,7 @@ the worker.
 
 Time and memory (components: 653 files, 6,432 tests; 3 interleaved runs, medians; warm Jest
 caches; nothing else running; CPU = user+sys of Jest and its workers;
-[report](results/2026-10-25-components.md)):
+report `results/2026-10-25-components.md`):
 
 | mode | wall | CPU | peak tree RSS |
 | --- | --: | --: | --: |

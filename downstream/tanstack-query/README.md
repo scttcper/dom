@@ -26,5 +26,6 @@ Presets: `smoke` and `all` (what the results track).
 <!-- downstream:end -->
 
 - What still fails, and why: [TRIAGE.md](TRIAGE.md)
-- Per-run reports, with failures grouped by error: [results/](results/)
+- Per-run reports, with failures grouped by error, are written to `results/` (not tracked; the
+  dated ones TRIAGE.md cites are in git history)
 - How the runner works, every option and what it checks: [HARNESS.md](HARNESS.md)
