@@ -59,7 +59,10 @@ import {
   $focused,
   $forLabels,
   $formAttrSeen,
+  $controlNamesVersion,
   $formControlsVersion,
+  $nameBlanked,
+  $nameBlankedValue,
   $forms,
   $ids,
   $impl,
@@ -125,6 +128,11 @@ export class Document extends Node {
   declare [$formAttrSeen]: boolean;
   /** Non-structural changes to form ownership or the category of listed controls. */
   declare [$formControlsVersion]: number;
+  /** `id` and `name` attribute changes: stamps a form's index of its controls by name. */
+  declare [$controlNamesVersion]: number;
+  /** An element whose `name` was set to "" and not yet set again, with the name it had (attributes.ts). */
+  declare [$nameBlanked]: NodeImpl | null;
+  declare [$nameBlankedValue]: string;
   /** Named controls whose form owner can change on a mutation elsewhere in the tree. */
   declare [$externalFormNames]?: ExternalNames;
   /**
@@ -174,6 +182,9 @@ export class Document extends Node {
     defineHidden(this, $forLabels, null);
     defineHidden(this, $formAttrSeen, false);
     defineHidden(this, $formControlsVersion, 0);
+    defineHidden(this, $controlNamesVersion, 0);
+    defineHidden(this, $nameBlanked, null);
+    defineHidden(this, $nameBlankedValue, "");
     defineHidden(this, $radios, null);
     defineHidden(this, $forms, null);
     defineHidden(this, $aboutBase, null);

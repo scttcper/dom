@@ -170,6 +170,10 @@ export function formOwnerScope(form: NodeImpl, listed: boolean): NodeImpl {
 /** The listed-control scan also covers every possible legacy named image. */
 export interface FormControlsSnapshot extends Array<NodeImpl> {
   hasImage?: true;
+  /** `Document[$controlNamesVersion]` at the last named lookup (collections.ts namedControl). */
+  namesVersion?: number;
+  /** The controls by ID and name, from the second lookup at that version on: null for several. */
+  names?: Map<string, NodeImpl | null> | null;
 }
 
 /** All listed elements (excluding image buttons) whose form owner is `form`, in tree order: form.elements. */

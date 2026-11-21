@@ -720,10 +720,14 @@ interceptors); our wrapper adds 22 ns an element, the guard 35.
 **Outliers of ours, by workload** (same day; `--cpu-prof-interval 100`, two seconds or more of
 steady state per workload). None of these was worth its change:
 
-- `validate-named-fields`: `form.elements.namedItem` is 21% inclusive, a scan of the controls per
-  lookup. An index stamped by `id` and `name` changes (Blink's NamedItemCache) does not survive
-  React: `updateInput` sets an input's `name` to "" and back on every update, so the index was
-  rebuilt on each keystroke (0.40 → 0.43 ms, twice the allocation).
+- `validate-named-fields`: `form.elements.namedItem` was 21% inclusive, a scan of the controls
+  per lookup. A form of 32 controls or more is now indexed by ID and name at its second lookup
+  (Blink's NamedItemCache), stamped with a count of `id` and `name` changes. The first attempt
+  did not survive React: `updateInput` sets an input's `name` to "" and back on every update,
+  so the index was rebuilt on each keystroke (0.40 → 0.43 ms). A name set to "" is therefore
+  only remembered, and setting the same element's name back cancels it (attributes.ts
+  `noteNameChange`); a lookup or a removal in between makes it count. The row: 0.387 → 0.297 ms.
+  It costs about 5 ns per `id` or `name` write (`dom/build-1000-rows` +1%, inside its spread).
 - `select-project`: `settleFlatOptions` was 6% self, a walk of the options for each option React
   appends (65 µs for 250 options). Deferring the algorithm until the first read is equivalent
   on paper, but `_selectednessNow()` only settles the select for an option whose selectedness

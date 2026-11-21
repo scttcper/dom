@@ -48,6 +48,7 @@ import {
 import { slotsAfterInsert, slotsAfterRemove, slotAssignmentActive } from "./slots.ts";
 import {
   $childNodes,
+  $controlNamesVersion,
   $css,
   $derived,
   $externalFormNames,
@@ -56,6 +57,7 @@ import {
   $host,
   $impl,
   $isHTML,
+  $nameBlanked,
   $shadowRoot,
   $treeVersion,
   $version,
@@ -451,6 +453,12 @@ export function remove(node: NodeImpl, suppressObservers: boolean): void {
   if (liveRangeCount !== 0 && ((node.flags & F_RANGE_MARKS) !== 0 || (parent.flags & F_RANGE) !== 0))
     rangesBeforeRemove(node, parent);
   if (nodeIteratorCount !== 0) iteratorsBeforeRemove(node);
+  // An element whose `name` is "" for now must not be kept by the document once it is removed.
+  // (attributes.ts flushBlankedName, inlined: this module does not import that one.)
+  if (doc[$nameBlanked] !== null) {
+    doc[$nameBlanked] = null;
+    doc[$controlNamesVersion]++;
+  }
   // Steps 7-8.
   const oldPrevious = node.prev;
   const oldNext = node.next;

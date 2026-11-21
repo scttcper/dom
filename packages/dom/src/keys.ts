@@ -85,6 +85,11 @@ export const $firingSubmissionEvents: unique symbol = Symbol.for("ctrl-dom.firin
 export const $focused: unique symbol = Symbol.for("ctrl-dom.focused");
 export const $form: unique symbol = Symbol.for("ctrl-dom.form");
 export const $formControlsVersion: unique symbol = Symbol.for("ctrl-dom.formControlsVersion");
+/** Document: counts `id` and `name` attribute changes (html/forms/collections.ts namedControl). */
+export const $controlNamesVersion: unique symbol = Symbol.for("ctrl-dom.controlNamesVersion");
+/** Document: the element whose `name` was just set to "", and the name it had (nodes/attributes.ts noteNameChange). */
+export const $nameBlanked: unique symbol = Symbol.for("ctrl-dom.nameBlanked");
+export const $nameBlankedValue: unique symbol = Symbol.for("ctrl-dom.nameBlankedValue");
 /** Document: an element of it has had a `form` attribute (sticky; html/forms/form-associated.ts formOwnerScope). */
 export const $formAttrSeen: unique symbol = Symbol.for("ctrl-dom.formAttrSeen");
 export const $forLabels: unique symbol = Symbol.for("ctrl-dom.forLabels");

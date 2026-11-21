@@ -16,6 +16,7 @@ import {
   F_ROLE_ATTR,
   F_TABINDEX_ATTR,
 } from "./constants.ts";
+import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { AttrRecord, type NodeImpl } from "./NodeImpl.ts";
 import { noteInlineStyle } from "../css/inline-count.ts";
@@ -25,7 +26,17 @@ import { slotAssignmentActive, slotsAttributeChanged } from "./slots.ts";
 import { ceReactionsPending, flushCEReactions } from "./create.ts";
 import { clearParserAssociation, isListed } from "../html/forms/form-associated.ts";
 import { checkNamedOwner } from "../html/forms/past-names.ts";
-import { $externalFormNames, $benign, $formAttrSeen, $formControlsVersion, $style, $version } from "../keys.ts";
+import {
+  $externalFormNames,
+  $benign,
+  $controlNamesVersion,
+  $formAttrSeen,
+  $formControlsVersion,
+  $nameBlanked,
+  $nameBlankedValue,
+  $style,
+  $version,
+} from "../keys.ts";
 
 /** Connected elements keyed by an attribute value. Allocate a list only when a key is shared. */
 export type ElementIndex = Map<string, NodeImpl | NodeImpl[]>;
@@ -359,7 +370,7 @@ export function handleAttributeChanges(
     // Same-value rewrites (React's `input.type = "text"` on every update) run the core steps too:
     // skipping them on `oldValue === newValue` cost 1.5–2 ns on every changed-value write, which
     // React does far more often, for 1–3 ns saved here.
-    coreAttributeSteps(el, a.localName, newValue);
+    coreAttributeSteps(el, a.localName, oldValue, newValue);
     if ((a.localName === "form" || (a.localName === "id" && el.doc[$formAttrSeen])) && oldValue !== newValue) {
       el.doc[$formControlsVersion]++;
       if (a.localName === "form") {
@@ -382,13 +393,45 @@ export function handleAttributeChanges(
   if (ceReactionsPending) flushCEReactions(); // custom element reactions (html agent; see create.ts)
 }
 
-function coreAttributeSteps(el: NodeImpl, localName: string, value: string | null): void {
+/**
+ * An `id` or `name` changed: a form's index of its controls by name is stale
+ * (html/forms/collections.ts namedControl, stamped with Document[$controlNamesVersion]).
+ *
+ * One change does not count. react-dom's updateInput sets an input's `name` to "" and back to
+ * what it was on every update (to take a radio out of its group while it writes `checked`), so
+ * a `name` set to "" is only remembered, and setting the same element's name back cancels it.
+ * Anything else in between, a lookup included (`flushBlankedName`), makes it count.
+ */
+function noteNameChange(el: NodeImpl, localName: string, oldValue: string | null, newValue: string | null): void {
+  const doc = el.doc;
+  const blanked = doc[$nameBlanked];
+  if (blanked !== null) {
+    doc[$nameBlanked] = null;
+    if (blanked === el && localName === "name" && oldValue === "" && newValue === doc[$nameBlankedValue]) return;
+  } else if (localName === "name" && newValue === "" && oldValue !== null) {
+    doc[$nameBlanked] = el;
+    doc[$nameBlankedValue] = oldValue;
+    return;
+  }
+  doc[$controlNamesVersion]++;
+}
+
+/** A name set to "" is in effect for whoever looks now: count it (see noteNameChange). */
+export function flushBlankedName(doc: Document): void {
+  if (doc[$nameBlanked] !== null) {
+    doc[$nameBlanked] = null;
+    doc[$controlNamesVersion]++;
+  }
+}
+
+function coreAttributeSteps(el: NodeImpl, localName: string, oldValue: string | null, value: string | null): void {
   switch (localName) {
     case "id": {
       const connected = (el.flags & F_CONNECTED) !== 0;
       if (connected && el.id !== "") el.doc._idRemove(el);
       el.id = value ?? "";
       if (connected && el.id !== "") el.doc._idAdd(el);
+      if (oldValue !== value) noteNameChange(el, localName, oldValue, value);
       break;
     }
     case "class":
@@ -403,6 +446,9 @@ function coreAttributeSteps(el: NodeImpl, localName: string, value: string | nul
         el.flags |= F_HAS_STYLE_ATTR;
       }
       (el.node as Element)[$style]?._attributeChanged(value);
+      break;
+    case "name":
+      if (oldValue !== value) noteNameChange(el, localName, oldValue, value);
       break;
   }
 }

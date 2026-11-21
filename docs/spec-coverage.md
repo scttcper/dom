@@ -414,7 +414,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-form-checkvalidity](https://html.spec.whatwg.org/#dom-form-checkvalidity) | `dom/html/forms/HTMLFormElement.ts`, `dom/html/forms/form-submission.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-form-elements](https://html.spec.whatwg.org/#dom-form-elements) | `dom/html/forms/HTMLFormElement.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`; WPT: `html/semantics/forms/the-form-element/form-elements-filter.html`, `html/semantics/forms/the-form-element/form-elements-interfaces-01.html` +3 |
 | [dom-form-length](https://html.spec.whatwg.org/#dom-form-length) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
-| [dom-form-nameditem](https://html.spec.whatwg.org/#dom-form-nameditem) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-form-nameditem](https://html.spec.whatwg.org/#dom-form-nameditem) | `dom/html/forms/HTMLFormElement.ts`, `dom/html/forms/collections.ts` | `dom/html/forms/form.test.ts`, `compat/forms/form-algorithms.test.ts` |
 | [dom-form-reportvalidity](https://html.spec.whatwg.org/#dom-form-reportvalidity) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-form-requestsubmit](https://html.spec.whatwg.org/#dom-form-requestsubmit) | `dom/html/forms/HTMLFormElement.ts` | `dom/html/forms/form.test.ts`, `compat/forms/submission-activation.test.ts` |
 | [dom-form-reset](https://html.spec.whatwg.org/#dom-form-reset) | `dom/html/forms/HTMLFormElement.ts` | `compat/forms/form-algorithms.test.ts` |

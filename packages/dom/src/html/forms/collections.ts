@@ -17,12 +17,12 @@ import { ensureIndexGetters, indexGetterTable } from "../../collections/indexed.
 import { NodeList } from "../../collections/NodeList.ts";
 import { T } from "../../nodes/tags.ts";
 import { firstElementChild, nextElementInTree } from "../../nodes/traverse.ts";
-import { attr } from "../../nodes/attributes.ts";
+import { attr, flushBlankedName } from "../../nodes/attributes.ts";
 import type { HTMLFormElement } from "./HTMLFormElement.ts";
-import { formOwner, formOwnerScope, labelsFor } from "./form-associated.ts";
+import { formOwner, formOwnerScope, labelsFor, type FormControlsSnapshot } from "./form-associated.ts";
 import { I_RADIO, inputType } from "./input-type.ts";
 import { HTML_NS } from "../../nodes/constants.ts";
-import { $el, $form, $impl, $name, $version } from "../../keys.ts";
+import { $controlNamesVersion, $el, $form, $impl, $name, $version } from "../../keys.ts";
 
 // --- live NodeLists ----------------------------------------------------------------------------
 
@@ -146,7 +146,36 @@ function namedList(form: NodeImpl, name: string, images: boolean): RadioNodeList
   return list;
 }
 
-export function namedControl(form: NodeImpl, controls: NodeImpl[], name: string): NodeImpl | RadioNodeList | null {
+/** Forms with fewer controls are scanned: the scan is cheaper than a Map until about here. */
+const INDEX_FROM = 32;
+
+/**
+ * The control(s) of `form` with ID or name `name`: https://html.spec.whatwg.org/#dom-form-nameditem
+ * and https://html.spec.whatwg.org/#dom-htmlformcontrolscollection-nameditem.
+ *
+ * A large form asked a second time, while no `id` or `name` has changed in the document, is
+ * indexed by name (as Blink's HTMLCollection::NamedItemCache): a handler that reads fields by
+ * name on every keystroke no longer scans 250 controls per read (bench/README.md,
+ * `react/validate-named-fields`). The snapshot itself lasts until the tree or a form owner
+ * changes; nodes/attributes.ts counts the name changes, and lets React's set-to-""-and-back pass.
+ */
+export function namedControl(
+  form: NodeImpl,
+  controls: FormControlsSnapshot,
+  name: string,
+): NodeImpl | RadioNodeList | null {
+  if (controls.length >= INDEX_FROM) {
+    const doc = form.doc;
+    flushBlankedName(doc);
+    const version = doc[$controlNamesVersion];
+    if (controls.namesVersion === version) {
+      const match = (controls.names ??= controlsByName(controls)).get(name);
+      if (match === undefined) return null;
+      return match ?? namedList(form, name, false);
+    }
+    controls.namesVersion = version;
+    controls.names = null;
+  }
   let first: NodeImpl | null = null;
   for (const c of controls) {
     if (c.id !== name && attr(c, "name") !== name) continue;
@@ -154,6 +183,17 @@ export function namedControl(form: NodeImpl, controls: NodeImpl[], name: string)
     first = c;
   }
   return first;
+}
+
+function controlsByName(controls: NodeImpl[]): Map<string, NodeImpl | null> {
+  const names = new Map<string, NodeImpl | null>();
+  for (const c of controls) {
+    const id = c.id;
+    if (id !== "") names.set(id, names.has(id) ? null : c);
+    const name = attr(c, "name");
+    if (name !== null && name !== "" && name !== id) names.set(name, names.has(name) ? null : c);
+  }
+  return names;
 }
 
 function matchesNamedImage(el: NodeImpl, form: NodeImpl, name: string): boolean {

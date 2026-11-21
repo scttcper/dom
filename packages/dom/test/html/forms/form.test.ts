@@ -766,3 +766,132 @@ describe("labels — https://html.spec.whatwg.org/#dom-lfe-labels", () => {
     expect([...shadow.getElementById("x").labels]).toEqual([shadow.querySelector("label")]);
   });
 });
+
+// A large form's controls are indexed by ID and name after a second lookup (collections.ts
+// namedControl), and the index is kept across attribute changes that are not names. Whatever
+// edits come between two lookups, each lookup has to return what a scan of the controls returns.
+describe("named lookups in a large form, against a scan — https://html.spec.whatwg.org/#dom-form-nameditem", () => {
+  function mulberry32(seed: number): (n: number) => number {
+    let a = seed >>> 0;
+    return (n) => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((((t ^ (t >>> 14)) >>> 0) / 4294967296) * n) | 0;
+    };
+  }
+
+  // biome-ignore lint: untyped DOM surface in tests
+  function scan(form: any, name: string): any[] {
+    // biome-ignore lint: untyped DOM surface in tests
+    return Array.from(form.elements as ArrayLike<any>).filter((c) => c.id === name || c.getAttribute("name") === name);
+  }
+
+  // biome-ignore lint: untyped DOM surface in tests
+  function check(form: any, name: string, context: string): void {
+    const expected = scan(form, name);
+    const item = form.elements.namedItem(name);
+    const property = form.elements[name];
+    const onForm = form[name];
+    if (expected.length === 0) {
+      expect(item, context).toBeNull();
+      expect(property, context).toBeUndefined();
+    } else if (expected.length === 1) {
+      expect(item, context).toBe(expected[0]);
+      expect(property, context).toBe(expected[0]);
+      expect(onForm, context).toBe(expected[0]);
+    } else {
+      expect(Array.from(item), context).toEqual(expected);
+      expect(Array.from(property), context).toEqual(expected);
+      expect(Array.from(onForm), context).toEqual(expected);
+    }
+  }
+
+  test("30 seeds of 150 edits and lookups on a 60-control form", () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const random = mulberry32(seed);
+      const doc = createWindow().document as any;
+      const form = doc.createElement("form");
+      const names = Array.from({ length: 12 }, (_, i) => `n${i}`);
+      const pickName = () => names[random(names.length)];
+      const addControl = () => {
+        const input = doc.createElement(random(5) === 0 ? "select" : "input");
+        if (random(4) !== 0) input.name = pickName();
+        if (random(4) === 0) input.id = pickName();
+        form.appendChild(input);
+      };
+      for (let i = 0; i < 60; i++) addControl();
+      doc.body.appendChild(form);
+      const control = () => form.elements[random(form.elements.length)];
+      const history: string[] = [];
+      for (let step = 0; step < 150; step++) {
+        const op = random(16);
+        if (op < 6) {
+          history.push("lookup");
+        } else if (op === 6) {
+          control().name = pickName();
+          history.push("rename");
+        } else if (op === 7) {
+          control().id = pickName();
+          history.push("id");
+        } else if (op === 8) {
+          control().removeAttribute(random(2) === 0 ? "name" : "id");
+          history.push("remove attribute");
+        } else if (op === 9) {
+          // react-dom's updateInput: the name to "" and back around an update.
+          const input = control();
+          const name = input.name;
+          input.name = "";
+          input.setAttribute("value", `v${step}`);
+          input.name = name;
+          history.push("blank and restore");
+        } else if (op === 10) {
+          // Left blank: a lookup must see it.
+          control().name = "";
+          history.push("blank");
+        } else if (op === 11) {
+          // Blank one, then rename another before the first is restored.
+          const first = control();
+          const name = first.name;
+          first.name = "";
+          control().name = pickName();
+          first.name = name;
+          history.push("blank, rename another, restore");
+        } else if (op === 12) {
+          control().remove();
+          history.push("remove");
+        } else if (op === 13) {
+          addControl();
+          history.push("add");
+        } else if (op === 14) {
+          control().setAttribute("data-x", String(step));
+          history.push("unrelated attribute");
+        } else {
+          // Blank a name and remove the element before restoring it.
+          const input = control();
+          input.name = "";
+          input.remove();
+          history.push("blank and remove");
+        }
+        const context = `seed ${seed}: ${history.slice(-12).join(", ")}`;
+        check(form, pickName(), context);
+        check(form, pickName(), context);
+        if (random(3) === 0) check(form, "missing", context);
+      }
+    }
+  });
+
+  test("a form below the index size is scanned every time and behaves the same", () => {
+    const doc = createWindow().document as any;
+    doc.body.innerHTML = '<form><input name="a"><input name="b" id="a"><input name="c"></form>';
+    const form = doc.body.firstChild;
+    expect(Array.from(form.elements.namedItem("a"))).toEqual([form.children[0], form.children[1]]);
+    form.children[1].id = "";
+    expect(form.elements.namedItem("a")).toBe(form.children[0]);
+    form.children[0].name = "";
+    expect(form.elements.namedItem("a")).toBeNull();
+    form.children[0].name = "a";
+    expect(form.elements.a).toBe(form.children[0]);
+  });
+});
