@@ -762,6 +762,13 @@ steady state per workload). None of these was worth its change:
   ones the text node and the control hold anyway): 426 → 160 ms of a 2.4 s profile. The timed
   row does not move (0.551 → 0.543 ms): its ten keystrokes write text that has no CR left.
 
+Three caches are still stamped with the document's version and so start over after any mutation:
+an element's role, its inaccessibility and its accessible name (packages/aria). They are left
+that way on purpose. A role can depend on the accessible name (`section`, `form`) and
+inaccessibility on computed styles, which form state feeds through `:checked` and the like, so a
+narrower stamp would have to prove a negative for every selector and name source; a stale answer
+there is a wrong query result. After a mutation a query recomputes them at ~30 ns an element.
+
 Looked at and dropped: user-event's two `Object.defineProperty` calls per event with a behavior
 (0.45% of `fill-10-submit`), `replaceAll` for `normalizeNewlines` (27 against the regular
 expression's 22 µs on 1,000 CRLF lines), defining the CSSStyleDeclaration accessors in one
