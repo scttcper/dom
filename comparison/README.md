@@ -33,8 +33,8 @@ experiments: bench/README.md, "Worker startup").
 
 **The same files with `--pool vmForks`** (`suite.ts --pool vmForks`): Vitest's VM pool keeps
 workers alive and gives each file a fresh vm context and environment instead of a fresh process,
-which is where per-file environment cost shows most. vmForks rather than vmThreads so the ctrl-dom
-contenders' `--import` preload applies in the workers.
+which is where per-file environment cost shows most. `node comparison/suite.ts --pool vmThreads`
+(or `threads`) runs the other pools and prints a summary; the report uses vmForks.
 
 **`jest` over the same tests** (`jest-suite.ts`): written as plain CommonJS with
 `React.createElement` (`lib/jest-files.ts`) and run with `transform: {}`, so nobody pays for a

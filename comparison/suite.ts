@@ -2,11 +2,13 @@
 // sample (fresh `vitest` process each, contenders interleaved). Writes results/suite.json with
 // wall time, Vitest's per-file environment setup and worker memory (and the run's date, machine
 // and versions). Every run must pass.
-// With `--pool vmForks` the same files run in Vitest's VM pool (long-lived workers, a fresh vm
-// context and environment per file; vmForks rather than vmThreads so contenders' `--import`
-// preloads apply) and the results go to results/suite-vm.json.
+// With `--pool` the same files run in another Vitest pool. `vmForks` is the one the report uses
+// (long-lived workers, a fresh vm context and environment per file), in results/suite-vm.json;
+// `vmThreads` and `threads` write results/suite-<pool>.json and are for looking at, with the
+// summary this prints.
 //
-//   node comparison/suite.ts [--contenders jsdom,ctrl-dom] [--samples 3] [--files 100] [--workers 4] [--pool vmForks]
+//   node comparison/suite.ts [--contenders jsdom,ctrl-dom] [--samples 3] [--files 100] [--workers 4]
+//                            [--pool vmForks|vmThreads|threads]
 
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -20,6 +22,13 @@ import { interleave, median, run, spread, type Spread } from "./lib/spawn.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const vitestBin = join(dirname(createRequire(import.meta.url).resolve("vitest/package.json")), "vitest.mjs");
+
+const POOLS = ["vmForks", "vmThreads", "threads"] as const;
+type Pool = (typeof POOLS)[number];
+
+/** Where a pool's results go: the report reads suite.json and suite-vm.json. */
+const resultsFile = (pool: Pool | undefined): string =>
+  pool === undefined ? "suite.json" : pool === "vmForks" ? "suite-vm.json" : `suite-${pool}.json`;
 
 export interface SuiteResult {
   wallMs: Spread;
@@ -37,7 +46,7 @@ const lines = (path: string) =>
 
 export async function suite(
   contenders: Contender[],
-  options: { samples: number; files: number; workers: number; pool?: "vmForks" },
+  options: { samples: number; files: number; workers: number; pool?: Pool },
 ): Promise<void> {
   generate(options.files);
   const tmp = `${here}results/.suite-tmp/`;
@@ -91,7 +100,7 @@ export async function suite(
     ]),
   );
   writeFileSync(
-    `${here}results/${options.pool ? "suite-vm" : "suite"}.json`,
+    `${here}results/${resultsFile(options.pool)}`,
     `${JSON.stringify({ ...options, run: runInfo(contenders), results }, null, 2)}\n`,
   );
 }
@@ -106,13 +115,25 @@ if (import.meta.main) {
       pool: { type: "string" },
     },
   });
-  if (values.pool !== undefined && values.pool !== "vmForks") throw new Error("--pool: only vmForks is supported");
+  if (values.pool !== undefined && !POOLS.includes(values.pool as Pool)) {
+    throw new Error(`--pool: one of ${POOLS.join(", ")}`);
+  }
   const contenders = selectContenders(values.contenders);
   for (const c of contenders) c.check?.();
+  const pool = values.pool as Pool | undefined;
   await suite(contenders, {
     samples: Number(values.samples),
     files: Number(values.files),
     workers: Number(values.workers),
-    pool: values.pool as "vmForks" | undefined,
+    pool,
   });
+  const { results } = JSON.parse(readFileSync(`${here}results/${resultsFile(pool)}`, "utf8")) as {
+    results: Record<string, SuiteResult>;
+  };
+  const s = (ms: number) => `${(ms / 1000).toFixed(2)} s`;
+  for (const [id, r] of Object.entries(results)) {
+    console.log(
+      `${id.padEnd(16)} wall ${s(r.wallMs.median)} [${s(r.wallMs.min)}–${s(r.wallMs.max)}]  environment ${r.environmentSetupMs.median.toFixed(1)} ms/file  worker RSS ${r.workerRssMB.median.toFixed(0)} MB`,
+    );
+  }
 }

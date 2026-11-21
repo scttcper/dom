@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bench": "node run.ts",
-    "bench:suite": "node suite/run.ts"
+    "bench": "node run.ts"
   },
   "dependencies": {
     "@ctrl/dom": "workspace:*",

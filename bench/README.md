@@ -18,8 +18,6 @@ pnpm bench --keep-going                      # keep sampling a config after it e
 pnpm build                                   # bundle packages/*/dist (needed by *-dist configs)
 pnpm bench --workloads startup/              # startup incl. bundled @ctrl/dom
 
-pnpm bench:suite                             # Vitest end-to-end suite (100 files)
-pnpm bench:suite --envs jsdom,ctrl-dom --samples 5 --files 100 --workers 4
 ```
 
 Results go to `bench/results/<date>-<name>.md` (tables) and `.json` (every raw sample). The
@@ -127,23 +125,11 @@ that skips work fails instead of winning. A failing configuration is reported wi
   times; that is legitimate (any caching an implementation does is included) but say so when
   quoting it.
 
-## Vitest suite benchmark (`suite/`)
+## Vitest suite benchmark
 
-`suite/generate.ts` writes 100 small React test files to `suite/.generated/` (git-ignored; a
-dot directory so the root `tsc -p` skips it; regenerated when the file count changes): a
-rotating mix of static render + role queries, a stateful click, and a user-event form.
-`suite/run.ts` runs `vitest run --config suite/vitest.config.ts` once per environment per
-sample (fresh process, default pool, interleaved) with:
-
-- `jsdom`, `happy-dom`: Vitest's built-in environments;
-- `ctrl-dom`: `environment: 'ctrl-dom'` (@ctrl/dom/vitest-environment), stock testing-library;
-- `ctrl-dom-full`: `ctrl-dom` plus `resolve.alias` of `@testing-library/{react,dom,user-event}` and
-  `@testing-library/jest-dom/vitest` to the `@ctrl/dom` drop-ins, with the same test files.
-
-It reports **wall time** of the whole `vitest run` (what users feel), Vitest's own per-file
-diagnostics summed over files (`environmentSetupDuration`, setup files, collect/import, test
-duration: CPU time across workers, not wall), and per-file worker RSS/heap recorded by the
-setup file. Only runs where every file passed are timed.
+`vitest run` over 100 generated React test files, per DOM and per pool, is comparison/'s
+(`node comparison/suite.ts`, comparison/README.md): one harness, the one the README table is
+generated from.
 
 ## Worker startup: where a fresh Vitest worker's time goes
 
@@ -352,7 +338,7 @@ Things measured on the way and not shipped: V8 flags in workers (`--single-threa
 `--max-lazy`, `--no-opt`, `--v8-pool-size=1`, `--max-semi-space-size=32`: within noise at 4 and
 15 workers; `--no-lazy-feedback-allocation`, 2026-11-21: a fresh process's first `render()` went
 4.35 → 3.7–4.0 ms and its second 0.30 → 0.21 ms, since react-dom's functions get feedback on their
-first call, but suite/'s 100 files were no faster, 2.07–2.13 s without against 2.09–2.16 s with
+first call, but a 100-file Vitest suite was no faster, 2.07–2.13 s without against 2.09–2.16 s with
 over six interleaved pairs, and `--always-sparkplug` was slower); Node's compile cache for Vitest's main process (`NODE_COMPILE_CACHE`: ~5% of a
 one-file run, and a plugin loads after the modules it would cache). Note for measuring here: on
 this machine's `powersave` governor the first batch of workers of every run takes twice the CPU
@@ -936,7 +922,6 @@ lib/dist-preload.js    the same, as an --import preload for Vitest workers (CTRL
 lib/report.ts          markdown + terminal tables
 lib/stats.ts           median/quantiles/formatting
 workloads/*.ts         startup, react, dom workloads
-suite/                 Vitest end-to-end suite benchmark
 compare.ts             regression check between two checkouts (CI)
 ```
 

@@ -1,7 +1,7 @@
 // Preloaded (`--import`) into Vitest workers and cold-start processes that should run the
 // bundles: bare `@ctrl/dom` and `@ctrl/dom/*` imports (the bundles' own) resolve to
 // packages/*/dist, from the specifier → path map in CTRL_DOM_DIST_MAP (distMapEnv() in packages.ts).
-// Used by bench/suite's *-dist configurations and comparison/'s ctrl-dom contenders.
+// Used by the *-dist bench configurations and comparison/'s ctrl-dom contenders.
 //
 // Plain JavaScript on purpose: a TypeScript preload makes every worker load Node's type stripper,
 // a WebAssembly module worth ~10 MB of RSS that an installed package never needs.

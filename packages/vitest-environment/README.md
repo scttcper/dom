@@ -39,15 +39,16 @@ in test and app code are ordinary property loads.
 export default defineConfig({ plugins: [ctrlDom()], test: { pool: "vmThreads" } });
 ```
 
-100 small React test files (`pnpm bench:suite --pool …`, full stack bundled):
+100 small React test files (`node comparison/suite.ts --workers 13 --pool …`, bundles):
 
 | pool | jsdom | happy-dom | ctrl-dom (environment only) | ctrl-dom (full stack) |
 | --- | ---: | ---: | ---: | ---: |
-| default (forks, per-file isolation) | 7.52 s | 5.56 s | 4.10 s | 2.29 s |
-| vmForks | 1.73 s | 1.46 s | 1.14 s | 0.94 s |
-| vmThreads | 1.46 s | 1.24 s | 1.01 s | 0.84 s |
+| default (forks, per-file isolation) | 7.59 s | 5.60 s | 3.99 s | 2.26 s |
+| vmForks | 1.97 s | 1.66 s | 1.25 s | 1.04 s |
+| vmThreads | 1.89 s | 1.54 s | 1.30 s | 1.05 s |
 
-Medians of 3 runs, 2026-11-21, Apple M4 Max (14 cores), Node 26.13.1, Vitest's default worker count.
+Medians of 3 runs, 2026-11-21, Apple M4 Max (14 cores), Node 26.13.1, 13 workers (Vitest's default
+there).
 
 VM pools have Vitest's usual caveats (Node built-ins come from another realm, so
 `instanceof` checks against them can fail); see https://vitest.dev/config/#vmthreads.
