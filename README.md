@@ -104,7 +104,7 @@ matters most for component tests:
   is usually starting a worker for every file, not the tests.
 - **[Pool](https://vitest.dev/guide/improving-performance#pool).** With many test files this is
   the setting that matters. `pool: "vmThreads"` reuses workers and gives each file a fresh
-  context: 1,000 short React test files went from 18.7 s to 7.0 s here. It uses more memory
+  context: 1,000 short React test files went from 18.9 s to 4.2 s here. It uses more memory
   ([`vmMemoryLimit`](https://vitest.dev/config/vmmemorylimit)), and `instanceof` no longer holds
   for values that come from Node (an error from `fs`, a `Buffer`); DOM objects are unaffected.
 - **[Test isolation](https://vitest.dev/guide/improving-performance#test-isolation).** Rather

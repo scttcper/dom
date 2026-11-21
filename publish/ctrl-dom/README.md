@@ -71,7 +71,7 @@ matters most for component tests:
   is usually starting a worker for every file, not the tests.
 - **[Pool](https://vitest.dev/guide/improving-performance#pool).** With many test files this is
   the setting that matters. `pool: "vmThreads"` reuses workers and gives each file a fresh
-  context: 1,000 short React test files went from 18.7 s to 7.0 s here. It uses more memory
+  context: 1,000 short React test files went from 18.9 s to 4.2 s here. It uses more memory
   ([`vmMemoryLimit`](https://vitest.dev/config/vmmemorylimit)), and `instanceof` no longer holds
   for values that come from Node (an error from `fs`, a `Buffer`); DOM objects are unaffected.
 - **[Test isolation](https://vitest.dev/guide/improving-performance#test-isolation).** Rather
@@ -106,20 +106,20 @@ that is all you need.
 
 For a large suite, change the pool. Most of what a short component test costs is starting its
 worker, not the test, and that cost is per file. The same React test files on each option, with
-Vitest's default of 15 workers on a 16-thread machine:
+Vitest's default of 13 workers on a 14-core machine:
 
 | | 100 files | 1,000 files | Memory, 1,000 files | What changes for your tests |
 | --- | ---: | ---: | --- | --- |
-| `ctrlDom()` (Vitest's default pool) | 2.56 s | 18.7 s | ~100 MB per worker (1.5 GB for 15) | Nothing. A new process for every test file. |
-| `test: { pool: "threads" }` | 2.33 s | 16.7 s | | A new thread per file instead of a process: `process.chdir()` throws, and native addons must be thread-safe. |
-| `test: { pool: "vmThreads" }` | 1.61 s | **7.0 s** | 4.0 GB at peak | Workers are reused, and each file gets a fresh global scope and module graph in them: how Jest isolates. See below. |
-| `test: { pool: "vmForks" }` | 1.64 s | 7.3 s | 273 MB per worker, up to 527 MB | The same, in processes instead of threads. |
+| `ctrlDom()` (Vitest's default pool) | 2.11 s | 18.9 s | ~110 MB per worker (1.5 GB for 13) | Nothing. A new process for every test file. |
+| `test: { pool: "threads" }` | 1.38 s | 12.0 s | | A new thread per file instead of a process: `process.chdir()` throws, and native addons must be thread-safe. |
+| `test: { pool: "vmThreads" }` | 0.86 s | **4.2 s** | 3.2 GB at peak | Workers are reused, and each file gets a fresh global scope and module graph in them: how Jest isolates. See below. |
+| `test: { pool: "vmForks" }` | 0.94 s | 4.5 s | 285 MB per worker, up to 675 MB | The same, in processes instead of threads. |
 | `ctrlDom({ sharedWorkers: true })` | | | | Files of a worker share one realm; the plugin resets the window and re-evaluates your own modules before each file. Base UI's 9,199 tests: 35 s → 7–8 s. [Shared workers](#shared-workers). |
 
-Medians of 3–5 runs, i5-12600K, Node 26.13.1. With 4 workers and 1,000 files: 24.3 s by default,
-11.9 s on `vmThreads`.
+Medians of 3–5 runs, 2026-11-21, Apple M4 Max, Node 26.13.1. With 4 workers and 1,000 files:
+20.7 s by default, 7.8 s on `vmThreads`.
 
-**`pool: "vmThreads"` is the one to try first on a large suite: 2.7× faster here**, and the gap
+**`pool: "vmThreads"` is the one to try first on a large suite: 4.5× faster here**, and the gap
 grows with the number of files. Two things to check when you switch:
 
 - **Memory.** Reused workers hold on to the modules of every file they have run. Vitest recycles
@@ -168,14 +168,14 @@ Vitest prints the split at the end of a run (`Duration … environment 40%, test
 3. **Leave `maxWorkers` alone** unless the machine is busy with something else.
 4. **For more, trade isolation for speed deliberately.** The same 100 React test files:
 
-| | 4 workers | 15 workers | What changes for your tests |
+| | 4 workers | 13 workers | What changes for your tests |
 | --- | ---: | ---: | --- |
-| `ctrlDom()` (Vitest's default pool) | 2.86 s | 2.56 s | Nothing. A new process for every test file. |
-| `test: { pool: "threads" }` | 3.60 s | 2.33 s | A new thread for every file instead of a process: `process.chdir()` throws, and native addons must be thread-safe. Only ahead when every core is busy. |
-| `test: { pool: "vmThreads" }` | 2.05 s | 1.61 s | Workers are reused; each file gets a fresh global scope and module graph in them, which is how Jest isolates. Objects Node itself creates (an error from `fs` or `fetch`, a `Buffer`) come from outside that scope, so `instanceof Error` on them is false, and memory grows until a worker is recycled (`vmMemoryLimit`). `vmForks` is the same with processes: 2.16 s / 1.64 s. |
+| `ctrlDom()` (Vitest's default pool) | 2.26 s | 2.11 s | Nothing. A new process for every test file. |
+| `test: { pool: "threads" }` | 2.69 s | 1.38 s | A new thread for every file instead of a process: `process.chdir()` throws, and native addons must be thread-safe. Only ahead when every core is busy. |
+| `test: { pool: "vmThreads" }` | 1.19 s | 0.86 s | Workers are reused; each file gets a fresh global scope and module graph in them, which is how Jest isolates. Objects Node itself creates (an error from `fs` or `fetch`, a `Buffer`) come from outside that scope, so `instanceof Error` on them is false, and memory grows until a worker is recycled (`vmMemoryLimit`). `vmForks` is the same with processes: 1.24 s / 0.94 s. |
 | `ctrlDom({ sharedWorkers: true })` | | | Files of a worker share one realm; the plugin resets the window and re-evaluates your own modules before each file. Module state in dependencies carries over. Base UI's 9,199 tests: 35 s → 7–8 s. [Shared workers](#shared-workers). |
 
-Medians of 5 runs, i5-12600K (16 threads), Node 26.13.1. Whether a suite passes on `vmThreads`
+Medians of 5 runs, 2026-11-21, Apple M4 Max (14 cores), Node 26.13.1. Whether a suite passes on `vmThreads`
 unchanged comes down to those `instanceof` checks on values from Node: run the whole suite on it
 before committing to it. Do not set `isolate: false` yourself: stock Testing Library
 then cleans up after a worker's first file only, which `sharedWorkers` exists to handle.
@@ -408,9 +408,11 @@ started.
 
 | 100 React test files | without | with |
 | --- | ---: | ---: |
-| 4 workers on 12 cores | 4.22 s | 2.94 s |
-| 8 workers on 16 cores (what `vitest` in watch mode uses) | 3.10 s | 2.51 s |
-| 15 workers on 16 cores (what `vitest run` uses) | 2.55 s | 2.42 s |
+| 4 workers on 14 cores | 3.52 s | 2.29 s |
+| 7 workers on 14 cores (what `vitest` in watch mode uses) | 2.47 s | 2.14 s |
+| 13 workers on 14 cores (what `vitest run` uses) | 2.15 s | 2.07 s |
+
+Medians of 5 runs, 2026-11-21, Apple M4 Max, Node 26.13.1.
 
 It needs idle cores to boot on, so it helps most where Vitest runs fewer workers than the machine
 has cores: watch mode, a `maxWorkers` setting, CI machines. In watch mode one worker stays ready
