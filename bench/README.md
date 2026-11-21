@@ -227,14 +227,17 @@ were ours:
   render + cleanup 8.24 → 7.81 µs, rerender 3.26 → 3.07 µs.
 
 Together 8.71 [8.47–9.03] → 7.86 ms [7.61–8.26] per test file (medians and quartiles of 40
-interleaved fresh processes, the release at 33707d9 against the one after both).
+interleaved fresh processes, the release at 33707d9 against the one after both). On Linux
+(`node:26-slim` under OrbStack, Node 26.7.0, aarch64, the same trees copied onto the container's
+filesystem): 6.58 [6.06–7.00] → 5.67 ms [5.39–6.21], the self-references alone 6.35 → 5.77 ms.
 
 Measured and not done: **`.mjs` file names.** For a `.js` module Node finds the nearest
 package.json to learn its format, once per directory, and the bundles sit in ten (`dist/<member>/`
 and its `_chunks/`). Renamed to `.mjs` on top of the relative imports, the same imports took
-7.54 → 6.96 ms on macOS. It renames every published file and the places that name them (each
-member's exports, the Jest preset, the plugin's environment path, tests/pack), and was not
-measured on Linux, where the failed lookups it avoids are cheaper.
+7.54 → 6.96 ms on macOS and 5.77 [5.49–6.02] → 5.50 ms [5.10–6.00] on Linux, where the failed
+lookups it avoids are cheaper. It renames every published file and the places that name them
+(each member's exports, the Jest preset, the plugin's environment path, tests/pack) for a
+quarter of a millisecond where CI runs.
 
 **What `@ctrl/dom/react` adds to React per call** (same setup, warm, medians of 7 × 20,000, one
 small component): render + cleanup 12.7 µs against 10.9 µs for `createRoot` + `act(render)` +
