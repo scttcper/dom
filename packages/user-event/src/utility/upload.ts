@@ -1,12 +1,7 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/utility/upload.ts
 
-import type {
-  EventInit,
-  File,
-  HTMLElement,
-  HTMLInputElement,
-} from '../dom-types.ts'
+import type {File, HTMLElement, HTMLInputElement} from '../dom-types.ts'
 import {
   createFileList,
   getWindow,
@@ -15,10 +10,6 @@ import {
   setFiles,
 } from '../utils/index.ts'
 import {type Instance} from '../setup/index.ts'
-
-export interface uploadInit {
-  changeInit?: EventInit
-}
 
 export async function upload(
   this: Instance,

@@ -53,12 +53,3 @@ export function toShort(v: unknown): number {
 export function toUnsignedShort(v: unknown): number {
   return integerPart(v) & 0xffff;
 }
-
-/** A dictionary argument: undefined/null → null (use defaults), objects pass, others throw. */
-export function toDictionary(v: unknown, iface: string): Record<string, unknown> | null {
-  if (v === undefined || v === null) return null;
-  if (typeof v !== "object" && typeof v !== "function") {
-    throw new TypeError(`Failed to construct '${iface}': The provided value is not of type '${iface}Init'.`);
-  }
-  return v as Record<string, unknown>;
-}

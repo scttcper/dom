@@ -48,11 +48,6 @@ export function inputType(impl: NodeImpl): string {
   return INPUT_TYPES.has(lower) ? lower : "text";
 }
 
-/** Whether `impl` is an HTML-namespace element with the given tag. */
-export function isHTML(impl: NodeImpl, tag: number): boolean {
-  return impl.tag === tag && impl.ns === HTML_NS;
-}
-
 interface StateWrapper {
   value?: unknown;
   checked?: unknown;

@@ -79,6 +79,7 @@
     "test:pack": "node tests/pack/src/run.ts",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint",
+    "knip": "knip",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "bench": "pnpm --filter ./bench run bench",
@@ -100,6 +101,7 @@
   "devDependencies": {
     "@types/node": "26.6.5",
     "jsdom": "31.0.1",
+    "knip": "^6.47.0",
     "oxfmt": "0.74.0",
     "oxlint": "1.89.0",
     "rolldown": "1.2.15",

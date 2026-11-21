@@ -17,11 +17,6 @@ function parentElement(el: NodeImpl): NodeImpl | null {
   return p !== null && p.type === ELEMENT_NODE ? p : null;
 }
 
-/** true if `element` and its subtree are inaccessible (`hidden`, `aria-hidden="true"`, `display: none`) */
-export function isSubtreeInaccessibleImpl(element: NodeImpl): boolean {
-  return aria.isSubtreeInaccessible(element);
-}
-
 /**
  * Partial implementation https://www.w3.org/TR/wai-aria-1.2/#tree_exclusion
  * which should only be used for elements with a non-presentational role i.e.
@@ -44,15 +39,6 @@ export function isInaccessibleImpl(element: NodeImpl): boolean {
 export function isInaccessibleChecked(element: NodeImpl): boolean {
   const gcs = styleOverride(element);
   return gcs === null ? aria.isInaccessible(element) : aria.isInaccessibleWithStyle(element, gcs, null);
-}
-
-export function isSubtreeInaccessible(element: any): boolean {
-  const impl = implOf(element);
-  const gcs = styleOverride(impl);
-  if (gcs === null) return isSubtreeInaccessibleImpl(impl);
-  if (impl.ns === HTML_NS && attr(impl, "hidden") !== null) return true;
-  if (ariaAttr(impl, "aria-hidden") === "true") return true;
-  return gcs(element).display === "none";
 }
 
 export function isInaccessible(
@@ -225,10 +211,6 @@ function computeHeadingLevelImpl(element: NodeImpl): number | undefined {
 }
 
 export { computeHeadingLevelImpl };
-
-export function computeHeadingLevel(element: any): number | undefined {
-  return computeHeadingLevelImpl(implOf(element));
-}
 
 export function computeAriaValueNow(element: NodeImpl): number | undefined {
   const valueNow = ariaAttr(element, "aria-valuenow");

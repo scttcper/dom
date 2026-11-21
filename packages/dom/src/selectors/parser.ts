@@ -567,7 +567,6 @@ export const P_HOST = 29;
 export const P_LINK = 30;
 export const P_ANY_LINK = 31;
 export const P_VISITED = 32;
-export const P_LOCAL_LINK = 33;
 export const P_TARGET = 34;
 export const P_TARGET_WITHIN = 35;
 export const P_DEFINED = 36;
@@ -594,10 +593,8 @@ export const P_OUT_OF_RANGE = 63;
 export const P_USER_VALID = 64;
 export const P_USER_INVALID = 65;
 export const P_AUTOFILL = 66;
-export const P_BLANK = 67;
 // misc element state
 export const P_OPEN = 70;
-export const P_CLOSED = 71;
 export const P_POPOVER_OPEN = 72;
 export const P_MODAL = 73;
 export const P_FULLSCREEN = 74;
@@ -1796,12 +1793,4 @@ function trimWs(s: string): string {
 export function parseSelectorList(src: string): SelectorList | null {
   const p = new SelectorParser(src);
   return p.parseSelectorList();
-}
-
-/** Like `parseSelectorList` but returns the failure reason ("" on success). */
-export function selectorError(src: string): string {
-  const p = new SelectorParser(src);
-  const list = p.parseSelectorList();
-  if (list === null) return p.error === "" ? "invalid selector" : p.error;
-  return "";
 }

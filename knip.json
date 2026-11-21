@@ -1,0 +1,116 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    "downstream/**",
+    "tools/release/**",
+    "**/fixtures/**",
+    "**/*.fixture.*",
+    "tests/pack/fixture/**",
+    "packages/dom/test/**/wpt/**/*.js",
+    "packages/dom/test/selectors/wpt/selectors.data.d.ts"
+  ],
+  "ignoreDependencies": ["vitest-environment-ctrl-dom", "ctrl-dom", "jest-environment-node"],
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.ts"],
+      "project": ["scripts/**/*.ts"]
+    },
+    "packages/aria": {
+      "entry": [
+        "bench/*.ts",
+        "scripts/*.{ts,cjs}",
+        "test/**/*.test.{ts,tsx,js}",
+        "test/**/vitest*.config.ts",
+        "test/**/*.scratch.ts"
+      ],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "packages/cli": {
+      "entry": [],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "packages/dom": {
+      "entry": [
+        "src/**/generate*.ts",
+        "test/**/*.test.{ts,tsx,js}",
+        "test/**/vitest*.config.ts",
+        "test/perf/*.ts",
+        "test/**/*.scratch.ts"
+      ],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "packages/jest-dom": {
+      "entry": ["bench/*.ts", "scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}", "test/setup-*.ts"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"],
+      "ignoreDependencies": ["@adobe/css-tools", "dom-accessibility-api"]
+    },
+    "packages/jest-environment": {
+      "entry": ["test/**/*.test.{ts,tsx,js}", "jest/*.cjs"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"],
+      "ignoreDependencies": ["jest"]
+    },
+    "packages/react": {
+      "entry": ["bench/*.ts", "test/**/*.test.{ts,tsx,js}"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "packages/register": {
+      "entry": ["test/**/*.test.{ts,tsx,js}"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"],
+      "ignoreDependencies": ["react", "expect", "@types/react"]
+    },
+    "packages/sentry-tests": {
+      "entry": ["scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}", "test/**/vitest*.config.ts"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "packages/testing-library": {
+      "entry": ["bench/*.ts", "test/**/*.test.{ts,tsx,js}", "test/types/*.ts"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"],
+      "ignoreDependencies": ["@babel/code-frame", "pretty-format"]
+    },
+    "packages/user-event": {
+      "entry": ["bench/*.ts", "test/**/*.test.{ts,tsx,js}"],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "packages/vitest-environment": {
+      "entry": [
+        "bench/*.ts",
+        "test/**/*.test.{ts,tsx,js}",
+        "test/**/vitest*.config.ts",
+        "test/**/{global-setup,record,counter,scenario}.{ts,tsx}"
+      ],
+      "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
+    },
+    "bench": {
+      "entry": ["worker.ts", "startup-snapshot.ts", "suite/*.ts", "workloads/**/*.{ts,tsx}", "lib/dist-preload.js"],
+      "project": ["**/*.{ts,tsx,js}"],
+      "ignoreDependencies": ["@testing-library/react", "@testing-library/user-event"]
+    },
+    "comparison": {
+      "entry": [
+        "suite.ts",
+        "jest-suite.ts",
+        "startup.ts",
+        "*.config.ts",
+        "lib/*-{reporter,setup,worker}.{ts,cjs}",
+        "benches/*.bench.{ts,tsx}"
+      ],
+      "project": ["**/*.{ts,tsx,js,cjs}"],
+      "ignoreDependencies": ["jest"]
+    },
+    "tests/compat": {
+      "entry": ["test/**/*.test.{ts,tsx}", "vitest.*.config.ts"],
+      "project": ["**/*.{ts,tsx}"]
+    }
+  },
+  "rules": {
+    "duplicates": "off",
+    "optionalPeerDependencies": "off"
+  },
+  "ignoreIssues": {
+    "packages/dom/src/parser/tags.ts": ["exports"],
+    "packages/user-event/src/setup/directApi.ts": ["exports"],
+    "packages/aria/src/data/*.generated.ts": ["exports"],
+    "packages/*/types/**": ["exports", "types"]
+  }
+}

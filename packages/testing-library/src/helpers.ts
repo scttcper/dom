@@ -4,10 +4,6 @@
 import type { NodeImpl } from "@ctrl/dom/internal";
 import { $impl } from "@ctrl/dom/internal";
 
-// Constant node.nodeType for text nodes, see:
-// https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType#Node_type_constants
-export const TEXT_NODE = 3;
-
 declare const jest: any;
 
 /**

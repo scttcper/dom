@@ -22,7 +22,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 
 | Spec | Implemented | Tested | WPT only | Untested |
 | --- | --: | --: | --: | --: |
-| [HTML Standard](#html-standard) | 786 | 607 | 54 | 125 |
+| [HTML Standard](#html-standard) | 785 | 606 | 54 | 125 |
 | [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
 | [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
 | [CSS: geometry](#css-geometry) | 61 | 54 | 3 | 4 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1687 | 1166 | 123 | 398 |
+| **All** | 1686 | 1165 | 123 | 398 |
 
 ## Web-platform-tests fixtures
 
@@ -163,7 +163,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## HTML Standard
 
-<https://html.spec.whatwg.org/> — 786 sections implemented, 607 tested, 54 by WPT only, 125 untested.
+<https://html.spec.whatwg.org/> — 785 sections implemented, 606 tested, 54 by WPT only, 125 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -216,7 +216,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [can-have-its-url-rewritten](https://html.spec.whatwg.org/#can-have-its-url-rewritten) | `dom/window/History.ts` | `compat/html/history-location.test.ts` |
 | [case-sensitivity-of-selectors](https://html.spec.whatwg.org/#case-sensitivity-of-selectors) | `dom/css/cascade.ts`, `dom/selectors/compile.ts`, `jest-dom/matchers/aria.ts` +1 | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/matching.test.ts`; WPT: `css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html` |
 | [categories](https://html.spec.whatwg.org/#categories) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
-| [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/label-helpers.ts` +1 | `testing-library/unit/label-map-cache.test.ts`, `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
+| [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/queries/label-text.ts` | `testing-library/unit/label-map-cache.test.ts`, `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
 | [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
 | [category-reset](https://html.spec.whatwg.org/#category-reset) | `dom/html/forms/form-associated.ts` | WPT: `html/semantics/forms/resetting-a-form/reset-form.html` |
 | [category-submit](https://html.spec.whatwg.org/#category-submit) | `dom/html/forms/form-associated.ts` | `compat/forms/form-algorithms.test.ts` |
@@ -946,7 +946,6 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [valid-month-string](https://html.spec.whatwg.org/#valid-month-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [valid-normalised-local-date-and-time-string](https://html.spec.whatwg.org/#valid-normalised-local-date-and-time-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [valid-simple-colour](https://html.spec.whatwg.org/#valid-simple-colour) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
-| [valid-time-string](https://html.spec.whatwg.org/#valid-time-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [valid-week-string](https://html.spec.whatwg.org/#valid-week-string) | `dom/html/forms/microsyntaxes.ts` | `compat/forms/input-microsyntaxes.test.ts` |
 | [validitystate](https://html.spec.whatwg.org/#validitystate) | `dom/html/forms/validation.ts` | `dom/html/forms/validation.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [value-sanitization-algorithm](https://html.spec.whatwg.org/#value-sanitization-algorithm) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `compat/forms/input-value.test.ts` |

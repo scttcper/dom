@@ -23,7 +23,7 @@
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { setAttributeValue, removeAttributeByLocalName, isAsciiWhitespace } from "../nodes/attributes.ts";
 import { DOMTokenList } from "../collections/DOMTokenList.ts";
-import { HTML_NS } from "../nodes/constants.ts";
+import {} from "../nodes/constants.ts";
 import { $impl } from "../keys.ts";
 
 type Ctor = { prototype: object };
@@ -316,29 +316,6 @@ export function clampedUlong(C: Ctor, idl: string, content: string, def: number,
   );
 }
 
-/** `double` reflection; `positive` = limited to only positive numbers. */
-export function double(C: Ctor, list: string, def = 0, positive = false): void {
-  for (const [idl, content] of names(list)) {
-    defineAccessor(
-      C,
-      idl,
-      function () {
-        const v = contentAttr(this[$impl], content);
-        if (v === null) return def;
-        const n = parseFloatingPoint(v);
-        if (Number.isNaN(n) || (positive && n <= 0)) return def;
-        return n;
-      },
-      function (v) {
-        const n = Number(v);
-        if (!Number.isFinite(n)) throw new TypeError("The provided double value is non-finite.");
-        if (positive && n <= 0) return;
-        setContentAttr(this[$impl], content, String(n));
-      },
-    );
-  }
-}
-
 export interface EnumSpec {
   /** Canonical keywords (lowercase). Aliases: "alias:canonical". */
   keywords: string[];
@@ -421,9 +398,4 @@ export function tokenList(C: Ctor, idl: string, content: string, supported: read
       setContentAttr(this[$impl], content, String(v));
     },
   );
-}
-
-/** Whether `impl` is an HTML-namespace element. */
-export function isHTMLElement(impl: NodeImpl): boolean {
-  return impl.type === 1 && impl.ns === HTML_NS;
 }

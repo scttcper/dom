@@ -26,7 +26,7 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
 import { attr, asciiLowercase, findAttributeByNamespace } from "../nodes/attributes.ts";
 import { nextInTree, nextSkippingChildren } from "../nodes/traverse.ts";
-import { clearSelectorCaches } from "./index.ts";
+import {} from "./index.ts";
 import { $host, $impl, $url } from "../keys.ts";
 
 export type Predicate = (el: NodeImpl) => boolean;
@@ -447,12 +447,3 @@ export const predicates: Record<string, Predicate> = {
   "has-slotted": never,
   "target-current": never,
 };
-
-/**
- * Replace the predicate for an element-state pseudo-class (e.g. html-forms registers `checked`,
- * html-elements registers `focus`, `popover-open`, `defined`). Name without the colon.
- */
-export function setPseudoClassPredicate(name: string, fn: Predicate): void {
-  predicates[name] = fn;
-  clearSelectorCaches();
-}

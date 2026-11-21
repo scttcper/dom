@@ -708,8 +708,3 @@ export function matchMediaText(text: string, env: MediaEnvironment): boolean {
   // matchMedia("") matches (empty list), unlike an invalid query.
   return evaluateMediaQueryList(list, env);
 }
-
-/** Serialization used by MediaQueryList.media. */
-export function normalizeMediaText(text: string): string {
-  return serializeMediaQueryList(parseMediaQueryList(text));
-}

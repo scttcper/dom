@@ -4,7 +4,7 @@ import { DOCUMENT_NODE, ELEMENT_NODE, F_CONTENTEDITABLE_ATTR, HTML_NS } from "..
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { contentAttr } from "./reflect.ts";
 import { asciiLowercase } from "../nodes/attributes.ts";
-import { isDisplayNone, isDisplayNoneInclusive } from "../css/internal.ts";
+import { isDisplayNoneInclusive } from "../css/internal.ts";
 
 // --- rendering ----------------------------------------------------------------------------
 
@@ -15,11 +15,6 @@ import { isDisplayNone, isDisplayNoneInclusive } from "../css/internal.ts";
  */
 export function isRenderingHidden(impl: NodeImpl): boolean {
   return isDisplayNoneInclusive(impl);
-}
-
-/** The element's own computed display is none (ancestors not considered). */
-export function isOwnDisplayNone(impl: NodeImpl): boolean {
-  return isDisplayNone(impl);
 }
 
 // --- editing ------------------------------------------------------------------------------

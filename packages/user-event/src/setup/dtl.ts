@@ -49,9 +49,6 @@ function load(
 const dtl: DTLModule | null = load(
   ctrlDomTestingLibrary as unknown as Partial<DTLModule>,
 )
-/** Which module provides `getConfig` ('default' when none could be loaded). */
-export const dtlSource: string = dtl ? '@ctrl/dom/testing-library' : 'default'
-
 /** The Testing Library DOM module user-event reads its config from, or null (built-in defaults). */
 export const dtlModule: DTLModule | null = dtl
 

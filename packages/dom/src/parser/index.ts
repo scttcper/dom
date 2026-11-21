@@ -50,7 +50,7 @@ import { attachShadowRoot } from "../nodes/Element.ts";
 import { parseXMLFragment } from "./xml.ts";
 import { $availableToElementInternals, $declarative, $host, $impl, $isHTML, $mode, $shadowRoot } from "../keys.ts";
 
-export { parseXML, parseXMLFragment, PARSERERROR_NS } from "./xml.ts";
+export { parseXML, PARSERERROR_NS } from "./xml.ts";
 
 /** Options for the HTML parser entry points. */
 export interface HTMLParseOptions {

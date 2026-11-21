@@ -308,8 +308,3 @@ export async function enableWarmForks(project: WarmProject, preload: string): Pr
   }
   return true;
 }
-
-/** @internal For tests: the spares alive now, and the counts since the process started. */
-export function warmForksState(): { spares: number; forked: number; adopted: number; started: number } {
-  return { spares: spares.length, ...stats };
-}

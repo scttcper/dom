@@ -454,13 +454,6 @@ function allImpls(root: NodeImpl, q: Query): NodeImpl[] {
   return out;
 }
 
-/** Internal variant of querySelectorAll returning impls (no NodeList allocation). The array is fresh and owned by the caller. */
-export function querySelectorAllImpls(root: NodeImpl, selectors: string, out: NodeImpl[] = []): NodeImpl[] {
-  const all = allImpls(root, getQuery(selectors, "querySelectorAll", root));
-  for (let i = 0; i < all.length; i++) out.push(all[i]);
-  return out;
-}
-
 /** https://dom.spec.whatwg.org/#dom-element-matches */
 export function matches(el: NodeImpl, selectors: string): boolean {
   const q = getQuery(selectors, "matches", el);
@@ -498,15 +491,4 @@ function closestMatch(el: NodeImpl, list: CList): NodeImpl | null {
     if (list.fn(n)) return n;
   }
   return null;
-}
-
-/** Whether `selectors` parses as a valid selector list (no exception). */
-export function isValidSelector(selectors: string): boolean {
-  let q = cache.get(selectors);
-  if (q === undefined) {
-    q = compileQuery(selectors);
-    if (cache.size >= MAX_CACHE) cache.clear();
-    cache.set(selectors, q);
-  }
-  return q !== null;
 }

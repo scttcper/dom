@@ -37,6 +37,8 @@ jobs:
           key: test-${{ runner.os }}-node${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm typecheck
       - run: pnpm lint
+      # Unused files, exports and dependencies (knip.json).
+      - run: pnpm knip
       - run: pnpm fmt:check
       - run: pnpm test
         env:

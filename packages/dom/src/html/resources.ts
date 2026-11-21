@@ -67,11 +67,6 @@ function setSheet(el: Element, sheet: object | null): void {
   Object.defineProperty(el, SHEET, { value: sheet, writable: true, configurable: true });
 }
 
-/** The CSS style sheet associated with a <style>/<link> element (for document.styleSheets). */
-export function associatedSheet(impl: NodeImpl): object | null {
-  return getSheet(impl.node as Element);
-}
-
 /** https://html.spec.whatwg.org/#child-text-content */
 export function childTextContent(impl: NodeImpl): string {
   let s = "";

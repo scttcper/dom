@@ -37,11 +37,6 @@ export function templateContentsOwner(doc: Document): Document {
 
 const CONTENT = Symbol("content");
 
-/** The template contents fragment of a template element (created on first use). */
-export function templateContents(impl: NodeImpl): NodeImpl {
-  return (impl.node as HTMLTemplateElement).content[$impl];
-}
-
 export class HTMLTemplateElement extends HTMLElement {
   constructor(doc?: Document, localName?: string, ns?: string | null, prefix?: string | null) {
     super(doc, localName, ns, prefix);

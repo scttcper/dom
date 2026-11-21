@@ -58,18 +58,6 @@ export interface CtrlDomFormsUI {
   ): void
 }
 
-/**
- * Contract expected from @ctrl/dom css (`src/css/internal.ts`).
- *
- * TODO(css): export from `@ctrl/dom/internal`.
- */
-export interface CtrlDomCss {
-  /** Computed value of `property` for the element (specified + inherited, no layout). */
-  computedValue(el: NodeImpl, property: string): string
-  isDisplayNone(el: NodeImpl): boolean
-  isVisibilityHidden(el: NodeImpl): boolean
-}
-
 type InternalModule = Record<string, unknown>
 
 const internal: InternalModule | null =
@@ -93,13 +81,6 @@ export const ctrlDomUI: CtrlDomFormsUI | null = pick<CtrlDomFormsUI>([
   'clearUIValue',
   'getUISelection',
   'setUISelection',
-])
-
-/** @ctrl/dom computed-style fast reads, or null while css does not provide them. */
-export const ctrlDomCss: CtrlDomCss | null = pick<CtrlDomCss>([
-  'computedValue',
-  'isDisplayNone',
-  'isVisibilityHidden',
 ])
 
 const skipIdle = internal?.skipIdleTime as ((ms: number) => boolean) | undefined

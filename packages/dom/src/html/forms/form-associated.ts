@@ -70,11 +70,6 @@ export function isLabelable(el: NodeImpl): boolean {
   return (el.flags & F_FACE) !== 0;
 }
 
-/** https://html.spec.whatwg.org/#form-associated-element (listed elements + img). */
-export function isFormAssociated(el: NodeImpl): boolean {
-  return isListed(el) || el.tag === T.img;
-}
-
 // --- id lookup ------------------------------------------------------------------------------
 
 /** First element in `el`'s tree (shadow-root aware) whose id is `id`, or null. */

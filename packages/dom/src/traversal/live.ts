@@ -326,7 +326,7 @@ function preRemovingSteps(it: IteratorState, pos: IteratorState, toBeRemoved: No
 }
 
 /** @internal For tests: drop every registration. */
-export function _resetLiveRegistries(): void {
+function _resetLiveRegistries(): void {
   iterators = [];
   liveRangeCount = 0;
   nodeIteratorCount = 0;

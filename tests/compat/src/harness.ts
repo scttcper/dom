@@ -240,16 +240,6 @@ export function recordEvents(
   return log;
 }
 
-/** Snapshot the commonly observed state of a form control. */
-export function controlState(el: AnyWindow): Record<string, unknown> {
-  const state: Record<string, unknown> = { value: el.value };
-  if ("checked" in el) state.checked = el.checked;
-  if ("defaultValue" in el) state.defaultValue = el.defaultValue;
-  if ("selectedIndex" in el) state.selectedIndex = el.selectedIndex;
-  if ("validity" in el) state.valid = el.validity?.valid;
-  return state;
-}
-
 /** All ValidityState flags of a control. */
 export function validityFlags(el: AnyWindow): Record<string, boolean> {
   const v = el.validity;

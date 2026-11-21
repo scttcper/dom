@@ -29,8 +29,6 @@ import { radioGroupHasNoChecked } from "./HTMLInputElement.ts";
 import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
 import { $control, $impl } from "../../keys.ts";
 
-export { isActuallyDisabled } from "./form-associated.ts";
-
 /** `:disabled` — https://html.spec.whatwg.org/#selector-disabled */
 export function isDisabled(el: NodeImpl): boolean {
   return isActuallyDisabled(el);

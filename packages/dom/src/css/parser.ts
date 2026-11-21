@@ -15,8 +15,6 @@
 import {
   CSSTokenizer,
   TK_AT_KEYWORD,
-  TK_BAD_STRING,
-  TK_BAD_URL,
   TK_CDC,
   TK_CDO,
   TK_COLON,
@@ -593,20 +591,4 @@ export function parseDeclarationList(src: string): RawDecl[] {
     for (let i = 0; i < more.decls.length; i++) holder.decls.push(more.decls[i]);
   }
   return holder.decls;
-}
-
-/** True if a value contains bad-string / bad-url tokens or unbalanced closers (never valid). */
-export function hasInvalidTokens(value: string): boolean {
-  const t = new CSSTokenizer(value);
-  let depth = 0;
-  while (true) {
-    const type = t.next();
-    if (type === TK_EOF) return false;
-    if (type === TK_BAD_STRING || type === TK_BAD_URL) return true;
-    if (type === TK_FUNCTION || type === TK_LPAREN || type === TK_LBRACKET || type === TK_LBRACE) depth++;
-    else if (type === TK_RPAREN || type === TK_RBRACKET || type === TK_RBRACE) {
-      if (depth === 0) return true;
-      depth--;
-    }
-  }
 }

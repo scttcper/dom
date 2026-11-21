@@ -295,17 +295,3 @@ export function cssPropertyToIDLAttribute(property: string, lowercaseFirst: bool
   }
   return out;
 }
-
-/** Converts an IDL attribute name or property-ish key to a CSS property name ("" if none). */
-export function idlAttributeToProperty(key: string): string {
-  if (key === "cssFloat") return "float";
-  if (key.indexOf("-") !== -1) return key.toLowerCase();
-  let out = "";
-  for (let i = 0; i < key.length; i++) {
-    const c = key.charCodeAt(i);
-    if (c >= 65 && c <= 90) out += "-" + key[i].toLowerCase();
-    else out += key[i];
-  }
-  if (out.startsWith("webkit-")) out = "-" + out;
-  return out;
-}

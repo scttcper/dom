@@ -344,11 +344,6 @@ function isShadowIncludingInclusiveAncestor(ancestor: NodeImpl, node: NodeImpl):
 // elements that support keyboard input (https://drafts.csswg.org/selectors-4/#the-focus-visible-pseudo).
 let pointerFocusPending = false;
 
-/** Called by user-event before a pointer-caused focus. */
-export function notePointerFocus(): void {
-  pointerFocusPending = true;
-}
-
 function wasPointerFocus(target: NodeImpl): boolean {
   if (!pointerFocusPending) return false;
   pointerFocusPending = false;

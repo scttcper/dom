@@ -24,7 +24,6 @@ import {
   KEY_TAG,
   matchComplex,
   matchFeaturelessHost,
-  packSpecificity,
   resetMemos,
   setHostContext,
   setScope,
@@ -33,11 +32,10 @@ import {
 } from "./compile.ts";
 import { $cx, $info } from "../keys.ts";
 
-export { KEY_NONE, KEY_ID, KEY_CLASS, KEY_TAG, packSpecificity, unpackSpecificity };
+export { KEY_NONE, KEY_ID, KEY_CLASS, KEY_TAG, unpackSpecificity };
 export { buildAncestorFilter, mayMatchAncestors } from "./filter.ts";
 export { beginStateDeps, endStateDeps, stateDepsHold, type StateDeps } from "./compile.ts";
-export { querySelectorAllImpls, isValidSelector, clearSelectorCaches } from "./index.ts";
-export { setHoverTarget, setActiveTarget, setPseudoClassPredicate, interaction, type Predicate } from "./state.ts";
+export { setHoverTarget, setActiveTarget } from "./state.ts";
 
 /** One complex selector of a compiled list. */
 export class CompiledSelector {
@@ -209,18 +207,6 @@ export function matchesSelectorDirect(sel: CompiledSelector, el: NodeImpl, pseud
   if (sel.pseudoElement !== pseudoElement) return false;
   if (sel.direct) return sel[$cx].fn(el);
   return matchesSelector(sel, el, pseudoElement);
-}
-
-/** Whether any selector of the list matches. */
-export function matchesSelectorList(
-  list: CompiledSelectorList,
-  el: NodeImpl,
-  pseudoElement?: string | null,
-  options?: MatchOptions,
-): boolean {
-  const s = list.selectors;
-  for (let i = 0; i < s.length; i++) if (matchesSelector(s[i], el, pseudoElement, options)) return true;
-  return false;
 }
 
 /** Highest specificity among the selectors of `list` that match `el` (-1 when none match). */

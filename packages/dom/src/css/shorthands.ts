@@ -12,7 +12,6 @@ import {
   grammarFor,
   isCSSWideKeyword,
   normalizeComponent,
-  normalizeLonghand,
   splitComponents,
   TK_COMMA,
   TK_DELIM,
@@ -782,9 +781,4 @@ export function serializeShorthand(name: string, v: string[], computed: boolean)
     }
   }
   return "";
-}
-
-/** Normalizes a single longhand value from a shorthand component list (helper for callers). */
-export function normalizeLonghandValue(name: string, value: string): string | null {
-  return normalizeLonghand(name, value);
 }

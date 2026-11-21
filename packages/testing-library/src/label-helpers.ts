@@ -8,7 +8,6 @@
 import {
   asciiLowercase,
   ariaAttr,
-  attr,
   ELEMENT_NODE,
   HTML_NS,
   indexedDescendantById,
@@ -20,25 +19,6 @@ import {
 import { labelMapForTree, labelsOf as ariaLabelsOf } from "@ctrl/dom/aria/internal";
 import { matchesSelector } from "./selectors.ts";
 import { implOf } from "./helpers.ts";
-
-/** https://html.spec.whatwg.org/#category-label (form-associated custom elements not supported). */
-export function isLabelable(impl: NodeImpl): boolean {
-  if (impl.type !== ELEMENT_NODE || impl.ns !== HTML_NS) return false;
-  switch (impl.tag) {
-    case T.button:
-    case T.meter:
-    case T.output:
-    case T.progress:
-    case T.select:
-    case T.textarea:
-      return true;
-    case T.input: {
-      const type = attr(impl, "type");
-      return type === null || asciiLowercase(type) !== "hidden";
-    }
-  }
-  return false;
-}
 
 const FORM_CONTROL_TAGS = new Set(["button", "input", "meter", "output", "progress", "select", "textarea"]);
 
@@ -149,20 +129,4 @@ export function getLabelsImpl(ctx: LabelContext, element: NodeImpl, selector = "
 export function getRealLabels(element: any): any[] {
   const impl = implOf(element);
   return new LabelContext(impl).labelsOf(impl).map((l) => l.node);
-}
-
-export function getLabelContent(element: any): string | null {
-  return getLabelContentImpl(implOf(element));
-}
-
-export function getLabels(
-  container: any,
-  element: any,
-  { selector = "*" } = {},
-): { content: string | null; formControl: any }[] {
-  const ctx = new LabelContext(implOf(container));
-  return getLabelsImpl(ctx, implOf(element), selector).map((l) => ({
-    content: l.content,
-    formControl: l.formControl == null ? l.formControl : l.formControl.node,
-  }));
 }

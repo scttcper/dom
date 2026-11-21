@@ -14,7 +14,6 @@ import {
   isInaccessibleImpl,
   isSubtreeInaccessibleImpl,
   isInaccessibleWithStyle,
-  isDisplayNone,
   isVisibilityHidden,
 } from "@ctrl/dom/aria/internal";
 
@@ -76,4 +75,4 @@ export const aria = {
   isSubtreeInaccessible: isSubtreeInaccessibleImpl,
 };
 
-export { isDisplayNone, isVisibilityHidden };
+export { isVisibilityHidden };

@@ -323,11 +323,6 @@ const H_SIBLINGS_AND_DESCENDANTS = 5;
 
 // --- specificity -------------------------------------------------------------------------
 
-/** Pack (a, b, c) into one comparable number (each component saturates at 1023). */
-export function packSpecificity(a: number, b: number, c: number): number {
-  return Math.min(a, 1023) * 1048576 + Math.min(b, 1023) * 1024 + Math.min(c, 1023);
-}
-
 export function unpackSpecificity(s: number): [number, number, number] {
   return [Math.floor(s / 1048576), Math.floor(s / 1024) % 1024, s % 1024];
 }

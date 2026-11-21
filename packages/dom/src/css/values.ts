@@ -167,10 +167,6 @@ const MATH_FUNCTIONS = new Set([
   "pow", "sqrt", "hypot", "log", "exp", "abs", "sign", "env", "-webkit-calc", "-moz-calc", "calc-size", "anchor", "anchor-size",
 ]);
 
-export function isLengthUnit(lowerUnit: string): boolean {
-  return LENGTH_UNITS.has(lowerUnit);
-}
-
 // --- grammars -----------------------------------------------------------------------------
 
 export const G_LENGTH = 1;

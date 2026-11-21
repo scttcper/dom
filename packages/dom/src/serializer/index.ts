@@ -308,11 +308,6 @@ export function getHTML(node: NodeImpl, options?: GetHTMLOptions): string {
   return runHtml(node, serializable, roots !== undefined && roots.length !== 0 ? roots : null, false);
 }
 
-/** HTML fragment serialization of `node`'s children, regardless of the document type. */
-export function serializeHTMLChildren(node: NodeImpl): string {
-  return runHtml(node, false, null, false);
-}
-
 // --- XML -------------------------------------------------------------------------------------
 // https://w3c.github.io/DOM-Parsing/#dfn-xml-serialization
 

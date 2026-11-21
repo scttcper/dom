@@ -19,7 +19,7 @@ const mockApis = {} as {
 export function getSpy<K extends keyof UserEventApi>(k: K) {
   return mockApis[k].mock
 }
-export function getReal<K extends keyof UserEventApi>(k: K) {
+function getReal<K extends keyof UserEventApi>(k: K) {
   return mockApis[k].real
 }
 

@@ -84,6 +84,7 @@ pnpm test                               # all packages
 pnpm vitest run --project @ctrl/dom      # one package
 pnpm typecheck                          # tsc -b over everything
 pnpm lint                               # oxlint
+pnpm knip                               # unused files, exports and dependencies (knip.json)
 pnpm fmt                                # oxfmt; CI fails on unformatted files (pnpm fmt:check)
 pnpm bench                              # benchmarks (bench/)
 pnpm bench:compare --base ../base --head .  # regression check between two clean checkouts

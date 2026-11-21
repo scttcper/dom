@@ -1948,6 +1948,6 @@ export function contentText(el: NodeImpl, v: string): string {
 }
 
 /** Number of elements with a cached style record is not tracked; exposed for tests of the fast path. */
-export function _hasStyleRecord(el: NodeImpl): boolean {
+function _hasStyleRecord(el: NodeImpl): boolean {
   return el.cache !== null && (el.cache as NodeCache).style !== null;
 }

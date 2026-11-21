@@ -51,5 +51,4 @@ export {
 export { ValidityState } from "./validation.ts";
 export { FormData } from "./FormData.ts";
 export { HTMLFormControlsCollection, HTMLOptionsCollection, RadioNodeList } from "./collections.ts";
-export { implicitSubmission, constructEntryList, defaultButton } from "./form-submission.ts";
-export { formOwner, labeledControl, isLabelable, isListed, isSubmittable, isResettable } from "./form-associated.ts";
+export { implicitSubmission } from "./form-submission.ts";

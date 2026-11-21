@@ -8,10 +8,6 @@
 /** https://html.spec.whatwg.org/#valid-floating-point-number */
 const FLOAT_RE = /^-?(?:\d+|\d*\.\d+)(?:[eE][-+]?\d+)?$/;
 
-export function isValidFloatString(s: string): boolean {
-  return FLOAT_RE.test(s);
-}
-
 /**
  * https://html.spec.whatwg.org/#rules-for-parsing-floating-point-number-values, restricted to
  * valid floating-point numbers (what value sanitization requires). NaN on error.
@@ -92,11 +88,6 @@ export function isValidWeekString(s: string): boolean {
   const year = Number(m[1]);
   const week = Number(m[2]);
   return year > 0 && week >= 1 && week <= lastWeekNumber(year);
-}
-
-/** https://html.spec.whatwg.org/#valid-time-string */
-export function isValidTimeString(s: string): boolean {
-  return !Number.isNaN(parseTime(s));
 }
 
 /**

@@ -20,7 +20,7 @@
 // and must keep `allowCDATA` up to date (adjusted current node not in the HTML namespace).
 
 import { entityValue, matchNamedReference, matchedLength, numericReferenceValue } from "./entities.ts";
-import { TAG_NAMES, TAG_COUNT } from "./tags.ts";
+import { TAG_NAMES } from "./tags.ts";
 
 // --- token types -------------------------------------------------------------------------
 export const TK_NONE = 0;
@@ -1813,6 +1813,3 @@ export class Tokenizer {
     else this.systemId += s;
   }
 }
-
-/** Number of tag names the tokenizer interns (exported for tests). */
-export const INTERNED_TAG_COUNT = TAG_COUNT;

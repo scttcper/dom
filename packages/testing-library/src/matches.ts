@@ -22,13 +22,6 @@ export interface MatcherOptions {
   suggest?: boolean;
 }
 
-export type MatchFn = (
-  textToMatch: string | null,
-  node: any,
-  matcher: Matcher | null,
-  normalizer: NormalizerFn,
-) => boolean;
-
 function assertNotNullOrUndefined<T>(matcher: T): asserts matcher is NonNullable<T> {
   if (matcher === null || matcher === undefined) {
     throw new Error(
