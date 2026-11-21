@@ -17,13 +17,7 @@
       "project": ["scripts/**/*.ts"]
     },
     "packages/aria": {
-      "entry": [
-        "bench/*.ts",
-        "scripts/*.{ts,cjs}",
-        "test/**/*.test.{ts,tsx,js}",
-        "test/**/vitest*.config.ts",
-        "test/**/*.scratch.ts"
-      ],
+      "entry": ["bench/*.ts", "scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}", "test/**/vitest*.config.ts"],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },
     "packages/cli": {
@@ -36,7 +30,7 @@
         "test/**/*.test.{ts,tsx,js}",
         "test/**/vitest*.config.ts",
         "test/perf/*.ts",
-        "test/**/*.scratch.ts"
+        "test/wpt/survey.ts"
       ],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },

@@ -1,4 +1,4 @@
-// WPT survey (not part of the suite): runs every testharness test under WPT_DIRS and writes
+// WPT survey (a tool, not part of the suite): runs every testharness test under WPT_DIRS and writes
 // per-file and per-directory pass counts. Point WPT_ROOT at an upstream checkout to survey
 // files that are not vendored yet:
 //

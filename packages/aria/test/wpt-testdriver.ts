@@ -39,11 +39,6 @@ export function wptComputedRole(el: Element): string {
   return WPT_ROLE_NAME[role] ?? role;
 }
 
-/** Map an arbitrary Testing Library role string to WPT's name for it. */
-export function wptRoleName(role: string): string {
-  return WPT_ROLE_NAME[role] ?? role;
-}
-
 /** `RunOptions.testdriver` for `defineWPT`/`runWPT`. Unsupported actions reject. */
 export function ariaTestDriver(): Record<string, unknown> {
   const unsupported = (name: string) => () => Promise.reject(new Error(`test_driver.${name} is not supported here`));
