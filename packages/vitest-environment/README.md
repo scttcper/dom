@@ -43,9 +43,11 @@ export default defineConfig({ plugins: [ctrlDom()], test: { pool: "vmThreads" } 
 
 | pool | jsdom | happy-dom | ctrl-dom (environment only) | ctrl-dom (full stack) |
 | --- | ---: | ---: | ---: | ---: |
-| default (forks, per-file isolation) | 11.7 s | 6.55 s | 5.94 s | 3.66 s |
-| vmForks | 2.12 s | 1.67 s | 1.66 s | 1.24 s |
-| vmThreads | 2.00 s | 1.44 s | 1.42 s | 1.00 s |
+| default (forks, per-file isolation) | 7.52 s | 5.56 s | 4.10 s | 2.29 s |
+| vmForks | 1.73 s | 1.46 s | 1.14 s | 0.94 s |
+| vmThreads | 1.46 s | 1.24 s | 1.01 s | 0.84 s |
+
+Medians of 3 runs, 2026-11-21, Apple M4 Max (14 cores), Node 26.13.1, Vitest's default worker count.
 
 VM pools have Vitest's usual caveats (Node built-ins come from another realm, so
 `instanceof` checks against them can fail); see https://vitest.dev/config/#vmthreads.
