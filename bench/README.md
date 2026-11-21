@@ -206,6 +206,42 @@ About 30 ms of the warm total is ours, ~9 ms of it undici; no other step of ours
 ~5 ms. The DOM's bundle is 854 KB minified, and its top-level evaluation is still ~3–4 ms of the
 import.
 
+**Imports between our bundles (2026-11-21, Node 26.13.1, `release/ctrl-dom` copied into a scratch
+project next to React 19.3.1).** With the compile cache warm, importing the testing stack is mostly
+Node's loader rather than our code. `@ctrl/dom/react` + `/user-event` + `/jest-dom/matchers` after
+the environment and React is 16 modules of ours; sampled at 40 µs through `node:inspector` (which
+keeps the compile cache, unlike `--cpu-prof`), the top-level evaluation of all of them is ~1 ms of
+7.5 ms, and the rest is `ModuleWrap`, opening files and package.json lookups. Two parts of that
+were ours:
+
+- **Self-references.** The bundles imported each other as `@ctrl/dom/aria` and so on, 21 edges for
+  that set of imports. Node resolves a bare specifier through the package's `exports`, and parses
+  that JSON again for every one (`read()` in lib/internal/modules/package_json_reader.js builds a
+  new config from the text on each call; ours has 25 entries). The release assembly now rewrites
+  them to the relative paths they resolve to (scripts/release.ts, `relativizeSelfReferences`):
+  8.31 → 7.56 ms.
+- **`@ctrl/dom/react`'s `export *` shim.** Its sources reached Testing Library through a local
+  `dtl.ts` that re-exported the package, which the bundler turned into a runtime copy
+  (`__reExport`): ~100 getters defined at import, and every Testing Library call from `render()`
+  through one. Importing `@ctrl/dom/testing-library` directly: the import step 1.21 → 0.90 ms,
+  render + cleanup 8.24 → 7.81 µs, rerender 3.26 → 3.07 µs.
+
+Together 8.71 [8.47–9.03] → 7.86 ms [7.61–8.26] per test file (medians and quartiles of 40
+interleaved fresh processes, the release at 33707d9 against the one after both).
+
+Measured and not done: **`.mjs` file names.** For a `.js` module Node finds the nearest
+package.json to learn its format, once per directory, and the bundles sit in ten (`dist/<member>/`
+and its `_chunks/`). Renamed to `.mjs` on top of the relative imports, the same imports took
+7.54 → 6.96 ms on macOS. It renames every published file and the places that name them (each
+member's exports, the Jest preset, the plugin's environment path, tests/pack), and was not
+measured on Linux, where the failed lookups it avoids are cheaper.
+
+**What `@ctrl/dom/react` adds to React per call** (same setup, warm, medians of 7 × 20,000, one
+small component): render + cleanup 12.7 µs against 10.9 µs for `createRoot` + `act(render)` +
+`act(unmount)` on one container; `rerender` 6.08 against 5.99 µs for `act(() => root.render())`;
+`fireEvent.click` 8.58 against 8.39 µs for `act(() => button.click())`. What is left of ours in a
+render is the result object with its ~50 bound queries, the container and the root bookkeeping.
+
 ### V8 startup snapshot: works, does not pay
 
 A userland snapshot (`node --snapshot-blob x --build-snapshot entry.cjs`) holding the evaluated DOM
@@ -308,7 +344,10 @@ without the process isolation. What it does not change: `spawn` blocks Vitest's 
 
 Things measured on the way and not shipped: V8 flags in workers (`--single-threaded-gc`,
 `--max-lazy`, `--no-opt`, `--v8-pool-size=1`, `--max-semi-space-size=32`: within noise at 4 and
-15 workers); Node's compile cache for Vitest's main process (`NODE_COMPILE_CACHE`: ~5% of a
+15 workers; `--no-lazy-feedback-allocation`, 2026-11-21: a fresh process's first `render()` went
+4.35 → 3.7–4.0 ms and its second 0.30 → 0.21 ms, since react-dom's functions get feedback on their
+first call, but suite/'s 100 files were no faster, 2.07–2.13 s without against 2.09–2.16 s with
+over six interleaved pairs, and `--always-sparkplug` was slower); Node's compile cache for Vitest's main process (`NODE_COMPILE_CACHE`: ~5% of a
 one-file run, and a plugin loads after the modules it would cache). Note for measuring here: on
 this machine's `powersave` governor the first batch of workers of every run takes twice the CPU
 time of later ones (cold cores), and `--cpu-prof` makes V8 reject the compile cache.

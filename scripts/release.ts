@@ -19,14 +19,16 @@
 // each subpath to a member's sources, and @ctrl/dom's members (packages/<dir> without a name of
 // their own) import each other as `@ctrl/dom/aria` and so on. Every bundle and declaration keeps
 // those imports as bare specifiers (scripts/build.ts), which inside the published @ctrl/dom are
-// self-references, so each member still exists exactly once. `@ctrl/dom` and `@ctrl/dom/internal`
-// themselves resolve to generated bridges (writeBridges) that hand every importer the DOM
-// instance the running environment loaded. Static files (READMEs, manifests' static fields) live
+// self-references, so each member still exists exactly once; the ES bundles' are then rewritten
+// to the relative paths they resolve to (relativizeSelfReferences). `@ctrl/dom` and
+// `@ctrl/dom/internal` themselves resolve to generated bridges (writeBridges) that hand every
+// importer the DOM instance the running environment loaded. Static files (READMEs, manifests' static fields) live
 // in publish/<package>/.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parseSync } from "rolldown/experimental";
 
 const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 export const releaseDir = join(repoRoot, "release");
@@ -182,6 +184,53 @@ function pinEnvironmentDom(ctrlDom: string, member = "vitest-environment"): void
 }
 
 /**
+ * Members import each other as `@ctrl/dom/aria` and so on, which inside the published package are
+ * self-references. Node resolves each one through the package's `exports`, and parses that JSON
+ * again for every bare specifier it resolves (`read()` in lib/internal/modules/package_json_reader.js
+ * builds a new config from the text each call). A test file's imports of @ctrl/dom/react,
+ * /user-event and /jest-dom/matchers cross 21 such edges: 8.31 → 7.56 ms with them rewritten to
+ * the relative path of the file `exports` names (bench/README.md, "Worker startup"). The ES
+ * bundles only: Jest resolves the CommonJS builds itself, and declarations keep the names.
+ */
+function relativizeSelfReferences(ctrlDom: string, exportsMap: Json): void {
+  let rewritten = 0;
+  for (const e of readdirSync(join(ctrlDom, "dist"), { withFileTypes: true, recursive: true })) {
+    if (!e.isFile() || !e.name.endsWith(".js")) continue;
+    const path = join(e.parentPath, e.name);
+    let code = readFileSync(path, "utf8");
+    if (!code.includes("@ctrl/dom")) continue;
+    // Parsed rather than matched: messages quote import lines too (`from "@ctrl/dom/vitest"`).
+    const { module } = parseSync(path, code);
+    const requests = [
+      ...module.staticImports.map((i) => i.moduleRequest),
+      ...module.staticExports.flatMap((x) => x.entries.map((entry) => entry.moduleRequest)),
+      ...module.dynamicImports.map((i) => i.moduleRequest),
+    ];
+    // Spans cover the quotes. Last first, so the offsets before an edit stay valid.
+    const starts = new Set<number>();
+    for (const span of requests.filter((r) => r != null).sort((x, y) => y.start - x.start)) {
+      if (starts.has(span.start)) continue;
+      starts.add(span.start);
+      const m = /^(["'`])@ctrl\/dom((?:\/[\w-]+)*)\1$/.exec(code.slice(span.start, span.end));
+      if (m === null) continue;
+      const [, quote, sub] = m;
+      const entry = exportsMap[sub === "" ? "." : `.${sub}`];
+      const file: string | undefined = typeof entry === "string" ? entry : entry?.default;
+      if (file === undefined) {
+        throw new Error(`${relative(ctrlDom, path)} imports @ctrl/dom${sub}, which exports does not name`);
+      }
+      const target = relative(e.parentPath, join(ctrlDom, file));
+      const specifier = target.startsWith(".") ? target : `./${target}`;
+      code = `${code.slice(0, span.start)}${quote}${specifier}${quote}${code.slice(span.end)}`;
+      rewritten++;
+    }
+    writeFileSync(path, code);
+  }
+  // None found means the parser's module record changed and every edge is a bare specifier again.
+  if (rewritten === 0) throw new Error("relativizeSelfReferences: no @ctrl/dom import found in dist");
+}
+
+/**
  * `preset: "@ctrl/dom"`: the ctrl-dom Jest environment (@ctrl/dom-jest-environment, installed next
  * to @ctrl/dom) with every stock Testing Library import routed to @ctrl/dom's CommonJS builds, so
  * existing tests run on the whole stack unchanged. CommonJS because Jest can only `require()` ES
@@ -267,6 +316,7 @@ export async function assembleRelease(): Promise<string[]> {
   }
   exportsMap["./jest-preset"] = "./jest-preset.cjs";
   exportsMap["./package.json"] = "./package.json";
+  relativizeSelfReferences(ctrlDom, exportsMap);
   const { dependencies, peerDependencies } = mergeDependencies(members);
   writeJestPreset(ctrlDom);
   // The `ctrl-dom` bin (`npx ctrl-dom debug <test file>`, docs/agent-debugging.md) and the
