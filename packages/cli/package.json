@@ -10,9 +10,6 @@
     "./vitest-reporter": "./src/vitest-reporter.ts",
     "./jest-reporter": "./src/jest-reporter.ts"
   },
-  "files": [
-    "dist"
-  ],
   "engines": {
     "node": ">=26"
   },

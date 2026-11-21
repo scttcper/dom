@@ -27,7 +27,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { build } from "rolldown";
-import { repoRoot } from "./lib/packages.ts";
+import { repoRoot } from "../scripts/packages.ts";
 import { fmt, summarize } from "./lib/stats.ts";
 
 const { values: flags } = parseArgs({

@@ -22,7 +22,7 @@ import { CONFIGS, DEFAULT_CONFIGS, DOM_CONFIGS, isConfig, type ConfigName } from
 import { buildCell, markdown, terminal } from "./lib/report.ts";
 import type { SampleResult } from "./worker.ts";
 import type { AnyWorkload } from "./workloads/types.ts";
-import { workspacePackages } from "./lib/packages.ts";
+import { workspacePackages } from "../scripts/packages.ts";
 
 const benchDir = fileURLToPath(new URL(".", import.meta.url));
 

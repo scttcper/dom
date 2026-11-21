@@ -28,7 +28,7 @@
 // the repository's).
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseSync } from "rolldown/experimental";
 
@@ -57,13 +57,9 @@ type Json = Record<string, any>;
 const readJson = (path: string): Json => JSON.parse(readFileSync(path, "utf8"));
 const writeJson = (path: string, value: unknown) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 
-/** Copy a directory, dropping per-package NOTICE copies (each published package has one at its root). */
 function copyTree(from: string, to: string): void {
   if (!existsSync(from)) throw new Error(`missing ${relative(repoRoot, from)} (run pnpm build first)`);
   cpSync(from, to, { recursive: true });
-  for (const e of readdirSync(to, { withFileTypes: true, recursive: true })) {
-    if (e.isFile() && (e.name === "NOTICE" || e.name === "LICENSE")) rmSync(join(e.parentPath, e.name));
-  }
 }
 
 /** A member's dist-based `exports` (publishConfig), moved under ./dist/<distDir>/ and ./<sub>. */
@@ -179,33 +175,13 @@ async function writeBridges(ctrlDom: string): Promise<void> {
 }
 
 /**
- * The Vitest environment is what loads the DOM, so it imports the DOM's entries rather than the
- * bridges: with nothing published yet a bridge falls back to `require(esm)`, which made every
- * forked Vitest worker start ~15 ms slower than a native import (60-file suite, `isolate`).
- * `@ctrl/dom/register` (node:test, bun test) is what loads the DOM there, so it is pinned too.
+ * Members whose imports of `@ctrl/dom` and `@ctrl/dom/internal` go to the DOM's entries rather
+ * than the bridges. The Vitest environment is what loads the DOM: with nothing published yet a
+ * bridge falls back to `require(esm)`, which made every forked Vitest worker start ~15 ms slower
+ * than a native import (60-file suite, `isolate`). `@ctrl/dom/register` (node:test, bun test) is
+ * what loads the DOM there.
  */
-function pinEnvironmentDom(ctrlDom: string, member = "vitest-environment"): void {
-  const envDir = join(ctrlDom, "dist", member);
-  let pinned = 0;
-  for (const e of readdirSync(envDir, { withFileTypes: true, recursive: true })) {
-    if (!e.isFile() || !e.name.endsWith(".js")) continue;
-    const path = join(e.parentPath, e.name);
-    const text = readFileSync(path, "utf8").replace(
-      // Import specifiers only (the plugin's own name is "@ctrl/dom" too), in any quotes: the
-      // minifier writes dynamic imports as import(`@ctrl/dom`).
-      /((?:from|import)\s*\(?\s*)(["'`])@ctrl\/dom(\/internal)?\2/g,
-      (_, head: string, quote: string, internal?: string) => {
-        pinned++;
-        const target = relative(e.parentPath, join(ctrlDom, "dist", "dom", internal ? "internal.js" : "index.js"));
-        return `${head}${quote}${target.startsWith(".") ? target : `./${target}`}${quote}`;
-      },
-    );
-    writeFileSync(path, text);
-  }
-  // Both load the DOM themselves: none found means the bundle's import syntax changed and the
-  // environment would quietly go through the bridge again.
-  if (pinned === 0) throw new Error(`pinEnvironmentDom: no @ctrl/dom import found in dist/${member}`);
-}
+const LOADS_THE_DOM = ["vitest-environment", "register"];
 
 /**
  * Members import each other as `@ctrl/dom/aria` and so on, which inside the published package are
@@ -213,17 +189,21 @@ function pinEnvironmentDom(ctrlDom: string, member = "vitest-environment"): void
  * again for every bare specifier it resolves (`read()` in lib/internal/modules/package_json_reader.js
  * builds a new config from the text each call). A test file's imports of @ctrl/dom/react,
  * /user-event and /jest-dom/matchers cross 21 such edges: 8.31 → 7.56 ms with them rewritten to
- * the relative path of the file `exports` names (bench/README.md, "Worker startup"). The ES
- * bundles only: Jest resolves the CommonJS builds itself, and declarations keep the names.
+ * the relative path of the file `exports` names (bench/README.md, "Worker startup"), or of the
+ * DOM's own entry for the members that load it (LOADS_THE_DOM). The ES bundles only: Jest
+ * resolves the CommonJS builds itself, and declarations keep the names.
  */
 function relativizeSelfReferences(ctrlDom: string, exportsMap: Json): void {
   let rewritten = 0;
+  const pinned = new Map(LOADS_THE_DOM.map((member) => [member, 0]));
   for (const e of readdirSync(join(ctrlDom, "dist"), { withFileTypes: true, recursive: true })) {
     if (!e.isFile() || !e.name.endsWith(".js")) continue;
     const path = join(e.parentPath, e.name);
     let code = readFileSync(path, "utf8");
     if (!code.includes("@ctrl/dom")) continue;
-    // Parsed rather than matched: messages quote import lines too (`from "@ctrl/dom/vitest"`).
+    const member = relative(join(ctrlDom, "dist"), path).split(sep)[0];
+    // Parsed rather than matched: messages quote import lines too (`from "@ctrl/dom/vitest"`),
+    // and the plugin's own name is the string "@ctrl/dom".
     const { module } = parseSync(path, code);
     const requests = [
       ...module.staticImports.map((i) => i.moduleRequest),
@@ -238,8 +218,14 @@ function relativizeSelfReferences(ctrlDom: string, exportsMap: Json): void {
       const m = /^(["'`])@ctrl\/dom((?:\/[\w-]+)*)\1$/.exec(code.slice(span.start, span.end));
       if (m === null) continue;
       const [, quote, sub] = m;
-      const entry = exportsMap[sub === "" ? "." : `.${sub}`];
-      const file: string | undefined = typeof entry === "string" ? entry : entry?.default;
+      let file: string | undefined;
+      if (pinned.has(member) && (sub === "" || sub === "/internal")) {
+        file = `./dist/dom/${sub === "" ? "index" : "internal"}.js`;
+        pinned.set(member, pinned.get(member)! + 1);
+      } else {
+        const entry = exportsMap[sub === "" ? "." : `.${sub}`];
+        file = typeof entry === "string" ? entry : entry?.default;
+      }
       if (file === undefined) {
         throw new Error(`${relative(ctrlDom, path)} imports @ctrl/dom${sub}, which exports does not name`);
       }
@@ -252,6 +238,10 @@ function relativizeSelfReferences(ctrlDom: string, exportsMap: Json): void {
   }
   // None found means the parser's module record changed and every edge is a bare specifier again.
   if (rewritten === 0) throw new Error("relativizeSelfReferences: no @ctrl/dom import found in dist");
+  // These load the DOM themselves: none found, and they would quietly go through the bridge.
+  for (const [member, count] of pinned) {
+    if (count === 0) throw new Error(`relativizeSelfReferences: no @ctrl/dom import found in dist/${member}`);
+  }
 }
 
 /**
@@ -319,8 +309,6 @@ export async function assembleRelease(): Promise<string[]> {
     exportsMap = { ...exportsMap, ...memberExports(pkg, sub, distDir) };
   }
   await writeBridges(ctrlDom);
-  pinEnvironmentDom(ctrlDom);
-  pinEnvironmentDom(ctrlDom, "register");
   for (const key of [".", "./internal"]) {
     const entry = key === "." ? "index" : "internal";
     exportsMap[key] = {
@@ -386,13 +374,15 @@ export async function assembleRelease(): Promise<string[]> {
   const sentryPkg = readJson(join(repoRoot, "packages/sentry-tests/package.json"));
   copyTree(join(repoRoot, "packages/sentry-tests/dist"), join(sentryTests, "dist"));
   copyPublishFiles("packages/sentry-tests/README.md", sentryTests);
-  const { publishConfig, devDependencies: _dev, exports: _exports, ...sentryFields } = sentryPkg;
-  const { access, ...sentryPublished } = publishConfig;
   writeJson(join(sentryTests, "package.json"), {
-    ...sentryFields,
-    ...sentryPublished,
+    ...about(sentryPkg),
+    main: sentryPkg.publishConfig.main,
+    types: sentryPkg.publishConfig.types,
+    exports: sentryPkg.publishConfig.exports,
     files: ["dist", "README.md", "NOTICE", "LICENSE"],
-    publishConfig: { access },
+    dependencies: sentryPkg.dependencies,
+    peerDependencies: sentryPkg.peerDependencies,
+    peerDependenciesMeta: sentryPkg.peerDependenciesMeta,
   });
 
   return [ctrlDom, jestEnv, sentryTests];

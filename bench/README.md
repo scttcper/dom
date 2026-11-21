@@ -930,13 +930,11 @@ worker.ts              one sample in a fresh process
 lib/configs.ts         configurations: install DOM globals, load testing stack, matcher helper
 lib/dist-hooks.ts      resolve @ctrl/dom to dist/ for *-dist configs
 lib/dist-preload.js    the same, as an --import preload for Vitest workers (CTRL_DOM_DIST_MAP)
-lib/packages.ts        workspace package/exports discovery (shared with scripts/build.ts)
 lib/report.ts          markdown + terminal tables
 lib/stats.ts           median/quantiles/formatting
 workloads/*.ts         startup, react, dom workloads
 suite/                 Vitest end-to-end suite benchmark
 compare.ts             regression check between two checkouts (CI)
-bundle.ts              shim for scripts/build.ts (pnpm build)
 ```
 
 Package-level microbenchmarks written by the package owners (not duplicated here):

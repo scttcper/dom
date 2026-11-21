@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, statSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { distMapEnv, workspacePackages, repoRoot } from "../../bench/lib/packages.ts";
+import { distMapEnv, workspacePackages, repoRoot } from "../../scripts/packages.ts";
 import { enableWarmForks, workerExecArgv } from "@ctrl/dom/vitest";
 import type { Contender } from "./types.ts";
 

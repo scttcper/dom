@@ -1,11 +1,12 @@
-// Workspace package discovery shared by the bundler (bench/bundle.ts) and the "dist" bench
-// configurations (bench/lib/dist-hooks.ts), so both agree on where each export's bundle lives.
+// Workspace package discovery shared by the build (build.ts), the release assembly and the
+// "dist" bench configurations (bench/lib/dist-hooks.ts), so all agree on where each export's
+// bundle lives.
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
+export const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 export const packagesDir = join(repoRoot, "packages");
 
 export interface WorkspaceExport {

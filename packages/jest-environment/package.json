@@ -32,29 +32,8 @@
     "./shims/dom-internal": "./src/shims/dom-internal.cjs",
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "src/shims",
-    "jest-preset.cjs",
-    "README.md"
-  ],
   "engines": {
     "node": ">=26"
-  },
-  "publishConfig": {
-    "main": "./dist/index.js",
-    "types": "./dist/types/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "./jest-preset": "./jest-preset.cjs",
-      "./jest-preset.cjs": "./jest-preset.cjs",
-      "./shims/dom": "./src/shims/dom.cjs",
-      "./shims/dom-internal": "./src/shims/dom-internal.cjs",
-      "./package.json": "./package.json"
-    }
   },
   "dependencies": {
     "@ctrl/dom": "workspace:*",

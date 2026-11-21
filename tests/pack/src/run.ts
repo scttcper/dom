@@ -409,7 +409,7 @@ function verifyLoads(check: Check, log: string): string[] {
     if (!line) continue;
     const [, kind, raw, parent] = line.split("\t");
     // The environments load the DOM themselves, so they import its entries directly (release
-    // assembly pins them, scripts/release.ts pinEnvironmentDom): through a bridge they would pay
+    // assembly pins them, scripts/release.ts LOADS_THE_DOM): through a bridge they would pay
     // its require(esm) fallback in every worker.
     if (kind === "edge" && ENVIRONMENT.test(parent ?? "") && BRIDGE.test(raw)) {
       const short = (url: string) => url.slice(url.lastIndexOf("/node_modules/") + "/node_modules/".length);

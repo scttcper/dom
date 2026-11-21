@@ -8,16 +8,10 @@
     "./pure": "./src/pure.ts",
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "engines": {
     "node": ">=26"
   },
   "publishConfig": {
-    "main": "./dist/index.js",
-    "types": "./dist/types/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/types/index.d.ts",

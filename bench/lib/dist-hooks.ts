@@ -5,7 +5,7 @@
 import { registerHooks } from "node:module";
 import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { workspacePackages } from "./packages.ts";
+import { workspacePackages } from "../../scripts/packages.ts";
 
 let installed = false;
 

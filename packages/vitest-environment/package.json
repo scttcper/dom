@@ -12,16 +12,10 @@
     "./shared-workers": "./src/shared-workers.ts",
     "./prewarm": "./src/prewarm.ts"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "engines": {
     "node": ">=26"
   },
   "publishConfig": {
-    "main": "./dist/index.js",
-    "types": "./dist/types/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/types/index.d.ts",

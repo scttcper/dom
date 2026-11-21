@@ -15,7 +15,7 @@ const MEMBERS = [
 ];
 const member = (dir: string) => [`packages/${dir}/src`, `packages/${dir}/types`, `packages/${dir}/package.json`];
 /** How every package is built and assembled: a fix here can change any published package. */
-const BUILD = ["scripts/build.ts", "scripts/release.ts", "bench/lib/packages.ts", "tsconfig.base.json"];
+const BUILD = ["scripts/build.ts", "scripts/release.ts", "scripts/packages.ts", "tsconfig.base.json"];
 
 export interface ReleasePackage {
   name: string;

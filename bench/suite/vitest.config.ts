@@ -9,7 +9,7 @@
 
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
-import { distMapEnv, workspacePackages } from "../lib/packages.ts";
+import { distMapEnv, workspacePackages } from "../../scripts/packages.ts";
 
 const benchEnv = process.env.BENCH_ENV ?? "jsdom";
 const dist = benchEnv.endsWith("-dist");

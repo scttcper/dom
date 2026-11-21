@@ -9,38 +9,29 @@
 //   dist/types/**.d.ts     declarations emitted from the sources (tsc --emitDeclarationOnly),
 //                          except for packages that ship hand-maintained, upstream-identical
 //                          typings under types/ (their dev `exports` carry a `types` condition).
-//   dist/NOTICE, LICENSE   copies of the repository NOTICE and LICENSE.
 //
-// Then release/: the published packages (@ctrl/dom, @ctrl/dom-jest-environment) assembled from
-// these builds by scripts/release.ts.
+// Then release/: the published packages (@ctrl/dom, @ctrl/dom-jest-environment,
+// @ctrl/sentry-tests) assembled from these builds by scripts/release.ts, which also writes their
+// manifests, READMEs, NOTICE and LICENSE. Nothing is published from packages/ directly.
 //
 // Every bare specifier (other workspace packages, react, node builtins) stays external, so two
 // bundles never carry two copies of the DOM. Packages' development `exports` keep pointing at
-// src/*.ts; `publishConfig` (applied by `pnpm pack` / `pnpm publish`) points them at dist/.
-// The bench's "*-dist" configurations read the same layout (bench/lib/packages.ts).
+// src/*.ts; `publishConfig.exports` names the same entries in dist/, which the release assembly
+// turns into the published exports. The bench's "*-dist" configurations read the same layout
+// (scripts/packages.ts).
 //
 // Minified (constructor names kept): a cold import of the DOM is ~10% faster and the tarball 25%
 // smaller; with Node's compile cache warm it makes no difference.
 //
 // Flags: --no-minify (readable bundles for debugging), --filter <substring>, --no-dts, --no-cjs.
 
-import {
-  rmSync,
-  statSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  cpSync,
-  existsSync,
-  mkdtempSync,
-} from "node:fs";
+import { rmSync, statSync, readdirSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync } from "node:fs";
 import { join, isAbsolute, relative, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { build, type OutputOptions } from "rolldown";
-import { workspacePackages, repoRoot, type WorkspacePackage } from "../bench/lib/packages.ts";
+import { workspacePackages, repoRoot, type WorkspacePackage } from "./packages.ts";
 
 const { values: flags } = parseArgs({
   options: {
@@ -207,8 +198,6 @@ if (dtsPackages.length > 0) {
   }
 }
 
-const notices = ["NOTICE", "LICENSE"].map((f) => join(repoRoot, f)).filter((f) => existsSync(f));
-
 for (const pkg of selected) {
   const input: Record<string, string> = {};
   for (const e of pkg.entries) input[e.entryName] = e.source;
@@ -241,7 +230,6 @@ for (const pkg of selected) {
       });
     }
     if (emitRoot && dtsPackages.includes(pkg)) copyDeclarations(emitRoot, pkg);
-    for (const f of notices) cpSync(f, join(outDir, f.slice(repoRoot.length).replace(/^\//, "")));
     const ms = performance.now() - t0;
     const kb = dirSize(outDir) / 1024;
     console.log(
@@ -256,8 +244,8 @@ for (const pkg of selected) {
   }
 }
 if (emitRoot) rmSync(dirname(emitRoot), { recursive: true, force: true });
-// The published packages (@ctrl/dom + its two environment packages) under release/, assembled
-// from the dist/ directories above (scripts/release.ts).
+// The published packages under release/, assembled from the dist/ directories above
+// (scripts/release.ts).
 if (!failed && !flags.filter) {
   const { assembleRelease } = await import("./release.ts");
   for (const dir of await assembleRelease()) console.log(`${"release".padEnd(24)} ${relative(repoRoot, dir)}`);
