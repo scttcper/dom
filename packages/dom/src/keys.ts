@@ -174,6 +174,11 @@ export const $selector: unique symbol = Symbol.for("ctrl-dom.selector");
 export const $serializable: unique symbol = Symbol.for("ctrl-dom.serializable");
 export const $sessionStorage: unique symbol = Symbol.for("ctrl-dom.sessionStorage");
 export const $settled: unique symbol = Symbol.for("ctrl-dom.settled");
+/** A select's bookkeeping for options appended one at a time (HTMLSelectElement.ts _childrenChangedSteps). */
+export const $optionsTail: unique symbol = Symbol.for("ctrl-dom.optionsTail");
+export const $optionsCount: unique symbol = Symbol.for("ctrl-dom.optionsCount");
+export const $optionsOnly: unique symbol = Symbol.for("ctrl-dom.optionsOnly");
+export const $selectionEpoch: unique symbol = Symbol.for("ctrl-dom.selectionEpoch");
 export const $shadowRoot: unique symbol = Symbol.for("ctrl-dom.shadowRoot");
 export const $shed: unique symbol = Symbol.for("ctrl-dom.shed");
 export const $sheet: unique symbol = Symbol.for("ctrl-dom.sheet");

@@ -12,8 +12,10 @@
  * select-ask-for-reset,common-HTMLOptionsCollection*}.html and the-textarea-element/value-defaultValue-textContent.html.
  */
 import { beforeEach, describe, expect, test } from "vitest";
+import { JSDOM } from "jsdom";
 import { createWindow, type Document } from "@ctrl/dom";
 import { setUIValue } from "../../../src/html/forms/ui.ts";
+import { $selectionEpoch } from "../../../src/keys.ts";
 
 // biome-ignore lint: untyped DOM surface in tests
 let window: any;
@@ -242,5 +244,138 @@ describe("the textarea element — https://html.spec.whatwg.org/#the-textarea-el
     expect([t.rows, t.cols]).toEqual([2, 20]);
     t.rows = 0;
     expect(t.getAttribute("rows")).toBe("2");
+  });
+});
+
+// `_childrenChangedSteps` skips the selectedness setting algorithm for one unselected option
+// appended to a drop-down that has its selected option. Whatever the history, the result has to
+// be what running the algorithm on every change gives: the same random edits on a select that
+// may skip and on one that is never allowed to, and appends alone against jsdom.
+describe("selectedness after appends, differential — https://html.spec.whatwg.org/#selectedness-setting-algorithm", () => {
+  function mulberry32(seed: number): (n: number) => number {
+    let a = seed >>> 0;
+    return (n) => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((((t ^ (t >>> 14)) >>> 0) / 4294967296) * n) | 0;
+    };
+  }
+
+  // biome-ignore lint: untyped DOM surface in tests
+  function makeOption(doc: any, random: (n: number) => number, step: number): any {
+    const option = doc.createElement("option");
+    option.textContent = `o${step}`;
+    const kind = random(8);
+    if (kind === 0) option.setAttribute("selected", "");
+    if (kind === 1) option.disabled = true;
+    return option;
+  }
+
+  /** One random edit of `select`; the same `random` sequence drives both sides. */
+  // biome-ignore lint: untyped DOM surface in tests
+  function edit(doc: any, select: any, random: (n: number) => number, step: number): string {
+    const options = select.options;
+    const pick = () => options[random(options.length)];
+    const op = random(20);
+    if (op < 10 || options.length === 0) {
+      select.appendChild(makeOption(doc, random, step));
+      return "append";
+    }
+    switch (op) {
+      case 10:
+        select.insertBefore(makeOption(doc, random, step), select.firstChild);
+        return "prepend";
+      case 11:
+        pick().remove();
+        return "remove";
+      case 12:
+        pick().selected = true;
+        return "select";
+      case 13:
+        pick().selected = false;
+        return "deselect";
+      case 14: {
+        const option = pick();
+        option.disabled = !option.disabled;
+        return "toggle disabled";
+      }
+      case 15:
+        select.selectedIndex = random(options.length + 1) - 1;
+        return "selectedIndex";
+      case 16: {
+        const option = pick();
+        if (option.hasAttribute("selected")) option.removeAttribute("selected");
+        else option.setAttribute("selected", "");
+        return "toggle selected attribute";
+      }
+      case 17: {
+        // Another select changes its own selection: the count of changes is shared.
+        const other = doc.createElement("select");
+        other.appendChild(doc.createElement("option"));
+        other.appendChild(doc.createElement("option")).selected = true;
+        return "another select";
+      }
+      case 18:
+        select.multiple = !select.multiple;
+        return "toggle multiple";
+      default:
+        select.appendChild(select.firstChild);
+        return "move first to the end";
+    }
+  }
+
+  // biome-ignore lint: untyped DOM surface in tests
+  const state = (select: any) => ({
+    // biome-ignore lint: untyped DOM surface in tests
+    selected: Array.from(select.options, (o: any) => o.selected),
+    selectedIndex: select.selectedIndex,
+    value: select.value,
+  });
+
+  test.each([
+    ["outside the document", false],
+    ["in the document", true],
+  ])(
+    "every kind of edit, against a select that runs the algorithm each time: 60 seeds of 80 edits, %s",
+    (_where, connected) => {
+      for (let seed = 1; seed <= 60; seed++) {
+        const doc = createWindow().document as any;
+        const fast = doc.createElement("select");
+        const reference = doc.createElement("select");
+        if (connected) doc.body.append(fast, reference);
+        const randoms = [mulberry32(seed), mulberry32(seed)];
+        const history: string[] = [];
+        for (let step = 0; step < 80; step++) {
+          history.push(edit(doc, fast, randoms[0], step));
+          // Never one selected option on record: the next append cannot be skipped.
+          reference[$selectionEpoch] = -1;
+          edit(doc, reference, randoms[1], step);
+          expect(state(fast), `seed ${seed}: ${history.join(", ")}`).toEqual(state(reference));
+        }
+      }
+    },
+  );
+
+  test.each([
+    ["outside the document", false],
+    ["in the document", true],
+  ])("appended options (plain, selected, disabled), against jsdom: 40 seeds of 60, %s", (_where, connected) => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const docs = [new JSDOM("<!doctype html><body></body>").window.document, createWindow().document] as any[];
+      const selects = docs.map((doc) => {
+        const select = doc.createElement("select");
+        if (connected) doc.body.appendChild(select);
+        return select;
+      });
+      const randoms = [mulberry32(seed), mulberry32(seed)];
+      for (let step = 0; step < 60; step++) {
+        for (let i = 0; i < 2; i++) selects[i].appendChild(makeOption(docs[i], randoms[i], step));
+        // Read every few appends only, so runs of appends go unobserved as in a React mount.
+        if (step % 7 === 6) expect(state(selects[1]), `seed ${seed}, step ${step}`).toEqual(state(selects[0]));
+      }
+      expect(state(selects[1]), `seed ${seed}`).toEqual(state(selects[0]));
+    }
   });
 });

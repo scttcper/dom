@@ -724,12 +724,13 @@ steady state per workload). None of these was worth its change:
   lookup. An index stamped by `id` and `name` changes (Blink's NamedItemCache) does not survive
   React: `updateInput` sets an input's `name` to "" and back on every update, so the index was
   rebuilt on each keystroke (0.40 → 0.43 ms, twice the allocation).
-- `select-project`: `settleFlatOptions` 6% self, a walk of the options for each option React
-  appends: 65 µs for 250 options, under a microsecond for a select of twenty. Deferring the
-  algorithm for options appended to a select outside the document (settle on the first read or
-  the connection) is equivalent on paper, but `_selectednessNow()` only settles the select for
-  an option whose selectedness is still unknown, so reads after a second append went stale
-  (one test of ours and three WPT select tests): every reader would have to settle first.
+- `select-project`: `settleFlatOptions` was 6% self, a walk of the options for each option React
+  appends (65 µs for 250 options). Deferring the algorithm until the first read is equivalent
+  on paper, but `_selectednessNow()` only settles the select for an option whose selectedness
+  is still unknown, so reads went stale (one test of ours, three of WPT's). What shipped is the
+  exact shortcut: one unselected option appended to a drop-down that already has its selected
+  option changes nothing, and the select knows that without a walk while no selectedness has
+  changed anywhere since (HTMLSelectElement.ts `_childrenChangedSteps`). The row: 0.90 → 0.86 ms.
 - `click-remove`: `compact` in traversal/live.ts 6% self. A removal at a node a range has touched
   walks every range registration, and a WeakRef is cleared only by a major GC (`removeChild`
   after 5,000 ranges were created and dropped: 150 µs). user-event registers two ranges per

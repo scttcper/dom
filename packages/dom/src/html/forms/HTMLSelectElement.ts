@@ -10,7 +10,7 @@ import { installAutocomplete } from "./autofill.ts";
 import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
-import { F_ATTR_HOOK, F_CHILDREN_HOOK, F_CONNECT_HOOK } from "../../nodes/constants.ts";
+import { F_ATTR_HOOK, F_CHILDREN_HOOK, F_CONNECT_HOOK, HTML_NS } from "../../nodes/constants.ts";
 import { T } from "../../nodes/tags.ts";
 import { nextInTree, nextSkippingChildren } from "../../nodes/traverse.ts";
 import { HTMLCollection } from "../../collections/HTMLCollection.ts";
@@ -31,14 +31,18 @@ import {
   type ConstraintValidation,
   type ValidityState,
 } from "./validation.ts";
-import type { HTMLOptionElement } from "./HTMLOptionElement.ts";
+import { selectedness, type HTMLOptionElement } from "./HTMLOptionElement.ts";
 import {
   $customValidity,
   $dirtiness,
   $impl,
   $labels,
   $options,
+  $optionsCount,
+  $optionsOnly,
+  $optionsTail,
   $selectedOptions,
+  $selectionEpoch,
   $settled,
   $updatingSelectedContent,
   $userValidity,
@@ -73,6 +77,13 @@ function settleFlatOptions(select: NodeImpl, selected: NodeImpl | undefined): bo
   return selected !== undefined || hasSelection;
 }
 
+function onlyOptions(select: NodeImpl): boolean {
+  for (let child = select.first; child !== null; child = child.next) {
+    if (child.tag !== T.option || child.ns !== HTML_NS) return false;
+  }
+  return true;
+}
+
 /** select.selectedOptions: https://html.spec.whatwg.org/#dom-select-selectedoptions */
 class SelectedOptionsCollection extends HTMLCollection {
   override _collect(out: Element[]): void {
@@ -103,6 +114,13 @@ export class HTMLSelectElement extends HTMLElement {
   [$settled]: boolean;
   /** Re-entrancy guard for `_updateSelectedContent` (it mutates the select's subtree). */
   [$updatingSelectedContent]: boolean;
+  /** The last child and the child count at the last children-changed step: tell one appended child from any other change. */
+  [$optionsTail]: NodeImpl | null;
+  [$optionsCount]: number;
+  /** Every child is an HTML option element (no optgroup, hr, selectedcontent or text). */
+  [$optionsOnly]: boolean;
+  /** `selectedness.epoch` when the algorithm last left exactly one option selected, else -1. */
+  [$selectionEpoch]: number;
   /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts); absent while false. */
   declare [$userValidity]?: boolean;
 
@@ -114,6 +132,10 @@ export class HTMLSelectElement extends HTMLElement {
     this[$selectedOptions] = null;
     this[$settled] = false;
     this[$updatingSelectedContent] = false;
+    this[$optionsTail] = null;
+    this[$optionsCount] = 0;
+    this[$optionsOnly] = true;
+    this[$selectionEpoch] = -1;
   }
 
   _ensureSettled(): void {
@@ -359,9 +381,43 @@ export class HTMLSelectElement extends HTMLElement {
     this._selectednessSettingAlgorithm();
   }
 
-  /** The list of options changed: https://html.spec.whatwg.org/#the-select-element:selectedness-setting-algorithm */
+  /**
+   * The list of options changed: https://html.spec.whatwg.org/#the-select-element:selectedness-setting-algorithm
+   *
+   * React appends a select's options one by one, and the algorithm walks the options each time
+   * (65 µs to build a select of 250). It has nothing to do when a drop-down that has exactly one
+   * selected option gets one more option at the end that is not selected, which is every append
+   * after the first: that case returns here. The select knows it without a walk while no
+   * option's selectedness has changed anywhere since the algorithm last left it with one
+   * (`selectedness.epoch`), its children are all options, and the new child follows the last
+   * one it saw. Anything else runs the algorithm as before.
+   */
   override _childrenChangedSteps(): void {
+    const impl = this[$impl];
+    const last = impl.last;
+    const appended =
+      this[$optionsOnly] &&
+      impl.childCount === this[$optionsCount] + 1 &&
+      last !== null &&
+      last.prev === this[$optionsTail] &&
+      last.tag === T.option &&
+      last.ns === HTML_NS;
+    this[$optionsTail] = last;
+    this[$optionsCount] = impl.childCount;
+    if (!appended) this[$optionsOnly] = onlyOptions(impl);
+    else if (
+      this[$selectionEpoch] === selectedness.epoch &&
+      this._isSingle() &&
+      this._displaySize() === 1 &&
+      !opt(last!)._selectednessNow()
+    ) {
+      return;
+    }
     this._selectednessSettingAlgorithm();
+    this[$selectionEpoch] =
+      this[$optionsOnly] && this._isSingle() && this._displaySize() === 1 && firstSelectedOption(impl) !== undefined
+        ? selectedness.epoch
+        : -1;
   }
 
   override _attributeChangedSteps(

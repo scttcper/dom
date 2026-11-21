@@ -22,6 +22,13 @@ import { $dirtiness, $impl, $selectedness, $settled, $version } from "../../keys
  * The select element an option belongs to, its "nearest ancestor select":
  * https://html.spec.whatwg.org/#option-element-nearest-ancestor-select
  */
+/**
+ * Counts every change of an option's selectedness, in any document: a select that has seen its
+ * one selected option remembers the count, and while it has not moved an appended option that is
+ * not selected changes nothing (HTMLSelectElement.ts _childrenChangedSteps).
+ */
+export const selectedness = { epoch: 0 };
+
 export function optionSelect(option: NodeImpl): NodeImpl | null {
   let ancestorOptgroup = false;
   for (let p = option.parent; p !== null; p = p.parent) {
@@ -65,6 +72,7 @@ export class HTMLOptionElement extends HTMLElement {
   _setSelectedness(value: boolean): void {
     if (this[$selectedness] === value) return;
     this[$impl].doc[$version]++;
+    selectedness.epoch++;
     this[$selectedness] = value;
   }
 
