@@ -273,3 +273,60 @@ describe("renderHook", () => {
     expect(cleanup).toHaveBeenCalledTimes(1);
   });
 });
+
+// The environment gives React's per-object accessors one function pair (@ctrl/dom's
+// window/shared-accessors.ts); React itself must not be able to tell.
+describe("React's development build on shared accessors", () => {
+  test("reading `key` off props warns once with React's own text, and the element still has its key", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const Row = (props: { label: string }) => <li>{props.label}</li>;
+    const first = <Row key="a" label="one" />;
+    const second = <Row key="b" label="two" />;
+    expect([first.key, second.key]).toEqual(["a", "b"]);
+    expect(Object.keys(second.props)).toEqual(["label"]);
+    expect((second.props as { key?: unknown }).key).toBeUndefined();
+    expect((first.props as { key?: unknown }).key).toBeUndefined();
+    const keyWarnings = error.mock.calls.filter(([format]) => String(format).includes("`key` is not a prop"));
+    error.mockRestore();
+    expect(keyWarnings).toHaveLength(1);
+    expect(keyWarnings[0][1]).toBe("Row");
+    // cloneElement goes through hasValidKey(), which must still see the warning getter for what it is.
+    expect(React.cloneElement(second, { label: "three" }).key).toBe("b");
+  });
+
+  test("controlled inputs: React sees a user's change through its value tracker and restores the controlled value", () => {
+    const changes: string[] = [];
+    function Fields() {
+      const [text, setText] = React.useState("a");
+      return (
+        <>
+          {["first", "second"].map((name) => (
+            <input
+              key={name}
+              aria-label={name}
+              value={name === "first" ? text : "fixed"}
+              onChange={(event) => {
+                changes.push(`${name}:${event.target.value}`);
+                if (name === "first") setText(event.target.value);
+              }}
+            />
+          ))}
+          <input type="checkbox" aria-label="box" checked={false} onChange={() => changes.push("box")} />
+        </>
+      );
+    }
+    main.render(<Fields />);
+    const first = main.screen.getByLabelText<any>("first");
+    const second = main.screen.getByLabelText<any>("second");
+    const box = main.screen.getByLabelText<any>("box");
+    main.fireEvent.change(first, { target: { value: "ab" } });
+    main.fireEvent.change(second, { target: { value: "changed" } });
+    main.fireEvent.click(box);
+    expect(changes).toEqual(["first:ab", "second:changed", "box"]);
+    // Controlled: state that did not change puts the DOM back.
+    expect([first.value, second.value, box.checked]).toEqual(["ab", "fixed", false]);
+    // Setting the value React already tracks is not a change.
+    main.fireEvent.change(first, { target: { value: "ab" } });
+    expect(changes).toHaveLength(3);
+  });
+});

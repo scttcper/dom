@@ -39,6 +39,7 @@ import { currentWindowOrNull, setCurrentWindow } from "./current.ts";
 import { $globalObject, $host, $options } from "../keys.ts";
 import { hiddenGlobals, installCompatMembers } from "./compat.ts";
 import { optInInterfaces } from "./interfaces.ts";
+import { shareAccessors } from "./shared-accessors.ts";
 
 const SELF_REFERENCES = ["window", "self", "frames", "parent", "top"];
 
@@ -184,6 +185,11 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
   const doc = window.document;
   Object.defineProperty(doc, "defaultView", { get: () => target, enumerable: true, configurable: true });
 
+  // React's per-object accessors share one pair (shared-accessors.ts). A target that is not a
+  // realm's global (a plain object) has no `Object` to wrap.
+  const realmObject = target.Object as ObjectConstructor | undefined;
+  const unshareAccessors = realmObject === undefined ? null : shareAccessors(realmObject);
+
   setCurrentWindow(window);
   const previousHost = window[$host];
   window[$host] = target as unknown as typeof globalThis;
@@ -204,6 +210,7 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
     }
     saved.clear();
     restoreMembers();
+    unshareAccessors?.();
     window[$host] = previousHost;
     window[$globalObject] = previousGlobal;
     if (installedWindows.get(target) === window) {

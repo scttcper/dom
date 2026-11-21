@@ -627,6 +627,81 @@ ours:
 Left alone: validating a 200-field form on every keystroke is 200 fields' worth of attribute
 reads (12% ours); a 1,000-option select re-rendered by React sets `selected` on each option.
 
+**React's development build and V8** (2026-11-21, React 19.3.1, Node 26.13.1). A V8 inline-cache
+log of a React workload (`node --expose-gc --log-ic --log-deopt --logfile=<file>
+--no-logfile-per-isolate bench/worker.ts <workload> ctrl-dom-full`: an IC line with states `N,N`
+is a megamorphic load that missed V8's stub cache and went to the runtime; its `pc` resolves to a
+function through the `code-creation` lines) found no deopt loop and no megamorphic miss of ours in
+steady state, but 749,392 misses in 160 iterations of `react/fill-10-submit`, 684,300 of them
+inside react-dom and 53,000 inside our DOM and user-event. They have one cause, and it is React's:
+
+- **The `key` warning getter.** `defineKeyPropWarningGetter` (react.development.js and both JSX
+  runtimes) defines a `key` getter on the props of every element that has a key, a new closure
+  each time. V8 keeps one accessor pair per map transition, so the second props object of a shape
+  goes to dictionary mode ("TransitionToDifferentAccessor"), and `Object.freeze` on a
+  dictionary-mode object copies its map ("SlowCopyForPreventExtensions"). Every keyed props
+  object ends up with a map of its own (`%HasFastProperties` false, `%HaveSameMap` false; 99,200
+  maps in that run), so each read of one in react-dom (`children`, `ref`, `is`,
+  `dangerouslySetInnerHTML`, `contentEditable`, `hasOwnProperty`) misses, and those maps push
+  everyone else's entries out of the stub cache: our 53,000 were `event.type`, `init.bubbles`,
+  `target.dispatchEvent` and the like. `installGlobals` now wraps the realm's
+  `Object.defineProperty` to give them all one getter (window/shared-accessors.ts: it finds
+  React's own getter by the props object in a WeakMap and calls it, so the warning is unchanged;
+  it has to be there before the first keyed element, or that shape's transition is taken), which
+  leaves 11,018 misses, all at startup. In plain Node a keyed element costs 1,044 ns to create
+  and read six props of, against 508 ns unkeyed; 760 ns with the shared getter. In a Vitest run,
+  40 `fireEvent.change` on a keyed 60-field form: 21.7 → 19.4 ms.
+- **React's value tracker** (see "What React does to our objects") is shared the same way: one
+  accessor pair for every input and textarea, defined with React's own attributes (defining it
+  enumerable at once normalizes on React's second call), React's closures kept in the element's
+  `ControlState`. A React-mounted element with its fibers, 5,000 of each: `<input>` 3,039 →
+  2,445 B, `<textarea>` 2,788 → 2,172 B, a checkbox 2,838 → 2,155 B, and a keyed `<span>` 1,896 →
+  1,699 B from the getter above.
+- **Both together**, toggled in one tree, 7 pairs, no `console.createTask` (as under a runner):
+  `react/keyed-list-1000` 5.03 → 3.94 ms, `tab-radio-groups` 0.421 → 0.348, `select-project`
+  1.15 → 0.99, `form-100-rerender` 5.85 → 5.29, `form-10-getByRole` 0.444 → 0.397,
+  `fill-10-submit` 8.70 → 8.10, `mount-unmount-churn` 0.303 → 0.282, `form-20-rerender` 1.40 →
+  1.32, `type-search-filter` 0.817 → 0.767; `pointer-release`, `edit-labelled-fields` and
+  `validate-named-fields` unchanged. Sentry's `perf` preset did not move (three interleaved
+  pairs, ctrl-dom-full: 62.5 and 62.0 s of CPU, 12.3 → 12.0 s, inside the spread between runs;
+  665 passed both ways): 141,571 of its 23.0 million `Object.defineProperty` calls define a key
+  getter. The win is for tests that re-render keyed lists and forms.
+- **Owner stacks look large here and are not.** `createElement`/`jsxDEV` capture
+  `Error("react-stack-top-frame")` per element: 1.2 µs of an unkeyed element's 1.7 µs. React
+  limits itself to 10,000 a second (`recentlyCreatedOwnerStacks`, reset in `prepareFreshStack`
+  once 1 s of `performance.now()` has passed), so the cost is at most 12 ms per second of a
+  worker. A bench sample is a short process (`form-20-rerender` creates 5,168 elements, all of
+  them captured; `keyed-list-1000` 100,150, 10% captured), which is why skipping them takes 6–29%
+  off iteration times and nothing off a long file. Pinning the counter with an accessor also puts
+  `ReactSharedInternals` in dictionary mode (+5–11% where the limit was already reached).
+- **Plain Node is not what the runners see.** `console.createTask` and `console.timeStamp` exist
+  only on Node's global console; Vitest's and Jest's `new Console()` have neither. With them
+  React creates a task per element (9–13% of the React workloads' iteration times) and logs its
+  performance tracks: `console.timeStamp` per component and `performance.measure`, whose detail
+  Node structured-clones (1.2% of `fill-10-submit`) and keeps in the performance timeline.
+  bench/worker.ts and `@ctrl/dom/register` run with both. Every configuration pays the same, so
+  the ratios hold, but React's share of a bench row is 10–15% higher than under a test runner.
+- **What is left of an element** is five `Object.defineProperty` calls and two `Object.freeze`
+  in `ReactElement`: 12.6% of `fill-10-submit` without the key getters and owner stacks, and the 23.0
+  million calls of Sentry's `perf` preset (some 4.6 million elements). Native code, the same on
+  jsdom, and nothing a DOM can take out.
+
+**Outliers of ours, by workload** (same day; `--cpu-prof-interval 100`, two seconds or more of
+steady state per workload). `validate-named-fields`: `form.elements.namedItem` is 21% inclusive,
+a scan of the controls per lookup. `tab-radio-groups`: `pruneRadioGroups` 16% self and
+`getTabDestination` 8%. `select-project`: `settleFlatOptions` 4.7% self, a walk of the options
+for each option React appends. `click-remove`: `compact` in traversal/live.ts 5.0% self; a
+removal at a node a range has touched walks every range registration, and a WeakRef is cleared
+only by a major GC (`removeChild` after 5,000 ranges were created and dropped: 150 µs; 1,200
+`user.click` calls before the removals did not slow them, the GC keeps up). `edit-labelled-fields`:
+`buildLabelMap` 5%. `styled-form-rerender`: about 20% in the cascade, since a class or tree change
+still invalidates every record. Looked at and dropped: user-event's two `Object.defineProperty`
+calls per event with a behavior (0.45% of `fill-10-submit`), `replaceAll` for `normalizeNewlines`
+(27 against the regular expression's 22 µs on 1,000 CRLF lines), defining the CSSStyleDeclaration
+accessors in one `Object.create(proto, descriptors)` (3.1 against 1.5 ms), the keyed misses of
+`buildTable` (0.06 ms per worker), and the megamorphic `[$impl]` loads on wrappers (the symbol is
+every wrapper's first descriptor, so they never reach the runtime).
+
 ## CSS (2026-11-09)
 
 A scratch probe timed what tests do with CSS at two sizes: parsing a style sheet, the first

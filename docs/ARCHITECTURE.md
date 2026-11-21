@@ -145,6 +145,11 @@ Memory rules for per-node state (every rendered element pays them):
   validity state, labels list, custom validity message and user validity flag of a form control
   are added on first use like the objects above: an input React mounted has 8 own properties
   (ours, React's two keys, its `value` accessor and tracker), inside a 16-entry dictionary.
+  `installGlobals` goes one further and keeps such a wrapper out of dictionary mode: it wraps the
+  realm's `Object.defineProperty` so that React's accessor is one function pair for every input
+  and textarea, with React's closures kept in the `ControlState`
+  (window/shared-accessors.ts; the `key` warning getter on React's props gets the same
+  treatment). A React-mounted input: 3,039 → 2,445 B with its fibers.
 
 `EventTarget → Node → Element → HTMLElement → HTML*Element`, `CharacterData → Text/Comment`,
 `Document`, `DocumentFragment → ShadowRoot`, `DocumentType`, `Attr`. Wrapper fields are

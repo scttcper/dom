@@ -11,6 +11,7 @@
 // test code) and restore at teardown.
 
 import { constants as vmConstants, createContext, runInContext } from "node:vm";
+import { sharedAccessor, unsharedDefineProperty } from "./shared-accessors.ts";
 import { windowInterfaces, Window } from "./Window.ts";
 
 type InterfaceSnapshot = {
@@ -117,7 +118,8 @@ export function guardInterfaceDefinitions(realm: RealmGlobal): void {
   if (set === null) return;
   const O = realm.Object;
   const R = realm.Reflect;
-  const defineProperty = O.defineProperty;
+  // One wrapper per realm: this one shares React's accessors too (shared-accessors.ts).
+  const defineProperty = unsharedDefineProperty(O);
   const defineProperties = O.defineProperties;
   const reflectDefineProperty = R.defineProperty;
   // CPU profiles charge the native defineProperty's work to these wrappers: in Sentry's suite
@@ -125,7 +127,7 @@ export function guardInterfaceDefinitions(realm: RealmGlobal): void {
   // calls on every element. Turning the guard off changed neither wall time nor CPU time.
   const wrappers = {
     defineProperty<T>(o: T, key: PropertyKey, desc: PropertyDescriptor & ThisType<unknown>): T {
-      return defineProperty(o, key, set.has(o as object) ? configurableDescriptor(desc) : desc);
+      return defineProperty(o, key, set.has(o as object) ? configurableDescriptor(desc) : sharedAccessor(o, key, desc));
     },
     defineProperties<T>(o: T, props: Descriptors & ThisType<unknown>): T {
       if (!set.has(o as object) || props === null || typeof props !== "object") return defineProperties(o, props);

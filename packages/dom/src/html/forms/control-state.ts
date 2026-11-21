@@ -8,6 +8,10 @@
 // 17 own fields of the wrapper, a tracked input was 2,238 B against 390 B untracked and reads
 // through it were 6x slower. Here it is one own property of the wrapper, and these fields stay in
 // a fast object with one hidden class for both elements.
+//
+// Under the environments the wrapper stays fast as well: `Object.defineProperty` gives every
+// element the same accessor pair and React's closures are kept in `tracker`
+// (window/shared-accessors.ts). The above is what a caller that bypasses it still gets.
 
 import type { FileList } from "../../window/FileList.ts";
 
@@ -32,6 +36,8 @@ export class ControlState {
   badInput: boolean;
   /** User-event's UI value (raw typed text) — null when it equals the value. See ui.ts. */
   uiValue: string | null;
+  /** The accessor React's value tracker defined on the element (window/shared-accessors.ts). */
+  tracker: PropertyDescriptor | null;
 
   constructor() {
     this.value = "";
@@ -47,5 +53,6 @@ export class ControlState {
     this.userEdited = false;
     this.badInput = false;
     this.uiValue = null;
+    this.tracker = null;
   }
 }
