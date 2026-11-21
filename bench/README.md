@@ -723,7 +723,11 @@ steady state per workload). None of these was worth its change:
   React: `updateInput` sets an input's `name` to "" and back on every update, so the index was
   rebuilt on each keystroke (0.40 → 0.43 ms, twice the allocation).
 - `select-project`: `settleFlatOptions` 6% self, a walk of the options for each option React
-  appends: 65 µs for 250 options, under a microsecond for a select of twenty.
+  appends: 65 µs for 250 options, under a microsecond for a select of twenty. Deferring the
+  algorithm for options appended to a select outside the document (settle on the first read or
+  the connection) is equivalent on paper, but `_selectednessNow()` only settles the select for
+  an option whose selectedness is still unknown, so reads after a second append went stale
+  (one test of ours and three WPT select tests): every reader would have to settle first.
 - `click-remove`: `compact` in traversal/live.ts 6% self. A removal at a node a range has touched
   walks every range registration, and a WeakRef is cleared only by a major GC (`removeChild`
   after 5,000 ranges were created and dropped: 150 µs). user-event registers two ranges per
@@ -731,7 +735,7 @@ steady state per workload). None of these was worth its change:
   before the removals did not slow them: the bench row comes from thousands of iterations in
   one process.
 - `tab-radio-groups`: `pruneRadioGroups` 13% self, `isDisabledImpl` 8% (a climb per radio, 400 of
-  them); `edit-labelled-fields`: `buildLabelMap` 5%; `styled-form-rerender`: about 20% in the
+  them; now only for the checked ones, 3%, the row itself 0.318 → 0.308 ms); `edit-labelled-fields`: `buildLabelMap` 5%; `styled-form-rerender`: about 20% in the
   cascade, since a class or tree change still invalidates every record.
 
 Looked at and dropped: user-event's two `Object.defineProperty` calls per event with a behavior

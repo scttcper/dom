@@ -98,13 +98,17 @@ function pruneRadioGroups(stops: (Element | null)[], active: Element) {
       continue
     const name = el.name
     if (!name) continue
-    if (name === activeGroup || isDisabled(el)) {
+    // A disabled radio is no stop and its checkedness supersedes nothing. Only a checked one is
+    // asked (a climb to the root each): an unchecked one that stays in the list is passed over
+    // as disabled by the caller's walk, which asks every candidate anyway.
+    const isChecked = el.checked
+    if (name === activeGroup || (isChecked && isDisabled(el))) {
       stops[i] = null
       continue
     }
     positions ??= new Map()
     const group = positions.get(name)
-    if (el.checked) {
+    if (isChecked) {
       // Across forms, multiple radios of the same name can be checked. Keep the last in tab order.
       checked[name] = el
       if (group) {
