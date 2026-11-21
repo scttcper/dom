@@ -180,6 +180,12 @@ async function runWorkload(w: Workload, config: ConfigName, iterations: number, 
 }
 
 async function main(): Promise<SampleResult> {
+  // Test runners give tests a `new Console()`, which lacks the inspector's `createTask` and
+  // `timeStamp`; React's development build does a task per element and its performance tracks
+  // when it finds them (9–13% of a React row, README "React's development build and V8"). Every
+  // configuration runs without them, as under Vitest and Jest.
+  delete (console as { createTask?: unknown }).createTask;
+  delete (console as { timeStamp?: unknown }).timeStamp;
   const [id, config, iterArg, warmArg] = process.argv.slice(2);
   const w = findWorkload(id);
   if (!w) throw new Error(`unknown workload ${id}`);

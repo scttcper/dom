@@ -38,6 +38,7 @@ import { Window, windowInterfaces, HOST_DELEGATES, installedWindows } from "./Wi
 import { currentWindowOrNull, setCurrentWindow } from "./current.ts";
 import { $globalObject, $host, $options } from "../keys.ts";
 import { hiddenGlobals, installCompatMembers } from "./compat.ts";
+import { hideDevtoolsConsole } from "./devtools-console.ts";
 import { optInInterfaces } from "./interfaces.ts";
 import { shareAccessors } from "./shared-accessors.ts";
 
@@ -189,6 +190,8 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
   // realm's global (a plain object) has no `Object` to wrap.
   const realmObject = target.Object as ObjectConstructor | undefined;
   const unshareAccessors = realmObject === undefined ? null : shareAccessors(realmObject);
+  // React's development build skips its DevTools bookkeeping (devtools-console.ts).
+  const showDevtoolsConsole = hideDevtoolsConsole(target.console as object | undefined);
 
   setCurrentWindow(window);
   const previousHost = window[$host];
@@ -211,6 +214,7 @@ export function installGlobals(window: Window, target: Record<PropertyKey, unkno
     saved.clear();
     restoreMembers();
     unshareAccessors?.();
+    showDevtoolsConsole?.();
     window[$host] = previousHost;
     window[$globalObject] = previousGlobal;
     if (installedWindows.get(target) === window) {

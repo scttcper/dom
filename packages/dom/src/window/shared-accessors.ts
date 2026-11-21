@@ -100,7 +100,10 @@ export function shareAccessors(O: ObjectConstructor): () => void {
   if (entry === undefined) {
     const original = Object.getOwnPropertyDescriptor(O, "defineProperty")!;
     const defineProperty = O.defineProperty;
-    // An object literal method: same name and length as the builtin, no `prototype`.
+    // An object literal method: same name and length as the builtin, no `prototype`. CPU
+    // profiles charge the native defineProperty's work to it: React calls it five times per
+    // element, so it tops a render-heavy profile (12% of `react/fill-10-submit`) with ~7 ns of
+    // its own per call.
     const wrapper = {
       defineProperty<T>(o: T, key: PropertyKey, desc: PropertyDescriptor & ThisType<unknown>): T {
         return defineProperty(o, key, sharedAccessor(o, key, desc));

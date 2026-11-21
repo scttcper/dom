@@ -101,6 +101,10 @@ that skips work fails instead of winning. A failing configuration is reported wi
 - **Interleaved.** Samples are taken round-robin: for each sample index, each workload runs
   every config, with the config order rotated each sample and reversed on odd samples, so
   thermal/background drift spreads evenly.
+- **A test runner's console.** The worker deletes `console.createTask` and `console.timeStamp`
+  before anything loads: Vitest and Jest give tests a `new Console()` without them, and React's
+  development build does extra work per element when it finds them ("React's development build
+  and V8" below).
 - **Within a process:** `warmup` untimed iterations, then `iterations` timed ones. The
   process's value is the median of its timed iterations.
 - **Across processes:** the cell shows the median of the per-process values and
@@ -679,28 +683,41 @@ inside react-dom and 53,000 inside our DOM and user-event. They have one cause, 
   React creates a task per element (9–13% of the React workloads' iteration times) and logs its
   performance tracks: `console.timeStamp` per component and `performance.measure`, whose detail
   Node structured-clones (1.2% of `fill-10-submit`) and keeps in the performance timeline.
-  bench/worker.ts and `@ctrl/dom/register` run with both. Every configuration pays the same, so
-  the ratios hold, but React's share of a bench row is 10–15% higher than under a test runner.
+  `installGlobals` now hides the two while no debugger is attached (window/devtools-console.ts),
+  which is what `@ctrl/dom/register` under node:test and a runner with its console interception
+  off get (register in plain Node, a 20-field form rendered and re-rendered three times: 0.38 →
+  0.30 ms); bench/worker.ts deletes them for every configuration, so rows measured before
+  2026-11-21 carry that extra React time and are not comparable with later ones.
 - **What is left of an element** is five `Object.defineProperty` calls and two `Object.freeze`
   in `ReactElement`: 12.6% of `fill-10-submit` without the key getters and owner stacks, and the 23.0
   million calls of Sentry's `perf` preset (some 4.6 million elements). Native code, the same on
   jsdom, and nothing a DOM can take out.
 
 **Outliers of ours, by workload** (same day; `--cpu-prof-interval 100`, two seconds or more of
-steady state per workload). `validate-named-fields`: `form.elements.namedItem` is 21% inclusive,
-a scan of the controls per lookup. `tab-radio-groups`: `pruneRadioGroups` 16% self and
-`getTabDestination` 8%. `select-project`: `settleFlatOptions` 4.7% self, a walk of the options
-for each option React appends. `click-remove`: `compact` in traversal/live.ts 5.0% self; a
-removal at a node a range has touched walks every range registration, and a WeakRef is cleared
-only by a major GC (`removeChild` after 5,000 ranges were created and dropped: 150 µs; 1,200
-`user.click` calls before the removals did not slow them, the GC keeps up). `edit-labelled-fields`:
-`buildLabelMap` 5%. `styled-form-rerender`: about 20% in the cascade, since a class or tree change
-still invalidates every record. Looked at and dropped: user-event's two `Object.defineProperty`
-calls per event with a behavior (0.45% of `fill-10-submit`), `replaceAll` for `normalizeNewlines`
-(27 against the regular expression's 22 µs on 1,000 CRLF lines), defining the CSSStyleDeclaration
-accessors in one `Object.create(proto, descriptors)` (3.1 against 1.5 ms), the keyed misses of
-`buildTable` (0.06 ms per worker), and the megamorphic `[$impl]` loads on wrappers (the symbol is
-every wrapper's first descriptor, so they never reach the runtime).
+steady state per workload). None of these was worth its change:
+
+- `validate-named-fields`: `form.elements.namedItem` is 21% inclusive, a scan of the controls per
+  lookup. An index stamped by `id` and `name` changes (Blink's NamedItemCache) does not survive
+  React: `updateInput` sets an input's `name` to "" and back on every update, so the index was
+  rebuilt on each keystroke (0.40 → 0.43 ms, twice the allocation).
+- `select-project`: `settleFlatOptions` 6% self, a walk of the options for each option React
+  appends: 65 µs for 250 options, under a microsecond for a select of twenty.
+- `click-remove`: `compact` in traversal/live.ts 6% self. A removal at a node a range has touched
+  walks every range registration, and a WeakRef is cleared only by a major GC (`removeChild`
+  after 5,000 ranges were created and dropped: 150 µs). user-event registers two ranges per
+  press on text and one per focus change, nothing per keystroke, and 1,200 `user.click` calls
+  before the removals did not slow them: the bench row comes from thousands of iterations in
+  one process.
+- `tab-radio-groups`: `pruneRadioGroups` 13% self, `isDisabledImpl` 8% (a climb per radio, 400 of
+  them); `edit-labelled-fields`: `buildLabelMap` 5%; `styled-form-rerender`: about 20% in the
+  cascade, since a class or tree change still invalidates every record.
+
+Looked at and dropped: user-event's two `Object.defineProperty` calls per event with a behavior
+(0.45% of `fill-10-submit`), `replaceAll` for `normalizeNewlines` (27 against the regular
+expression's 22 µs on 1,000 CRLF lines), defining the CSSStyleDeclaration accessors in one
+`Object.create(proto, descriptors)` (3.1 against 1.5 ms), the keyed misses of `buildTable`
+(0.06 ms per worker), and the megamorphic `[$impl]` loads on wrappers (the symbol is every
+wrapper's first descriptor, so they never reach the runtime).
 
 ## CSS (2026-11-09)
 
