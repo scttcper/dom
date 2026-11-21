@@ -1,7 +1,7 @@
 // semantic-release plugin: @semantic-release/commit-analyzer and release-notes-generator, fed only
 // the commits that touch this package's paths (tools/release/packages.ts), plus the manifest
 // fix-ups before publishing: `repository.url` (npm trusted publishing and provenance require it
-// to match the GitHub repository the workflow runs in; the template's `directory` is kept) and
+// to match the GitHub repository the workflow runs in; the manifest's `directory` is kept) and
 // the @ctrl/dom peer range.
 //
 // Options: { paths: string[], peersOnCtrlDom?: boolean, pkgRoot: string }

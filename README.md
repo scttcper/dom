@@ -11,7 +11,7 @@ same exports, behavior, error messages and `prettyDOM` output as Testing Library
 ## Setup
 
 Requires Node 26+, React 19, and Vitest 5+ or Jest 30+ (node:test and Bun work too, see the
-[package README](publish/ctrl-dom/README.md)).
+[package README](docs/npm-readme.md)).
 
 ### Vitest
 
@@ -53,7 +53,7 @@ instead of the preset.
 
 You can also import `@ctrl/dom/react`, `@ctrl/dom/user-event`, `@ctrl/dom/jest-dom`,
 `@ctrl/dom/testing-library` and `@ctrl/dom/aria` directly. The
-[package README](publish/ctrl-dom/README.md) covers options and agent-friendly debug output.
+[package README](docs/npm-readme.md) covers options and agent-friendly debug output.
 
 ## Performance
 
@@ -111,7 +111,7 @@ matters most for component tests:
 - **[Test isolation](https://vitest.dev/guide/improving-performance#test-isolation).** Rather
   than `isolate: false`, use `ctrlDom({ sharedWorkers: true })`: it sets that and resets the
   window between files, which stock Testing Library's cleanup does not do past a worker's first
-  file. [Details](publish/ctrl-dom/README.md#shared-workers).
+  file. [Details](docs/npm-readme.md#shared-workers).
 - **[Sharding](https://vitest.dev/guide/improving-performance#sharding)** splits a large suite
   across CI machines.
 - **Watch mode while you work.** A one-file `vitest run` is mostly Vitest starting; `vitest` pays
@@ -181,7 +181,7 @@ depend on real sizes and positions belong in a browser, for example
 - **Timers don't wait.** The test environments run timers on a virtual clock that jumps ahead
   when nothing else is pending, so `findBy*`, `waitFor` and user-event delays cost microseconds.
   A test that needs real time can turn it off, per project or per file:
-  [Time skipping](publish/ctrl-dom/README.md#time-skipping).
+  [Time skipping](docs/npm-readme.md#time-skipping).
 
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the details.
 

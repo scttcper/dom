@@ -1,32 +1,42 @@
 # @ctrl/dom-jest-environment
 
-Jest environment that installs an `@ctrl/dom` window as the test globals.
+Jest environment for [@ctrl/dom](https://www.npmjs.com/package/@ctrl/dom), the DOM for testing
+React components: a faster, leaner drop-in for `jest-environment-jsdom`.
 
-```js
-// jest.config.js: the whole stack, stock @testing-library/* imports routed to @ctrl/dom
-module.exports = { preset: "@ctrl/dom" };
+```sh
+pnpm add -D @ctrl/dom @ctrl/dom-jest-environment
 ```
 
+The whole stack, with your `@testing-library/*` imports routed to @ctrl/dom:
+
 ```js
-// the environment only, with stock @testing-library/* packages
+// jest.config.js
+module.exports = {
+  preset: "@ctrl/dom",
+  setupFilesAfterEnv: ["@ctrl/dom/jest-dom"], // instead of "@testing-library/jest-dom"
+};
+```
+
+The DOM only, with stock Testing Library:
+
+```js
 module.exports = { testEnvironment: "@ctrl/dom-jest-environment" };
 ```
 
-The environment publishes the DOM modules it loaded on the test global, and published
-`@ctrl/dom` / `@ctrl/dom/internal` resolve to bridges that return them, so every module in a test
-file shares one DOM (scripts/release.ts, writeBridges). Inside this repository, where the
-packages run from source, the workspace preset maps the DOM's imports to the shims in src/shims/
-for the same effect. Peer
-dependencies: `jest` >= 30, `@ctrl/dom`.
+Per file: `/** @jest-environment @ctrl/dom-jest-environment */`. Options
+(`testEnvironmentOptions`) and the differences from jsdom are documented in
+[@ctrl/dom's README](https://www.npmjs.com/package/@ctrl/dom). Requires Jest 30+ and Node 26+.
+Test code that imports `@ctrl/dom` (or its subpaths) gets the environment's own instance.
 
-Differences from jest-environment-jsdom you may notice (see `docs/deviations.md`):
+## Differences from jest-environment-jsdom
+
+The full list is in [deviations.md](https://github.com/scttcper/dom/blob/main/docs/deviations.md).
 
 - `testEnvironmentOptions` takes `createWindow` options (`url`, `width`, `platform`, ...) plus
   `nodeFetch: true` to keep Node's `fetch`/`Request`/`Response` (absent by default, as under
   jsdom). `compat` defaults to `"jsdom-26"`, the surface of jsdom 26 that jest-environment-jsdom
   30 ships (no `PointerEvent`); `"jsdom-30"` matches environments built on newer jsdom and
-  `"modern"` adds what no jsdom has (`matchMedia`, `ResizeObserver`, `inert`). See
-  `docs/deviations.md`.
+  `"modern"` adds what no jsdom has (`matchMedia`, `ResizeObserver`, `inert`).
 - `environment.dom` is a minimal stand-in for jsdom's `JSDOM` object: `window` and
   `reconfigure({ url })`.
 - Timers the test file leaves pending are cleared at teardown, as jsdom's `window.close()` does.
@@ -45,4 +55,6 @@ time, in the same order and with the same app-visible elapsed time. A `findBy` t
 matches fails after 1 s of virtual time instead of 1 s of real time. Set `testEnvironmentOptions.timeSkip` to `false` (or
 `CTRL_DOM_TIME_SKIP=0`) for real-time timers.
 
-Part of [ctrl-dom](../../README.md). MIT licensed; third-party notices in [NOTICE](../../NOTICE).
+## License
+
+MIT. Third-party notices are in the package's `NOTICE` file.

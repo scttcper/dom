@@ -22,17 +22,18 @@
 // self-references, so each member still exists exactly once; the ES bundles' are then rewritten
 // to the relative paths they resolve to (relativizeSelfReferences). `@ctrl/dom` and
 // `@ctrl/dom/internal` themselves resolve to generated bridges (writeBridges) that hand every
-// importer the DOM instance the running environment loaded. Static files (READMEs, manifests' static fields) live
-// in publish/<package>/.
+// importer the DOM instance the running environment loaded. What a manifest says about its
+// package (name, description, keywords, ...) comes from the workspace package.json of the same
+// name: the root's for @ctrl/dom, whose README on npm is docs/npm-readme.md (the root README is
+// the repository's).
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseSync } from "rolldown/experimental";
 
 const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 export const releaseDir = join(repoRoot, "release");
-const publishDir = join(repoRoot, "publish");
 
 /** @ctrl/dom's members: packages/<dir> → its subpath ("" is the package root). */
 const MEMBERS: Record<string, string> = {
@@ -103,16 +104,39 @@ function mergeDependencies(pkgs: Json[]) {
   return { dependencies, peerDependencies };
 }
 
-function copyPublishFiles(name: string, to: string, files: string[]): void {
-  for (const file of files) {
-    const from = join(publishDir, name, file);
-    if (!existsSync(from)) continue;
-    mkdirSync(dirname(join(to, file)), { recursive: true });
-    cpSync(from, join(to, file), { recursive: true });
-  }
+/** A published package's README (a path in the repository) and the repository's NOTICE and LICENSE. */
+function copyPublishFiles(readme: string, to: string): void {
+  cpSync(join(repoRoot, readme), join(to, "README.md"));
   for (const f of ["NOTICE", "LICENSE"]) {
     if (existsSync(join(repoRoot, f))) cpSync(join(repoRoot, f), join(to, f));
   }
+}
+
+const VERSION = "0.0.0";
+
+/** What a workspace manifest says about its package, for the published one. */
+const ABOUT = [
+  "name",
+  "description",
+  "keywords",
+  "license",
+  "homepage",
+  "bugs",
+  "repository",
+  "author",
+  "type",
+  "engines",
+];
+
+/**
+ * The start of a published manifest. Each package is released on its own version line
+ * (tools/release): the version here is a placeholder semantic-release replaces at publish time.
+ */
+function about(pkg: Json): Json {
+  const missing = ABOUT.filter((key) => pkg[key] === undefined);
+  if (missing.length > 0) throw new Error(`${pkg.name}: package.json lacks ${missing.join(", ")}`);
+  const { name, ...rest } = Object.fromEntries(ABOUT.map((key) => [key, pkg[key]]));
+  return { name, version: VERSION, ...rest, publishConfig: { access: "public" } };
 }
 
 /**
@@ -237,7 +261,7 @@ function relativizeSelfReferences(ctrlDom: string, exportsMap: Json): void {
  * modules under `--experimental-vm-modules`; absolute paths because a mapped name would be
  * resolved from each requiring file's directory. `@ctrl/dom` itself needs no mapping: its
  * CommonJS entry is the bridge to the environment's instance. Setup files are resolved without
- * moduleNameMapper, so they name "@ctrl/dom/jest-dom" (publish/ctrl-dom/README.md).
+ * moduleNameMapper, so they name "@ctrl/dom/jest-dom" (docs/npm-readme.md).
  */
 const JEST_PRESET_MAPPING: Record<string, string> = {
   "@testing-library/dom": "testing-library/index.cjs",
@@ -279,15 +303,6 @@ function sorted<T>(record: Record<string, T>): Record<string, T> {
 
 export async function assembleRelease(): Promise<string[]> {
   rmSync(releaseDir, { recursive: true, force: true });
-  const templates = Object.fromEntries(
-    ["ctrl-dom", "dom-jest-environment"].map((name) => [
-      name,
-      readJson(join(publishDir, name, "package.template.json")),
-    ]),
-  );
-  // Each package is released on its own version line (tools/release): templates hold a
-  // placeholder version that semantic-release replaces at publish time.
-  const version: string = templates["ctrl-dom"].version;
 
   // ── @ctrl/dom ──
   const ctrlDom = join(releaseDir, "ctrl-dom");
@@ -323,9 +338,9 @@ export async function assembleRelease(): Promise<string[]> {
   // reporters it hands the test runners by path.
   const cliPkg = readJson(join(repoRoot, "packages/cli/package.json"));
   copyTree(join(repoRoot, "packages/cli/dist"), join(ctrlDom, "dist", "cli"));
-  copyPublishFiles("ctrl-dom", ctrlDom, ["README.md"]);
+  copyPublishFiles("docs/npm-readme.md", ctrlDom);
   writeJson(join(ctrlDom, "package.json"), {
-    ...templates["ctrl-dom"],
+    ...about(readJson(join(repoRoot, "package.json"))),
     main: "./dist/bridge/index.js",
     types: "./dist/dom/types/index.d.ts",
     bin: Object.fromEntries(
@@ -348,9 +363,9 @@ export async function assembleRelease(): Promise<string[]> {
   const jestEnv = join(releaseDir, "dom-jest-environment");
   const jestPkg = readJson(join(repoRoot, "packages/jest-environment/package.json"));
   copyTree(join(repoRoot, "packages/jest-environment/dist"), join(jestEnv, "dist"));
-  copyPublishFiles("dom-jest-environment", jestEnv, ["README.md"]);
+  copyPublishFiles("packages/jest-environment/README.md", jestEnv);
   writeJson(join(jestEnv, "package.json"), {
-    ...templates["dom-jest-environment"],
+    ...about(jestPkg),
     main: "./dist/index.js",
     types: "./dist/types/index.d.ts",
     exports: {
@@ -361,7 +376,7 @@ export async function assembleRelease(): Promise<string[]> {
     dependencies: sorted(mergeDependencies([jestPkg]).dependencies),
     // A peer, so the environment and the test project share one @ctrl/dom. The release sets the
     // range to ^<latest @ctrl/dom> (tools/release/scoped-plugin.ts).
-    peerDependencies: { "@ctrl/dom": `^${version}`, jest: PEER_OVERRIDES.jest },
+    peerDependencies: { "@ctrl/dom": `^${VERSION}`, jest: PEER_OVERRIDES.jest },
   });
 
   // ── @ctrl/sentry-tests ──
@@ -370,8 +385,7 @@ export async function assembleRelease(): Promise<string[]> {
   const sentryTests = join(releaseDir, "sentry-tests");
   const sentryPkg = readJson(join(repoRoot, "packages/sentry-tests/package.json"));
   copyTree(join(repoRoot, "packages/sentry-tests/dist"), join(sentryTests, "dist"));
-  cpSync(join(repoRoot, "packages/sentry-tests/README.md"), join(sentryTests, "README.md"));
-  copyPublishFiles("sentry-tests", sentryTests, []);
+  copyPublishFiles("packages/sentry-tests/README.md", sentryTests);
   const { publishConfig, devDependencies: _dev, exports: _exports, ...sentryFields } = sentryPkg;
   const { access, ...sentryPublished } = publishConfig;
   writeJson(join(sentryTests, "package.json"), {

@@ -2,7 +2,27 @@
   "name": "@ctrl/dom-jest-environment",
   "version": "0.0.0",
   "private": true,
-  "description": "Jest environment that installs the @ctrl/dom window as globals (testEnvironment: 'ctrl-dom').",
+  "description": "Jest environment for @ctrl/dom, the fast DOM for testing React components (testEnvironment: \"@ctrl/dom-jest-environment\", or preset: \"@ctrl/dom\").",
+  "keywords": [
+    "jest",
+    "jest-environment",
+    "dom",
+    "jsdom",
+    "happy-dom",
+    "testing",
+    "react"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/scttcper/dom/tree/main/packages/jest-environment#readme",
+  "bugs": {
+    "url": "https://github.com/scttcper/dom/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scttcper/dom.git",
+    "directory": "packages/jest-environment"
+  },
+  "author": "Scott Cooper <scttcper@gmail.com>",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

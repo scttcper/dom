@@ -32,7 +32,7 @@ export const PACKAGES: ReleasePackage[] = [
   {
     name: "@ctrl/dom",
     pkgRoot: "release/ctrl-dom",
-    paths: [...MEMBERS.flatMap(member), "publish/ctrl-dom", ...BUILD],
+    paths: [...MEMBERS.flatMap(member), "package.json", "docs/npm-readme.md", ...BUILD],
     peersOnCtrlDom: false,
   },
   {
@@ -40,7 +40,7 @@ export const PACKAGES: ReleasePackage[] = [
     pkgRoot: "release/dom-jest-environment",
     // Also every @ctrl/dom release: the environment runs on @ctrl/dom/internal, and a release is
     // what moves its `^<@ctrl/dom>` peer range (0.x carets stop at the next minor).
-    paths: [...member("jest-environment"), "publish/dom-jest-environment", ...MEMBERS.flatMap(member), ...BUILD],
+    paths: [...member("jest-environment"), "packages/jest-environment/README.md", ...MEMBERS.flatMap(member), ...BUILD],
     peersOnCtrlDom: true,
   },
   {
