@@ -104,9 +104,10 @@ matters most for component tests:
   is usually starting a worker for every file, not the tests.
 - **[Pool](https://vitest.dev/guide/improving-performance#pool).** With many test files this is
   the setting that matters. `pool: "vmThreads"` reuses workers and gives each file a fresh
-  context: 1,000 short React test files went from 18.9 s to 4.2 s here. It uses more memory
-  ([`vmMemoryLimit`](https://vitest.dev/config/vmmemorylimit)), and `instanceof` no longer holds
-  for values that come from Node (an error from `fs`, a `Buffer`); DOM objects are unaffected.
+  context: 1,000 short React test files went from 18.9 s to 4.2 s on an Apple M4 Max (13 workers).
+  It uses more memory ([`vmMemoryLimit`](https://vitest.dev/config/vmmemorylimit)), and
+  `instanceof` no longer holds for values that come from Node (an error from `fs`, a `Buffer`); DOM
+  objects are unaffected.
 - **[Test isolation](https://vitest.dev/guide/improving-performance#test-isolation).** Rather
   than `isolate: false`, use `ctrlDom({ sharedWorkers: true })`: it sets that and resets the
   window between files, which stock Testing Library's cleanup does not do past a worker's first
