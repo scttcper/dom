@@ -690,6 +690,68 @@ const keyedList: Workload = {
   },
 };
 
+// Ported from packages/jest-dom/bench: ten matchers over one login form. The document changes
+// before every iteration, so version-stamped caches (roles, names, styles) carry nothing over:
+// each iteration is "a new test".
+const jestDomMatchers: Workload = {
+  id: "react/jest-dom-matchers",
+  title: "10 jest-dom matchers on a login form, after a mutation",
+  kind: "react",
+  iterations: 300,
+  warmup: 30,
+  setup(env) {
+    const { document, matchers } = env;
+    const host = document.createElement("main");
+    host.innerHTML = `
+      <form aria-label="login">
+        <h1>Sign in</h1>
+        <label for="user">Username</label><input id="user" name="user" required>
+        <label for="pass">Password</label><input id="pass" name="pass" type="password" required aria-describedby="pass-hint">
+        <p id="pass-hint">At least 12 characters</p>
+        <label><input type="checkbox" name="remember" checked> Remember me</label>
+        <fieldset disabled><legend>Advanced</legend><input name="proxy" aria-label="Proxy"></fieldset>
+        <div hidden><span id="hidden-text">secret</span></div>
+        <button type="submit" disabled>Sign in</button>
+        <a href="/forgot">Forgot password?</a>
+      </form>`;
+    document.body.appendChild(host);
+    const $ = (selector: string) => host.querySelector(selector);
+    const user = $("#user");
+    const pass = $("#pass");
+    const cases: [name: string, pass: boolean, received: unknown, ...args: unknown[]][] = [
+      ["toBeVisible", true, user],
+      ["toBeVisible", false, $("#hidden-text")],
+      ["toHaveAccessibleName", true, user, "Username"],
+      ["toHaveAccessibleDescription", true, pass, "At least 12 characters"],
+      ["toHaveRole", true, $("a"), "link"],
+      ["toBeDisabled", true, $('input[name="proxy"]')],
+      ["toBeDisabled", true, $("button")],
+      ["toBeChecked", true, $('input[type="checkbox"]')],
+      ["toBeRequired", true, user],
+      ["toHaveTextContent", true, $("h1"), "Sign in"],
+    ];
+    const context = { isNot: false, equals: (a: unknown, b: unknown) => Object.is(a, b), utils: {} };
+    let tick = 0;
+    return {
+      beforeEach() {
+        host.setAttribute("data-tick", String(tick++));
+      },
+      run() {
+        const out: boolean[] = [];
+        for (const [name, , received, ...args] of cases) out.push(matchers[name].call(context, received, ...args).pass);
+        return out;
+      },
+      verify(out: any) {
+        eq(out.length, cases.length, "results");
+        for (let i = 0; i < cases.length; i++) eq(out[i], cases[i][1], `${cases[i][0]} #${i}`);
+      },
+      close() {
+        host.remove();
+      },
+    };
+  },
+};
+
 const textQueries: Workload = {
   id: "react/text-queries",
   title: "getByText / getByLabelText / getByTestId scans (200 rows, 30 queries)",
@@ -1029,6 +1091,7 @@ export const reactWorkloads: Workload[] = [
   tabRadioGroups,
   chooseProject,
   textQueries,
+  jestDomMatchers,
   asyncFlows,
   churn,
 ];

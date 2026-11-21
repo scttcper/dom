@@ -66,6 +66,9 @@ React + testing-library (unmodified development React 19; unmount and resets unt
   node identity.
 - `react/text-queries`: 10 each of `getByText`, `getByLabelText`, `getByTestId` over a mounted
   200-row tree (query time only).
+- `react/jest-dom-matchers`: ten jest-dom matchers (visibility, accessible name and description,
+  role, disabled, checked, required, text content) on a login form, after a mutation that
+  invalidates cached roles, names and styles.
 - `react/findby-waitfor`: `findByRole` after an async load, then 5 click → `waitFor` async
   saves, then `findByText`. Real timers: a DOM whose MutationObserver doesn't drive `waitFor`
   pays the 50 ms polling interval, which is a real cost users feel.
@@ -937,8 +940,3 @@ suite/                 Vitest end-to-end suite benchmark
 compare.ts             regression check between two checkouts (CI)
 ```
 
-Package-level microbenchmarks written by the package owners (not duplicated here):
-`packages/aria/bench` (role/name computation), `packages/testing-library/bench` (queries),
-`packages/react/bench`, `packages/user-event/bench`, `packages/jest-dom/bench`, and
-`packages/vitest-environment/bench` (environment setup inside Vitest). This harness covers
-cross-stack, user-visible workloads.

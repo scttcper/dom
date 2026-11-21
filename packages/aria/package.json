@@ -33,7 +33,6 @@
     "aria-query": "5.3.0",
     "dom-accessibility-api": "0.5.16",
     "dom-accessibility-api-0.6": "npm:dom-accessibility-api@0.6.3",
-    "happy-dom": "21.0.4",
     "jsdom": "31.0.1"
   }
 }

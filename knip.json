@@ -17,7 +17,7 @@
       "project": ["scripts/**/*.ts"]
     },
     "packages/aria": {
-      "entry": ["bench/*.ts", "scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}", "test/**/vitest*.config.ts"],
+      "entry": ["scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}"],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },
     "packages/cli": {
@@ -35,7 +35,7 @@
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },
     "packages/jest-dom": {
-      "entry": ["bench/*.ts", "scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}", "test/setup-*.ts"],
+      "entry": ["scripts/*.{ts,cjs}", "test/**/*.test.{ts,tsx,js}", "test/setup-*.ts"],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"],
       "ignoreDependencies": ["@adobe/css-tools", "dom-accessibility-api"]
     },
@@ -45,7 +45,7 @@
       "ignoreDependencies": ["jest"]
     },
     "packages/react": {
-      "entry": ["bench/*.ts", "test/**/*.test.{ts,tsx,js}"],
+      "entry": ["test/**/*.test.{ts,tsx,js}"],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },
     "packages/register": {
@@ -58,17 +58,16 @@
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },
     "packages/testing-library": {
-      "entry": ["bench/*.ts", "test/**/*.test.{ts,tsx,js}", "test/types/*.ts"],
+      "entry": ["test/**/*.test.{ts,tsx,js}", "test/types/*.ts"],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"],
       "ignoreDependencies": ["@babel/code-frame", "pretty-format"]
     },
     "packages/user-event": {
-      "entry": ["bench/*.ts", "test/**/*.test.{ts,tsx,js}"],
+      "entry": ["test/**/*.test.{ts,tsx,js}"],
       "project": ["**/*.{ts,tsx,js,cjs,mjs}"]
     },
     "packages/vitest-environment": {
       "entry": [
-        "bench/*.ts",
         "test/**/*.test.{ts,tsx,js}",
         "test/**/vitest*.config.ts",
         "test/**/{global-setup,record,counter,scenario}.{ts,tsx}"
