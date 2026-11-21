@@ -13,7 +13,7 @@ import { EF_DISPATCH, EF_INITIALIZED, Event, NONE, setTrusted } from "./Event.ts
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import { addEventListener, removeEventListener, type ListenerSlots } from "./listeners.ts";
 import { dispatch } from "./dispatch.ts";
-import { toDOMString } from "./convert.ts";
+import { toDOMString } from "../webidl-convert.ts";
 import { $listeners, $listenerTypesChanged } from "../keys.ts";
 
 export class EventTarget {

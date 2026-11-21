@@ -15,7 +15,7 @@ import { clockNow } from "../window/clock.ts";
 import { exposeMembers } from "../webidl-runtime.ts";
 import type { EventInit } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
-import { toDOMString } from "./convert.ts";
+import { toDOMString } from "../webidl-convert.ts";
 import { $globalObject } from "../keys.ts";
 
 export const NONE = 0;

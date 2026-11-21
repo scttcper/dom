@@ -20,7 +20,7 @@ import { exposeMembers } from "../webidl-runtime.ts";
 import { EF_DISPATCH, Event, initializeEvent, isInternalConstruct, setToStringTag } from "./Event.ts";
 import type { EventInit } from "../webidl.ts";
 import { requireArgs } from "./UIEvents.ts";
-import { toDOMString, toDouble, toUnsignedLong, toUnsignedShort } from "./convert.ts";
+import { toDOMString, toDouble, toUnsignedLong, toUnsignedShort } from "../webidl-convert.ts";
 
 type Dict = Record<string, unknown>;
 

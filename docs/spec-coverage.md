@@ -1398,23 +1398,23 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dfn-create-operation-function](https://webidl.spec.whatwg.org/#dfn-create-operation-function) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dfn-overload-resolution-algorithm](https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm) | `dom/webidl-runtime.ts`, `dom/window/Storage.ts` | **untested** |
 | [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | `dom/collections/token-lists.test.ts`, `dom/window/geometry.test.ts` |
-| [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/events/convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
+| [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
 | [es-attributes](https://webidl.spec.whatwg.org/#es-attributes) | `dom/nodes/DocumentType.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/nodes/node-accessors.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/html/svg.test.ts`, `dom/nodes/element-node-misc.test.ts`, `dom/window/interface-shape.test.ts` |
 | [es-dictionary](https://webidl.spec.whatwg.org/#es-dictionary) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts`, `user-event/event/native-dicts.test.ts` |
-| [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
-| [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/events/convert.ts`, `dom/html/svg-types.ts` | `dom/events/event-path.test.ts` |
+| [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
+| [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/html/svg-types.ts`, `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
 | [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/wpt-uievents.test.ts` |
 | [es-interfaces](https://webidl.spec.whatwg.org/#es-interfaces) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts`, `dom/window/isolation.test.ts`, `vitest-environment/environment.test.ts`, `compat/surface/profiles.test.ts` |
 | [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NamedNodeMap.ts`, `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
 | [es-legacy-platform-objects](https://webidl.spec.whatwg.org/#es-legacy-platform-objects) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
-| [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/events/convert.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts`, `dom/window/window-apis.test.ts` |
+| [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/webidl-convert.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts`, `dom/window/window-apis.test.ts` |
 | [es-namespaces](https://webidl.spec.whatwg.org/#es-namespaces) | `dom/css/CSS.ts` | `dom/css/view.test.ts`; WPT: `css/cssom/CSS-namespace-object-class-string.html` |
 | [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/webidl-enumeration.test.ts` |
-| [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
-| [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/events/convert.ts` | `dom/events/event-path.test.ts` |
-| [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/events/convert.ts`, `dom/window/Storage.ts`, `dom/window/geometry.ts` | `dom/events/event-path.test.ts`, `dom/window/geometry.test.ts` |
-| [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/events/convert.ts`, `dom/html/svg-types.ts` | `dom/events/event-path.test.ts` |
+| [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
+| [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
+| [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/webidl-convert.ts`, `dom/window/Storage.ts`, `dom/window/geometry.ts` | `dom/events/event-path.test.ts`, `dom/window/geometry.test.ts` |
+| [es-unsigned-short](https://webidl.spec.whatwg.org/#es-unsigned-short) | `dom/html/svg-types.ts`, `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
 | [js-DOMString](https://webidl.spec.whatwg.org/#js-DOMString) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
 | [js-dictionary](https://webidl.spec.whatwg.org/#js-dictionary) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
 | [legacy-callback-interface-object](https://webidl.spec.whatwg.org/#legacy-callback-interface-object) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts` |

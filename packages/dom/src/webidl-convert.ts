@@ -1,8 +1,8 @@
-// WebIDL value conversions used by event constructors and init dictionaries.
-// https://webidl.spec.whatwg.org/#es-type-mapping
+// WebIDL conversions of JavaScript values to IDL types, for constructor arguments and init
+// dictionaries. https://webidl.spec.whatwg.org/#es-type-mapping
 //
-// Fast paths first: init dictionaries almost always carry already-correct primitives, so each
-// converter checks `typeof` once before falling back to the generic algorithm.
+// The integer types are JavaScript's own bitwise conversions: ToInt32/ToUint32 truncate, wrap and
+// turn NaN and the infinities into 0, which is ConvertToInt without [Clamp] or [EnforceRange].
 
 /** https://webidl.spec.whatwg.org/#es-DOMString */
 export function toDOMString(v: unknown): string {
@@ -13,43 +13,34 @@ export function toDOMString(v: unknown): string {
 
 /** https://webidl.spec.whatwg.org/#es-double — throws on non-finite values. */
 export function toDouble(v: unknown, what: string): number {
-  const n = typeof v === "number" ? v : Number(v);
+  const n = Number(v);
   if (!Number.isFinite(n)) throw new TypeError(`${what} is not a finite floating-point value.`);
   return n;
 }
 
 /** https://webidl.spec.whatwg.org/#es-float */
 export function toFloat(v: unknown, what: string): number {
-  const n = toDouble(v, what);
-  const f = Math.fround(n);
+  const f = Math.fround(toDouble(v, what));
   if (!Number.isFinite(f)) throw new TypeError(`${what} is outside the range of a float.`);
   return f;
 }
 
-function integerPart(v: unknown): number {
-  const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n)) return 0;
-  return Math.trunc(n);
-}
-
 /** https://webidl.spec.whatwg.org/#es-long */
 export function toLong(v: unknown): number {
-  if (typeof v === "number" && (v | 0) === v) return v;
-  return integerPart(v) | 0;
+  return Number(v) | 0;
 }
 
 /** https://webidl.spec.whatwg.org/#es-unsigned-long */
 export function toUnsignedLong(v: unknown): number {
-  if (typeof v === "number" && v >>> 0 === v) return v;
-  return integerPart(v) >>> 0;
+  return Number(v) >>> 0;
 }
 
 /** https://webidl.spec.whatwg.org/#es-short */
 export function toShort(v: unknown): number {
-  return (integerPart(v) << 16) >> 16;
+  return (Number(v) << 16) >> 16;
 }
 
 /** https://webidl.spec.whatwg.org/#es-unsigned-short */
 export function toUnsignedShort(v: unknown): number {
-  return integerPart(v) & 0xffff;
+  return Number(v) & 0xffff;
 }
