@@ -710,7 +710,9 @@ at the end of the prototype chain could define them on demand, but every new ind
 store on a declaration would then reach its `set` trap. Sentry's
 `perf` preset, one worker (37.9 s sampled): ours 12.6%, 7.6 points of it that same native
 `defineProperty` work under the guard in isolation.ts; after it the virtual `Date` at 0.4% and
-nothing else above 0.15%. React's five `defineProperty` calls and two `Object.freeze` cost 430 ns
+nothing else above 0.15%. That `Date` is at its floor: 59 ns for `new Date(ms)` against the
+native 50, 68 against 54 without arguments, and choosing the native call by argument count
+instead of spreading them measures the same. React's five `defineProperty` calls and two `Object.freeze` cost 430 ns
 an element in the main realm and the same in the `DONT_CONTEXTIFY` realm our Jest environment
 makes (920 ns in a contextified one, which resolves every `Object` through the sandbox's
 interceptors); our wrapper adds 22 ns an element, the guard 35.
