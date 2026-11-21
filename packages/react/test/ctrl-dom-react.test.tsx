@@ -30,7 +30,7 @@ describe("entry points", () => {
   });
 
   test("fireEvent keeps every DOM Testing Library alias", async () => {
-    const dtl = await import("../src/dtl.ts");
+    const dtl = await import("@ctrl/dom/testing-library");
     for (const key of Object.keys(dtl.fireEvent)) expect(typeof (main.fireEvent as any)[key]).toBe("function");
   });
 });
@@ -181,7 +181,7 @@ describe("act environment", () => {
   });
 
   test("asyncWrapper restores the act environment when the callback throws or rejects", async () => {
-    const { getConfig } = await import("../src/dtl.ts");
+    const { getConfig } = await import("@ctrl/dom/testing-library");
     const error = new Error("Action failed");
     const fail = () => {
       throw error;
@@ -193,7 +193,7 @@ describe("act environment", () => {
   });
 
   test("asyncWrapper's drain on the idle-skipping clock: one event-loop turn without a 0 ms timer when nothing is due, and a timer due within the millisecond still runs before it resolves", async () => {
-    const { getConfig } = await import("../src/dtl.ts");
+    const { getConfig } = await import("@ctrl/dom/testing-library");
     const original = globalThis.setTimeout;
     let calls = 0;
     // Counts calls and copies the clock's own properties, as user-event's timer observer does.
@@ -227,7 +227,7 @@ describe("act environment", () => {
     // Downstream: React Hook Form's useFieldArray "not corrupt parent state when remove is called
     // with values prop" read its update log before React's effects ran when the drain decided
     // from a microtask that it could take one turn.
-    const { getConfig } = await import("../src/dtl.ts");
+    const { getConfig } = await import("@ctrl/dom/testing-library");
     for (let i = 0; i < 3; i++) await new Promise<void>((resolve) => setImmediate(resolve));
     const order: string[] = [];
     await getConfig().asyncWrapper(async () => {

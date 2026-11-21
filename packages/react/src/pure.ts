@@ -24,7 +24,7 @@ import {
   type Queries,
   type prettyFormat,
   type queries,
-} from "./dtl.ts";
+} from "@ctrl/dom/testing-library";
 import act, {
   actReleasingSuspendedWork,
   actRoots,
@@ -42,7 +42,7 @@ import {
   tracing,
 } from "@ctrl/dom/internal";
 import { fireEvent } from "./fire-event.ts";
-import { getConfig, configure, type Config, type ConfigFn } from "./config.ts";
+import { getConfig, configure, reactStrictModeEnabled, type Config, type ConfigFn } from "./config.ts";
 
 // Containers React can render into / hydrate. Typed loosely on purpose: these are whatever
 // DOM the test environment provides (@ctrl/dom, or jsdom/happy-dom for the stock comparison).
@@ -330,7 +330,7 @@ const ownContainers = new WeakMap<object, { listeners: number; keys: number }>()
 const MAX_REUSABLE_CONTAINERS = 8;
 
 function strictModeIfNeeded(innerElement: React.ReactNode, reactStrictMode: boolean | undefined): React.ReactNode {
-  return (reactStrictMode ?? getConfig().reactStrictMode)
+  return (reactStrictMode ?? reactStrictModeEnabled())
     ? React.createElement(React.StrictMode, null, innerElement)
     : innerElement;
 }
@@ -806,5 +806,5 @@ export function renderHook<
 }
 
 // just re-export everything from dom-testing-library
-export * from "./dtl.ts";
+export * from "@ctrl/dom/testing-library";
 export { act, fireEvent, getConfig, configure, type Config, type ConfigFn };

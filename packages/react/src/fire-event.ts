@@ -5,7 +5,7 @@
 // distinction exists because a few events work differently with React's event system.
 // Every call goes through DTL's `eventWrapper`, which pure.ts configures to run in act().
 
-import { fireEvent as dtlFireEvent, type FireFunction, type FireObject } from "./dtl.ts";
+import { fireEvent as dtlFireEvent, type FireFunction, type FireObject } from "@ctrl/dom/testing-library";
 
 type AnyFire = (...args: any[]) => boolean;
 

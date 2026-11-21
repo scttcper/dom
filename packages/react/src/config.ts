@@ -1,7 +1,11 @@
 // Port of @testing-library/react@16.3.3 src/config.js
 // https://github.com/testing-library/react-testing-library/blob/v16.3.3/src/config.js
 
-import { configure as configureDTL, getConfig as getConfigDTL, type Config as ConfigDTL } from "./dtl.ts";
+import {
+  configure as configureDTL,
+  getConfig as getConfigDTL,
+  type Config as ConfigDTL,
+} from "@ctrl/dom/testing-library";
 
 export interface Config extends ConfigDTL {
   reactStrictMode: boolean;
@@ -26,6 +30,11 @@ let configForRTL: { reactStrictMode: boolean | undefined; releaseSuspendedWork: 
 /** `releaseSuspendedWork` without building the merged config (read on every RTL act). */
 export function releaseSuspendedWorkEnabled(): boolean {
   return configForRTL.releaseSuspendedWork;
+}
+
+/** `reactStrictMode`, likewise (read on every render and rerender). */
+export function reactStrictModeEnabled(): boolean | undefined {
+  return configForRTL.reactStrictMode;
 }
 
 export function getConfig(): Config {
