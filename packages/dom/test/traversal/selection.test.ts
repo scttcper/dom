@@ -109,6 +109,41 @@ describe("Selection — https://w3c.github.io/selection-api/#selection-interface
 });
 
 describe("live ranges — https://dom.spec.whatwg.org/#concept-live-range", () => {
+  test("a range the selection made and replaced without handing it out stops being tracked at the next mutation; one returned by getRangeAt() stays live", () => {
+    const list = document.createElement("ul");
+    for (let i = 0; i < 6; i++) list.appendChild(document.createElement("li")).textContent = `row ${i}`;
+    document.body!.appendChild(list);
+    const selection = document.getSelection()!;
+    const text = (i: number) => list.children[i]!.firstChild!;
+
+    // Caret moves, as a focus change or a keystroke makes them: each replaces the selection's range.
+    const before = liveRangeCount;
+    for (let i = 0; i < 500; i++) selection.collapse(text(i % 5), 0);
+    // Removing a row a caret has been in walks the document's ranges.
+    list.removeChild(list.children[4]!);
+    // The 499 replaced ranges are gone from the list without waiting for a GC.
+    expect(liveRangeCount - before).toBe(1);
+
+    // Handed out: the caller may keep it, so it has to follow mutations after it is replaced.
+    selection.collapse(text(1), 3);
+    const kept = selection.getRangeAt(0);
+    selection.collapse(text(2), 0);
+    expect(selection.getRangeAt(0)).not.toBe(kept);
+    list.removeChild(list.children[1]!);
+    expect([kept.startContainer, kept.startOffset]).toEqual([list, 1]);
+    // And the selection's own range followed the same removal.
+    expect(selection.anchorNode).toBe(list.children[1]!.firstChild);
+
+    // A range added by the caller is the caller's as well.
+    const added = document.createRange();
+    added.setStart(text(0), 2);
+    selection.removeAllRanges();
+    selection.addRange(added);
+    selection.collapse(text(2), 0);
+    list.removeChild(list.firstChild!);
+    expect([added.startContainer, added.startOffset]).toEqual([list, 0]);
+  });
+
   test("boundary points follow insertions, removals and data changes", () => {
     document.body!.innerHTML = "<p>abcdef</p>";
     const p = document.body!.firstChild!;

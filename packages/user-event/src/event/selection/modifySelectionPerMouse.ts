@@ -5,6 +5,7 @@ import type {Document, Element, Node, Range} from '../../dom-types.ts'
 import {setUISelection} from '../../document/index.ts'
 import {type SelectionRange} from './index.ts'
 import {resolveCaretPosition} from './resolveCaretPosition.ts'
+import {selectBoundaries} from './selectBoundaries.ts'
 
 export function modifySelectionPerMouseMove(
   selectionRange: Range | SelectionRange,
@@ -42,17 +43,24 @@ export function modifySelectionPerMouseMove(
       setUISelection(selectionRange.node, {anchorOffset, focusOffset})
     }
   } else {
-    const range = selectionRange.cloneRange()
-
-    const cmp = range.comparePoint(selectionFocus.node, selectionFocus.offset)
+    // Upstream clones the range, moves the clone's start or end to the pointer and adds the
+    // clone to the selection. The boundary points it would have: a point before the range
+    // becomes its start, one after it its end.
+    let startNode = selectionRange.startContainer
+    let startOffset = selectionRange.startOffset
+    let endNode = selectionRange.endContainer
+    let endOffset = selectionRange.endOffset
+    const cmp = selectionRange.comparePoint(
+      selectionFocus.node,
+      selectionFocus.offset,
+    )
     if (cmp < 0) {
-      range.setStart(selectionFocus.node, selectionFocus.offset)
+      startNode = selectionFocus.node
+      startOffset = selectionFocus.offset
     } else if (cmp > 0) {
-      range.setEnd(selectionFocus.node, selectionFocus.offset)
+      endNode = selectionFocus.node
+      endOffset = selectionFocus.offset
     }
-
-    const selection = document.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
+    selectBoundaries(document, startNode, startOffset, endNode, endOffset)
   }
 }

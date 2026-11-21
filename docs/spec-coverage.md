@@ -32,7 +32,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-syntax](#css-css-syntax) | 32 | 10 | 0 | 22 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [SVG 2](#svg-2) | 26 | 10 | 0 | 16 |
-| [W3C: selection-api](#w3c-selection-api) | 21 | 6 | 1 | 14 |
+| [W3C: selection-api](#w3c-selection-api) | 21 | 7 | 1 | 13 |
 | [W3C: aria](#w3c-aria) | 20 | 15 | 0 | 5 |
 | [CSS: css-color](#css-css-color) | 18 | 14 | 1 | 3 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1687 | 1165 | 123 | 399 |
+| **All** | 1687 | 1166 | 123 | 398 |
 
 ## Web-platform-tests fixtures
 
@@ -1619,14 +1619,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## W3C: selection-api
 
-<https://w3c.github.io/selection-api/> — 21 sections implemented, 6 tested, 1 by WPT only, 14 untested.
+<https://w3c.github.io/selection-api/> — 21 sections implemented, 7 tested, 1 by WPT only, 13 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [dfn-has-scheduled-selectionchange-event](https://w3c.github.io/selection-api/#dfn-has-scheduled-selectionchange-event) | `dom/traversal/Selection.ts` | **untested** |
 | [dfn-selection](https://w3c.github.io/selection-api/#dfn-selection) | `dom/nodes/Document.ts` | **untested** |
 | [dom-document-getselection](https://w3c.github.io/selection-api/#dom-document-getselection) | `dom/nodes/Document.ts` | `dom/traversal/wpt-selection.test.ts` |
-| [dom-selection-addrange](https://w3c.github.io/selection-api/#dom-selection-addrange) | `dom/traversal/Selection.ts` | `dom/traversal/wpt-selection.test.ts` |
+| [dom-selection-addrange](https://w3c.github.io/selection-api/#dom-selection-addrange) | `dom/traversal/Selection.ts`, `user-event/event/selection/selectBoundaries.ts` | `dom/traversal/wpt-selection.test.ts`, `user-event/event/select-boundaries.test.ts` |
 | [dom-selection-collapse](https://w3c.github.io/selection-api/#dom-selection-collapse) | `dom/traversal/Selection.ts` | `dom/traversal/wpt-selection.test.ts` |
 | [dom-selection-containsnode](https://w3c.github.io/selection-api/#dom-selection-containsnode) | `dom/traversal/Selection.ts` | **untested** |
 | [dom-selection-deletefromdocument](https://w3c.github.io/selection-api/#dom-selection-deletefromdocument) | `dom/traversal/Selection.ts` | **untested** |
@@ -1637,7 +1637,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-selection-modify](https://w3c.github.io/selection-api/#dom-selection-modify) | `dom/traversal/Selection.ts` | **untested** |
 | [dom-selection-removerange](https://w3c.github.io/selection-api/#dom-selection-removerange) | `dom/traversal/Selection.ts` | **untested** |
 | [dom-selection-selectallchildren](https://w3c.github.io/selection-api/#dom-selection-selectallchildren) | `dom/traversal/Selection.ts` | **untested** |
-| [dom-selection-setbaseandextent](https://w3c.github.io/selection-api/#dom-selection-setbaseandextent) | `dom/traversal/Selection.ts` | **untested** |
+| [dom-selection-setbaseandextent](https://w3c.github.io/selection-api/#dom-selection-setbaseandextent) | `dom/traversal/Selection.ts` | `user-event/event/select-boundaries.test.ts` |
 | [dom-window-getselection](https://w3c.github.io/selection-api/#dom-window-getselection) | `dom/window/Window.ts` | **untested** |
 | [extensions-to-globaleventhandlers-interface](https://w3c.github.io/selection-api/#extensions-to-globaleventhandlers-interface) | `dom/events/handler-names.ts` | **untested** |
 | [firing-selectionhange-event](https://w3c.github.io/selection-api/#firing-selectionhange-event) | `dom/traversal/Selection.ts` | **untested** |

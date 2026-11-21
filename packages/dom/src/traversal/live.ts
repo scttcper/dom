@@ -99,6 +99,15 @@ export function registerLiveRange(r: LiveBoundaries): void {
   file(home, new WeakRef(r));
 }
 
+/**
+ * `r` is unreachable: its only holder (a Selection that made it and never handed it out) has
+ * replaced it. The next walk of its document's list drops the entry instead of waiting for a
+ * major GC to clear the WeakRef, so selections moved in a loop do not lengthen every mutation.
+ */
+export function retireLiveRange(r: LiveBoundaries): void {
+  r[$home] = null;
+}
+
 /** Re-file `r` after its boundary points moved to another document. */
 export function refileRange(r: LiveBoundaries): void {
   markBoundary(r[$sc]);

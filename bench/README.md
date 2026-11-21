@@ -732,11 +732,14 @@ steady state per workload). None of these was worth its change:
   option changes nothing, and the select knows that without a walk while no selectedness has
   changed anywhere since (HTMLSelectElement.ts `_childrenChangedSteps`). The row: 0.90 → 0.86 ms.
 - `click-remove`: `compact` in traversal/live.ts 6% self. A removal at a node a range has touched
-  walks every range registration, and a WeakRef is cleared only by a major GC (`removeChild`
-  after 5,000 ranges were created and dropped: 150 µs). user-event registers two ranges per
-  press on text and one per focus change, nothing per keystroke, and 1,200 `user.click` calls
-  before the removals did not slow them: the bench row comes from thousands of iterations in
-  one process.
+  walks every range registration, and a WeakRef is cleared only by a major GC. Two sources of
+  registrations are gone: a range the Selection made itself and replaced without ever returning
+  it from `getRangeAt()` is retired at once (`retireLiveRange`), and user-event's mouse
+  selection sets the selection with `setBaseAndExtent` instead of adding a cloned range per
+  press and per pointer move (selectBoundaries.ts). `removeChild` after the caret moved 1,000
+  times: 36 → 0.8 µs; after 5,000: 139 → 0.4 µs. The rows barely move (`click-remove` 1.667 →
+  1.640 ms, `drag-text-selection` 0.813 → 0.801): they never held that many. Still registered
+  until collected: ranges a caller creates, and the one range the mouse keeps per press.
 - `tab-radio-groups`: `pruneRadioGroups` 13% self, `isDisabledImpl` 8% (a climb per radio, 400 of
   them; now only for the checked ones, 3%, the row itself 0.318 → 0.308 ms); `edit-labelled-fields`: `buildLabelMap` 5%; `styled-form-rerender`: about 20% in the
   cascade, since a class or tree change still invalidates every record.

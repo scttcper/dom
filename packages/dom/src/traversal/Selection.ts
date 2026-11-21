@@ -18,6 +18,7 @@ import { fireAnEvent } from "../events/fire.ts";
 // spies (user-event's "do not call setTimeout with delay `null`" relies on that).
 import { queueUserAgentTask } from "../window/clock.ts";
 import type { EventTarget } from "../events/EventTarget.ts";
+import { retireLiveRange } from "./live.ts";
 import { Range, StaticRange, compareBoundaryPoints, nodeLength } from "./Range.ts";
 import { $ec, $eo, $host, $impl, $sc, $so } from "../keys.ts";
 
@@ -50,6 +51,8 @@ function checkBoundary(n: NodeImpl, offset: number): void {
 export class Selection {
   #doc: Document;
   #range: Range | null;
+  /** `#range` was made here and never returned by getRangeAt(): nothing else can reach it. */
+  #owned: boolean;
   #direction: number;
   /** https://w3c.github.io/selection-api/#dfn-has-scheduled-selectionchange-event */
   #scheduled: boolean;
@@ -58,6 +61,7 @@ export class Selection {
   constructor(doc: Document) {
     this.#doc = doc;
     this.#range = null;
+    this.#owned = false;
     this.#direction = DIR_NONE;
     this.#scheduled = false;
   }
@@ -74,12 +78,15 @@ export class Selection {
   }
 
   #setNewRange(sc: NodeImpl, so: number, ec: NodeImpl, eo: number, direction: number): void {
-    this.#set(Range._create(this.#doc, sc, so, ec, eo), direction);
+    this.#set(Range._create(this.#doc, sc, so, ec, eo), direction, true);
   }
 
-  #set(range: Range | null, direction: number): void {
+  #set(range: Range | null, direction: number, owned = false): void {
     const old = this.#range;
+    // A range only this selection could reach stops being live with it (traversal/live.ts).
+    if (old !== null && old !== range && this.#owned) retireLiveRange(old);
     this.#range = range;
+    this.#owned = owned;
     this.#direction = direction;
     // https://w3c.github.io/selection-api/#selectionchange-event: dissociated from its range or
     // associated with a new one (a new range with the same boundary points is not a change).
@@ -168,6 +175,7 @@ export class Selection {
         `The index provided (${index}) is greater than or equal to the maximum bound (${this.rangeCount}).`,
         "IndexSizeError",
       );
+    this.#owned = false;
     return r;
   }
 
@@ -274,7 +282,7 @@ export class Selection {
       r._setStart(a, ao);
       r._setEnd(f, fo);
     }
-    this.#set(r, backwards ? DIR_BACKWARDS : DIR_FORWARDS);
+    this.#set(r, backwards ? DIR_BACKWARDS : DIR_FORWARDS, true);
   }
 
   /** https://w3c.github.io/selection-api/#dom-selection-selectallchildren */

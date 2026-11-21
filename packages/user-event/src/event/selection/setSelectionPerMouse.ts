@@ -6,6 +6,7 @@ import {getUIValue, setUISelection} from '../../document/index.ts'
 import {hasNoSelection, hasOwnSelection} from '../../utils/index.ts'
 import {type SelectionRange} from './index.ts'
 import {resolveCaretPosition} from './resolveCaretPosition.ts'
+import {selectBoundaries} from './selectBoundaries.ts'
 
 export function setSelectionPerMouseDown({
   document,
@@ -66,9 +67,14 @@ export function setSelectionPerMouseDown({
       throw new Error('The given offset is out of bounds.')
     }
 
-    const selection = document.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range.cloneRange())
+    // Upstream adds a clone of the range to the selection.
+    selectBoundaries(
+      document,
+      range.startContainer,
+      range.startOffset,
+      range.endContainer,
+      range.endOffset,
+    )
 
     return range
   }
