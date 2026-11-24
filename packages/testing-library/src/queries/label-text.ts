@@ -51,8 +51,9 @@ function queryAllLabelsByText(
 function queryAllByLabelText(container: any, text: Matcher, options?: SelectorMatcherOptions): any[] {
   checkContainerType(container);
 
-  const selector = options?.selector ?? "*";
-  const exact = options?.exact ?? true;
+  // Destructuring defaults apply to undefined only: `exact: null` is fuzzy upstream.
+  const selector = options?.selector !== undefined ? options.selector : "*";
+  const exact = options?.exact !== undefined ? options.exact : true;
   const matchNormalizer: NormalizerFn = resolveNormalizer(
     options?.trim,
     options?.collapseWhitespace,

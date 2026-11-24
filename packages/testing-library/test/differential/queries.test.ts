@@ -101,6 +101,18 @@ describe("ByText", () => {
     { name: "exact match", html: FORM, run: (l, c) => l.getByText(c, "Home link") },
     { name: "regex, multiple", html: FORM, run: (l, c) => l.getAllByText(c, /o/) },
     { name: "fuzzy", html: FORM, run: (l, c) => l.getAllByText(c, "ONE", { exact: false }) },
+    // `{ exact = true }` defaults only undefined: null is falsy, so the match is fuzzy.
+    { name: "exact: null is fuzzy", html: FORM, run: (l, c) => l.queryAllByText(c, "ONE", { exact: null as any }) },
+    {
+      name: "exact: null is fuzzy (by attribute)",
+      html: FORM,
+      run: (l, c) => l.queryAllByPlaceholderText(c, "jan", { exact: null as any }),
+    },
+    {
+      name: "exact: null is fuzzy (by label)",
+      html: FORM,
+      run: (l, c) => l.queryAllByLabelText(c, "first", { exact: null as any }),
+    },
     {
       name: "function matcher",
       html: FORM,

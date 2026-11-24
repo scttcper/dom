@@ -712,6 +712,8 @@ function uaDisplayImportant(el: NodeImpl): boolean {
  * Rules tested against every element must not use volatile pseudo-classes (:dir(),
  * :focus-visible, ...): testing one marks the style record volatile and disables its cache.
  * The bidi rules are applied on read instead (uaDirection).
+ * Every selector must be keyed by a type selector: computeRecord tests only the UA index's tag
+ * buckets, so an id, class, attribute-only or universal rule here would never apply.
  */
 export const UA_CSS = `
 a[href], area[href] { color: rgb(0, 0, 238); text-decoration: underline; cursor: pointer; }

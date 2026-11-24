@@ -96,13 +96,11 @@ function walkForId(root: NodeImpl, id: string): NodeImpl | null {
  */
 export function formOwner(el: NodeImpl): NodeImpl | null {
   if ((el.flags & F_PARSER_FORM) !== 0 && el.tag !== T.form) {
-    const link = parserLinks.get(el);
-    if (link !== undefined) {
-      const form = link.form;
-      if (form !== null && (el.tag === T.img || attr(el, "form") === null) && treeRoot(el) === treeRoot(form))
-        return form;
-      clearParserAssociation(el);
-    }
+    // F_PARSER_FORM and the parserLinks entry are set and cleared together.
+    const form = parserLinks.get(el)!.form;
+    if (form !== null && (el.tag === T.img || attr(el, "form") === null) && treeRoot(el) === treeRoot(form))
+      return form;
+    clearParserAssociation(el);
   }
   if (el.tag !== T.img) {
     const formId = attr(el, "form");

@@ -39,7 +39,8 @@ export function getMultipleElementsFoundError(message: string, container: any): 
 }
 
 export function queryAllByAttribute(attribute: string, container: any, text: Matcher, options?: MatcherOptions): any[] {
-  const exact = options?.exact ?? true;
+  // `{ exact = true } = {}`: the default applies to undefined only (`exact: null` is fuzzy upstream).
+  const exact = options?.exact !== undefined ? options.exact : true;
   const matchNormalizer = resolveNormalizer(options?.trim, options?.collapseWhitespace, options?.normalizer);
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
