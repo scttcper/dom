@@ -3,7 +3,7 @@ dist
 *.node
 *.o
 coverage
-bench/results/*.json
+bench/results/
 .DS_Store
 downstream/*/checkout
 downstream/*/output
