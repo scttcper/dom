@@ -17,7 +17,15 @@ import type { Document } from "../nodes/Document.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nodeCache, type NodeCache } from "../nodes/cache.ts";
-import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_STYLE_ATTR, F_SHADOW_ROOT, HTML_NS, SVG_NS } from "../nodes/constants.ts";
+import {
+  DOCUMENT_NODE,
+  ELEMENT_NODE,
+  F_HAS_STYLE_ATTR,
+  F_HTML,
+  F_SHADOW_ROOT,
+  HTML_NS,
+  SVG_NS,
+} from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
@@ -885,16 +893,6 @@ function hostOf(rs: RootStyles): NodeImpl | null {
   return host ? host[$impl] : null;
 }
 
-class Matched {
-  rule: IndexedRule;
-  /** Context rank: shadow-host (:host) rules lose to outer-tree rules for normal declarations. */
-  context: number;
-  constructor(rule: IndexedRule, context: number) {
-    this.rule = rule;
-    this.context = context;
-  }
-}
-
 /**
  * Element the ancestor filter (selectors/filter.ts) was last built for in this computeRecord, or
  * null (cleared when the computation ends). Built lazily, once the element has more than
@@ -978,8 +976,7 @@ function testRules(
   pseudo: string,
   opts: MatchOptions | undefined,
   filter: boolean,
-  context: number,
-  out: Matched[],
+  out: IndexedRule[],
 ): void {
   if (bucket === undefined) return;
   let list = bucket.rules;
@@ -995,33 +992,33 @@ function testRules(
       if (filterFor === el && !mayMatchAncestors(r.h0, r.h1, r.h2, r.h3)) continue;
     }
     if (opts === undefined ? matchesSelectorDirect(r.sel, el, pseudo) : matchesSelector(r.sel, el, pseudo, opts))
-      out.push(new Matched(r, context));
+      out.push(r);
   }
 }
 
-function collect(
-  buckets: RuleBuckets,
-  el: NodeImpl,
-  pseudo: string,
-  host: NodeImpl | null,
-  context: number,
-  out: Matched[],
-): void {
+function collect(buckets: RuleBuckets, el: NodeImpl, pseudo: string, host: NodeImpl | null, out: IndexedRule[]): void {
   if (buckets.size === 0) return;
   const opts = host === null ? undefined : { shadowHost: host };
   const quirks = buckets.quirks;
   // Quirks mode matches ids and classes ASCII case-insensitively: the filter's exact hashes do not apply.
   const filter = !quirks;
   if (el.id !== "" && buckets.ids.size !== 0)
-    testRules(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id), el, pseudo, opts, filter, context, out);
+    testRules(buckets.ids.get(quirks ? asciiLowercase(el.id) : el.id), el, pseudo, opts, filter, out);
   if (buckets.classes.size !== 0 && el.attrs !== null) {
     const cls = classTokens(el);
     for (let i = 0; i < cls.length; i++)
-      testRules(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]), el, pseudo, opts, filter, context, out);
+      testRules(buckets.classes.get(quirks ? asciiLowercase(cls[i]) : cls[i]), el, pseudo, opts, filter, out);
   }
   if (buckets.tags.size !== 0)
-    testRules(buckets.tags.get(asciiLowercase(el.name)), el, pseudo, opts, filter, context, out);
-  testRules(buckets.universal, el, pseudo, opts, filter, context, out);
+    testRules(
+      buckets.tags.get((el.flags & F_HTML) !== 0 ? el.name : asciiLowercase(el.name)),
+      el,
+      pseudo,
+      opts,
+      filter,
+      out,
+    );
+  testRules(buckets.universal, el, pseudo, opts, filter, out);
 }
 
 function bucketsFor(idx: RuleIndex, pseudo: number): RuleBuckets {
@@ -1029,10 +1026,12 @@ function bucketsFor(idx: RuleIndex, pseudo: number): RuleBuckets {
 }
 
 function applyBlock(map: Map<string, string>, block: DeclBlock, important: boolean): void {
+  const imp = block.important;
+  if (important && imp === null) return;
   const names = block.names;
   const values = block.values;
   for (let i = 0; i < names.length; i++) {
-    if (block.isImportant(i) !== important) continue;
+    if (imp !== null && (imp[i] === true) !== important) continue;
     const name = names[i];
     const longhands = PENDING_LONGHANDS.get(name);
     if (longhands !== undefined) {
@@ -1048,22 +1047,38 @@ function applyBlock(map: Map<string, string>, block: DeclBlock, important: boole
 }
 
 /** https://drafts.csswg.org/css-cascade-5/#cascade-sort over matched rules + inline style. */
-function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null, uaMatched: Matched[]): void {
+function cascade(
+  rec: StyleRecord,
+  matched: IndexedRule[],
+  hostMatched: IndexedRule[] | null,
+  inline: DeclBlock | null,
+  uaMatched: IndexedRule[] | null,
+): void {
   let map: Map<string, string> | null = null;
   let anyImportant = false;
-  if (uaMatched.length !== 0) {
+  if (uaMatched !== null && uaMatched.length !== 0) {
     map = new Map();
-    uaMatched.sort(normalOrder);
-    for (const m of uaMatched) applyBlock(map, blockOf(m.rule), false);
+    if (uaMatched.length > 1) uaMatched.sort(normalRuleOrder);
+    for (let i = 0; i < uaMatched.length; i++) applyBlock(map, blockOf(uaMatched[i]), false);
     rec.ua = new Map(map);
+  }
+  // Shadow-host (:host) rules (context 0) lose to outer-tree rules (context 1) for normal declarations.
+  if (hostMatched !== null && hostMatched.length !== 0) {
+    map ??= new Map();
+    if (hostMatched.length > 1) hostMatched.sort(normalRuleOrder);
+    for (let i = 0; i < hostMatched.length; i++) {
+      const block = blockOf(hostMatched[i]);
+      applyBlock(map, block, false);
+      if (!anyImportant && block.important !== null) anyImportant = block.important.includes(true);
+    }
   }
   if (matched.length !== 0) {
     map ??= new Map();
-    matched.sort(normalOrder);
-    for (const m of matched) {
-      const block = blockOf(m.rule);
+    if (matched.length > 1) matched.sort(normalRuleOrder);
+    for (let i = 0; i < matched.length; i++) {
+      const block = blockOf(matched[i]);
       applyBlock(map, block, false);
-      anyImportant ||= block.important?.includes(true) === true;
+      if (!anyImportant && block.important !== null) anyImportant = block.important.includes(true);
     }
   }
   if (inline !== null && inline.names.length !== 0) {
@@ -1071,32 +1086,25 @@ function cascade(rec: StyleRecord, matched: Matched[], inline: DeclBlock | null,
     applyBlock(map, inline, false);
   }
   if (anyImportant) {
-    matched.sort(importantOrder);
-    for (const m of matched) applyBlock(map!, blockOf(m.rule), true);
+    // Important declarations: outer-tree rules (context 1) lose to shadow-host (:host) rules (context 0).
+    if (matched.length > 1) matched.sort(importantRuleOrder);
+    for (let i = 0; i < matched.length; i++) applyBlock(map!, blockOf(matched[i]), true);
+    if (hostMatched !== null && hostMatched.length !== 0) {
+      if (hostMatched.length > 1) hostMatched.sort(importantRuleOrder);
+      for (let i = 0; i < hostMatched.length; i++) applyBlock(map!, blockOf(hostMatched[i]), true);
+    }
   }
-  if (inline !== null && inline.important?.includes(true)) applyBlock(map!, inline, true);
+  if (inline !== null && inline.important !== null && inline.important.includes(true)) applyBlock(map!, inline, true);
   rec.decls = map;
 }
 
-function normalOrder(a: Matched, b: Matched): number {
-  return (
-    a.context - b.context ||
-    a.rule.layer - b.rule.layer ||
-    a.rule.specificity - b.rule.specificity ||
-    a.rule.sheetIndex - b.rule.sheetIndex ||
-    a.rule.order - b.rule.order
-  );
+function normalRuleOrder(a: IndexedRule, b: IndexedRule): number {
+  return a.layer - b.layer || a.specificity - b.specificity || a.sheetIndex - b.sheetIndex || a.order - b.order;
 }
 
-/** Important declarations: inner context and earlier layers win (reversed). */
-function importantOrder(a: Matched, b: Matched): number {
-  return (
-    b.context - a.context ||
-    b.rule.layer - a.rule.layer ||
-    a.rule.specificity - b.rule.specificity ||
-    a.rule.sheetIndex - b.rule.sheetIndex ||
-    a.rule.order - b.rule.order
-  );
+/** Important declarations: earlier layers win (reversed). */
+function importantRuleOrder(a: IndexedRule, b: IndexedRule): number {
+  return b.layer - a.layer || a.specificity - b.specificity || a.sheetIndex - b.sheetIndex || a.order - b.order;
 }
 
 /** Author rules matching `el` (or its pseudo-element): its tree's sheets, then its own shadow tree's :host rules. */
@@ -1105,20 +1113,25 @@ function collectAuthor(
   pseudo: number,
   rs: RootStyles | null,
   styleVersion: number,
-  out: Matched[],
-): void {
+  out: IndexedRule[],
+): IndexedRule[] | null {
   const doc = el.doc;
   const pseudoName = pseudo === PSEUDO_NONE ? "" : pseudo === PSEUDO_BEFORE ? "before" : "after";
   if (rs !== null) {
     const idx = ruleIndexFor(rs, doc, styleVersion);
-    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), 1, out);
+    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, hostOf(rs), out);
   }
   // The host's own shadow tree styles it (and its ::before/::after) through :host rules.
   const srs = shadowStylesOf(el);
   if (srs !== null) {
     const idx = ruleIndexFor(srs, doc, styleVersion);
-    if (idx !== null) collect(bucketsFor(idx, pseudo), el, pseudoName, el, 0, out);
+    if (idx !== null) {
+      const hostOut: IndexedRule[] = [];
+      collect(bucketsFor(idx, pseudo), el, pseudoName, el, hostOut);
+      if (hostOut.length !== 0) return hostOut;
+    }
   }
+  return null;
 }
 
 // --- revert-layer ----------------------------------------------------------------------------
@@ -1142,8 +1155,8 @@ function collectAuthor(
 /** Layer key of the style attribute. */
 const INLINE_LAYER = -1;
 
-function layerKey(m: Matched): number {
-  return m.context * 0x100000 + m.rule.layer;
+function layerKey(context: number, rule: IndexedRule): number {
+  return context * 0x100000 + rule.layer;
 }
 
 /** Winner bookkeeping for one property (`winnerIn`). */
@@ -1186,27 +1199,41 @@ function effectiveValue(rec: StyleRecord, prop: string, v: string): string | nul
  */
 function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
   const el = rec.el;
-  const matched: Matched[] = [];
+  const matched: IndexedRule[] = [];
   resetFilter();
   hashedSeen = 0;
-  collectAuthor(el, rec.pseudo, rec.root, currentStyleVersion(el.doc), matched);
+  const hostMatched = collectAuthor(el, rec.pseudo, rec.root, currentStyleVersion(el.doc), matched);
   resetFilter();
-  matched.sort(normalOrder);
-  const important = matched.slice().sort(importantOrder);
+  matched.sort(normalRuleOrder);
+  if (hostMatched !== null) hostMatched.sort(normalRuleOrder);
+  const important = matched.slice().sort(importantRuleOrder);
+  const hostImportant = hostMatched === null ? null : hostMatched.slice().sort(importantRuleOrder);
   const inline = rec.pseudo === PSEUDO_NONE ? inlineBlock(el) : null;
   const excluded: number[] = [];
   for (;;) {
     // https://drafts.csswg.org/css-cascade-5/#cascade-sort, restricted to one property.
     winValue = undefined;
     winLayer = 0;
+    if (hostMatched !== null) {
+      for (let i = 0; i < hostMatched.length; i++) {
+        const k = layerKey(0, hostMatched[i]);
+        if (excluded.indexOf(k) === -1) winnerIn(blockOf(hostMatched[i]), false, prop, k);
+      }
+    }
     for (let i = 0; i < matched.length; i++) {
-      const k = layerKey(matched[i]);
-      if (excluded.indexOf(k) === -1) winnerIn(blockOf(matched[i].rule), false, prop, k);
+      const k = layerKey(1, matched[i]);
+      if (excluded.indexOf(k) === -1) winnerIn(blockOf(matched[i]), false, prop, k);
     }
     if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, false, prop, INLINE_LAYER);
     for (let i = 0; i < important.length; i++) {
-      const k = layerKey(important[i]);
-      if (excluded.indexOf(k) === -1) winnerIn(blockOf(important[i].rule), true, prop, k);
+      const k = layerKey(1, important[i]);
+      if (excluded.indexOf(k) === -1) winnerIn(blockOf(important[i]), true, prop, k);
+    }
+    if (hostImportant !== null) {
+      for (let i = 0; i < hostImportant.length; i++) {
+        const k = layerKey(0, hostImportant[i]);
+        if (excluded.indexOf(k) === -1) winnerIn(blockOf(hostImportant[i]), true, prop, k);
+      }
     }
     if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, true, prop, INLINE_LAYER);
     const v = winValue as string | undefined;
@@ -1223,9 +1250,9 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
   const rec = new StyleRecord(el, pseudo);
   const rs = rootOf(el);
   rec.root = rs;
-  const matched: Matched[] = [];
+  const matched: IndexedRule[] = [];
   const prevDeps = beginStateDeps();
-  collectAuthor(el, pseudo, rs, styleVersion, matched);
+  const hostMatched = collectAuthor(el, pseudo, rs, styleVersion, matched);
   const deps = endStateDeps(prevDeps);
   if (deps !== null) {
     // Keep only dependencies on the element and its ancestors (removing one of those removes the
@@ -1233,9 +1260,16 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
     if (depsOnAncestors(deps, el)) rec.deps = deps;
     else rec.volatile = true;
   }
-  const uaMatched: Matched[] = [];
-  if (pseudo === PSEUDO_NONE && el.ns === HTML_NS) collect(uaRuleIndex().main, el, "", null, 0, uaMatched);
-  cascade(rec, matched, pseudo === PSEUDO_NONE ? inlineBlock(el) : null, uaMatched);
+  let uaMatched: IndexedRule[] | null = null;
+  if (pseudo === PSEUDO_NONE && el.ns === HTML_NS) {
+    // Every rule in UA_CSS is keyed by tag name (no id, class, or universal rules).
+    const uaBucket = uaRuleIndex().main.tags.get((el.flags & F_HTML) !== 0 ? el.name : asciiLowercase(el.name));
+    if (uaBucket !== undefined) {
+      uaMatched = [];
+      testRules(uaBucket, el, "", undefined, true, uaMatched);
+    }
+  }
+  cascade(rec, matched, hostMatched, pseudo === PSEUDO_NONE ? inlineBlock(el) : null, uaMatched);
   if (pseudo === PSEUDO_NONE) {
     rec.displayLocked = uaDisplayImportant(el);
     // Popover showing state changes without a DOM mutation: never reuse the cached display.
@@ -1247,12 +1281,18 @@ function computeRecord(el: NodeImpl, pseudo: number, styleVersion: number): Styl
   return rec;
 }
 
+function isAncestorOf(ancestor: NodeImpl, el: NodeImpl): boolean {
+  for (let n: NodeImpl | null = el; n !== null; n = n.parent) if (n === ancestor) return true;
+  return false;
+}
+
 function depsOnAncestors(deps: StateDeps, el: NodeImpl): boolean {
+  if (!isAncestorOf(deps.el0, el)) return false;
   const els = deps.els;
-  outer: for (let i = 0; i < els.length; i++) {
-    const x = els[i];
-    for (let n: NodeImpl | null = el; n !== null; n = n.parent) if (n === x) continue outer;
-    return false;
+  if (els !== null) {
+    for (let i = 0; i < els.length; i++) {
+      if (!isAncestorOf(els[i], el)) return false;
+    }
   }
   return true;
 }
@@ -1529,8 +1569,22 @@ export function setComputedColorMode(mode: "specified" | "rgb"): void {
 const LINE_WIDTH: Record<string, string> = { thin: "1px", medium: "3px", thick: "5px" };
 
 function borderStyleFor(prop: string): string | null {
-  const m = /^(border-(?:top|right|bottom|left)|outline|column-rule)-width$/.exec(prop);
-  return m === null ? null : m[1] + "-style";
+  switch (prop) {
+    case "border-top-width":
+      return "border-top-style";
+    case "border-right-width":
+      return "border-right-style";
+    case "border-bottom-width":
+      return "border-bottom-style";
+    case "border-left-width":
+      return "border-left-style";
+    case "outline-width":
+      return "outline-style";
+    case "column-rule-width":
+      return "column-rule-style";
+    default:
+      return null;
+  }
 }
 
 /** Computed value from a specified value (https://drafts.csswg.org/css-cascade-5/#computed). */

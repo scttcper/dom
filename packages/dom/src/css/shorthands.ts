@@ -708,11 +708,11 @@ function serializeBox(v: string[]): string {
 
 function serializeSide(w: string, s: string, c: string, computed: boolean): string {
   if (computed) return w + " " + s + " " + c;
-  const parts: string[] = [];
-  if (w !== "medium") parts.push(w);
-  if (s !== "none") parts.push(s);
-  if (c !== "currentcolor") parts.push(c);
-  return parts.length === 0 ? w : parts.join(" ");
+  let out = "";
+  if (w !== "medium") out = w;
+  if (s !== "none") out = out === "" ? s : out + " " + s;
+  if (c !== "currentcolor") out = out === "" ? c : out + " " + c;
+  return out === "" ? w : out;
 }
 
 /**

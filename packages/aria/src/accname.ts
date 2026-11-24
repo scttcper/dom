@@ -71,6 +71,38 @@ class Ctx {
     this.flavor = flavor;
     this.usedState = false;
   }
+
+  reset(compute: number, options: ComputeTextAlternativeOptions | undefined, flavor: Flavor): void {
+    this.compute = compute;
+    const gcs = options?.getComputedStyle;
+    this.gcs = typeof gcs === "function" ? gcs : null;
+    this.pseudo = options?.computedStyleSupportsPseudoElements ?? this.gcs !== null;
+    this.hidden = options?.hidden ?? false;
+    this.flavor = flavor;
+    this.usedState = false;
+  }
+}
+
+// Single reusable computation context (avoids allocating a Ctx + Set on every name check).
+// Always cleared in `releaseCtx` (try/finally) so module state never retains a node or callback.
+const sharedCtx = new Ctx(COMPUTE_NAME, undefined, 5);
+let sharedCtxInUse = false;
+
+function acquireCtx(compute: number, options: ComputeTextAlternativeOptions | undefined, flavor: Flavor): Ctx {
+  if (!sharedCtxInUse) {
+    sharedCtxInUse = true;
+    sharedCtx.reset(compute, options, flavor);
+    return sharedCtx;
+  }
+  return new Ctx(compute, options, flavor);
+}
+
+function releaseCtx(ctx: Ctx): void {
+  if (ctx === sharedCtx) {
+    ctx.consulted.clear();
+    ctx.gcs = null;
+    sharedCtxInUse = false;
+  }
 }
 
 // --- role helpers (dom-accessibility-api's hasAnyConcreteRoles) ---------------------------
@@ -511,9 +543,36 @@ function computeTextAlternative(
   return "";
 }
 
+const MULTI_WS = /\s\s+/g;
+
+function isRegExpWs(c: number): boolean {
+  if (c <= 0x20) return c === 0x20 || (c >= 0x09 && c <= 0x0d);
+  if (c < 0xa0) return false;
+  return (
+    c === 0xa0 ||
+    c === 0x1680 ||
+    (c >= 0x2000 && c <= 0x200a) ||
+    c === 0x2028 ||
+    c === 0x2029 ||
+    c === 0x202f ||
+    c === 0x205f ||
+    c === 0x3000 ||
+    c === 0xfeff
+  );
+}
+
 /** asFlatString: trim and collapse runs of 2+ whitespace characters to one space. */
 function asFlatString(s: string): string {
-  return s.trim().replace(/\s\s+/g, " ");
+  const len = s.length;
+  if (len === 0) return "";
+  if (isRegExpWs(s.charCodeAt(0)) || isRegExpWs(s.charCodeAt(len - 1))) return s.trim().replace(MULTI_WS, " ");
+  let prevWs = false;
+  for (let i = 1; i < len - 1; i++) {
+    const ws = isRegExpWs(s.charCodeAt(i));
+    if (ws && prevWs) return s.trim().replace(MULTI_WS, " ");
+    prevWs = ws;
+  }
+  return s;
 }
 
 /** https://w3c.github.io/accname/#mapping_additional_nd_te */
@@ -522,9 +581,13 @@ export function computeTextAlternativeImpl(
   options: ComputeTextAlternativeOptions | undefined,
   flavor: Flavor,
 ): string {
-  const ctx = new Ctx(options?.compute === "description" ? COMPUTE_DESCRIPTION : COMPUTE_NAME, options, flavor);
-  // by spec computeAccessibleDescription starts with the referenced elements as roots
-  return asFlatString(computeTextAlternative(ctx, root, false, ctx.compute === COMPUTE_DESCRIPTION, false));
+  const ctx = acquireCtx(options?.compute === "description" ? COMPUTE_DESCRIPTION : COMPUTE_NAME, options, flavor);
+  try {
+    // by spec computeAccessibleDescription starts with the referenced elements as roots
+    return asFlatString(computeTextAlternative(ctx, root, false, ctx.compute === COMPUTE_DESCRIPTION, false));
+  } finally {
+    releaseCtx(ctx);
+  }
 }
 
 /** https://w3c.github.io/aria/#namefromprohibited */
@@ -600,9 +663,16 @@ export function computeAccessibleNameImpl(
     const c = root.cache as NodeCache | null;
     if (c !== null && c.nameVersion === doc[$version] && c.ariaNameStyleVersion === doc[$styleVersion]) return c.name;
   }
-  const ctx = new Ctx(COMPUTE_NAME, options, flavor);
-  const name = asFlatString(computeTextAlternative(ctx, root, false, false, false));
-  if (cacheable && !ctx.usedState) {
+  const ctx = acquireCtx(COMPUTE_NAME, options, flavor);
+  let name: string;
+  let usedState: boolean;
+  try {
+    name = asFlatString(computeTextAlternative(ctx, root, false, false, false));
+    usedState = ctx.usedState;
+  } finally {
+    releaseCtx(ctx);
+  }
+  if (cacheable && !usedState) {
     const c = nodeCache(root);
     c.nameVersion = doc[$version];
     c.ariaNameStyleVersion = doc[$styleVersion];

@@ -9,7 +9,7 @@ import { isLabelable } from "@ctrl/dom/aria/internal";
 import { getConfig } from "../config.ts";
 import { checkContainerType, implOf } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext, labelledFormControl } from "../label-helpers.ts";
-import { makeNormalizer, textMatcher, type Matcher, type NormalizerFn } from "../matches.ts";
+import { makeNormalizer, resolveNormalizer, textMatcher, type Matcher, type NormalizerFn } from "../matches.ts";
 import {
   makeFindQuery,
   makeSingleQuery,
@@ -48,14 +48,16 @@ function queryAllLabelsByText(
   return textToMatchByLabels.filter(({ node, textToMatch }) => match(textToMatch, node)).map(({ node }) => node);
 }
 
-function queryAllByLabelText(
-  container: any,
-  text: Matcher,
-  { selector = "*", exact = true, collapseWhitespace, trim, normalizer }: SelectorMatcherOptions = {},
-): any[] {
+function queryAllByLabelText(container: any, text: Matcher, options?: SelectorMatcherOptions): any[] {
   checkContainerType(container);
 
-  const matchNormalizer: NormalizerFn = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const selector = options?.selector ?? "*";
+  const exact = options?.exact ?? true;
+  const matchNormalizer: NormalizerFn = resolveNormalizer(
+    options?.trim,
+    options?.collapseWhitespace,
+    options?.normalizer,
+  );
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const ctx = new LabelContext(root, true);
@@ -64,19 +66,21 @@ function queryAllByLabelText(
   // `queryAllByAttribute('aria-label', container, …)` in the same walk: its elements are found
   // here and matched after the labelled ones, in upstream's order (a matcher function sees the
   // same calls).
-  const ariaLabelled: NodeImpl[] = [];
+  let ariaLabelled: NodeImpl[] | null = null;
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type !== ELEMENT_NODE) continue;
-    if (ariaAttr(n, "aria-label") !== null) ariaLabelled.push(n);
+    if (ariaAttr(n, "aria-label") !== null) (ariaLabelled ??= []).push(n);
     // `getRealLabels(element).length || element.hasAttribute('aria-labelledby')`
     // Only labelable elements have labels (the label map's keys): the rest skip the lookup.
     const labelledBy = ariaAttr(n, "aria-labelledby");
     if (labelledBy !== null || isLabelable(n)) collectLabelled(ctx, n, labelledBy, selector, match, labelledElements);
   }
 
-  for (let i = 0; i < ariaLabelled.length; i++) {
-    const n = ariaLabelled[i];
-    if (match(ariaAttr(n, "aria-label"), n.node)) labelledElements.push(n.node);
+  if (ariaLabelled !== null) {
+    for (let i = 0; i < ariaLabelled.length; i++) {
+      const n = ariaLabelled[i];
+      if (match(ariaAttr(n, "aria-label"), n.node)) labelledElements.push(n.node);
+    }
   }
 
   const unique = labelledElements.length > 1 ? Array.from(new Set(labelledElements)) : labelledElements;
@@ -145,10 +149,10 @@ function collectLabelled(
 // )
 // however, we can give a more helpful error message than the generic one,
 // so we're writing this one out by hand.
-function getAllByLabelText(container: any, text: Matcher, ...rest: [SelectorMatcherOptions?]): any[] {
-  const els = queryAllByLabelText(container, text, ...rest);
+function getAllByLabelText(container: any, text: Matcher, options?: SelectorMatcherOptions): any[] {
+  const els = queryAllByLabelText(container, text, options);
   if (!els.length) {
-    const labels = queryAllLabelsByText(container, text, ...rest);
+    const labels = queryAllLabelsByText(container, text, options);
     if (labels.length) {
       const tagNames = labels
         .map((label) => getTagNameOfElementAssociatedWithLabelViaFor(container, label))
@@ -171,7 +175,7 @@ function getAllByLabelText(container: any, text: Matcher, ...rest: [SelectorMatc
       }
     } else {
       throw getConfig().getElementError(
-        withLabelCandidates(`Unable to find a label with the text of: ${text}`, container, text, rest[0]),
+        withLabelCandidates(`Unable to find a label with the text of: ${text}`, container, text, options),
         container,
       );
     }

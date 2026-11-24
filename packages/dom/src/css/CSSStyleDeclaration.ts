@@ -12,7 +12,7 @@
 // declarations use prototype getters instead, see computed.ts).
 
 import type { Element } from "../nodes/Element.ts";
-import { attr, setAttribute } from "../nodes/attributes.ts";
+import { attr, setAttributeValue } from "../nodes/attributes.ts";
 import { DeclBlock } from "./declarations.ts";
 import { allPropertyNames, cssPropertyToIDLAttribute, isCustomPropertyName } from "./properties.ts";
 import { $block, $impl, $indexed, $owner, $parentRule, $readonly, $updating } from "../keys.ts";
@@ -81,7 +81,7 @@ export class CSSStyleDeclaration {
     if (owner !== null) {
       this[$updating] = true;
       try {
-        setAttribute(owner[$impl], "style", this[$block].serialize());
+        setAttributeValue(owner[$impl], "style", this[$block].serialize());
       } finally {
         this[$updating] = false;
       }
@@ -200,7 +200,14 @@ export class CSSStyleDeclaration {
     // Computed declarations ignore named assignments (jsdom-compatible; browsers throw).
     if (this[$readonly]) return;
     // `[LegacyNullToEmptyString] attribute CSSOMString` (https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-camel-cased-attribute).
-    this.setProperty(property, value === null ? "" : idlString(value));
+    const v = value === null ? "" : idlString(value);
+    if (v === "") {
+      if (this[$block].remove(property)) this._changed();
+      return;
+    }
+    const block = this[$block];
+    block.dirty = false;
+    if (block.setValue(property, v, false, false) && block.dirty) this._changed();
   }
 
   *[Symbol.iterator](): IterableIterator<string> {

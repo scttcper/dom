@@ -26,7 +26,7 @@ import type { Element } from "../nodes/Element.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ceActive, ceParserCreated, createElementImpl } from "../nodes/create.ts";
 import { append, appendDetached, insertDetached, remove, adopt } from "../nodes/tree.ts";
-import { appendAttributeDetached, findAttributeByName, attr } from "../nodes/attributes.ts";
+import { appendAttributeDetached, setAttributesDetached, findAttributeByName, attr } from "../nodes/attributes.ts";
 import { Comment, ProcessingInstruction, Text } from "../nodes/CharacterData.ts";
 import { DocumentFragment } from "../nodes/DocumentFragment.ts";
 import { DocumentType } from "../nodes/DocumentType.ts";
@@ -120,17 +120,19 @@ class DomSink extends TreeSink {
     const doc = this.parentOf(parent, ref).doc;
     const nsUri = ns === NS_HTML ? HTML_NS : ns === NS_SVG ? SVG_NS : ns === NS_MATHML ? MATHML_NS : this.otherNs;
     const el = createElementImpl(doc, name, nsUri, null);
-    if (hasNs) {
-      for (let i = 0; i < count; i++) {
-        const a = attrNs[i];
-        if (a === 0) appendAttributeDetached(el, names[i], values[i], null, null);
-        else if (a === ANS_XLINK) appendAttributeDetached(el, names[i], values[i], XLINK_NS, "xlink");
-        else if (a === ANS_XML) appendAttributeDetached(el, names[i], values[i], XML_NS, "xml");
-        else if (a === ANS_XMLNS)
-          appendAttributeDetached(el, names[i], values[i], XMLNS_NS, names[i] === "xmlns" ? null : "xmlns");
+    if (count !== 0) {
+      if (hasNs) {
+        for (let i = 0; i < count; i++) {
+          const a = attrNs[i];
+          if (a === 0) appendAttributeDetached(el, names[i], values[i], null, null);
+          else if (a === ANS_XLINK) appendAttributeDetached(el, names[i], values[i], XLINK_NS, "xlink");
+          else if (a === ANS_XML) appendAttributeDetached(el, names[i], values[i], XML_NS, "xml");
+          else if (a === ANS_XMLNS)
+            appendAttributeDetached(el, names[i], values[i], XMLNS_NS, names[i] === "xmlns" ? null : "xmlns");
+        }
+      } else {
+        setAttributesDetached(el, names, values, count);
       }
-    } else {
-      for (let i = 0; i < count; i++) appendAttributeDetached(el, names[i], values[i], null, null);
     }
     // Custom elements: "is" value and upgrade reaction (html/custom-elements.ts).
     if (ceActive && ns === NS_HTML) ceParserCreated(el);

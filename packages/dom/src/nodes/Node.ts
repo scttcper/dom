@@ -28,6 +28,7 @@ import {
   TEXT_NODE,
 } from "./constants.ts";
 import { EventTarget } from "../events/EventTarget.ts";
+import { UPPER_TAG_NAMES } from "./tags.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { NodeImpl } from "./NodeImpl.ts";
@@ -568,6 +569,8 @@ const upperNames = new Map<string, string>();
 export function htmlUppercasedQualifiedName(impl: NodeImpl): string {
   if (impl.prefix === null) {
     if ((impl.flags & F_HTML) === 0) return impl.name;
+    const tag = impl.tag;
+    if (tag !== 0) return UPPER_TAG_NAMES[tag];
     let upper = upperNames.get(impl.name);
     if (upper === undefined) {
       // Bounded: generated custom element names would otherwise grow it for the whole process.

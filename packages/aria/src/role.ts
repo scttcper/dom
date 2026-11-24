@@ -57,6 +57,62 @@ function eqCI(v: string | null, lower: string): boolean {
 // -----------------------------------------------------------------------------------------
 // Testing Library / aria-query@5.3.0 implicit roles.
 
+// Tags whose Testing Library implicit role never depends on attributes: read in O(1) without
+// allocating a per-node NodeCache. Conditional tags (`input`, `select`, `th`, `form`, `img`, `a`,
+// `area`, `section`) stay `undefined` and go through the version-stamped NodeCache below.
+const STATIC_IMPLICIT_ROLE: (string | undefined)[] = new Array<string | undefined>(Object.keys(T).length + 1).fill("");
+STATIC_IMPLICIT_ROLE[T.input] = undefined;
+STATIC_IMPLICIT_ROLE[T.select] = undefined;
+STATIC_IMPLICIT_ROLE[T.th] = undefined;
+STATIC_IMPLICIT_ROLE[T.form] = undefined;
+STATIC_IMPLICIT_ROLE[T.img] = undefined;
+STATIC_IMPLICIT_ROLE[T.a] = undefined;
+STATIC_IMPLICIT_ROLE[T.area] = undefined;
+STATIC_IMPLICIT_ROLE[T.section] = undefined;
+STATIC_IMPLICIT_ROLE[T.aside] = "complementary";
+STATIC_IMPLICIT_ROLE[T.article] = "article";
+STATIC_IMPLICIT_ROLE[T.header] = "banner";
+STATIC_IMPLICIT_ROLE[T.blockquote] = "blockquote";
+STATIC_IMPLICIT_ROLE[T.button] = "button";
+STATIC_IMPLICIT_ROLE[T.caption] = "caption";
+STATIC_IMPLICIT_ROLE[T.td] = "cell";
+STATIC_IMPLICIT_ROLE[T.code] = "code";
+STATIC_IMPLICIT_ROLE[T.footer] = "contentinfo";
+STATIC_IMPLICIT_ROLE[T.dd] = "definition";
+STATIC_IMPLICIT_ROLE[T.del] = "deletion";
+STATIC_IMPLICIT_ROLE[T.dialog] = "dialog";
+STATIC_IMPLICIT_ROLE[T.html] = "document";
+STATIC_IMPLICIT_ROLE[T.em] = "emphasis";
+STATIC_IMPLICIT_ROLE[T.figure] = "figure";
+for (const t of [T.b, T.bdo, T.body, T.data, T.div, T.hgroup, T.i, T.pre, T.q, T.samp, T.small, T.span, T.u])
+  STATIC_IMPLICIT_ROLE[t] = "generic";
+for (const t of [T.details, T.fieldset, T.optgroup, T.address]) STATIC_IMPLICIT_ROLE[t] = "group";
+for (const t of [T.h1, T.h2, T.h3, T.h4, T.h5, T.h6]) STATIC_IMPLICIT_ROLE[t] = "heading";
+STATIC_IMPLICIT_ROLE[T.ins] = "insertion";
+for (const t of [T.menu, T.ol, T.ul]) STATIC_IMPLICIT_ROLE[t] = "list";
+STATIC_IMPLICIT_ROLE[T.datalist] = "listbox";
+STATIC_IMPLICIT_ROLE[T.li] = "listitem";
+STATIC_IMPLICIT_ROLE[T.main] = "main";
+STATIC_IMPLICIT_ROLE[T.mark] = "mark";
+STATIC_IMPLICIT_ROLE[T.math] = "math";
+STATIC_IMPLICIT_ROLE[T.meter] = "meter";
+STATIC_IMPLICIT_ROLE[T.nav] = "navigation";
+STATIC_IMPLICIT_ROLE[T.option] = "option";
+STATIC_IMPLICIT_ROLE[T.p] = "paragraph";
+STATIC_IMPLICIT_ROLE[T.progress] = "progressbar";
+STATIC_IMPLICIT_ROLE[T.tr] = "row";
+for (const t of [T.tbody, T.tfoot, T.thead]) STATIC_IMPLICIT_ROLE[t] = "rowgroup";
+STATIC_IMPLICIT_ROLE[T.hr] = "separator";
+STATIC_IMPLICIT_ROLE[T.output] = "status";
+STATIC_IMPLICIT_ROLE[T.strong] = "strong";
+STATIC_IMPLICIT_ROLE[T.sub] = "subscript";
+STATIC_IMPLICIT_ROLE[T.sup] = "superscript";
+STATIC_IMPLICIT_ROLE[T.table] = "table";
+STATIC_IMPLICIT_ROLE[T.dfn] = "term";
+STATIC_IMPLICIT_ROLE[T.dt] = "term";
+STATIC_IMPLICIT_ROLE[T.textarea] = "textbox";
+STATIC_IMPLICIT_ROLE[T.time] = "time";
+
 /**
  * The single implicit role Testing Library 10.4 computes for an element, or "" for none
  * (`getImplicitAriaRoles(el)[0] ?? ""`). Every aria-query@5.3.0 element entry maps to
@@ -64,6 +120,8 @@ function eqCI(v: string | null, lower: string): boolean {
  */
 export function implicitRole(impl: NodeImpl): string {
   if (impl.type !== ELEMENT_NODE) return "";
+  const fixed = STATIC_IMPLICIT_ROLE[anyTag(impl)];
+  if (fixed !== undefined) return fixed;
   const version = impl.doc[$version];
   const cache = nodeCache(impl);
   if (cache.roleVersion !== version) {

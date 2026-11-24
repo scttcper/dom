@@ -18,7 +18,7 @@ import {
   type SpanContext,
 } from "@ctrl/dom/internal";
 import { getSuggestedQuery, type Variant } from "./suggestions.ts";
-import { makeNormalizer, textMatcher, type Matcher, type MatcherOptions } from "./matches.ts";
+import { resolveNormalizer, textMatcher, type Matcher, type MatcherOptions } from "./matches.ts";
 import { waitForInSpan } from "./wait-for.ts";
 import { getConfig } from "./config.ts";
 import { implOf } from "./helpers.ts";
@@ -38,13 +38,9 @@ export function getMultipleElementsFoundError(message: string, container: any): 
   );
 }
 
-export function queryAllByAttribute(
-  attribute: string,
-  container: any,
-  text: Matcher,
-  { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {},
-): any[] {
-  const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+export function queryAllByAttribute(attribute: string, container: any, text: Matcher, options?: MatcherOptions): any[] {
+  const exact = options?.exact ?? true;
+  const matchNormalizer = resolveNormalizer(options?.trim, options?.collapseWhitespace, options?.normalizer);
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const lower = asciiLowercase(attribute);
@@ -71,12 +67,26 @@ export function queryByAttribute(attribute: string, container: any, text: Matche
   return els[0] || null;
 }
 
+/** Read `suggest` from a trailing argument value without `args.slice(-1)` or `{}` allocation. */
+function suggestFromLast(last: any): boolean {
+  if (last !== undefined && last !== null && last.suggest !== undefined) return last.suggest;
+  return getConfig().throwSuggestions;
+}
+
 // this accepts a query function and returns a function which throws an error
 // if more than one elements is returned, otherwise it returns the first
 // element or null
 export function makeSingleQuery(allQuery: AnyQuery, getMultipleError: GetErrorFunction<any[]>): AnyQuery {
-  return (container: any, ...args: any[]) => {
-    const els = allQuery(container, ...args);
+  return function (container: any, a: any = undefined, b: any = undefined) {
+    const argc = arguments.length;
+    const els =
+      argc === 2
+        ? allQuery(container, a)
+        : argc === 3
+          ? allQuery(container, a, b)
+          : argc === 1
+            ? allQuery(container)
+            : (allQuery as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
     if (els.length > 1) {
       // Ours: under CTRL_DOM_DEBUG each element prints as its snapshot line(s).
       const elementStrings =
@@ -84,8 +94,14 @@ export function makeSingleQuery(allQuery: AnyQuery, getMultipleError: GetErrorFu
           ? els.map((element: any) => agentElementSummary(element)).join("\n")
           : els.map((element: any) => getElementError(null, element).message).join("\n\n");
 
+      const msg =
+        argc === 2
+          ? getMultipleError(container, a)
+          : argc === 3
+            ? getMultipleError(container, a, b)
+            : (getMultipleError as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
       throw getMultipleElementsFoundError(
-        `${getMultipleError(container, ...args)}
+        `${msg}
 
 Here are the matching elements:
 
@@ -109,10 +125,24 @@ ${suggestion.toString()}
 // this accepts a query function and returns a function which throws an error
 // if an empty list of elements is returned
 export function makeGetAllQuery(allQuery: AnyQuery, getMissingError: GetErrorFunction<any[]>): AnyQuery {
-  return (container: any, ...args: any[]) => {
-    const els = allQuery(container, ...args);
+  return function (container: any, a: any = undefined, b: any = undefined) {
+    const argc = arguments.length;
+    const els =
+      argc === 2
+        ? allQuery(container, a)
+        : argc === 3
+          ? allQuery(container, a, b)
+          : argc === 1
+            ? allQuery(container)
+            : (allQuery as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
     if (!els.length) {
-      throw getConfig().getElementError(getMissingError(container, ...args), container);
+      const msg =
+        argc === 2
+          ? getMissingError(container, a)
+          : argc === 3
+            ? getMissingError(container, a, b)
+            : (getMissingError as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
+      throw getConfig().getElementError(msg, container);
     }
     return els;
   };
@@ -147,8 +177,18 @@ const matchCount = (result: unknown): number => (Array.isArray(result) ? result.
 
 /** Ours: a span per call when something subscribes to @ctrl/dom's tracing channel (@ctrl/dom trace.ts). */
 function traceQuery(name: string, query: AnyQuery): AnyQuery {
-  return (container: any, ...args: any[]) => {
-    if (!tracing()) return query(container, ...args);
+  return function (container: any, a: any = undefined, b: any = undefined) {
+    const argc = arguments.length;
+    if (!tracing()) {
+      return argc === 2
+        ? query(container, a)
+        : argc === 3
+          ? query(container, a, b)
+          : argc === 1
+            ? query(container)
+            : (query as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
+    }
+    const args = Array.prototype.slice.call(arguments, 1);
     return traceSync(QUERY_OP, describeCall(name, args), (span) => {
       const result = query(container, ...args);
       span.data.matches = matchCount(result);
@@ -157,39 +197,56 @@ function traceQuery(name: string, query: AnyQuery): AnyQuery {
   };
 }
 
-export const wrapSingleQueryWithSuggestion =
-  (query: AnyQuery, queryAllByName: string, variant: Variant): AnyQuery =>
-  (container: any, ...args: any[]) => {
-    const element = query(container, ...args);
-    const [{ suggest = getConfig().throwSuggestions } = {}] = args.slice(-1);
-    if (element && suggest) {
-      const suggestion = getSuggestedQuery(element, variant);
-      if (suggestion && !queryAllByName.endsWith(suggestion.queryName)) {
-        throw getSuggestionError(suggestion.toString(), container);
+export const wrapSingleQueryWithSuggestion = (query: AnyQuery, queryAllByName: string, variant: Variant): AnyQuery =>
+  function (container: any, a: any = undefined, b: any = undefined) {
+    const argc = arguments.length;
+    const element =
+      argc === 2
+        ? query(container, a)
+        : argc === 3
+          ? query(container, a, b)
+          : argc === 1
+            ? query(container)
+            : (query as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
+    if (element) {
+      const last = argc === 2 ? a : argc === 3 ? b : argc > 3 ? arguments[argc - 1] : undefined;
+      if (suggestFromLast(last)) {
+        const suggestion = getSuggestedQuery(element, variant);
+        if (suggestion && !queryAllByName.endsWith(suggestion.queryName)) {
+          throw getSuggestionError(suggestion.toString(), container);
+        }
       }
     }
     return element;
   };
 
-export const wrapAllByQueryWithSuggestion =
-  (query: AnyQuery, queryAllByName: string, variant: Variant): AnyQuery =>
-  (container: any, ...args: any[]) => {
-    const els = query(container, ...args);
+export const wrapAllByQueryWithSuggestion = (query: AnyQuery, queryAllByName: string, variant: Variant): AnyQuery =>
+  function (container: any, a: any = undefined, b: any = undefined) {
+    const argc = arguments.length;
+    const els =
+      argc === 2
+        ? query(container, a)
+        : argc === 3
+          ? query(container, a, b)
+          : argc === 1
+            ? query(container)
+            : (query as (...x: any[]) => any).apply(null, arguments as unknown as any[]);
+    if (els.length) {
+      const last = argc === 2 ? a : argc === 3 ? b : argc > 3 ? arguments[argc - 1] : undefined;
+      if (suggestFromLast(last)) {
+        // get a unique list of all suggestion messages.  We are only going to make a suggestion if
+        // all the suggestions are the same
+        const uniqueSuggestionMessages = [
+          ...new Set(els.map((element: any) => getSuggestedQuery(element, variant)?.toString())),
+        ];
 
-    const [{ suggest = getConfig().throwSuggestions } = {}] = args.slice(-1);
-    if (els.length && suggest) {
-      // get a unique list of all suggestion messages.  We are only going to make a suggestion if
-      // all the suggestions are the same
-      const uniqueSuggestionMessages = [
-        ...new Set(els.map((element: any) => getSuggestedQuery(element, variant)?.toString())),
-      ];
-
-      if (
-        // only want to suggest if all the els have the same suggestion.
-        uniqueSuggestionMessages.length === 1 &&
-        !queryAllByName.endsWith(getSuggestedQuery(els[0], variant)!.queryName)
-      ) {
-        throw getSuggestionError(uniqueSuggestionMessages[0] as string, container);
+        if (
+          // only want to suggest if all the els have the same suggestion.
+          uniqueSuggestionMessages.length === 1 &&
+          !queryAllByName.endsWith(getSuggestedQuery(els[0], variant)!.queryName)
+        ) {
+          throw getSuggestionError(uniqueSuggestionMessages[0] as string, container);
+        }
       }
     }
 

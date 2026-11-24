@@ -446,9 +446,11 @@ export function grammarFor(name: string): Grammar {
 // --- normalization ------------------------------------------------------------------------
 
 export function isCSSWideKeyword(lower: string): boolean {
-  return (
-    lower === "inherit" || lower === "initial" || lower === "unset" || lower === "revert" || lower === "revert-layer"
-  );
+  const c = lower.charCodeAt(0);
+  if (c === 105) return lower === "inherit" || lower === "initial";
+  if (c === 117) return lower === "unset";
+  if (c === 114) return lower === "revert" || lower === "revert-layer";
+  return false;
 }
 
 /** Normalizes one component against a grammar; null if it does not match. */
@@ -720,11 +722,26 @@ export function serializeUrl(s: string): string {
   return "url(" + serializeString(s) + ")";
 }
 
-/** Value contains a var() reference anywhere (pending-substitution value). */
+/** Value contains a var() / env() / attr() reference anywhere (pending-substitution value). */
 export function containsVar(value: string): boolean {
-  const i = value.indexOf("(");
-  if (i === -1) return false;
-  return /var\(/i.test(value) || /env\(/i.test(value) || /attr\(/i.test(value);
+  let i = value.indexOf("(");
+  while (i !== -1) {
+    if (i >= 3) {
+      const c1 = value.charCodeAt(i - 1) | 32;
+      if (c1 === 114) {
+        // ...r( → var( or attr(
+        const c2 = value.charCodeAt(i - 2) | 32;
+        if (c2 === 97 && (value.charCodeAt(i - 3) | 32) === 118) return true;
+        if (i >= 4 && c2 === 116 && (value.charCodeAt(i - 3) | 32) === 116 && (value.charCodeAt(i - 4) | 32) === 97)
+          return true;
+      } else if (c1 === 118 && (value.charCodeAt(i - 2) | 32) === 110 && (value.charCodeAt(i - 3) | 32) === 101) {
+        // ...env(
+        return true;
+      }
+    }
+    i = value.indexOf("(", i + 1);
+  }
+  return false;
 }
 
 /**

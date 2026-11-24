@@ -176,28 +176,64 @@ export function textMatcher(
 }
 
 /**
- * Constructs a normalizer to pass to functions in matches.ts
- * @param trim The user-specified value for `trim`, without any defaulting having been applied
- * @param collapseWhitespace The user-specified value for `collapseWhitespace`, without any defaulting having been applied
- * @param normalizer The user-specified normalizer
+ * Exact matcher with identity normalizer (used by `*ByRole`'s `name` / `description` filters):
+ * resolves the matcher's kind once per query instead of re-checking `instanceof` per candidate.
  */
-export function makeNormalizer({ trim, collapseWhitespace, normalizer }: NormalizerOptions): NormalizerFn {
+export function exactIdentityMatcher(matcher: Matcher | null): (textToMatch: string | null, node: any) => boolean {
+  if (matcher === null || matcher === undefined) {
+    return (textToMatch) => {
+      if (typeof textToMatch !== "string") return false;
+      assertNotNullOrUndefined(matcher);
+      return false;
+    };
+  }
+  if (typeof matcher === "string") {
+    return (textToMatch) => typeof textToMatch === "string" && textToMatch === matcher;
+  }
+  if (typeof matcher === "function") {
+    return (textToMatch, node) => typeof textToMatch === "string" && matcher(textToMatch, node);
+  }
+  if (typeof matcher === "object") {
+    if (isPlainRegExp(matcher)) {
+      return (textToMatch) => typeof textToMatch === "string" && matcher.test(textToMatch);
+    }
+    if ((matcher as unknown) instanceof RegExp) {
+      const re = matcher as RegExp;
+      return (textToMatch) => typeof textToMatch === "string" && matchRegExp(re, textToMatch);
+    }
+  }
+  const s = String(matcher);
+  return (textToMatch) => typeof textToMatch === "string" && textToMatch === s;
+}
+
+/** Zero-allocation internal helper for `makeNormalizer`. */
+export function resolveNormalizer(
+  trim: boolean | undefined,
+  collapseWhitespace: boolean | undefined,
+  normalizer: NormalizerFn | undefined,
+): NormalizerFn {
   if (!normalizer) {
-    // No custom normalizer specified. Just use default.
     if (trim === undefined && collapseWhitespace === undefined) return defaultNormalizer;
     return getDefaultNormalizer({ trim, collapseWhitespace });
   }
-
   if (typeof trim !== "undefined" || typeof collapseWhitespace !== "undefined") {
-    // They've also specified a value for trim or collapseWhitespace
     throw new Error(
       "trim and collapseWhitespace are not supported with a normalizer. " +
         "If you want to use the default trim and collapseWhitespace logic in your normalizer, " +
         'use "getDefaultNormalizer({trim, collapseWhitespace})" and compose that into your normalizer',
     );
   }
-
   return normalizer;
+}
+
+/**
+ * Constructs a normalizer to pass to functions in matches.ts
+ * @param trim The user-specified value for `trim`, without any defaulting having been applied
+ * @param collapseWhitespace The user-specified value for `collapseWhitespace`, without any defaulting having been applied
+ * @param normalizer The user-specified normalizer
+ */
+export function makeNormalizer({ trim, collapseWhitespace, normalizer }: NormalizerOptions): NormalizerFn {
+  return resolveNormalizer(trim, collapseWhitespace, normalizer);
 }
 
 const regExpExec = RegExp.prototype.exec;

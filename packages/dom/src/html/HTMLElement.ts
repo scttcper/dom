@@ -9,6 +9,7 @@
 
 import { installEventHandlers } from "../events/handlers.ts";
 import { Element } from "../nodes/Element.ts";
+import { ceActive } from "../nodes/create.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { asciiLowercase, removeAttribute, setAttribute } from "../nodes/attributes.ts";
@@ -87,14 +88,14 @@ export class HTMLElement extends Element {
 
   override _connectedSteps(): void {
     const impl = this[$impl];
-    if ((impl.flags & F_CUSTOM) !== 0 || isValueOf(this) !== null) ceConnected(this);
+    if (ceActive && ((impl.flags & F_CUSTOM) !== 0 || isValueOf(this) !== null)) ceConnected(this);
     if ((impl.flags & F_FACE) !== 0) faceStateMaybeChanged(impl);
   }
 
   override _disconnectedSteps(): void {
     const impl = this[$impl];
     if (isPopoverShowing(impl) || isInTopLayer(impl)) topLayerRemovingSteps(impl);
-    if (definitionOf(this) !== undefined) ceDisconnected(this);
+    if (ceActive && definitionOf(this) !== undefined) ceDisconnected(this);
     // The ancestor chain changed: a parser-made form association ends (html/forms).
     clearParserAssociation(impl);
     if ((impl.flags & F_FACE) !== 0) faceStateMaybeChanged(impl);
@@ -107,7 +108,7 @@ export class HTMLElement extends Element {
 
   /** https://dom.spec.whatwg.org/#move step 24 (moveBefore): custom element connectedMoveCallback. */
   override _movingSteps(_isSubtreeRoot: boolean, _oldParent: NodeImpl): void {
-    if (definitionOf(this) !== undefined) ceMoved(this);
+    if (ceActive && definitionOf(this) !== undefined) ceMoved(this);
   }
 
   /** attachShadow step 3 hook (nodes/Element.ts): the custom element definition disables shadow roots. */
@@ -130,10 +131,7 @@ export class HTMLElement extends Element {
     namespace: string | null,
   ): void {
     if (localName === "popover" && namespace === null) popoverAttributeChanged(this[$impl], oldValue, value);
-    // TODO(html): this WeakMap lookup runs on every attribute write of every F_ATTR_HOOK element (~5 ns
-    // of a 22 ns input write) even when no custom element was ever defined; a registry count or an
-    // F_CE_CUSTOM-style flag check would skip it.
-    if (definitionOf(this) !== undefined) ceAttributeChanged(this, localName, oldValue, value, namespace);
+    if (ceActive && definitionOf(this) !== undefined) ceAttributeChanged(this, localName, oldValue, value, namespace);
     if ((this[$impl].flags & F_FACE) !== 0 && namespace === null && (localName === "form" || localName === "disabled"))
       faceStateMaybeChanged(this[$impl]);
   }
