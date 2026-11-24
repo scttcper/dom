@@ -7,6 +7,7 @@ import {
   jestFakeTimersAreEnabled,
   advanceFakeTimersByTime,
   checkContainerType,
+  NO_OPTIONS,
 } from "./helpers.ts";
 import { getConfig, runWithExpensiveErrorDiagnosticsDisabled } from "./config.ts";
 import { envDebugFormat } from "./agent-debug.ts";
@@ -48,25 +49,22 @@ function defaultOnTimeout(error: any, container: any) {
 
 function waitForImpl<T>(
   callback: () => T | Promise<T>,
-  options: WaitForOptions | undefined,
-  stackTraceError: Error,
-  span: SpanContext | null = null,
+  defaultStackTraceError: Error,
+  span: SpanContext | null,
+  {
+    container = getDocument(),
+    timeout = getConfig().asyncUtilTimeout,
+    showOriginalStackTrace = getConfig().showOriginalStackTrace,
+    stackTraceError = defaultStackTraceError,
+    interval = 50,
+    // Upstream's default is a closure per call; `defaultOnTimeout` runs on timeout instead.
+    onTimeout,
+    mutationObserverOptions = DEFAULT_MUTATION_OBSERVER_OPTIONS,
+  }: WaitForOptions,
 ): Promise<T> {
   if (typeof callback !== "function") {
     throw new TypeError("Received `callback` arg must be a function");
   }
-
-  const container = options?.container !== undefined ? options.container : getDocument();
-  const timeout = options?.timeout !== undefined ? options.timeout : getConfig().asyncUtilTimeout;
-  const showOriginalStackTrace =
-    options?.showOriginalStackTrace !== undefined ? options.showOriginalStackTrace : getConfig().showOriginalStackTrace;
-  const resolvedStackTraceError = options?.stackTraceError !== undefined ? options.stackTraceError : stackTraceError;
-  const interval = options?.interval !== undefined ? options.interval : 50;
-  const onTimeout = options?.onTimeout;
-  const mutationObserverOptions =
-    options?.mutationObserverOptions !== undefined
-      ? options.mutationObserverOptions
-      : DEFAULT_MUTATION_OBSERVER_OPTIONS;
 
   return new Promise<T>((resolve, reject) => {
     let lastError: any;
@@ -88,7 +86,7 @@ function waitForImpl<T>(
               const error = new Error(
                 `Changed from using fake timers to real timers while using waitFor. This is not allowed and will result in very strange behavior. Please ensure you're awaiting all async things your test is doing before changing to real timers. For more info, please go to https://github.com/testing-library/dom-testing-library/issues/830`,
               );
-              if (!showOriginalStackTrace) copyStackTrace(error, resolvedStackTraceError);
+              if (!showOriginalStackTrace) copyStackTrace(error, stackTraceError);
               reject(error);
               return;
             }
@@ -162,7 +160,7 @@ function waitForImpl<T>(
         const error = new Error(
           `Changed from using real timers to fake timers while using waitFor. This is not allowed and will result in very strange behavior. Please ensure you're awaiting all async things your test is doing before changing to fake timers. For more info, please go to https://github.com/testing-library/dom-testing-library/issues/830`,
         );
-        if (!showOriginalStackTrace) copyStackTrace(error, resolvedStackTraceError);
+        if (!showOriginalStackTrace) copyStackTrace(error, stackTraceError);
         return reject(error);
       } else {
         return checkCallback();
@@ -202,12 +200,12 @@ function waitForImpl<T>(
       if (lastError) {
         error = lastError;
         if (!showOriginalStackTrace && error.name === "TestingLibraryElementError") {
-          copyStackTrace(error, resolvedStackTraceError);
+          copyStackTrace(error, stackTraceError);
         }
       } else {
         error = new Error("Timed out in waitFor.");
         if (!showOriginalStackTrace) {
-          copyStackTrace(error, resolvedStackTraceError);
+          copyStackTrace(error, stackTraceError);
         }
       }
       onDone(onTimeout !== undefined ? onTimeout(error) : defaultOnTimeout(error, container), null);
@@ -233,7 +231,7 @@ export function waitForInSpan<T>(
   // create the error here so its stack trace is as close to the
   // calling code as possible
   const stackTraceError = new Error("STACK_TRACE_MESSAGE");
-  return getConfig().asyncWrapper(() => waitForImpl(callback, options, stackTraceError, span));
+  return getConfig().asyncWrapper(() => waitForImpl(callback, stackTraceError, span, options ?? NO_OPTIONS));
 }
 
 /**

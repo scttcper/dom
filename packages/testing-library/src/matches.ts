@@ -175,38 +175,7 @@ export function textMatcher(
   };
 }
 
-/**
- * Exact matcher with identity normalizer (used by `*ByRole`'s `name` / `description` filters):
- * resolves the matcher's kind once per query instead of re-checking `instanceof` per candidate.
- */
-export function exactIdentityMatcher(matcher: Matcher | null): (textToMatch: string | null, node: any) => boolean {
-  if (matcher === null || matcher === undefined) {
-    return (textToMatch) => {
-      if (typeof textToMatch !== "string") return false;
-      assertNotNullOrUndefined(matcher);
-      return false;
-    };
-  }
-  if (typeof matcher === "string") {
-    return (textToMatch) => typeof textToMatch === "string" && textToMatch === matcher;
-  }
-  if (typeof matcher === "function") {
-    return (textToMatch, node) => typeof textToMatch === "string" && matcher(textToMatch, node);
-  }
-  if (typeof matcher === "object") {
-    if (isPlainRegExp(matcher)) {
-      return (textToMatch) => typeof textToMatch === "string" && matcher.test(textToMatch);
-    }
-    if ((matcher as unknown) instanceof RegExp) {
-      const re = matcher as RegExp;
-      return (textToMatch) => typeof textToMatch === "string" && matchRegExp(re, textToMatch);
-    }
-  }
-  const s = String(matcher);
-  return (textToMatch) => typeof textToMatch === "string" && textToMatch === s;
-}
-
-/** Zero-allocation internal helper for `makeNormalizer`. */
+/** `makeNormalizer` taking the options positionally, so callers need no options object. */
 export function resolveNormalizer(
   trim: boolean | undefined,
   collapseWhitespace: boolean | undefined,

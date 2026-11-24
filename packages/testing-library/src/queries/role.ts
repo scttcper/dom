@@ -26,8 +26,8 @@ import {
   isInaccessibleImpl,
 } from "../role-helpers.ts";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
-import { checkContainerType, implOf } from "../helpers.ts";
-import { exactIdentityMatcher, matches, type Matcher } from "../matches.ts";
+import { checkContainerType, implOf, NO_OPTIONS } from "../helpers.ts";
+import { matches, type Matcher } from "../matches.ts";
 import { getConfig } from "../config.ts";
 import { envDebugFormat } from "../agent-debug.ts";
 import { roleCandidates } from "../candidates.ts";
@@ -57,82 +57,58 @@ function assertSupported(role: string, prop: string): void {
   }
 }
 
-function queryAllByRole(container: any, role: any, options?: ByRoleOptions): any[] {
+function queryAllByRole(
+  container: any,
+  role: any,
+  {
+    hidden = getConfig().defaultHidden,
+    name,
+    description,
+    queryFallbacks = false,
+    selected,
+    busy,
+    checked,
+    pressed,
+    current,
+    level,
+    expanded,
+    value: { now: valueNow, min: valueMin, max: valueMax, text: valueText } = NO_OPTIONS,
+  }: ByRoleOptions = NO_OPTIONS,
+): any[] {
   checkContainerType(container);
 
-  const hidden = options?.hidden !== undefined ? options.hidden : getConfig().defaultHidden;
-  const name = options?.name;
-  const description = options?.description;
-  const queryFallbacks = options?.queryFallbacks ?? false;
-  const selected = options?.selected;
-  const busy = options?.busy;
-  const checked = options?.checked;
-  const pressed = options?.pressed;
-  const current = options?.current;
-  const level = options?.level;
-  const expanded = options?.expanded;
-  const value = options?.value;
-  const valueNow = value?.now;
-  const valueMin = value?.min;
-  const valueMax = value?.max;
-  const valueText = value?.text;
-
-  let hasState = false;
-  if (selected !== undefined) {
-    assertSupported(role, "aria-selected");
-    hasState = true;
-  }
-  if (busy !== undefined) {
-    assertSupported(role, "aria-busy");
-    hasState = true;
-  }
-  if (checked !== undefined) {
-    assertSupported(role, "aria-checked");
-    hasState = true;
-  }
-  if (pressed !== undefined) {
-    assertSupported(role, "aria-pressed");
-    hasState = true;
-  }
+  if (selected !== undefined) assertSupported(role, "aria-selected");
+  if (busy !== undefined) assertSupported(role, "aria-busy");
+  if (checked !== undefined) assertSupported(role, "aria-checked");
+  if (pressed !== undefined) assertSupported(role, "aria-pressed");
   // All currently released ARIA versions support `aria-current` on all roles.
   // Leaving this for symmetry and forward compatibility
-  if (current !== undefined) {
-    assertSupported(role, "aria-current");
-    hasState = true;
-  }
+  if (current !== undefined) assertSupported(role, "aria-current");
   if (level !== undefined) {
     // guard against using `level` option with any role other than `heading`
     if (role !== "heading") {
       throw new Error(`Role "${role}" cannot have "level" property.`);
     }
-    hasState = true;
   }
-  if (valueNow !== undefined) {
-    assertSupported(role, "aria-valuenow");
-    hasState = true;
-  }
-  if (valueMax !== undefined) {
-    assertSupported(role, "aria-valuemax");
-    hasState = true;
-  }
-  if (valueMin !== undefined) {
-    assertSupported(role, "aria-valuemin");
-    hasState = true;
-  }
-  if (valueText !== undefined) {
-    assertSupported(role, "aria-valuetext");
-    hasState = true;
-  }
-  if (expanded !== undefined) {
-    assertSupported(role, "aria-expanded");
-    hasState = true;
-  }
+  if (valueNow !== undefined) assertSupported(role, "aria-valuenow");
+  if (valueMax !== undefined) assertSupported(role, "aria-valuemax");
+  if (valueMin !== undefined) assertSupported(role, "aria-valuemin");
+  if (valueText !== undefined) assertSupported(role, "aria-valuetext");
+  if (expanded !== undefined) assertSupported(role, "aria-expanded");
 
-  const state: StateFilter | null = hasState
-    ? { selected, busy, checked, pressed, current, level, expanded, valueNow, valueMin, valueMax, valueText }
-    : null;
-  const matchName = name !== undefined ? exactIdentityMatcher(name as Matcher) : null;
-  const matchDescription = description !== undefined ? exactIdentityMatcher(description as Matcher) : null;
+  const state: StateFilter = {
+    selected,
+    busy,
+    checked,
+    pressed,
+    current,
+    level,
+    expanded,
+    valueNow,
+    valueMin,
+    valueMax,
+    valueText,
+  };
   const pseudo = getConfig().computedStyleSupportsPseudoElements;
   const root = implOf(container);
   const out: any[] = [];
@@ -145,11 +121,15 @@ function queryAllByRole(container: any, role: any, options?: ByRoleOptions): any
   for (let el = root.first; el !== null; el = nextInTree(el, root)) {
     if (el.type !== ELEMENT_NODE) continue;
     if (!matchesRole(el)) continue;
-    if (state !== null && !matchesState(el, state)) continue;
+    if (!matchesState(el, state)) continue;
     if (hidden === false && (gcs === null ? isInaccessibleImpl(el) : aria.isInaccessibleWithStyle(el, gcs, memo)))
       continue;
-    if (matchName !== null && !matchName(aria.computeAccessibleName(el, pseudo, gcs), el.node)) continue;
-    if (matchDescription !== null && !matchDescription(aria.computeAccessibleDescription(el, pseudo, gcs), el.node))
+    if (name !== undefined && !matches(aria.computeAccessibleName(el, pseudo, gcs), el.node, name as Matcher, identity))
+      continue;
+    if (
+      description !== undefined &&
+      !matches(aria.computeAccessibleDescription(el, pseudo, gcs), el.node, description as Matcher, identity)
+    )
       continue;
     out.push(el.node);
   }

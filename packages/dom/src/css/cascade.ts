@@ -1057,47 +1057,44 @@ function cascade(
   uaMatched: IndexedRule[] | null,
 ): void {
   let map: Map<string, string> | null = null;
-  let anyImportant = false;
   if (uaMatched !== null && uaMatched.length !== 0) {
     map = new Map();
-    if (uaMatched.length > 1) uaMatched.sort(normalRuleOrder);
-    for (let i = 0; i < uaMatched.length; i++) applyBlock(map, blockOf(uaMatched[i]), false);
+    applyNormal(map, uaMatched);
     rec.ua = new Map(map);
   }
-  // Shadow-host (:host) rules (context 0) lose to outer-tree rules (context 1) for normal declarations.
-  if (hostMatched !== null && hostMatched.length !== 0) {
-    map ??= new Map();
-    if (hostMatched.length > 1) hostMatched.sort(normalRuleOrder);
-    for (let i = 0; i < hostMatched.length; i++) {
-      const block = blockOf(hostMatched[i]);
-      applyBlock(map, block, false);
-      if (!anyImportant && block.important !== null) anyImportant = block.important.includes(true);
-    }
-  }
-  if (matched.length !== 0) {
-    map ??= new Map();
-    if (matched.length > 1) matched.sort(normalRuleOrder);
-    for (let i = 0; i < matched.length; i++) {
-      const block = blockOf(matched[i]);
-      applyBlock(map, block, false);
-      if (!anyImportant && block.important !== null) anyImportant = block.important.includes(true);
-    }
-  }
+  // Shadow-host (:host) rules (context 0) lose to outer-tree rules (context 1) for normal
+  // declarations, and win for important ones.
+  let anyImportant = false;
+  if (hostMatched !== null && hostMatched.length !== 0) anyImportant = applyNormal((map ??= new Map()), hostMatched);
+  if (matched.length !== 0 && applyNormal((map ??= new Map()), matched)) anyImportant = true;
   if (inline !== null && inline.names.length !== 0) {
     map ??= new Map();
     applyBlock(map, inline, false);
   }
   if (anyImportant) {
-    // Important declarations: outer-tree rules (context 1) lose to shadow-host (:host) rules (context 0).
-    if (matched.length > 1) matched.sort(importantRuleOrder);
-    for (let i = 0; i < matched.length; i++) applyBlock(map!, blockOf(matched[i]), true);
-    if (hostMatched !== null && hostMatched.length !== 0) {
-      if (hostMatched.length > 1) hostMatched.sort(importantRuleOrder);
-      for (let i = 0; i < hostMatched.length; i++) applyBlock(map!, blockOf(hostMatched[i]), true);
-    }
+    applyImportant(map!, matched);
+    if (hostMatched !== null) applyImportant(map!, hostMatched);
   }
   if (inline !== null && inline.important !== null && inline.important.includes(true)) applyBlock(map!, inline, true);
   rec.decls = map;
+}
+
+/** Applies `rules`' normal declarations in cascade order; returns whether any rule has an important one. */
+function applyNormal(map: Map<string, string>, rules: IndexedRule[]): boolean {
+  if (rules.length > 1) rules.sort(normalRuleOrder);
+  let anyImportant = false;
+  for (let i = 0; i < rules.length; i++) {
+    const block = blockOf(rules[i]);
+    applyBlock(map, block, false);
+    if (!anyImportant && block.important !== null) anyImportant = block.important.includes(true);
+  }
+  return anyImportant;
+}
+
+/** Applies `rules`' important declarations in cascade order. */
+function applyImportant(map: Map<string, string>, rules: IndexedRule[]): void {
+  if (rules.length > 1) rules.sort(importantRuleOrder);
+  for (let i = 0; i < rules.length; i++) applyBlock(map, blockOf(rules[i]), true);
 }
 
 function normalRuleOrder(a: IndexedRule, b: IndexedRule): number {
@@ -1199,6 +1196,21 @@ function effectiveValue(rec: StyleRecord, prop: string, v: string): string | nul
  * (https://drafts.csswg.org/css-cascade-5/#revert-layer), or undefined when no author
  * declaration remains (the caller then reverts to the UA origin).
  */
+/** `winnerIn` over rules from tree context `context` (0 shadow host, 1 outer tree), skipping excluded layers. */
+function winnerInRules(
+  rules: IndexedRule[] | null,
+  context: number,
+  important: boolean,
+  prop: string,
+  excluded: number[],
+): void {
+  if (rules === null) return;
+  for (let i = 0; i < rules.length; i++) {
+    const k = layerKey(context, rules[i]);
+    if (excluded.indexOf(k) === -1) winnerIn(blockOf(rules[i]), important, prop, k);
+  }
+}
+
 function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
   const el = rec.el;
   const matched: IndexedRule[] = [];
@@ -1216,27 +1228,11 @@ function revertLayerValue(rec: StyleRecord, prop: string): string | undefined {
     // https://drafts.csswg.org/css-cascade-5/#cascade-sort, restricted to one property.
     winValue = undefined;
     winLayer = 0;
-    if (hostMatched !== null) {
-      for (let i = 0; i < hostMatched.length; i++) {
-        const k = layerKey(0, hostMatched[i]);
-        if (excluded.indexOf(k) === -1) winnerIn(blockOf(hostMatched[i]), false, prop, k);
-      }
-    }
-    for (let i = 0; i < matched.length; i++) {
-      const k = layerKey(1, matched[i]);
-      if (excluded.indexOf(k) === -1) winnerIn(blockOf(matched[i]), false, prop, k);
-    }
+    winnerInRules(hostMatched, 0, false, prop, excluded);
+    winnerInRules(matched, 1, false, prop, excluded);
     if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, false, prop, INLINE_LAYER);
-    for (let i = 0; i < important.length; i++) {
-      const k = layerKey(1, important[i]);
-      if (excluded.indexOf(k) === -1) winnerIn(blockOf(important[i]), true, prop, k);
-    }
-    if (hostImportant !== null) {
-      for (let i = 0; i < hostImportant.length; i++) {
-        const k = layerKey(0, hostImportant[i]);
-        if (excluded.indexOf(k) === -1) winnerIn(blockOf(hostImportant[i]), true, prop, k);
-      }
-    }
+    winnerInRules(important, 1, true, prop, excluded);
+    winnerInRules(hostImportant, 0, true, prop, excluded);
     if (inline !== null && excluded.indexOf(INLINE_LAYER) === -1) winnerIn(inline, true, prop, INLINE_LAYER);
     const v = winValue as string | undefined;
     if (v === undefined) return undefined;

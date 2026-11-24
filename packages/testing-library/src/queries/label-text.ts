@@ -7,7 +7,7 @@
 import { ariaAttr, ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
 import { isLabelable } from "@ctrl/dom/aria/internal";
 import { getConfig } from "../config.ts";
-import { checkContainerType, implOf } from "../helpers.ts";
+import { checkContainerType, implOf, NO_OPTIONS } from "../helpers.ts";
 import { getLabelContentImpl, getLabelsImpl, LabelContext, labelledFormControl } from "../label-helpers.ts";
 import { makeNormalizer, resolveNormalizer, textMatcher, type Matcher, type NormalizerFn } from "../matches.ts";
 import {
@@ -48,17 +48,14 @@ function queryAllLabelsByText(
   return textToMatchByLabels.filter(({ node, textToMatch }) => match(textToMatch, node)).map(({ node }) => node);
 }
 
-function queryAllByLabelText(container: any, text: Matcher, options?: SelectorMatcherOptions): any[] {
+function queryAllByLabelText(
+  container: any,
+  text: Matcher,
+  { selector = "*", exact = true, collapseWhitespace, trim, normalizer }: SelectorMatcherOptions = NO_OPTIONS,
+): any[] {
   checkContainerType(container);
 
-  // Destructuring defaults apply to undefined only: `exact: null` is fuzzy upstream.
-  const selector = options?.selector !== undefined ? options.selector : "*";
-  const exact = options?.exact !== undefined ? options.exact : true;
-  const matchNormalizer: NormalizerFn = resolveNormalizer(
-    options?.trim,
-    options?.collapseWhitespace,
-    options?.normalizer,
-  );
+  const matchNormalizer: NormalizerFn = resolveNormalizer(trim, collapseWhitespace, normalizer);
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const ctx = new LabelContext(root, true);

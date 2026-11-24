@@ -19,7 +19,7 @@ export function isButtonLikeInput(impl: NodeImpl): boolean {
 
 /** Concatenated data of the direct Text children (or a button-like input's value). */
 export function getNodeTextImpl(impl: NodeImpl): string {
-  if (impl.tag === T.input && isButtonLikeInput(impl)) return (impl.node as any).value;
+  if (isButtonLikeInput(impl)) return (impl.node as any).value;
   const first = impl.first;
   if (first === null) return "";
   if (first === impl.last) return first.type === TEXT_NODE ? first.data : "";
