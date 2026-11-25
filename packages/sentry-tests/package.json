@@ -68,7 +68,7 @@
   },
   "devDependencies": {
     "@ctrl/dom": "workspace:*",
-    "@types/react": "19.3.0",
+    "@types/react": "19.3.3",
     "jest": "30.5.2",
     "jest-circus": "30.5.2",
     "jsdom": "31.0.1",
