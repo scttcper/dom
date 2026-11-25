@@ -4,7 +4,8 @@
 //
 // A pull tokenizer: `next()` consumes one token and exposes it through fields (`type`,
 // `start`, `end`, `value`, `num`, `isInteger`, `unit`, `hashId`) instead of allocating a
-// token object, so parsers can stream over a stylesheet without per-token garbage.
+// token object, so parsers can stream over a stylesheet without per-token garbage. The
+// selector parser tokenizes through it too (selectors/parser.ts `tokenize`).
 // Input preprocessing (https://drafts.csswg.org/css-syntax-3/#input-preprocessing) is done
 // lazily: CR, CRLF and FF count as one newline wherever newlines matter, and U+0000 /
 // surrogates are replaced with U+FFFD only in decoded token values.
@@ -41,7 +42,7 @@ function isNewline(c: number): boolean {
   return c === 0x0a || c === 0x0d || c === 0x0c;
 }
 
-function isWhitespace(c: number): boolean {
+export function isWhitespace(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d || c === 0x0c;
 }
 
@@ -59,31 +60,15 @@ function hexValue(c: number): number {
   return c - 0x61 + 10;
 }
 
-/** https://drafts.csswg.org/css-syntax-3/#non-ascii-ident-code-point (UTF-16 code units; surrogates = astral planes). */
-function isNonAsciiIdent(c: number): boolean {
-  if (c < 0xb7) return false;
-  return (
-    c === 0xb7 ||
-    (c >= 0xc0 && c <= 0xd6) ||
-    (c >= 0xd8 && c <= 0xf6) ||
-    (c >= 0xf8 && c <= 0x37d) ||
-    (c >= 0x37f && c <= 0x1fff) ||
-    c === 0x200c ||
-    c === 0x200d ||
-    c === 0x203f ||
-    c === 0x2040 ||
-    (c >= 0x2070 && c <= 0x218f) ||
-    (c >= 0x2c00 && c <= 0x2fef) ||
-    (c >= 0x3001 && c <= 0xd7ff) ||
-    (c >= 0xd800 && c <= 0xdfff) ||
-    (c >= 0xf900 && c <= 0xfdcf) ||
-    (c >= 0xfdf0 && c <= 0xfffd)
-  );
-}
-
-/** https://drafts.csswg.org/css-syntax-3/#ident-start-code-point */
+/**
+ * https://drafts.csswg.org/css-syntax-3/#ident-start-code-point, with every non-ASCII code point
+ * (UTF-16 code unit >= U+0080) as an ident code point, as browsers and jsdom still do: the spec's
+ * https://drafts.csswg.org/css-syntax-3/#non-ascii-ident-code-point ranges would make `.a×b` and
+ * `font-family: a×b` invalid (docs/deviations.md). U+0000 counts too: input preprocessing turns
+ * it into U+FFFD, and consumeName decodes it.
+ */
 export function isIdentStart(c: number): boolean {
-  return (c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || isNonAsciiIdent(c);
+  return (c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c >= 0x80 || c === 0;
 }
 
 /** https://drafts.csswg.org/css-syntax-3/#ident-code-point */
@@ -523,7 +508,7 @@ export class CSSTokenizer {
         return TK_RBRACE;
     }
     if (isDigit(c)) return this.consumeNumeric();
-    if (isIdentStart(c) || c === 0) return this.consumeIdentLike();
+    if (isIdentStart(c)) return this.consumeIdentLike();
     return this.delim();
   }
 

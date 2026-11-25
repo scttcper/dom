@@ -29,7 +29,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [Web IDL](#web-idl) | 38 | 28 | 1 | 9 |
 | [CSS: cssom-view](#css-cssom-view) | 35 | 22 | 2 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
-| [CSS: css-syntax](#css-css-syntax) | 32 | 10 | 0 | 22 |
+| [CSS: css-syntax](#css-css-syntax) | 32 | 11 | 0 | 21 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [SVG 2](#svg-2) | 26 | 10 | 0 | 16 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 7 | 1 | 13 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1685 | 1167 | 125 | 393 |
+| **All** | 1685 | 1168 | 125 | 392 |
 
 ## Web-platform-tests fixtures
 
@@ -1513,42 +1513,42 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-syntax
 
-<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 10 tested, 0 by WPT only, 22 untested.
+<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 11 tested, 0 by WPT only, 21 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [anb-microsyntax](https://drafts.csswg.org/css-syntax/#anb-microsyntax) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts` |
 | [consume-at-rule](https://drafts.csswg.org/css-syntax/#consume-at-rule) | `dom/css/parser.ts` | **untested** |
 | [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | `dom/css/cssom-stylesheet.test.ts`, `dom/css/lazy-blocks.test.ts` |
-| [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts`, `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
 | [consume-declaration](https://drafts.csswg.org/css-syntax/#consume-declaration) | `dom/css/parser.ts` | **untested** |
-| [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
-| [consume-ident-like-token](https://drafts.csswg.org/css-syntax/#consume-ident-like-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts`, `dom/window/geometry.ts` | **untested** |
-| [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
+| [consume-ident-like-token](https://drafts.csswg.org/css-syntax/#consume-ident-like-token) | `dom/css/tokenizer.ts` | **untested** |
+| [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts` | **untested** |
+| [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/window/geometry.ts` | **untested** |
+| [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts` | **untested** |
 | [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | `dom/css/lazy-blocks.test.ts` |
-| [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts` | **untested** |
 | [consume-simple-block](https://drafts.csswg.org/css-syntax/#consume-simple-block) | `dom/css/values.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/lazy-blocks.test.ts` |
+| [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts` | `dom/css/lazy-blocks.test.ts` |
 | [consume-stylesheet-contents](https://drafts.csswg.org/css-syntax/#consume-stylesheet-contents) | `dom/css/parser.ts` | **untested** |
-| [consume-token](https://drafts.csswg.org/css-syntax/#consume-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
-| [consume-url-token](https://drafts.csswg.org/css-syntax/#consume-url-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/lazy-blocks.test.ts` |
-| [ident-code-point](https://drafts.csswg.org/css-syntax/#ident-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [ident-start-code-point](https://drafts.csswg.org/css-syntax/#ident-start-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [input-preprocessing](https://drafts.csswg.org/css-syntax/#input-preprocessing) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [non-ascii-ident-code-point](https://drafts.csswg.org/css-syntax/#non-ascii-ident-code-point) | `dom/css/tokenizer.ts` | **untested** |
+| [consume-token](https://drafts.csswg.org/css-syntax/#consume-token) | `dom/css/tokenizer.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
+| [consume-url-token](https://drafts.csswg.org/css-syntax/#consume-url-token) | `dom/css/tokenizer.ts` | `dom/css/lazy-blocks.test.ts` |
+| [ident-code-point](https://drafts.csswg.org/css-syntax/#ident-code-point) | `dom/css/tokenizer.ts` | **untested** |
+| [ident-start-code-point](https://drafts.csswg.org/css-syntax/#ident-start-code-point) | `dom/css/tokenizer.ts` | **untested** |
+| [input-preprocessing](https://drafts.csswg.org/css-syntax/#input-preprocessing) | `dom/css/tokenizer.ts` | **untested** |
+| [non-ascii-ident-code-point](https://drafts.csswg.org/css-syntax/#non-ascii-ident-code-point) | `dom/css/tokenizer.ts` | `dom/css/tokenizer.test.ts` |
 | [parse-block-contents](https://drafts.csswg.org/css-syntax/#parse-block-contents) | `dom/css/parser.ts` | **untested** |
 | [parse-rule](https://drafts.csswg.org/css-syntax/#parse-rule) | `dom/css/parser.ts` | **untested** |
 | [parse-stylesheet](https://drafts.csswg.org/css-syntax/#parse-stylesheet) | `dom/css/parser.ts` | **untested** |
 | [parsing](https://drafts.csswg.org/css-syntax/#parsing) | `dom/css/parser.ts` | **untested** |
 | [serializing-anb](https://drafts.csswg.org/css-syntax/#serializing-anb) | `dom/selectors/serialize.ts` | `dom/selectors/parser.test.ts` |
-| [starts-with-a-number](https://drafts.csswg.org/css-syntax/#starts-with-a-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [starts-with-a-valid-escape](https://drafts.csswg.org/css-syntax/#starts-with-a-valid-escape) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [starts-with-a-number](https://drafts.csswg.org/css-syntax/#starts-with-a-number) | `dom/css/tokenizer.ts` | **untested** |
+| [starts-with-a-valid-escape](https://drafts.csswg.org/css-syntax/#starts-with-a-valid-escape) | `dom/css/tokenizer.ts` | **untested** |
 | [style-rules](https://drafts.csswg.org/css-syntax/#style-rules) | `dom/selectors/internal.ts` | **untested** |
 | [tokenization](https://drafts.csswg.org/css-syntax/#tokenization) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
 | [tokenizer-definitions](https://drafts.csswg.org/css-syntax/#tokenizer-definitions) | `dom/selectors/parser.ts` | **untested** |
-| [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts` | **untested** |
 
 ## CSS: selectors
 

@@ -13,34 +13,33 @@
 // Namespace prefixes are recorded verbatim (`Simple.nsPrefix`) and resolved by the compiler,
 // since querySelector has no namespace map while style sheets may (@namespace).
 
+import {
+  CSSTokenizer,
+  TK_COLON,
+  TK_COMMA,
+  TK_DELIM,
+  TK_DIMENSION,
+  TK_EOF,
+  TK_FUNCTION,
+  TK_HASH,
+  TK_IDENT,
+  TK_LBRACE,
+  TK_LBRACKET,
+  TK_LPAREN,
+  TK_NUMBER,
+  TK_PERCENTAGE,
+  TK_RBRACE,
+  TK_RBRACKET,
+  TK_RPAREN,
+  TK_STRING,
+  TK_WHITESPACE,
+  isWhitespace,
+} from "../css/tokenizer.ts";
+
 // --- tokens ------------------------------------------------------------------------------
 // https://drafts.csswg.org/css-syntax-3/#tokenizer-definitions
-
-export const TK_EOF = 0;
-export const TK_IDENT = 1;
-export const TK_FUNCTION = 2;
-export const TK_AT = 3;
-export const TK_HASH = 4;
-export const TK_STRING = 5;
-export const TK_BAD_STRING = 6;
-export const TK_URL = 7;
-export const TK_BAD_URL = 8;
-export const TK_DELIM = 9;
-export const TK_NUMBER = 10;
-export const TK_PERCENTAGE = 11;
-export const TK_DIMENSION = 12;
-export const TK_WS = 13;
-export const TK_CDO = 14;
-export const TK_CDC = 15;
-export const TK_COLON = 16;
-export const TK_SEMICOLON = 17;
-export const TK_COMMA = 18;
-export const TK_LBRACKET = 19;
-export const TK_RBRACKET = 20;
-export const TK_LPAREN = 21;
-export const TK_RPAREN = 22;
-export const TK_LBRACE = 23;
-export const TK_RBRACE = 24;
+// Tokenized by the CSS layer's tokenizer (css/tokenizer.ts); the parser walks an array of tokens
+// so it can look ahead and back.
 
 export class Token {
   declare type: number;
@@ -65,429 +64,23 @@ export class Token {
   }
 }
 
-function isDigit(c: number): boolean {
-  return c >= 0x30 && c <= 0x39;
-}
-
-function isHexDigit(c: number): boolean {
-  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x46) || (c >= 0x61 && c <= 0x66);
-}
-
-function hexValue(c: number): number {
-  if (c <= 0x39) return c - 0x30;
-  if (c <= 0x46) return c - 0x41 + 10;
-  return c - 0x61 + 10;
-}
-
-/** https://drafts.csswg.org/css-syntax-3/#ident-start-code-point */
-function isIdentStart(c: number): boolean {
-  // U+0000 is preprocessed to U+FFFD (https://drafts.csswg.org/css-syntax-3/#input-preprocessing), a non-ASCII ident code point.
-  return (c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c >= 0x80 || c === 0;
-}
-
-/** https://drafts.csswg.org/css-syntax-3/#ident-code-point */
-function isIdentChar(c: number): boolean {
-  return isIdentStart(c) || isDigit(c) || c === 0x2d;
-}
-
-function isNewline(c: number): boolean {
-  return c === 0x0a || c === 0x0d || c === 0x0c;
-}
-
-function isWhitespace(c: number): boolean {
-  return c === 0x20 || c === 0x09 || isNewline(c);
-}
-
-function isNonPrintable(c: number): boolean {
-  return (c >= 0 && c <= 0x08) || c === 0x0b || (c >= 0x0e && c <= 0x1f) || c === 0x7f;
-}
-
-/**
- * CSS tokenizer over a selector string.
- * https://drafts.csswg.org/css-syntax-3/#consume-token
- *
- * Input preprocessing (https://drafts.csswg.org/css-syntax-3/#input-preprocessing) is done
- * lazily: CR/FF/CRLF are treated as newlines and U+0000 becomes U+FFFD when consumed.
- */
-export class Tokenizer {
-  declare src: string;
-  declare pos: number;
-  declare len: number;
-
-  constructor(src: string) {
-    this.src = src;
-    this.pos = 0;
-    this.len = src.length;
-  }
-
-  code(i: number): number {
-    if (i >= this.len) return -1;
-    return this.src.charCodeAt(i);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#starts-with-a-valid-escape */
-  validEscape(i: number): boolean {
-    if (this.code(i) !== 0x5c) return false;
-    // EOF after "\" is a valid escape (it consumes to U+FFFD).
-    return !isNewline(this.code(i + 1));
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#would-start-an-identifier */
-  startsIdent(i: number): boolean {
-    const c = this.code(i);
-    if (c === 0x2d) {
-      const n = this.code(i + 1);
-      return isIdentStart(n) || n === 0x2d || this.validEscape(i + 1);
-    }
-    if (isIdentStart(c)) return true;
-    return this.validEscape(i);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#starts-with-a-number */
-  startsNumber(i: number): boolean {
-    const c = this.code(i);
-    if (c === 0x2b || c === 0x2d) {
-      const n = this.code(i + 1);
-      if (isDigit(n)) return true;
-      return n === 0x2e && isDigit(this.code(i + 2));
-    }
-    if (c === 0x2e) return isDigit(this.code(i + 1));
-    return isDigit(c);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-escaped-code-point (pos is after "\"). */
-  consumeEscape(): string {
-    const c = this.code(this.pos);
-    if (c === -1) return "\uFFFD";
-    if (isHexDigit(c)) {
-      let v = 0;
-      let count = 0;
-      while (count < 6 && isHexDigit(this.code(this.pos))) {
-        v = v * 16 + hexValue(this.code(this.pos));
-        this.pos++;
-        count++;
-      }
-      const w = this.code(this.pos);
-      if (w === 0x0d && this.code(this.pos + 1) === 0x0a) this.pos += 2;
-      else if (isWhitespace(w)) this.pos++;
-      if (v === 0 || (v >= 0xd800 && v <= 0xdfff) || v > 0x10ffff) return "\uFFFD";
-      return String.fromCodePoint(v);
-    }
-    this.pos++;
-    if (c === 0) return "\uFFFD";
-    if (c >= 0xd800 && c <= 0xdbff) {
-      const lo = this.code(this.pos);
-      if (lo >= 0xdc00 && lo <= 0xdfff) {
-        this.pos++;
-        return this.src.slice(this.pos - 2, this.pos);
-      }
-    }
-    return String.fromCharCode(c);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-name */
-  consumeName(): string {
-    let out = "";
-    const start = this.pos;
-    let runStart = start;
-    while (true) {
-      const c = this.code(this.pos);
-      if (c !== -1 && c !== 0 && isIdentChar(c)) {
-        this.pos++;
-      } else if (this.validEscape(this.pos)) {
-        out += this.src.slice(runStart, this.pos);
-        this.pos++;
-        out += this.consumeEscape();
-        runStart = this.pos;
-      } else if (c === 0) {
-        out += this.src.slice(runStart, this.pos) + "\uFFFD";
-        this.pos++;
-        runStart = this.pos;
-      } else {
-        break;
-      }
-    }
-    if (runStart === start) return this.src.slice(start, this.pos);
-    return out + this.src.slice(runStart, this.pos);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-number */
-  consumeNumber(tok: Token): void {
-    const start = this.pos;
-    let isInt = true;
-    let c = this.code(this.pos);
-    if (c === 0x2b || c === 0x2d) {
-      tok.flag = true;
-      this.pos++;
-    }
-    while (isDigit(this.code(this.pos))) this.pos++;
-    if (this.code(this.pos) === 0x2e && isDigit(this.code(this.pos + 1))) {
-      isInt = false;
-      this.pos += 2;
-      while (isDigit(this.code(this.pos))) this.pos++;
-    }
-    c = this.code(this.pos);
-    if (c === 0x45 || c === 0x65) {
-      const n = this.code(this.pos + 1);
-      if (isDigit(n)) {
-        isInt = false;
-        this.pos += 2;
-        while (isDigit(this.code(this.pos))) this.pos++;
-      } else if ((n === 0x2b || n === 0x2d) && isDigit(this.code(this.pos + 2))) {
-        isInt = false;
-        this.pos += 3;
-        while (isDigit(this.code(this.pos))) this.pos++;
-      }
-    }
-    tok.num = Number(this.src.slice(start, this.pos));
-    tok.isInt = isInt;
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-string-token (pos is after the quote). */
-  consumeString(quote: number, start: number): Token {
-    let out = "";
-    let runStart = this.pos;
-    while (true) {
-      const c = this.code(this.pos);
-      if (c === quote || c === -1) {
-        out += this.src.slice(runStart, this.pos);
-        if (c !== -1) this.pos++;
-        return new Token(TK_STRING, out, start);
-      }
-      if (isNewline(c)) {
-        return new Token(TK_BAD_STRING, "", start);
-      }
-      if (c === 0x5c) {
-        out += this.src.slice(runStart, this.pos);
-        const n = this.code(this.pos + 1);
-        if (n === -1) {
-          this.pos++;
-        } else if (isNewline(n)) {
-          this.pos += n === 0x0d && this.code(this.pos + 2) === 0x0a ? 3 : 2;
-        } else {
-          this.pos++;
-          out += this.consumeEscape();
-        }
-        runStart = this.pos;
-      } else if (c === 0) {
-        out += this.src.slice(runStart, this.pos) + "\uFFFD";
-        this.pos++;
-        runStart = this.pos;
-      } else {
-        this.pos++;
-      }
-    }
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-remnants-of-bad-url */
-  consumeBadUrl(start: number): Token {
-    while (true) {
-      const c = this.code(this.pos);
-      if (c === -1) break;
-      if (c === 0x29) {
-        this.pos++;
-        break;
-      }
-      if (this.validEscape(this.pos)) {
-        this.pos++;
-        this.consumeEscape();
-      } else {
-        this.pos++;
-      }
-    }
-    return new Token(TK_BAD_URL, "", start);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-url-token */
-  consumeUrl(start: number): Token {
-    while (isWhitespace(this.code(this.pos))) this.pos++;
-    let out = "";
-    while (true) {
-      const c = this.code(this.pos);
-      if (c === 0x29 || c === -1) {
-        if (c !== -1) this.pos++;
-        return new Token(TK_URL, out, start);
-      }
-      if (isWhitespace(c)) {
-        while (isWhitespace(this.code(this.pos))) this.pos++;
-        const e = this.code(this.pos);
-        if (e === 0x29 || e === -1) {
-          if (e !== -1) this.pos++;
-          return new Token(TK_URL, out, start);
-        }
-        return this.consumeBadUrl(start);
-      }
-      if (c === 0x22 || c === 0x27 || c === 0x28 || isNonPrintable(c)) {
-        return this.consumeBadUrl(start);
-      }
-      if (c === 0x5c) {
-        if (this.validEscape(this.pos)) {
-          this.pos++;
-          out += this.consumeEscape();
-        } else {
-          return this.consumeBadUrl(start);
-        }
-      } else {
-        out += c === 0 ? "\uFFFD" : this.src[this.pos];
-        this.pos++;
-      }
-    }
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-ident-like-token */
-  consumeIdentLike(start: number): Token {
-    const name = this.consumeName();
-    if (this.code(this.pos) === 0x28) {
-      this.pos++;
-      if (name.length === 3 && asciiLower(name) === "url") {
-        let p = this.pos;
-        while (isWhitespace(this.code(p)) && isWhitespace(this.code(p + 1))) p++;
-        const q = this.code(p);
-        const q2 = isWhitespace(q) ? this.code(p + 1) : q;
-        if (q2 === 0x22 || q2 === 0x27) {
-          this.pos = p;
-          return new Token(TK_FUNCTION, name, start);
-        }
-        return this.consumeUrl(start);
-      }
-      return new Token(TK_FUNCTION, name, start);
-    }
-    return new Token(TK_IDENT, name, start);
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-numeric-token */
-  consumeNumeric(start: number): Token {
-    const tok = new Token(TK_NUMBER, "", start);
-    this.consumeNumber(tok);
-    if (this.startsIdent(this.pos)) {
-      tok.type = TK_DIMENSION;
-      tok.value = this.consumeName();
-    } else if (this.code(this.pos) === 0x25) {
-      this.pos++;
-      tok.type = TK_PERCENTAGE;
-    }
-    return tok;
-  }
-
-  /** https://drafts.csswg.org/css-syntax-3/#consume-token (comments are skipped). */
-  next(): Token {
-    // https://drafts.csswg.org/css-syntax-3/#consume-comments
-    while (this.code(this.pos) === 0x2f && this.code(this.pos + 1) === 0x2a) {
-      const end = this.src.indexOf("*/", this.pos + 2);
-      this.pos = end === -1 ? this.len : end + 2;
-    }
-    const start = this.pos;
-    const c = this.code(this.pos);
-    if (c === -1) return new Token(TK_EOF, "", start);
-    if (isWhitespace(c)) {
-      this.pos++;
-      while (isWhitespace(this.code(this.pos))) this.pos++;
-      return new Token(TK_WS, " ", start);
-    }
-    switch (c) {
-      case 0x22:
-      case 0x27:
-        this.pos++;
-        return this.consumeString(c, start);
-      case 0x23: {
-        const n = this.code(this.pos + 1);
-        if ((n !== -1 && isIdentChar(n)) || n === 0 || this.validEscape(this.pos + 1)) {
-          this.pos++;
-          const tok = new Token(TK_HASH, "", start);
-          tok.flag = this.startsIdent(this.pos);
-          tok.value = this.consumeName();
-          return tok;
-        }
-        this.pos++;
-        return new Token(TK_DELIM, "#", start);
-      }
-      case 0x28:
-        this.pos++;
-        return new Token(TK_LPAREN, "(", start);
-      case 0x29:
-        this.pos++;
-        return new Token(TK_RPAREN, ")", start);
-      case 0x2b:
-        if (this.startsNumber(this.pos)) return this.consumeNumeric(start);
-        this.pos++;
-        return new Token(TK_DELIM, "+", start);
-      case 0x2c:
-        this.pos++;
-        return new Token(TK_COMMA, ",", start);
-      case 0x2d:
-        if (this.startsNumber(this.pos)) return this.consumeNumeric(start);
-        if (this.code(this.pos + 1) === 0x2d && this.code(this.pos + 2) === 0x3e) {
-          this.pos += 3;
-          return new Token(TK_CDC, "-->", start);
-        }
-        if (this.startsIdent(this.pos)) return this.consumeIdentLike(start);
-        this.pos++;
-        return new Token(TK_DELIM, "-", start);
-      case 0x2e:
-        if (this.startsNumber(this.pos)) return this.consumeNumeric(start);
-        this.pos++;
-        return new Token(TK_DELIM, ".", start);
-      case 0x3a:
-        this.pos++;
-        return new Token(TK_COLON, ":", start);
-      case 0x3b:
-        this.pos++;
-        return new Token(TK_SEMICOLON, ";", start);
-      case 0x3c:
-        if (this.code(this.pos + 1) === 0x21 && this.code(this.pos + 2) === 0x2d && this.code(this.pos + 3) === 0x2d) {
-          this.pos += 4;
-          return new Token(TK_CDO, "<!--", start);
-        }
-        this.pos++;
-        return new Token(TK_DELIM, "<", start);
-      case 0x40:
-        if (this.startsIdent(this.pos + 1)) {
-          this.pos++;
-          return new Token(TK_AT, this.consumeName(), start);
-        }
-        this.pos++;
-        return new Token(TK_DELIM, "@", start);
-      case 0x5b:
-        this.pos++;
-        return new Token(TK_LBRACKET, "[", start);
-      case 0x5c:
-        if (this.validEscape(this.pos)) return this.consumeIdentLike(start);
-        this.pos++;
-        return new Token(TK_DELIM, "\\", start);
-      case 0x5d:
-        this.pos++;
-        return new Token(TK_RBRACKET, "]", start);
-      case 0x7b:
-        this.pos++;
-        return new Token(TK_LBRACE, "{", start);
-      case 0x7d:
-        this.pos++;
-        return new Token(TK_RBRACE, "}", start);
-    }
-    if (isDigit(c)) return this.consumeNumeric(start);
-    if (isIdentStart(c) || c === 0) return this.consumeIdentLike(start);
-    this.pos++;
-    if (c >= 0xd800 && c <= 0xdbff) {
-      const lo = this.code(this.pos);
-      if (lo >= 0xdc00 && lo <= 0xdfff) {
-        this.pos++;
-        return new Token(TK_DELIM, this.src.slice(this.pos - 2, this.pos), start);
-      }
-    }
-    return new Token(TK_DELIM, this.src[start], start);
-  }
-}
-
 /** Tokenize a whole string (comments dropped). The last token is always TK_EOF. */
 export function tokenize(src: string): Token[] {
-  const t = new Tokenizer(src);
+  const t = new CSSTokenizer(src);
   const out: Token[] = [];
   while (true) {
-    const tok = t.next();
+    const type = t.next();
+    const tok = new Token(type, t.value, t.start);
+    if (type === TK_NUMBER || type === TK_PERCENTAGE || type === TK_DIMENSION) {
+      tok.num = t.num;
+      tok.isInt = t.isInteger;
+      tok.flag = t.sign !== "";
+    } else if (type === TK_HASH) {
+      tok.flag = t.hashId;
+    }
     out.push(tok);
-    if (tok.type === TK_EOF) break;
+    if (type === TK_EOF) return out;
   }
-  return out;
 }
 
 export function asciiLower(s: string): string {
@@ -907,7 +500,7 @@ export class SelectorParser {
   }
 
   skipWs(): void {
-    while (this.toks[this.i].type === TK_WS) this.i++;
+    while (this.toks[this.i].type === TK_WHITESPACE) this.i++;
   }
 
   /** Accept a closing token, or EOF (blocks are implicitly closed at EOF per css-syntax). */
@@ -1028,7 +621,7 @@ export class SelectorParser {
   /** Reads a combinator at the current position (after optional whitespace); C_NONE if none. Returns C_DESCENDANT for bare whitespace. */
   parseCombinator(): number {
     let sawWs = false;
-    while (this.peekType() === TK_WS) {
+    while (this.peekType() === TK_WHITESPACE) {
       this.i++;
       sawWs = true;
     }
@@ -1413,7 +1006,7 @@ export class SelectorParser {
       const t = this.peek();
       if ((p === P_NTH_CHILD || p === P_NTH_LAST_CHILD) && t.type === TK_IDENT && asciiLower(t.value) === "of") {
         this.i++;
-        if (this.peekType() !== TK_WS) {
+        if (this.peekType() !== TK_WHITESPACE) {
           this.fail("expected whitespace after 'of'");
           return false;
         }
@@ -1664,7 +1257,7 @@ export class SelectorParser {
       let b = 0;
       for (let k = 1; k < rest.length; k++) {
         const c = rest.charCodeAt(k);
-        if (!isDigit(c)) return this.anbFail();
+        if (c < 0x30 || c > 0x39) return this.anbFail();
         b = b * 10 + (c - 0x30);
       }
       s.b = -b;
