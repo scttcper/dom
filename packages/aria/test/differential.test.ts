@@ -201,6 +201,41 @@ describe("differential: aria-query data surface — https://www.w3.org/TR/wai-ar
     }
   });
 
+  // The maps are rebuilt at load from a compact encoding (scripts/gen-aria-query-data.cjs), so pin
+  // what toEqual does not: entry order, key order inside every value, and the aria/dom maps.
+  test("every map's entries serialize exactly as aria-query@5.3.0's, in order (roles, elementRoles, roleElements, aria, dom)", () => {
+    const entries = (map: any): [string, string][] =>
+      map.entries().map(([k, v]: any) => [JSON.stringify(k), JSON.stringify(v instanceof Set ? [...v] : v)]);
+    for (const name of ["roles", "elementRoles", "roleElements", "aria", "dom"] as const) {
+      expect(entries(ctrlDom[name]), name).toEqual(entries(O.ariaQuery[name]));
+    }
+  });
+
+  test("aria and dom lookups equal aria-query@5.3.0 (get, has)", () => {
+    for (const name of ["aria", "dom"] as const) {
+      for (const key of O.ariaQuery[name].keys()) {
+        expect(JSON.stringify(ctrlDom[name].get(key)), `${name}.get(${key})`).toBe(
+          JSON.stringify(O.ariaQuery[name].get(key)),
+        );
+        expect(ctrlDom[name].has(key)).toBe(true);
+      }
+      expect(ctrlDom[name].get("nope")).toBeUndefined();
+      expect(ctrlDom[name].has("nope")).toBe(false);
+    }
+  });
+
+  test("role definitions share no more objects than aria-query@5.3.0's (a mutation stays in its role)", () => {
+    const distinct = (map: any, field: string): number => {
+      const seen = new Set();
+      for (const [, def] of map.entries())
+        if (typeof def[field] === "object" && def[field] !== null) seen.add(def[field]);
+      return seen.size;
+    };
+    for (const field of Object.keys(O.ariaQuery.roles.get("button"))) {
+      expect(distinct(ctrlDom.roles, field), field).toBe(distinct(O.ariaQuery.roles, field));
+    }
+  });
+
   test("forEach and iteration follow aria-query's TLookup interface", () => {
     const seen: string[] = [];
     ctrlDom.roles.forEach((_value, key) => seen.push(key));

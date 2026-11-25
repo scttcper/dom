@@ -1739,7 +1739,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [el-h1-h6](https://w3c.github.io/html-aam/#el-h1-h6) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
 | [fieldset-and-legend-elements](https://w3c.github.io/html-aam/#fieldset-and-legend-elements) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [html-attribute-state-and-property-mappings](https://w3c.github.io/html-aam/#html-attribute-state-and-property-mappings) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/accessible-description.test.ts`, `aria/html-aam-roles.test.ts`, `testing-library/unit/aria-snapshot.test.ts` |
-| [html-element-role-mappings](https://w3c.github.io/html-aam/#html-element-role-mappings) | `aria/role.ts`, `aria/roles-list.ts`, `testing-library/aria-snapshot.ts` +1 | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/html-aam-roles.test.ts`, `aria/wpt-aria.test.ts` +3 |
+| [html-element-role-mappings](https://w3c.github.io/html-aam/#html-element-role-mappings) | `aria/role.ts`, `aria/roles-list.ts`, `testing-library/aria-snapshot.ts` +1 | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/html-aam-roles.test.ts`, `aria/wpt-aria.test.ts` +4 |
 | [img-element](https://w3c.github.io/html-aam/#img-element) | `aria/accname.ts` | **untested** |
 | [input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation](https://w3c.github.io/html-aam/#input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [input-type-image-accessible-name-computation](https://w3c.github.io/html-aam/#input-type-image-accessible-name-computation) | `aria/accname.ts` | **untested** |
