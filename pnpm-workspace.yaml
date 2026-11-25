@@ -10,3 +10,6 @@ allowBuilds:
   msw: false
   # jest-haste-map's optional native watcher (Jest 30.5); the comparison runs Jest without watch.
   "@parcel/watcher": false
+
+# pnpm 12.23 defaults to a 24h minimumReleaseAge; this repo takes upgrades as soon as they ship.
+minimumReleaseAge: 0

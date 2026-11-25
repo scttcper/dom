@@ -80,7 +80,8 @@ jobs:
             tools/release/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm install --dir tools/release --ignore-workspace --frozen-lockfile
+      # --ignore-workspace skips pnpm-workspace.yaml, so repeat its minimumReleaseAge: 0 here.
+      - run: pnpm install --dir tools/release --ignore-workspace --frozen-lockfile --config.minimum-release-age=0
       - name: semantic-release
         run: node tools/release/release.ts --package "$PACKAGE" $DRY_RUN
         env:
