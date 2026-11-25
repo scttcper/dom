@@ -93,13 +93,9 @@ function isHostIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
   return false;
 }
 
-function hasElementChild(n: NodeImpl): boolean {
-  for (let c = n.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) return true;
-  return false;
-}
-
-function hasDoctypeChild(n: NodeImpl): boolean {
-  for (let c = n.first; c !== null; c = c.next) if (c.type === DOCUMENT_TYPE_NODE) return true;
+/** Whether `n` has a child of `type` other than `except`. */
+function hasChildOfType(n: NodeImpl, type: number, except: NodeImpl | null): boolean {
+  for (let c = n.first; c !== null; c = c.next) if (c.type === type && c !== except) return true;
   return false;
 }
 
@@ -113,8 +109,32 @@ function elementPrecedes(child: NodeImpl): boolean {
   return false;
 }
 
+/**
+ * Whether an element inserted into the Document `parent` before `child` would not be its only
+ * element child or would precede a doctype. `replaced` (`child` itself, or null) is the child
+ * being replaced, which does not count.
+ */
+function elementConflicts(parent: NodeImpl, child: NodeImpl | null, replaced: NodeImpl | null): boolean {
+  return (
+    hasChildOfType(parent, ELEMENT_NODE, replaced) ||
+    (child !== null && ((child !== replaced && child.type === DOCUMENT_TYPE_NODE) || doctypeFollows(child)))
+  );
+}
+
+// What ensurePreInsertionValidity checks for.
+const INSERTING = 0;
+/** Steps 1-6 of https://dom.spec.whatwg.org/#concept-node-replace: `child` is the node being replaced. */
+const REPLACING = 1;
+/** replaceChildren(): a Document parent's existing children are about to be removed. */
+const REPLACING_ALL = 2;
+
 /** https://dom.spec.whatwg.org/#concept-node-ensure-pre-insertion-validity */
-export function ensurePreInsertionValidity(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null): void {
+export function ensurePreInsertionValidity(
+  node: NodeImpl,
+  parent: NodeImpl,
+  child: NodeImpl | null,
+  mode = INSERTING,
+): void {
   const pt = parent.type;
   if (pt !== DOCUMENT_NODE && pt !== DOCUMENT_FRAGMENT_NODE && pt !== ELEMENT_NODE) {
     throw hierarchyError("The parent is not a Document, DocumentFragment or Element.");
@@ -123,7 +143,12 @@ export function ensurePreInsertionValidity(node: NodeImpl, parent: NodeImpl, chi
     throw hierarchyError("The new child is an ancestor of the parent.");
   }
   if (child !== null && child.parent !== parent) {
-    throw new DOMException("The reference child is not a child of this node.", "NotFoundError");
+    throw new DOMException(
+      mode === REPLACING
+        ? "The node to be replaced is not a child of this node."
+        : "The reference child is not a child of this node.",
+      "NotFoundError",
+    );
   }
   const nt = node.type;
   if (nt !== DOCUMENT_FRAGMENT_NODE && nt !== DOCUMENT_TYPE_NODE && nt !== ELEMENT_NODE && !isCharacterData(nt)) {
@@ -135,75 +160,35 @@ export function ensurePreInsertionValidity(node: NodeImpl, parent: NodeImpl, chi
   ) {
     throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
   }
-  if (pt === DOCUMENT_NODE) checkDocumentChildConstraints(node, parent, child, null);
+  if (pt === DOCUMENT_NODE) checkDocumentChildConstraints(node, parent, child, mode);
 }
 
 /**
- * Step 6 of ensure-pre-insertion-validity / step 6 of replace. `replaced` is the child being
- * replaced (null for insertion); it is ignored when looking for existing element/doctype children.
+ * Step 6 of ensure-pre-insertion-validity / step 6 of replace. When replacing, `child` is the
+ * child being replaced; it is ignored when looking for existing element/doctype children.
  */
-function checkDocumentChildConstraints(
-  node: NodeImpl,
-  parent: NodeImpl,
-  child: NodeImpl | null,
-  replaced: NodeImpl | null,
-): void {
-  const otherElement = () => {
-    for (let c = parent.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE && c !== replaced) return true;
-    return false;
-  };
-  const otherDoctype = () => {
-    for (let c = parent.first; c !== null; c = c.next) if (c.type === DOCUMENT_TYPE_NODE && c !== replaced) return true;
-    return false;
-  };
-  switch (node.type) {
-    case DOCUMENT_FRAGMENT_NODE: {
-      let elements = 0;
-      for (let c = node.first; c !== null; c = c.next) {
-        if (c.type === ELEMENT_NODE) elements++;
-        else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE)
-          throw hierarchyError("A document cannot contain text children.");
-      }
-      if (elements > 1) throw hierarchyError("A document can have only one document element.");
-      if (elements === 1) {
-        if (replaced === null) {
-          if (
-            hasElementChild(parent) ||
-            (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child)))
-          ) {
-            throw hierarchyError("A document can have only one document element.");
-          }
-        } else if (otherElement() || doctypeFollows(replaced)) {
-          throw hierarchyError("A document can have only one document element.");
-        }
-      }
-      break;
+function checkDocumentChildConstraints(node: NodeImpl, parent: NodeImpl, child: NodeImpl | null, mode: number): void {
+  const nt = node.type;
+  if (nt === DOCUMENT_FRAGMENT_NODE) {
+    let elements = 0;
+    for (let c = node.first; c !== null; c = c.next) {
+      if (c.type === ELEMENT_NODE) elements++;
+      else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE)
+        throw hierarchyError("A document cannot contain text children.");
     }
-    case ELEMENT_NODE:
-      if (replaced === null) {
-        if (
-          hasElementChild(parent) ||
-          (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child)))
-        ) {
-          throw hierarchyError("A document can have only one document element.");
-        }
-      } else if (otherElement() || doctypeFollows(replaced)) {
-        throw hierarchyError("A document can have only one document element.");
-      }
-      break;
-    case DOCUMENT_TYPE_NODE:
-      if (replaced === null) {
-        if (
-          hasDoctypeChild(parent) ||
-          (child !== null && elementPrecedes(child)) ||
-          (child === null && hasElementChild(parent))
-        ) {
-          throw hierarchyError("A document can have only one doctype, before the document element.");
-        }
-      } else if (otherDoctype() || elementPrecedes(replaced)) {
-        throw hierarchyError("A document can have only one doctype, before the document element.");
-      }
-      break;
+    if (elements > 1) throw hierarchyError("A document can have only one document element.");
+    if (elements === 0) return;
+  } else if (nt !== ELEMENT_NODE && nt !== DOCUMENT_TYPE_NODE) return;
+  if (mode === REPLACING_ALL) return;
+  const replaced = mode === REPLACING ? child : null;
+  if (nt !== DOCUMENT_TYPE_NODE) {
+    if (elementConflicts(parent, child, replaced))
+      throw hierarchyError("A document can have only one document element.");
+  } else if (
+    hasChildOfType(parent, DOCUMENT_TYPE_NODE, replaced) ||
+    (child !== null ? elementPrecedes(child) : hasChildOfType(parent, ELEMENT_NODE, null))
+  ) {
+    throw hierarchyError("A document can have only one doctype, before the document element.");
   }
 }
 
@@ -213,27 +198,7 @@ function checkDocumentChildConstraints(
  * (https://github.com/whatwg/dom/issues/1045).
  */
 export function ensureReplaceAllValidity(node: NodeImpl, parent: NodeImpl): void {
-  if (parent.type !== DOCUMENT_NODE) {
-    ensurePreInsertionValidity(node, parent, null);
-    return;
-  }
-  if (isHostIncludingInclusiveAncestor(node, parent))
-    throw hierarchyError("The new child is an ancestor of the parent.");
-  const nt = node.type;
-  if (nt !== DOCUMENT_FRAGMENT_NODE && nt !== DOCUMENT_TYPE_NODE && nt !== ELEMENT_NODE && !isCharacterData(nt)) {
-    throw hierarchyError("Nodes of this type cannot be inserted.");
-  }
-  if (nt === TEXT_NODE || nt === CDATA_SECTION_NODE)
-    throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
-  if (nt === DOCUMENT_FRAGMENT_NODE) {
-    let elements = 0;
-    for (let c = node.first; c !== null; c = c.next) {
-      if (c.type === ELEMENT_NODE) elements++;
-      else if (c.type === TEXT_NODE || c.type === CDATA_SECTION_NODE)
-        throw hierarchyError("A document cannot contain text children.");
-    }
-    if (elements > 1) throw hierarchyError("A document can have only one document element.");
-  }
+  ensurePreInsertionValidity(node, parent, null, REPLACING_ALL);
 }
 
 /** https://dom.spec.whatwg.org/#concept-node-pre-insert */
@@ -523,12 +488,8 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
     throw hierarchyError("Only elements and character data nodes can be moved.");
   if (newParent.type === DOCUMENT_NODE) {
     if (nt === TEXT_NODE) throw hierarchyError("Nodes of this type cannot be moved into a document.");
-    if (
-      nt === ELEMENT_NODE &&
-      (hasElementChild(newParent) || (child !== null && (child.type === DOCUMENT_TYPE_NODE || doctypeFollows(child))))
-    ) {
+    if (nt === ELEMENT_NODE && elementConflicts(newParent, child, null))
       throw hierarchyError("A document can have only one document element.");
-    }
   }
   // Step 7-8.
   const oldParent = node.parent!;
@@ -575,27 +536,8 @@ export function move(node: NodeImpl, newParent: NodeImpl, child: NodeImpl | null
 
 /** https://dom.spec.whatwg.org/#concept-node-replace */
 export function replace(child: NodeImpl, node: NodeImpl, parent: NodeImpl): NodeImpl {
-  const pt = parent.type;
-  if (pt !== DOCUMENT_NODE && pt !== DOCUMENT_FRAGMENT_NODE && pt !== ELEMENT_NODE) {
-    throw hierarchyError("The parent is not a Document, DocumentFragment or Element.");
-  }
-  if (isHostIncludingInclusiveAncestor(node, parent))
-    throw hierarchyError("The new child is an ancestor of the parent.");
-  if (child.parent !== parent) {
-    throw new DOMException("The node to be replaced is not a child of this node.", "NotFoundError");
-  }
-  const nt = node.type;
-  if (nt !== DOCUMENT_FRAGMENT_NODE && nt !== DOCUMENT_TYPE_NODE && nt !== ELEMENT_NODE && !isCharacterData(nt)) {
-    throw hierarchyError("Nodes of this type cannot be inserted.");
-  }
-  if (
-    ((nt === TEXT_NODE || nt === CDATA_SECTION_NODE) && pt === DOCUMENT_NODE) ||
-    (nt === DOCUMENT_TYPE_NODE && pt !== DOCUMENT_NODE)
-  ) {
-    throw hierarchyError("Nodes of this type cannot be inserted into this parent.");
-  }
-  if (pt === DOCUMENT_NODE) checkDocumentChildConstraints(node, parent, null, child);
-
+  // Steps 1-6.
+  ensurePreInsertionValidity(node, parent, child, REPLACING);
   // Steps 7-9.
   let reference = child.next;
   if (reference === node) reference = node.next;
@@ -643,24 +585,7 @@ export function adopt(node: NodeImpl, doc: Document): void {
     // version. Versions only grow, so moving past the old document's means no entry stamped
     // there can ever match one of this document's.
     if (doc[$version] <= oldDoc[$version]) doc[$version] = oldDoc[$version] + 1;
-    const html = doc[$isHTML];
-    for (let n: NodeImpl | null = node; n !== null; n = nextInTree(n, node)) {
-      n.doc = doc;
-      if (n.type === ELEMENT_NODE) {
-        // F_HTML depends on the node document being an HTML document.
-        if (n.ns === HTML_NS && html) n.flags |= F_HTML;
-        else n.flags &= ~F_HTML;
-        if ((n.flags & F_FORM_ATTR) !== 0) doc[$formAttrSeen] = true;
-        const attrs = n.attrs;
-        if (attrs !== null) {
-          for (let i = 0; i < attrs.length; i++) {
-            const a = attrs[i].attr;
-            if (a !== null) a[$impl].doc = doc;
-          }
-        }
-        if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)[$shadowRoot]![$impl], doc);
-      }
-    }
+    setNodeDocument(node, doc);
     if (oldDoc[$externalFormNames]?.groups.size) checkExternalSubtree(node, oldDoc[$externalFormNames]);
     if (liveRangeCount !== 0) rangesAdopt(node, oldDoc);
     // Step 3.2: adopting steps (template contents, custom element adoptedCallback via the html
@@ -677,13 +602,14 @@ function runAdoptingSteps(root: NodeImpl, oldDoc: Document): void {
   }
 }
 
-/** Shadow-including re-homing of a shadow tree (shadow roots have no parent to remove from). */
-function adoptShadowTree(root: NodeImpl, doc: Document): void {
-  const oldCSS = root.doc[$css] as DocCSS | null;
+/** Set the node document of `root`'s shadow-including inclusive descendants (and their Attr nodes) to `doc`. */
+function setNodeDocument(root: NodeImpl, doc: Document): void {
+  const html = doc[$isHTML];
   for (let n: NodeImpl | null = root; n !== null; n = nextInTree(n, root)) {
     n.doc = doc;
     if (n.type === ELEMENT_NODE) {
-      if (n.ns === HTML_NS && doc[$isHTML]) n.flags |= F_HTML;
+      // F_HTML depends on the node document being an HTML document.
+      if (n.ns === HTML_NS && html) n.flags |= F_HTML;
       else n.flags &= ~F_HTML;
       if ((n.flags & F_FORM_ATTR) !== 0) doc[$formAttrSeen] = true;
       const attrs = n.attrs;
@@ -693,10 +619,15 @@ function adoptShadowTree(root: NodeImpl, doc: Document): void {
           if (a !== null) a[$impl].doc = doc;
         }
       }
-      if ((n.flags & F_HAS_SHADOW) !== 0) adoptShadowTree((n.node as Element)[$shadowRoot]![$impl], doc);
+      if ((n.flags & F_HAS_SHADOW) !== 0) {
+        // Shadow roots have no parent to remove from; their stylesheets move with them.
+        const shadow = (n.node as Element)[$shadowRoot]![$impl];
+        const oldCSS = shadow.doc[$css] as DocCSS | null;
+        setNodeDocument(shadow, doc);
+        oldCSS?.adoptShadowRoot(shadow);
+      }
     }
   }
-  oldCSS?.adoptShadowRoot(root);
 }
 
 /**

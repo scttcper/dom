@@ -13,15 +13,9 @@ export class FileList {
   constructor(token?: symbol, files?: readonly File[]) {
     if (token !== kConstruct) throw new TypeError("Illegal constructor");
     const list = files ?? [];
-    for (let i = 0; i < list.length; i++) {
-      Object.defineProperty(this, i, { value: list[i], enumerable: true, configurable: false, writable: false });
-    }
-    Object.defineProperty(this, "length", {
-      value: list.length,
-      enumerable: false,
-      configurable: false,
-      writable: false,
-    });
+    // New properties: neither writable nor configurable (nor enumerable unless stated).
+    for (let i = 0; i < list.length; i++) Object.defineProperty(this, i, { value: list[i], enumerable: true });
+    Object.defineProperty(this, "length", { value: list.length });
   }
 
   item(index: number): File | null {

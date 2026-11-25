@@ -18,21 +18,21 @@ import { $constructed, $css, $doc, $impl, $ownerNode, $styleVersion, $templateCo
 
 /** Style sheets of one tree (a document or a shadow root). */
 export class RootStyles {
-  root: NodeImpl;
+  declare root: NodeImpl;
   /** Owner sheets (<style>, <link>) in tree order. */
-  owners: CSSStyleSheet[];
-  ownerNodes: NodeImpl[];
+  declare owners: CSSStyleSheet[];
+  declare ownerNodes: NodeImpl[];
   /** Adopted sheets in cascade order. The public array view observes writes to this array. */
-  adopted: CSSStyleSheet[];
+  declare adopted: CSSStyleSheet[];
   /** The array view returned to script, allocated on the first read. */
-  adoptedView: CSSStyleSheet[] | null;
-  list: StyleSheetList | null;
+  declare adoptedView: CSSStyleSheet[] | null;
+  declare list: StyleSheetList | null;
   /** Listed in its document's DocCSS.shadows index. */
-  indexed: boolean;
+  declare indexed: boolean;
   /** The weak reference the document's RootRefs hold (created on first use). */
-  ref: WeakRef<RootStyles> | null;
+  declare ref: WeakRef<RootStyles> | null;
   /** Rule index cache (built by cascade.ts). */
-  index: RuleIndex | null;
+  declare index: RuleIndex | null;
 
   constructor(root: NodeImpl) {
     this.root = root;
@@ -64,8 +64,8 @@ export class RootStyles {
  * short-lived shadow roots keeps a small index. Walkers deref each entry and delete the collected.
  */
 export class RootRefs {
-  readonly refs: Set<WeakRef<RootStyles>>;
-  pruneAt: number;
+  declare readonly refs: Set<WeakRef<RootStyles>>;
+  declare pruneAt: number;
 
   constructor() {
     this.refs = new Set();
@@ -86,22 +86,22 @@ export class RootRefs {
 }
 
 export class DocCSS {
-  doc: Document;
-  main: RootStyles;
+  declare doc: Document;
+  declare main: RootStyles;
   /**
    * Shadow roots with active sheets. Each root owns its RootStyles and can be collected
    * with its host. Empty roots leave this index when their last sheet is removed.
    */
-  shadows: RootRefs | null;
+  declare shadows: RootRefs | null;
   shadowAttributeUses: ShadowAttributeUses | null = null;
   /** Viewport the rule index was last validated against. */
-  envWidth: number;
-  envHeight: number;
-  envDpr: number;
+  declare envWidth: number;
+  declare envHeight: number;
+  declare envDpr: number;
   /** Cache for hasAuthorStyles(): (version, styleVersion) → result. */
-  authorVersion: number;
-  authorStyleVersion: number;
-  authorResult: boolean;
+  declare authorVersion: number;
+  declare authorStyleVersion: number;
+  declare authorResult: boolean;
 
   constructor(doc: Document) {
     this.doc = doc;

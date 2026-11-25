@@ -4,7 +4,8 @@
 //
 // A pull tokenizer: `next()` consumes one token and exposes it through fields (`type`,
 // `start`, `end`, `value`, `num`, `isInteger`, `unit`, `hashId`) instead of allocating a
-// token object, so parsers can stream over a stylesheet without per-token garbage.
+// token object, so parsers can stream over a stylesheet without per-token garbage. The
+// selector parser tokenizes through it too (selectors/parser.ts `tokenize`).
 // Input preprocessing (https://drafts.csswg.org/css-syntax-3/#input-preprocessing) is done
 // lazily: CR, CRLF and FF count as one newline wherever newlines matter, and U+0000 /
 // surrogates are replaced with U+FFFD only in decoded token values.
@@ -41,7 +42,7 @@ function isNewline(c: number): boolean {
   return c === 0x0a || c === 0x0d || c === 0x0c;
 }
 
-function isWhitespace(c: number): boolean {
+export function isWhitespace(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d || c === 0x0c;
 }
 
@@ -59,31 +60,15 @@ function hexValue(c: number): number {
   return c - 0x61 + 10;
 }
 
-/** https://drafts.csswg.org/css-syntax-3/#non-ascii-ident-code-point (UTF-16 code units; surrogates = astral planes). */
-function isNonAsciiIdent(c: number): boolean {
-  if (c < 0xb7) return false;
-  return (
-    c === 0xb7 ||
-    (c >= 0xc0 && c <= 0xd6) ||
-    (c >= 0xd8 && c <= 0xf6) ||
-    (c >= 0xf8 && c <= 0x37d) ||
-    (c >= 0x37f && c <= 0x1fff) ||
-    c === 0x200c ||
-    c === 0x200d ||
-    c === 0x203f ||
-    c === 0x2040 ||
-    (c >= 0x2070 && c <= 0x218f) ||
-    (c >= 0x2c00 && c <= 0x2fef) ||
-    (c >= 0x3001 && c <= 0xd7ff) ||
-    (c >= 0xd800 && c <= 0xdfff) ||
-    (c >= 0xf900 && c <= 0xfdcf) ||
-    (c >= 0xfdf0 && c <= 0xfffd)
-  );
-}
-
-/** https://drafts.csswg.org/css-syntax-3/#ident-start-code-point */
+/**
+ * https://drafts.csswg.org/css-syntax-3/#ident-start-code-point, with every non-ASCII code point
+ * (UTF-16 code unit >= U+0080) as an ident code point, as browsers and jsdom still do: the spec's
+ * https://drafts.csswg.org/css-syntax-3/#non-ascii-ident-code-point ranges would make `.a×b` and
+ * `font-family: a×b` invalid (docs/deviations.md). U+0000 counts too: input preprocessing turns
+ * it into U+FFFD, and consumeName decodes it.
+ */
 export function isIdentStart(c: number): boolean {
-  return (c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || isNonAsciiIdent(c);
+  return (c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c >= 0x80 || c === 0;
 }
 
 /** https://drafts.csswg.org/css-syntax-3/#ident-code-point */
@@ -96,31 +81,31 @@ function isNonPrintable(c: number): boolean {
 }
 
 export class CSSTokenizer {
-  src: string;
-  len: number;
-  pos: number;
+  declare src: string;
+  declare len: number;
+  declare pos: number;
   /** Current token type (TK_*). */
-  type: number;
+  declare type: number;
   /** Source offsets of the current token. */
-  start: number;
-  end: number;
+  declare start: number;
+  declare end: number;
   /**
    * Decoded value: ident/function/at-keyword/hash name, string/url contents, delim
    * character, or the unit for dimensions. "" for other tokens.
    */
-  value: string;
+  declare value: string;
   /** Numeric value of number/percentage/dimension tokens. */
-  num: number;
+  declare num: number;
   /** Number token type flag: true for "integer", false for "number". */
-  isInteger: boolean;
+  declare isInteger: boolean;
   /** Dimension unit (decoded, original case). */
-  unit: string;
+  declare unit: string;
   /** Hash token type flag: true for "id". */
-  hashId: boolean;
+  declare hashId: boolean;
   /** Number token sign character ("+", "-" or ""). */
-  sign: string;
+  declare sign: string;
   /** Number of comments skipped so far (lets callers detect comments inside a range). */
-  comments: number;
+  declare comments: number;
 
   constructor(src: string) {
     this.src = src;
@@ -218,21 +203,24 @@ export class CSSTokenizer {
       else break;
     }
     if (!this.validEscape(this.pos) && this.code(this.pos) !== 0) return this.src.slice(start, this.pos);
-    let out = this.src.slice(start, this.pos);
+    // Slow path: copy each run of plain ident code points with one slice, not one per character.
+    let out = "";
+    let run = start;
     while (this.pos < this.len) {
       const c = this.src.charCodeAt(this.pos);
       if (c === 0) {
-        out += REPLACEMENT;
-        this.pos++;
+        out += this.src.slice(run, this.pos) + REPLACEMENT;
+        run = ++this.pos;
       } else if (isIdentChar(c)) {
-        out += this.src.slice(this.pos, this.pos + 1);
         this.pos++;
       } else if (this.validEscape(this.pos)) {
+        out += this.src.slice(run, this.pos);
         this.pos++;
         out += this.consumeEscape();
+        run = this.pos;
       } else break;
     }
-    return out;
+    return out + this.src.slice(run, this.pos);
   }
 
   /** https://drafts.csswg.org/css-syntax-3/#consume-number */
@@ -523,7 +511,7 @@ export class CSSTokenizer {
         return TK_RBRACE;
     }
     if (isDigit(c)) return this.consumeNumeric();
-    if (isIdentStart(c) || c === 0) return this.consumeIdentLike();
+    if (isIdentStart(c)) return this.consumeIdentLike();
     return this.delim();
   }
 

@@ -1,5 +1,5 @@
 // DOMParser / XMLSerializer / Document.parseHTMLUnsafe on top of the parser area's entry
-// points, and a fallback CSS namespace used until the css area exports its own.
+// points.
 
 import { Document } from "../nodes/Document.ts";
 import type { Node } from "../nodes/Node.ts";
@@ -48,38 +48,3 @@ export function documentParseHTMLUnsafe(html: string): Document {
   parseHTMLUnsafe(String(html), doc);
   return doc;
 }
-
-/** https://drafts.csswg.org/cssom/#serialize-an-identifier */
-function escape(value: string): string {
-  const s = String(value);
-  const len = s.length;
-  let out = "";
-  const first = len > 0 ? s.charCodeAt(0) : 0;
-  for (let i = 0; i < len; i++) {
-    const c = s.charCodeAt(i);
-    if (c === 0) out += "�";
-    else if ((c >= 0x01 && c <= 0x1f) || c === 0x7f) out += `\\${c.toString(16)} `;
-    else if (i === 0 && c >= 0x30 && c <= 0x39) out += `\\${c.toString(16)} `;
-    else if (i === 1 && c >= 0x30 && c <= 0x39 && first === 0x2d) out += `\\${c.toString(16)} `;
-    else if (i === 0 && c === 0x2d && len === 1) out += "\\-";
-    else if (
-      c >= 0x80 ||
-      c === 0x2d ||
-      c === 0x5f ||
-      (c >= 0x30 && c <= 0x39) ||
-      (c >= 0x41 && c <= 0x5a) ||
-      (c >= 0x61 && c <= 0x7a)
-    )
-      out += s[i];
-    else out += `\\${s[i]}`;
-  }
-  return out;
-}
-
-/** https://drafts.csswg.org/cssom/#namespacedef-css — TODO(css): replace with the css area's CSS namespace. */
-export const CSS = {
-  escape,
-  supports(_conditionOrProperty: string, _value?: string): boolean {
-    return false;
-  },
-};

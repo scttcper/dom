@@ -5,16 +5,14 @@
  *   CSSOM View §4.2 "The MediaQueryList interface"
  *     https://drafts.csswg.org/cssom-view/#the-mediaquerylist-interface
  *     https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes
- *   Media Queries Level 5 (fallback evaluator)
+ *   Media Queries Level 5 (the css area's evaluator, css/media.ts, as matchMedia uses it)
  *     https://drafts.csswg.org/mediaqueries-5/#media
  *     https://drafts.csswg.org/mediaqueries-5/#mq-range-context
  *     https://drafts.csswg.org/mediaqueries-5/#mq-boolean-context
- *
- * The fallback evaluator is used until the css area registers windowHooks.evaluateMediaQuery.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createWindow, MediaQueryList, type Window } from "@ctrl/dom";
-import { evaluateMediaQueryList, windowHooks } from "@ctrl/dom/internal";
+import { matchMediaText, mediaEnvironment } from "@ctrl/dom/internal";
 
 let window: Window;
 
@@ -27,7 +25,8 @@ afterEach(() => {
 });
 
 const env = { width: 1024, height: 768, devicePixelRatio: 1, mediaType: "screen", features: null };
-const ev = (q: string, features?: Record<string, string | number>) => evaluateMediaQueryList(q, env, features);
+const ev = (q: string, features?: Record<string, string | number>) =>
+  matchMediaText(q, { ...env, features: features ?? null });
 
 describe("matchMedia — https://drafts.csswg.org/cssom-view/#dom-window-matchmedia", () => {
   test("returns a MediaQueryList with media and live matches", () => {
@@ -43,27 +42,17 @@ describe("matchMedia — https://drafts.csswg.org/cssom-view/#dom-window-matchme
     expect(() => (window.matchMedia as unknown as () => void)()).toThrow(TypeError);
   });
 
-  test("windowHooks.evaluateMediaQuery takes over evaluation", () => {
-    const previous = windowHooks.evaluateMediaQuery;
-    windowHooks.evaluateMediaQuery = (query, e) => query === "custom" && e.width === 1024;
-    try {
-      expect(window.matchMedia("custom").matches).toBe(true);
-      expect(window.matchMedia("(min-width: 1px)").matches).toBe(false);
-    } finally {
-      windowHooks.evaluateMediaQuery = previous;
-    }
-  });
-
-  test("the evaluator receives the window's mediaFeatures overrides in its environment", () => {
-    const previous = windowHooks.evaluateMediaQuery;
-    const seen: unknown[] = [];
-    windowHooks.evaluateMediaQuery = (_query, e) => (seen.push(e.features), true);
-    try {
-      expect(createWindow({ mediaFeatures: { "prefers-color-scheme": "dark" } }).matchMedia("(x)").matches).toBe(true);
-      expect(seen).toEqual([{ "prefers-color-scheme": "dark" }]);
-    } finally {
-      windowHooks.evaluateMediaQuery = previous;
-    }
+  test("the evaluator receives the window's viewport and mediaFeatures overrides in its environment", () => {
+    expect(mediaEnvironment(window)).toEqual({ ...env, features: null });
+    const dark = createWindow({ width: 800, height: 600, mediaFeatures: { "prefers-color-scheme": "dark" } });
+    expect(mediaEnvironment(dark)).toEqual({
+      width: 800,
+      height: 600,
+      devicePixelRatio: 1,
+      mediaType: "screen",
+      features: { "prefers-color-scheme": "dark" },
+    });
+    dark.close();
   });
 
   test("mediaFeatures window option overrides discrete features (matchMedia and @media rules)", () => {
@@ -144,7 +133,7 @@ describe("change events — https://drafts.csswg.org/cssom-view/#evaluate-media-
   });
 });
 
-describe("fallback evaluator — https://drafts.csswg.org/mediaqueries-5/#media", () => {
+describe("evaluator — https://drafts.csswg.org/mediaqueries-5/#media", () => {
   test("media types and the empty list", () => {
     expect(ev("")).toBe(true);
     expect(ev("all")).toBe(true);

@@ -12,8 +12,8 @@ import { $impl, $owner, $record } from "../keys.ts";
 
 export class Attr extends Node {
   /** Backing record while attached to an element; null for a detached Attr. */
-  [$record]: AttrRecord | null;
-  [$owner]: Element | null;
+  declare [$record]: AttrRecord | null;
+  declare [$owner]: Element | null;
 
   /** @internal */
   constructor(
@@ -31,8 +31,8 @@ export class Attr extends Node {
     impl.data = value;
     impl.ns = ns;
     impl.prefix = prefix;
-    this[$owner] = owner;
     this[$record] = record;
+    this[$owner] = owner;
   }
 
   get namespaceURI(): string | null {

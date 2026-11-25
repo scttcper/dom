@@ -12,7 +12,7 @@
 //   (re-entrant) dispatches stack naturally and steady-state dispatch allocates nothing.
 
 import { clockNow } from "../window/clock.ts";
-import { exposeMembers } from "../webidl-runtime.ts";
+import { argumentsRequired, exposeMembers } from "../webidl-runtime.ts";
 import type { EventInit } from "../webidl.ts";
 import type { EventTarget } from "./EventTarget.ts";
 import { toDOMString } from "../webidl-convert.ts";
@@ -41,19 +41,19 @@ export const EF_TOUCH_EVENT = 1 << 11;
 
 /** Internal, monomorphic per-event state. Never exposed. */
 export class EventState {
-  flags: number;
-  type: string;
-  target: EventTarget | null;
-  relatedTarget: EventTarget | null;
-  currentTarget: EventTarget | null;
-  eventPhase: number;
+  declare flags: number;
+  declare type: string;
+  declare target: EventTarget | null;
+  declare relatedTarget: EventTarget | null;
+  declare currentTarget: EventTarget | null;
+  declare eventPhase: number;
   /** Offset of the first path struct in `PATH`, or -1 when the path is empty. */
-  pathStart: number;
+  declare pathStart: number;
   /** Number of structs in the path. */
-  pathLength: number;
+  declare pathLength: number;
   /** https://dom.spec.whatwg.org/#event-touch-target-list (retargeted touch targets for the current struct). */
-  touchTargets: EventTarget[] | null;
-  timeStamp: number;
+  declare touchTargets: EventTarget[] | null;
+  declare timeStamp: number;
 
   constructor(type: string, flags: number) {
     this.flags = flags;
@@ -312,21 +312,13 @@ export class Event {
 
   /** https://dom.spec.whatwg.org/#dom-event-initevent */
   initEvent(type: string, bubbles = false, cancelable = false): void {
-    if (arguments.length === 0) {
-      throw new TypeError("Failed to execute 'initEvent' on 'Event': 1 argument required, but only 0 present.");
-    }
+    if (arguments.length === 0) argumentsRequired("initEvent", "Event", 1, 0);
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
   }
 }
 
-Object.defineProperties(Event.prototype, {
-  NONE: { value: NONE, enumerable: true },
-  CAPTURING_PHASE: { value: CAPTURING_PHASE, enumerable: true },
-  AT_TARGET: { value: AT_TARGET, enumerable: true },
-  BUBBLING_PHASE: { value: BUBBLING_PHASE, enumerable: true },
-  [Symbol.toStringTag]: { value: "Event", configurable: true },
-});
+exposeConstants(Event);
 
 /** https://dom.spec.whatwg.org/#set-the-canceled-flag */
 export function setCanceledFlag(s: EventState): void {
@@ -360,7 +352,24 @@ export function setTrusted(event: Event, trusted = true): void {
   (event as { isTrusted: boolean }).isTrusted = trusted;
 }
 
-/** Name used in subclass constructor errors. */
+/**
+ * https://webidl.spec.whatwg.org/#es-constants: constants live on the interface object AND its
+ * prototype. Copies an interface's constant statics (its upper-case own properties) to the
+ * prototype as read-only enumerable properties. Used by the node and range interfaces too.
+ */
+export function exposeConstants(ctor: { prototype: object }): void {
+  for (const key of Object.getOwnPropertyNames(ctor)) {
+    if (/^[A-Z_]+$/.test(key)) {
+      Object.defineProperty(ctor.prototype, key, { value: (ctor as Record<string, unknown>)[key], enumerable: true });
+    }
+  }
+}
+
+/**
+ * @@toStringTag on the prototype (https://webidl.spec.whatwg.org/#dfn-class-string): the class
+ * name, so `Object.prototype.toString` gives `[object Name]`. Used by interfaces across the
+ * DOM, not only events.
+ */
 export function setToStringTag(ctor: { prototype: object; name: string }, requiredArgs?: number): void {
   Object.defineProperty(ctor.prototype, Symbol.toStringTag, { value: ctor.name, configurable: true });
   // https://webidl.spec.whatwg.org/#es-interface-call step "length": the shortest constructor

@@ -15,7 +15,7 @@ import { $host } from "../keys.ts";
 
 export class DocumentFragment extends Node {
   /** Host for shadow roots and template contents (https://dom.spec.whatwg.org/#concept-documentfragment-host). */
-  [$host]: Element | null;
+  declare [$host]: Element | null;
 
   constructor(doc: Document = currentDocument()) {
     super(DOCUMENT_FRAGMENT_NODE, doc);

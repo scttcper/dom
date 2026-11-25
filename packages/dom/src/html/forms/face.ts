@@ -56,18 +56,18 @@ const FLAG_NAMES: [string, number][] = [
  * validation read (the custom element itself has no validity members).
  */
 export class FaceState {
-  impl: NodeImpl;
+  declare impl: NodeImpl;
   /** https://html.spec.whatwg.org/#face-submission-value */
-  value: unknown;
+  declare value: unknown;
   /** https://html.spec.whatwg.org/#face-state */
-  state: unknown;
-  flags: number;
-  message: string;
-  validity: ValidityState | null;
-  labels: LabelsNodeList | null;
+  declare state: unknown;
+  declare flags: number;
+  declare message: string;
+  declare validity: ValidityState | null;
+  declare labels: LabelsNodeList | null;
   /** Last form owner / disabledness reported through the callbacks. */
-  lastOwner: WeakRef<NodeImpl> | null;
-  lastDisabled: boolean;
+  declare lastOwner: WeakRef<NodeImpl> | null;
+  declare lastDisabled: boolean;
   // Validatable members (unused fields of the interface kept for shape).
   /** The custom validity error message; absent while it is the empty string. */
   declare [$customValidity]?: string;

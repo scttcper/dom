@@ -5,25 +5,19 @@
 
 import { HTMLElement } from "../HTMLElement.ts";
 import type { Document } from "../../nodes/Document.ts";
-import type { Element } from "../../nodes/Element.ts";
 import { HTMLCollection } from "../../collections/HTMLCollection.ts";
 import { descendantTextContent } from "../../nodes/Node.ts";
 import { T } from "../../nodes/tags.ts";
 import { contentAttr, parseFloatingPoint, str, tokenList } from "../reflect.ts";
-import { formOwner } from "./form-associated.ts";
-import { LabelsNodeList } from "./collections.ts";
+import { installDefaults } from "./common.ts";
+import { labelsMember, type LabelsNodeList } from "./collections.ts";
 import { serializeFloat } from "./microsyntaxes.ts";
-import {
-  installConstraintValidation,
-  V_CUSTOM_ERROR,
-  type ConstraintValidation,
-  type ValidityState,
-} from "./validation.ts";
+import { installConstraintValidation, type ConstraintValidation, type ValidityState } from "./validation.ts";
 import { $customValidity, $defaultValueOverride, $impl, $labels, $options, $validity } from "../../keys.ts";
 
 export class HTMLOutputElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#concept-output-default-value-override (null = none). */
-  [$defaultValueOverride]: string | null;
+  declare [$defaultValueOverride]: string | null;
   /** The custom validity error message; absent while it is the empty string. */
   declare [$customValidity]?: string;
   declare [$validity]?: ValidityState | null;
@@ -42,14 +36,7 @@ export class HTMLOutputElement extends HTMLElement {
   declare htmlFor: object;
   declare name: string;
 
-  get form(): Element | null {
-    const owner = formOwner(this[$impl]);
-    return owner === null ? null : (owner.node as Element);
-  }
-
-  get labels(): LabelsNodeList {
-    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
-  }
+  declare readonly labels: LabelsNodeList;
 
   /** https://html.spec.whatwg.org/#dom-output-defaultvalue */
   get defaultValue(): string {
@@ -77,22 +64,12 @@ export class HTMLOutputElement extends HTMLElement {
     this[$defaultValueOverride] = null;
   }
 
-  // Output elements are always barred from constraint validation.
-  _barredFromValidation(): boolean {
-    return true;
-  }
-
-  _validityFlags(): number {
-    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
-  }
-
-  _validationMessage(_flags: number): string {
-    return this[$customValidity] ?? "";
-  }
+  // Output elements are always barred from constraint validation (installConstraintValidation).
 }
 
 export interface HTMLOutputElement extends ConstraintValidation {}
 installConstraintValidation(HTMLOutputElement);
+installDefaults(HTMLOutputElement, labelsMember);
 
 str(HTMLOutputElement, "name");
 tokenList(HTMLOutputElement, "htmlFor", "for");
@@ -111,11 +88,6 @@ function setFloat(el: HTMLElement, name: string, value: unknown): void {
 
 export class HTMLProgressElement extends HTMLElement {
   declare [$labels]?: LabelsNodeList | null;
-
-  /** @internal Use Document.createElement. */
-  constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
-    super(doc, localName, ns, prefix);
-  }
 
   /** https://html.spec.whatwg.org/#dom-progress-max */
   get max(): number {
@@ -149,19 +121,12 @@ export class HTMLProgressElement extends HTMLElement {
     return this.value / this.max;
   }
 
-  get labels(): LabelsNodeList {
-    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
-  }
+  declare readonly labels: LabelsNodeList;
 }
 
 /** https://html.spec.whatwg.org/#the-meter-element — the clamped values of the meter algorithm. */
 export class HTMLMeterElement extends HTMLElement {
   declare [$labels]?: LabelsNodeList | null;
-
-  /** @internal Use Document.createElement. */
-  constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
-    super(doc, localName, ns, prefix);
-  }
 
   get min(): number {
     const n = attrFloat(this, "min");
@@ -231,17 +196,18 @@ export class HTMLMeterElement extends HTMLElement {
     setFloat(this, "optimum", v);
   }
 
-  get labels(): LabelsNodeList {
-    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
-  }
+  declare readonly labels: LabelsNodeList;
 }
+
+installDefaults(HTMLProgressElement, labelsMember);
+installDefaults(HTMLMeterElement, labelsMember);
 
 function isOption(el: { tag: number }): boolean {
   return el.tag === T.option;
 }
 
 export class HTMLDataListElement extends HTMLElement {
-  [$options]: HTMLCollection | null;
+  declare [$options]: HTMLCollection | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {

@@ -213,53 +213,53 @@ function ciMatch(src: string, pos: number, word: string): boolean {
 
 export class Tokenizer {
   // input
-  src: string;
-  pos: number;
-  len: number;
-  state: number;
+  declare src: string;
+  declare pos: number;
+  declare len: number;
+  declare state: number;
   /** Set by the tree builder: CDATA sections are recognized (foreign content). */
-  allowCDATA: boolean;
+  declare allowCDATA: boolean;
   /** Recognize processing instructions (2026 spec change; off = classic bogus comments). */
-  processingInstructions: boolean;
+  declare processingInstructions: boolean;
   /** Name of the last start tag emitted (for "appropriate end tag token"). */
-  lastStartTag: string;
+  declare lastStartTag: string;
 
   // current token
-  type: number;
-  pendingType: number;
+  declare type: number;
+  declare pendingType: number;
   /** Character token run (TK_CHARS). */
-  text: string;
+  declare text: string;
   /** The run contains raw U+0000 characters (data state / CDATA sections). */
-  textHasNull: boolean;
+  declare textHasNull: boolean;
   /** Tag name (lowercase), DOCTYPE name, or PI target. */
-  name: string;
+  declare name: string;
   /** Interned tag id from parser/tags.ts, or 0. */
-  tagId: number;
-  selfClosing: boolean;
-  attrNames: string[];
-  attrValues: string[];
-  attrCount: number;
+  declare tagId: number;
+  declare selfClosing: boolean;
+  declare attrNames: string[];
+  declare attrValues: string[];
+  declare attrCount: number;
   /** Comment / PI data. */
-  data: string;
-  hasName: boolean;
-  publicId: string;
-  hasPublicId: boolean;
-  systemId: string;
-  hasSystemId: boolean;
-  forceQuirks: boolean;
+  declare data: string;
+  declare hasName: boolean;
+  declare publicId: string;
+  declare hasPublicId: boolean;
+  declare systemId: string;
+  declare hasSystemId: boolean;
+  declare forceQuirks: boolean;
 
   // scratch
-  textStart: number;
-  textBuf: string;
-  tagStart: number;
-  nameStart: number;
-  nameHash: number;
-  nameFix: boolean;
-  isEndTag: boolean;
-  valueStart: number;
-  valueBuf: string;
-  dropAttr: boolean;
-  tempBuf: string;
+  declare textStart: number;
+  declare textBuf: string;
+  declare tagStart: number;
+  declare nameStart: number;
+  declare nameHash: number;
+  declare nameFix: boolean;
+  declare isEndTag: boolean;
+  declare valueStart: number;
+  declare valueBuf: string;
+  declare dropAttr: boolean;
+  declare tempBuf: string;
 
   constructor() {
     this.src = "";
@@ -1463,8 +1463,7 @@ export class Tokenizer {
           this.pos++;
           this.state = S_BEFORE_DOCTYPE_NAME;
         } else if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else {
           // missing-whitespace-before-doctype-name
           this.state = S_BEFORE_DOCTYPE_NAME;
@@ -1478,12 +1477,10 @@ export class Tokenizer {
         this.pos = pos;
         const c = pos < len ? src.charCodeAt(pos) : -1;
         if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else if (c === 62) {
           this.pos++;
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else {
           this.hasName = true;
           this.name = "";
@@ -1497,8 +1494,7 @@ export class Tokenizer {
         for (;;) {
           if (pos >= len) {
             this.pos = pos;
-            this.forceQuirks = true;
-            this.emitDoctype();
+            this.emitDoctype(true);
             return;
           }
           const c = src.charCodeAt(pos);
@@ -1525,8 +1521,7 @@ export class Tokenizer {
         this.pos = pos;
         const c = pos < len ? src.charCodeAt(pos) : -1;
         if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else if (c === 62) {
           this.pos++;
           this.emitDoctype();
@@ -1557,11 +1552,9 @@ export class Tokenizer {
           this.startDoctypeId(isPublic, c);
         } else if (c === 62) {
           this.pos++;
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else {
           this.forceQuirks = true;
           this.state = S_BOGUS_DOCTYPE;
@@ -1581,11 +1574,9 @@ export class Tokenizer {
           this.startDoctypeId(isPublic, c);
         } else if (c === 62) {
           this.pos++;
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else {
           this.forceQuirks = true;
           this.state = S_BOGUS_DOCTYPE;
@@ -1606,8 +1597,7 @@ export class Tokenizer {
           if (pos >= len) {
             this.pos = pos;
             this.appendDoctypeId(isPublic, acc);
-            this.forceQuirks = true;
-            this.emitDoctype();
+            this.emitDoctype(true);
             return;
           }
           const c = src.charCodeAt(pos);
@@ -1621,8 +1611,7 @@ export class Tokenizer {
             // abrupt-doctype-*-identifier
             this.pos = pos + 1;
             this.appendDoctypeId(isPublic, acc);
-            this.forceQuirks = true;
-            this.emitDoctype();
+            this.emitDoctype(true);
             return;
           }
           acc += c === 0 ? "�" : src[pos];
@@ -1649,8 +1638,7 @@ export class Tokenizer {
           this.pos++;
           this.startDoctypeId(false, c);
         } else if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else {
           this.forceQuirks = true;
           this.state = S_BOGUS_DOCTYPE;
@@ -1667,8 +1655,7 @@ export class Tokenizer {
           this.pos++;
           this.emitDoctype();
         } else if (c === -1) {
-          this.forceQuirks = true;
-          this.emitDoctype();
+          this.emitDoctype(true);
         } else {
           // unexpected-character-after-doctype-system-identifier (does NOT set force-quirks)
           this.state = S_BOGUS_DOCTYPE;
@@ -1791,7 +1778,9 @@ export class Tokenizer {
     this.state = S_DATA;
   }
 
-  private emitDoctype(): void {
+  /** Emit the current DOCTYPE token, first setting its force-quirks flag when `forceQuirks`. */
+  private emitDoctype(forceQuirks = false): void {
+    if (forceQuirks) this.forceQuirks = true;
     this.emit(TK_DOCTYPE, this.tagStart);
     this.state = S_DATA;
   }

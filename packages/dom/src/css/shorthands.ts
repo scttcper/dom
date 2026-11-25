@@ -160,8 +160,12 @@ const STYLE_KEYWORDS = new Set([
   "outset",
 ]);
 
-/** <line-width> || <line-style> || <color> → [width, style, color] (missing = initial). */
-function parseBorderSide(value: string): string[] | null {
+/**
+ * <line-width> || <line-style> || <color> → [width, style, color] (missing = initial). For
+ * `outline` (https://drafts.csswg.org/css-ui-4/#outline) the style is an <outline-line-style>:
+ * `auto` is one, `hidden` is not.
+ */
+function parseBorderSide(value: string, outline: boolean): string[] | null {
   const parts = items(value);
   if (parts === null || parts.length < 1 || parts.length > 3) return null;
   let width = "";
@@ -169,7 +173,12 @@ function parseBorderSide(value: string): string[] | null {
   let color = "";
   const gw = grammarFor("border-top-width");
   for (const p of parts) {
-    if (p.type === TK_IDENT && STYLE_KEYWORDS.has(p.lower)) {
+    if (
+      p.type === TK_IDENT &&
+      (outline
+        ? p.lower !== "hidden" && (p.lower === "auto" || STYLE_KEYWORDS.has(p.lower))
+        : STYLE_KEYWORDS.has(p.lower))
+    ) {
       if (style !== "") return null;
       style = p.lower;
       continue;
@@ -485,9 +494,9 @@ export function expandShorthand(name: string, value: string): string[] | null {
     case "border-right":
     case "border-bottom":
     case "border-left":
-      return parseBorderSide(value);
+      return parseBorderSide(value, false);
     case "border": {
-      const side = parseBorderSide(value);
+      const side = parseBorderSide(value, false);
       if (side === null) return null;
       return [
         side[0],
@@ -578,33 +587,9 @@ export function expandCascadeShorthand(name: string, value: string): string[] | 
   switch (name) {
     case "outline": {
       // https://drafts.csswg.org/css-ui-4/#outline: <outline-color> || <outline-line-style> || <outline-line-width>
-      const parts = items(value);
-      if (parts === null || parts.length < 1 || parts.length > 3) return null;
-      let width = "";
-      let style = "";
-      let color = "";
-      const gw = grammarFor("outline-width");
-      for (const p of parts) {
-        if (p.type === TK_IDENT && (STYLE_KEYWORDS.has(p.lower) || p.lower === "auto") && p.lower !== "hidden") {
-          if (style !== "") return null;
-          style = p.lower;
-          continue;
-        }
-        const w = normalizeComponent(p, gw);
-        if (w !== null) {
-          if (width !== "") return null;
-          width = w;
-          continue;
-        }
-        const c = normalizeColor(p.text);
-        if (c !== null && p.type !== TK_NUMBER) {
-          if (color !== "") return null;
-          color = c;
-          continue;
-        }
-        return null;
-      }
-      return [color || "currentcolor", style || "none", width || "medium"];
+      // (outline-width has border-top-width's grammar).
+      const side = parseBorderSide(value, true);
+      return side === null ? null : [side[2], side[1], side[0]];
     }
     case "overflow":
     case "flex-flow": {

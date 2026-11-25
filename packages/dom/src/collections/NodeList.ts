@@ -41,7 +41,7 @@ import { F_CHILD_LIST } from "../nodes/constants.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
-import { CollectionIterator, collectionForEach, iterableTarget } from "./iterator.ts";
+import { CollectionIterator, defineCollectionIterator, iterableTarget } from "./iterator.ts";
 import { $items, $version } from "../keys.ts";
 
 /** Index getter tables of lazy NodeList subclasses, by prototype. */
@@ -182,11 +182,4 @@ const values = {
   },
 }.values;
 
-Object.defineProperties(NodeList.prototype, {
-  forEach: { value: collectionForEach, writable: true, enumerable: true, configurable: true },
-  entries: { value: Array.prototype.entries, writable: true, enumerable: true, configurable: true },
-  keys: { value: Array.prototype.keys, writable: true, enumerable: true, configurable: true },
-  values: { value: values, writable: true, enumerable: true, configurable: true },
-  [Symbol.iterator]: { value: values, writable: true, configurable: true },
-  [Symbol.toStringTag]: { value: "NodeList", configurable: true },
-});
+defineCollectionIterator(NodeList, values, true);

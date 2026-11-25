@@ -46,6 +46,7 @@ import {
   hasAuthorStyles,
   styleRecord,
 } from "./cascade.ts";
+import { absoluteLength } from "./values.ts";
 import { layoutEnabled } from "./layout-mode.ts";
 import { $impl, $innerHeight, $innerWidth, $options, $shadowRoot, $version, $window } from "../keys.ts";
 import type { Window } from "../window/Window.ts";
@@ -62,31 +63,31 @@ export const BOX_FIXED_SELF = 16;
 /** One element's box. All coordinates are document coordinates with no scrolling applied. */
 export class Box {
   /** Border-box origin (layout position: what offsetTop/offsetLeft use). */
-  x: number;
-  y: number;
+  declare x: number;
+  declare y: number;
   /** Border-box origin with translate transforms of the element and its ancestors applied. */
-  vx: number;
-  vy: number;
+  declare vx: number;
+  declare vy: number;
   /** Border-box size. */
-  w: number;
-  h: number;
-  mt: number;
-  mr: number;
-  mb: number;
-  ml: number;
-  bt: number;
-  br: number;
-  bb: number;
-  bl: number;
-  pt: number;
-  pr: number;
-  pb: number;
-  pl: number;
+  declare w: number;
+  declare h: number;
+  declare mt: number;
+  declare mr: number;
+  declare mb: number;
+  declare ml: number;
+  declare bt: number;
+  declare br: number;
+  declare bb: number;
+  declare bl: number;
+  declare pt: number;
+  declare pr: number;
+  declare pb: number;
+  declare pl: number;
   /** This box's index in the generation's box list, and the end (exclusive) of its subtree's range. */
-  idx: number;
-  end: number;
-  gen: number;
-  flags: number;
+  declare idx: number;
+  declare end: number;
+  declare gen: number;
+  declare flags: number;
   constructor() {
     this.x = 0;
     this.y = 0;
@@ -114,13 +115,13 @@ export class Box {
 }
 
 class LayoutState {
-  version: number;
-  styleVersion: number;
-  vw: number;
-  vh: number;
-  gen: number;
+  declare version: number;
+  declare styleVersion: number;
+  declare vw: number;
+  declare vh: number;
+  declare gen: number;
   /** Boxes of the current generation in layout order (subtrees are contiguous ranges). */
-  list: Box[];
+  declare list: Box[];
   constructor() {
     this.version = -1;
     this.styleVersion = -1;
@@ -193,12 +194,12 @@ let viewH = 768;
 let outW = 0;
 
 class PendingAbs {
-  el: NodeImpl;
-  sx: number;
-  sy: number;
-  fs: number;
-  lh: string;
-  fixed: boolean;
+  declare el: NodeImpl;
+  declare sx: number;
+  declare sy: number;
+  declare fs: number;
+  declare lh: string;
+  declare fixed: boolean;
   constructor(el: NodeImpl, sx: number, sy: number, fs: number, lh: string, fixed: boolean) {
     this.el = el;
     this.sx = sx;
@@ -260,46 +261,46 @@ function plain(el: NodeImpl): boolean {
  * visited several times per run.
  */
 class Style {
-  gen: number;
-  position: string;
-  transform: string;
-  borderBox: boolean;
-  scroller: boolean;
-  mt: string;
-  mr: string;
-  mb: string;
-  ml: string;
-  bt: string;
-  br: string;
-  bb: string;
-  bl: string;
-  pt: string;
-  pr: string;
-  pb: string;
-  pl: string;
-  width: string;
-  height: string;
-  minW: string;
-  maxW: string;
-  minH: string;
-  maxH: string;
-  top: string;
-  right: string;
-  bottom: string;
-  left: string;
-  flexDir: string;
-  grow: number;
-  shrink: number;
-  basis: string;
-  alignSelf: string;
-  alignItems: string;
-  justify: string;
-  rowGap: string;
-  colGap: string;
+  declare gen: number;
+  declare position: string;
+  declare transform: string;
+  declare borderBox: boolean;
+  declare scroller: boolean;
+  declare mt: string;
+  declare mr: string;
+  declare mb: string;
+  declare ml: string;
+  declare bt: string;
+  declare br: string;
+  declare bb: string;
+  declare bl: string;
+  declare pt: string;
+  declare pr: string;
+  declare pb: string;
+  declare pl: string;
+  declare width: string;
+  declare height: string;
+  declare minW: string;
+  declare maxW: string;
+  declare minH: string;
+  declare maxH: string;
+  declare top: string;
+  declare right: string;
+  declare bottom: string;
+  declare left: string;
+  declare flexDir: string;
+  declare grow: number;
+  declare shrink: number;
+  declare basis: string;
+  declare alignSelf: string;
+  declare alignItems: string;
+  declare justify: string;
+  declare rowGap: string;
+  declare colGap: string;
   /** Font size in px, NaN to inherit the parent's. */
-  fs: number;
+  declare fs: number;
   /** Computed line-height, "" to inherit the parent's. */
-  lh: string;
+  declare lh: string;
   constructor() {
     this.gen = -1;
     this.position = "static";
@@ -574,20 +575,8 @@ function unitPx(num: number, unit: string): number {
       return (num * Math.min(viewW, viewH)) / 100;
     case "vmax":
       return (num * Math.max(viewW, viewH)) / 100;
-    case "in":
-      return num * 96;
-    case "cm":
-      return (num * 96) / 2.54;
-    case "mm":
-      return (num * 96) / 25.4;
-    case "q":
-      return (num * 96) / 101.6;
-    case "pt":
-      return (num * 96) / 72;
-    case "pc":
-      return num * 16;
   }
-  return NaN;
+  return absoluteLength(num, unit);
 }
 
 function lenOr0(v: string, pct: number, fs: number): number {
@@ -1215,19 +1204,19 @@ function layoutInline(el: NodeImpl, x: number, y: number, cw: number, pfs: numbe
 // --- flex -----------------------------------------------------------------------------------------
 
 class FlexItem {
-  el: NodeImpl | null;
-  text: string;
-  grow: number;
-  shrink: number;
+  declare el: NodeImpl | null;
+  declare text: string;
+  declare grow: number;
+  declare shrink: number;
   /** Hypothetical then final main size (border box). */
-  main: number;
+  declare main: number;
   /** Main-axis margins. */
-  m0: number;
-  m1: number;
+  declare m0: number;
+  declare m1: number;
   /** Measured outer cross size. */
-  cross: number;
-  autoCross: boolean;
-  align: string;
+  declare cross: number;
+  declare autoCross: boolean;
+  declare align: string;
   constructor() {
     this.el = null;
     this.text = "";

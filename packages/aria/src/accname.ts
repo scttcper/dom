@@ -18,6 +18,7 @@ import {
   T,
   ariaAttr,
   attr,
+  nextInTree,
   nodeCache,
   type AttrRecord,
   type NodeCache,
@@ -54,22 +55,16 @@ const COMPUTE_DESCRIPTION = 1;
 /** Per-computation state (one per top-level call). */
 class Ctx {
   consulted: Set<NodeImpl | AttrRecord>;
-  compute: number;
-  hidden: boolean;
-  pseudo: boolean;
-  gcs: GetComputedStyle | null;
-  flavor: Flavor;
+  compute!: number;
+  hidden!: boolean;
+  pseudo!: boolean;
+  gcs!: GetComputedStyle | null;
+  flavor!: Flavor;
   /** Set when a dynamic form-control state (value, selectedness) was read: the result must not be cached. */
-  usedState: boolean;
+  usedState!: boolean;
   constructor(compute: number, options: ComputeTextAlternativeOptions | undefined, flavor: Flavor) {
     this.consulted = new Set();
-    this.compute = compute;
-    const gcs = options?.getComputedStyle;
-    this.gcs = typeof gcs === "function" ? gcs : null;
-    this.pseudo = options?.computedStyleSupportsPseudoElements ?? this.gcs !== null;
-    this.hidden = options?.hidden ?? false;
-    this.flavor = flavor;
-    this.usedState = false;
+    this.reset(compute, options, flavor);
   }
 
   reset(compute: number, options: ComputeTextAlternativeOptions | undefined, flavor: Flavor): void {
@@ -382,22 +377,10 @@ function querySelectorAllSubtree(el: NodeImpl, name: string, value: string | nul
 }
 
 function collectDescendantsWithAttr(root: NodeImpl, name: string, value: string | null, out: NodeImpl[]): void {
-  for (let n = root.first; n !== null;) {
+  for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type === ELEMENT_NODE) {
       const v = attr(n, name);
       if (v !== null && (value === null || v === value)) out.push(n);
-    }
-    if (n.first !== null) n = n.first;
-    else {
-      let cur: NodeImpl | null = n;
-      n = null;
-      while (cur !== null && cur !== root) {
-        if (cur.next !== null) {
-          n = cur.next;
-          break;
-        }
-        cur = cur.parent;
-      }
     }
   }
 }

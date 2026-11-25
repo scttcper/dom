@@ -22,6 +22,8 @@ import {
 } from "../nodes/constants.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { DocumentFragment } from "../nodes/DocumentFragment.ts";
+import { exposeConstants, setToStringTag } from "../events/Event.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import {
@@ -72,11 +74,25 @@ export function nodeLength(n: NodeImpl): number {
   }
 }
 
-function toNodeImpl(node: unknown, method: string, iface = "Range"): NodeImpl {
+export function toNodeImpl(node: unknown, method: string, iface = "Range"): NodeImpl {
   if (node === null || typeof node !== "object" || !($impl in node)) {
     throw new TypeError(`Failed to execute '${method}' on '${iface}': parameter 1 is not of type 'Node'.`);
   }
   return (node as Node)[$impl];
+}
+
+/** The errors of https://dom.spec.whatwg.org/#concept-range-bp-set steps 1-2 (shared with Selection). */
+export function checkBoundary(n: NodeImpl, offset: number): void {
+  if (n.type === DOCUMENT_TYPE_NODE)
+    throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+  if (offset > nodeLength(n)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
+}
+
+/** `n`'s parent, for the boundary points before and after `n`. */
+function parentOf(n: NodeImpl): NodeImpl {
+  const parent = n.parent;
+  if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
+  return parent;
 }
 
 /**
@@ -122,6 +138,12 @@ function childBeforeOffset(child: NodeImpl, offset: number): boolean {
   return offset > after;
 }
 
+/** Whether `node` and its ancestors below `ancestor` are all Text nodes. */
+function onlyTextUpTo(node: NodeImpl, ancestor: NodeImpl): boolean {
+  for (let n = node; n !== ancestor; n = n.parent!) if (!isText(n)) return false;
+  return true;
+}
+
 /** The child of `ancestor` that is an inclusive ancestor of `node` (node must be a descendant). */
 function childOfAncestor(node: NodeImpl, ancestor: NodeImpl): NodeImpl {
   let n = node;
@@ -161,13 +183,13 @@ function commonAncestor(a: NodeImpl, b: NodeImpl): NodeImpl {
 /** https://dom.spec.whatwg.org/#interface-abstractrange */
 export abstract class AbstractRange {
   /** @internal start container / offset, end container / offset */
-  [$sc]: NodeImpl;
-  [$so]: number;
-  [$ec]: NodeImpl;
-  [$eo]: number;
+  declare [$sc]: NodeImpl;
+  declare [$so]: number;
+  declare [$ec]: NodeImpl;
+  declare [$eo]: number;
 
   /** @internal live.ts bookkeeping (null for StaticRange). */
-  [$home]: object | null;
+  declare [$home]: object | null;
 
   constructor(sc: NodeImpl, so: number, ec: NodeImpl, eo: number) {
     this[$sc] = sc;
@@ -278,9 +300,7 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#concept-range-bp-set */
   _setStart(node: NodeImpl, offset: number): void {
-    if (node.type === DOCUMENT_TYPE_NODE)
-      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
-    if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
+    checkBoundary(node, offset);
     if (!hasSameRoot(this, node) || compareBoundaryPoints(node, offset, this[$ec], this[$eo]) > 0) {
       this[$ec] = node;
       this[$eo] = offset;
@@ -291,9 +311,7 @@ export class Range extends AbstractRange {
   }
 
   _setEnd(node: NodeImpl, offset: number): void {
-    if (node.type === DOCUMENT_TYPE_NODE)
-      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
-    if (offset > nodeLength(node)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
+    checkBoundary(node, offset);
     if (!hasSameRoot(this, node) || compareBoundaryPoints(node, offset, this[$sc], this[$so]) < 0) {
       this[$sc] = node;
       this[$so] = offset;
@@ -313,30 +331,22 @@ export class Range extends AbstractRange {
 
   setStartBefore(node: Node): void {
     const n = toNodeImpl(node, "setStartBefore");
-    const parent = n.parent;
-    if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
-    this._setStart(parent, indexOf(n));
+    this._setStart(parentOf(n), indexOf(n));
   }
 
   setStartAfter(node: Node): void {
     const n = toNodeImpl(node, "setStartAfter");
-    const parent = n.parent;
-    if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
-    this._setStart(parent, indexOf(n) + 1);
+    this._setStart(parentOf(n), indexOf(n) + 1);
   }
 
   setEndBefore(node: Node): void {
     const n = toNodeImpl(node, "setEndBefore");
-    const parent = n.parent;
-    if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
-    this._setEnd(parent, indexOf(n));
+    this._setEnd(parentOf(n), indexOf(n));
   }
 
   setEndAfter(node: Node): void {
     const n = toNodeImpl(node, "setEndAfter");
-    const parent = n.parent;
-    if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
-    this._setEnd(parent, indexOf(n) + 1);
+    this._setEnd(parentOf(n), indexOf(n) + 1);
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-collapse */
@@ -352,8 +362,7 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#concept-range-select */
   _select(n: NodeImpl): void {
-    const parent = n.parent;
-    if (parent === null) throw new DOMException("The given Node has no parent.", "InvalidNodeTypeError");
+    const parent = parentOf(n);
     const index = indexOf(n);
     this[$sc] = parent;
     this[$so] = index;
@@ -368,8 +377,7 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#dom-range-selectnodecontents */
   _selectContents(n: NodeImpl): void {
-    if (n.type === DOCUMENT_TYPE_NODE)
-      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    checkBoundary(n, 0);
     this[$sc] = n;
     this[$so] = 0;
     this[$ec] = n;
@@ -441,12 +449,12 @@ export class Range extends AbstractRange {
 
   /** https://dom.spec.whatwg.org/#dom-range-extractcontents */
   extractContents(): DocumentFragment {
-    return extract(this, this[$sc], this[$so], this[$ec], this[$eo]).node as DocumentFragment;
+    return extract(false, this, this[$sc], this[$so], this[$ec], this[$eo]).node as DocumentFragment;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-clonecontents */
   cloneContents(): DocumentFragment {
-    return cloneContents(this[$sc], this[$so], this[$ec], this[$eo]).node as DocumentFragment;
+    return extract(true, null, this[$sc], this[$so], this[$ec], this[$eo]).node as DocumentFragment;
   }
 
   /** https://dom.spec.whatwg.org/#dom-range-insertnode */
@@ -459,15 +467,8 @@ export class Range extends AbstractRange {
     const np = toNodeImpl(newParent, "surroundContents");
     // Step 1: a non-Text node partially contained in the range.
     const ca = commonAncestor(this[$sc], this[$ec]);
-    for (let n: NodeImpl = this[$sc]; n !== ca; n = n.parent!) {
-      if (!isText(n)) {
-        throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
-      }
-    }
-    for (let n: NodeImpl = this[$ec]; n !== ca; n = n.parent!) {
-      if (!isText(n)) {
-        throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
-      }
+    if (!onlyTextUpTo(this[$sc], ca) || !onlyTextUpTo(this[$ec], ca)) {
+      throw new DOMException("The Range has partially selected a non-Text node.", "InvalidStateError");
     }
     // Step 2.
     const t = np.type;
@@ -478,7 +479,7 @@ export class Range extends AbstractRange {
       );
     }
     // Steps 3-7.
-    const fragment = extract(this, this[$sc], this[$so], this[$ec], this[$eo]);
+    const fragment = extract(false, this, this[$sc], this[$so], this[$ec], this[$eo]);
     if (np.first !== null) replaceAll(null, np);
     insertIntoRange(this, np);
     append(fragment, np);
@@ -498,9 +499,7 @@ export class Range extends AbstractRange {
     const n = toNodeImpl(node, "isPointInRange");
     const o = Number(offset) >>> 0;
     if (!hasSameRoot(this, n)) return false;
-    if (n.type === DOCUMENT_TYPE_NODE)
-      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
-    if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
+    checkBoundary(n, o);
     return (
       compareBoundaryPoints(n, o, this[$sc], this[$so]) >= 0 && compareBoundaryPoints(n, o, this[$ec], this[$eo]) <= 0
     );
@@ -512,9 +511,7 @@ export class Range extends AbstractRange {
     const o = Number(offset) >>> 0;
     if (!hasSameRoot(this, n))
       throw new DOMException("The node provided and the Range are not in the same tree.", "WrongDocumentError");
-    if (n.type === DOCUMENT_TYPE_NODE)
-      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
-    if (o > nodeLength(n)) throw new DOMException(`There is no child at offset ${o}.`, "IndexSizeError");
+    checkBoundary(n, o);
     if (compareBoundaryPoints(n, o, this[$sc], this[$so]) < 0) return -1;
     if (compareBoundaryPoints(n, o, this[$ec], this[$eo]) > 0) return 1;
     return 0;
@@ -562,10 +559,7 @@ export class Range extends AbstractRange {
 
   /** https://html.spec.whatwg.org/#dom-range-createcontextualfragment */
   createContextualFragment(fragment: string): DocumentFragment {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'createContextualFragment' on 'Range': 1 argument required, but only 0 present.",
-      );
+    if (arguments.length === 0) argumentsRequired("createContextualFragment", "Range", 1, 0);
     const node = this[$sc];
     let element: NodeImpl | null;
     switch (node.type) {
@@ -598,17 +592,10 @@ export class Range extends AbstractRange {
   }
 }
 
-for (const [k, v] of [
-  ["START_TO_START", START_TO_START],
-  ["START_TO_END", START_TO_END],
-  ["END_TO_END", END_TO_END],
-  ["END_TO_START", END_TO_START],
-] as const) {
-  Object.defineProperty(Range.prototype, k, { value: v, enumerable: true });
-}
-Object.defineProperty(AbstractRange.prototype, Symbol.toStringTag, { value: "AbstractRange", configurable: true });
-Object.defineProperty(Range.prototype, Symbol.toStringTag, { value: "Range", configurable: true });
-Object.defineProperty(StaticRange.prototype, Symbol.toStringTag, { value: "StaticRange", configurable: true });
+exposeConstants(Range);
+setToStringTag(AbstractRange);
+setToStringTag(Range);
+setToStringTag(StaticRange);
 
 /** First node in tree order at or after boundary point (node, offset) (null at the end of the tree). */
 function afterBoundary(node: NodeImpl, offset: number, root: NodeImpl | null = null): NodeImpl | null {
@@ -667,20 +654,24 @@ function rangeContents(sc: NodeImpl, so: number, ec: NodeImpl, eo: number) {
   return { first, last, contained };
 }
 
-function cloneWithData(n: NodeImpl, data: string): NodeImpl {
-  const copy = cloneNode(n, n.doc, false);
-  copy.data = data;
-  return copy;
-}
-
-/** https://dom.spec.whatwg.org/#concept-range-extract (`range` is the live range to collapse, or null for a subrange). */
-function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl, oeo: number): NodeImpl {
+/**
+ * https://dom.spec.whatwg.org/#concept-range-extract, or with `cloning` the same steps of
+ * https://dom.spec.whatwg.org/#concept-range-clone (copies instead of moves, nothing removed).
+ * `range` is the live range to collapse after extracting, or null for a subrange.
+ */
+function extract(
+  cloning: boolean,
+  range: Range | null,
+  osn: NodeImpl,
+  oso: number,
+  oen: NodeImpl,
+  oeo: number,
+): NodeImpl {
   const fragment = osn.doc.createDocumentFragment()[$impl];
   if (osn === oen && oso === oeo) return fragment;
   // Step 4.
   if (osn === oen && isCharacterData(osn)) {
-    append(cloneWithData(osn, osn.data.slice(oso, oeo)), fragment);
-    replaceData(osn, oso, oeo - oso, "");
+    appendPartial(cloning, fragment, osn, osn, oso, oen, oeo);
     return fragment;
   }
   // Steps 5-10.
@@ -689,29 +680,14 @@ function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl,
   const newNode = first === null ? osn : first.parent!;
   const newOffset = first === null || range === null ? oso : indexOf(first) + 1;
   // Steps 13-14.
-  if (first !== null) {
-    if (isCharacterData(first)) {
-      append(cloneWithData(osn, osn.data.slice(oso)), fragment);
-      replaceData(osn, oso, osn.data.length - oso, "");
-    } else {
-      const clone = cloneNode(first, first.doc, false);
-      append(clone, fragment);
-      append(extract(null, osn, oso, first, nodeLength(first)), clone);
-    }
-  }
+  if (first !== null) appendPartial(cloning, fragment, first, osn, oso, first, nodeLength(first));
   // Step 15.
-  for (let i = 0; i < contained.length; i++) append(contained[i], fragment);
-  // Steps 16-17.
-  if (last !== null) {
-    if (isCharacterData(last)) {
-      append(cloneWithData(oen, oen.data.slice(0, oeo)), fragment);
-      replaceData(oen, 0, oeo, "");
-    } else {
-      const clone = cloneNode(last, last.doc, false);
-      append(clone, fragment);
-      append(extract(null, last, 0, oen, oeo), clone);
-    }
+  for (let i = 0; i < contained.length; i++) {
+    const n = contained[i];
+    append(cloning ? cloneNode(n, n.doc, true) : n, fragment);
   }
+  // Steps 16-17.
+  if (last !== null) appendPartial(cloning, fragment, last, last, 0, oen, oeo);
   // Step 18.
   if (range !== null) {
     range[$sc] = range[$ec] = newNode;
@@ -721,35 +697,27 @@ function extract(range: Range | null, osn: NodeImpl, oso: number, oen: NodeImpl,
   return fragment;
 }
 
-/** https://dom.spec.whatwg.org/#concept-range-clone */
-function cloneContents(osn: NodeImpl, oso: number, oen: NodeImpl, oeo: number): NodeImpl {
-  const fragment = osn.doc.createDocumentFragment()[$impl];
-  if (osn === oen && oso === oeo) return fragment;
-  if (osn === oen && isCharacterData(osn)) {
-    append(cloneWithData(osn, osn.data.slice(oso, oeo)), fragment);
-    return fragment;
-  }
-  const { first, last, contained } = rangeContents(osn, oso, oen, oeo);
-  if (first !== null) {
-    if (isCharacterData(first)) {
-      append(cloneWithData(osn, osn.data.slice(oso)), fragment);
-    } else {
-      const clone = cloneNode(first, first.doc, false);
-      append(clone, fragment);
-      append(cloneContents(osn, oso, first, nodeLength(first)), clone);
-    }
-  }
-  for (let i = 0; i < contained.length; i++) append(cloneNode(contained[i], contained[i].doc, true), fragment);
-  if (last !== null) {
-    if (isCharacterData(last)) {
-      append(cloneWithData(oen, oen.data.slice(0, oeo)), fragment);
-    } else {
-      const clone = cloneNode(last, last.doc, false);
-      append(clone, fragment);
-      append(cloneContents(last, 0, oen, oeo), clone);
-    }
-  }
-  return fragment;
+/**
+ * Steps 4, 13-14 and 16-17 of extract / clone: append the partially contained `child` to
+ * `fragment`. CharacterData (then `child` is also the subrange's boundary node): a copy holding
+ * the selected data, which extracting also deletes. Otherwise a shallow copy holding the
+ * contents of the subrange (sn, so)-(en, eo).
+ */
+function appendPartial(
+  cloning: boolean,
+  fragment: NodeImpl,
+  child: NodeImpl,
+  sn: NodeImpl,
+  so: number,
+  en: NodeImpl,
+  eo: number,
+): void {
+  const copy = cloneNode(child, child.doc, false);
+  const data = isCharacterData(child);
+  if (data) copy.data = child.data.slice(so, eo);
+  append(copy, fragment);
+  if (!data) append(extract(cloning, null, sn, so, en, eo), copy);
+  else if (!cloning) replaceData(child, so, eo - so, "");
 }
 
 /** https://dom.spec.whatwg.org/#concept-range-insert */

@@ -1,142 +1,72 @@
 // Ported from @testing-library/user-event v14.6.8 (MIT)
 // https://github.com/testing-library/user-event/blob/v14.6.8/src/event/eventMap.ts
+//
+// Ours: the entries share their `defaultInit` objects (read-only: createEvent passes them to
+// constructors and reads their members) and are built by one helper, instead of a separate
+// literal per event type.
 
 import {type EventType} from './types.ts'
 
-export const eventMap = {
-  auxclick: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  beforeinput: {
-    EventType: 'InputEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  blur: {
-    EventType: 'FocusEvent',
-    defaultInit: {bubbles: false, cancelable: false, composed: true},
-  },
-  click: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  contextmenu: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  copy: {
-    EventType: 'ClipboardEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  change: {
-    EventType: 'Event',
-    defaultInit: {bubbles: true, cancelable: false},
-  },
-  cut: {
-    EventType: 'ClipboardEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  dblclick: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  focus: {
-    EventType: 'FocusEvent',
-    defaultInit: {bubbles: false, cancelable: false, composed: true},
-  },
-  focusin: {
-    EventType: 'FocusEvent',
-    defaultInit: {bubbles: true, cancelable: false, composed: true},
-  },
-  focusout: {
-    EventType: 'FocusEvent',
-    defaultInit: {bubbles: true, cancelable: false, composed: true},
-  },
-  keydown: {
-    EventType: 'KeyboardEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  keypress: {
-    EventType: 'KeyboardEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  keyup: {
-    EventType: 'KeyboardEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  paste: {
-    EventType: 'ClipboardEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  input: {
-    EventType: 'InputEvent',
-    defaultInit: {bubbles: true, cancelable: false, composed: true},
-  },
-  mousedown: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  mouseenter: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: false, cancelable: false, composed: true},
-  },
-  mouseleave: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: false, cancelable: false, composed: true},
-  },
-  mousemove: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  mouseout: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  mouseover: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  mouseup: {
-    EventType: 'MouseEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  pointerover: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  pointerenter: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: false, cancelable: false},
-  },
-  pointerdown: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  pointermove: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  pointerup: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  pointercancel: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: false, composed: true},
-  },
-  pointerout: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: true, cancelable: true, composed: true},
-  },
-  pointerleave: {
-    EventType: 'PointerEvent',
-    defaultInit: {bubbles: false, cancelable: false},
-  },
-  submit: {
-    EventType: 'Event',
-    defaultInit: {bubbles: true, cancelable: true},
-  },
+const bubblesCancelableComposed = {
+  bubbles: true,
+  cancelable: true,
+  composed: true,
 } as const
+const bubblesComposed = {
+  bubbles: true,
+  cancelable: false,
+  composed: true,
+} as const
+const composedOnly = {
+  bubbles: false,
+  cancelable: false,
+  composed: true,
+} as const
+const uncomposed = {bubbles: false, cancelable: false} as const
+
+/** One entry: the interface createEvent constructs and the EventInit it passes. */
+function entry<const I extends string, const D extends object>(
+  EventType: I,
+  defaultInit: D,
+) {
+  return {EventType, defaultInit}
+}
+
+export const eventMap = {
+  auxclick: entry('PointerEvent', bubblesCancelableComposed),
+  beforeinput: entry('InputEvent', bubblesCancelableComposed),
+  blur: entry('FocusEvent', composedOnly),
+  click: entry('PointerEvent', bubblesCancelableComposed),
+  contextmenu: entry('PointerEvent', bubblesCancelableComposed),
+  copy: entry('ClipboardEvent', bubblesCancelableComposed),
+  change: entry('Event', {bubbles: true, cancelable: false}),
+  cut: entry('ClipboardEvent', bubblesCancelableComposed),
+  dblclick: entry('MouseEvent', bubblesCancelableComposed),
+  focus: entry('FocusEvent', composedOnly),
+  focusin: entry('FocusEvent', bubblesComposed),
+  focusout: entry('FocusEvent', bubblesComposed),
+  keydown: entry('KeyboardEvent', bubblesCancelableComposed),
+  keypress: entry('KeyboardEvent', bubblesCancelableComposed),
+  keyup: entry('KeyboardEvent', bubblesCancelableComposed),
+  paste: entry('ClipboardEvent', bubblesCancelableComposed),
+  input: entry('InputEvent', bubblesComposed),
+  mousedown: entry('MouseEvent', bubblesCancelableComposed),
+  mouseenter: entry('MouseEvent', composedOnly),
+  mouseleave: entry('MouseEvent', composedOnly),
+  mousemove: entry('MouseEvent', bubblesCancelableComposed),
+  mouseout: entry('MouseEvent', bubblesCancelableComposed),
+  mouseover: entry('MouseEvent', bubblesCancelableComposed),
+  mouseup: entry('MouseEvent', bubblesCancelableComposed),
+  pointerover: entry('PointerEvent', bubblesCancelableComposed),
+  pointerenter: entry('PointerEvent', uncomposed),
+  pointerdown: entry('PointerEvent', bubblesCancelableComposed),
+  pointermove: entry('PointerEvent', bubblesCancelableComposed),
+  pointerup: entry('PointerEvent', bubblesCancelableComposed),
+  pointercancel: entry('PointerEvent', bubblesComposed),
+  pointerout: entry('PointerEvent', bubblesCancelableComposed),
+  pointerleave: entry('PointerEvent', uncomposed),
+  submit: entry('Event', {bubbles: true, cancelable: true}),
+}
 
 function getEventClass(type: EventType) {
   return eventMap[type].EventType

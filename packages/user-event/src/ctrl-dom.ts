@@ -14,19 +14,29 @@
 // - Tree/attribute reads (isElementType, isDisabled, getTreeDiff, focusability) walk NodeImpl.
 // - CSS reads (`pointer-events`, `display`, `visibility`) go through css/internal.ts.
 //
-// Each hook is used only when @ctrl/dom/internal actually exports it (the import is static: a
-// top-level `await import()` would make the package an async ES module that `require()` and the
-// CommonJS build cannot load). Expected contracts are
-// documented on `CtrlDomFormsUI` / `CtrlDomCss`.
+// @ctrl/dom/internal always comes from the same @ctrl/dom as this package (it is one of its
+// subpaths), so every hook below exists; what varies is whether a node is one of its nodes
+// (implOf). The import is static: a top-level `await import()` would make the package an async ES
+// module that `require()` and the CommonJS build cannot load.
 
-import * as ctrlDomInternal from '@ctrl/dom/internal'
+import {
+  $impl as importedImpl,
+  NodeImpl as ImportedNodeImpl,
+  T,
+  attr,
+  clearUIValue,
+  getUISelection,
+  getUIValue,
+  setUISelection,
+  setUIValue,
+} from '@ctrl/dom/internal'
 import type {NodeImpl} from '@ctrl/dom/internal'
 import type {Element, Node} from './dom-types.ts'
-import {$impl as importedImpl} from '@ctrl/dom/internal'
 
 // Read once: the CommonJS build reads an imported binding through rolldown's interop getter on
 // every access, and implOf runs for most events user-event creates (Sentry's suite profile).
 const $impl: typeof importedImpl = importedImpl
+const NodeImplClass: typeof ImportedNodeImpl = ImportedNodeImpl
 
 /**
  * @ctrl/dom html-forms UI state (`src/html/forms/ui.ts`, re-exported from `@ctrl/dom/internal`).
@@ -58,97 +68,51 @@ export interface CtrlDomFormsUI {
   ): void
 }
 
-type InternalModule = Record<string, unknown>
+/** @ctrl/dom UI value/selection hooks. */
+export const ctrlDomUI = {
+  getUIValue,
+  setUIValue,
+  clearUIValue,
+  getUISelection,
+  setUISelection,
+} as unknown as CtrlDomFormsUI
 
-const internal: InternalModule | null =
-  ctrlDomInternal as unknown as InternalModule
-
-function pick<T>(names: Array<keyof T & string>): T | null {
-  if (internal === null) return null
-  const out = {} as Record<string, unknown>
-  for (const name of names) {
-    const fn = internal[name]
-    if (typeof fn !== 'function') return null
-    out[name] = fn
-  }
-  return out as T
-}
-
-/** @ctrl/dom UI value/selection hooks, or null while html-forms does not provide them. */
-export const ctrlDomUI: CtrlDomFormsUI | null = pick<CtrlDomFormsUI>([
-  'getUIValue',
-  'setUIValue',
-  'clearUIValue',
-  'getUISelection',
-  'setUISelection',
-])
-
-const skipIdle = internal?.skipIdleTime as ((ms: number) => boolean) | undefined
-
-/**
- * Let `ms` of idle time pass on @ctrl/dom's idle-skipping clock (src/window/clock.ts), as a real
- * wait would there; false when a timer falls due in that time. True without such a clock.
- */
-export function skipIdleTime(ms: number): boolean {
-  return skipIdle === undefined || skipIdle(ms)
-}
-
-const clockTimer = internal?.isClockTimer as
-  | ((fn: unknown) => boolean)
-  | undefined
-
-/**
- * Whether `fn` is the setTimeout/setInterval of @ctrl/dom's active idle-skipping clock, or a copy
- * of its own properties (src/window/clock.ts): the timers created through it are the clock's.
- * False on another DOM.
- */
-export function isClockTimer(fn: unknown): boolean {
-  return clockTimer !== undefined && clockTimer(fn)
-}
-
-const foreignImmediates = internal?.foreignImmediatesPending as
-  | (() => boolean)
-  | undefined
-
-/**
- * Whether immediates other than @ctrl/dom's clock's own are queued (src/window/clock.ts); on
- * another DOM, any queued immediate.
- */
-export function immediatesPending(): boolean {
-  return foreignImmediates !== undefined
-    ? foreignImmediates()
-    : process.getActiveResourcesInfo().includes('Immediate')
-}
-
-const turn = internal?.loopTurn as ((resolve: () => void) => void) | undefined
-
-/**
- * `setImmediate(resolve)`; on @ctrl/dom's idle-skipping clock without the event-loop turn when
- * that turn would run nothing else (src/window/clock.ts, loopTurn).
- */
-export function loopTurn(resolve: () => void): void {
-  if (turn !== undefined) turn(resolve)
-  else globalThis.setImmediate(resolve)
-}
-
-const NodeImplClass = (internal?.NodeImpl ?? null) as
-  | (abstract new (...args: never[]) => NodeImpl)
-  | null
+export {
+  /**
+   * Let `ms` of idle time pass on @ctrl/dom's idle-skipping clock (src/window/clock.ts), as a
+   * real wait would there; false when a timer falls due in that time. True without such a clock.
+   */
+  skipIdleTime,
+  /**
+   * Whether `fn` is the setTimeout/setInterval of @ctrl/dom's active idle-skipping clock, or a
+   * copy of its own properties (src/window/clock.ts): the timers created through it are the
+   * clock's. False without such a clock.
+   */
+  isClockTimer,
+  /**
+   * Whether immediates other than @ctrl/dom's clock's own are queued (src/window/clock.ts);
+   * without a clock, any queued immediate.
+   */
+  foreignImmediatesPending as immediatesPending,
+  /**
+   * `setImmediate(resolve)`; on @ctrl/dom's idle-skipping clock without the event-loop turn when
+   * that turn would run nothing else (src/window/clock.ts, loopTurn).
+   */
+  loopTurn,
+} from '@ctrl/dom/internal'
 
 /** The NodeImpl behind an @ctrl/dom wrapper, or null for nodes of other DOM implementations. */
 export function implOf(node: Node | null | undefined): NodeImpl | null {
-  if (NodeImplClass === null || node == null) return null
+  if (node == null) return null
   const impl = (node as {[$impl]?: unknown})[$impl]
   return impl instanceof NodeImplClass ? impl : null
 }
 
 /** `attr(el, lowercaseName)` and the tag ids of @ctrl/dom's node records (src/nodes), for walks that stay off the wrappers. */
-export const implAttr = internal?.attr as
-  | ((el: NodeImpl, lowerName: string) => string | null)
-  | undefined
-export const TAGS = internal?.T as Record<string, number> | undefined
+export const implAttr: (el: NodeImpl, lowerName: string) => string | null = attr
+export const TAGS: Record<string, number> = T
 
-/** Whether `el` is an @ctrl/dom element and the html-forms UI hooks are available. */
+/** Whether `el` is an @ctrl/dom element, whose UI value and selection ctrlDomUI keeps. */
 export function hasCtrlDomUI(el: Element): boolean {
-  return ctrlDomUI !== null && implOf(el) !== null
+  return implOf(el) !== null
 }

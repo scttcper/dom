@@ -25,6 +25,7 @@ import { setPostDispatchHook } from "../events/dispatch.ts";
 import { contentAttr } from "./reflect.ts";
 import { fireToggleEvent, queueToggleTask, type ToggleTask } from "./events.ts";
 import { targetPopover } from "./invokers.ts";
+import { isShadowIncludingInclusiveAncestor } from "./shared.ts";
 import { $focused, $host, $impl, $styleVersion, $window } from "../keys.ts";
 
 /** https://html.spec.whatwg.org/#close-watcher */
@@ -212,18 +213,6 @@ export function flatParent(n: NodeImpl): NodeImpl | null {
 
 function isFlatInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
   for (let n: NodeImpl | null = b; n !== null; n = flatParent(n)) if (n === a) return true;
-  return false;
-}
-
-function isShadowIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n: NodeImpl | null = b; n !== null;) {
-    if (n === a) return true;
-    if (n.parent !== null) n = n.parent;
-    else if ((n.flags & F_SHADOW_ROOT) !== 0) {
-      const host: Element | null = (n.node as unknown as { [$host]: Element | null })[$host];
-      n = host === null ? null : host[$impl];
-    } else n = null;
-  }
   return false;
 }
 

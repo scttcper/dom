@@ -11,7 +11,7 @@
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Element } from "../nodes/Element.ts";
 import type { EventTarget } from "../events/EventTarget.ts";
-import { ELEMENT_NODE, F_CONNECTED, F_SHADOW_ROOT, HTML_NS } from "../nodes/constants.ts";
+import { ELEMENT_NODE, F_CONNECTED, HTML_NS } from "../nodes/constants.ts";
 import { T } from "../nodes/tags.ts";
 import { treeRoot } from "../nodes/traverse.ts";
 import { removeAttribute, setAttribute } from "../nodes/attributes.ts";
@@ -25,25 +25,13 @@ import { retarget } from "../events/dispatch.ts";
 import { elementByIdInTree, formOwner, isActuallyDisabled } from "./forms/form-associated.ts";
 import { isSubmitButton } from "./forms/form-submission.ts";
 import { inputType, I_BUTTON, I_IMAGE, I_RESET, I_SUBMIT } from "./forms/input-type.ts";
-import { $host, $impl } from "../keys.ts";
+import { isShadowIncludingInclusiveAncestor } from "./shared.ts";
+import { $impl } from "../keys.ts";
 
 type Ctor = { prototype: object };
 
 /** Explicitly set attr-associated elements (https://html.spec.whatwg.org/#explicitly-set-attr-element). */
 const explicit = new WeakMap<NodeImpl, Map<string, WeakRef<Element>>>();
-
-function isShadowIncludingAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n: NodeImpl | null = b; n !== null;) {
-    const p: NodeImpl | null = n.parent;
-    if (p !== null) n = p;
-    else if ((n.flags & F_SHADOW_ROOT) !== 0) {
-      const host: Element | null = (n.node as unknown as { [$host]: Element | null })[$host];
-      n = host === null ? null : host[$impl];
-    } else return false;
-    if (n === a) return true;
-  }
-  return false;
-}
 
 /** https://html.spec.whatwg.org/#attr-associated-element */
 function attrAssociated(el: NodeImpl, attr: string): NodeImpl | null {
@@ -53,7 +41,7 @@ function attrAssociated(el: NodeImpl, attr: string): NodeImpl | null {
   if (ref !== undefined) {
     const impl = ref[$impl];
     const root = treeRoot(impl);
-    return root === treeRoot(el) || isShadowIncludingAncestor(root, el) ? impl : null;
+    return isShadowIncludingInclusiveAncestor(root, el) ? impl : null;
   }
   // 3. Else the first element in the same tree with the content attribute's value as its id.
   const id = contentAttr(el, attr);
@@ -156,8 +144,9 @@ export function popoverTargetAttributeActivation(node: NodeImpl, eventTarget: No
   // 3. Activating something inside the popover that is itself inside the invoker does nothing.
   if (
     eventTarget !== null &&
-    (eventTarget === popover || isShadowIncludingAncestor(popover, eventTarget)) &&
-    isShadowIncludingAncestor(node, popover)
+    isShadowIncludingInclusiveAncestor(popover, eventTarget) &&
+    node !== popover &&
+    isShadowIncludingInclusiveAncestor(node, popover)
   )
     return;
   // 4-5.

@@ -5,6 +5,7 @@ import {
   ELEMENT_NODE,
   TEXT_NODE,
   CDATA_SECTION_NODE,
+  nextInTree,
   treeRoot,
   type NodeImpl,
 } from "@ctrl/dom/internal";
@@ -18,16 +19,6 @@ export function implOf(node: Node | Element): NodeImpl {
   return impl;
 }
 
-function nextInTreeWithin(n: NodeImpl, root: NodeImpl): NodeImpl | null {
-  if (n.first !== null) return n.first;
-  let cur: NodeImpl | null = n;
-  while (cur !== null && cur !== root) {
-    if (cur.next !== null) return cur.next;
-    cur = cur.parent;
-  }
-  return null;
-}
-
 /**
  * `root.getElementById(id)` for a Document or DocumentFragment/ShadowRoot root.
  * https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid
@@ -37,7 +28,7 @@ export function elementByIdInRoot(root: NodeImpl, id: string): NodeImpl | null {
   if (root.type === DOCUMENT_NODE) {
     return (root.node as unknown as { _idLookup(id: string): NodeImpl | null })._idLookup(id);
   }
-  for (let n = root.first; n !== null; n = nextInTreeWithin(n, root)) {
+  for (let n = root.first; n !== null; n = nextInTree(n, root)) {
     if (n.type === ELEMENT_NODE && n.id === id) return n;
   }
   return null;
@@ -72,7 +63,7 @@ export function queryIdRefs(impl: NodeImpl, value: string | null, out: NodeImpl[
 /** https://dom.spec.whatwg.org/#dom-node-textcontent for an element (descendant text, tree order). */
 export function textContent(impl: NodeImpl): string {
   let s = "";
-  for (let n = impl.first; n !== null; n = nextInTreeWithin(n, impl)) {
+  for (let n = impl.first; n !== null; n = nextInTree(n, impl)) {
     if (n.type === TEXT_NODE || n.type === CDATA_SECTION_NODE) s += n.data;
   }
   return s;

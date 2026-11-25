@@ -32,6 +32,7 @@ import {
   Tokenizer,
 } from "./tokenizer.ts";
 import * as T from "./tags.ts";
+import { asciiLowercase, isAsciiWhitespace } from "../nodes/attributes.ts";
 
 // --- namespaces and attribute namespaces -----------------------------------------------------
 export const NS_HTML = 0;
@@ -229,34 +230,15 @@ const QUIRKS_PUBLIC_PREFIXES: string[] = [
   "-//webtechs//dtd mozilla html//",
 ];
 
-function asciiLower(s: string): string {
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c >= 65 && c <= 90) {
-      let out = s.slice(0, i);
-      for (let j = i; j < s.length; j++) {
-        const d = s.charCodeAt(j);
-        out += d >= 65 && d <= 90 ? String.fromCharCode(d + 32) : s[j];
-      }
-      return out;
-    }
-  }
-  return s;
-}
-
-function isWsCode(c: number): boolean {
-  return c === 32 || c === 10 || c === 9 || c === 12 || c === 13;
-}
-
 function isAllWs(s: string): boolean {
-  for (let i = 0; i < s.length; i++) if (!isWsCode(s.charCodeAt(i))) return false;
+  for (let i = 0; i < s.length; i++) if (!isAsciiWhitespace(s.charCodeAt(i))) return false;
   return true;
 }
 
 function hasNonWsNonNull(s: string): boolean {
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);
-    if (!isWsCode(c) && c !== 0) return true;
+    if (!isAsciiWhitespace(c) && c !== 0) return true;
   }
   return false;
 }
@@ -334,11 +316,11 @@ export class TreeSink {
 
 /** Per-parse options. */
 export class ParseOptions {
-  scripting: boolean;
-  allowDeclarativeShadowRoots: boolean;
-  processingInstructions: boolean;
+  declare scripting: boolean;
+  declare allowDeclarativeShadowRoots: boolean;
+  declare processingInstructions: boolean;
   /** iframe srcdoc documents are never put in quirks mode. */
-  iframeSrcdoc: boolean;
+  declare iframeSrcdoc: boolean;
   constructor() {
     this.scripting = false;
     this.allowDeclarativeShadowRoots = false;
@@ -348,61 +330,61 @@ export class ParseOptions {
 }
 
 export class TreeBuilder {
-  sink: TreeSink;
-  tok: Tokenizer;
+  declare sink: TreeSink;
+  declare tok: Tokenizer;
 
   // per-handle element facts
-  hNs: number[];
-  hTag: number[];
-  hName: string[];
-  hIP: boolean[];
-  hContents: number[];
+  declare hNs: number[];
+  declare hTag: number[];
+  declare hName: string[];
+  declare hIP: boolean[];
+  declare hContents: number[];
 
-  stack: number[];
-  afe: number[];
-  afeTok: number[];
+  declare stack: number[];
+  declare afe: number[];
+  declare afeTok: number[];
   // token pool for active formatting elements
-  ptName: string[];
-  ptId: number[];
-  ptAttrStart: number[];
-  ptAttrCount: number[];
-  poolNames: string[];
-  poolValues: string[];
+  declare ptName: string[];
+  declare ptId: number[];
+  declare ptAttrStart: number[];
+  declare ptAttrCount: number[];
+  declare poolNames: string[];
+  declare poolValues: string[];
 
-  templateModes: number[];
-  mode: number;
-  originalMode: number;
-  docHandle: number;
-  headElement: number;
-  formElement: number;
-  fragmentContext: number;
-  framesetOk: boolean;
-  fosterParenting: boolean;
-  documentMode: number;
-  scripting: boolean;
-  allowDSD: boolean;
-  iframeSrcdoc: boolean;
-  stopped: boolean;
-  skipNewline: boolean;
-  reprocess: boolean;
+  declare templateModes: number[];
+  declare mode: number;
+  declare originalMode: number;
+  declare docHandle: number;
+  declare headElement: number;
+  declare formElement: number;
+  declare fragmentContext: number;
+  declare framesetOk: boolean;
+  declare fosterParenting: boolean;
+  declare documentMode: number;
+  declare scripting: boolean;
+  declare allowDSD: boolean;
+  declare iframeSrcdoc: boolean;
+  declare stopped: boolean;
+  declare skipNewline: boolean;
+  declare reprocess: boolean;
 
   /** Current token type (may be rewritten, e.g. </br> → <br>). */
-  ttype: number;
-  chars: string;
-  cpos: number;
-  charsHasNull: boolean;
-  pendingTableText: string;
-  pendingTableNonWs: boolean;
+  declare ttype: number;
+  declare chars: string;
+  declare cpos: number;
+  declare charsHasNull: boolean;
+  declare pendingTableText: string;
+  declare pendingTableNonWs: boolean;
 
   // insertion location scratch
-  locParent: number;
-  locRef: number;
+  declare locParent: number;
+  declare locRef: number;
   // foreign attribute scratch
-  fNames: string[];
-  fValues: string[];
-  fNs: number[];
-  emptyStrings: string[];
-  emptyNumbers: number[];
+  declare fNames: string[];
+  declare fValues: string[];
+  declare fNs: number[];
+  declare emptyStrings: string[];
+  declare emptyNumbers: number[];
 
   constructor(sink: TreeSink) {
     this.sink = sink;
@@ -576,7 +558,7 @@ export class TreeBuilder {
       else if (name === "mtext") tag = T.F_MTEXT;
       else if (name === "annotation-xml") {
         tag = T.F_ANNOTATION_XML;
-        const e = asciiLower(encoding);
+        const e = asciiLowercase(encoding);
         ip = e === "text/html" || e === "application/xhtml+xml";
       }
     } else if (ns === NS_SVG) {
@@ -962,23 +944,21 @@ export class TreeBuilder {
     this.sink.insertText(this.locParent, this.locRef, s);
   }
 
-  /** https://html.spec.whatwg.org/#insert-a-comment */
+  /**
+   * https://html.spec.whatwg.org/#insert-a-comment for the current comment token, as the last
+   * child of `parent` (-1: at the appropriate place). Every insertion mode inserts a processing
+   * instruction token the same way, so this inserts that too.
+   */
   private insertComment(parent: number): void {
-    if (parent >= 0) {
-      this.sink.insertComment(parent, -1, this.tok.data);
-      return;
+    let ref = -1;
+    if (parent < 0) {
+      this.appropriatePlace(-1);
+      parent = this.locParent;
+      ref = this.locRef;
     }
-    this.appropriatePlace(-1);
-    this.sink.insertComment(this.locParent, this.locRef, this.tok.data);
-  }
-
-  private insertPI(parent: number): void {
-    if (parent >= 0) {
-      this.sink.insertProcessingInstruction(parent, -1, this.tok.name, this.tok.data);
-      return;
-    }
-    this.appropriatePlace(-1);
-    this.sink.insertProcessingInstruction(this.locParent, this.locRef, this.tok.name, this.tok.data);
+    const tok = this.tok;
+    if (this.ttype === TK_PI) this.sink.insertProcessingInstruction(parent, ref, tok.name, tok.data);
+    else this.sink.insertComment(parent, ref, tok.data);
   }
 
   private recordElement(h: number, ns: number, tag: number, name: string): void {
@@ -1173,12 +1153,15 @@ export class TreeBuilder {
         earliest = i;
       }
     }
-    if (count >= 3) {
-      afe.splice(earliest, 1);
-      this.afeTok.splice(earliest, 1);
-    }
+    if (count >= 3) this.afeRemove(earliest);
     afe.push(h);
     this.afeTok.push(this.storeToken());
+  }
+
+  /** Remove entry `i` of the list of active formatting elements. */
+  private afeRemove(i: number): void {
+    this.afe.splice(i, 1);
+    this.afeTok.splice(i, 1);
   }
 
   private insertMarker(): void {
@@ -1280,8 +1263,7 @@ export class TreeBuilder {
       // (fi is re-resolved after the inner loop, which can remove list entries.)
       const si = this.stackIndexOf(fe);
       if (si < 0) {
-        afe.splice(fi, 1);
-        this.afeTok.splice(fi, 1);
+        this.afeRemove(fi);
         return;
       }
       if (!this.nodeInScope(fe)) return;
@@ -1294,8 +1276,7 @@ export class TreeBuilder {
       }
       if (fbIndex < 0) {
         stack.length = si;
-        afe.splice(fi, 1);
-        this.afeTok.splice(fi, 1);
+        this.afeRemove(fi);
         return;
       }
       const fb = stack[fbIndex];
@@ -1312,8 +1293,7 @@ export class TreeBuilder {
         if (node === fe) break;
         let ai = this.afeIndexOf(node);
         if (inner > 3 && ai >= 0) {
-          afe.splice(ai, 1);
-          this.afeTok.splice(ai, 1);
+          this.afeRemove(ai);
           if (ai < bookmark) bookmark--;
           ai = -1;
         }
@@ -1340,8 +1320,7 @@ export class TreeBuilder {
       const newElement = this.createFromStored(feTok);
       this.sink.reparentChildren(fb, newElement);
       this.sink.insert(fb, -1, newElement);
-      afe.splice(fi, 1);
-      this.afeTok.splice(fi, 1);
+      this.afeRemove(fi);
       if (fi < bookmark) bookmark--;
       afe.splice(bookmark, 0, newElement);
       this.afeTok.splice(bookmark, 0, feTok);
@@ -1356,7 +1335,7 @@ export class TreeBuilder {
   private skipWs(): boolean {
     const s = this.chars;
     let i = this.cpos;
-    while (i < s.length && isWsCode(s.charCodeAt(i))) i++;
+    while (i < s.length && isAsciiWhitespace(s.charCodeAt(i))) i++;
     this.cpos = i;
     return i < s.length;
   }
@@ -1366,7 +1345,7 @@ export class TreeBuilder {
     const s = this.chars;
     const start = this.cpos;
     let i = start;
-    while (i < s.length && isWsCode(s.charCodeAt(i))) i++;
+    while (i < s.length && isAsciiWhitespace(s.charCodeAt(i))) i++;
     if (i > start) this.insertChars(start === 0 && i === s.length ? s : s.slice(start, i));
     this.cpos = i;
     return i < s.length;
@@ -1395,10 +1374,8 @@ export class TreeBuilder {
         if (!this.skipWs()) return;
         break;
       case TK_COMMENT:
-        this.insertComment(this.docHandle);
-        return;
       case TK_PI:
-        this.insertPI(this.docHandle);
+        this.insertComment(this.docHandle);
         return;
       case TK_DOCTYPE: {
         this.sink.insertDoctype(this.docHandle, tok.hasName ? tok.name : "", tok.publicId, tok.systemId);
@@ -1423,8 +1400,8 @@ export class TreeBuilder {
   private doctypeMode(): number {
     const tok = this.tok;
     if (tok.forceQuirks || !tok.hasName || tok.name !== "html") return MODE_QUIRKS;
-    const pub = tok.hasPublicId ? asciiLower(tok.publicId) : "";
-    const sys = tok.hasSystemId ? asciiLower(tok.systemId) : "";
+    const pub = tok.hasPublicId ? asciiLowercase(tok.publicId) : "";
+    const sys = tok.hasSystemId ? asciiLowercase(tok.systemId) : "";
     if (tok.hasPublicId) {
       if (
         pub === "-//w3o//dtd w3 html strict 3.0//en//" ||
@@ -1457,28 +1434,19 @@ export class TreeBuilder {
   /** https://html.spec.whatwg.org/#the-before-html-insertion-mode */
   private beforeHtml(): void {
     const tok = this.tok;
+    let fromToken = false;
     switch (this.ttype) {
       case TK_DOCTYPE:
         return;
       case TK_COMMENT:
-        this.insertComment(this.docHandle);
-        return;
       case TK_PI:
-        this.insertPI(this.docHandle);
+        this.insertComment(this.docHandle);
         return;
       case TK_CHARS:
         if (!this.skipWs()) return;
         break;
       case TK_START:
-        if (tok.tagId === T.T_HTML) {
-          this.locParent = this.docHandle;
-          this.locRef = -1;
-          const h = this.createHtmlElement("html", T.T_HTML, true);
-          this.sink.insert(this.docHandle, -1, h);
-          this.stack.push(h);
-          this.mode = M_BEFORE_HEAD;
-          return;
-        }
+        fromToken = tok.tagId === T.T_HTML;
         break;
       case TK_END: {
         const id = tok.tagId;
@@ -1486,13 +1454,15 @@ export class TreeBuilder {
         break;
       }
     }
+    // An html start tag creates the element; anything else creates one without attributes and
+    // is reprocessed.
     this.locParent = this.docHandle;
     this.locRef = -1;
-    const h = this.createHtmlElement("html", T.T_HTML, false);
+    const h = this.createHtmlElement("html", T.T_HTML, fromToken);
     this.sink.insert(this.docHandle, -1, h);
     this.stack.push(h);
     this.mode = M_BEFORE_HEAD;
-    this.reprocess = true;
+    this.reprocess = !fromToken;
   }
 
   /** https://html.spec.whatwg.org/#the-before-head-insertion-mode */
@@ -1503,10 +1473,8 @@ export class TreeBuilder {
         if (!this.skipWs()) return;
         break;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -1548,10 +1516,8 @@ export class TreeBuilder {
         if (!this.insertLeadingWs()) return;
         break;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -1624,7 +1590,7 @@ export class TreeBuilder {
     const host = this.currentNode();
     const hostIsRoot = host === this.stack[0];
     const mode = this.allowDSD && !hostIsRoot ? this.tokenAttr("shadowrootmode") : null;
-    const lowerMode = mode === null ? "" : asciiLower(mode);
+    const lowerMode = mode === null ? "" : asciiLowercase(mode);
     if (lowerMode === "open" || lowerMode === "closed") {
       this.appropriatePlace(-1);
       const shadow = this.sink.attachDeclarativeShadowRoot(
@@ -1632,7 +1598,7 @@ export class TreeBuilder {
         lowerMode,
         this.tokenHasAttr("shadowrootdelegatesfocus"),
         this.tokenHasAttr("shadowrootserializable"),
-        asciiLower(this.tokenAttr("shadowrootslotassignment") ?? "") === "manual" ? "manual" : "named",
+        asciiLowercase(this.tokenAttr("shadowrootslotassignment") ?? "") === "manual" ? "manual" : "named",
         this.tokenHasAttr("shadowrootclonable"),
       );
       if (shadow >= 0) {
@@ -1712,10 +1678,8 @@ export class TreeBuilder {
         if (!this.insertLeadingWs()) return;
         break;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -1781,10 +1745,8 @@ export class TreeBuilder {
         this.bodyChars(this.restChars());
         return;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -1935,8 +1897,7 @@ export class TreeBuilder {
             this.adoptionAgency();
             const ai = this.afeIndexOf(e);
             if (ai >= 0) {
-              afe.splice(ai, 1);
-              this.afeTok.splice(ai, 1);
+              this.afeRemove(ai);
             }
             const si = this.stackIndexOf(e);
             if (si >= 0) stack.splice(si, 1);
@@ -2001,7 +1962,7 @@ export class TreeBuilder {
         this.reconstructFormatting();
         this.insertVoidHtmlElement();
         const type = this.tokenAttr("type");
-        if (type === null || asciiLower(type) !== "hidden") this.framesetOk = false;
+        if (type === null || asciiLowercase(type) !== "hidden") this.framesetOk = false;
         return;
       }
       case T.T_PARAM:
@@ -2329,10 +2290,8 @@ export class TreeBuilder {
         break;
       }
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -2383,7 +2342,7 @@ export class TreeBuilder {
             return;
           case T.T_INPUT: {
             const type = this.tokenAttr("type");
-            if (type === null || asciiLower(type) !== "hidden") break;
+            if (type === null || asciiLowercase(type) !== "hidden") break;
             this.insertVoidHtmlElement();
             return;
           }
@@ -2520,10 +2479,8 @@ export class TreeBuilder {
         if (!this.insertLeadingWs()) return;
         break;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -2841,10 +2798,8 @@ export class TreeBuilder {
         if (!this.skipWsViaBody()) return;
         break;
       case TK_COMMENT:
-        this.insertComment(this.stack[0]);
-        return;
       case TK_PI:
-        this.insertPI(this.stack[0]);
+        this.insertComment(this.stack[0]);
         return;
       case TK_DOCTYPE:
         return;
@@ -2874,7 +2829,7 @@ export class TreeBuilder {
     const s = this.chars;
     const start = this.cpos;
     let i = start;
-    while (i < s.length && isWsCode(s.charCodeAt(i))) i++;
+    while (i < s.length && isAsciiWhitespace(s.charCodeAt(i))) i++;
     if (i > start) this.bodyChars(s.slice(start, i));
     this.cpos = i;
     return i < s.length;
@@ -2888,10 +2843,8 @@ export class TreeBuilder {
         this.insertWsOnly();
         return;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_START:
         switch (tok.tagId) {
@@ -2928,14 +2881,14 @@ export class TreeBuilder {
     let ws = "";
     let all = true;
     for (let i = 0; i < s.length; i++) {
-      if (!isWsCode(s.charCodeAt(i))) {
+      if (!isAsciiWhitespace(s.charCodeAt(i))) {
         all = false;
         break;
       }
     }
     if (all) ws = s;
     else {
-      for (let i = 0; i < s.length; i++) if (isWsCode(s.charCodeAt(i))) ws += s[i];
+      for (let i = 0; i < s.length; i++) if (isAsciiWhitespace(s.charCodeAt(i))) ws += s[i];
     }
     this.insertChars(ws);
   }
@@ -2948,10 +2901,8 @@ export class TreeBuilder {
         this.insertWsOnly();
         return;
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_START:
         if (tok.tagId === T.T_HTML) this.inBody();
@@ -2971,10 +2922,8 @@ export class TreeBuilder {
     const tok = this.tok;
     switch (this.ttype) {
       case TK_COMMENT:
-        this.insertComment(this.docHandle);
-        return;
       case TK_PI:
-        this.insertPI(this.docHandle);
+        this.insertComment(this.docHandle);
         return;
       case TK_DOCTYPE:
         this.inBody();
@@ -3001,10 +2950,8 @@ export class TreeBuilder {
     const tok = this.tok;
     switch (this.ttype) {
       case TK_COMMENT:
-        this.insertComment(this.docHandle);
-        return;
       case TK_PI:
-        this.insertPI(this.docHandle);
+        this.insertComment(this.docHandle);
         return;
       case TK_DOCTYPE:
         this.inBody();
@@ -3013,7 +2960,7 @@ export class TreeBuilder {
         // Whitespace: "in body" rules; anything else ignored.
         const s = this.restChars();
         let ws = "";
-        for (let i = 0; i < s.length; i++) if (isWsCode(s.charCodeAt(i))) ws += s[i];
+        for (let i = 0; i < s.length; i++) if (isAsciiWhitespace(s.charCodeAt(i))) ws += s[i];
         if (ws.length !== 0) this.bodyChars(ws);
         return;
       }
@@ -3039,10 +2986,8 @@ export class TreeBuilder {
         return;
       }
       case TK_COMMENT:
-        this.insertComment(-1);
-        return;
       case TK_PI:
-        this.insertPI(-1);
+        this.insertComment(-1);
         return;
       case TK_DOCTYPE:
         return;
@@ -3079,7 +3024,7 @@ export class TreeBuilder {
         }
         for (;;) {
           if (i === 0) return;
-          if (asciiLower(this.hName[node]) === tok.name) {
+          if (asciiLowercase(this.hName[node]) === tok.name) {
             stack.length = i;
             return;
           }

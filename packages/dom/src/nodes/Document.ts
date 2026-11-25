@@ -41,7 +41,7 @@ import { T } from "./tags.ts";
 import type { NodeList } from "../collections/NodeList.ts";
 import { NameNodeList } from "../html/forms/collections.ts";
 import type { ElementCreationOptions } from "../webidl.ts";
-import type { Event } from "../events/Event.ts";
+import { setToStringTag, type Event } from "../events/Event.ts";
 import { createEvent } from "../events/createEvent.ts";
 import { parseDocument } from "../parser/index.ts";
 import {
@@ -586,8 +586,7 @@ export class Document extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-document-createevent (table and algorithm in events/createEvent.ts) */
   createEvent(interfaceName: string): Event {
-    if (arguments.length === 0)
-      throw new TypeError("Failed to execute 'createEvent' on 'Document': 1 argument required, but only 0 present.");
+    if (arguments.length === 0) argumentsRequired("createEvent", "Document", 1, 0);
     return createEvent(interfaceName);
   }
 
@@ -630,11 +629,11 @@ function documentBaseURL(doc: Document): string {
  * own (the HTML `load()` extension is not implemented: no network).
  */
 export class XMLDocument extends Document {}
-Object.defineProperty(XMLDocument.prototype, Symbol.toStringTag, { value: "XMLDocument", configurable: true });
+setToStringTag(XMLDocument);
 
 /** https://dom.spec.whatwg.org/#interface-domimplementation */
 export class DOMImplementation {
-  [$doc]: Document;
+  declare [$doc]: Document;
 
   /** @internal Use document.implementation. */
   constructor(doc: Document) {

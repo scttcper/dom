@@ -22,7 +22,7 @@ import type { HTMLFormElement } from "./HTMLFormElement.ts";
 import { formOwner, formOwnerScope, labelsFor, type FormControlsSnapshot } from "./form-associated.ts";
 import { I_RADIO, inputType } from "./input-type.ts";
 import { HTML_NS } from "../../nodes/constants.ts";
-import { $controlNamesVersion, $el, $form, $impl, $name, $version } from "../../keys.ts";
+import { $controlNamesVersion, $el, $form, $impl, $labels, $name, $version } from "../../keys.ts";
 
 // --- live NodeLists ----------------------------------------------------------------------------
 
@@ -85,6 +85,15 @@ export class LabelsNodeList extends ComputedNodeList {
     return items;
   }
 }
+
+/** `labels` of a labelable element's interface (installDefaults), [SameObject]. */
+export const labelsMember = {
+  /** https://html.spec.whatwg.org/#dom-lfe-labels */
+  get labels(): LabelsNodeList {
+    const el = this as unknown as { [$labels]?: LabelsNodeList; [$impl]: NodeImpl };
+    return (el[$labels] ??= new LabelsNodeList(el[$impl]));
+  },
+};
 
 /**
  * The live NodeList returned by `document.getElementsByName(name)`

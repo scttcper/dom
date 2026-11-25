@@ -13,6 +13,7 @@ import { describe, expect, test } from "vitest";
 import { PROPERTY_TABLE } from "../../src/css/data/properties.ts";
 import {
   allPropertyNames,
+  canonicalPropertyName,
   computedPropertyNames,
   isInherited,
   isSupportedProperty,
@@ -75,6 +76,38 @@ describe("§7.2 inheritance and §7.1 initial values — https://drafts.csswg.or
       // Either it had an initial value of its own, or it has the base's.
       if (p.initial !== base.initial) expect(p.initial, name).not.toBe("");
     }
+  });
+
+  test("legacy name aliases: every -webkit- row with a standard counterpart, and no other name — https://drafts.csswg.org/css-cascade-5/#legacy-name-alias", () => {
+    const aliases: Record<string, string> = {};
+    for (const name of allPropertyNames()) {
+      const target = canonicalPropertyName(name);
+      if (target !== name) aliases[name] = target;
+    }
+    const plain = (names: string) => names.split(" ").map((name) => [`-webkit-${name}`, name]);
+    expect(aliases).toEqual(
+      Object.fromEntries([
+        ...plain(
+          "align-content align-items align-self animation animation-delay animation-direction animation-duration " +
+            "animation-fill-mode animation-iteration-count animation-name animation-play-state " +
+            "animation-timing-function appearance backface-visibility background-clip background-origin " +
+            "background-size border-bottom-left-radius border-bottom-right-radius border-radius " +
+            "border-top-left-radius border-top-right-radius box-shadow box-sizing filter flex flex-basis " +
+            "flex-direction flex-flow flex-grow flex-shrink flex-wrap justify-content mask mask-clip " +
+            "mask-composite mask-image mask-origin mask-position mask-repeat mask-size order perspective " +
+            "perspective-origin text-size-adjust transform transform-origin transform-style transition " +
+            "transition-delay transition-duration transition-property transition-timing-function user-select",
+        ),
+        ["-webkit-mask-box-image", "mask-border"],
+        ...["outset", "repeat", "slice", "source", "width"].map((s) => [
+          `-webkit-mask-box-image-${s}`,
+          `mask-border-${s}`,
+        ]),
+      ]),
+    );
+    // Not aliases: no standard counterpart, a legacy shorthand of its own, custom properties.
+    for (const name of ["-webkit-box-flex", "-webkit-text-stroke", "-webkit-line-clamp", "-webkit-", "--x"])
+      expect(canonicalPropertyName(name), name).toBe(name);
   });
 });
 

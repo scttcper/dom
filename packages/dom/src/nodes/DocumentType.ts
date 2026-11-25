@@ -7,7 +7,7 @@ import { installChildNode, type ChildNode } from "./mixins.ts";
 import { $impl, $systemId } from "../keys.ts";
 
 export class DocumentType extends Node {
-  [$systemId]: string;
+  declare [$systemId]: string;
 
   /** @internal Use DOMImplementation.createDocumentType. */
   constructor(doc: Document, name: string, publicId: string, systemId: string) {

@@ -26,6 +26,8 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { T } from "../nodes/tags.ts";
 import { attr, asciiLowercase, findAttributeByNamespace } from "../nodes/attributes.ts";
 import { nextInTree, nextSkippingChildren } from "../nodes/traverse.ts";
+// The <input type> table only (it imports no element classes, see above).
+import { INPUT_TYPE_NAMES, inputType } from "../html/forms/input-type.ts";
 import {} from "./index.ts";
 import { $host, $impl, $url } from "../keys.ts";
 
@@ -141,35 +143,7 @@ function targetWithin(el: NodeImpl): boolean {
 
 /** https://html.spec.whatwg.org/#attr-input-type (lowercased keyword, "text" for missing/invalid). */
 export function inputTypeName(el: NodeImpl): string {
-  const t = attr(el, "type");
-  if (t === null) return "text";
-  const v = asciiLowercase(t);
-  switch (v) {
-    case "hidden":
-    case "text":
-    case "search":
-    case "tel":
-    case "url":
-    case "email":
-    case "password":
-    case "date":
-    case "month":
-    case "week":
-    case "time":
-    case "datetime-local":
-    case "number":
-    case "range":
-    case "color":
-    case "checkbox":
-    case "radio":
-    case "file":
-    case "submit":
-    case "image":
-    case "reset":
-    case "button":
-      return v;
-  }
-  return "text";
+  return INPUT_TYPE_NAMES[inputType(el)];
 }
 
 function isHTML(el: NodeImpl): boolean {

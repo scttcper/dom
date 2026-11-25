@@ -23,8 +23,8 @@ export let subtreeObservers = 0;
 
 /** The observer and the finalizer can enumerate these without retaining a target, callback, or document. */
 export class ObservedNode extends WeakRef<NodeImpl> {
-  readonly nodes: Set<ObservedNode>;
-  subtree: boolean;
+  declare readonly nodes: Set<ObservedNode>;
+  declare subtree: boolean;
 
   constructor(node: NodeImpl, nodes: Set<ObservedNode>, subtree: boolean) {
     super(node);
@@ -46,10 +46,10 @@ const collected = new FinalizationRegistry<ObservedNode>(forgetNode);
 
 /** https://dom.spec.whatwg.org/#registered-observer (and transient registered observer when `source` is set). */
 export class RegisteredObserver {
-  readonly observer: MutationObserver;
-  options: NormalizedOptions;
-  readonly source: RegisteredObserver | null;
-  readonly target: ObservedNode;
+  declare readonly observer: MutationObserver;
+  declare options: NormalizedOptions;
+  declare readonly source: RegisteredObserver | null;
+  declare readonly target: ObservedNode;
 
   constructor(
     node: NodeImpl,
@@ -76,13 +76,13 @@ export class RegisteredObserver {
 
 /** MutationObserverInit after the defaulting steps of observe(). */
 export class NormalizedOptions {
-  childList: boolean;
-  attributes: boolean;
-  characterData: boolean;
-  subtree: boolean;
-  attributeOldValue: boolean;
-  characterDataOldValue: boolean;
-  attributeFilter: string[] | null;
+  declare childList: boolean;
+  declare attributes: boolean;
+  declare characterData: boolean;
+  declare subtree: boolean;
+  declare attributeOldValue: boolean;
+  declare characterDataOldValue: boolean;
+  declare attributeFilter: string[] | null;
 
   constructor(init: MutationObserverInit, attributes: boolean, characterData: boolean) {
     this.childList = !!init.childList;

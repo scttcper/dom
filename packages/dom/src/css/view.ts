@@ -83,8 +83,8 @@ export function checkVisibility(el: NodeImpl, options?: CheckVisibilityOptions |
 }
 
 class ScrollOffsets {
-  top: number;
-  left: number;
+  declare top: number;
+  declare left: number;
   constructor() {
     this.top = 0;
     this.left = 0;
@@ -104,23 +104,16 @@ function slot(el: NodeImpl): ScrollOffsets {
   return o;
 }
 
-export function getScrollTop(el: NodeImpl): number {
-  if (layoutEnabled && layoutOn(el.doc)) return layoutScroll(el, true);
-  return offsets.get(el)?.top ?? 0;
+/** scrollTop (`vertical`) / scrollLeft. */
+function getScroll(el: NodeImpl, vertical: boolean): number {
+  if (layoutEnabled && layoutOn(el.doc)) return layoutScroll(el, vertical);
+  const o = offsets.get(el);
+  return o === undefined ? 0 : vertical ? o.top : o.left;
 }
 
-export function getScrollLeft(el: NodeImpl): number {
-  if (layoutEnabled && layoutOn(el.doc)) return layoutScroll(el, false);
-  return offsets.get(el)?.left ?? 0;
-}
-
-export function setScrollTop(el: NodeImpl, v: unknown): void {
-  if (layoutEnabled && layoutOn(el.doc)) setLayoutScroll(el, true, v);
-  else slot(el).top = clamp(v);
-}
-
-export function setScrollLeft(el: NodeImpl, v: unknown): void {
-  if (layoutEnabled && layoutOn(el.doc)) setLayoutScroll(el, false, v);
+function setScroll(el: NodeImpl, vertical: boolean, v: unknown): void {
+  if (layoutEnabled && layoutOn(el.doc)) setLayoutScroll(el, vertical, v);
+  else if (vertical) slot(el).top = clamp(v);
   else slot(el).left = clamp(v);
 }
 
@@ -287,9 +280,11 @@ const Metric = {
   ScrollHeight: 5,
 } as const;
 
+/** Element accessors indexed by Metric. */
+const METRIC_NAMES = ["clientTop", "clientLeft", "clientWidth", "clientHeight", "scrollWidth", "scrollHeight"];
+
 /** https://drafts.csswg.org/cssom-view/#dom-element-clienttop and the client/scroll sizes after it. */
-export function elementMetric(el: NodeImpl, m: number): number {
-  if (!layoutEnabled) return 0;
+function elementMetric(el: NodeImpl, m: number): number {
   const b = boxOf(el);
   if (b === null) return 0;
   switch (m) {
@@ -311,9 +306,11 @@ export function elementMetric(el: NodeImpl, m: number): number {
 
 const Offset = { Top: 0, Left: 1, Width: 2, Height: 3 } as const;
 
+/** HTMLElement accessors indexed by Offset. */
+const OFFSET_NAMES = ["offsetTop", "offsetLeft", "offsetWidth", "offsetHeight"];
+
 /** https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsettop and siblings (layout positions, transforms ignored). */
-export function offsetMetric(el: NodeImpl, m: number): number {
-  if (!layoutEnabled) return 0;
+function offsetMetric(el: NodeImpl, m: number): number {
   const b = boxOf(el);
   if (b === null) return 0;
   if (m === Offset.Width) return Math.round(b.w);
@@ -376,6 +373,17 @@ function alignDelta(mode: string, start: number, size: number, client: number): 
 
 // --- installation -----------------------------------------------------------------------------
 
+/** Defines a `get <names[m]>` accessor per index m reading `metric(element, m)`, or 0 without layout. */
+function defineMetrics(proto: object, names: string[], metric: (el: NodeImpl, m: number) => number): void {
+  for (let m = 0; m < names.length; m++) {
+    const get = function (this: Element): number {
+      return layoutEnabled ? metric(this[$impl], m) : 0;
+    };
+    Object.defineProperty(get, "name", { value: `get ${names[m]}` });
+    Object.defineProperty(proto, names[m], { get, enumerable: true, configurable: true });
+  }
+}
+
 /** Installs offsetParent and offset* on HTMLElement (replacing html's always-null/zero stubs). */
 export function installHTMLElementView(HTMLElementClass: { prototype: object }): void {
   const proto = HTMLElementClass.prototype;
@@ -387,36 +395,7 @@ export function installHTMLElementView(HTMLElementClass: { prototype: object }):
     enumerable: true,
     configurable: true,
   });
-  const getters: [string, (this: Element) => number][] = [
-    [
-      "offsetTop",
-      function offsetTop(this: Element) {
-        return layoutEnabled ? offsetMetric(this[$impl], Offset.Top) : 0;
-      },
-    ],
-    [
-      "offsetLeft",
-      function offsetLeft(this: Element) {
-        return layoutEnabled ? offsetMetric(this[$impl], Offset.Left) : 0;
-      },
-    ],
-    [
-      "offsetWidth",
-      function offsetWidth(this: Element) {
-        return layoutEnabled ? offsetMetric(this[$impl], Offset.Width) : 0;
-      },
-    ],
-    [
-      "offsetHeight",
-      function offsetHeight(this: Element) {
-        return layoutEnabled ? offsetMetric(this[$impl], Offset.Height) : 0;
-      },
-    ],
-  ];
-  for (const [name, get] of getters) {
-    Object.defineProperty(get, "name", { value: `get ${name}` });
-    Object.defineProperty(proto, name, { get, enumerable: true, configurable: true });
-  }
+  defineMetrics(proto, OFFSET_NAMES, offsetMetric);
 }
 
 /** Installs the style-aware CSSOM View members on Element (replacing the core's layout-free stubs). */
@@ -449,37 +428,20 @@ export function installElementView(ElementClass: { prototype: object }): void {
       if (layoutEnabled) scrollElementIntoView(this[$impl], arg);
     },
   });
-  const metrics: [string, number][] = [
-    ["clientTop", Metric.ClientTop],
-    ["clientLeft", Metric.ClientLeft],
-    ["clientWidth", Metric.ClientWidth],
-    ["clientHeight", Metric.ClientHeight],
-    ["scrollWidth", Metric.ScrollWidth],
-    ["scrollHeight", Metric.ScrollHeight],
-  ];
-  for (const [name, m] of metrics) {
-    const get = function (this: Element): number {
-      return layoutEnabled ? elementMetric(this[$impl], m) : 0;
-    };
-    Object.defineProperty(get, "name", { value: `get ${name}` });
-    def(name, { get });
+  defineMetrics(proto, METRIC_NAMES, elementMetric);
+  for (const [name, vertical] of [
+    ["scrollTop", true],
+    ["scrollLeft", false],
+  ] as const) {
+    def(name, {
+      get(this: Element) {
+        return getScroll(this[$impl], vertical);
+      },
+      set(this: Element, v: unknown) {
+        setScroll(this[$impl], vertical, v);
+      },
+    });
   }
-  def("scrollTop", {
-    get(this: Element) {
-      return getScrollTop(this[$impl]);
-    },
-    set(this: Element, v: unknown) {
-      setScrollTop(this[$impl], v);
-    },
-  });
-  def("scrollLeft", {
-    get(this: Element) {
-      return getScrollLeft(this[$impl]);
-    },
-    set(this: Element, v: unknown) {
-      setScrollLeft(this[$impl], v);
-    },
-  });
   for (const [name, by] of [
     ["scroll", false],
     ["scrollTo", false],

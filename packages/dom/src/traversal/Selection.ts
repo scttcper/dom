@@ -7,7 +7,7 @@
 // (https://w3c.github.io/selection-api/#selectionchange-event), like jsdom; mutations of the
 // associated range itself do not schedule one.
 
-import { DOCUMENT_TYPE_NODE, F_SHADOW_ROOT } from "../nodes/constants.ts";
+import { F_SHADOW_ROOT } from "../nodes/constants.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
@@ -19,33 +19,22 @@ import { fireAnEvent } from "../events/fire.ts";
 import { queueUserAgentTask } from "../window/clock.ts";
 import type { EventTarget } from "../events/EventTarget.ts";
 import { retireLiveRange } from "./live.ts";
-import { Range, StaticRange, compareBoundaryPoints, nodeLength } from "./Range.ts";
+import { Range, StaticRange, checkBoundary, compareBoundaryPoints, nodeLength, toNodeImpl } from "./Range.ts";
 import { $ec, $eo, $host, $impl, $sc, $so } from "../keys.ts";
+import { setToStringTag } from "../events/Event.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 
 const DIR_NONE = 0;
 const DIR_FORWARDS = 1;
 const DIR_BACKWARDS = 2;
 
 function toImpl(node: unknown, method: string): NodeImpl {
-  if (node === null || typeof node !== "object" || !($impl in node)) {
-    throw new TypeError(`Failed to execute '${method}' on 'Selection': parameter 1 is not of type 'Node'.`);
-  }
-  return (node as Node)[$impl];
+  return toNodeImpl(node, method, "Selection");
 }
 
 /** WebIDL: too few arguments for a non-optional parameter. */
 function arity(given: number, required: number, method: string): void {
-  if (given < required) {
-    throw new TypeError(
-      `Failed to execute '${method}' on 'Selection': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`,
-    );
-  }
-}
-
-function checkBoundary(n: NodeImpl, offset: number): void {
-  if (n.type === DOCUMENT_TYPE_NODE)
-    throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
-  if (offset > nodeLength(n)) throw new DOMException(`There is no child at offset ${offset}.`, "IndexSizeError");
+  if (given < required) argumentsRequired(method, "Selection", required, given);
 }
 
 export class Selection {
@@ -289,8 +278,7 @@ export class Selection {
   selectAllChildren(node: Node): void {
     const n = toImpl(node, "selectAllChildren");
     // 1. If node is a DocumentType, throw an InvalidNodeTypeError.
-    if (n.type === DOCUMENT_TYPE_NODE)
-      throw new DOMException("DocumentType Node can't be used as boundary point.", "InvalidNodeTypeError");
+    checkBoundary(n, 0);
     // 2. If node's root is not the document associated with this, return.
     if (!this.#inDocument(n)) return;
     // 3-5. A new range from (node, 0) to (node, node's number of children) — the child count,
@@ -339,4 +327,4 @@ export class Selection {
   }
 }
 
-Object.defineProperty(Selection.prototype, Symbol.toStringTag, { value: "Selection", configurable: true });
+setToStringTag(Selection);

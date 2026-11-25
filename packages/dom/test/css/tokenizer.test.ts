@@ -118,10 +118,37 @@ function normalize(tokens: Expected[]): Expected[] {
     });
 }
 
+/**
+ * Intentional differences: these cases pin https://drafts.csswg.org/css-syntax-3/#non-ascii-ident-code-point,
+ * which leaves `§`, `×` and private-use code points out of identifiers. We keep every non-ASCII
+ * code point an ident code point, as browsers and jsdom do (docs/deviations.md), so they tokenize
+ * as one identifier instead.
+ */
+const WIDER_NON_ASCII_IDENTS: Record<string, Expected[]> = {
+  "ident/0007": [
+    ["ident-token", "-§", 0, 2, { value: "-§" }],
+    ["whitespace-token", "\n", 2, 3, null],
+  ],
+  "ident/0008": [
+    ["ident-token", "-×", 0, 2, { value: "-×" }],
+    ["whitespace-token", "\n", 2, 3, null],
+  ],
+  "fuzz/b69ece36-057f-4450-9423-a1661787bce6": [
+    ["ident-token", "Iv1\uf1c7\u0000B", 0, 6, { value: "Iv1\uf1c7\ufffdB" }],
+    ["}-token", "}", 6, 7, null],
+    ["dimension-token", "1E", 7, 9, { value: 1, type: "integer", unit: "E" }],
+    ["delim-token", "+", 9, 10, { value: "+" }],
+    ["ident-token", "X9oO", 10, 14, { value: "X9oO" }],
+    ["delim-token", "\u001f", 14, 15, { value: "\u001f" }],
+    ["ident-token", "N3G", 15, 18, { value: "N3G" }],
+  ],
+};
+
 describe("§4.3.1 consume a token — https://drafts.csswg.org/css-syntax-3/#consume-token (css-tokenizer-tests)", () => {
   for (const c of fixture.cases) {
-    test(`${c.name}: produces the expected token stream`, () => {
-      expect(normalize(tokenize(c.source))).toEqual(normalize(c.tokens));
+    const wider = WIDER_NON_ASCII_IDENTS[c.name];
+    test(`${c.name}: produces the expected token stream${wider ? " (every non-ASCII code point is an ident code point)" : ""}`, () => {
+      expect(normalize(tokenize(c.source))).toEqual(normalize(wider ?? c.tokens));
     });
   }
 });
@@ -133,5 +160,20 @@ describe("pull tokenizer bookkeeping", () => {
     expect(t.next()).toBe(TK_IDENT);
     expect(t.value).toBe("b");
     expect(t.comments).toBe(1);
+  });
+});
+
+describe("consume an ident sequence — https://drafts.csswg.org/css-syntax-3/#consume-name", () => {
+  test("escapes decode and NUL becomes U+FFFD anywhere in the name, with the plain runs between them kept", () => {
+    const value = (src: string) => {
+      const t = new CSSTokenizer(src);
+      expect(t.next()).toBe(TK_IDENT);
+      return t.value;
+    };
+    expect(value("abc\\:def\\31 23gh\0ij\\\u00e9k")).toBe("abc:def123gh\ufffdij\u00e9k");
+    expect(value("\\:a")).toBe(":a");
+    expect(value("a\\:")).toBe("a:");
+    expect(value("a\0")).toBe("a\ufffd");
+    expect(value("\\61\\62 c\\:\\:d")).toBe("abc::d");
   });
 });

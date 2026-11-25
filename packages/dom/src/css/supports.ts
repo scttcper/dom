@@ -28,9 +28,9 @@ export function supportsDeclaration(property: string, value: string): boolean {
 }
 
 class Cursor {
-  src: string;
-  t: CSSTokenizer;
-  type: number;
+  declare src: string;
+  declare t: CSSTokenizer;
+  declare type: number;
   constructor(src: string) {
     this.src = src;
     this.t = new CSSTokenizer(src);

@@ -14,33 +14,33 @@ import type { NodeImpl } from "./NodeImpl.ts";
 export class NodeCache {
   // --- @ctrl/dom/aria ---
   /** `Document._version` at which `role` was computed. */
-  roleVersion: number;
+  declare roleVersion: number;
   /** Testing Library's implicit role (aria/src/role.ts implicitRole), "" for none. */
-  role: string;
+  declare role: string;
   /** `Document._version` at which `name` was computed. */
-  nameVersion: number;
+  declare nameVersion: number;
   /** Accessible name. */
-  name: string;
+  declare name: string;
 
   // --- css (computed style) ---
   /** `Document._version` less its benign bumps (css/style-deps.ts) at which `style` was computed. */
-  styleVersion: number;
+  declare styleVersion: number;
   /** `Document._styleVersion` at which `style` was computed. */
-  styleSheetVersion: number;
+  declare styleSheetVersion: number;
   /** Opaque computed-style record owned by src/css. */
-  style: object | null;
+  declare style: object | null;
   /** The live `getComputedStyle()` declaration for the element (src/css/computed.ts); never stale. */
-  computedStyle: object | null;
+  declare computedStyle: object | null;
 
   // --- @ctrl/dom/aria (appended by the aria agent) ---
   /** `Document._styleVersion` at which `name` was computed (paired with `nameVersion`). */
-  ariaNameStyleVersion: number;
+  declare ariaNameStyleVersion: number;
   /** `Document._version` at which `ariaHiddenBits` was computed. */
-  ariaHiddenVersion: number;
+  declare ariaHiddenVersion: number;
   /** `Document._styleVersion` at which `ariaHiddenBits` was computed. */
-  ariaHiddenStyleVersion: number;
+  declare ariaHiddenStyleVersion: number;
   /** Accessibility-tree exclusion bits owned by packages/aria/src/hidden.ts. */
-  ariaHiddenBits: number;
+  declare ariaHiddenBits: number;
 
   constructor() {
     this.roleVersion = -1;

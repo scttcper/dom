@@ -24,12 +24,12 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | --- | --: | --: | --: | --: |
 | [HTML Standard](#html-standard) | 785 | 606 | 54 | 125 |
 | [DOM Standard](#dom-standard) | 274 | 238 | 28 | 8 |
-| [CSS: cssom](#css-cssom) | 74 | 38 | 22 | 14 |
+| [CSS: cssom](#css-cssom) | 75 | 39 | 22 | 14 |
 | [CSS: geometry](#css-geometry) | 61 | 54 | 3 | 4 |
-| [Web IDL](#web-idl) | 37 | 28 | 0 | 9 |
-| [CSS: cssom-view](#css-cssom-view) | 34 | 22 | 1 | 11 |
+| [Web IDL](#web-idl) | 38 | 28 | 1 | 9 |
+| [CSS: cssom-view](#css-cssom-view) | 35 | 22 | 2 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
-| [CSS: css-syntax](#css-css-syntax) | 32 | 10 | 0 | 22 |
+| [CSS: css-syntax](#css-css-syntax) | 32 | 12 | 0 | 20 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [SVG 2](#svg-2) | 26 | 10 | 0 | 16 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 7 | 1 | 13 |
@@ -37,7 +37,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-color](#css-css-color) | 18 | 14 | 1 | 3 |
 | [W3C: uievents](#w3c-uievents) | 17 | 7 | 0 | 10 |
 | [W3C: html-aam](#w3c-html-aam) | 15 | 8 | 0 | 7 |
-| [CSS: css-cascade](#css-css-cascade) | 14 | 11 | 0 | 3 |
+| [CSS: css-cascade](#css-css-cascade) | 14 | 12 | 0 | 2 |
 | [W3C: accname](#w3c-accname) | 11 | 7 | 0 | 4 |
 | [CSS: resize-observer](#css-resize-observer) | 10 | 2 | 0 | 8 |
 | [Infra Standard](#infra-standard) | 10 | 0 | 0 | 10 |
@@ -52,7 +52,6 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-display](#css-css-display) | 5 | 2 | 0 | 3 |
 | [CSS: css-fonts](#css-css-fonts) | 5 | 2 | 2 | 1 |
 | [CSS: css-values](#css-css-values) | 5 | 2 | 0 | 3 |
-| [CSS: mediaqueries](#css-mediaqueries) | 5 | 1 | 0 | 4 |
 | [Fetch Standard](#fetch-standard) | 5 | 3 | 0 | 2 |
 | [W3C: xml](#w3c-xml) | 5 | 0 | 0 | 5 |
 | [CSS: css-nesting](#css-css-nesting) | 4 | 2 | 1 | 1 |
@@ -82,6 +81,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [CSS: css-overflow](#css-css-overflow) | 1 | 1 | 0 | 0 |
 | [CSS: css-sizing](#css-css-sizing) | 1 | 0 | 0 | 1 |
 | [CSS: css-ui](#css-css-ui) | 1 | 1 | 0 | 0 |
+| [CSS: mediaqueries](#css-mediaqueries) | 1 | 1 | 0 | 0 |
 | [Encoding Standard](#encoding-standard) | 1 | 0 | 0 | 1 |
 | [RFC9110](#rfc9110) | 1 | 0 | 0 | 1 |
 | [MIME Sniffing Standard](#mime-sniffing-standard) | 1 | 0 | 0 | 1 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1686 | 1165 | 123 | 398 |
+| **All** | 1685 | 1169 | 125 | 391 |
 
 ## Web-platform-tests fixtures
 
@@ -217,7 +217,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [case-sensitivity-of-selectors](https://html.spec.whatwg.org/#case-sensitivity-of-selectors) | `dom/css/cascade.ts`, `dom/selectors/compile.ts`, `jest-dom/matchers/aria.ts` +1 | `dom/css/cascade-matching-caches.test.ts`, `dom/selectors/engine-shortcuts.test.ts`, `dom/selectors/matching.test.ts`; WPT: `css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html` |
 | [categories](https://html.spec.whatwg.org/#categories) | `dom/html/forms/form-associated.ts` | `compat/forms/form-owner.test.ts` |
 | [category-label](https://html.spec.whatwg.org/#category-label) | `aria/forms.ts`, `dom/html/forms/form-associated.ts`, `testing-library/queries/label-text.ts` | `testing-library/unit/label-map-cache.test.ts`, `user-event/upstream/pointer/click.test.ts`, `compat/html/output-progress-meter.test.ts` |
-| [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
+| [category-listed](https://html.spec.whatwg.org/#category-listed) | `dom/html/forms/form-associated.ts`, `dom/html/forms/validation.ts`, `dom/parser/treebuilder.ts` | `compat/forms/form-algorithms.test.ts` |
 | [category-reset](https://html.spec.whatwg.org/#category-reset) | `dom/html/forms/form-associated.ts` | WPT: `html/semantics/forms/resetting-a-form/reset-form.html` |
 | [category-submit](https://html.spec.whatwg.org/#category-submit) | `dom/html/forms/form-associated.ts` | `compat/forms/form-algorithms.test.ts` |
 | [cdata-section-state](https://html.spec.whatwg.org/#cdata-section-state) | `dom/parser/tokenizer.ts` | **untested** |
@@ -256,7 +256,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-button](https://html.spec.whatwg.org/#concept-button) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [concept-custom-element-definition-construction-stack](https://html.spec.whatwg.org/#concept-custom-element-definition-construction-stack) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | `dom/nodes/wpt-nodes.test.ts`, `dom/window/iframe.test.ts` |
-| [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/HTMLTextAreaElement.ts`, `dom/html/forms/selection.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/radio-groups.test.ts` |
 | [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`, `compat/html/focus.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | `compat/forms/input-microsyntaxes.test.ts` |
@@ -315,7 +315,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dialog-setup-steps](https://html.spec.whatwg.org/#dialog-setup-steps) | `dom/html/interactive.ts` | `dom/html/dialog-popover-details.test.ts` |
 | [dialog-toggle-task-tracker](https://html.spec.whatwg.org/#dialog-toggle-task-tracker) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [disabled-elements](https://html.spec.whatwg.org/#disabled-elements) | `jest-dom/matchers/state.ts` | `user-event/upstream/utils/misc/isDisabled.test.ts`; WPT: `html/semantics/disabled-elements/disabledElement.html` |
-| [do-not-apply](https://html.spec.whatwg.org/#do-not-apply) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/input-type.ts` | `dom/html/forms/wpt-forms.test.ts`, `compat/forms/textarea-selection.test.ts` |
+| [do-not-apply](https://html.spec.whatwg.org/#do-not-apply) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/input-type.ts`, `dom/html/forms/selection.ts` | `dom/html/forms/wpt-forms.test.ts`, `compat/forms/textarea-selection.test.ts` |
 | [doctype-state](https://html.spec.whatwg.org/#doctype-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [document-base-url](https://html.spec.whatwg.org/#document-base-url) | `dom/nodes/Document.ts` | `dom/nodes/wpt-nodes.test.ts` |
 | [document-showing-popover](https://html.spec.whatwg.org/#document-showing-popover) | `dom/html/top-layer.ts` | `dom/html/invokers-toggle.test.ts` |
@@ -407,7 +407,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-elementinternals-setformvalue](https://html.spec.whatwg.org/#dom-elementinternals-setformvalue) | `dom/html/forms/face.ts` | WPT: `custom-elements/form-associated/ElementInternals-setFormValue-nullish-value.html` |
 | [dom-elementinternals-setvalidity](https://html.spec.whatwg.org/#dom-elementinternals-setvalidity) | `dom/html/forms/face.ts` | `dom/html/forms/element-internals.test.ts` |
 | [dom-elementinternals-shadowroot](https://html.spec.whatwg.org/#dom-elementinternals-shadowroot) | `dom/html/HTMLElement.ts` | WPT: `custom-elements/element-internals-shadowroot.html` |
-| [dom-fae-form](https://html.spec.whatwg.org/#dom-fae-form) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [dom-fae-form](https://html.spec.whatwg.org/#dom-fae-form) | `dom/html/forms/validation.ts` | `compat/forms/form-algorithms.test.ts` |
 | [dom-fe-autocomplete](https://html.spec.whatwg.org/#dom-fe-autocomplete) | `dom/html/forms/autofill.ts` | `dom/html/forms/face-autofill.test.ts`, `compat/forms/reflection.test.ts` |
 | [dom-fieldset-elements](https://html.spec.whatwg.org/#dom-fieldset-elements) | `dom/html/forms/HTMLFieldSetElement.ts` | WPT: `custom-elements/form-associated/fieldset-elements-after-upgrade.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [dom-focus](https://html.spec.whatwg.org/#dom-focus) | `dom/html/HTMLElement.ts` | WPT: `html/editing/focus/focus-management/focus-on-all-elements.html` |
@@ -544,9 +544,9 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-textarea-textlength](https://html.spec.whatwg.org/#dom-textarea-textlength) | `dom/html/forms/HTMLTextAreaElement.ts` | WPT: `html/semantics/forms/the-textarea-element/textarea-textLength.html` |
 | [dom-textarea-value](https://html.spec.whatwg.org/#dom-textarea-value) | `dom/html/forms/HTMLTextAreaElement.ts` | WPT: `html/semantics/forms/the-textarea-element/value-defaultValue-textContent.html` |
 | [dom-textarea/input-select](https://html.spec.whatwg.org/#dom-textarea/input-select) | `dom/html/forms/HTMLInputElement.ts` | WPT: `html/semantics/forms/the-input-element/selection-weekmonth.html`, `html/semantics/forms/the-input-element/selection.html` |
-| [dom-textarea/input-selectionstart](https://html.spec.whatwg.org/#dom-textarea/input-selectionstart) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/controls-details.test.ts` |
-| [dom-textarea/input-setrangetext](https://html.spec.whatwg.org/#dom-textarea/input-setrangetext) | `dom/html/forms/HTMLInputElement.ts` | `compat/forms/textarea-selection.test.ts` |
-| [dom-textarea/input-setselectionrange](https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange) | `dom/html/forms/HTMLInputElement.ts` | `user-event/differential/events.test.ts`, `user-event/upstream/environment/select.test.ts`; WPT: `html/semantics/forms/textfieldselection/textfieldselection-setSelectionRange.html` |
+| [dom-textarea/input-selectionstart](https://html.spec.whatwg.org/#dom-textarea/input-selectionstart) | `dom/html/forms/selection.ts` | `dom/html/forms/controls-details.test.ts` |
+| [dom-textarea/input-setrangetext](https://html.spec.whatwg.org/#dom-textarea/input-setrangetext) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/HTMLTextAreaElement.ts`, `dom/html/forms/selection.ts` | `compat/forms/textarea-selection.test.ts` |
+| [dom-textarea/input-setselectionrange](https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange) | `dom/html/forms/selection.ts` | `user-event/differential/events.test.ts`, `user-event/upstream/environment/select.test.ts`; WPT: `html/semantics/forms/textfieldselection/textfieldselection-setSelectionRange.html` |
 | [dom-title-text](https://html.spec.whatwg.org/#dom-title-text) | `dom/html/resources.ts` | `compat/html/elements.test.ts` |
 | [dom-togglepopover](https://html.spec.whatwg.org/#dom-togglepopover) | `dom/html/HTMLElement.ts` | `dom/html/invokers-toggle.test.ts` |
 | [dom-tr-rowindex](https://html.spec.whatwg.org/#dom-tr-rowindex) | `dom/html/elements.ts` | `compat/html/elements.test.ts` |
@@ -804,7 +804,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [session-storage-holder](https://html.spec.whatwg.org/#session-storage-holder) | `dom/window/Storage.ts` | `dom/window/window-apis.test.ts` |
 | [set-the-dialog-close-watcher](https://html.spec.whatwg.org/#set-the-dialog-close-watcher) | `dom/html/interactive.ts` | `dom/html/invokers-toggle.test.ts` |
 | [set-the-frozen-base-url](https://html.spec.whatwg.org/#set-the-frozen-base-url) | `dom/nodes/Document.ts` | **untested** |
-| [set-the-selection-range](https://html.spec.whatwg.org/#set-the-selection-range) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/controls-details.test.ts` |
+| [set-the-selection-range](https://html.spec.whatwg.org/#set-the-selection-range) | `dom/html/forms/selection.ts` | `dom/html/forms/controls-details.test.ts` |
 | [shared-history-push/replace-state-steps](https://html.spec.whatwg.org/#shared-history-push/replace-state-steps) | `dom/window/History.ts` | `dom/window/history.test.ts`, `dom/window/wpt-history.test.ts`, `compat/html/history-location.test.ts` |
 | [show-a-modal-dialog](https://html.spec.whatwg.org/#show-a-modal-dialog) | `dom/html/interactive.ts` | `dom/html/wpt-dialog.test.ts` |
 | [show-popover](https://html.spec.whatwg.org/#show-popover) | `dom/html/top-layer.ts` | `dom/html/wpt-popover.test.ts` |
@@ -817,7 +817,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [tabindex-focus-flag](https://html.spec.whatwg.org/#tabindex-focus-flag) | `dom/html/focus.ts` | `compat/html/focus.test.ts` |
 | [tag-name-state](https://html.spec.whatwg.org/#tag-name-state) | `dom/parser/tokenizer.ts` | **untested** |
 | [tag-open-state](https://html.spec.whatwg.org/#tag-open-state) | `dom/parser/tokenizer.ts` | **untested** |
-| [textFieldSelection](https://html.spec.whatwg.org/#textFieldSelection) | `dom/html/forms/HTMLTextAreaElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/wpt-forms.test.ts`, `compat/forms/textarea-selection.test.ts`; WPT: `html/semantics/forms/textfieldselection/selection-not-application-textarea.html`, `html/semantics/forms/textfieldselection/selection.html` +1 |
+| [textFieldSelection](https://html.spec.whatwg.org/#textFieldSelection) | `dom/html/forms/HTMLTextAreaElement.ts`, `dom/html/forms/selection.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/wpt-forms.test.ts`, `compat/forms/textarea-selection.test.ts`; WPT: `html/semantics/forms/textfieldselection/selection-not-application-textarea.html`, `html/semantics/forms/textfieldselection/selection.html` +1 |
 | [textarea-wrapping-transformation](https://html.spec.whatwg.org/#textarea-wrapping-transformation) | `dom/html/forms/form-submission.ts` | `dom/html/forms/controls-details.test.ts` |
 | [the-a-element](https://html.spec.whatwg.org/#the-a-element) | `dom/html/anchor.ts` | WPT: `html/semantics/forms/the-label-element/label-inside-anchor.html`, `html/semantics/interactive-elements/the-summary-element/anchor-without-link.html` |
 | [the-a-element:activation-behaviour](https://html.spec.whatwg.org/#the-a-element:activation-behaviour) | `dom/html/anchor.ts` | `compat/html/activation.test.ts` |
@@ -1026,7 +1026,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-range-insert](https://dom.spec.whatwg.org/#concept-range-insert) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [concept-range-root](https://dom.spec.whatwg.org/#concept-range-root) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
 | [concept-range-select](https://dom.spec.whatwg.org/#concept-range-select) | `dom/traversal/Range.ts` | `dom/traversal/range.test.ts` |
-| [concept-shadow-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor) | `dom/events/dispatch.ts` | `dom/events/event-path.test.ts` |
+| [concept-shadow-including-inclusive-ancestor](https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor) | `dom/events/dispatch.ts`, `dom/html/shared.ts` | `dom/events/event-path.test.ts` |
 | [concept-shadow-including-root](https://dom.spec.whatwg.org/#concept-shadow-including-root) | `dom/nodes/Node.ts`, `dom/nodes/tree.ts` | `dom/nodes/node-methods.test.ts` |
 | [concept-text-split](https://dom.spec.whatwg.org/#concept-text-split) | `dom/nodes/character-data.ts`, `dom/traversal/live.ts` | `dom/nodes/node-methods.test.ts`, `dom/traversal/range-mutations-fuzz.test.ts` |
 | [concept-traverse-children](https://dom.spec.whatwg.org/#concept-traverse-children) | `dom/traversal/TreeWalker.ts` | `dom/traversal/tree-walker.test.ts` |
@@ -1236,7 +1236,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: cssom
 
-<https://drafts.csswg.org/cssom/> — 74 sections implemented, 38 tested, 22 by WPT only, 14 untested.
+<https://drafts.csswg.org/cssom/> — 75 sections implemented, 39 tested, 22 by WPT only, 14 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1277,13 +1277,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-window-getcomputedstyle](https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle) | `dom/css/computed.ts`, `dom/window/Window.ts`, `dom/window/hooks.ts` | `aria/replaced-getcomputedstyle.test.ts`, `dom/css/cascade.test.ts`, `dom/css/computed-style-override.test.ts`, `dom/css/computed-values.test.ts` +5; WPT: `css/cssom/getComputedStyle-basic.html`, `css/cssom/getComputedStyle-display-none-002.html` +22 |
 | [extensions-to-the-document-or-shadow-root-interface](https://drafts.csswg.org/cssom/#extensions-to-the-document-or-shadow-root-interface) | `dom/css/index.ts` | WPT: `css/cssom/CSSStyleSheet-constructable-cssRules.html`, `css/cssom/CSSStyleSheet-constructable-invalidation.html` +4 |
 | [insert-a-css-rule](https://drafts.csswg.org/cssom/#insert-a-css-rule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts`; WPT: `css/cssom/at-namespace.html` |
-| [namespacedef-css](https://drafts.csswg.org/cssom/#namespacedef-css) | `dom/css/CSS.ts`, `dom/window/fallbacks.ts` | WPT: `css/cssom/CSS-namespace-object-class-string.html` |
+| [namespacedef-css](https://drafts.csswg.org/cssom/#namespacedef-css) | `dom/css/CSS.ts` | WPT: `css/cssom/CSS-namespace-object-class-string.html` |
 | [parse-a-css-declaration-block](https://drafts.csswg.org/cssom/#parse-a-css-declaration-block) | `dom/css/declarations.ts` | `dom/css/cssom-declaration.test.ts` |
 | [parse-a-css-rule](https://drafts.csswg.org/cssom/#parse-a-css-rule) | `dom/css/cssom.ts` | **untested** |
 | [parse-a-css-value](https://drafts.csswg.org/cssom/#parse-a-css-value) | `dom/css/values.ts` | **untested** |
 | [parse-a-media-query-list](https://drafts.csswg.org/cssom/#parse-a-media-query-list) | `dom/css/media.ts` | **untested** |
 | [parse-a-selector](https://drafts.csswg.org/cssom/#parse-a-selector) | `dom/selectors/parser.ts` | **untested** |
 | [ref-for-concept-element-attributes-change-ext](https://drafts.csswg.org/cssom/#ref-for-concept-element-attributes-change-ext) | `dom/css/CSSStyleDeclaration.ts` | **untested** |
+| [remove-a-css-rule](https://drafts.csswg.org/cssom/#remove-a-css-rule) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
 | [resolved-values](https://drafts.csswg.org/cssom/#resolved-values) | `dom/css/cascade.ts`, `dom/css/computed.ts` | WPT: `css/cssom/computed-style-001.html`, `css/cssom/getComputedStyle-line-height.html` +4 |
 | [serialize-a-css-component-value](https://drafts.csswg.org/cssom/#serialize-a-css-component-value) | `dom/css/values.ts` | WPT: `css/cssom/serialize-custom-props.html` |
 | [serialize-a-css-declaration](https://drafts.csswg.org/cssom/#serialize-a-css-declaration) | `dom/css/declarations.ts` | `dom/css/declaration.test.ts`; WPT: `css/cssom/serialization-CSSDeclaration-with-important.html` |
@@ -1294,9 +1295,9 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [serialize-a-media-query-list](https://drafts.csswg.org/cssom/#serialize-a-media-query-list) | `dom/css/media.ts` | `dom/css/media-queries.test.ts` |
 | [serialize-a-selector](https://drafts.csswg.org/cssom/#serialize-a-selector) | `dom/selectors/serialize.ts` | `dom/selectors/matching.test.ts` |
 | [serialize-a-simple-selector](https://drafts.csswg.org/cssom/#serialize-a-simple-selector) | `dom/selectors/serialize.ts` | **untested** |
-| [serialize-a-string](https://drafts.csswg.org/cssom/#serialize-a-string) | `dom/css/values.ts`, `dom/selectors/serialize.ts` | **untested** |
+| [serialize-a-string](https://drafts.csswg.org/cssom/#serialize-a-string) | `dom/selectors/serialize.ts` | **untested** |
 | [serialize-a-url](https://drafts.csswg.org/cssom/#serialize-a-url) | `dom/css/values.ts` | **untested** |
-| [serialize-an-identifier](https://drafts.csswg.org/cssom/#serialize-an-identifier) | `dom/css/CSS.ts`, `dom/css/values.ts`, `dom/selectors/serialize.ts` +2 | `dom/selectors/parser.test.ts` |
+| [serialize-an-identifier](https://drafts.csswg.org/cssom/#serialize-an-identifier) | `dom/css/CSS.ts`, `dom/css/values.ts`, `dom/selectors/serialize.ts` +1 | `dom/selectors/parser.test.ts` |
 | [serializing-media-queries](https://drafts.csswg.org/cssom/#serializing-media-queries) | `dom/css/media.ts` | WPT: `css/cssom/mediaquery-sort-dedup.html` |
 | [set-a-css-declaration](https://drafts.csswg.org/cssom/#set-a-css-declaration) | `dom/css/declarations.ts` | WPT: `css/cssom/setproperty-custom-property-override-important.html` |
 | [synchronously-replace-the-rules-of-a-cssstylesheet](https://drafts.csswg.org/cssom/#synchronously-replace-the-rules-of-a-cssstylesheet) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
@@ -1385,7 +1386,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## Web IDL
 
-<https://webidl.spec.whatwg.org/> — 37 sections implemented, 28 tested, 0 by WPT only, 9 untested.
+<https://webidl.spec.whatwg.org/> — 38 sections implemented, 28 tested, 1 by WPT only, 9 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1394,23 +1395,24 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [abstract-opdef-converttoint](https://webidl.spec.whatwg.org/#abstract-opdef-converttoint) | `dom/window/abort.ts` | `dom/window/abort.test.ts` |
 | [default-tojson-steps](https://webidl.spec.whatwg.org/#default-tojson-steps) | `dom/window/quad.ts` | `dom/window/geometry.test.ts` |
 | [dfn-array-index-property-name](https://webidl.spec.whatwg.org/#dfn-array-index-property-name) | `dom/collections/NamedNodeMap.ts` | **untested** |
-| [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/html/registry.ts`, `dom/webidl-runtime.ts`, `dom/window/interfaces.ts` | `dom/html/interfaces.wpt.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/geometry.test.ts`, `dom/window/interface-shape.test.ts` |
+| [dfn-class-string](https://webidl.spec.whatwg.org/#dfn-class-string) | `dom/events/Event.ts`, `dom/html/registry.ts`, `dom/webidl-runtime.ts` +1 | `dom/html/interfaces.wpt.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/geometry.test.ts`, `dom/window/interface-shape.test.ts` |
 | [dfn-create-operation-function](https://webidl.spec.whatwg.org/#dfn-create-operation-function) | `dom/window/Window.ts` | `dom/window/global-receiver.test.ts`, `dom/window/timers.test.ts` |
 | [dfn-overload-resolution-algorithm](https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm) | `dom/webidl-runtime.ts`, `dom/window/Storage.ts` | **untested** |
 | [dfn-support-indexed-properties](https://webidl.spec.whatwg.org/#dfn-support-indexed-properties) | `dom/collections/indexed.ts` | `dom/collections/token-lists.test.ts`, `dom/window/geometry.test.ts` |
 | [es-DOMString](https://webidl.spec.whatwg.org/#es-DOMString) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts`; WPT: `html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html`, `html/dom/elements/global-attributes/classlist-nonstring.html` |
 | [es-attributes](https://webidl.spec.whatwg.org/#es-attributes) | `dom/nodes/DocumentType.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/nodes/node-accessors.test.ts`, `dom/window/webidl-enumeration.test.ts` |
-| [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/html/svg.test.ts`, `dom/nodes/element-node-misc.test.ts`, `dom/window/interface-shape.test.ts` |
+| [es-constants](https://webidl.spec.whatwg.org/#es-constants) | `dom/events/Event.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/html/svg.test.ts`, `dom/nodes/element-node-misc.test.ts`, `dom/window/interface-shape.test.ts` |
 | [es-dictionary](https://webidl.spec.whatwg.org/#es-dictionary) | `dom/events/UIEvents.ts` | `dom/events/init-dictionaries.test.ts`, `user-event/event/native-dicts.test.ts` |
 | [es-double](https://webidl.spec.whatwg.org/#es-double) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
 | [es-float](https://webidl.spec.whatwg.org/#es-float) | `dom/html/svg-types.ts`, `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
 | [es-interface-call](https://webidl.spec.whatwg.org/#es-interface-call) | `dom/events/Event.ts`, `dom/nodes/Node.ts`, `dom/webidl-runtime.ts` | `dom/events/wpt-uievents.test.ts` |
 | [es-interfaces](https://webidl.spec.whatwg.org/#es-interfaces) | `dom/window/interfaces.ts` | `dom/window/globals.test.ts`, `dom/window/isolation.test.ts`, `vitest-environment/environment.test.ts`, `compat/surface/profiles.test.ts` |
 | [es-iterable](https://webidl.spec.whatwg.org/#es-iterable) | `dom/collections/NamedNodeMap.ts`, `dom/collections/NodeList.ts`, `dom/collections/iterator.ts` | `dom/collections/collections.test.ts`, `dom/collections/wpt-lists.test.ts`, `dom/nodes/wpt-nodelist-tampered.test.ts` |
+| [es-iterator](https://webidl.spec.whatwg.org/#es-iterator) | `dom/collections/iterator.ts` | WPT: `dom/collections/HTMLCollection-iterator.html` |
 | [es-legacy-platform-objects](https://webidl.spec.whatwg.org/#es-legacy-platform-objects) | `dom/window/Storage.ts` | `dom/window/storage.test.ts`, `dom/window/wpt-webstorage.test.ts` |
 | [es-long](https://webidl.spec.whatwg.org/#es-long) | `dom/webidl-convert.ts`, `dom/window/clock.ts`, `dom/window/timers.ts` | `dom/events/event-path.test.ts`, `dom/window/clock.test.ts`, `dom/window/window-apis.test.ts` |
 | [es-namespaces](https://webidl.spec.whatwg.org/#es-namespaces) | `dom/css/CSS.ts` | `dom/css/view.test.ts`; WPT: `css/cssom/CSS-namespace-object-class-string.html` |
-| [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/webidl-enumeration.test.ts` |
+| [es-operations](https://webidl.spec.whatwg.org/#es-operations) | `dom/collections/iterator.ts`, `dom/webidl-runtime.ts` | `dom/events/shape.test.ts`, `dom/window/dommatrix.test.ts`, `dom/window/webidl-enumeration.test.ts` |
 | [es-short](https://webidl.spec.whatwg.org/#es-short) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
 | [es-type-mapping](https://webidl.spec.whatwg.org/#es-type-mapping) | `dom/webidl-convert.ts` | `dom/events/event-path.test.ts` |
 | [es-unsigned-long](https://webidl.spec.whatwg.org/#es-unsigned-long) | `dom/webidl-convert.ts`, `dom/window/Storage.ts`, `dom/window/geometry.ts` | `dom/events/event-path.test.ts`, `dom/window/geometry.test.ts` |
@@ -1429,7 +1431,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: cssom-view
 
-<https://drafts.csswg.org/cssom-view/> — 34 sections implemented, 22 tested, 1 by WPT only, 11 untested.
+<https://drafts.csswg.org/cssom-view/> — 35 sections implemented, 22 tested, 2 by WPT only, 11 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1437,10 +1439,10 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-document-elementfrompoint](https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint) | `dom/nodes/Document.ts` | `dom/css/view.test.ts` |
 | [dom-document-elementsfrompoint](https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint) | `dom/nodes/Document.ts` | `dom/css/view.test.ts` |
 | [dom-document-scrollingelement](https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement) | `dom/css/index.ts` | `dom/css/view.test.ts`; WPT: `css/cssom-view/scroll-overflow-clip-quirks-002.html` |
-| [dom-element-checkvisibility](https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/view.test.ts` |
+| [dom-element-checkvisibility](https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility) | `dom/css/view.ts` | `dom/css/view.test.ts` |
 | [dom-element-clienttop](https://drafts.csswg.org/cssom-view/#dom-element-clienttop) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
 | [dom-element-clientwidth](https://drafts.csswg.org/cssom-view/#dom-element-clientwidth) | `dom/css/layout.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollWidthHeight-not-scrollable-fractional-zoom.html` |
-| [dom-element-getboundingclientrect](https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect) | `dom/css/view.ts`, `dom/nodes/Element.ts` | `dom/css/layout.test.ts`, `dom/nodes/element-node-misc.test.ts` |
+| [dom-element-getboundingclientrect](https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect) | `dom/css/view.ts` | `dom/css/layout.test.ts`, `dom/nodes/element-node-misc.test.ts` |
 | [dom-element-getclientrects](https://drafts.csswg.org/cssom-view/#dom-element-getclientrects) | `dom/css/view.ts` | `dom/css/layout.test.ts` |
 | [dom-element-scroll](https://drafts.csswg.org/cssom-view/#dom-element-scroll) | `dom/css/view.ts` | **untested** |
 | [dom-element-scrollintoview](https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview) | `dom/css/view.ts` | `dom/css/layout.test.ts`; WPT: `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode-and-rtl-direction.html`, `css/cssom-view/scrollIntoView-horizontal-tb-writing-mode.html` +7 |
@@ -1459,6 +1461,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-window-scrollby](https://drafts.csswg.org/cssom-view/#dom-window-scrollby) | `dom/window/Window.ts` | **untested** |
 | [dom-window-visualviewport](https://drafts.csswg.org/cssom-view/#dom-window-visualviewport) | `dom/window/Window.ts` | **untested** |
 | [evaluate-media-queries-and-report-changes](https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes) | `dom/window/Window.ts`, `dom/window/media.ts` | `dom/css/media-queries.test.ts`, `dom/window/matchMedia.test.ts` |
+| [extension-to-the-element-interface](https://drafts.csswg.org/cssom-view/#extension-to-the-element-interface) | `dom/nodes/Element.ts` | WPT: `css/cssom-view/scroll-offsets-fractional-zoom.html` |
 | [extensions-to-the-htmlelement-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface) | `dom/css/view.ts`, `dom/html/HTMLElement.ts` | `dom/css/layout.test.ts` |
 | [extensions-to-the-mouseevent-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface) | `dom/events/UIEvents.ts` | `dom/events/uievents.test.ts` |
 | [extensions-to-the-window-interface](https://drafts.csswg.org/cssom-view/#extensions-to-the-window-interface) | `dom/window/Window.ts` | `dom/window/globals.test.ts`, `dom/window/window.test.ts` |
@@ -1510,42 +1513,42 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-syntax
 
-<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 10 tested, 0 by WPT only, 22 untested.
+<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 12 tested, 0 by WPT only, 20 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [anb-microsyntax](https://drafts.csswg.org/css-syntax/#anb-microsyntax) | `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts` |
 | [consume-at-rule](https://drafts.csswg.org/css-syntax/#consume-at-rule) | `dom/css/parser.ts` | **untested** |
 | [consume-block-contents](https://drafts.csswg.org/css-syntax/#consume-block-contents) | `dom/css/parser.ts` | `dom/css/cssom-stylesheet.test.ts`, `dom/css/lazy-blocks.test.ts` |
-| [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts`, `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
+| [consume-comments](https://drafts.csswg.org/css-syntax/#consume-comments) | `dom/css/tokenizer.ts`, `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
 | [consume-declaration](https://drafts.csswg.org/css-syntax/#consume-declaration) | `dom/css/parser.ts` | **untested** |
-| [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
-| [consume-ident-like-token](https://drafts.csswg.org/css-syntax/#consume-ident-like-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts`, `dom/window/geometry.ts` | **untested** |
-| [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
+| [consume-ident-like-token](https://drafts.csswg.org/css-syntax/#consume-ident-like-token) | `dom/css/tokenizer.ts` | **untested** |
+| [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts` | `dom/css/tokenizer.test.ts` |
+| [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/window/geometry.ts` | **untested** |
+| [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts` | **untested** |
 | [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | `dom/css/lazy-blocks.test.ts` |
-| [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [consume-remnants-of-bad-url](https://drafts.csswg.org/css-syntax/#consume-remnants-of-bad-url) | `dom/css/tokenizer.ts` | **untested** |
 | [consume-simple-block](https://drafts.csswg.org/css-syntax/#consume-simple-block) | `dom/css/values.ts`, `dom/selectors/parser.ts` | **untested** |
-| [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/lazy-blocks.test.ts` |
+| [consume-string-token](https://drafts.csswg.org/css-syntax/#consume-string-token) | `dom/css/tokenizer.ts` | `dom/css/lazy-blocks.test.ts` |
 | [consume-stylesheet-contents](https://drafts.csswg.org/css-syntax/#consume-stylesheet-contents) | `dom/css/parser.ts` | **untested** |
-| [consume-token](https://drafts.csswg.org/css-syntax/#consume-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
-| [consume-url-token](https://drafts.csswg.org/css-syntax/#consume-url-token) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/lazy-blocks.test.ts` |
-| [ident-code-point](https://drafts.csswg.org/css-syntax/#ident-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [ident-start-code-point](https://drafts.csswg.org/css-syntax/#ident-start-code-point) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [input-preprocessing](https://drafts.csswg.org/css-syntax/#input-preprocessing) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [non-ascii-ident-code-point](https://drafts.csswg.org/css-syntax/#non-ascii-ident-code-point) | `dom/css/tokenizer.ts` | **untested** |
+| [consume-token](https://drafts.csswg.org/css-syntax/#consume-token) | `dom/css/tokenizer.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
+| [consume-url-token](https://drafts.csswg.org/css-syntax/#consume-url-token) | `dom/css/tokenizer.ts` | `dom/css/lazy-blocks.test.ts` |
+| [ident-code-point](https://drafts.csswg.org/css-syntax/#ident-code-point) | `dom/css/tokenizer.ts` | **untested** |
+| [ident-start-code-point](https://drafts.csswg.org/css-syntax/#ident-start-code-point) | `dom/css/tokenizer.ts` | **untested** |
+| [input-preprocessing](https://drafts.csswg.org/css-syntax/#input-preprocessing) | `dom/css/tokenizer.ts` | **untested** |
+| [non-ascii-ident-code-point](https://drafts.csswg.org/css-syntax/#non-ascii-ident-code-point) | `dom/css/tokenizer.ts` | `dom/css/tokenizer.test.ts` |
 | [parse-block-contents](https://drafts.csswg.org/css-syntax/#parse-block-contents) | `dom/css/parser.ts` | **untested** |
 | [parse-rule](https://drafts.csswg.org/css-syntax/#parse-rule) | `dom/css/parser.ts` | **untested** |
 | [parse-stylesheet](https://drafts.csswg.org/css-syntax/#parse-stylesheet) | `dom/css/parser.ts` | **untested** |
 | [parsing](https://drafts.csswg.org/css-syntax/#parsing) | `dom/css/parser.ts` | **untested** |
 | [serializing-anb](https://drafts.csswg.org/css-syntax/#serializing-anb) | `dom/selectors/serialize.ts` | `dom/selectors/parser.test.ts` |
-| [starts-with-a-number](https://drafts.csswg.org/css-syntax/#starts-with-a-number) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
-| [starts-with-a-valid-escape](https://drafts.csswg.org/css-syntax/#starts-with-a-valid-escape) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [starts-with-a-number](https://drafts.csswg.org/css-syntax/#starts-with-a-number) | `dom/css/tokenizer.ts` | **untested** |
+| [starts-with-a-valid-escape](https://drafts.csswg.org/css-syntax/#starts-with-a-valid-escape) | `dom/css/tokenizer.ts` | **untested** |
 | [style-rules](https://drafts.csswg.org/css-syntax/#style-rules) | `dom/selectors/internal.ts` | **untested** |
 | [tokenization](https://drafts.csswg.org/css-syntax/#tokenization) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | `dom/css/tokenizer.test.ts`, `dom/selectors/parser.test.ts` |
 | [tokenizer-definitions](https://drafts.csswg.org/css-syntax/#tokenizer-definitions) | `dom/selectors/parser.ts` | **untested** |
-| [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts`, `dom/selectors/parser.ts` | **untested** |
+| [would-start-an-identifier](https://drafts.csswg.org/css-syntax/#would-start-an-identifier) | `dom/css/tokenizer.ts` | **untested** |
 
 ## CSS: selectors
 
@@ -1736,7 +1739,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [el-h1-h6](https://w3c.github.io/html-aam/#el-h1-h6) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/html-aam-roles.test.ts` |
 | [fieldset-and-legend-elements](https://w3c.github.io/html-aam/#fieldset-and-legend-elements) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [html-attribute-state-and-property-mappings](https://w3c.github.io/html-aam/#html-attribute-state-and-property-mappings) | `aria/states.ts`, `testing-library/role-helpers.ts` | `aria/accessible-description.test.ts`, `aria/html-aam-roles.test.ts`, `testing-library/unit/aria-snapshot.test.ts` |
-| [html-element-role-mappings](https://w3c.github.io/html-aam/#html-element-role-mappings) | `aria/role.ts`, `aria/roles-list.ts`, `testing-library/aria-snapshot.ts` +1 | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/html-aam-roles.test.ts`, `aria/wpt-aria.test.ts` +3 |
+| [html-element-role-mappings](https://w3c.github.io/html-aam/#html-element-role-mappings) | `aria/role.ts`, `aria/roles-list.ts`, `testing-library/aria-snapshot.ts` +1 | `aria/differential.test.ts`, `aria/getRole.test.ts`, `aria/html-aam-roles.test.ts`, `aria/wpt-aria.test.ts` +4 |
 | [img-element](https://w3c.github.io/html-aam/#img-element) | `aria/accname.ts` | **untested** |
 | [input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation](https://w3c.github.io/html-aam/#input-type-button-input-type-submit-and-input-type-reset-accessible-name-computation) | `aria/accname.ts` | `aria/accessible-name.test.ts` |
 | [input-type-image-accessible-name-computation](https://w3c.github.io/html-aam/#input-type-image-accessible-name-computation) | `aria/accname.ts` | **untested** |
@@ -1744,7 +1747,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-cascade
 
-<https://drafts.csswg.org/css-cascade/> — 14 sections implemented, 11 tested, 0 by WPT only, 3 untested.
+<https://drafts.csswg.org/css-cascade/> — 14 sections implemented, 12 tested, 0 by WPT only, 2 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1756,7 +1759,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [dom-cssscoperule-start](https://drafts.csswg.org/css-cascade/#dom-cssscoperule-start) | `dom/css/cssom.ts` | **untested** |
 | [inheriting](https://drafts.csswg.org/css-cascade/#inheriting) | `dom/css/cascade.ts`, `dom/css/properties.ts` | `dom/css/cascade-matching-caches.test.ts`, `dom/css/computed-values.test.ts`, `dom/css/properties.test.ts` |
 | [layer-apis](https://drafts.csswg.org/css-cascade/#layer-apis) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
-| [legacy-name-alias](https://drafts.csswg.org/css-cascade/#legacy-name-alias) | `dom/css/properties.ts` | **untested** |
+| [legacy-name-alias](https://drafts.csswg.org/css-cascade/#legacy-name-alias) | `dom/css/properties.ts` | `dom/css/properties.test.ts` |
 | [revert-layer](https://drafts.csswg.org/css-cascade/#revert-layer) | `dom/css/cascade.ts` | `dom/css/computed-values.test.ts` |
 | [shorthand](https://drafts.csswg.org/css-cascade/#shorthand) | `dom/css/shorthands.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/wpt-cssom.test.ts` |
 | [the-csslayerblockrule-interface](https://drafts.csswg.org/css-cascade/#the-csslayerblockrule-interface) | `dom/css/cssom.ts` | `dom/css/cssom-stylesheet.test.ts` |
@@ -1958,23 +1961,11 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
-| [absolute-lengths](https://drafts.csswg.org/css-values/#absolute-lengths) | `dom/window/geometry.ts` | **untested** |
+| [absolute-lengths](https://drafts.csswg.org/css-values/#absolute-lengths) | `dom/css/values.ts`, `dom/window/geometry.ts` | **untested** |
 | [angles](https://drafts.csswg.org/css-values/#angles) | `dom/window/geometry.ts` | **untested** |
 | [calc-func](https://drafts.csswg.org/css-values/#calc-func) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
 | [calc-type-checking](https://drafts.csswg.org/css-values/#calc-type-checking) | `dom/window/geometry.ts` | `dom/window/dommatrix.test.ts` |
 | [lengths](https://drafts.csswg.org/css-values/#lengths) | `dom/css/layout.ts` | **untested** |
-
-## CSS: mediaqueries
-
-<https://drafts.csswg.org/mediaqueries/> — 5 sections implemented, 1 tested, 0 by WPT only, 4 untested.
-
-| Section | Implemented in | Tests |
-| --- | --- | --- |
-| [evaluating](https://drafts.csswg.org/mediaqueries/#evaluating) | `dom/css/media.ts`, `dom/window/hooks.ts` | `dom/css/cascade.test.ts`, `dom/css/media-queries.test.ts` |
-| [mq-features](https://drafts.csswg.org/mediaqueries/#mq-features) | `dom/window/media.ts` | **untested** |
-| [mq-list](https://drafts.csswg.org/mediaqueries/#mq-list) | `dom/window/media.ts` | **untested** |
-| [typedef-media-condition](https://drafts.csswg.org/mediaqueries/#typedef-media-condition) | `dom/window/media.ts` | **untested** |
-| [typedef-media-query](https://drafts.csswg.org/mediaqueries/#typedef-media-query) | `dom/window/media.ts` | **untested** |
 
 ## Fetch Standard
 
@@ -2252,6 +2243,14 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
 | [outline](https://drafts.csswg.org/css-ui/#outline) | `dom/css/shorthands.ts`, `dom/css/values.ts` | `dom/css/cssom-declaration.test.ts`, `dom/css/wpt-css-parsing.test.ts`; WPT: `css/css-ui/parsing/outline-invalid.html` |
+
+## CSS: mediaqueries
+
+<https://drafts.csswg.org/mediaqueries/> — 1 sections implemented, 1 tested, 0 by WPT only, 0 untested.
+
+| Section | Implemented in | Tests |
+| --- | --- | --- |
+| [evaluating](https://drafts.csswg.org/mediaqueries/#evaluating) | `dom/css/media.ts` | `dom/css/cascade.test.ts`, `dom/css/media-queries.test.ts` |
 
 ## Encoding Standard
 

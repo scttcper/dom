@@ -101,8 +101,3 @@ type EventConstructor = new (type: string, init?: Record<string, unknown>) => im
 export function eventInterface(name: string): EventConstructor {
   return dom[name] as EventConstructor;
 }
-
-/** Look up an optional public export of `@ctrl/dom` by name (lazy: areas land in parallel). */
-export function domExport<T = unknown>(name: string): T | undefined {
-  return dom[name] as T | undefined;
-}

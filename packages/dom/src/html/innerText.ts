@@ -233,7 +233,7 @@ class Builder {
   /** Whether the last part ends with a collapsible space that a line end may remove. */
   trimmable = false;
   /** The document has author styles (style lookups go beyond the UA fast path). */
-  styled: boolean;
+  declare styled: boolean;
 
   constructor(styled: boolean) {
     this.styled = styled;

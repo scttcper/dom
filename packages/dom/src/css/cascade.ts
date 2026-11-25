@@ -77,6 +77,7 @@ import {
 } from "./shorthands.ts";
 import { computeColor } from "./colors.ts";
 import {
+  absoluteLength,
   containsVar,
   formatNumber,
   grammarFor,
@@ -129,23 +130,23 @@ import {
 // --- rule index --------------------------------------------------------------------------------
 
 export class IndexedRule {
-  sel: CompiledSelector;
-  specificity: number;
+  declare sel: CompiledSelector;
+  declare specificity: number;
   /** Its sheet's position in cascade order (owner sheets in tree order, then adopted ones). */
-  sheetIndex: number;
+  declare sheetIndex: number;
   /** When it was indexed: within a sheet, later rules have higher orders (rules appended later too). */
-  order: number;
+  declare order: number;
   /** Layer rank: higher wins for normal declarations; unlayered rules have the highest rank. */
-  layer: number;
+  declare layer: number;
   /** The declarations; null until the rule first matches, for a rule whose `owner` has not parsed them. */
-  block: DeclBlock | null;
-  owner: BlockOwner | null;
-  layerNode: LayerNode;
+  declare block: DeclBlock | null;
+  declare owner: BlockOwner | null;
+  declare layerNode: LayerNode;
   /** Copied from `sel` so the cascade's loop reads them without a pointer hop (as Blink's RuleData). */
-  h0: number;
-  h1: number;
-  h2: number;
-  h3: number;
+  declare h0: number;
+  declare h1: number;
+  declare h2: number;
+  declare h3: number;
 
   constructor(
     sel: CompiledSelector,
@@ -182,9 +183,9 @@ function blockOf(rule: IndexedRule): DeclBlock {
 
 /** The rules that share one subject key. */
 export class Bucket {
-  rules: IndexedRule[];
+  declare rules: IndexedRule[];
   /** How many have ancestor hashes (`h0 >= 0`): the ones the ancestor filter can reject. */
-  hashed: number;
+  declare hashed: number;
   constructor() {
     this.rules = [];
     this.hashed = 0;
@@ -197,16 +198,16 @@ export class Bucket {
 
 /** Rules bucketed by subject key. */
 export class RuleBuckets {
-  ids: Map<string, Bucket>;
-  classes: Map<string, Bucket>;
-  tags: Map<string, Bucket>;
-  universal: Bucket;
-  size: number;
+  declare ids: Map<string, Bucket>;
+  declare classes: Map<string, Bucket>;
+  declare tags: Map<string, Bucket>;
+  declare universal: Bucket;
+  declare size: number;
   /**
    * Quirks-mode document: id and class keys are ASCII-lowercased on both sides
    * (https://html.spec.whatwg.org/#case-sensitivity-of-selectors).
    */
-  quirks: boolean;
+  declare quirks: boolean;
 
   constructor(quirks: boolean) {
     this.ids = new Map();
@@ -248,9 +249,9 @@ function copyBucket(bucket: Bucket): Bucket {
 }
 
 class LayerNode {
-  name: string;
-  children: Map<string, LayerNode>;
-  rank: number;
+  declare name: string;
+  declare children: Map<string, LayerNode>;
+  declare rank: number;
   constructor(name: string) {
     this.name = name;
     this.children = new Map();
@@ -260,16 +261,16 @@ class LayerNode {
 
 export class RuleIndex {
   attributeNames: Set<string> | null = null;
-  main: RuleBuckets;
-  before: RuleBuckets;
-  after: RuleBuckets;
+  declare main: RuleBuckets;
+  declare before: RuleBuckets;
+  declare after: RuleBuckets;
   /** Any rule depends on state outside Document._version (:hover, :focus, :checked, ...). */
-  volatile: boolean;
-  styleVersion: number;
+  declare volatile: boolean;
+  declare styleVersion: number;
   /** The builder, kept to index rules appended later (extendIndex). */
-  builder: IndexBuilder | null;
+  declare builder: IndexBuilder | null;
   /** The tree's sheets in cascade order, as indexed. */
-  sheets: IndexedSheet[];
+  declare sheets: IndexedSheet[];
   constructor(styleVersion: number, quirks = false) {
     this.main = new RuleBuckets(quirks);
     this.before = new RuleBuckets(quirks);
@@ -283,12 +284,12 @@ export class RuleIndex {
 
 /** A sheet as a rule index last saw it. */
 class IndexedSheet {
-  sheet: CSSStyleSheet;
+  declare sheet: CSSStyleSheet;
   /** `$version` and rule count when last indexed. */
-  version: number;
-  rules: number;
+  declare version: number;
+  declare rules: number;
   /** Its rules are in the index (not disabled, media matching). */
-  applied: boolean;
+  declare applied: boolean;
   constructor(sheet: CSSStyleSheet, applied: boolean) {
     this.sheet = sheet;
     this.version = sheet[$version];
@@ -298,18 +299,18 @@ class IndexedSheet {
 }
 
 class IndexBuilder {
-  index: RuleIndex;
-  env: MediaEnvironment;
+  declare index: RuleIndex;
+  declare env: MediaEnvironment;
   /** The sheet being indexed (IndexedRule.sheetIndex) and the next rule's order. */
-  sheetIndex: number;
-  order: number;
-  root: LayerNode;
-  anon: number;
-  all: IndexedRule[];
+  declare sheetIndex: number;
+  declare order: number;
+  declare root: LayerNode;
+  declare anon: number;
+  declare all: IndexedRule[];
   /** Adding rules to a finished index (extend): buckets that gain a rule are copied. */
-  extending: boolean;
+  declare extending: boolean;
 
-  readonly noteAttribute: (name: string) => void;
+  declare readonly noteAttribute: (name: string) => void;
 
   constructor(index: RuleIndex, env: MediaEnvironment, shadowCSS: DocCSS | null) {
     this.noteAttribute = (name) => {
@@ -786,41 +787,41 @@ const PENDING_LONGHANDS = pendingLonghandsMap();
 
 /** Cascade result + memoized computed values for one element (or pseudo-element). */
 export class StyleRecord {
-  el: NodeImpl;
-  pseudo: number;
+  declare el: NodeImpl;
+  declare pseudo: number;
   /** Winning cascaded value per property (author + inline + UA), null if none. */
-  decls: Map<string, string> | null;
+  declare decls: Map<string, string> | null;
   /** UA cascaded values (for `revert`). */
-  ua: Map<string, string> | null;
+  declare ua: Map<string, string> | null;
   /** Whether a UA !important display:none applies. */
-  displayLocked: boolean;
+  declare displayLocked: boolean;
   /** Memoized computed values. */
-  computed: Map<string, string> | null;
+  declare computed: Map<string, string> | null;
   /** Computed custom properties (inherited), resolved lazily. */
-  custom: Map<string, string> | null;
-  customDone: boolean;
+  declare custom: Map<string, string> | null;
+  declare customDone: boolean;
   /** Computed display/visibility/pointer-events (hot for aria), "" = not computed yet. */
-  display: string;
-  visibility: string;
-  pointerEvents: string;
+  declare display: string;
+  declare visibility: string;
+  declare pointerEvents: string;
   /** Depends on state that neither the version stamps nor `deps` cover: never reuse from cache. */
-  volatile: boolean;
+  declare volatile: boolean;
   /**
    * Volatile selector tests (:hover, :focus, :checked, ...) evaluated while matching this
    * element's rules, with their results (selectors/compile.ts StateDeps), or null. While they
    * still hold, the matched declarations are reused; computed values are recomputed.
    */
-  deps: StateDeps | null;
+  declare deps: StateDeps | null;
   /**
    * A computed value was derived from another record (parent, originating element, root) that is
    * volatile, has `deps`, or itself has this flag: such values may change without a version
    * bump, so they are not kept across reuses. Set by `dependOn` when that record is read.
    */
-  inheritsVolatile: boolean;
-  before: StyleRecord | null;
-  after: StyleRecord | null;
+  declare inheritsVolatile: boolean;
+  declare before: StyleRecord | null;
+  declare after: StyleRecord | null;
   /** Tree root styles this element belongs to (null when disconnected). */
-  root: RootStyles | null;
+  declare root: RootStyles | null;
 
   constructor(el: NodeImpl, pseudo: number) {
     this.el = el;
@@ -928,8 +929,8 @@ function resetFilter(): void {
  * removed trees (parents) and replaced rule indexes (buckets).
  */
 class Survivors {
-  hashes: number[];
-  lists: WeakMap<Bucket, IndexedRule[]>;
+  declare hashes: number[];
+  declare lists: WeakMap<Bucket, IndexedRule[]>;
   constructor(hashes: number[]) {
     this.hashes = hashes;
     this.lists = new WeakMap();
@@ -1488,33 +1489,18 @@ function rootFontSize(rec: StyleRecord): number {
   return parseFloat(computedValueOf(dependOn(rec, styleRecord(root)), "font-size")) || 16;
 }
 
-/** Absolute length in px for a single dimension token, given font metrics (null if not absolute). */
-function absLength(num: number, unit: string, em: number, rem: number): number | null {
+/** Length in px for a single dimension token, given font metrics (NaN for other relative units). */
+function absLength(num: number, unit: string, em: number, rem: number): number {
   switch (unit) {
-    case "px":
-      return num;
     case "em":
       return num * em;
     case "rem":
       return num * rem;
     case "ex":
-      return num * em * 0.5;
     case "ch":
       return num * em * 0.5;
-    case "in":
-      return num * 96;
-    case "cm":
-      return (num * 96) / 2.54;
-    case "mm":
-      return (num * 96) / 25.4;
-    case "q":
-      return (num * 96) / 101.6;
-    case "pt":
-      return (num * 96) / 72;
-    case "pc":
-      return num * 16;
   }
-  return null;
+  return absoluteLength(num, unit);
 }
 
 function computeFontSize(rec: StyleRecord, v: string): string {
@@ -1531,7 +1517,7 @@ function computeFontSize(rec: StyleRecord, v: string): string {
   if (c.type === TK_PERCENTAGE) return px((parentPx(rec, "font-size", 16) * c.num) / 100);
   if (c.type === TK_DIMENSION) {
     const n = absLength(c.num, c.lower, parentPx(rec, "font-size", 16), c.lower === "rem" ? rootFontSize(rec) : 16);
-    return n === null ? v : px(n);
+    return Number.isNaN(n) ? v : px(n);
   }
   return v;
 }

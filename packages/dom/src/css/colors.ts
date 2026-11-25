@@ -219,10 +219,10 @@ export function isNamedColor(lowerName: string): boolean {
 
 /** Resolved sRGB color: channels 0-255 (unrounded), alpha 0-1. */
 export class RGBA {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
+  declare r: number;
+  declare g: number;
+  declare b: number;
+  declare a: number;
   constructor(r: number, g: number, b: number, a: number) {
     this.r = r;
     this.g = g;

@@ -45,7 +45,7 @@ import {
 import { activeElement, blurElement, defaultTabIndex, focusElement, tabIndexValue, documentHasFocus } from "./focus.ts";
 import { isEditable } from "./shared.ts";
 import { getInnerText, renderedTextFragment } from "./innerText.ts";
-import { ARIA_STRING_ATTRIBUTES } from "./aria-reflection.ts";
+import { ARIA_ELEMENT_REFS, ARIA_STRING_ATTRIBUTES } from "./aria-reflection.ts";
 import { fireSyntheticClick } from "./events.ts";
 import { clearParserAssociation, formOwner, isActuallyDisabled, parserAssociateForm } from "./forms/form-associated.ts";
 import { I_EMAIL, I_PASSWORD, I_URL, inputType } from "./forms/input-type.ts";
@@ -379,24 +379,16 @@ export class HTMLElement extends Element {
     attachedInternals.set(this, internals);
     return internals;
   }
+}
 
-  // --- CSSOM View (no layout) -------------------------------------------------------------
-
-  get offsetParent(): Element | null {
-    return null;
-  }
-  get offsetTop(): number {
-    return 0;
-  }
-  get offsetLeft(): number {
-    return 0;
-  }
-  get offsetWidth(): number {
-    return 0;
-  }
-  get offsetHeight(): number {
-    return 0;
-  }
+export interface HTMLElement {
+  // CSSOM View (https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface):
+  // defined on HTMLElement.prototype by css/view.ts (installHTMLElementView) while the DOM loads.
+  readonly offsetParent: Element | null;
+  readonly offsetTop: number;
+  readonly offsetLeft: number;
+  readonly offsetWidth: number;
+  readonly offsetHeight: number;
 }
 
 /** https://html.spec.whatwg.org/#autocapitalize-and-autocorrect-inheriting-elements */
@@ -553,9 +545,9 @@ export function customStatesOf(el: Element): Set<string> | null {
  * root, and form association (delegated to html/forms/face.ts).
  */
 export class ElementInternals {
-  [$target]: HTMLElement;
-  [$states]: Set<string> | null;
-  [$value]: unknown;
+  declare [$target]: HTMLElement;
+  declare [$states]: Set<string> | null;
+  declare [$value]: unknown;
 
   constructor(target: HTMLElement) {
     if (!(target instanceof HTMLElement) || attachedInternals.has(target)) throw new TypeError("Illegal constructor");
@@ -647,16 +639,7 @@ const internalsAriaElements = new WeakMap<
   ElementInternals,
   Map<string, { refs: WeakRef<Element>[]; cached: WeakRef<readonly Element[]> | null }>
 >();
-for (const [name, many] of [
-  ["ariaActiveDescendantElement", false],
-  ["ariaControlsElements", true],
-  ["ariaDescribedByElements", true],
-  ["ariaDetailsElements", true],
-  ["ariaErrorMessageElements", true],
-  ["ariaFlowToElements", true],
-  ["ariaLabelledByElements", true],
-  ["ariaOwnsElements", true],
-] as const) {
+for (const [name, , many] of ARIA_ELEMENT_REFS) {
   const toElement = (v: unknown): Element => {
     if (!(v instanceof Element))
       throw new TypeError(

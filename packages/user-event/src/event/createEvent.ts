@@ -93,12 +93,12 @@ export function createEvent<K extends EventType>(
 ) {
   const window = getWindow(target)
   const {EventType, defaultInit} = eventMap[type]
-  const constructors = getEventConstructors(window)
+  const {fallbacks, constructors} = getEventConstructors(window)
 
   // A fallback class (the window lacks the interface, e.g. PointerEvent under
   // @ctrl/dom-jest-environment's jsdom 26 parity) takes upstream's path: its native superclass
   // constructor would drop the members only the initializers set (pointerType, width, ...).
-  if (implOf(target) !== null && !constructors.fallbacks.has(EventType)) {
+  if (implOf(target) !== null && !fallbacks.has(EventType)) {
     return createNativeEvent(
       constructors[EventType],
       EventType,
@@ -144,50 +144,38 @@ export function createEvent<K extends EventType>(
  * KeyboardEventInit, modifier* members on EventModifierInit, clipboardData on ClipboardEventInit).
  */
 function createNativeEvent(
-  Ctor: new (type: string, init: object) => Event,
+  Ctor: EventConstructor,
   eventInterface: string,
   type: string,
   defaultInit: EventInit,
   init: object | undefined,
   modifiers: ModifierSource | undefined,
 ): Event {
-  const i = (init ?? {}) as PointerEventInit &
-    KeyboardEventInit &
-    InputEventInit &
-    ClipboardEventInit & {
-      x?: number
-      y?: number
-      offsetX?: number
-      offsetY?: number
-      pageX?: number
-      pageY?: number
-    }
+  const i = (init ?? {}) as NativeInit
   const m = modifiers?.keyboard.modifiers
   let dict: object
   switch (eventInterface) {
     case 'KeyboardEvent':
-      dict = keyboardEventDict(i as NativeInit, defaultInit, m)
+      dict = keyboardEventDict(i, defaultInit, m)
       break
     case 'MouseEvent':
-      dict = mouseEventDict(i as NativeInit, defaultInit, m)
+      dict = mouseEventDict(i, defaultInit, m)
       break
     case 'PointerEvent':
-      dict = pointerEventDict(i as NativeInit, defaultInit, m)
+      dict = pointerEventDict(i, defaultInit, m)
       break
     case 'InputEvent':
-      dict = inputEventDict(i as NativeInit, defaultInit)
+      dict = inputEventDict(i, defaultInit)
       break
-    default: {
-      const d: Record<string, unknown> = {...i}
-      modifiers?.assignUIEventModifiers(d)
-      d.bubbles = defaultInit.bubbles
-      d.cancelable = defaultInit.cancelable
-      d.composed = defaultInit.composed
-      if (i.clientX === undefined && i.x !== undefined) d.clientX = i.x
-      if (i.clientY === undefined && i.y !== undefined) d.clientY = i.y
-      if (i.pressure === undefined) d.pressure = i.buttons ? 0.5 : 0
-      dict = d
-    }
+    default:
+      // FocusEvent, ClipboardEvent, Event: dispatchUIEvent passes modifiers only for mouse and
+      // keyboard events, and these constructors read no modifier, coordinate or pressure member.
+      dict = {
+        ...i,
+        bubbles: defaultInit.bubbles,
+        cancelable: defaultInit.cancelable,
+        composed: defaultInit.composed,
+      }
   }
   const event = new Ctor(type, dict)
   setLayoutMembers(event, i)
@@ -195,10 +183,10 @@ function createNativeEvent(
 }
 
 type LayoutInit = {
-  offsetX?: number
-  offsetY?: number
-  pageX?: number
-  pageY?: number
+  offsetX?: unknown
+  offsetY?: unknown
+  pageX?: unknown
+  pageY?: unknown
 }
 
 function setLayoutMembers(event: Event, i: LayoutInit) {
@@ -383,71 +371,41 @@ function getEventConstructors(window: Window) {
   return constructors
 }
 
+type EventConstructor = new (type: string, init: object) => Event
+
+/**
+ * The interfaces of the event map, each after its parent. Upstream also builds AnimationEvent,
+ * CompositionEvent, DragEvent, PopStateEvent, ProgressEvent, TouchEvent and TransitionEvent, which
+ * no event it creates uses.
+ */
+const EVENT_INTERFACES = [
+  ['Event', ''],
+  ['UIEvent', 'Event'],
+  ['ClipboardEvent', 'Event'],
+  ['FocusEvent', 'UIEvent'],
+  ['InputEvent', 'UIEvent'],
+  ['KeyboardEvent', 'UIEvent'],
+  ['MouseEvent', 'UIEvent'],
+  ['PointerEvent', 'MouseEvent'],
+] as const
+
 /* istanbul ignore next */
 function buildEventConstructors(window: Window) {
-  // Interfaces the window lacks (replaced by the classes below).
+  const own = window as unknown as Record<string, EventConstructor | undefined>
+  // Interfaces the window lacks, replaced by a bare subclass of the parent with the
+  // interface's name (upstream's `class PointerEvent extends MouseEvent {}`).
   const fallbacks = new Set<string>()
-  for (const name of [
-    'Event',
-    'AnimationEvent',
-    'ClipboardEvent',
-    'PopStateEvent',
-    'ProgressEvent',
-    'TransitionEvent',
-    'UIEvent',
-    'CompositionEvent',
-    'FocusEvent',
-    'InputEvent',
-    'KeyboardEvent',
-    'MouseEvent',
-    'DragEvent',
-    'PointerEvent',
-    'TouchEvent',
-  ] as const) {
-    if (window[name] === undefined) fallbacks.add(name)
+  const constructors: Record<string, EventConstructor> = {}
+  for (const [name, parent] of EVENT_INTERFACES) {
+    let Ctor = own[name]
+    if (Ctor === undefined) {
+      fallbacks.add(name)
+      const Parent = (constructors[parent] ?? Object) as EventConstructor
+      Ctor = {[name]: class extends Parent {}}[name]
+    }
+    constructors[name] = Ctor
   }
-  const Event = window.Event ?? class Event {}
-  const AnimationEvent =
-    window.AnimationEvent ?? class AnimationEvent extends Event {}
-  const ClipboardEvent =
-    window.ClipboardEvent ?? class ClipboardEvent extends Event {}
-  const PopStateEvent =
-    window.PopStateEvent ?? class PopStateEvent extends Event {}
-  const ProgressEvent =
-    window.ProgressEvent ?? class ProgressEvent extends Event {}
-  const TransitionEvent =
-    window.TransitionEvent ?? class TransitionEvent extends Event {}
-  const UIEvent = window.UIEvent ?? class UIEvent extends Event {}
-  const CompositionEvent =
-    window.CompositionEvent ?? class CompositionEvent extends UIEvent {}
-  const FocusEvent = window.FocusEvent ?? class FocusEvent extends UIEvent {}
-  const InputEvent = window.InputEvent ?? class InputEvent extends UIEvent {}
-  const KeyboardEvent =
-    window.KeyboardEvent ?? class KeyboardEvent extends UIEvent {}
-  const MouseEvent = window.MouseEvent ?? class MouseEvent extends UIEvent {}
-  const DragEvent = window.DragEvent ?? class DragEvent extends MouseEvent {}
-  const PointerEvent =
-    window.PointerEvent ?? class PointerEvent extends MouseEvent {}
-  const TouchEvent = window.TouchEvent ?? class TouchEvent extends UIEvent {}
-
-  return {
-    fallbacks,
-    Event,
-    AnimationEvent,
-    ClipboardEvent,
-    PopStateEvent,
-    ProgressEvent,
-    TransitionEvent,
-    UIEvent,
-    CompositionEvent,
-    FocusEvent,
-    InputEvent,
-    KeyboardEvent,
-    MouseEvent,
-    DragEvent,
-    PointerEvent,
-    TouchEvent,
-  }
+  return {fallbacks, constructors}
 }
 
 function assignProps<T extends object>(obj: T, props: {[k in keyof T]?: T[k]}) {

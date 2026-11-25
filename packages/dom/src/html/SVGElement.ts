@@ -24,8 +24,8 @@ import { SVGNumber, installFitToViewBox } from "./svg-types.ts";
 
 /** https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedString */
 export class SVGAnimatedString {
-  [$el]: Element;
-  [$attr]: string;
+  declare [$el]: Element;
+  declare [$attr]: string;
   constructor(el: Element, attr: string) {
     this[$el] = el;
     this[$attr] = attr;

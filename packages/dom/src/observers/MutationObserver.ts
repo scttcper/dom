@@ -15,6 +15,7 @@ import {
   removeTransientRegistrations,
 } from "./queue.ts";
 import { $callback, $transients, $id, $impl, $nodes, $records } from "../keys.ts";
+import { setToStringTag } from "../events/Event.ts";
 
 export interface MutationObserverInit {
   childList?: boolean;
@@ -32,15 +33,15 @@ let nextId = 0;
 
 export class MutationObserver {
   /** @internal Creation order (notify order). */
-  [$id]: number;
+  declare [$id]: number;
   /** @internal https://dom.spec.whatwg.org/#concept-mo-callback */
-  [$callback]: MutationCallback;
+  declare [$callback]: MutationCallback;
   /** @internal https://dom.spec.whatwg.org/#concept-mo-queue */
-  [$records]: MutationRecord[];
+  declare [$records]: MutationRecord[];
   /** @internal https://dom.spec.whatwg.org/#mutationobserver-node-list (nodes with a registration of this observer). */
-  [$nodes]: Set<ObservedNode>;
+  declare [$nodes]: Set<ObservedNode>;
   /** @internal Temporary subtree registrations until the next delivery. */
-  [$transients]: RegisteredObserver[] | null;
+  declare [$transients]: RegisteredObserver[] | null;
 
   constructor(callback: MutationCallback) {
     if (typeof callback !== "function") {
@@ -70,21 +71,10 @@ export class MutationObserver {
         "Failed to execute 'observe' on 'MutationObserver': The options object must set at least one of 'attributes', 'characterData', or 'childList' to true.",
       );
     }
-    if (options.attributeOldValue && !attributes) {
-      throw new TypeError(
-        "Failed to execute 'observe' on 'MutationObserver': The options object may only set 'attributeOldValue' to true when 'attributes' is true or not present.",
-      );
-    }
-    if (options.attributeFilter !== undefined && !attributes) {
-      throw new TypeError(
-        "Failed to execute 'observe' on 'MutationObserver': The options object may only set 'attributeFilter' when 'attributes' is true or not present.",
-      );
-    }
-    if (options.characterDataOldValue && !characterData) {
-      throw new TypeError(
-        "Failed to execute 'observe' on 'MutationObserver': The options object may only set 'characterDataOldValue' to true when 'characterData' is true or not present.",
-      );
-    }
+    if (options.attributeOldValue && !attributes) throw onlyWhen("attributeOldValue' to true", "attributes");
+    if (options.attributeFilter !== undefined && !attributes) throw onlyWhen("attributeFilter'", "attributes");
+    if (options.characterDataOldValue && !characterData)
+      throw onlyWhen("characterDataOldValue' to true", "characterData");
     const normalized = new NormalizedOptions(options, !!attributes, !!characterData);
     const node = target[$impl];
     // Step 7.
@@ -118,7 +108,11 @@ export class MutationObserver {
   }
 }
 
-Object.defineProperty(MutationObserver.prototype, Symbol.toStringTag, {
-  value: "MutationObserver",
-  configurable: true,
-});
+setToStringTag(MutationObserver);
+
+/** Steps 4-6 of observe(): an option given without the option it depends on. */
+function onlyWhen(option: string, dependency: string): TypeError {
+  return new TypeError(
+    `Failed to execute 'observe' on 'MutationObserver': The options object may only set '${option} when '${dependency}' is true or not present.`,
+  );
+}

@@ -4,7 +4,7 @@
 // fake timers never stall them).
 
 import { EventTarget } from "../events/EventTarget.ts";
-import { getEventHandler, setEventHandler } from "../events/handlers.ts";
+import { defineEventHandlers } from "../events/handlers.ts";
 import { eventInterface } from "./interfaces.ts";
 import { $error, $generation, $readyState, $result } from "../keys.ts";
 
@@ -126,18 +126,7 @@ export class FileReader extends EventTarget {
 }
 
 // https://w3c.github.io/FileAPI/#dfn-onloadstart and siblings
-for (const type of ["loadstart", "progress", "load", "abort", "error", "loadend"]) {
-  Object.defineProperty(FileReader.prototype, `on${type}`, {
-    get(this: FileReader) {
-      return getEventHandler(this, type);
-    },
-    set(this: FileReader, value: unknown) {
-      setEventHandler(this, type, value);
-    },
-    enumerable: true,
-    configurable: true,
-  });
-}
+defineEventHandlers(FileReader.prototype, ["loadstart", "progress", "load", "abort", "error", "loadend"]);
 for (const [name, value] of [
   ["EMPTY", 0],
   ["LOADING", 1],

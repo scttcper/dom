@@ -16,9 +16,9 @@ import type { Document } from "../nodes/Document.ts";
 import { removeAttribute, setAttribute, splitOnAsciiWhitespace } from "../nodes/attributes.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE } from "../nodes/constants.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
-import { isShadowRootImpl } from "../nodes/slots.ts";
-import { $host, $impl } from "../keys.ts";
+import { $impl } from "../keys.ts";
 import { defineAccessor, nullableStr } from "./reflect.ts";
+import { parentOrHost } from "./shared.ts";
 
 /** ARIAMixin's `DOMString?` attributes (ARIA 1.3 plus the tentative *Text/description ones browsers ship). */
 export const ARIA_STRING_ATTRIBUTES =
@@ -35,18 +35,19 @@ export const ARIA_STRING_ATTRIBUTES =
   "ariaSetSize=aria-setsize ariaSort=aria-sort ariaValueMax=aria-valuemax ariaValueMin=aria-valuemin " +
   "ariaValueNow=aria-valuenow ariaValueText=aria-valuetext";
 
-/** `Element?` attributes → content attribute. */
-const ELEMENT_REFS: [string, string][] = [["ariaActiveDescendantElement", "aria-activedescendant"]];
-
-/** `FrozenArray<Element>?` attributes → content attribute. */
-const ELEMENTS_REFS: [string, string][] = [
-  ["ariaControlsElements", "aria-controls"],
-  ["ariaDescribedByElements", "aria-describedby"],
-  ["ariaDetailsElements", "aria-details"],
-  ["ariaErrorMessageElements", "aria-errormessage"],
-  ["ariaFlowToElements", "aria-flowto"],
-  ["ariaLabelledByElements", "aria-labelledby"],
-  ["ariaOwnsElements", "aria-owns"],
+/**
+ * `Element?` (many = false) and `FrozenArray<Element>?` (many = true) attributes → content
+ * attribute; ElementInternals has the same IDL attributes (HTMLElement.ts).
+ */
+export const ARIA_ELEMENT_REFS: readonly (readonly [idl: string, content: string, many: boolean])[] = [
+  ["ariaActiveDescendantElement", "aria-activedescendant", false],
+  ["ariaControlsElements", "aria-controls", true],
+  ["ariaDescribedByElements", "aria-describedby", true],
+  ["ariaDetailsElements", "aria-details", true],
+  ["ariaErrorMessageElements", "aria-errormessage", true],
+  ["ariaFlowToElements", "aria-flowto", true],
+  ["ariaLabelledByElements", "aria-labelledby", true],
+  ["ariaOwnsElements", "aria-owns", true],
 ];
 
 /**
@@ -102,13 +103,6 @@ function clearExplicit(el: NodeImpl, localName: string): void {
   removeAttribute(el, localName);
 }
 
-/** Shadow-including parent: the parent, or the host of a shadow root. */
-function shadowIncludingParent(n: NodeImpl): NodeImpl | null {
-  if (n.parent !== null) return n.parent;
-  if (isShadowRootImpl(n)) return (n.node as unknown as { [$host]: Element | null })[$host]?.[$impl] ?? null;
-  return null;
-}
-
 /**
  * Whether `target` is a descendant of any of `el`'s shadow-including ancestors. Equivalent:
  * `target`'s tree root is a (strict) shadow-including ancestor of `el` and is not `target`.
@@ -117,7 +111,7 @@ function isValidReference(el: NodeImpl, target: NodeImpl): boolean {
   let root = target;
   while (root.parent !== null) root = root.parent;
   if (root === target) return false;
-  for (let a = shadowIncludingParent(el); a !== null; a = shadowIncludingParent(a)) {
+  for (let a = parentOrHost(el); a !== null; a = parentOrHost(a)) {
     if (a === root) return true;
   }
   return false;
@@ -196,7 +190,8 @@ function toElement(v: unknown, prop: string): NodeImpl {
   return v[$impl];
 }
 
-for (const [idl, content] of ELEMENT_REFS) {
+for (const [idl, content, many] of ARIA_ELEMENT_REFS) {
+  if (many) continue;
   defineAccessor(
     Element,
     idl,
@@ -212,7 +207,8 @@ for (const [idl, content] of ELEMENT_REFS) {
   );
 }
 
-for (const [idl, content] of ELEMENTS_REFS) {
+for (const [idl, content, many] of ARIA_ELEMENT_REFS) {
+  if (!many) continue;
   defineAccessor(
     Element,
     idl,

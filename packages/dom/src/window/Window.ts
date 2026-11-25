@@ -10,16 +10,15 @@
 // subsystem lazy. See installGlobals (globals.ts) for how a window becomes the test global.
 
 import { EventTarget } from "../events/EventTarget.ts";
-import { hideInternals } from "../webidl-runtime.ts";
+import { argumentsRequired, defineHidden, hideInternals } from "../webidl-runtime.ts";
 import { Event } from "../events/Event.ts";
 import { Document } from "../nodes/Document.ts";
 import { DocumentType } from "../nodes/DocumentType.ts";
 import type { Element } from "../nodes/Element.ts";
-import { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
+import type { CSSStyleDeclaration } from "../css/CSSStyleDeclaration.ts";
 import { parseDocument } from "../parser/index.ts";
 import { setCurrentWindow, currentWindowOrNull } from "./current.ts";
-import { ensureInterfaces, eventInterface, domExport, type InterfaceMap } from "./interfaces.ts";
-import { CSS } from "./fallbacks.ts";
+import { ensureInterfaces, eventInterface, type InterfaceMap } from "./interfaces.ts";
 import { DOMStringList } from "./DOMStringList.ts";
 import { AbortSignal } from "./abort.ts";
 import { windowHooks } from "./hooks.ts";
@@ -40,7 +39,7 @@ import { type TimerList, clearTimers, startTimer } from "./timers.ts";
 import { clockSkipping, userAgentTimers } from "./clock.ts";
 import { type CompatProfile, compatExposes, resolveCompat } from "./compat.ts";
 import { type LayoutMode, enableLayout } from "../css/layout-mode.ts";
-import { COMPUTED_STYLE_PSEUDO, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
+import { COMPUTED_STYLE_PSEUDO, notImplementedActive, reportNotImplemented, stubbedMethod } from "./not-implemented.ts";
 import {
   $aboutBase,
   $childWindows,
@@ -99,7 +98,7 @@ export interface WindowOptions {
   languages?: readonly string[];
   /** document.referrer */
   referrer?: string;
-  /** Overrides for media features in the fallback matchMedia evaluator, e.g. { "prefers-color-scheme": "dark" }. */
+  /** Media feature overrides for matchMedia() and @media rules, e.g. { "prefers-color-scheme": "dark" }. */
   mediaFeatures?: Record<string, string | number>;
   /**
    * How getComputedStyle serializes colors: "specified" (default) keeps the author's text like
@@ -260,10 +259,11 @@ const WINDOW_FIELDS: readonly symbol[] = [
 ];
 
 export class Window extends EventTarget {
-  document: Document;
-  name: string;
-  status: string;
-  opener: Window | null;
+  // `declare`d: the constructor assigns them (a class field would define each as `undefined` first).
+  declare document: Document;
+  declare name: string;
+  declare status: string;
+  declare opener: Window | null;
   /** @internal */
   declare [$options]: ResolvedWindowOptions;
   /** @internal The document's URL (https://dom.spec.whatwg.org/#concept-document-url) as a parsed URL. */
@@ -320,15 +320,9 @@ export class Window extends EventTarget {
     // The internal fields are `declare`d and created here, non-enumerable from the start, in
     // declaration order (where class syntax used to create them as enumerable `undefined`): far
     // cheaper than reconfiguring each one in hideInternals below, which now only catches keys
-    // added later during construction.
-    for (let i = 0; i < WINDOW_FIELDS.length; i++) {
-      Object.defineProperty(this, WINDOW_FIELDS[i], {
-        value: undefined,
-        writable: true,
-        configurable: true,
-        enumerable: false,
-      });
-    }
+    // added later during construction. Each starts null; the ones that start otherwise are set
+    // below.
+    for (let i = 0; i < WINDOW_FIELDS.length; i++) defineHidden(this, WINDOW_FIELDS[i], null);
     if (!prototypeReady) preparePrototype();
     const url = new URL(options.url ?? "http://localhost/");
     const doc = Document._createHTML(this, url.href);
@@ -352,27 +346,12 @@ export class Window extends EventTarget {
     };
     if (options.layout === "lite") enableLayout();
     this[$url] = url;
-    this[$location] = null;
-    this[$history] = null;
-    this[$navigator] = null;
-    this[$screen] = null;
-    this[$visualViewport] = null;
-    this[$localStorage] = null;
-    this[$sessionStorage] = null;
     // Join eagerly so storage events reach tabs and frames before their first storage access.
     const storageParent = nested?.parent ?? options.shareStorageWith;
-    this[$shed] = storageParent === undefined ? null : new StoragePeer(this, storageParent._storageShed);
-    this[$customElements] = null;
-    this[$cookieJar] = null;
+    if (storageParent !== undefined) this[$shed] = new StoragePeer(this, storageParent._storageShed);
     this[$mediaQueryLists] = new Set();
-    this[$tasks] = null;
-    this[$timers] = null;
-    this[$frameCallbacks] = null;
-    this[$runningFrame] = null;
-    this[$frameTask] = null;
     this[$frameTime] = -1;
     this[$frameId] = 0;
-    this[$idleCallbacks] = null;
     this[$idleId] = 0;
     this[$innerWidth] = width;
     this[$innerHeight] = height;
@@ -381,10 +360,6 @@ export class Window extends EventTarget {
     this[$scrollY] = 0;
     this[$closed] = false;
     this[$host] = globalThis;
-    this[$parentWindow] = null;
-    this[$frameElement] = null;
-    this[$childWindows] = null;
-    this[$globalObject] = null;
     if (options.visualViewport ?? compatExposes(this[$options].compat, "visualViewport")) {
       Object.defineProperty(this, "visualViewport", {
         get: visualViewportGetter,
@@ -528,13 +503,7 @@ export class Window extends EventTarget {
 
   /** https://html.spec.whatwg.org/#dom-window-customelements (html-elements registers the factory). */
   get customElements(): unknown {
-    if (this[$customElements] === null) {
-      const factory = windowHooks.createCustomElementRegistry;
-      // TODO(html-elements): register windowHooks.createCustomElementRegistry.
-      if (factory !== null) this[$customElements] = factory(this);
-      else return undefined;
-    }
-    return this[$customElements];
+    return (this[$customElements] ??= windowHooks.createCustomElementRegistry!(this));
   }
 
   /** @internal */
@@ -617,21 +586,16 @@ export class Window extends EventTarget {
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-scroll — no layout: just records the position. */
   scroll(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
-    const self = receiver(this, "scroll");
-    reportNotImplemented(self, NOT_IMPLEMENTED.scroll);
-    scrollWindow(self, x, y);
+    scrollWindow(stubbedCall(this, "scroll"), x, y);
   }
 
   scrollTo(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
-    const self = receiver(this, "scrollTo");
-    reportNotImplemented(self, NOT_IMPLEMENTED.scrollTo);
-    scrollWindow(self, x, y);
+    scrollWindow(stubbedCall(this, "scrollTo"), x, y);
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-scrollby */
   scrollBy(x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
-    const self = receiver(this, "scrollBy");
-    reportNotImplemented(self, NOT_IMPLEMENTED.scrollBy);
+    const self = stubbedCall(this, "scrollBy");
     if (typeof x === "object" && x !== null) {
       scrollWindow(self, { left: self[$scrollX] + (Number(x.left) || 0), top: self[$scrollY] + (Number(x.top) || 0) });
     } else {
@@ -644,22 +608,19 @@ export class Window extends EventTarget {
    * set the viewport size, report media query changes and fire `resize`.
    */
   resizeTo(width: number, height: number): void {
-    const self = receiver(this, "resizeTo");
-    reportNotImplemented(self, NOT_IMPLEMENTED.resizeTo);
-    resizeWindow(self, Number(width), Number(height));
+    resizeWindow(stubbedCall(this, "resizeTo"), Number(width), Number(height));
   }
 
   resizeBy(x: number, y: number): void {
-    const self = receiver(this, "resizeBy");
-    reportNotImplemented(self, NOT_IMPLEMENTED.resizeBy);
+    const self = stubbedCall(this, "resizeBy");
     resizeWindow(self, self[$innerWidth] + Number(x), self[$innerHeight] + Number(y));
   }
 
   moveTo(_x: number, _y: number): void {
-    reportNotImplemented(receiver(this, "moveTo"), NOT_IMPLEMENTED.moveTo);
+    stubbedCall(this, "moveTo");
   }
   moveBy(_x: number, _y: number): void {
-    reportNotImplemented(receiver(this, "moveBy"), NOT_IMPLEMENTED.moveBy);
+    stubbedCall(this, "moveBy");
   }
 
   // --- CSSOM -----------------------------------------------------------------------------------
@@ -673,25 +634,22 @@ export class Window extends EventTarget {
     if (pseudoElement !== undefined && pseudoElement !== null && String(pseudoElement) !== "") {
       reportNotImplemented(receiver(this, "getComputedStyle"), COMPUTED_STYLE_PSEUDO);
     }
-    const hook =
-      windowHooks.getComputedStyle ?? domExport<(e: Element, p?: string | null) => unknown>("getComputedStyle") ?? null;
-    if (hook !== null) return hook(element, pseudoElement, receiver(this, "getComputedStyle")) as CSSStyleDeclaration;
-    // TODO(css): register windowHooks.getComputedStyle. Fallback: the inline declarations only.
-    return new CSSStyleDeclaration(element);
+    return windowHooks.getComputedStyle!(
+      element,
+      pseudoElement,
+      receiver(this, "getComputedStyle"),
+    ) as CSSStyleDeclaration;
   }
 
   /** https://drafts.csswg.org/cssom-view/#dom-window-matchmedia */
   matchMedia(query: string): MediaQueryList {
-    if (arguments.length === 0)
-      throw new TypeError("Failed to execute 'matchMedia' on 'Window': 1 argument required, but only 0 present.");
+    if (arguments.length === 0) argumentsRequired("matchMedia", "Window", 1, 0);
     return new MediaQueryList(receiver(this, "matchMedia"), String(query).trim());
   }
 
   /** https://w3c.github.io/selection-api/#dom-window-getselection */
   getSelection(): unknown {
-    const doc = receiver(this, "getSelection").document as unknown as { getSelection?: () => unknown };
-    // TODO(dom-core): Document.prototype.getSelection.
-    return typeof doc.getSelection === "function" ? doc.getSelection() : null;
+    return receiver(this, "getSelection").document.getSelection();
   }
 
   // --- animation frames, idle callbacks, tasks -----------------------------------------------
@@ -885,30 +843,30 @@ export class Window extends EventTarget {
   // --- browser chrome no-ops (https://html.spec.whatwg.org/#user-prompts) ----------------------
 
   alert(_message?: unknown): void {
-    reportNotImplemented(receiver(this, "alert"), NOT_IMPLEMENTED.alert);
+    stubbedCall(this, "alert");
   }
   confirm(_message?: unknown): boolean {
-    reportNotImplemented(receiver(this, "confirm"), NOT_IMPLEMENTED.confirm);
+    stubbedCall(this, "confirm");
     return false;
   }
   prompt(_message?: unknown, _default?: unknown): string | null {
-    reportNotImplemented(receiver(this, "prompt"), NOT_IMPLEMENTED.prompt);
+    stubbedCall(this, "prompt");
     return null;
   }
   print(): void {
-    reportNotImplemented(receiver(this, "print"), NOT_IMPLEMENTED.print);
+    stubbedCall(this, "print");
   }
   /** https://html.spec.whatwg.org/#dom-open — nothing is opened. */
   open(_url?: string, _target?: string, _features?: string): Window | null {
-    reportNotImplemented(receiver(this, "open"), NOT_IMPLEMENTED.open);
+    stubbedCall(this, "open");
     return null;
   }
   stop(): void {}
   focus(): void {
-    reportNotImplemented(receiver(this, "focus"), NOT_IMPLEMENTED.focus);
+    stubbedCall(this, "focus");
   }
   blur(): void {
-    reportNotImplemented(receiver(this, "blur"), NOT_IMPLEMENTED.blur);
+    stubbedCall(this, "blur");
   }
   captureEvents(): void {}
   releaseEvents(): void {}
@@ -1032,25 +990,14 @@ function runAnimationFrame(this: Window): void {
 }
 
 /**
- * The Window methods jsdom stubs with a "Not implemented" report (browser/Window.js,
- * notImplementedMethodWrapper), for the jsdom profiles (window/not-implemented.ts).
+ * receiver() for a Window method jsdom stubs with a "Not implemented" report (browser/Window.js,
+ * notImplementedMethodWrapper), reported for the jsdom profiles (window/not-implemented.ts).
  */
-const NOT_IMPLEMENTED = {
-  alert: stubbedMethod("Window", "alert"),
-  blur: stubbedMethod("Window", "blur"),
-  confirm: stubbedMethod("Window", "confirm"),
-  focus: stubbedMethod("Window", "focus"),
-  moveBy: stubbedMethod("Window", "moveBy"),
-  moveTo: stubbedMethod("Window", "moveTo"),
-  open: stubbedMethod("Window", "open"),
-  print: stubbedMethod("Window", "print"),
-  prompt: stubbedMethod("Window", "prompt"),
-  resizeBy: stubbedMethod("Window", "resizeBy"),
-  resizeTo: stubbedMethod("Window", "resizeTo"),
-  scroll: stubbedMethod("Window", "scroll"),
-  scrollBy: stubbedMethod("Window", "scrollBy"),
-  scrollTo: stubbedMethod("Window", "scrollTo"),
-};
+function stubbedCall(self: Window, method: string): Window {
+  const window = receiver(self, method);
+  if (notImplementedActive()) reportNotImplemented(window, stubbedMethod("Window", method));
+  return window;
+}
 
 /** scroll()/scrollTo()/scrollBy(): records the position (there is no layout to scroll). */
 function scrollWindow(self: Window, x?: number | { left?: number; top?: number; behavior?: string }, y?: number): void {
@@ -1146,7 +1093,7 @@ for (const name of ["locationbar", "menubar", "personalbar", "scrollbars", "stat
 function preparePrototype(): void {
   prototypeReady = true;
   const proto = Window.prototype;
-  ensureInterfaces(proto, { CSS, DOMStringList, AbortSignal });
+  ensureInterfaces(proto, { DOMStringList, AbortSignal });
   const descriptors: PropertyDescriptorMap = {};
   for (const name of HOST_DELEGATES) {
     if (name in proto) continue;
@@ -1169,7 +1116,7 @@ function preparePrototype(): void {
 /** The interface objects every window exposes (name → class). */
 export function windowInterfaces(): InterfaceMap {
   if (!prototypeReady) preparePrototype();
-  return ensureInterfaces(Window.prototype, { CSS, DOMStringList, AbortSignal });
+  return ensureInterfaces(Window.prototype, { DOMStringList, AbortSignal });
 }
 
 export function createWindow(options?: WindowOptions): Window {

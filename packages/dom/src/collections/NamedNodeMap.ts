@@ -16,14 +16,10 @@
 import { F_HTML } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Attr } from "../nodes/Attr.ts";
-import {
-  asciiLowercase,
-  findAttributeByName,
-  findAttributeByNamespace,
-  removeAttributeRecord,
-} from "../nodes/attributes.ts";
+import { asciiLowercase, findAttributeByName, findAttributeNS, removeAttributeRecord } from "../nodes/attributes.ts";
 import { attrNode, setAttributeNode } from "../nodes/attr-nodes.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
+import { defineCollectionIterator } from "./iterator.ts";
 
 let table: IndexGetterTable | null = null;
 const $el = Symbol("NamedNodeMap.element");
@@ -124,11 +120,7 @@ export class NamedNodeMap {
 
   getNamedItemNS(namespace: string | null, localName: string): Attr | null {
     const el = this[$el];
-    const a = findAttributeByNamespace(
-      el,
-      namespace === "" || namespace === undefined ? null : namespace,
-      String(localName),
-    );
+    const a = findAttributeNS(el, namespace, localName);
     return a === null ? null : attrNode(el, a);
   }
 
@@ -152,11 +144,7 @@ export class NamedNodeMap {
 
   removeNamedItemNS(namespace: string | null, localName: string): Attr {
     const el = this[$el];
-    const a = findAttributeByNamespace(
-      el,
-      namespace === "" || namespace === undefined ? null : namespace,
-      String(localName),
-    );
+    const a = findAttributeNS(el, namespace, localName);
     if (a === null)
       throw new DOMException(`No item with name '${namespace}::${localName}' was found.`, "NotFoundError");
     const node = attrNode(el, a);
@@ -214,7 +202,4 @@ const attributeValues = {
   },
 }.values;
 
-Object.defineProperties(NamedNodeMap.prototype, {
-  [Symbol.iterator]: { value: attributeValues, writable: true, configurable: true },
-  [Symbol.toStringTag]: { value: "NamedNodeMap", configurable: true },
-});
+defineCollectionIterator(NamedNodeMap, attributeValues, false);

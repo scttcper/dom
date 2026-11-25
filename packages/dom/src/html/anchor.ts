@@ -37,15 +37,10 @@ const RELS = ["noreferrer", "noopener", "opener"] as const;
 /** Install HTMLHyperlinkElementUtils on `C`. */
 function installHyperlinkUtils(C: { prototype: object }): void {
   const proto = C.prototype;
-  const define = (
-    name: string,
-    get: (u: URL | null, impl: NodeImpl) => string,
-    set?: (u: URL, v: string) => boolean,
-  ) => {
+  const define = (name: string, get: (u: URL | null) => string, set?: (u: URL, v: string) => boolean) => {
     Object.defineProperty(proto, name, {
       get(this: Hyperlink) {
-        const impl = this[$impl];
-        return get(linkURL(impl), impl);
+        return get(linkURL(this[$impl]));
       },
       set: set
         ? function (this: Hyperlink, v: unknown) {
@@ -91,72 +86,27 @@ function installHyperlinkUtils(C: { prototype: object }): void {
       return true;
     },
   );
-  define(
-    "username",
-    (u) => (u === null ? "" : u.username),
-    (u, v) => {
-      if (u.host === "" || u.protocol === "file:") return false;
-      u.username = v;
-      return true;
-    },
-  );
-  define(
-    "password",
-    (u) => (u === null ? "" : u.password),
-    (u, v) => {
-      if (u.host === "" || u.protocol === "file:") return false;
-      u.password = v;
-      return true;
-    },
-  );
-  define(
-    "host",
-    (u) => (u === null ? "" : u.host),
-    (u, v) => {
-      u.host = v;
-      return true;
-    },
-  );
-  define(
-    "hostname",
-    (u) => (u === null ? "" : u.hostname),
-    (u, v) => {
-      u.hostname = v;
-      return true;
-    },
-  );
-  define(
-    "port",
-    (u) => (u === null ? "" : u.port),
-    (u, v) => {
-      u.port = v;
-      return true;
-    },
-  );
-  define(
-    "pathname",
-    (u) => (u === null ? "" : u.pathname),
-    (u, v) => {
-      u.pathname = v;
-      return true;
-    },
-  );
-  define(
-    "search",
-    (u) => (u === null ? "" : u.search),
-    (u, v) => {
-      u.search = v;
-      return true;
-    },
-  );
-  define(
-    "hash",
-    (u) => (u === null ? "" : u.hash),
-    (u, v) => {
-      u.hash = v;
-      return true;
-    },
-  );
+  for (const name of ["username", "password"] as const) {
+    define(
+      name,
+      (u) => (u === null ? "" : u[name]),
+      (u, v) => {
+        if (u.host === "" || u.protocol === "file:") return false;
+        u[name] = v;
+        return true;
+      },
+    );
+  }
+  for (const name of ["host", "hostname", "port", "pathname", "search", "hash"] as const) {
+    define(
+      name,
+      (u) => (u === null ? "" : u[name]),
+      (u, v) => {
+        u[name] = v;
+        return true;
+      },
+    );
+  }
 }
 
 /**

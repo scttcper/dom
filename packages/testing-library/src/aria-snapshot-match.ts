@@ -36,6 +36,7 @@ import {
   ariaSnapshot,
   ariaSnapshotTree,
   envMaxLines,
+  nodeKey,
   quote,
   truncate,
   yamlValue,
@@ -594,13 +595,6 @@ function templateKey(t: RoleTemplate): string {
   return key;
 }
 
-function receivedKey(node: MatchNode): string {
-  let key = node.role;
-  if (node.name !== "") key += " " + quote(truncate(node.name, MAX_TEXT));
-  for (let i = 0; i < node.props.length; i++) key += " " + node.props[i];
-  return key;
-}
-
 function isInline(t: RoleTemplate): boolean {
   return t.url === null && t.mode === null && t.children.length === 1 && t.children[0].kind === "text";
 }
@@ -687,7 +681,7 @@ class Scorer {
       return;
     }
     const n = node as MatchNode;
-    const key = headerMatches(n, t) ? templateKey(t) : receivedKey(n);
+    const key = headerMatches(n, t) ? templateKey(t) : nodeKey(n, MAX_TEXT);
     const aligned = this.align(t.children, n.children);
     if (isInline(t)) {
       const text = aligned[0] as string | null;

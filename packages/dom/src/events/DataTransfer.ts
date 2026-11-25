@@ -9,6 +9,8 @@
 
 import { createFileList, type FileList } from "../html/forms/FileList.ts";
 import { defineHidden, exposeMembers } from "../webidl-runtime.ts";
+import { setToStringTag } from "./Event.ts";
+import { asciiLowercase } from "../nodes/attributes.ts";
 import { $data, $dropEffect, $effectAllowed, $file, $files, $items, $kind, $owner, $type, $types } from "../keys.ts";
 
 const DROP_EFFECTS = new Set(["none", "copy", "link", "move"]);
@@ -23,10 +25,6 @@ const EFFECT_ALLOWED = new Set([
   "all",
   "uninitialized",
 ]);
-
-function asciiLowercase(s: string): string {
-  return s.replace(/[A-Z]/g, (c) => c.toLowerCase());
-}
 
 let internal = false;
 
@@ -71,10 +69,7 @@ export class DataTransferItem {
     return null;
   }
 }
-Object.defineProperty(DataTransferItem.prototype, Symbol.toStringTag, {
-  value: "DataTransferItem",
-  configurable: true,
-});
+setToStringTag(DataTransferItem);
 
 function makeItem(kind: string, type: string, data: string, file: File | null): DataTransferItem {
   internal = true;
@@ -178,10 +173,7 @@ export class DataTransferItemList {
     }
   }
 }
-Object.defineProperty(DataTransferItemList.prototype, Symbol.toStringTag, {
-  value: "DataTransferItemList",
-  configurable: true,
-});
+setToStringTag(DataTransferItemList);
 
 function makeList(): DataTransferItemList {
   internal = true;
@@ -319,6 +311,6 @@ export class DataTransfer {
     return (this[$files] = createFileList(files));
   }
 }
-Object.defineProperty(DataTransfer.prototype, Symbol.toStringTag, { value: "DataTransfer", configurable: true });
+setToStringTag(DataTransfer);
 
 exposeMembers(DataTransfer, DataTransferItemList, DataTransferItem);

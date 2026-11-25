@@ -13,12 +13,13 @@
 // it does in browsers and `Object.defineProperty(event, ...)` (Testing Library) still works.
 // No layout: pageX/offsetX mirror clientX like jsdom (docs/deviations.md).
 
-import { exposeMembers } from "../webidl-runtime.ts";
+import { argumentsRequired, exposeMembers } from "../webidl-runtime.ts";
 import {
   EF_DISPATCH,
   EF_MOUSE_EVENT,
   EF_TOUCH_EVENT,
   Event,
+  exposeConstants,
   initializeEvent,
   isInternalConstruct,
   setToStringTag,
@@ -227,8 +228,7 @@ export class UIEvent extends Event {
 
   /** https://w3c.github.io/uievents/#dom-uievent-inituievent */
   initUIEvent(type: string, bubbles = false, cancelable = false, view: Window | null = null, detail = 0): void {
-    if (arguments.length === 0)
-      throw new TypeError("Failed to execute 'initUIEvent' on 'UIEvent': 1 argument required, but only 0 present.");
+    if (arguments.length === 0) argumentsRequired("initUIEvent", "UIEvent", 1, 0);
     if (view !== null && view !== undefined && !isWindow(view)) {
       throw new TypeError(
         `Failed to execute 'initUIEvent' on '${this.constructor.name}': parameter 4 is not of type 'Window'.`,
@@ -410,10 +410,7 @@ export class MouseEvent extends UIEvent {
     button = 0,
     relatedTarget: EventTarget | null = null,
   ): void {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'initMouseEvent' on 'MouseEvent': 1 argument required, but only 0 present.",
-      );
+    if (arguments.length === 0) argumentsRequired("initMouseEvent", "MouseEvent", 1, 0);
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, detail);
     this.#screenX = toLong(screenX);
@@ -662,11 +659,7 @@ export class WheelEvent extends MouseEvent {
   }
 }
 setToStringTag(WheelEvent, 1);
-Object.defineProperties(WheelEvent.prototype, {
-  DOM_DELTA_PIXEL: { value: 0, enumerable: true },
-  DOM_DELTA_LINE: { value: 1, enumerable: true },
-  DOM_DELTA_PAGE: { value: 2, enumerable: true },
-});
+exposeConstants(WheelEvent);
 
 // --- DragEvent ------------------------------------------------------------------------------
 
@@ -786,10 +779,7 @@ export class KeyboardEvent extends UIEvent {
     shiftKey = false,
     metaKey = false,
   ): void {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'initKeyboardEvent' on 'KeyboardEvent': 1 argument required, but only 0 present.",
-      );
+    if (arguments.length === 0) argumentsRequired("initKeyboardEvent", "KeyboardEvent", 1, 0);
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
     this.#key = toDOMString(key);
@@ -798,12 +788,7 @@ export class KeyboardEvent extends UIEvent {
   }
 }
 setToStringTag(KeyboardEvent, 1);
-Object.defineProperties(KeyboardEvent.prototype, {
-  DOM_KEY_LOCATION_STANDARD: { value: 0, enumerable: true },
-  DOM_KEY_LOCATION_LEFT: { value: 1, enumerable: true },
-  DOM_KEY_LOCATION_RIGHT: { value: 2, enumerable: true },
-  DOM_KEY_LOCATION_NUMPAD: { value: 3, enumerable: true },
-});
+exposeConstants(KeyboardEvent);
 
 // --- InputEvent -----------------------------------------------------------------------------
 
@@ -874,10 +859,7 @@ export class CompositionEvent extends UIEvent {
 
   /** https://w3c.github.io/uievents/#dom-compositionevent-initcompositionevent */
   initCompositionEvent(type: string, bubbles = false, cancelable = false, view: Window | null = null, data = ""): void {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'initCompositionEvent' on 'CompositionEvent': 1 argument required, but only 0 present.",
-      );
+    if (arguments.length === 0) argumentsRequired("initCompositionEvent", "CompositionEvent", 1, 0);
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     this.initUIEvent(type, bubbles, cancelable, view, 0);
     this.#data = toDOMString(data);

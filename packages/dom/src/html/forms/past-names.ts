@@ -12,8 +12,8 @@ import { formOwner } from "./form-associated.ts";
 import type { HTMLFormElement } from "./HTMLFormElement.ts";
 
 export class PastName extends WeakRef<NodeImpl> {
-  history: Map<string, PastName>;
-  names: string | string[];
+  declare history: Map<string, PastName>;
+  declare names: string | string[];
   declare external?: ExternalWatch;
 
   constructor(history: Map<string, PastName>, name: string, el: NodeImpl) {
@@ -59,8 +59,8 @@ export function rememberName(form: HTMLFormElement, name: string, el: NodeImpl):
 /** Controls with a form attribute depend on that particular ID. The null group covers the
  * parser's association to a form outside the control's ancestor chain. */
 class ExternalWatch extends WeakRef<NodeImpl> {
-  registry: ExternalNames;
-  key: string | null;
+  declare registry: ExternalNames;
+  declare key: string | null;
   constructor(el: NodeImpl, registry: ExternalNames, key: string | null) {
     super(el);
     this.registry = registry;

@@ -64,13 +64,13 @@ export interface HTMLParseOptions {
 
 /** The DOM side of the tree builder. Handles index `nodes`. */
 class DomSink extends TreeSink {
-  nodes: NodeImpl[];
+  declare nodes: NodeImpl[];
   /** Elements whose wrappers want `_childrenChangedSteps()` once their children are complete. */
-  hooked: NodeImpl[];
+  declare hooked: NodeImpl[];
   /** Document whose mode the parser sets (document parsing only). */
-  modeTarget: Document | null;
+  declare modeTarget: Document | null;
   /** Namespace URI for NS_OTHER (fragment context in a non-HTML/SVG/MathML namespace). */
-  otherNs: string | null;
+  declare otherNs: string | null;
 
   constructor() {
     super();

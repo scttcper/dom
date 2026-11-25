@@ -64,17 +64,8 @@ export class DOMPointReadOnly {
   matrixTransform(matrix?: DOMMatrixInit): DOMPoint {
     // Step 1: create a DOMMatrix from the dictionary (a matrix instance is read directly).
     const m = matrixFromInit(matrix, "matrixTransform", "DOMPointReadOnly");
-    // Step 2: https://drafts.csswg.org/geometry/#transform-a-point-with-a-matrix
-    const x = this.#x;
-    const y = this.#y;
-    const z = this.#z;
-    const w = this.#w;
-    return new DOMPoint(
-      m[0] * x + m[4] * y + m[8] * z + m[12] * w,
-      m[1] * x + m[5] * y + m[9] * z + m[13] * w,
-      m[2] * x + m[6] * y + m[10] * z + m[14] * w,
-      m[3] * x + m[7] * y + m[11] * z + m[15] * w,
-    );
+    // Step 2.
+    return transformedPoint(m, this.#x, this.#y, this.#z, this.#w);
   }
 
   toJSON(): Required<DOMPointInit> {
@@ -412,30 +403,24 @@ function multiplyInto(out: number[], a: number[], b: number[]): void {
   out[15] = a3 * b12 + a7 * b13 + a11 * b14 + a15 * b15 - -0;
 }
 
+/** https://drafts.csswg.org/geometry/#transform-a-point-with-a-matrix */
+function transformedPoint(m: number[], x: number, y: number, z: number, w: number): DOMPoint {
+  return new DOMPoint(
+    m[0] * x + m[4] * y + m[8] * z + m[12] * w,
+    m[1] * x + m[5] * y + m[9] * z + m[13] * w,
+    m[2] * x + m[6] * y + m[10] * z + m[14] * w,
+    m[3] * x + m[7] * y + m[11] * z + m[15] * w,
+  );
+}
+
 /**
- * True when all sixteen entries are finite: then `entry * 0` is exactly ±0 and the specialized
- * products below may drop those terms. (Their sum is finite only if every entry is; a sum that
- * overflows merely sends a finite matrix down the general path.)
+ * True when all sixteen entries of `m` are finite: then `entry * 0` is exactly ±0 and the
+ * specialized products below may drop those terms. (Their sum is finite only if every entry is;
+ * a sum that overflows merely sends a finite matrix down the general path.)
  */
-function allFinite(
-  a0: number,
-  a1: number,
-  a2: number,
-  a3: number,
-  a4: number,
-  a5: number,
-  a6: number,
-  a7: number,
-  a8: number,
-  a9: number,
-  a10: number,
-  a11: number,
-  a12: number,
-  a13: number,
-  a14: number,
-  a15: number,
-): boolean {
-  const sum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 + a14 + a15;
+function allFinite(m: number[]): boolean {
+  const sum =
+    m[0] + m[1] + m[2] + m[3] + m[4] + m[5] + m[6] + m[7] + m[8] + m[9] + m[10] + m[11] + m[12] + m[13] + m[14] + m[15];
   return sum - sum === 0;
 }
 
@@ -457,7 +442,7 @@ function translateBy(m: number[], tx: number, ty: number, tz: number): void {
   const a13 = m[13];
   const a14 = m[14];
   const a15 = m[15];
-  if (!allFinite(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15)) {
+  if (!allFinite(m)) {
     multiplyInto(m, m, set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, tx, ty, tz, 1));
     return;
   }
@@ -497,7 +482,7 @@ function scaleBy(m: number[], sx: number, sy: number, sz: number): void {
   const a13 = m[13];
   const a14 = m[14];
   const a15 = m[15];
-  if (!allFinite(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15)) {
+  if (!allFinite(m)) {
     multiplyInto(m, m, set16(SCRATCH, sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, sz, 0, 0, 0, 0, 1));
     return;
   }
@@ -540,7 +525,7 @@ function multiplyBy2x2(m: number[], b11: number, b12: number, b21: number, b22: 
   const a13 = m[13];
   const a14 = m[14];
   const a15 = m[15];
-  if (!allFinite(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15)) {
+  if (!allFinite(m)) {
     multiplyInto(m, m, set16(SCRATCH, b11, b12, 0, 0, b21, b22, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
     return;
   }
@@ -642,13 +627,7 @@ function rotateEuler(m: number[], rotX: number, rotY: number, rotZ: number): voi
   rotateBy(m, 0, 0, 1, rotZ);
   // A rotation by ±0 degrees is the identity matrix (with a -0 entry), and multiplying by it
   // changes nothing in a finite matrix without -0 entries, which the Z step just produced.
-  if (
-    rotX === 0 &&
-    rotY === 0 &&
-    allFinite(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15])
-  ) {
-    return;
-  }
+  if (rotX === 0 && rotY === 0 && allFinite(m)) return;
   multiplyInto(m, m, rotation(0, 1, 0, rotY));
   multiplyInto(m, m, rotation(1, 0, 0, rotX));
 }
@@ -1074,77 +1053,51 @@ function parseTransformList(input: string): number[] | null {
         fn3D = true;
         break;
       }
-      case "translate": {
-        const v = n === 1 ? argsAll(argLength, 1) : argsAll(argLength, 2);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, v[0], v[1] ?? 0, 0, 1);
-        break;
-      }
-      case "translatex": {
-        const v = argsAll(argLength, 1);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, v[0], 0, 0, 1);
-        break;
-      }
-      case "translatey": {
-        const v = argsAll(argLength, 1);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, v[0], 0, 1);
-        break;
-      }
-      case "translatez": {
-        const v = argsAll(argLength, 1);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, v[0], 1);
-        fn3D = true;
-        break;
-      }
-      case "translate3d": {
-        const v = argsAll(argLength, 3);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, v[0], v[1], v[2], 1);
-        fn3D = true;
-        break;
-      }
-      case "scale": {
-        const v = n === 1 ? argsAll(argNumberOrPercent, 1) : argsAll(argNumberOrPercent, 2);
-        if (v !== null) m = set16(SCRATCH, v[0], 0, 0, 0, 0, v[1] ?? v[0], 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-        break;
-      }
-      case "scalex": {
-        const v = argsAll(argNumberOrPercent, 1);
-        if (v !== null) m = set16(SCRATCH, v[0], 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-        break;
-      }
-      case "scaley": {
-        const v = argsAll(argNumberOrPercent, 1);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, v[0], 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-        break;
-      }
-      case "scalez": {
-        const v = argsAll(argNumberOrPercent, 1);
-        if (v !== null) m = set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, v[0], 0, 0, 0, 0, 1);
-        fn3D = true;
-        break;
-      }
+      case "translate":
+      case "translatex":
+      case "translatey":
+      case "translatez":
+      case "translate3d":
+      case "scale":
+      case "scalex":
+      case "scaley":
+      case "scalez":
       case "scale3d": {
-        const v = argsAll(argNumberOrPercent, 3);
-        if (v !== null) m = set16(SCRATCH, v[0], 0, 0, 0, 0, v[1], 0, 0, 0, 0, v[2], 0, 0, 0, 0, 1);
-        fn3D = true;
+        // The axis suffix: "" (x, then y: the identity for translate(), x for scale()), "x",
+        // "y", "z" or "3d" (x, y, z); the other axes keep the identity value.
+        const scale = name.startsWith("scale");
+        const axis = name.slice(scale ? 5 : 9);
+        const v = argsAll(scale ? argNumberOrPercent : argLength, axis === "3d" ? 3 : axis === "" && n === 2 ? 2 : 1);
+        fn3D = axis === "z" || axis === "3d";
+        if (v === null) break;
+        const id = scale ? 1 : 0;
+        let x = id;
+        let y = id;
+        let z = id;
+        if (axis === "x") x = v[0];
+        else if (axis === "y") y = v[0];
+        else if (axis === "z") z = v[0];
+        else {
+          x = v[0];
+          y = v[1] ?? (scale ? x : 0);
+          if (axis === "3d") z = v[2];
+        }
+        m = scale
+          ? set16(SCRATCH, x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1)
+          : set16(SCRATCH, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1);
         break;
       }
       case "rotate":
+      case "rotatex":
+      case "rotatey":
       case "rotatez": {
+        // rotate() is rotateZ() in 2D.
         const v = argsAll(argAngle, 1);
-        if (v !== null) m = rotation(0, 0, 1, v[0]);
-        fn3D = name === "rotatez";
-        break;
-      }
-      case "rotatex": {
-        const v = argsAll(argAngle, 1);
-        if (v !== null) m = rotation(1, 0, 0, v[0]);
-        fn3D = true;
-        break;
-      }
-      case "rotatey": {
-        const v = argsAll(argAngle, 1);
-        if (v !== null) m = rotation(0, 1, 0, v[0]);
-        fn3D = true;
+        const axis = name.slice(6);
+        if (v !== null) {
+          m = rotation(axis === "x" ? 1 : 0, axis === "y" ? 1 : 0, axis === "x" || axis === "y" ? 0 : 1, v[0]);
+        }
+        fn3D = axis !== "";
         break;
       }
       case "rotate3d": {
@@ -1156,19 +1109,11 @@ function parseTransformList(input: string): number[] | null {
         fn3D = true;
         break;
       }
-      case "skew": {
-        const v = n === 1 ? argsAll(argAngle, 1) : argsAll(argAngle, 2);
-        if (v !== null) m = skewing(v[0], v[1] ?? 0);
-        break;
-      }
-      case "skewx": {
-        const v = argsAll(argAngle, 1);
-        if (v !== null) m = skewing(v[0], 0);
-        break;
-      }
+      case "skew":
+      case "skewx":
       case "skewy": {
-        const v = argsAll(argAngle, 1);
-        if (v !== null) m = skewing(0, v[0]);
+        const v = argsAll(argAngle, name === "skew" && n === 2 ? 2 : 1);
+        if (v !== null) m = name === "skewy" ? skewing(0, v[0]) : skewing(v[0], v[1] ?? 0);
         break;
       }
       case "perspective": {
@@ -1212,15 +1157,6 @@ export class DOMMatrixReadOnly {
         pendingStorage = null;
         this.#m = adopted;
       }
-    } else if (typeof init === "string") {
-      const m = parseTransformList(init);
-      if (m === null) {
-        throw new DOMException(
-          `Failed to construct '${new.target === DOMMatrix ? "DOMMatrix" : "DOMMatrixReadOnly"}': Failed to parse '${init}'.`,
-          "SyntaxError",
-        );
-      }
-      this.#m = m;
     } else if (
       typeof init === "object" &&
       init !== null &&
@@ -1259,7 +1195,8 @@ export class DOMMatrixReadOnly {
         );
       }
     } else {
-      // WebIDL `(DOMString or sequence<unrestricted double>)`: anything else is stringified.
+      // WebIDL `(DOMString or sequence<unrestricted double>)`: a string, or anything else
+      // stringified.
       const s = String(init);
       const m = parseTransformList(s);
       if (m === null) {
@@ -1458,17 +1395,12 @@ export class DOMMatrixReadOnly {
     const py = point.y;
     const pz = point.z;
     const pw = point.w;
-    const x = px === undefined ? 0 : Number(px);
-    const y = py === undefined ? 0 : Number(py);
-    const z = pz === undefined ? 0 : Number(pz);
-    const w = pw === undefined ? 1 : Number(pw);
-    // https://drafts.csswg.org/geometry/#transform-a-point-with-a-matrix
-    const m = this.#m;
-    return new DOMPoint(
-      m[0] * x + m[4] * y + m[8] * z + m[12] * w,
-      m[1] * x + m[5] * y + m[9] * z + m[13] * w,
-      m[2] * x + m[6] * y + m[10] * z + m[14] * w,
-      m[3] * x + m[7] * y + m[11] * z + m[15] * w,
+    return transformedPoint(
+      this.#m,
+      px === undefined ? 0 : Number(px),
+      py === undefined ? 0 : Number(py),
+      pz === undefined ? 0 : Number(pz),
+      pw === undefined ? 1 : Number(pw),
     );
   }
 

@@ -6,6 +6,7 @@
 // nothing.
 
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { setToStringTag } from "../events/Event.ts";
 import {
   findAttributeByNamespace,
   isValidAttributeLocalName,
@@ -165,4 +166,4 @@ export class DOMStringMap {
   }
 }
 
-Object.defineProperty(DOMStringMap.prototype, Symbol.toStringTag, { value: "DOMStringMap", configurable: true });
+setToStringTag(DOMStringMap);

@@ -27,7 +27,7 @@ import {
 } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Document } from "../nodes/Document.ts";
-import { attr, classTokens, asciiLowercase } from "../nodes/attributes.ts";
+import { attr, classTokens, asciiLowercase, isAsciiWhitespace } from "../nodes/attributes.ts";
 import { tagId } from "../nodes/tags.ts";
 import {
   type Complex,
@@ -172,33 +172,33 @@ const STABLE_PREDICATES = new Set([
 
 /** One compiled simple selector. Every field is initialized so all tests share one shape. */
 export class Test {
-  op: number;
+  declare op: number;
   /** Exact name (type/attribute local name, id, class). */
-  name: string;
+  declare name: string;
   /** ASCII-lowercased name. */
-  lower: string;
+  declare lower: string;
   /** For type tests: true when the namespace must equal `ns`. For attribute tests: true when any namespace is allowed. */
-  nsCheck: boolean;
-  ns: string | null;
+  declare nsCheck: boolean;
+  declare ns: string | null;
   /** Attribute matcher (OP_*). */
-  attrOp: number;
-  value: string;
-  valueLower: string;
-  valueCase: number;
-  a: number;
-  b: number;
-  list: CList | null;
-  fn: Predicate | null;
-  args: string[];
+  declare attrOp: number;
+  declare value: string;
+  declare valueLower: string;
+  declare valueCase: number;
+  declare a: number;
+  declare b: number;
+  declare list: CList | null;
+  declare fn: Predicate | null;
+  declare args: string[];
   // Single-slot index memo for :nth-* (valid within one top-level query; see resetMemos).
-  memoEl: NodeImpl | null;
-  memoIdx: number;
-  memoVersion: number;
-  memoParent: NodeImpl | null;
-  memoCount: number;
-  memoCountVersion: number;
+  declare memoEl: NodeImpl | null;
+  declare memoIdx: number;
+  declare memoVersion: number;
+  declare memoParent: NodeImpl | null;
+  declare memoCount: number;
+  declare memoCountVersion: number;
   /** Depends on state outside Document._version (a non-STABLE predicate, :dir(), :state()): evaluations are logged (StateDeps). */
-  volatileTest: boolean;
+  declare volatileTest: boolean;
 
   constructor(op: number) {
     this.op = op;
@@ -230,22 +230,22 @@ const EMPTY_ARGS: string[] = [];
 /** A compiled complex (or relative) selector. Compounds are stored right-to-left. */
 export class CComplex {
   /** comps[0] is the subject (rightmost) compound. */
-  comps: Test[][];
+  declare comps: Test[][];
   /** combs[k] joins comps[k] (right) and comps[k + 1] (left). */
-  combs: number[];
-  last: number;
+  declare combs: number[];
+  declare last: number;
   /** For relative selectors (:has): the relation of the leftmost compound to the anchor. */
-  leading: number;
+  declare leading: number;
   /** Search domain for :has candidates (H_*). */
-  hasDomain: number;
+  declare hasDomain: number;
   /** Pseudo-element name of the subject ("" for none), e.g. "before". */
-  pseudoElement: string;
+  declare pseudoElement: string;
   /** Packed specificity (see packSpecificity). */
-  specificity: number;
+  declare specificity: number;
   /** Source text. */
-  text: string;
+  declare text: string;
   /** Matcher closure (built on first call). */
-  fn: Matcher;
+  declare fn: Matcher;
 
   constructor() {
     this.comps = [];
@@ -265,9 +265,9 @@ export class CComplex {
 }
 
 export class CList {
-  items: CComplex[];
+  declare items: CComplex[];
   /** Matches if any item matches (built on first call). */
-  fn: Matcher;
+  declare fn: Matcher;
   constructor() {
     this.items = [];
     this.fn = (el) => {
@@ -285,23 +285,23 @@ export class CompileInfo {
   /** Every selector uses only element types, universal selectors and tree combinators. */
   treeOnly = true;
   /** Contains state pseudo-classes whose value is not covered by Document._version. */
-  volatile: boolean;
+  declare volatile: boolean;
   /** Contains :scope. */
-  usesScope: boolean;
+  declare usesScope: boolean;
   /** :nth-* tests whose memos must be reset after each top-level query. */
-  nthTests: Test[];
+  declare nthTests: Test[];
   /** Namespace resolution: prefix → URI (undefined = undeclared). */
   resolve: ((prefix: string) => string | null | undefined) | null;
   /** Default namespace (undefined = none declared: type selectors match any namespace). */
-  defaultNs: string | null | undefined;
+  declare defaultNs: string | null | undefined;
   /** First compile error ("" when none). */
-  error: string;
+  declare error: string;
   /**
    * A forgiving list (:is/:where) dropped an item: the selector only parses because of
    * forgiving parsing, so `@supports selector()` reports it unsupported
    * (https://drafts.csswg.org/css-conditional-4/#support-definition-ext).
    */
-  forgivingDropped: boolean;
+  declare forgivingDropped: boolean;
 
   constructor() {
     this.volatile = false;
@@ -614,10 +614,7 @@ function compileAttribute(s: Simple, info: CompileInfo): Test {
 }
 
 function hasWhitespace(s: string): boolean {
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0c || c === 0x0d) return true;
-  }
+  for (let i = 0; i < s.length; i++) if (isAsciiWhitespace(s.charCodeAt(i))) return true;
   return false;
 }
 
@@ -653,21 +650,17 @@ function compilePseudoClass(s: Simple, info: CompileInfo): Test | null {
       return nthTest(P_NTH_OF_TYPE, 0, 1, null, info);
     case P_LAST_OF_TYPE:
       return nthTest(P_NTH_LAST_OF_TYPE, 0, 1, null, info);
-    case P_ONLY_CHILD: {
-      // :first-child:last-child
-      const t = new Test(O_IS);
-      const cl = new CList();
-      const cx = new CComplex();
-      cx.comps.push([nthTest(P_NTH_CHILD, 0, 1, null, info), nthTest(P_NTH_LAST_CHILD, 0, 1, null, info)]);
-      cl.items.push(cx);
-      t.list = cl;
-      return t;
-    }
+    case P_ONLY_CHILD:
     case P_ONLY_OF_TYPE: {
+      // :first-child:last-child, :first-of-type:last-of-type
+      const ofType = s.pseudo === P_ONLY_OF_TYPE;
       const t = new Test(O_IS);
       const cl = new CList();
       const cx = new CComplex();
-      cx.comps.push([nthTest(P_NTH_OF_TYPE, 0, 1, null, info), nthTest(P_NTH_LAST_OF_TYPE, 0, 1, null, info)]);
+      cx.comps.push([
+        nthTest(ofType ? P_NTH_OF_TYPE : P_NTH_CHILD, 0, 1, null, info),
+        nthTest(ofType ? P_NTH_LAST_OF_TYPE : P_NTH_LAST_CHILD, 0, 1, null, info),
+      ]);
       cl.items.push(cx);
       t.list = cl;
       return t;
@@ -731,15 +724,8 @@ function compilePseudoClass(s: Simple, info: CompileInfo): Test | null {
 }
 
 function nthTest(p: number, a: number, b: number, list: SelectorList | null, info: CompileInfo): Test {
-  const op =
-    p === P_NTH_CHILD
-      ? O_NTH_CHILD
-      : p === P_NTH_LAST_CHILD
-        ? O_NTH_LAST_CHILD
-        : p === P_NTH_OF_TYPE
-          ? O_NTH_OF_TYPE
-          : O_NTH_LAST_OF_TYPE;
-  const t = new Test(op);
+  // O_NTH_CHILD..O_NTH_LAST_OF_TYPE are in the order of P_NTH_CHILD..P_NTH_LAST_OF_TYPE.
+  const t = new Test(O_NTH_CHILD + (p - P_NTH_CHILD));
   t.a = a;
   t.b = b;
   if (list !== null) t.list = compileList(list, info);
@@ -773,12 +759,12 @@ export function resetMemos(info: CompileInfo): void {
 
 /** Volatile tests evaluated while recording, with their elements and results. */
 export class StateDeps {
-  t0: Test;
-  el0: NodeImpl;
-  r0: boolean;
-  tests: Test[] | null;
-  els: NodeImpl[] | null;
-  results: boolean[] | null;
+  declare t0: Test;
+  declare el0: NodeImpl;
+  declare r0: boolean;
+  declare tests: Test[] | null;
+  declare els: NodeImpl[] | null;
+  declare results: boolean[] | null;
   constructor(t: Test, el: NodeImpl, r: boolean) {
     this.t0 = t;
     this.el0 = el;
@@ -1398,7 +1384,7 @@ function headingOffset(el: NodeImpl): number {
 /** https://html.spec.whatwg.org/#rules-for-parsing-non-negative-integers (-1 on error). */
 function parseNonNegativeInteger(s: string): number {
   let i = 0;
-  while (i < s.length && isWs(s.charCodeAt(i))) i++;
+  while (i < s.length && isAsciiWhitespace(s.charCodeAt(i))) i++;
   if (i < s.length && s.charCodeAt(i) === 0x2b) i++;
   let n = -1;
   for (; i < s.length; i++) {
@@ -1440,9 +1426,9 @@ function attrValueMatches(t: Test, v: string, want: string): boolean {
       const wl = want.length;
       let i = 0;
       while (i < len) {
-        while (i < len && isWs(v.charCodeAt(i))) i++;
+        while (i < len && isAsciiWhitespace(v.charCodeAt(i))) i++;
         const start = i;
-        while (i < len && !isWs(v.charCodeAt(i))) i++;
+        while (i < len && !isAsciiWhitespace(v.charCodeAt(i))) i++;
         if (i - start === wl && v.startsWith(want, start)) return true;
       }
       return false;
@@ -1457,10 +1443,6 @@ function attrValueMatches(t: Test, v: string, want: string): boolean {
       return v.includes(want);
   }
   return false;
-}
-
-function isWs(c: number): boolean {
-  return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0c || c === 0x0d;
 }
 
 function anb(a: number, b: number, idx: number): boolean {

@@ -33,8 +33,24 @@ function newNode(c: number): number {
   return n;
 }
 
+/** The child of `node` on the edge `c`, created (last among its siblings) if missing. */
+function childOf(node: number, c: number): number {
+  let child = firstChild[node];
+  let last = -1;
+  while (child >= 0) {
+    if (edgeChar[child] === c) return child;
+    last = child;
+    child = nextSibling[child];
+  }
+  child = newNode(c);
+  if (last < 0) firstChild[node] = child;
+  else nextSibling[last] = child;
+  return child;
+}
+
 function build(): void {
   built = true;
+  // At most one node per character of an entry plus its ";" (in place of the comma).
   const cap = ENTITY_NAMES.length + 1;
   firstChild = new Int32Array(cap);
   nextSibling = new Int32Array(cap);
@@ -51,37 +67,26 @@ function build(): void {
   let index = 0;
   const total = ENTITY_NAMES.length;
   while (p < total) {
-    // One name: ENTITY_NAMES[p .. comma).
+    // One entry: ENTITY_NAMES[p .. "*" or comma), the name without its ";".
     const c0 = ENTITY_NAMES.charCodeAt(p);
     let node = rootIndex[c0];
     if (node < 0) {
       node = newNode(c0);
       rootIndex[c0] = node;
     }
-    p++;
-    while (p < total) {
-      const c = ENTITY_NAMES.charCodeAt(p);
-      if (c === 44) break;
-      let child = firstChild[node];
-      let found = -1;
-      let last = -1;
-      while (child >= 0) {
-        if (edgeChar[child] === c) {
-          found = child;
-          break;
-        }
-        last = child;
-        child = nextSibling[child];
-      }
-      if (found < 0) {
-        found = newNode(c);
-        if (last < 0) firstChild[node] = found;
-        else nextSibling[last] = found;
-      }
-      node = found;
+    let c = ENTITY_NAMES.charCodeAt(++p);
+    while (p < total && c !== 44 && c !== 42) {
+      node = childOf(node, c);
+      c = ENTITY_NAMES.charCodeAt(++p);
+    }
+    // A legacy name ("*") also matches without the ";". Test the local `c`: rolldown inlines the
+    // 14 KB ENTITY_NAMES constant into `if (ENTITY_NAMES.charCodeAt(p) === 42)`, copying it into
+    // the bundle a second time.
+    if (c === 42) {
+      nodeValue[node] = index;
       p++;
     }
-    nodeValue[node] = index++;
+    nodeValue[childOf(node, 59)] = index++;
     p++; // skip comma
   }
   // Dense table for the second character: root sibling chains are the longest.

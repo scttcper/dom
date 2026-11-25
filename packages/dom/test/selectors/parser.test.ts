@@ -14,9 +14,8 @@
  * form; test_invalid_selector → must fail to parse.
  */
 import { describe, expect, test } from "vitest";
+import { parseSelectorList, tokenize, SelectorParser, type Simple } from "../../src/selectors/parser.ts";
 import {
-  parseSelectorList,
-  tokenize,
   TK_IDENT,
   TK_HASH,
   TK_STRING,
@@ -24,9 +23,7 @@ import {
   TK_DIMENSION,
   TK_NUMBER,
   TK_DELIM,
-  SelectorParser,
-  type Simple,
-} from "../../src/selectors/parser.ts";
+} from "../../src/css/tokenizer.ts";
 import { serializeSelectorList, serializeIdentifier, serializeAnPlusB } from "../../src/selectors/serialize.ts";
 import { complexSpecificity, unpackSpecificity } from "../../src/selectors/compile.ts";
 import cases from "./wpt/css-selectors-parsing.json" with { type: "json" };

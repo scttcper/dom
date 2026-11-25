@@ -34,19 +34,19 @@ import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { attr } from "../nodes/attributes.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { ensureIndexGetters, indexGetterTable, type IndexGetterTable } from "./indexed.ts";
-import { CollectionIterator, iterableTarget } from "./iterator.ts";
+import { CollectionIterator, defineCollectionIterator, iterableTarget } from "./iterator.ts";
 import { $coll, $impl, $items, $treeVersion, $version } from "../keys.ts";
 
 export type ElementFilter = (el: NodeImpl) => boolean;
 
 /** @internal Monomorphic state record of an HTMLCollection. */
 export class CollectionState {
-  root: NodeImpl;
+  declare root: NodeImpl;
   /** true: only element children of root; false: descendants matching `filter`. */
-  childrenOnly: boolean;
-  filter: ElementFilter | null;
+  declare childrenOnly: boolean;
+  declare filter: ElementFilter | null;
   /** Members depend only on the tree and tag names: stamped with Document[$treeVersion]. */
-  structural: boolean;
+  declare structural: boolean;
 
   constructor(root: NodeImpl, childrenOnly: boolean, filter: ElementFilter | null, structural: boolean) {
     this.root = root;
@@ -183,10 +183,7 @@ const values = {
   },
 }.values;
 
-Object.defineProperties(HTMLCollection.prototype, {
-  [Symbol.iterator]: { value: values, writable: true, configurable: true },
-  [Symbol.toStringTag]: { value: "HTMLCollection", configurable: true },
-});
+defineCollectionIterator(HTMLCollection, values, false);
 
 /** Created on first construction so importing the module costs nothing. */
 let table: IndexGetterTable | null = null;
