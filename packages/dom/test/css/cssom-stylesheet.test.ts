@@ -96,6 +96,16 @@ describe("deleteRule — https://drafts.csswg.org/cssom/#dom-cssstylesheet-delet
     expect(() => sheet(".a {}").deleteRule(1)).toThrow(expect.objectContaining({ name: "IndexSizeError" }));
   });
 
+  test("step 2 checks the index against the list as it is after the index's conversion, which can remove rules", () => {
+    const s = sheet(".a {}");
+    const index = { valueOf: () => (s.deleteRule(0), 0) };
+    expect(() => s.deleteRule(index)).toThrow(expect.objectContaining({ name: "IndexSizeError" }));
+    expect(s.cssRules.length).toBe(0);
+    s.replaceSync(".a {} .b {}");
+    expect(s.insertRule(".c {}", { valueOf: () => (s.deleteRule(0), 1) })).toBe(1);
+    expect([...s.cssRules].map((r: any) => r.selectorText)).toEqual([".b", ".c"]);
+  });
+
   test("deleted rules stop applying", () => {
     document.body!.innerHTML = `<p class="t">x</p>`;
     const s = styleElementSheet(".t { color: blue }");
@@ -273,6 +283,13 @@ describe("CSSGroupingRule — https://drafts.csswg.org/cssom/#the-cssgroupingrul
     media.deleteRule(0);
     expect(media.cssRules[0].selectorText).toBe(".b");
     expect(() => media.deleteRule(3)).toThrow(expect.objectContaining({ name: "IndexSizeError" }));
+  });
+
+  test("deleteRule checks the index against the child rules as they are after the index's conversion", () => {
+    const media = sheet("@media screen { .a {} }").cssRules[0];
+    const index = { valueOf: () => (media.deleteRule(0), 0) };
+    expect(() => media.deleteRule(index)).toThrow(expect.objectContaining({ name: "IndexSizeError" }));
+    expect(media.cssRules.length).toBe(0);
   });
 
   test("insertRule/deleteRule argument and index errors carry Chrome's messages, on the sheet and on grouping rules (https://drafts.csswg.org/cssom/#insert-a-css-rule and https://drafts.csswg.org/cssom/#remove-a-css-rule step 2)", () => {

@@ -441,6 +441,11 @@ export class HTMLInputElement extends HTMLElement {
     return sanitizeValue(type, attr(this[$impl], "value") ?? "", this[$impl]);
   }
 
+  /** https://html.spec.whatwg.org/#concept-fe-api-value — for the selection APIs, which apply in value mode only. */
+  _apiValue(): string {
+    return this._currentValue(inputType(this[$impl]));
+  }
+
   /** https://html.spec.whatwg.org/#dom-input-value */
   get value(): string {
     const impl = this[$impl];

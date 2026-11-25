@@ -221,6 +221,22 @@ describe("the textarea element — https://html.spec.whatwg.org/#the-textarea-el
     expect([t.selectionStart, t.selectionEnd]).toEqual([0, 5]);
   });
 
+  test("setRangeText edits the element's value, not an own `value` getter a test installed (as jsdom)", () => {
+    const docs = [new JSDOM("<!doctype html><body></body>").window.document, createWindow().document] as any[];
+    const results = docs.map((doc) =>
+      ["textarea", "input"].map((tag) => {
+        const el = doc.createElement(tag);
+        el.value = "abc";
+        Object.defineProperty(el, "value", { get: () => "MASK", configurable: true });
+        el.setRangeText("X", 1, 2);
+        delete el.value;
+        return el.value;
+      }),
+    );
+    expect(results[1]).toEqual(results[0]);
+    expect(results[1]).toEqual(["aXc", "aXc"]);
+  });
+
   test("UI edits and range replacements normalize newlines while reset restores the live default", () => {
     document.body!.innerHTML = "<form id=f><textarea id=t></textarea></form>";
     const t = $("t");

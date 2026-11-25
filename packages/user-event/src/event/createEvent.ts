@@ -156,16 +156,16 @@ function createNativeEvent(
   let dict: object
   switch (eventInterface) {
     case 'KeyboardEvent':
-      dict = new KeyboardEventDict(i, defaultInit, m)
+      dict = keyboardEventDict(i, defaultInit, m)
       break
     case 'MouseEvent':
-      dict = new MouseEventDict(i, defaultInit, m)
+      dict = mouseEventDict(i, defaultInit, m)
       break
     case 'PointerEvent':
-      dict = new PointerEventDict(i, defaultInit, m)
+      dict = pointerEventDict(i, defaultInit, m)
       break
     case 'InputEvent':
-      dict = new InputEventDict(i, defaultInit)
+      dict = inputEventDict(i, defaultInit)
       break
     default:
       // FocusEvent, ClipboardEvent, Event: dispatchUIEvent passes modifiers only for mouse and
@@ -203,113 +203,157 @@ function setLayoutMembers(event: Event, i: LayoutInit) {
 // Init dictionaries for the interfaces user-event dispatches most, with one shape each: every
 // member @ctrl/dom's constructor reads, in a fixed order, so its reads stay monomorphic (a spread
 // of `init` plus the overrides made a different, dictionary-sized object at every call site).
-// Classes so the members the interfaces share are written once: V8 sizes an instance for every
-// `this.x =` of its constructor chain, so each dictionary is one in-object allocation, like a
-// literal. Same values as the generic path: `init`'s members, the System's modifiers over
-// `init`'s (Hyper and Super are not System modifiers), the event map's bubbles/cancelable/
-// composed, the defaults applied above. Upstream stringifies `key`, `code` and `inputType` with
-// `String(x)`, so a missing one reads as "undefined" (`inputType` of the `input` events
-// selectOptions/upload fire). test/event/native-dicts.test.ts pins the member lists against the
-// constructors' reads.
+// Same values as the generic path: `init`'s members, the System's modifiers over `init`'s (Hyper
+// and Super are not System modifiers), the event map's bubbles/cancelable/composed, the
+// defaults applied above. Upstream stringifies `key`, `code` and `inputType` with `String(x)`,
+// so a missing one reads as "undefined" (`inputType` of the `input` events selectOptions/upload
+// fire). test/event/native-dicts.test.ts pins the member lists against the constructors' reads.
 
 type NativeInit = Record<string, unknown>
 
-/** UIEventInit members, with EventInit's from the event map. */
-class UIEventDict {
-  [member: string]: unknown
-  constructor(i: NativeInit, d: EventInit) {
-    this.bubbles = d.bubbles
-    this.cancelable = d.cancelable
-    this.composed = d.composed
-    this.view = i.view
-    this.detail = i.detail
-    this.which = i.which
+/** @internal UIEventInit and EventModifierInit members of a keyboard event. */
+export function keyboardEventDict(
+  i: NativeInit,
+  d: EventInit,
+  m: ModifierFlags | undefined,
+) {
+  return {
+    bubbles: d.bubbles,
+    cancelable: d.cancelable,
+    composed: d.composed,
+    view: i.view,
+    detail: i.detail,
+    which: i.which,
+    ctrlKey: m === undefined ? i.ctrlKey : m.Control,
+    shiftKey: m === undefined ? i.shiftKey : m.Shift,
+    altKey: m === undefined ? i.altKey : m.Alt,
+    metaKey: m === undefined ? i.metaKey : m.Meta,
+    modifierAltGraph: m === undefined ? i.modifierAltGraph : m.AltGraph,
+    modifierCapsLock: m === undefined ? i.modifierCapsLock : m.CapsLock,
+    modifierFn: m === undefined ? i.modifierFn : m.Fn,
+    modifierFnLock: m === undefined ? i.modifierFnLock : m.FnLock,
+    modifierHyper: i.modifierHyper,
+    modifierNumLock: m === undefined ? i.modifierNumLock : m.NumLock,
+    modifierScrollLock: m === undefined ? i.modifierScrollLock : m.ScrollLock,
+    modifierSuper: i.modifierSuper,
+    modifierSymbol: m === undefined ? i.modifierSymbol : m.Symbol,
+    modifierSymbolLock: m === undefined ? i.modifierSymbolLock : m.SymbolLock,
+    key: i.key === undefined ? 'undefined' : i.key,
+    code: i.code === undefined ? 'undefined' : i.code,
+    location: i.location,
+    repeat: i.repeat,
+    isComposing: i.isComposing,
+    charCode: i.charCode,
+    keyCode: i.keyCode,
   }
 }
 
-/** EventModifierInit members (with UIEventInit's). */
-class ModifierEventDict extends UIEventDict {
-  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
-    super(i, d)
-    const fromInit = m === undefined
-    this.ctrlKey = fromInit ? i.ctrlKey : m.Control
-    this.shiftKey = fromInit ? i.shiftKey : m.Shift
-    this.altKey = fromInit ? i.altKey : m.Alt
-    this.metaKey = fromInit ? i.metaKey : m.Meta
-    this.modifierAltGraph = fromInit ? i.modifierAltGraph : m.AltGraph
-    this.modifierCapsLock = fromInit ? i.modifierCapsLock : m.CapsLock
-    this.modifierFn = fromInit ? i.modifierFn : m.Fn
-    this.modifierFnLock = fromInit ? i.modifierFnLock : m.FnLock
-    this.modifierHyper = i.modifierHyper
-    this.modifierNumLock = fromInit ? i.modifierNumLock : m.NumLock
-    this.modifierScrollLock = fromInit ? i.modifierScrollLock : m.ScrollLock
-    this.modifierSuper = i.modifierSuper
-    this.modifierSymbol = fromInit ? i.modifierSymbol : m.Symbol
-    this.modifierSymbolLock = fromInit ? i.modifierSymbolLock : m.SymbolLock
-  }
-}
-
-/** @internal KeyboardEventInit members (with EventModifierInit's). */
-export class KeyboardEventDict extends ModifierEventDict {
-  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
-    super(i, d, m)
-    this.key = i.key === undefined ? 'undefined' : i.key
-    this.code = i.code === undefined ? 'undefined' : i.code
-    this.location = i.location
-    this.repeat = i.repeat
-    this.isComposing = i.isComposing
-    this.charCode = i.charCode
-    this.keyCode = i.keyCode
-  }
-}
-
-/** @internal MouseEventInit members (with EventModifierInit's). */
-export class MouseEventDict extends ModifierEventDict {
-  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
-    super(i, d, m)
-    this.screenX = i.screenX
-    this.screenY = i.screenY
-    this.clientX = i.clientX === undefined ? i.x : i.clientX
-    this.clientY = i.clientY === undefined ? i.y : i.clientY
-    this.button = i.button
-    this.buttons = i.buttons
-    this.movementX = i.movementX
-    this.movementY = i.movementY
-    this.relatedTarget = i.relatedTarget
+/** @internal MouseEventInit members (with UIEventInit and EventModifierInit). */
+export function mouseEventDict(
+  i: NativeInit,
+  d: EventInit,
+  m: ModifierFlags | undefined,
+) {
+  return {
+    bubbles: d.bubbles,
+    cancelable: d.cancelable,
+    composed: d.composed,
+    view: i.view,
+    detail: i.detail,
+    which: i.which,
+    screenX: i.screenX,
+    screenY: i.screenY,
+    clientX: i.clientX === undefined ? i.x : i.clientX,
+    clientY: i.clientY === undefined ? i.y : i.clientY,
+    ctrlKey: m === undefined ? i.ctrlKey : m.Control,
+    shiftKey: m === undefined ? i.shiftKey : m.Shift,
+    altKey: m === undefined ? i.altKey : m.Alt,
+    metaKey: m === undefined ? i.metaKey : m.Meta,
+    modifierAltGraph: m === undefined ? i.modifierAltGraph : m.AltGraph,
+    modifierCapsLock: m === undefined ? i.modifierCapsLock : m.CapsLock,
+    modifierFn: m === undefined ? i.modifierFn : m.Fn,
+    modifierFnLock: m === undefined ? i.modifierFnLock : m.FnLock,
+    modifierHyper: i.modifierHyper,
+    modifierNumLock: m === undefined ? i.modifierNumLock : m.NumLock,
+    modifierScrollLock: m === undefined ? i.modifierScrollLock : m.ScrollLock,
+    modifierSuper: i.modifierSuper,
+    modifierSymbol: m === undefined ? i.modifierSymbol : m.Symbol,
+    modifierSymbolLock: m === undefined ? i.modifierSymbolLock : m.SymbolLock,
+    button: i.button,
+    buttons: i.buttons,
+    movementX: i.movementX,
+    movementY: i.movementY,
+    relatedTarget: i.relatedTarget,
   }
 }
 
 /** @internal PointerEventInit members (with MouseEventInit's). */
-export class PointerEventDict extends MouseEventDict {
-  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
-    super(i, d, m)
-    this.pointerId = i.pointerId
-    this.width = i.width
-    this.height = i.height
-    this.pressure =
-      i.pressure === undefined ? (i.buttons ? 0.5 : 0) : i.pressure
-    this.tangentialPressure = i.tangentialPressure
-    this.tiltX = i.tiltX
-    this.tiltY = i.tiltY
-    this.altitudeAngle = i.altitudeAngle
-    this.azimuthAngle = i.azimuthAngle
-    this.twist = i.twist
-    this.pointerType = i.pointerType
-    this.isPrimary = i.isPrimary
-    this.persistentDeviceId = i.persistentDeviceId
-    this.coalescedEvents = i.coalescedEvents
-    this.predictedEvents = i.predictedEvents
+export function pointerEventDict(
+  i: NativeInit,
+  d: EventInit,
+  m: ModifierFlags | undefined,
+) {
+  return {
+    bubbles: d.bubbles,
+    cancelable: d.cancelable,
+    composed: d.composed,
+    view: i.view,
+    detail: i.detail,
+    which: i.which,
+    screenX: i.screenX,
+    screenY: i.screenY,
+    clientX: i.clientX === undefined ? i.x : i.clientX,
+    clientY: i.clientY === undefined ? i.y : i.clientY,
+    ctrlKey: m === undefined ? i.ctrlKey : m.Control,
+    shiftKey: m === undefined ? i.shiftKey : m.Shift,
+    altKey: m === undefined ? i.altKey : m.Alt,
+    metaKey: m === undefined ? i.metaKey : m.Meta,
+    modifierAltGraph: m === undefined ? i.modifierAltGraph : m.AltGraph,
+    modifierCapsLock: m === undefined ? i.modifierCapsLock : m.CapsLock,
+    modifierFn: m === undefined ? i.modifierFn : m.Fn,
+    modifierFnLock: m === undefined ? i.modifierFnLock : m.FnLock,
+    modifierHyper: i.modifierHyper,
+    modifierNumLock: m === undefined ? i.modifierNumLock : m.NumLock,
+    modifierScrollLock: m === undefined ? i.modifierScrollLock : m.ScrollLock,
+    modifierSuper: i.modifierSuper,
+    modifierSymbol: m === undefined ? i.modifierSymbol : m.Symbol,
+    modifierSymbolLock: m === undefined ? i.modifierSymbolLock : m.SymbolLock,
+    button: i.button,
+    buttons: i.buttons,
+    movementX: i.movementX,
+    movementY: i.movementY,
+    relatedTarget: i.relatedTarget,
+    pointerId: i.pointerId,
+    width: i.width,
+    height: i.height,
+    pressure: i.pressure === undefined ? (i.buttons ? 0.5 : 0) : i.pressure,
+    tangentialPressure: i.tangentialPressure,
+    tiltX: i.tiltX,
+    tiltY: i.tiltY,
+    altitudeAngle: i.altitudeAngle,
+    azimuthAngle: i.azimuthAngle,
+    twist: i.twist,
+    pointerType: i.pointerType,
+    isPrimary: i.isPrimary,
+    persistentDeviceId: i.persistentDeviceId,
+    coalescedEvents: i.coalescedEvents,
+    predictedEvents: i.predictedEvents,
   }
 }
 
 /** @internal InputEventInit members (with UIEventInit's). */
-export class InputEventDict extends UIEventDict {
-  constructor(i: NativeInit, d: EventInit) {
-    super(i, d)
-    this.data = i.data
-    this.isComposing = i.isComposing
-    this.inputType = i.inputType === undefined ? 'undefined' : i.inputType
-    this.dataTransfer = i.dataTransfer
+export function inputEventDict(i: NativeInit, d: EventInit) {
+  return {
+    bubbles: d.bubbles,
+    cancelable: d.cancelable,
+    composed: d.composed,
+    view: i.view,
+    detail: i.detail,
+    which: i.which,
+    data: i.data,
+    isComposing: i.isComposing,
+    inputType: i.inputType === undefined ? 'undefined' : i.inputType,
+    dataTransfer: i.dataTransfer,
   }
 }
 

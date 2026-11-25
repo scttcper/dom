@@ -322,10 +322,12 @@ function syntaxError(method: string, iface: string, rule: string): DOMException 
 
 /**
  * https://drafts.csswg.org/cssom/#insert-a-css-rule step 2 / https://drafts.csswg.org/cssom/#remove-a-css-rule
- * step 2: `index` (an unsigned long) must be at most `max` (the list length to insert, length - 1 to remove).
+ * step 2: `index` (an unsigned long) must be at most the list's length to insert, length - 1 to remove.
+ * The length is read after converting `index`, whose valueOf() can change the list.
  */
-function ruleIndex(index: number, max: number, method: string, iface: string): number {
+function ruleIndex(index: number, rules: readonly unknown[], remove: boolean, method: string, iface: string): number {
   const i = index >>> 0;
+  const max = remove ? rules.length - 1 : rules.length;
   if (i > max)
     throw new DOMException(
       `Failed to execute '${method}' on '${iface}': The index provided (${i}) is larger than the maximum index (${Math.max(0, max)}).`,
@@ -483,7 +485,7 @@ export class CSSStyleSheet extends StyleSheet {
     if (arguments.length === 0) argumentsRequired("insertRule", "CSSStyleSheet", 1, 0);
     checkModifiable(this, "insertRule");
     const text = String(rule);
-    const i = ruleIndex(index, this[$rules].length, "insertRule", "CSSStyleSheet");
+    const i = ruleIndex(index, this[$rules], false, "insertRule", "CSSStyleSheet");
     const raw = parseRule(text);
     if (raw === null) throw syntaxError("insertRule", "CSSStyleSheet", text);
     const name = raw.kind === RULE_AT ? raw.name.toLowerCase() : "";
@@ -536,7 +538,7 @@ export class CSSStyleSheet extends StyleSheet {
   deleteRule(index: number): void {
     if (arguments.length === 0) argumentsRequired("deleteRule", "CSSStyleSheet", 1, 0);
     checkModifiable(this, "deleteRule");
-    const i = ruleIndex(index, this[$rules].length - 1, "deleteRule", "CSSStyleSheet");
+    const i = ruleIndex(index, this[$rules], true, "deleteRule", "CSSStyleSheet");
     const [removed] = this[$rules].splice(i, 1);
     discardSheetRuleIndexes(this);
     removed[$sheet] = null;
@@ -718,7 +720,7 @@ export class CSSGroupingRule extends CSSRule {
     const iface = this.constructor.name;
     if (arguments.length === 0) argumentsRequired("insertRule", iface, 1, 0);
     const text = String(rule);
-    const i = ruleIndex(index, this[$rules].length, "insertRule", iface);
+    const i = ruleIndex(index, this[$rules], false, "insertRule", iface);
     const raw = parseRule(text);
     if (raw === null) throw syntaxError("insertRule", iface, text);
     const nested = this._nestedContext();
@@ -742,7 +744,7 @@ export class CSSGroupingRule extends CSSRule {
   deleteRule(index: number): void {
     const iface = this.constructor.name;
     if (arguments.length === 0) argumentsRequired("deleteRule", iface, 1, 0);
-    removeChildRule(this, ruleIndex(index, this[$rules].length - 1, "deleteRule", iface));
+    removeChildRule(this, ruleIndex(index, this[$rules], true, "deleteRule", iface));
   }
 }
 

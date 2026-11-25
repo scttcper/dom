@@ -203,21 +203,24 @@ export class CSSTokenizer {
       else break;
     }
     if (!this.validEscape(this.pos) && this.code(this.pos) !== 0) return this.src.slice(start, this.pos);
-    let out = this.src.slice(start, this.pos);
+    // Slow path: copy each run of plain ident code points with one slice, not one per character.
+    let out = "";
+    let run = start;
     while (this.pos < this.len) {
       const c = this.src.charCodeAt(this.pos);
       if (c === 0) {
-        out += REPLACEMENT;
-        this.pos++;
+        out += this.src.slice(run, this.pos) + REPLACEMENT;
+        run = ++this.pos;
       } else if (isIdentChar(c)) {
-        out += this.src.slice(this.pos, this.pos + 1);
         this.pos++;
       } else if (this.validEscape(this.pos)) {
+        out += this.src.slice(run, this.pos);
         this.pos++;
         out += this.consumeEscape();
+        run = this.pos;
       } else break;
     }
-    return out;
+    return out + this.src.slice(run, this.pos);
   }
 
   /** https://drafts.csswg.org/css-syntax-3/#consume-number */

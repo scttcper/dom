@@ -1,7 +1,7 @@
 /**
  * The fixed-shape init dictionaries @ctrl/dom/user-event builds for @ctrl/dom's event constructors
- * (packages/user-event/src/event/createEvent.ts: KeyboardEventDict, MouseEventDict,
- * PointerEventDict, InputEventDict) against what those constructors read: a member missing from a
+ * (packages/user-event/src/event/createEvent.ts: keyboardEventDict, mouseEventDict,
+ * pointerEventDict, inputEventDict) against what those constructors read: a member missing from a
  * builder would silently fall back to its default, a stale one would only cost time.
  *
  * Specs:
@@ -15,10 +15,10 @@
 import {describe, expect, test} from 'vitest'
 import {createWindow} from '@ctrl/dom'
 import {
-  InputEventDict,
-  KeyboardEventDict,
-  MouseEventDict,
-  PointerEventDict,
+  inputEventDict,
+  keyboardEventDict,
+  mouseEventDict,
+  pointerEventDict,
 } from '../../src/event/createEvent.ts'
 
 type Ctor = new (type: string, init: object) => object
@@ -45,21 +45,21 @@ const builders = [
   [
     'KeyboardEvent',
     (init: Record<string, unknown>) =>
-      new KeyboardEventDict(init, eventInit, undefined),
+      keyboardEventDict(init, eventInit, undefined),
   ],
   [
     'MouseEvent',
     (init: Record<string, unknown>) =>
-      new MouseEventDict(init, eventInit, undefined),
+      mouseEventDict(init, eventInit, undefined),
   ],
   [
     'PointerEvent',
     (init: Record<string, unknown>) =>
-      new PointerEventDict(init, eventInit, undefined),
+      pointerEventDict(init, eventInit, undefined),
   ],
   [
     'InputEvent',
-    (init: Record<string, unknown>) => new InputEventDict(init, eventInit),
+    (init: Record<string, unknown>) => inputEventDict(init, eventInit),
   ],
 ] as const
 
@@ -111,7 +111,7 @@ describe('EventModifierInit — https://w3c.github.io/uievents/#dictdef-eventmod
     }
     const event = new window.KeyboardEvent(
       'keydown',
-      new KeyboardEventDict(init, eventInit, flags),
+      keyboardEventDict(init, eventInit, flags),
     ) as unknown as {
       altKey: boolean
       ctrlKey: boolean
@@ -128,19 +128,19 @@ describe('EventModifierInit — https://w3c.github.io/uievents/#dictdef-eventmod
 
 describe('defaults user-event applies — https://w3c.github.io/pointerevents/#dom-pointereventinit', () => {
   test('pressure is 0.5 while a button is pressed and 0 otherwise; clientX/clientY fall back to x/y', () => {
+    expect(pointerEventDict({buttons: 1}, eventInit, undefined).pressure).toBe(
+      0.5,
+    )
+    expect(pointerEventDict({buttons: 0}, eventInit, undefined).pressure).toBe(
+      0,
+    )
     expect(
-      new PointerEventDict({buttons: 1}, eventInit, undefined).pressure,
-    ).toBe(0.5)
-    expect(
-      new PointerEventDict({buttons: 0}, eventInit, undefined).pressure,
-    ).toBe(0)
-    expect(
-      new PointerEventDict({buttons: 1, pressure: 0.25}, eventInit, undefined)
+      pointerEventDict({buttons: 1, pressure: 0.25}, eventInit, undefined)
         .pressure,
     ).toBe(0.25)
-    const mouse = new MouseEventDict({x: 3, y: 4}, eventInit, undefined)
+    const mouse = mouseEventDict({x: 3, y: 4}, eventInit, undefined)
     expect([mouse.clientX, mouse.clientY]).toEqual([3, 4])
-    const both = new MouseEventDict(
+    const both = mouseEventDict(
       {x: 3, y: 4, clientX: 5, clientY: 6},
       eventInit,
       undefined,
@@ -149,9 +149,9 @@ describe('defaults user-event applies — https://w3c.github.io/pointerevents/#d
   })
 
   test('a missing key, code or inputType reads as "undefined", as upstream\'s String(value)', () => {
-    const key = new KeyboardEventDict({}, eventInit, undefined)
+    const key = keyboardEventDict({}, eventInit, undefined)
     expect([key.key, key.code]).toEqual(['undefined', 'undefined'])
-    expect(new InputEventDict({}, eventInit).inputType).toBe('undefined')
+    expect(inputEventDict({}, eventInit).inputType).toBe('undefined')
   })
 })
 

@@ -162,3 +162,18 @@ describe("pull tokenizer bookkeeping", () => {
     expect(t.comments).toBe(1);
   });
 });
+
+describe("consume an ident sequence — https://drafts.csswg.org/css-syntax-3/#consume-name", () => {
+  test("escapes decode and NUL becomes U+FFFD anywhere in the name, with the plain runs between them kept", () => {
+    const value = (src: string) => {
+      const t = new CSSTokenizer(src);
+      expect(t.next()).toBe(TK_IDENT);
+      return t.value;
+    };
+    expect(value("abc\\:def\\31 23gh\0ij\\\u00e9k")).toBe("abc:def123gh\ufffdij\u00e9k");
+    expect(value("\\:a")).toBe(":a");
+    expect(value("a\\:")).toBe("a:");
+    expect(value("a\0")).toBe("a\ufffd");
+    expect(value("\\61\\62 c\\:\\:d")).toBe("abc::d");
+  });
+});

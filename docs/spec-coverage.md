@@ -29,7 +29,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [Web IDL](#web-idl) | 38 | 28 | 1 | 9 |
 | [CSS: cssom-view](#css-cssom-view) | 35 | 22 | 2 | 11 |
 | [XMLHttpRequest Standard](#xmlhttprequest-standard) | 33 | 4 | 0 | 29 |
-| [CSS: css-syntax](#css-css-syntax) | 32 | 11 | 0 | 21 |
+| [CSS: css-syntax](#css-css-syntax) | 32 | 12 | 0 | 20 |
 | [CSS: selectors](#css-selectors) | 29 | 14 | 4 | 11 |
 | [SVG 2](#svg-2) | 26 | 10 | 0 | 16 |
 | [W3C: selection-api](#w3c-selection-api) | 21 | 7 | 1 | 13 |
@@ -96,7 +96,7 @@ spec, `wai-aria-1.2` is `aria`), and links without a fragment are ignored. Secti
 | [W3C: webappsec-secure-contexts](#w3c-webappsec-secure-contexts) | 1 | 1 | 0 | 0 |
 | [W3C: webdriver](#w3c-webdriver) | 1 | 0 | 0 | 1 |
 | [WebSockets Standard](#websockets-standard) | 1 | 0 | 0 | 1 |
-| **All** | 1685 | 1168 | 125 | 392 |
+| **All** | 1685 | 1169 | 125 | 391 |
 
 ## Web-platform-tests fixtures
 
@@ -256,7 +256,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [concept-button](https://html.spec.whatwg.org/#concept-button) | `dom/html/invokers.ts` | `dom/html/invokers-toggle.test.ts` |
 | [concept-custom-element-definition-construction-stack](https://html.spec.whatwg.org/#concept-custom-element-definition-construction-stack) | `dom/html/custom-elements.ts` | `compat/html/custom-element-reactions.test.ts` |
 | [concept-document-about-base-url](https://html.spec.whatwg.org/#concept-document-about-base-url) | `dom/nodes/Document.ts`, `dom/window/Window.ts` | `dom/nodes/wpt-nodes.test.ts`, `dom/window/iframe.test.ts` |
-| [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLTextAreaElement.ts` | `compat/forms/form-algorithms.test.ts` |
+| [concept-fe-api-value](https://html.spec.whatwg.org/#concept-fe-api-value) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/HTMLTextAreaElement.ts`, `dom/html/forms/selection.ts` | `compat/forms/form-algorithms.test.ts` |
 | [concept-fe-checked](https://html.spec.whatwg.org/#concept-fe-checked) | `dom/html/forms/HTMLInputElement.ts` | `dom/html/forms/input.test.ts`, `dom/html/forms/radio-groups.test.ts` |
 | [concept-fe-disabled](https://html.spec.whatwg.org/#concept-fe-disabled) | `dom/html/forms/form-associated.ts` | `aria/html-aam-roles.test.ts`, `dom/html/forms/form.test.ts`, `compat/forms/form-owner.test.ts`, `compat/html/focus.test.ts`; WPT: `custom-elements/form-associated/form-disabled-legend.html`, `html/semantics/forms/the-fieldset-element/disabled-nested-legend.html` |
 | [concept-fe-mutable](https://html.spec.whatwg.org/#concept-fe-mutable) | `dom/html/forms/HTMLInputElement.ts`, `dom/html/forms/state.ts` | `compat/forms/input-microsyntaxes.test.ts` |
@@ -1513,7 +1513,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 
 ## CSS: css-syntax
 
-<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 11 tested, 0 by WPT only, 21 untested.
+<https://drafts.csswg.org/css-syntax/> — 32 sections implemented, 12 tested, 0 by WPT only, 20 untested.
 
 | Section | Implemented in | Tests |
 | --- | --- | --- |
@@ -1524,7 +1524,7 @@ harness by path or by directory; known-failing subtests are listed with reasons 
 | [consume-declaration](https://drafts.csswg.org/css-syntax/#consume-declaration) | `dom/css/parser.ts` | **untested** |
 | [consume-escaped-code-point](https://drafts.csswg.org/css-syntax/#consume-escaped-code-point) | `dom/css/tokenizer.ts` | `dom/selectors/parser.test.ts`; WPT: `dom/nodes/ParentNode-querySelector-escapes.html` |
 | [consume-ident-like-token](https://drafts.csswg.org/css-syntax/#consume-ident-like-token) | `dom/css/tokenizer.ts` | **untested** |
-| [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts` | **untested** |
+| [consume-name](https://drafts.csswg.org/css-syntax/#consume-name) | `dom/css/tokenizer.ts` | `dom/css/tokenizer.test.ts` |
 | [consume-number](https://drafts.csswg.org/css-syntax/#consume-number) | `dom/css/tokenizer.ts`, `dom/window/geometry.ts` | **untested** |
 | [consume-numeric-token](https://drafts.csswg.org/css-syntax/#consume-numeric-token) | `dom/css/tokenizer.ts` | **untested** |
 | [consume-qualified-rule](https://drafts.csswg.org/css-syntax/#consume-qualified-rule) | `dom/css/cssom.ts`, `dom/css/parser.ts` | `dom/css/lazy-blocks.test.ts` |

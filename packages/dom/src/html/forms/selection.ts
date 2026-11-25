@@ -13,7 +13,8 @@ import { $control, $impl, $version } from "../../keys.ts";
 interface SelectionHost {
   [$control]: ControlState;
   [$impl]: NodeImpl;
-  readonly value: string;
+  /** The element's value (https://html.spec.whatwg.org/#concept-fe-api-value), not a `value` accessor a test installed. */
+  _apiValue(): string;
   _selectionLength(): number;
   /** The selection APIs apply (always on a textarea). */
   _selectable(): boolean;
@@ -85,7 +86,7 @@ export const textSelection = {
       argumentsRequired("setRangeText", el[$impl].tag === T.input ? "HTMLInputElement" : "HTMLTextAreaElement", 1, 0);
     assertSelectable(el, "setRangeText()");
     const result = rangeText(
-      el.value,
+      el._apiValue(),
       el[$control].selStart,
       el[$control].selEnd,
       String(replacement),
