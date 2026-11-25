@@ -145,12 +145,15 @@ export interface ElementDefinitionOptions {
 }
 
 /** https://html.spec.whatwg.org/#customelementregistry */
+/** The prefix of define()'s error messages. */
+const DEFINE = "Failed to execute 'define' on 'CustomElementRegistry': ";
+
 export class CustomElementRegistry {
-  [$byName]: Map<string, CustomElementDefinition>;
-  [$byCtor]: Map<Function, CustomElementDefinition>;
-  [$whenDefined]: Map<string, Deferred>;
-  [$running]: boolean;
-  [$window]: object | null;
+  declare [$byName]: Map<string, CustomElementDefinition>;
+  declare [$byCtor]: Map<Function, CustomElementDefinition>;
+  declare [$whenDefined]: Map<string, Deferred>;
+  declare [$running]: boolean;
+  declare [$window]: object | null;
 
   /** @internal */
   constructor(window: object | null = null) {
@@ -165,36 +168,26 @@ export class CustomElementRegistry {
   define(name: string, constructor: Function, options?: ElementDefinitionOptions): void {
     // WebIDL: CustomElementConstructor is a callback function type.
     if (typeof constructor !== "function") {
-      throw new TypeError(
-        "Failed to execute 'define' on 'CustomElementRegistry': parameter 2 is not of type 'Function'.",
-      );
+      throw new TypeError(`${DEFINE}parameter 2 is not of type 'Function'.`);
     }
     name = String(name);
     // 1. IsConstructor(constructor) (without observable property gets).
     if (!isConstructor(constructor)) {
-      throw new TypeError(
-        "Failed to execute 'define' on 'CustomElementRegistry': The provided value is not a constructor.",
-      );
+      throw new TypeError(`${DEFINE}The provided value is not a constructor.`);
     }
     // 2.
     if (!isValidCustomElementName(name)) {
-      throw new DOMException(
-        `Failed to execute 'define' on 'CustomElementRegistry': "${name}" is not a valid custom element name`,
-        "SyntaxError",
-      );
+      throw new DOMException(`${DEFINE}"${name}" is not a valid custom element name`, "SyntaxError");
     }
     // 3–4.
     if (this[$byName].has(name)) {
       throw new DOMException(
-        `Failed to execute 'define' on 'CustomElementRegistry': the name "${name}" has already been used with this registry`,
+        `${DEFINE}the name "${name}" has already been used with this registry`,
         "NotSupportedError",
       );
     }
     if (this[$byCtor].has(constructor)) {
-      throw new DOMException(
-        "Failed to execute 'define' on 'CustomElementRegistry': this constructor has already been used with this registry",
-        "NotSupportedError",
-      );
+      throw new DOMException(`${DEFINE}this constructor has already been used with this registry`, "NotSupportedError");
     }
     // 5–7.
     let localName = name;
@@ -210,10 +203,7 @@ export class CustomElementRegistry {
     }
     // 8–9.
     if (this[$running])
-      throw new DOMException(
-        "Failed to execute 'define' on 'CustomElementRegistry': an element definition is already running.",
-        "NotSupportedError",
-      );
+      throw new DOMException(`${DEFINE}an element definition is already running.`, "NotSupportedError");
     this[$running] = true;
     // 10.
     let formAssociated = false;
@@ -234,17 +224,12 @@ export class CustomElementRegistry {
       // 11.1–11.2.
       const prototype = (constructor as { prototype: unknown }).prototype;
       if (typeof prototype !== "object" || prototype === null)
-        throw new TypeError(
-          "Failed to execute 'define' on 'CustomElementRegistry': The prototype of the constructor is not an object.",
-        );
+        throw new TypeError(`${DEFINE}The prototype of the constructor is not an object.`);
       const proto = prototype as Record<string, unknown>;
       const cb = (n: string): Callback | null => {
         const v = proto[n];
         if (v === undefined) return null;
-        if (typeof v !== "function")
-          throw new TypeError(
-            `Failed to execute 'define' on 'CustomElementRegistry': The '${n}' callback is not a function.`,
-          );
+        if (typeof v !== "function") throw new TypeError(`${DEFINE}The '${n}' callback is not a function.`);
         return v as Callback;
       };
       // 11.3–11.4.

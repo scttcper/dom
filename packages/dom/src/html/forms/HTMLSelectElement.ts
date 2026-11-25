@@ -15,14 +15,16 @@ import { T } from "../../nodes/tags.ts";
 import { nextInTree, nextSkippingChildren } from "../../nodes/traverse.ts";
 import { HTMLCollection } from "../../collections/HTMLCollection.ts";
 import { bool, contentAttr, parseNonNegativeInteger, str, ulong } from "../reflect.ts";
-import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
+import { hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
 import {
   addOptionIndexHost,
   HTMLOptionsCollection,
-  LabelsNodeList,
+  labelsMember,
   listOfOptions,
   scanOptions,
+  type LabelsNodeList,
 } from "./collections.ts";
+import { installDefaults } from "./common.ts";
 import {
   installConstraintValidation,
   MSG_SELECT,
@@ -105,22 +107,22 @@ export class HTMLSelectElement extends HTMLElement {
   declare [$customValidity]?: string;
   declare [$validity]?: ValidityState | null;
   declare [$labels]?: LabelsNodeList | null;
-  [$options]: HTMLOptionsCollection | null;
-  [$selectedOptions]: HTMLCollection | null;
+  declare [$options]: HTMLOptionsCollection | null;
+  declare [$selectedOptions]: HTMLCollection | null;
   /**
    * The selectedness setting algorithm has run at least once. Trees built by the parser or by
    * cloning attach options without hooks; the first read (or insertion) settles them.
    */
-  [$settled]: boolean;
+  declare [$settled]: boolean;
   /** Re-entrancy guard for `_updateSelectedContent` (it mutates the select's subtree). */
-  [$updatingSelectedContent]: boolean;
+  declare [$updatingSelectedContent]: boolean;
   /** The last child and the child count at the last children-changed step: tell one appended child from any other change. */
-  [$optionsTail]: NodeImpl | null;
-  [$optionsCount]: number;
+  declare [$optionsTail]: NodeImpl | null;
+  declare [$optionsCount]: number;
   /** Every child is an HTML option element (no optgroup, hr, selectedcontent or text). */
-  [$optionsOnly]: boolean;
+  declare [$optionsOnly]: boolean;
   /** `selectedness.epoch` when the algorithm last left exactly one option selected, else -1. */
-  [$selectionEpoch]: number;
+  declare [$selectionEpoch]: number;
   /** https://html.spec.whatwg.org/#user-validity (forms/user-validity.ts); absent while false. */
   declare [$userValidity]?: boolean;
 
@@ -255,14 +257,7 @@ export class HTMLSelectElement extends HTMLElement {
     this._updateSelectedContent();
   }
 
-  get form(): Element | null {
-    const owner = formOwner(this[$impl]);
-    return owner === null ? null : (owner.node as Element);
-  }
-
-  get labels(): LabelsNodeList {
-    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
-  }
+  declare readonly labels: LabelsNodeList;
 
   declare autocomplete: string;
   declare disabled: boolean;
@@ -465,6 +460,7 @@ export class HTMLSelectElement extends HTMLElement {
 
 export interface HTMLSelectElement extends ConstraintValidation {}
 installConstraintValidation(HTMLSelectElement);
+installDefaults(HTMLSelectElement, labelsMember);
 
 str(HTMLSelectElement, "name");
 // select[i] / select[i] = option forward to the options collection.

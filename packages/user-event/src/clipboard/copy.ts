@@ -5,8 +5,17 @@ import {copySelection} from '../document/index.ts'
 import {type Instance} from '../setup/index.ts'
 import {writeDataTransferToClipboard} from '../utils/index.ts'
 
-export async function copy(this: Instance) {
-  const doc = this.config.document
+export function copy(this: Instance) {
+  return copyOrCut(this, 'copy')
+}
+
+/**
+ * Ours: upstream's copy() and cut() (src/clipboard/cut.ts) are this body with their own event
+ * (cut's default action, removing the selection, is its behavior plugin). Upstream's cut() writes
+ * to `target.ownerDocument`, the document `target` came from.
+ */
+export async function copyOrCut(instance: Instance, type: 'copy' | 'cut') {
+  const doc = instance.config.document
   const target = doc.activeElement ?? /* istanbul ignore next */ doc.body
 
   const clipboardData = copySelection(target)
@@ -16,10 +25,10 @@ export async function copy(this: Instance) {
   }
 
   if (
-    this.dispatchUIEvent(target, 'copy', {
+    instance.dispatchUIEvent(target, type, {
       clipboardData,
     }) &&
-    this.config.writeToClipboard
+    instance.config.writeToClipboard
   ) {
     await writeDataTransferToClipboard(doc, clipboardData)
   }

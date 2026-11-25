@@ -13,6 +13,7 @@
 import { constants as vmConstants, createContext, runInContext } from "node:vm";
 import { sharedAccessor, unsharedDefineProperty } from "./shared-accessors.ts";
 import { windowInterfaces, Window } from "./Window.ts";
+import { defineHidden } from "../webidl-runtime.ts";
 
 type InterfaceSnapshot = {
   target: object;
@@ -142,26 +143,12 @@ export function guardInterfaceDefinitions(realm: RealmGlobal): void {
       return reflectDefineProperty(o, key, set.has(o) ? configurableDescriptor(desc) : desc);
     },
   };
-  // Same names and lengths as the originals; data properties like the intrinsics'.
+  // Same names and lengths as the originals; data properties like the intrinsics' (writable,
+  // configurable, not enumerable: what defineHidden defines).
   Object.defineProperty(wrappers.reflectDefineProperty, "name", { value: "defineProperty" });
-  Object.defineProperty(O, "defineProperty", {
-    value: wrappers.defineProperty,
-    writable: true,
-    configurable: true,
-    enumerable: false,
-  });
-  Object.defineProperty(O, "defineProperties", {
-    value: wrappers.defineProperties,
-    writable: true,
-    configurable: true,
-    enumerable: false,
-  });
-  Object.defineProperty(R, "defineProperty", {
-    value: wrappers.reflectDefineProperty,
-    writable: true,
-    configurable: true,
-    enumerable: false,
-  });
+  defineHidden(O, "defineProperty", wrappers.defineProperty);
+  defineHidden(O, "defineProperties", wrappers.defineProperties);
+  defineHidden(R, "defineProperty", wrappers.reflectDefineProperty);
 }
 
 /** https://tc39.es/ecma262/#array-index (canonical numeric strings below 2^32 - 1). */

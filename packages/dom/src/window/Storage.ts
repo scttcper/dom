@@ -10,6 +10,7 @@
 import { eventInterface } from "./interfaces.ts";
 import type { Window } from "./Window.ts";
 import { windowOrigin } from "./origin.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 import { $closed, $parentWindow, $url } from "../keys.ts";
 
 /** https://storage.spec.whatwg.org/#storage-shed */
@@ -140,18 +141,15 @@ const proxies = new WeakMap<Storage, Storage>();
 
 /** https://webidl.spec.whatwg.org/#dfn-overload-resolution-algorithm step 4: too few arguments. */
 function requireArgs(count: number, required: number, method: string): void {
-  if (count < required) {
-    throw new TypeError(
-      `Failed to execute '${method}' on 'Storage': ${required} argument${required === 1 ? "" : "s"} required, but only ${count} present.`,
-    );
-  }
+  if (count < required) argumentsRequired(method, "Storage", required, count);
 }
 
 export class Storage {
   constructor(token?: symbol, window?: Window, type?: "local" | "session", map?: StorageArea) {
     if (token !== kConstruct) throw new TypeError("Illegal constructor");
     const s: StorageState = { map: map!, window: window!, type: type! };
-    Object.defineProperty(this, kState, { value: s, writable: false, enumerable: false, configurable: false });
+    // A new property: not writable, enumerable or configurable.
+    Object.defineProperty(this, kState, { value: s });
     const proxy = new Proxy(this, handler);
     proxies.set(this, proxy);
     return proxy;

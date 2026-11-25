@@ -48,33 +48,46 @@ function hex(c: number): string {
 
 /** https://drafts.csswg.org/cssom/#serialize-an-identifier */
 export function serializeIdentifier(s: string): string {
-  let out = "";
   const len = s.length;
-  const first = len > 0 ? s.charCodeAt(0) : -1;
-  for (let i = 0; i < len; i++) {
+  const first = s.charCodeAt(0);
+  // Most identifiers (keys, class names) need no escaping: find the first character that does
+  // and return the string itself when there is none.
+  let start = 0;
+  for (; start < len; start++) {
+    const c = s.charCodeAt(start);
+    if ((c >= 0x30 && c <= 0x39 && (start === 0 || (start === 1 && first === 0x2d))) || (c === 0x2d && len === 1))
+      break;
+    if (
+      !(
+        c >= 0x80 ||
+        c === 0x2d ||
+        c === 0x5f ||
+        (c >= 0x30 && c <= 0x39) ||
+        (c >= 0x41 && c <= 0x5a) ||
+        (c >= 0x61 && c <= 0x7a)
+      )
+    )
+      break;
+  }
+  if (start === len) return s;
+  let out = s.slice(0, start);
+  for (let i = start; i < len; i++) {
     const c = s.charCodeAt(i);
-    if (c === 0) {
-      out += "�";
-    } else if ((c >= 0x01 && c <= 0x1f) || c === 0x7f) {
-      out += "\\" + hex(c) + " ";
-    } else if (i === 0 && c >= 0x30 && c <= 0x39) {
-      out += "\\" + hex(c) + " ";
-    } else if (i === 1 && c >= 0x30 && c <= 0x39 && first === 0x2d) {
-      out += "\\" + hex(c) + " ";
-    } else if (i === 0 && c === 0x2d && len === 1) {
-      out += "\\-";
-    } else if (
+    if (c === 0) out += "\ufffd";
+    else if ((c >= 0x01 && c <= 0x1f) || c === 0x7f) out += "\\" + hex(c) + " ";
+    else if (i === 0 && c >= 0x30 && c <= 0x39) out += "\\" + hex(c) + " ";
+    else if (i === 1 && c >= 0x30 && c <= 0x39 && first === 0x2d) out += "\\" + hex(c) + " ";
+    else if (i === 0 && c === 0x2d && len === 1) out += "\\-";
+    else if (
       c >= 0x80 ||
       c === 0x2d ||
       c === 0x5f ||
       (c >= 0x30 && c <= 0x39) ||
       (c >= 0x41 && c <= 0x5a) ||
       (c >= 0x61 && c <= 0x7a)
-    ) {
+    )
       out += s[i];
-    } else {
-      out += "\\" + s[i];
-    }
+    else out += "\\" + s[i];
   }
   return out;
 }

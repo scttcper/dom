@@ -6,6 +6,7 @@
 import { NodeList } from "../collections/NodeList.ts";
 import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import { setToStringTag } from "../events/Event.ts";
 
 export type MutationNodes = NodeImpl | NodeImpl[] | null;
 
@@ -92,4 +93,4 @@ export class MutationRecord {
   }
 }
 
-Object.defineProperty(MutationRecord.prototype, Symbol.toStringTag, { value: "MutationRecord", configurable: true });
+setToStringTag(MutationRecord);

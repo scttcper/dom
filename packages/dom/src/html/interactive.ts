@@ -4,15 +4,7 @@
 import { selectedCoordinates, setDialogSubmission } from "./forms/form-submission.ts";
 import { HTMLElement } from "./HTMLElement.ts";
 import { bool, contentAttr, str } from "./reflect.ts";
-import {
-  ELEMENT_NODE,
-  F_ATTR_HOOK,
-  F_CONNECT_HOOK,
-  F_CONNECTED,
-  F_SHADOW_ROOT,
-  HTML_NS,
-  SVG_NS,
-} from "../nodes/constants.ts";
+import { ELEMENT_NODE, F_ATTR_HOOK, F_CONNECT_HOOK, F_CONNECTED, HTML_NS, SVG_NS } from "../nodes/constants.ts";
 import type { Document } from "../nodes/Document.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import type { Event } from "../events/Event.ts";
@@ -45,7 +37,8 @@ import {
 import { setDialogCommandSteps } from "./invokers.ts";
 import { outsideCEReactions } from "./custom-elements.ts";
 import { blurElement, focusDelegate, focusElement, isInert, isSummaryForParentDetails } from "./focus.ts";
-import { $focused, $host, $impl } from "../keys.ts";
+import { isShadowIncludingInclusiveAncestor } from "./shared.ts";
+import { $focused, $impl } from "../keys.ts";
 
 // --- <details> ------------------------------------------------------------------------------
 
@@ -553,18 +546,6 @@ function lightDismissOpenDialogs(s: TopLayerState, target: NodeImpl, type: strin
   if (computedClosedBy(topmostDialog) !== "any") return;
   const r = dialogs.get(topmostDialog);
   if (r?.closeWatcher) requestCloseWatcher(r.closeWatcher, false);
-}
-
-function isShadowIncludingInclusiveAncestor(a: NodeImpl, b: NodeImpl): boolean {
-  for (let n: NodeImpl | null = b; n !== null;) {
-    if (n === a) return true;
-    if (n.parent !== null) n = n.parent;
-    else if ((n.flags & F_SHADOW_ROOT) !== 0) {
-      const host: HTMLElement | null = (n.node as unknown as { [$host]: HTMLElement | null })[$host];
-      n = host === null ? null : host[$impl];
-    } else n = null;
-  }
-  return false;
 }
 
 setTopLayerDialogHooks(dialogFocusingSteps, lightDismissOpenDialogs);

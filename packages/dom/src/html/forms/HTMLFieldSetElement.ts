@@ -7,20 +7,15 @@ import type { Element } from "../../nodes/Element.ts";
 import { HTMLCollection } from "../../collections/HTMLCollection.ts";
 import { T } from "../../nodes/tags.ts";
 import { bool, str } from "../reflect.ts";
-import { formOwner, isListed } from "./form-associated.ts";
-import {
-  installConstraintValidation,
-  V_CUSTOM_ERROR,
-  type ConstraintValidation,
-  type ValidityState,
-} from "./validation.ts";
+import { isListed } from "./form-associated.ts";
+import { installConstraintValidation, type ConstraintValidation, type ValidityState } from "./validation.ts";
 import { $customValidity, $elements, $impl, $validity } from "../../keys.ts";
 
 export class HTMLFieldSetElement extends HTMLElement {
   /** The custom validity error message; absent while it is the empty string. */
   declare [$customValidity]?: string;
   declare [$validity]?: ValidityState | null;
-  [$elements]: HTMLCollection | null;
+  declare [$elements]: HTMLCollection | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
@@ -32,11 +27,6 @@ export class HTMLFieldSetElement extends HTMLElement {
     return "fieldset";
   }
 
-  get form(): Element | null {
-    const owner = formOwner(this[$impl]);
-    return owner === null ? null : (owner.node as Element);
-  }
-
   /** https://html.spec.whatwg.org/#dom-fieldset-elements — listed descendants. */
   get elements(): HTMLCollection {
     return (this[$elements] ??= HTMLCollection._descendants(this[$impl], false, isListed));
@@ -45,18 +35,7 @@ export class HTMLFieldSetElement extends HTMLElement {
   declare disabled: boolean;
   declare name: string;
 
-  // Fieldsets are always barred from constraint validation.
-  _barredFromValidation(): boolean {
-    return true;
-  }
-
-  _validityFlags(): number {
-    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
-  }
-
-  _validationMessage(_flags: number): string {
-    return this[$customValidity] ?? "";
-  }
+  // Fieldsets are always barred from constraint validation (installConstraintValidation).
 }
 
 export interface HTMLFieldSetElement extends ConstraintValidation {}
@@ -69,9 +48,7 @@ export class HTMLLegendElement extends HTMLElement {
   /** https://html.spec.whatwg.org/#dom-legend-form */
   get form(): Element | null {
     const p = this[$impl].parent;
-    if (p === null || p.tag !== T.fieldset) return null;
-    const owner = formOwner(p);
-    return owner === null ? null : (owner.node as Element);
+    return p === null || p.tag !== T.fieldset ? null : (p.node as HTMLFieldSetElement).form;
   }
 
   declare align: string;

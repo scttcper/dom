@@ -96,31 +96,31 @@ function isNonPrintable(c: number): boolean {
 }
 
 export class CSSTokenizer {
-  src: string;
-  len: number;
-  pos: number;
+  declare src: string;
+  declare len: number;
+  declare pos: number;
   /** Current token type (TK_*). */
-  type: number;
+  declare type: number;
   /** Source offsets of the current token. */
-  start: number;
-  end: number;
+  declare start: number;
+  declare end: number;
   /**
    * Decoded value: ident/function/at-keyword/hash name, string/url contents, delim
    * character, or the unit for dimensions. "" for other tokens.
    */
-  value: string;
+  declare value: string;
   /** Numeric value of number/percentage/dimension tokens. */
-  num: number;
+  declare num: number;
   /** Number token type flag: true for "integer", false for "number". */
-  isInteger: boolean;
+  declare isInteger: boolean;
   /** Dimension unit (decoded, original case). */
-  unit: string;
+  declare unit: string;
   /** Hash token type flag: true for "id". */
-  hashId: boolean;
+  declare hashId: boolean;
   /** Number token sign character ("+", "-" or ""). */
-  sign: string;
+  declare sign: string;
   /** Number of comments skipped so far (lets callers detect comments inside a range). */
-  comments: number;
+  declare comments: number;
 
   constructor(src: string) {
     this.src = src;

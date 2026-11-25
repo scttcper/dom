@@ -27,17 +27,16 @@ function parseURL(window: Window, url: string): URL {
  * Location.prototype as ordinary configurable properties instead of [LegacyUnforgeable] own
  * ones, so `vi.spyOn(location, "assign")` works.
  */
+// Defined on a new object: unstated attributes are false (not writable, enumerable or configurable).
 const UNFORGEABLE: PropertyDescriptorMap = {
   toString: {
     value: function toString(this: Location): string {
       return this[$window][$url].href;
     },
-    writable: false,
     enumerable: true,
-    configurable: false,
   },
-  valueOf: { value: Object.prototype.valueOf, writable: false, enumerable: false, configurable: false },
-  [Symbol.toPrimitive]: { value: undefined, writable: false, enumerable: false, configurable: false },
+  valueOf: { value: Object.prototype.valueOf },
+  [Symbol.toPrimitive]: { value: undefined },
 };
 
 /**

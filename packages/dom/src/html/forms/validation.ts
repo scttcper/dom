@@ -1,14 +1,16 @@
 // The constraint validation API: https://html.spec.whatwg.org/#the-constraint-validation-api
 //
 // Each validatable element class implements `_validityFlags()` (a bit set of V_* flags,
-// computed on demand from current state) and `_barredFromValidation()`; this module provides
-// ValidityState and the shared willValidate/validity/validationMessage/checkValidity/
-// reportValidity/setCustomValidity members, installed onto each prototype like the DOM
-// interface mixins (see nodes/mixins.ts).
+// computed on demand from current state) and `_barredFromValidation()`, or inherits the
+// defaults below (custom error only, always barred); this module provides ValidityState and
+// the shared form/willValidate/validity/validationMessage/checkValidity/reportValidity/
+// setCustomValidity members, installed onto each prototype like the DOM interface mixins
+// (see nodes/mixins.ts).
 
 import { defineHidden, exposeMembers } from "../../webidl-runtime.ts";
 import type { Element } from "../../nodes/Element.ts";
-import { fireEvent, normalizeNewlines } from "./common.ts";
+import { fireEvent, installDefaults, normalizeNewlines } from "./common.ts";
+import { formOwner } from "./form-associated.ts";
 import { $customValidity, $el, $impl, $options, $validity, $window } from "../../keys.ts";
 
 export const V_VALUE_MISSING = 1 << 0;
@@ -30,8 +32,11 @@ export interface Validatable extends Element {
   _validityFlags(): number;
   /** https://html.spec.whatwg.org/#barred-from-constraint-validation */
   _barredFromValidation(): boolean;
-  /** Browser-like message for the first failing constraint in `flags` (customError excluded). */
-  _validationMessage(flags: number): string;
+  /**
+   * Browser-like message for the first failing constraint in `flags` (customError excluded).
+   * Only elements with built-in constraints have one: the others' flags are 0 or customError.
+   */
+  _validationMessage?(flags: number): string;
 }
 
 /** https://html.spec.whatwg.org/#validitystate */
@@ -100,6 +105,7 @@ export function checkValidityOf(el: Validatable): boolean {
 }
 
 export interface ConstraintValidation {
+  readonly form: Element | null;
   readonly willValidate: boolean;
   readonly validity: ValidityState;
   readonly validationMessage: string;
@@ -151,10 +157,33 @@ const constraintValidation = {
   },
 };
 
+/**
+ * What every listed element (https://html.spec.whatwg.org/#category-listed) shares unless its
+ * class defines its own: `form`, and the constraints of an element whose only one is a custom
+ * error and that is always barred from constraint validation (object, fieldset, output).
+ */
+const listedDefaults = {
+  /** https://html.spec.whatwg.org/#dom-fae-form */
+  get form(): Element | null {
+    const owner = formOwner((this as unknown as Validatable)[$impl]);
+    return owner === null ? null : (owner.node as Element);
+  },
+
+  _barredFromValidation(): boolean {
+    return true;
+  },
+
+  _validityFlags(): number {
+    return (this as unknown as Validatable)[$customValidity] ? V_CUSTOM_ERROR : 0;
+  },
+};
+
+/** Installs the constraint validation API and `form` on a listed element's interface. */
 export function installConstraintValidation(target: { prototype: object }): void {
   for (const key of Reflect.ownKeys(constraintValidation)) {
     Object.defineProperty(target.prototype, key, Object.getOwnPropertyDescriptor(constraintValidation, key)!);
   }
+  installDefaults(target, listedDefaults);
 }
 
 /** jsdom's text for every built-in constraint failure (the default; drop-in compatibility). */
@@ -166,7 +195,7 @@ export const MSG_JSDOM = "Constraints not satisfied";
  */
 function builtinMessage(el: Validatable, flags: number): string {
   const win = el[$impl].doc[$window] as unknown as { [$options]?: { validationMessages?: string } } | null;
-  return win?.[$options]?.validationMessages === "browser" ? el._validationMessage(flags) : MSG_JSDOM;
+  return win?.[$options]?.validationMessages === "browser" ? el._validationMessage!(flags) : MSG_JSDOM;
 }
 
 // --- browser-like messages (Chromium en-US wording) -----------------------------------------

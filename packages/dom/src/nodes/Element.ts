@@ -1,14 +1,16 @@
 // https://dom.spec.whatwg.org/#interface-element
 
-import { ELEMENT_NODE, F_CONNECTED, F_CUSTOM, F_HAS_SHADOW, F_HTML, HTML_NS } from "./constants.ts";
+import { ELEMENT_NODE, F_CUSTOM, F_HAS_SHADOW, F_HTML, HTML_NS } from "./constants.ts";
 import type { Document } from "./Document.ts";
 import { htmlUppercasedQualifiedName, Node } from "./Node.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import { tagId } from "./tags.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 import {
   asciiLowercase,
   findAttributeByName,
   findAttributeByNamespace,
+  findAttributeNS,
   getAttribute,
   isValidAttributeLocalName,
   removeAttribute,
@@ -40,7 +42,7 @@ import { NamedNodeMap } from "../collections/NamedNodeMap.ts";
 import type { Attr } from "./Attr.ts";
 import { attrNode, removeAttributeNode, setAttributeNode } from "./attr-nodes.ts";
 import { validateAndExtract } from "./names.ts";
-import { DOMRect, DOMRectList } from "../window/geometry.ts";
+import type { DOMRect, DOMRectList } from "../window/geometry.ts";
 import { T } from "./tags.ts";
 import {
   _shadowRootAttached,
@@ -189,11 +191,7 @@ export class Element extends Node {
   }
 
   getAttributeNS(namespace: string | null, localName: string): string | null {
-    const a = findAttributeByNamespace(
-      this[$impl],
-      namespace === "" || namespace === undefined ? null : namespace,
-      String(localName),
-    );
+    const a = findAttributeNS(this[$impl], namespace, localName);
     return a === null ? null : a.value;
   }
 
@@ -226,11 +224,7 @@ export class Element extends Node {
   /** https://dom.spec.whatwg.org/#dom-element-getattributenodens */
   getAttributeNodeNS(namespace: string | null, localName: string): Attr | null {
     const impl = this[$impl];
-    const a = findAttributeByNamespace(
-      impl,
-      namespace === "" || namespace === undefined ? null : namespace,
-      String(localName),
-    );
+    const a = findAttributeNS(impl, namespace, localName);
     return a === null ? null : attrNode(impl, a);
   }
 
@@ -253,11 +247,7 @@ export class Element extends Node {
   }
 
   removeAttributeNS(namespace: string | null, localName: string): void {
-    const a = findAttributeByNamespace(
-      this[$impl],
-      namespace === "" || namespace === undefined ? null : namespace,
-      String(localName),
-    );
+    const a = findAttributeNS(this[$impl], namespace, localName);
     if (a !== null) removeAttributeRecord(this[$impl], a);
   }
 
@@ -289,13 +279,7 @@ export class Element extends Node {
   }
 
   hasAttributeNS(namespace: string | null, localName: string): boolean {
-    return (
-      findAttributeByNamespace(
-        this[$impl],
-        namespace === "" || namespace === undefined ? null : namespace,
-        String(localName),
-      ) !== null
-    );
+    return findAttributeNS(this[$impl], namespace, localName) !== null;
   }
 
   // --- selectors --------------------------------------------------------------------------
@@ -419,9 +403,7 @@ export class Element extends Node {
 
   /** https://dom.spec.whatwg.org/#dom-element-attachshadow */
   attachShadow(init: ShadowRootInit): ShadowRoot {
-    if (init === null || typeof init !== "object") {
-      throw new TypeError("Failed to execute 'attachShadow' on 'Element': 1 argument required, but only 0 present.");
-    }
+    if (init === null || typeof init !== "object") argumentsRequired("attachShadow", "Element", 1, 0);
     const mode = init.mode;
     if (mode !== "open" && mode !== "closed") {
       throw new TypeError(
@@ -446,53 +428,6 @@ export class Element extends Node {
     const shadow = host === null || (host.flags & F_HAS_SHADOW) === 0 ? null : (host.node as Element)[$shadowRoot];
     return shadow != null && shadow.mode === "open" ? (slot.node as Element) : null;
   }
-
-  // --- CSSOM View (no layout: geometry is always zero, scrolling is a no-op) ---------------
-
-  /** https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect */
-  getBoundingClientRect(): DOMRect {
-    return new DOMRect();
-  }
-
-  getClientRects(): DOMRectList {
-    return new DOMRectList();
-  }
-
-  /** https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility — without layout: connected and not hidden by `hidden` / display:none ancestors is unknowable, so connectedness. */
-  checkVisibility(_options?: object): boolean {
-    return (this[$impl].flags & F_CONNECTED) !== 0;
-  }
-
-  get scrollTop(): number {
-    return 0;
-  }
-  set scrollTop(_v: number) {}
-  get scrollLeft(): number {
-    return 0;
-  }
-  set scrollLeft(_v: number) {}
-  get scrollWidth(): number {
-    return 0;
-  }
-  get scrollHeight(): number {
-    return 0;
-  }
-  get clientTop(): number {
-    return 0;
-  }
-  get clientLeft(): number {
-    return 0;
-  }
-  get clientWidth(): number {
-    return 0;
-  }
-  get clientHeight(): number {
-    return 0;
-  }
-  scroll(_x?: unknown, _y?: number): void {}
-  scrollTo(_x?: unknown, _y?: number): void {}
-  scrollBy(_x?: unknown, _y?: number): void {}
-  scrollIntoView(_arg?: unknown): void {}
 
   // --- hooks for subclasses (see constants.ts F_*_HOOK) -----------------------------------
 
@@ -520,7 +455,25 @@ export class Element extends Node {
   _cloningSteps(_copy: Element, _subtree?: boolean): void {}
 }
 
-export interface Element extends ParentNode, ChildNode, NonDocumentTypeChildNode {}
+export interface Element extends ParentNode, ChildNode, NonDocumentTypeChildNode {
+  // CSSOM View (https://drafts.csswg.org/cssom-view/#extension-to-the-element-interface): defined
+  // on Element.prototype by css/view.ts (installElementView) while the DOM loads.
+  getBoundingClientRect(): DOMRect;
+  getClientRects(): DOMRectList;
+  checkVisibility(options?: object): boolean;
+  scrollTop: number;
+  scrollLeft: number;
+  readonly scrollWidth: number;
+  readonly scrollHeight: number;
+  readonly clientTop: number;
+  readonly clientLeft: number;
+  readonly clientWidth: number;
+  readonly clientHeight: number;
+  scroll(x?: unknown, y?: number): void;
+  scrollTo(x?: unknown, y?: number): void;
+  scrollBy(x?: unknown, y?: number): void;
+  scrollIntoView(arg?: unknown): void;
+}
 installParentNode(Element);
 installChildNode(Element);
 installNonDocumentTypeChildNode(Element);
@@ -609,8 +562,8 @@ export function attachShadowRoot(
 /** Keep observable collection identity while a caller holds it. The finalizer holds only
  * weak collection references and string keys, so it cannot keep the root alive. */
 class CollectionEntry extends WeakRef<HTMLCollection> {
-  entries: Map<string, CollectionEntry>;
-  key: string;
+  declare entries: Map<string, CollectionEntry>;
+  declare key: string;
 
   constructor(collection: HTMLCollection, entries: Map<string, CollectionEntry>, key: string) {
     super(collection);

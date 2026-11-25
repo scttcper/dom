@@ -35,20 +35,21 @@ import {
 } from "./tokenizer.ts";
 import { normalizeColor } from "./colors.ts";
 import { isIdentChar, isIdentStart } from "./tokenizer.ts";
+import { serializeString } from "../selectors/serialize.ts";
 
 // --- components ---------------------------------------------------------------------------
 
 /** One top-level component value of a declaration value. */
 export class Comp {
-  type: number;
+  declare type: number;
   /** Source text of the whole component (a function includes its arguments). */
-  text: string;
+  declare text: string;
   /** Lowercased ident / function name / unit; "" otherwise. */
-  lower: string;
-  num: number;
-  isInteger: boolean;
+  declare lower: string;
+  declare num: number;
+  declare isInteger: boolean;
   /** Decoded string/url value. */
-  value: string;
+  declare value: string;
 
   constructor(type: number, text: string, lower: string, num: number, isInteger: boolean, value: string) {
     this.type = type;
@@ -152,6 +153,27 @@ export function formatNumber(n: number): string {
   return n.toFixed(0);
 }
 
+/** `num` `unit` in px for an absolute length unit (https://drafts.csswg.org/css-values-4/#absolute-lengths), else NaN. */
+export function absoluteLength(num: number, unit: string): number {
+  switch (unit) {
+    case "px":
+      return num;
+    case "in":
+      return num * 96;
+    case "cm":
+      return (num * 96) / 2.54;
+    case "mm":
+      return (num * 96) / 25.4;
+    case "q":
+      return (num * 96) / 101.6;
+    case "pt":
+      return (num * 96) / 72;
+    case "pc":
+      return num * 16;
+  }
+  return NaN;
+}
+
 // oxfmt-ignore
 const LENGTH_UNITS = new Set([
   "px", "em", "rem", "ex", "rex", "ch", "rch", "cap", "rcap", "ic", "ric", "lh", "rlh",
@@ -186,12 +208,12 @@ export const G_LIST = 4096;
 
 /** Per-property value grammar for single-component (or N-component repeated) values. */
 export class Grammar {
-  types: number;
-  keywords: Set<string>;
+  declare types: number;
+  declare keywords: Set<string>;
   /** Allowed (lowercase) function names besides math functions. */
-  fns: Set<string>;
+  declare fns: Set<string>;
   /** Maximum number of space-separated components (each matching this grammar). */
-  max: number;
+  declare max: number;
   /** For max > 1: collapse repeated values like jsdom (`auto auto` is still invalid for width since max is 1). */
   constructor(types: number, keywords: Set<string>, fns: Set<string>, max: number) {
     this.types = types;
@@ -702,19 +724,6 @@ function excludedFamilyWord(word: string): boolean {
 
 function normalizeFontFamily(comps: Comp[]): string | null {
   return serializeFamilyList(significant(comps));
-}
-
-/** https://drafts.csswg.org/cssom/#serialize-a-string */
-export function serializeString(s: string): string {
-  let out = '"';
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c === 0) out += "�";
-    else if ((c >= 1 && c <= 0x1f) || c === 0x7f) out += "\\" + c.toString(16) + " ";
-    else if (c === 0x22 || c === 0x5c) out += "\\" + s[i];
-    else out += s[i];
-  }
-  return out + '"';
 }
 
 /** https://drafts.csswg.org/cssom/#serialize-a-url */

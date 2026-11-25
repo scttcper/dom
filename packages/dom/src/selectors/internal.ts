@@ -40,31 +40,31 @@ export { setHoverTarget, setActiveTarget } from "./state.ts";
 /** One complex selector of a compiled list. */
 export class CompiledSelector {
   /** Source text of this complex selector (trimmed). */
-  readonly text: string;
+  declare readonly text: string;
   /** Packed specificity: a * 2^20 + b * 2^10 + c (each saturating at 1023). Compare numerically. */
-  readonly specificity: number;
+  declare readonly specificity: number;
   /** KEY_ID / KEY_CLASS / KEY_TAG / KEY_NONE (universal or pseudo-class-only subject). */
-  readonly keyKind: number;
+  declare readonly keyKind: number;
   /** The id, class name, or lowercased tag name for `keyKind`; "" for KEY_NONE. */
-  readonly key: string;
+  declare readonly key: string;
   /** Subject pseudo-element without colons ("before", "part::before", ...), or "" for elements. */
-  readonly pseudoElement: string;
+  declare readonly pseudoElement: string;
   /** Depends on state not covered by Document._version (focus, hover, checkedness, values, ...). */
-  readonly volatile: boolean;
+  declare readonly volatile: boolean;
   /**
    * Ancestor-filter hashes (filter.ts; -1 = none): names some ancestor of the subject must have.
    * Test with `mayMatchAncestors(h0, h1, h2, h3)` after `buildAncestorFilter(el)`.
    */
-  readonly h0: number;
-  readonly h1: number;
-  readonly h2: number;
-  readonly h3: number;
+  declare readonly h0: number;
+  declare readonly h1: number;
+  declare readonly h2: number;
+  declare readonly h3: number;
   /** Matching needs no :scope, :nth-* memo reset or host context: `matchesSelectorDirect` may skip that setup. */
-  readonly direct: boolean;
+  declare readonly direct: boolean;
   /** @internal */
-  readonly [$cx]: CComplex;
+  declare readonly [$cx]: CComplex;
   /** @internal */
-  readonly [$info]: CompileInfo;
+  declare readonly [$info]: CompileInfo;
 
   constructor(cx: CComplex, info: CompileInfo) {
     this.text = cx.text;

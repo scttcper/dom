@@ -68,22 +68,31 @@ class CaretLocation implements CaretPosition {
   }
 }
 
+/** The PointerCoords members upstream compares, in its order. */
+const COORDS = [
+  'x',
+  'y',
+  'clientX',
+  'clientY',
+  'offsetX',
+  'offsetY',
+  'pageX',
+  'pageY',
+  'screenX',
+  'screenY',
+] as const
+
 export function isDifferentPointerPosition(
   positionA: PointerPosition,
   positionB: PointerPosition,
 ) {
+  if (positionA.target !== positionB.target) return true
+  const a = positionA.coords
+  const b = positionB.coords
+  for (let i = 0; i < COORDS.length; i++) {
+    if (a?.[COORDS[i]] !== b?.[COORDS[i]]) return true
+  }
   return (
-    positionA.target !== positionB.target ||
-    positionA.coords?.x !== positionB.coords?.x ||
-    positionA.coords?.y !== positionB.coords?.y ||
-    positionA.coords?.clientX !== positionB.coords?.clientX ||
-    positionA.coords?.clientY !== positionB.coords?.clientY ||
-    positionA.coords?.offsetX !== positionB.coords?.offsetX ||
-    positionA.coords?.offsetY !== positionB.coords?.offsetY ||
-    positionA.coords?.pageX !== positionB.coords?.pageX ||
-    positionA.coords?.pageY !== positionB.coords?.pageY ||
-    positionA.coords?.screenX !== positionB.coords?.screenX ||
-    positionA.coords?.screenY !== positionB.coords?.screenY ||
     positionA.caret?.node !== positionB.caret?.node ||
     positionA.caret?.offset !== positionB.caret?.offset
   )

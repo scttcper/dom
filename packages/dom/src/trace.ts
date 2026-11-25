@@ -99,7 +99,7 @@ export function describeCall(name: string, args: readonly unknown[]): string {
 }
 
 function describeValue(value: unknown, depth: number): string {
-  if (typeof value === "string") return JSON.stringify(value.length > 40 ? `${value.slice(0, 39)}…` : value);
+  if (typeof value === "string") return quote(value);
   if (typeof value === "function") return value.name ? `${value.name}()` : "fn";
   if (value instanceof RegExp) return String(value);
   if (value === null || typeof value !== "object") return String(value);

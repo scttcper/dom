@@ -16,7 +16,7 @@
 // https://html.spec.whatwg.org/#the-beforeunloadevent-interface
 // https://websockets.spec.whatwg.org/#the-closeevent-interface
 
-import { exposeMembers } from "../webidl-runtime.ts";
+import { argumentsRequired, exposeMembers } from "../webidl-runtime.ts";
 import { EF_DISPATCH, Event, initializeEvent, isInternalConstruct, setToStringTag } from "./Event.ts";
 import type { EventInit } from "../webidl.ts";
 import { requireArgs } from "./UIEvents.ts";
@@ -70,10 +70,7 @@ export class CustomEvent<T = unknown> extends Event {
 
   /** https://dom.spec.whatwg.org/#dom-customevent-initcustomevent */
   initCustomEvent(type: string, bubbles = false, cancelable = false, detail: T | null = null): void {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'initCustomEvent' on 'CustomEvent': 1 argument required, but only 0 present.",
-      );
+    if (arguments.length === 0) argumentsRequired("initCustomEvent", "CustomEvent", 1, 0);
     if ((this._s.flags & EF_DISPATCH) !== 0) return;
     initializeEvent(this, toDOMString(type), !!bubbles, !!cancelable);
     this.#detail = detail;

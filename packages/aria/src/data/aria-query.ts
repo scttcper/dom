@@ -29,17 +29,124 @@ export interface ARIARoleDefinition {
   superClass: string[][];
 }
 
-interface RawData {
+type Relation = ARIARoleDefinition["relatedConcepts"][number];
+/** A `{ concept, module }` relation as `[concept, module]`, with a `{ name }`-only concept as the name. */
+type PackedRelation = Relation | [concept: string | ARIARoleRelationConcept, module: string];
+
+/**
+ * A role definition as the generator stores it. `flags`: 1 abstract, 2 accessibleNameRequired,
+ * 4 childrenPresentational. `nameFrom`, `superClass` and `props` are indexes into the shared
+ * `lists`; a `props` list holds the indexes of its keys in `aria`, and `propValues` the props
+ * whose value is not null. `baseConcepts` is always empty and `requireContextRole` equals
+ * `requiredContextRole` in 5.3.0 (the generator checks both).
+ */
+type RawRole = [
+  name: string,
+  flags: number,
+  nameFrom: number,
+  prohibitedProps: string[],
+  props: number,
+  relatedConcepts: PackedRelation[],
+  requiredContextRole: string[],
+  requiredOwnedElements: string[][],
+  requiredProps: Record<string, unknown>,
+  superClass: number,
+  propValues?: Record<string, unknown>,
+];
+
+interface Data {
   roles: Array<[string, ARIARoleDefinition]>;
   elementRoles: Array<[ARIARoleRelationConcept, string[]]>;
   roleElements: Array<[string, ARIARoleRelationConcept[]]>;
   aria: Array<[string, Record<string, unknown>]>;
-  dom: Array<[string, Record<string, unknown>]>;
+  dom: Array<[string, { reserved: boolean }]>;
 }
 
-let raw: RawData | null = null;
-function data(): RawData {
-  return (raw ??= JSON.parse(ARIA_QUERY_DATA) as RawData);
+let built: Data | null = null;
+function data(): Data {
+  return (built ??= build());
+}
+
+/** Expands the compact tables of ./aria-query.generated.ts into aria-query's. */
+function build(): Data {
+  const {
+    lists,
+    roles: rawRoles,
+    aria,
+    dom: rawDom,
+  } = JSON.parse(ARIA_QUERY_DATA) as {
+    lists: unknown[][];
+    roles: RawRole[];
+    aria: Data["aria"];
+    dom: string[];
+  };
+  const propsTemplates: Array<Record<string, unknown>> = [];
+  const roles: Data["roles"] = new Array(rawRoles.length);
+  // https://github.com/A11yance/aria-query/blob/v5.3.0/src/elementRoleMap.js and
+  // roleElementMap.js: the HTML-module concepts of each role. elementRoleMap.js looks for an
+  // existing entry by comparing [concept, roles] tuples with the concept itself, which never
+  // matches, so every concept gets its own entry with that one role.
+  const elementRoles: Data["elementRoles"] = [];
+  const roleElements: Data["roleElements"] = [];
+  for (let i = 0; i < rawRoles.length; i++) {
+    const r = rawRoles[i];
+    const name = r[0];
+    // A role gets a copy of the props object of an earlier role with the same keys and no
+    // values, or one parsed from its key list (JSON.parse builds fast-mode objects, much
+    // faster than adding the keys one by one).
+    let props: Record<string, unknown>;
+    const template = propsTemplates[r[4]];
+    if (template !== undefined) {
+      props = { ...template };
+    } else {
+      const keys = lists[r[4]] as number[];
+      let json = "{";
+      for (let k = 0; k < keys.length; k++) json += `${k === 0 ? '"' : ',"'}${aria[keys[k]][0]}":null`;
+      props = JSON.parse(`${json}}`) as Record<string, unknown>;
+      if (r[10] === undefined) propsTemplates[r[4]] = props;
+    }
+    if (r[10] !== undefined) Object.assign(props, r[10]);
+    const related = r[5];
+    const relatedConcepts: Relation[] = new Array(related.length);
+    const concepts: ARIARoleRelationConcept[] = [];
+    for (let j = 0; j < related.length; j++) {
+      const packed = related[j];
+      const relation = Array.isArray(packed)
+        ? { concept: typeof packed[0] === "string" ? { name: packed[0] } : packed[0], module: packed[1] }
+        : packed;
+      relatedConcepts[j] = relation;
+      if (relation.module === "HTML" && relation.concept != null) {
+        elementRoles.push([relation.concept, [name]]);
+        concepts.push(relation.concept);
+      }
+    }
+    if (concepts.length > 0) roleElements.push([name, concepts]);
+    const flags = r[1];
+    roles[i] = [
+      name,
+      {
+        abstract: (flags & 1) !== 0,
+        accessibleNameRequired: (flags & 2) !== 0,
+        baseConcepts: [],
+        childrenPresentational: (flags & 4) !== 0,
+        nameFrom: (lists[r[2]] as string[]).slice(),
+        prohibitedProps: r[3],
+        props,
+        relatedConcepts,
+        requireContextRole: r[6],
+        requiredContextRole: r[6].slice(),
+        requiredOwnedElements: r[7],
+        requiredProps: r[8],
+        superClass: (lists[r[9]] as string[][]).map((chain) => chain.slice()),
+      },
+    ];
+  }
+  const dom: Data["dom"] = new Array(rawDom.length);
+  for (let i = 0; i < rawDom.length; i++) {
+    const name = rawDom[i];
+    dom[i] = name[0] === "!" ? [name.slice(1), { reserved: true }] : [name, { reserved: false }];
+  }
+  return { roles, elementRoles, roleElements, aria, dom };
 }
 
 /** Deep equality for plain JSON values (aria-query uses dequal/lite for elementRoles lookups). */

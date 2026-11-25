@@ -183,3 +183,10 @@ export function installEventHandlers(proto: object, kind: EventHandlersKind): vo
   }
   Object.defineProperties(proto, descriptors);
 }
+
+/** Install plain `on<type>` attributes (no target resolution), e.g. XMLHttpRequestEventTarget's and FileReader's. */
+export function defineEventHandlers(proto: object, types: readonly string[]): void {
+  const descriptors: PropertyDescriptorMap = {};
+  for (const type of types) addHandler(descriptors, type, null);
+  Object.defineProperties(proto, descriptors);
+}

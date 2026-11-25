@@ -50,7 +50,7 @@ export function setUIValue(
   }
 
   if (hasCtrlDomUI(el)) {
-    ctrlDomUI!.setUIValue(el, value)
+    ctrlDomUI.setUIValue(el, value)
     return
   }
 
@@ -64,7 +64,7 @@ export function setUIValue(
 export function getUIValue(element: HTMLInputElement | HTMLTextAreaElement) {
   const el = element as EditableElement
   if (hasCtrlDomUI(el)) {
-    return ctrlDomUI!.getUIValue(el)
+    return ctrlDomUI.getUIValue(el)
   }
   return el[UIValue] === undefined ? el.value : String(el[UIValue])
 }
@@ -74,7 +74,7 @@ export function setUIValueClean(
   element: HTMLInputElement | HTMLTextAreaElement,
 ) {
   if (hasCtrlDomUI(element)) {
-    ctrlDomUI!.clearUIValue(element)
+    ctrlDomUI.clearUIValue(element)
     return
   }
   ;(element as EditableElement)[UIValue] = undefined
@@ -120,7 +120,7 @@ export function setUISelection(
         : getUISelection(el).anchorOffset
     const focusOffset = Math.max(0, focusOffsetParam)
     if (anchorOffset > focusOffset) {
-      const length = ctrlDomUI!.getUIValue(el).length
+      const length = ctrlDomUI.getUIValue(el).length
       el[UISelection] = {
         anchorOffset: Math.min(anchorOffset, length),
         focusOffset: Math.min(focusOffset, length),
@@ -129,7 +129,7 @@ export function setUISelection(
       el[UISelection] = undefined
     }
     // Same direction upstream ends up with: it calls `setSelectionRange(start, end)`.
-    ctrlDomUI!.setUISelection(
+    ctrlDomUI.setUISelection(
       el,
       Math.min(anchorOffset, focusOffset),
       Math.max(anchorOffset, focusOffset),
@@ -180,7 +180,7 @@ export function getUISelection(
 ): UISelectionRange {
   const el = element as EditableElement
   if (hasCtrlDomUI(el)) {
-    const {start, end} = ctrlDomUI!.getUISelection(el)
+    const {start, end} = ctrlDomUI.getUISelection(el)
     const remembered = el[UISelection]
     const backward =
       remembered?.anchorOffset === end && remembered.focusOffset === start

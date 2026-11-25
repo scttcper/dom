@@ -23,8 +23,8 @@ Object.freeze(EMPTY_BLOCK);
  * lazily through the cascade's per-element cache, so reads stay live across mutations.
  */
 export class CSSComputedStyleDeclaration extends CSSStyleDeclaration {
-  [$el]: NodeImpl;
-  [$pseudo]: string | null;
+  declare [$el]: NodeImpl;
+  declare [$pseudo]: string | null;
 
   constructor(el: NodeImpl, pseudo: string | null) {
     super(null, EMPTY_BLOCK);

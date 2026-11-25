@@ -93,12 +93,12 @@ export function createEvent<K extends EventType>(
 ) {
   const window = getWindow(target)
   const {EventType, defaultInit} = eventMap[type]
-  const constructors = getEventConstructors(window)
+  const {fallbacks, constructors} = getEventConstructors(window)
 
   // A fallback class (the window lacks the interface, e.g. PointerEvent under
   // @ctrl/dom-jest-environment's jsdom 26 parity) takes upstream's path: its native superclass
   // constructor would drop the members only the initializers set (pointerType, width, ...).
-  if (implOf(target) !== null && !constructors.fallbacks.has(EventType)) {
+  if (implOf(target) !== null && !fallbacks.has(EventType)) {
     return createNativeEvent(
       constructors[EventType],
       EventType,
@@ -144,50 +144,38 @@ export function createEvent<K extends EventType>(
  * KeyboardEventInit, modifier* members on EventModifierInit, clipboardData on ClipboardEventInit).
  */
 function createNativeEvent(
-  Ctor: new (type: string, init: object) => Event,
+  Ctor: EventConstructor,
   eventInterface: string,
   type: string,
   defaultInit: EventInit,
   init: object | undefined,
   modifiers: ModifierSource | undefined,
 ): Event {
-  const i = (init ?? {}) as PointerEventInit &
-    KeyboardEventInit &
-    InputEventInit &
-    ClipboardEventInit & {
-      x?: number
-      y?: number
-      offsetX?: number
-      offsetY?: number
-      pageX?: number
-      pageY?: number
-    }
+  const i = (init ?? {}) as NativeInit
   const m = modifiers?.keyboard.modifiers
   let dict: object
   switch (eventInterface) {
     case 'KeyboardEvent':
-      dict = keyboardEventDict(i as NativeInit, defaultInit, m)
+      dict = new KeyboardEventDict(i, defaultInit, m)
       break
     case 'MouseEvent':
-      dict = mouseEventDict(i as NativeInit, defaultInit, m)
+      dict = new MouseEventDict(i, defaultInit, m)
       break
     case 'PointerEvent':
-      dict = pointerEventDict(i as NativeInit, defaultInit, m)
+      dict = new PointerEventDict(i, defaultInit, m)
       break
     case 'InputEvent':
-      dict = inputEventDict(i as NativeInit, defaultInit)
+      dict = new InputEventDict(i, defaultInit)
       break
-    default: {
-      const d: Record<string, unknown> = {...i}
-      modifiers?.assignUIEventModifiers(d)
-      d.bubbles = defaultInit.bubbles
-      d.cancelable = defaultInit.cancelable
-      d.composed = defaultInit.composed
-      if (i.clientX === undefined && i.x !== undefined) d.clientX = i.x
-      if (i.clientY === undefined && i.y !== undefined) d.clientY = i.y
-      if (i.pressure === undefined) d.pressure = i.buttons ? 0.5 : 0
-      dict = d
-    }
+    default:
+      // FocusEvent, ClipboardEvent, Event: dispatchUIEvent passes modifiers only for mouse and
+      // keyboard events, and these constructors read no modifier, coordinate or pressure member.
+      dict = {
+        ...i,
+        bubbles: defaultInit.bubbles,
+        cancelable: defaultInit.cancelable,
+        composed: defaultInit.composed,
+      }
   }
   const event = new Ctor(type, dict)
   setLayoutMembers(event, i)
@@ -195,10 +183,10 @@ function createNativeEvent(
 }
 
 type LayoutInit = {
-  offsetX?: number
-  offsetY?: number
-  pageX?: number
-  pageY?: number
+  offsetX?: unknown
+  offsetY?: unknown
+  pageX?: unknown
+  pageY?: unknown
 }
 
 function setLayoutMembers(event: Event, i: LayoutInit) {
@@ -215,157 +203,113 @@ function setLayoutMembers(event: Event, i: LayoutInit) {
 // Init dictionaries for the interfaces user-event dispatches most, with one shape each: every
 // member @ctrl/dom's constructor reads, in a fixed order, so its reads stay monomorphic (a spread
 // of `init` plus the overrides made a different, dictionary-sized object at every call site).
-// Same values as the generic path: `init`'s members, the System's modifiers over `init`'s (Hyper
-// and Super are not System modifiers), the event map's bubbles/cancelable/composed, the
-// defaults applied above. Upstream stringifies `key`, `code` and `inputType` with `String(x)`,
-// so a missing one reads as "undefined" (`inputType` of the `input` events selectOptions/upload
-// fire). test/event/native-dicts.test.ts pins the member lists against the constructors' reads.
+// Classes so the members the interfaces share are written once: V8 sizes an instance for every
+// `this.x =` of its constructor chain, so each dictionary is one in-object allocation, like a
+// literal. Same values as the generic path: `init`'s members, the System's modifiers over
+// `init`'s (Hyper and Super are not System modifiers), the event map's bubbles/cancelable/
+// composed, the defaults applied above. Upstream stringifies `key`, `code` and `inputType` with
+// `String(x)`, so a missing one reads as "undefined" (`inputType` of the `input` events
+// selectOptions/upload fire). test/event/native-dicts.test.ts pins the member lists against the
+// constructors' reads.
 
 type NativeInit = Record<string, unknown>
 
-/** @internal UIEventInit and EventModifierInit members of a keyboard event. */
-export function keyboardEventDict(
-  i: NativeInit,
-  d: EventInit,
-  m: ModifierFlags | undefined,
-) {
-  return {
-    bubbles: d.bubbles,
-    cancelable: d.cancelable,
-    composed: d.composed,
-    view: i.view,
-    detail: i.detail,
-    which: i.which,
-    ctrlKey: m === undefined ? i.ctrlKey : m.Control,
-    shiftKey: m === undefined ? i.shiftKey : m.Shift,
-    altKey: m === undefined ? i.altKey : m.Alt,
-    metaKey: m === undefined ? i.metaKey : m.Meta,
-    modifierAltGraph: m === undefined ? i.modifierAltGraph : m.AltGraph,
-    modifierCapsLock: m === undefined ? i.modifierCapsLock : m.CapsLock,
-    modifierFn: m === undefined ? i.modifierFn : m.Fn,
-    modifierFnLock: m === undefined ? i.modifierFnLock : m.FnLock,
-    modifierHyper: i.modifierHyper,
-    modifierNumLock: m === undefined ? i.modifierNumLock : m.NumLock,
-    modifierScrollLock: m === undefined ? i.modifierScrollLock : m.ScrollLock,
-    modifierSuper: i.modifierSuper,
-    modifierSymbol: m === undefined ? i.modifierSymbol : m.Symbol,
-    modifierSymbolLock: m === undefined ? i.modifierSymbolLock : m.SymbolLock,
-    key: i.key === undefined ? 'undefined' : i.key,
-    code: i.code === undefined ? 'undefined' : i.code,
-    location: i.location,
-    repeat: i.repeat,
-    isComposing: i.isComposing,
-    charCode: i.charCode,
-    keyCode: i.keyCode,
+/** UIEventInit members, with EventInit's from the event map. */
+class UIEventDict {
+  [member: string]: unknown
+  constructor(i: NativeInit, d: EventInit) {
+    this.bubbles = d.bubbles
+    this.cancelable = d.cancelable
+    this.composed = d.composed
+    this.view = i.view
+    this.detail = i.detail
+    this.which = i.which
   }
 }
 
-/** @internal MouseEventInit members (with UIEventInit and EventModifierInit). */
-export function mouseEventDict(
-  i: NativeInit,
-  d: EventInit,
-  m: ModifierFlags | undefined,
-) {
-  return {
-    bubbles: d.bubbles,
-    cancelable: d.cancelable,
-    composed: d.composed,
-    view: i.view,
-    detail: i.detail,
-    which: i.which,
-    screenX: i.screenX,
-    screenY: i.screenY,
-    clientX: i.clientX === undefined ? i.x : i.clientX,
-    clientY: i.clientY === undefined ? i.y : i.clientY,
-    ctrlKey: m === undefined ? i.ctrlKey : m.Control,
-    shiftKey: m === undefined ? i.shiftKey : m.Shift,
-    altKey: m === undefined ? i.altKey : m.Alt,
-    metaKey: m === undefined ? i.metaKey : m.Meta,
-    modifierAltGraph: m === undefined ? i.modifierAltGraph : m.AltGraph,
-    modifierCapsLock: m === undefined ? i.modifierCapsLock : m.CapsLock,
-    modifierFn: m === undefined ? i.modifierFn : m.Fn,
-    modifierFnLock: m === undefined ? i.modifierFnLock : m.FnLock,
-    modifierHyper: i.modifierHyper,
-    modifierNumLock: m === undefined ? i.modifierNumLock : m.NumLock,
-    modifierScrollLock: m === undefined ? i.modifierScrollLock : m.ScrollLock,
-    modifierSuper: i.modifierSuper,
-    modifierSymbol: m === undefined ? i.modifierSymbol : m.Symbol,
-    modifierSymbolLock: m === undefined ? i.modifierSymbolLock : m.SymbolLock,
-    button: i.button,
-    buttons: i.buttons,
-    movementX: i.movementX,
-    movementY: i.movementY,
-    relatedTarget: i.relatedTarget,
+/** EventModifierInit members (with UIEventInit's). */
+class ModifierEventDict extends UIEventDict {
+  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
+    super(i, d)
+    const fromInit = m === undefined
+    this.ctrlKey = fromInit ? i.ctrlKey : m.Control
+    this.shiftKey = fromInit ? i.shiftKey : m.Shift
+    this.altKey = fromInit ? i.altKey : m.Alt
+    this.metaKey = fromInit ? i.metaKey : m.Meta
+    this.modifierAltGraph = fromInit ? i.modifierAltGraph : m.AltGraph
+    this.modifierCapsLock = fromInit ? i.modifierCapsLock : m.CapsLock
+    this.modifierFn = fromInit ? i.modifierFn : m.Fn
+    this.modifierFnLock = fromInit ? i.modifierFnLock : m.FnLock
+    this.modifierHyper = i.modifierHyper
+    this.modifierNumLock = fromInit ? i.modifierNumLock : m.NumLock
+    this.modifierScrollLock = fromInit ? i.modifierScrollLock : m.ScrollLock
+    this.modifierSuper = i.modifierSuper
+    this.modifierSymbol = fromInit ? i.modifierSymbol : m.Symbol
+    this.modifierSymbolLock = fromInit ? i.modifierSymbolLock : m.SymbolLock
+  }
+}
+
+/** @internal KeyboardEventInit members (with EventModifierInit's). */
+export class KeyboardEventDict extends ModifierEventDict {
+  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
+    super(i, d, m)
+    this.key = i.key === undefined ? 'undefined' : i.key
+    this.code = i.code === undefined ? 'undefined' : i.code
+    this.location = i.location
+    this.repeat = i.repeat
+    this.isComposing = i.isComposing
+    this.charCode = i.charCode
+    this.keyCode = i.keyCode
+  }
+}
+
+/** @internal MouseEventInit members (with EventModifierInit's). */
+export class MouseEventDict extends ModifierEventDict {
+  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
+    super(i, d, m)
+    this.screenX = i.screenX
+    this.screenY = i.screenY
+    this.clientX = i.clientX === undefined ? i.x : i.clientX
+    this.clientY = i.clientY === undefined ? i.y : i.clientY
+    this.button = i.button
+    this.buttons = i.buttons
+    this.movementX = i.movementX
+    this.movementY = i.movementY
+    this.relatedTarget = i.relatedTarget
   }
 }
 
 /** @internal PointerEventInit members (with MouseEventInit's). */
-export function pointerEventDict(
-  i: NativeInit,
-  d: EventInit,
-  m: ModifierFlags | undefined,
-) {
-  return {
-    bubbles: d.bubbles,
-    cancelable: d.cancelable,
-    composed: d.composed,
-    view: i.view,
-    detail: i.detail,
-    which: i.which,
-    screenX: i.screenX,
-    screenY: i.screenY,
-    clientX: i.clientX === undefined ? i.x : i.clientX,
-    clientY: i.clientY === undefined ? i.y : i.clientY,
-    ctrlKey: m === undefined ? i.ctrlKey : m.Control,
-    shiftKey: m === undefined ? i.shiftKey : m.Shift,
-    altKey: m === undefined ? i.altKey : m.Alt,
-    metaKey: m === undefined ? i.metaKey : m.Meta,
-    modifierAltGraph: m === undefined ? i.modifierAltGraph : m.AltGraph,
-    modifierCapsLock: m === undefined ? i.modifierCapsLock : m.CapsLock,
-    modifierFn: m === undefined ? i.modifierFn : m.Fn,
-    modifierFnLock: m === undefined ? i.modifierFnLock : m.FnLock,
-    modifierHyper: i.modifierHyper,
-    modifierNumLock: m === undefined ? i.modifierNumLock : m.NumLock,
-    modifierScrollLock: m === undefined ? i.modifierScrollLock : m.ScrollLock,
-    modifierSuper: i.modifierSuper,
-    modifierSymbol: m === undefined ? i.modifierSymbol : m.Symbol,
-    modifierSymbolLock: m === undefined ? i.modifierSymbolLock : m.SymbolLock,
-    button: i.button,
-    buttons: i.buttons,
-    movementX: i.movementX,
-    movementY: i.movementY,
-    relatedTarget: i.relatedTarget,
-    pointerId: i.pointerId,
-    width: i.width,
-    height: i.height,
-    pressure: i.pressure === undefined ? (i.buttons ? 0.5 : 0) : i.pressure,
-    tangentialPressure: i.tangentialPressure,
-    tiltX: i.tiltX,
-    tiltY: i.tiltY,
-    altitudeAngle: i.altitudeAngle,
-    azimuthAngle: i.azimuthAngle,
-    twist: i.twist,
-    pointerType: i.pointerType,
-    isPrimary: i.isPrimary,
-    persistentDeviceId: i.persistentDeviceId,
-    coalescedEvents: i.coalescedEvents,
-    predictedEvents: i.predictedEvents,
+export class PointerEventDict extends MouseEventDict {
+  constructor(i: NativeInit, d: EventInit, m: ModifierFlags | undefined) {
+    super(i, d, m)
+    this.pointerId = i.pointerId
+    this.width = i.width
+    this.height = i.height
+    this.pressure =
+      i.pressure === undefined ? (i.buttons ? 0.5 : 0) : i.pressure
+    this.tangentialPressure = i.tangentialPressure
+    this.tiltX = i.tiltX
+    this.tiltY = i.tiltY
+    this.altitudeAngle = i.altitudeAngle
+    this.azimuthAngle = i.azimuthAngle
+    this.twist = i.twist
+    this.pointerType = i.pointerType
+    this.isPrimary = i.isPrimary
+    this.persistentDeviceId = i.persistentDeviceId
+    this.coalescedEvents = i.coalescedEvents
+    this.predictedEvents = i.predictedEvents
   }
 }
 
 /** @internal InputEventInit members (with UIEventInit's). */
-export function inputEventDict(i: NativeInit, d: EventInit) {
-  return {
-    bubbles: d.bubbles,
-    cancelable: d.cancelable,
-    composed: d.composed,
-    view: i.view,
-    detail: i.detail,
-    which: i.which,
-    data: i.data,
-    isComposing: i.isComposing,
-    inputType: i.inputType === undefined ? 'undefined' : i.inputType,
-    dataTransfer: i.dataTransfer,
+export class InputEventDict extends UIEventDict {
+  constructor(i: NativeInit, d: EventInit) {
+    super(i, d)
+    this.data = i.data
+    this.isComposing = i.isComposing
+    this.inputType = i.inputType === undefined ? 'undefined' : i.inputType
+    this.dataTransfer = i.dataTransfer
   }
 }
 
@@ -383,71 +327,41 @@ function getEventConstructors(window: Window) {
   return constructors
 }
 
+type EventConstructor = new (type: string, init: object) => Event
+
+/**
+ * The interfaces of the event map, each after its parent. Upstream also builds AnimationEvent,
+ * CompositionEvent, DragEvent, PopStateEvent, ProgressEvent, TouchEvent and TransitionEvent, which
+ * no event it creates uses.
+ */
+const EVENT_INTERFACES = [
+  ['Event', ''],
+  ['UIEvent', 'Event'],
+  ['ClipboardEvent', 'Event'],
+  ['FocusEvent', 'UIEvent'],
+  ['InputEvent', 'UIEvent'],
+  ['KeyboardEvent', 'UIEvent'],
+  ['MouseEvent', 'UIEvent'],
+  ['PointerEvent', 'MouseEvent'],
+] as const
+
 /* istanbul ignore next */
 function buildEventConstructors(window: Window) {
-  // Interfaces the window lacks (replaced by the classes below).
+  const own = window as unknown as Record<string, EventConstructor | undefined>
+  // Interfaces the window lacks, replaced by a bare subclass of the parent with the
+  // interface's name (upstream's `class PointerEvent extends MouseEvent {}`).
   const fallbacks = new Set<string>()
-  for (const name of [
-    'Event',
-    'AnimationEvent',
-    'ClipboardEvent',
-    'PopStateEvent',
-    'ProgressEvent',
-    'TransitionEvent',
-    'UIEvent',
-    'CompositionEvent',
-    'FocusEvent',
-    'InputEvent',
-    'KeyboardEvent',
-    'MouseEvent',
-    'DragEvent',
-    'PointerEvent',
-    'TouchEvent',
-  ] as const) {
-    if (window[name] === undefined) fallbacks.add(name)
+  const constructors: Record<string, EventConstructor> = {}
+  for (const [name, parent] of EVENT_INTERFACES) {
+    let Ctor = own[name]
+    if (Ctor === undefined) {
+      fallbacks.add(name)
+      const Parent = (constructors[parent] ?? Object) as EventConstructor
+      Ctor = {[name]: class extends Parent {}}[name]
+    }
+    constructors[name] = Ctor
   }
-  const Event = window.Event ?? class Event {}
-  const AnimationEvent =
-    window.AnimationEvent ?? class AnimationEvent extends Event {}
-  const ClipboardEvent =
-    window.ClipboardEvent ?? class ClipboardEvent extends Event {}
-  const PopStateEvent =
-    window.PopStateEvent ?? class PopStateEvent extends Event {}
-  const ProgressEvent =
-    window.ProgressEvent ?? class ProgressEvent extends Event {}
-  const TransitionEvent =
-    window.TransitionEvent ?? class TransitionEvent extends Event {}
-  const UIEvent = window.UIEvent ?? class UIEvent extends Event {}
-  const CompositionEvent =
-    window.CompositionEvent ?? class CompositionEvent extends UIEvent {}
-  const FocusEvent = window.FocusEvent ?? class FocusEvent extends UIEvent {}
-  const InputEvent = window.InputEvent ?? class InputEvent extends UIEvent {}
-  const KeyboardEvent =
-    window.KeyboardEvent ?? class KeyboardEvent extends UIEvent {}
-  const MouseEvent = window.MouseEvent ?? class MouseEvent extends UIEvent {}
-  const DragEvent = window.DragEvent ?? class DragEvent extends MouseEvent {}
-  const PointerEvent =
-    window.PointerEvent ?? class PointerEvent extends MouseEvent {}
-  const TouchEvent = window.TouchEvent ?? class TouchEvent extends UIEvent {}
-
-  return {
-    fallbacks,
-    Event,
-    AnimationEvent,
-    ClipboardEvent,
-    PopStateEvent,
-    ProgressEvent,
-    TransitionEvent,
-    UIEvent,
-    CompositionEvent,
-    FocusEvent,
-    InputEvent,
-    KeyboardEvent,
-    MouseEvent,
-    DragEvent,
-    PointerEvent,
-    TouchEvent,
-  }
+  return {fallbacks, constructors}
 }
 
 function assignProps<T extends object>(obj: T, props: {[k in keyof T]?: T[k]}) {

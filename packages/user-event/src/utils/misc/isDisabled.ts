@@ -3,7 +3,7 @@
 
 import type {NodeImpl} from '@ctrl/dom/internal'
 import type {Element} from '../../dom-types.ts'
-import {implAttr, implOf, TAGS} from '../../ctrl-dom.ts'
+import {implAttr as attr, implOf, TAGS as T} from '../../ctrl-dom.ts'
 import {isElementType} from './isElementType.ts'
 
 // Hoisted: upstream builds this array for every ancestor of every event target.
@@ -19,9 +19,7 @@ const DISABLEABLE: (
 // This should probably just rely on the :disabled pseudo-class, but JSDOM doesn't implement it properly.
 export function isDisabled(element: Element | null): boolean {
   const impl = implOf(element)
-  if (impl !== null && implAttr !== undefined && TAGS !== undefined) {
-    return isDisabledImpl(impl, element as Element, implAttr, TAGS)
-  }
+  if (impl !== null) return isDisabledImpl(impl, element as Element)
   for (let el = element; el; el = el.parentElement) {
     if (disables(el, element as Element)) return true
   }
@@ -62,12 +60,7 @@ function disables(el: Element, element: Element): boolean {
  * climb came through it), or nothing, since such a name has no "-". Any other element goes
  * through the loop body above.
  */
-function isDisabledImpl(
-  start: NodeImpl,
-  element: Element,
-  attr: (el: NodeImpl, lowerName: string) => string | null,
-  T: Record<string, number>,
-): boolean {
+function isDisabledImpl(start: NodeImpl, element: Element): boolean {
   let child: NodeImpl | null = null
   // `parentElement`: the climb ends at a parent that is not an element (document, shadow root).
   for (

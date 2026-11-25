@@ -5,10 +5,10 @@ import type { Node } from "./Node.ts";
 /** The rarely present parts of an attribute: a namespace/prefix, or a materialized `Attr` node. */
 export class AttrRare {
   /** Qualified name (`prefix:localName` or `localName`). */
-  name: string;
-  ns: string | null;
-  prefix: string | null;
-  attr: Attr | null;
+  declare name: string;
+  declare ns: string | null;
+  declare prefix: string | null;
+  declare attr: Attr | null;
 
   constructor(name: string, ns: string | null, prefix: string | null) {
     this.name = name;
@@ -29,9 +29,9 @@ export class AttrRare {
  * accessors stay monomorphic and inline.
  */
 export class AttrRecord {
-  localName: string;
-  value: string;
-  rare: AttrRare | null;
+  declare localName: string;
+  declare value: string;
+  declare rare: AttrRare | null;
 
   constructor(localName: string, value: string, ns: string | null, prefix: string | null) {
     this.localName = localName;
@@ -92,40 +92,40 @@ export class AttrRecord {
  */
 export class NodeImpl {
   /** The public wrapper object. */
-  node: Node;
+  declare node: Node;
   /** https://dom.spec.whatwg.org/#dom-node-nodetype */
-  type: number;
+  declare type: number;
   /** Node document. For a Document node, the document itself. */
-  doc: Document;
-  parent: NodeImpl | null;
-  first: NodeImpl | null;
-  last: NodeImpl | null;
-  prev: NodeImpl | null;
-  next: NodeImpl | null;
-  childCount: number;
+  declare doc: Document;
+  declare parent: NodeImpl | null;
+  declare first: NodeImpl | null;
+  declare last: NodeImpl | null;
+  declare prev: NodeImpl | null;
+  declare next: NodeImpl | null;
+  declare childCount: number;
   /** Bit set of `F_*` flags from constants.ts. */
-  flags: number;
+  declare flags: number;
   /** `tagId(localName)` for HTML-namespace elements, else 0. */
-  tag: number;
+  declare tag: number;
   /** Element local name (lowercase for HTML) / doctype name / PI target / attr local name; "" otherwise. */
-  name: string;
+  declare name: string;
   /** Element namespace. */
-  ns: string | null;
+  declare ns: string | null;
   /** Element namespace prefix. */
-  prefix: string | null;
+  declare prefix: string | null;
   /** Element attribute list, null until the first attribute is set. */
-  attrs: AttrRecord[] | null;
+  declare attrs: AttrRecord[] | null;
   /** CharacterData data / attr value; "" for other nodes. */
-  data: string;
+  declare data: string;
   /** Element id attribute value ("" when absent) — mirrored for the id index and `#id` selectors. */
-  id: string;
+  declare id: string;
   /** Lazily split class attribute tokens (null = not computed / invalidated). */
-  classes: string[] | null;
+  declare classes: string[] | null;
   /**
    * Per-node cache slot for subsystems (aria role/name caches, computed style). Always an
    * object of class `NodeCache` or null so the field stays monomorphic. See nodes/cache.ts.
    */
-  cache: object | null;
+  declare cache: object | null;
 
   constructor(node: Node, type: number, doc: Document) {
     this.node = node;

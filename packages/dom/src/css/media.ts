@@ -25,7 +25,7 @@ import {
   TK_LBRACE,
   TK_RBRACE,
 } from "./tokenizer.ts";
-import { formatNumber } from "./values.ts";
+import { absoluteLength, formatNumber } from "./values.ts";
 
 export interface MediaEnvironment {
   width: number;
@@ -45,11 +45,11 @@ export const DEFAULT_MEDIA_ENV: MediaEnvironment = {
 };
 
 class Tok {
-  type: number;
-  text: string;
-  lower: string;
-  num: number;
-  unit: string;
+  declare type: number;
+  declare text: string;
+  declare lower: string;
+  declare num: number;
+  declare unit: string;
   constructor(type: number, text: string, lower: string, num: number, unit: string) {
     this.type = type;
     this.text = text;
@@ -82,16 +82,16 @@ const N_UNKNOWN = 5;
 const N_TRUE = 6;
 
 class MQNode {
-  kind: number;
-  children: MQNode[];
+  declare kind: number;
+  declare children: MQNode[];
   /** Feature name (lowercase) for N_FEATURE. */
-  name: string;
+  declare name: string;
   /** Comparison: "" boolean, ":" plain, or "<" "<=" ">" ">=" "=" (feature OP value). */
-  op: string;
-  value: Tok[] | null;
+  declare op: string;
+  declare value: Tok[] | null;
   /** Second comparison for `a < name < b` ranges (value OP2 feature, normalized as feature op2 value2). */
-  op2: string;
-  value2: Tok[] | null;
+  declare op2: string;
+  declare value2: Tok[] | null;
   constructor(kind: number) {
     this.kind = kind;
     this.children = [];
@@ -105,13 +105,13 @@ class MQNode {
 
 export class MediaQuery {
   /** Serialization (https://drafts.csswg.org/cssom/#serialize-a-media-query). */
-  text: string;
-  negated: boolean;
+  declare text: string;
+  declare negated: boolean;
   /** Lowercase media type ("all" when omitted). */
-  type: string;
-  condition: MQNode | null;
+  declare type: string;
+  declare condition: MQNode | null;
   /** Unparsable query: evaluates false and serializes as "not all". */
-  invalid: boolean;
+  declare invalid: boolean;
   constructor(text: string, negated: boolean, type: string, condition: MQNode | null, invalid: boolean) {
     this.text = text;
     this.negated = negated;
@@ -122,8 +122,8 @@ export class MediaQuery {
 }
 
 class MQParser {
-  toks: Tok[];
-  i: number;
+  declare toks: Tok[];
+  declare i: number;
   constructor(toks: Tok[]) {
     this.toks = toks;
     this.i = 0;
@@ -489,28 +489,9 @@ export function serializeMediaQueryList(list: MediaQuery[]): string {
 function lengthPx(t: Tok): number | null {
   if (t.type === TK_NUMBER) return t.num === 0 ? 0 : null;
   if (t.type !== TK_DIMENSION) return null;
-  switch (t.unit) {
-    case "px":
-      return t.num;
-    case "em":
-    case "rem":
-      return t.num * 16;
-    case "in":
-      return t.num * 96;
-    case "cm":
-      return (t.num * 96) / 2.54;
-    case "mm":
-      return (t.num * 96) / 25.4;
-    case "pt":
-      return (t.num * 96) / 72;
-    case "pc":
-      return t.num * 16;
-    case "q":
-      return (t.num * 96) / 101.6;
-    case "vw":
-      return null;
-  }
-  return null;
+  // em/rem: relative to the initial font size (16px), as relative units are in media queries.
+  const n = t.unit === "em" || t.unit === "rem" ? t.num * 16 : absoluteLength(t.num, t.unit);
+  return Number.isNaN(n) ? null : n;
 }
 
 function resolutionDppx(t: Tok): number | null {

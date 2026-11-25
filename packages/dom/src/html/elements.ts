@@ -34,13 +34,7 @@ import { T } from "../nodes/tags.ts";
 import { nextElementInTree } from "../nodes/traverse.ts";
 import { setAttribute } from "../nodes/attributes.ts";
 import { fnCollection } from "./collection.ts";
-import {
-  installConstraintValidation,
-  V_CUSTOM_ERROR,
-  type ConstraintValidation,
-  type ValidityState,
-} from "./forms/validation.ts";
-import { formOwner } from "./forms/form-associated.ts";
+import { installConstraintValidation, type ConstraintValidation, type ValidityState } from "./forms/validation.ts";
 import { currentDocument } from "../window/current.ts";
 import type { HTMLCollection } from "../collections/HTMLCollection.ts";
 import { $customValidity, $impl, $validity } from "../keys.ts";
@@ -314,19 +308,6 @@ export class HTMLObjectElement extends HTMLElement {
   }
   getSVGDocument(): null {
     return null;
-  }
-  get form(): Element | null {
-    const f = formOwner(this[$impl]);
-    return f === null ? null : (f.node as Element);
-  }
-  _barredFromValidation(): boolean {
-    return true;
-  }
-  _validityFlags(): number {
-    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
-  }
-  _validationMessage(_flags: number): string {
-    return this[$customValidity] ?? "";
   }
 }
 export interface HTMLObjectElement extends ConstraintValidation {}

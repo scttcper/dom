@@ -42,9 +42,9 @@ export const RULE_AT = 2;
 export const RULE_DECLS = 3;
 
 export class RawDecl {
-  name: string;
-  value: string;
-  important: boolean;
+  declare name: string;
+  declare value: string;
+  declare important: boolean;
 
   constructor(name: string, value: string, important: boolean) {
     this.name = name;
@@ -55,27 +55,27 @@ export class RawDecl {
 
 export class RawRule {
   /** RULE_QUALIFIED, RULE_AT or RULE_DECLS. */
-  kind: number;
+  declare kind: number;
   /** At-rule name without "@" (as written); "" for qualified rules. */
-  name: string;
+  declare name: string;
   /** Prelude text, comments removed, trimmed. */
-  prelude: string;
+  declare prelude: string;
   /** Whether the rule ended with a {} block (vs. ";" / EOF). */
-  hasBlock: boolean;
+  declare hasBlock: boolean;
   /** Every declaration found directly in the block, in order. */
-  decls: RawDecl[];
+  declare decls: RawDecl[];
   /**
    * How many of `decls` precede the first nested rule (the rule's own declarations). The
    * later ones are also listed, grouped, as RULE_DECLS entries of `rules`.
    */
-  leading: number;
+  declare leading: number;
   /** Rules found directly in the block, with RULE_DECLS runs between and after them. */
-  rules: RawRule[];
+  declare rules: RawRule[];
   /**
    * A qualified rule's block when it holds nothing but declarations, as written and not parsed
    * yet (see `flatBlockEnd`); `decls` is empty until `rawDecls()` parses it. Null otherwise.
    */
-  lazy: string | null;
+  declare lazy: string | null;
 
   constructor(kind: number, name: string, prelude: string, hasBlock: boolean) {
     this.kind = kind;
@@ -244,21 +244,21 @@ function isAsciiCaseInsensitive(a: string, lower: string): boolean {
 }
 
 export class CSSParser {
-  src: string;
-  t: CSSTokenizer;
+  declare src: string;
+  declare t: CSSTokenizer;
   /** True when the current token has been pushed back and must be returned by the next `advance()`. */
-  peeked: boolean;
+  declare peeked: boolean;
   /** Closer stack for skipping nested blocks. */
-  stack: number[];
+  declare stack: number[];
   /** Results of the last consumed declaration value scan. */
-  valueStart: number;
-  valueEnd: number;
-  importantEnd: number;
-  important: boolean;
-  valueHasBlock: boolean;
-  valueOtherCount: number;
+  declare valueStart: number;
+  declare valueEnd: number;
+  declare importantEnd: number;
+  declare important: boolean;
+  declare valueHasBlock: boolean;
+  declare valueOtherCount: number;
   /** Leave a flat block of a qualified rule unparsed (RawRule.lazy); false parses every block now. */
-  lazyBlocks: boolean;
+  declare lazyBlocks: boolean;
 
   constructor(src: string) {
     this.src = src;

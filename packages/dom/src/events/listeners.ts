@@ -44,13 +44,13 @@ export function listenerSeqLimit(): number {
  * of these and none has a signal.
  */
 export class Listener {
-  callback: EventListenerOrEventListenerObject;
+  declare callback: EventListenerOrEventListenerObject;
   /** LISTENER_* bits. */
-  flags: number;
+  declare flags: number;
   /** The next listener of the same type on the same target, in insertion order. */
-  next: Listener | null;
-  seq: number;
-  id: ListenerType;
+  declare next: Listener | null;
+  declare seq: number;
+  declare id: ListenerType;
 
   constructor(id: ListenerType, callback: EventListenerOrEventListenerObject, flags: number) {
     this.callback = callback;
@@ -63,9 +63,9 @@ export class Listener {
 
 /** A live target owns its listener. A shared signal must not keep that target or its callback alive. */
 class SignalListener extends Listener {
-  target: EventTarget;
-  signal: AbortSignal;
-  ref: AbortRef;
+  declare target: EventTarget;
+  declare signal: AbortSignal;
+  declare ref: AbortRef;
 
   constructor(
     id: ListenerType,

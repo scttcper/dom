@@ -140,6 +140,15 @@ export function findAttributeByNamespace(el: NodeImpl, ns: string | null, localN
   return null;
 }
 
+/** findAttributeByNamespace with the arguments of the `*NS(namespace, localName)` methods ("" or undefined namespace: null). */
+export function findAttributeNS(el: NodeImpl, namespace: string | null, localName: string): AttrRecord | null {
+  return findAttributeByNamespace(
+    el,
+    namespace === "" || namespace === undefined ? null : namespace,
+    String(localName),
+  );
+}
+
 /** getAttribute(qualifiedName). Lowercases for HTML elements in HTML documents. */
 export function getAttribute(el: NodeImpl, qualifiedName: string): string | null {
   const attrs = el.attrs;

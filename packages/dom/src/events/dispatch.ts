@@ -59,6 +59,7 @@ import type { EventTarget } from "./EventTarget.ts";
 import { mayHaveActivationBehavior, type ActivationTarget, type InputActivationState } from "./activation.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { DOCUMENT_NODE, ELEMENT_NODE, F_HAS_SHADOW, F_SHADOW_ROOT, TEXT_NODE } from "../nodes/constants.ts";
+import { treeRoot } from "../nodes/traverse.ts";
 import { reportException } from "./report.ts";
 import {
   LISTENER_CAPTURE,
@@ -138,11 +139,6 @@ function assignedSlot(impl: NodeImpl): EventTarget | null {
 
 function isAssigned(impl: NodeImpl): boolean {
   return assignedSlot(impl) !== null;
-}
-
-function treeRoot(n: NodeImpl): NodeImpl {
-  while (n.parent !== null) n = n.parent;
-  return n;
 }
 
 // --- get the parent -------------------------------------------------------------------------

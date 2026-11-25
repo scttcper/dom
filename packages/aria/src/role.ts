@@ -62,57 +62,26 @@ function eqCI(v: string | null, lower: string): boolean {
 // (`input`, `select`, `th`, `form`, `img`, `a`, `area`, `section`) stay `undefined` and are the
 // cases of implicitRoleImpl's switch.
 const STATIC_IMPLICIT_ROLE: (string | undefined)[] = new Array<string | undefined>(Object.keys(T).length + 1).fill("");
-STATIC_IMPLICIT_ROLE[T.input] = undefined;
-STATIC_IMPLICIT_ROLE[T.select] = undefined;
-STATIC_IMPLICIT_ROLE[T.th] = undefined;
-STATIC_IMPLICIT_ROLE[T.form] = undefined;
-STATIC_IMPLICIT_ROLE[T.img] = undefined;
-STATIC_IMPLICIT_ROLE[T.a] = undefined;
-STATIC_IMPLICIT_ROLE[T.area] = undefined;
-STATIC_IMPLICIT_ROLE[T.section] = undefined;
-STATIC_IMPLICIT_ROLE[T.aside] = "complementary";
-STATIC_IMPLICIT_ROLE[T.article] = "article";
-STATIC_IMPLICIT_ROLE[T.header] = "banner";
-STATIC_IMPLICIT_ROLE[T.blockquote] = "blockquote";
-STATIC_IMPLICIT_ROLE[T.button] = "button";
-STATIC_IMPLICIT_ROLE[T.caption] = "caption";
-STATIC_IMPLICIT_ROLE[T.td] = "cell";
-STATIC_IMPLICIT_ROLE[T.code] = "code";
-STATIC_IMPLICIT_ROLE[T.footer] = "contentinfo";
-STATIC_IMPLICIT_ROLE[T.dd] = "definition";
-STATIC_IMPLICIT_ROLE[T.del] = "deletion";
-STATIC_IMPLICIT_ROLE[T.dialog] = "dialog";
-STATIC_IMPLICIT_ROLE[T.html] = "document";
-STATIC_IMPLICIT_ROLE[T.em] = "emphasis";
-STATIC_IMPLICIT_ROLE[T.figure] = "figure";
-for (const t of [T.b, T.bdo, T.body, T.data, T.div, T.hgroup, T.i, T.pre, T.q, T.samp, T.small, T.span, T.u])
-  STATIC_IMPLICIT_ROLE[t] = "generic";
-for (const t of [T.details, T.fieldset, T.optgroup, T.address]) STATIC_IMPLICIT_ROLE[t] = "group";
-for (const t of [T.h1, T.h2, T.h3, T.h4, T.h5, T.h6]) STATIC_IMPLICIT_ROLE[t] = "heading";
-STATIC_IMPLICIT_ROLE[T.ins] = "insertion";
-for (const t of [T.menu, T.ol, T.ul]) STATIC_IMPLICIT_ROLE[t] = "list";
-STATIC_IMPLICIT_ROLE[T.datalist] = "listbox";
-STATIC_IMPLICIT_ROLE[T.li] = "listitem";
-STATIC_IMPLICIT_ROLE[T.main] = "main";
-STATIC_IMPLICIT_ROLE[T.mark] = "mark";
-STATIC_IMPLICIT_ROLE[T.math] = "math";
-STATIC_IMPLICIT_ROLE[T.meter] = "meter";
-STATIC_IMPLICIT_ROLE[T.nav] = "navigation";
-STATIC_IMPLICIT_ROLE[T.option] = "option";
-STATIC_IMPLICIT_ROLE[T.p] = "paragraph";
-STATIC_IMPLICIT_ROLE[T.progress] = "progressbar";
-STATIC_IMPLICIT_ROLE[T.tr] = "row";
-for (const t of [T.tbody, T.tfoot, T.thead]) STATIC_IMPLICIT_ROLE[t] = "rowgroup";
-STATIC_IMPLICIT_ROLE[T.hr] = "separator";
-STATIC_IMPLICIT_ROLE[T.output] = "status";
-STATIC_IMPLICIT_ROLE[T.strong] = "strong";
-STATIC_IMPLICIT_ROLE[T.sub] = "subscript";
-STATIC_IMPLICIT_ROLE[T.sup] = "superscript";
-STATIC_IMPLICIT_ROLE[T.table] = "table";
-STATIC_IMPLICIT_ROLE[T.dfn] = "term";
-STATIC_IMPLICIT_ROLE[T.dt] = "term";
-STATIC_IMPLICIT_ROLE[T.textarea] = "textbox";
-STATIC_IMPLICIT_ROLE[T.time] = "time";
+for (const name of ["input", "select", "th", "form", "img", "a", "area", "section"]) {
+  STATIC_IMPLICIT_ROLE[tagId(name)] = undefined;
+}
+// oxfmt-ignore
+setRoles(STATIC_IMPLICIT_ROLE, {
+  complementary: "aside", article: "article", banner: "header", blockquote: "blockquote", button: "button",
+  caption: "caption", cell: "td", code: "code", contentinfo: "footer", definition: "dd", deletion: "del",
+  dialog: "dialog", document: "html", emphasis: "em", figure: "figure",
+  generic: "b bdo body data div hgroup i pre q samp small span u", group: "details fieldset optgroup address",
+  heading: "h1 h2 h3 h4 h5 h6", insertion: "ins", list: "menu ol ul", listbox: "datalist", listitem: "li",
+  main: "main", mark: "mark", math: "math", meter: "meter", navigation: "nav", option: "option",
+  paragraph: "p", progressbar: "progress", row: "tr", rowgroup: "tbody tfoot thead", separator: "hr",
+  status: "output", strong: "strong", subscript: "sub", superscript: "sup", table: "table", term: "dfn dt",
+  textbox: "textarea", time: "time",
+});
+
+/** Sets `table[tag id] = role` for each role's " "-separated tag names. */
+function setRoles(table: (string | undefined)[], tagsByRole: Record<string, string>): void {
+  for (const role in tagsByRole) for (const name of tagsByRole[role].split(" ")) table[tagId(name)] = role;
+}
 
 /**
  * The single implicit role Testing Library 10.4 computes for an element, or "" for none
@@ -257,54 +226,15 @@ export type Flavor = 5 | 6;
 
 /** dom-accessibility-api's localNameToRoleMappings, by tag id. */
 const DAA_ROLE_BY_TAG: string[] = [];
-{
-  const m: Record<string, string> = {
-    article: "article",
-    aside: "complementary",
-    button: "button",
-    datalist: "listbox",
-    dd: "definition",
-    details: "group",
-    dialog: "dialog",
-    dt: "term",
-    fieldset: "group",
-    figure: "figure",
-    form: "form",
-    footer: "contentinfo",
-    h1: "heading",
-    h2: "heading",
-    h3: "heading",
-    h4: "heading",
-    h5: "heading",
-    h6: "heading",
-    header: "banner",
-    hr: "separator",
-    html: "document",
-    legend: "legend",
-    li: "listitem",
-    math: "math",
-    main: "main",
-    menu: "list",
-    nav: "navigation",
-    ol: "list",
-    optgroup: "group",
-    option: "option",
-    output: "status",
-    progress: "progressbar",
-    section: "region",
-    summary: "button",
-    table: "table",
-    tbody: "rowgroup",
-    textarea: "textbox",
-    tfoot: "rowgroup",
-    td: "cell",
-    th: "columnheader",
-    thead: "rowgroup",
-    tr: "row",
-    ul: "list",
-  };
-  for (const [name, role] of Object.entries(m)) DAA_ROLE_BY_TAG[tagId(name)] = role;
-}
+// oxfmt-ignore
+setRoles(DAA_ROLE_BY_TAG, {
+  article: "article", complementary: "aside", button: "button summary", listbox: "datalist", definition: "dd",
+  group: "details fieldset optgroup", dialog: "dialog", term: "dt", figure: "figure", form: "form",
+  contentinfo: "footer", heading: "h1 h2 h3 h4 h5 h6", banner: "header", separator: "hr", document: "html",
+  legend: "legend", listitem: "li", math: "math", main: "main", list: "menu ol ul", navigation: "nav",
+  option: "option", status: "output", progressbar: "progress", region: "section", table: "table",
+  rowgroup: "tbody tfoot thead", textbox: "textarea", cell: "td", columnheader: "th", row: "tr",
+});
 
 /** https://rawgit.com/w3c/aria/stable/#global_states as listed by dom-accessibility-api. */
 // oxfmt-ignore
@@ -313,12 +243,7 @@ const GLOBAL_ARIA_05 = [
   "aria-dropeffect", "aria-flowto", "aria-grabbed", "aria-hidden", "aria-keyshortcuts", "aria-label",
   "aria-labelledby", "aria-live", "aria-owns", "aria-relevant", "aria-roledescription",
 ];
-// oxfmt-ignore
-const GLOBAL_ARIA_06 = [
-  "aria-atomic", "aria-busy", "aria-controls", "aria-current", "aria-description", "aria-describedby",
-  "aria-details", "aria-dropeffect", "aria-flowto", "aria-grabbed", "aria-hidden", "aria-keyshortcuts",
-  "aria-label", "aria-labelledby", "aria-live", "aria-owns", "aria-relevant", "aria-roledescription",
-];
+const GLOBAL_ARIA_06 = GLOBAL_ARIA_05.toSpliced(4, 0, "aria-description");
 
 function isProhibited(role: string, name: string, flavor: Flavor): boolean {
   switch (role) {

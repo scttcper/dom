@@ -2,22 +2,15 @@
 
 import { buttonInvokerActivation } from "../invokers.ts";
 import { HTMLElement } from "../HTMLElement.ts";
-import type { Document } from "../../nodes/Document.ts";
 import type { NodeImpl } from "../../nodes/NodeImpl.ts";
-import type { Element } from "../../nodes/Element.ts";
 import type { Event } from "../../events/Event.ts";
 import { F_CONNECTED } from "../../nodes/constants.ts";
 import { bool, enumerated, str } from "../reflect.ts";
-import { reflectActionURL } from "./common.ts";
+import { installDefaults, reflectActionURL } from "./common.ts";
 import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
-import { LabelsNodeList } from "./collections.ts";
+import { labelsMember, type LabelsNodeList } from "./collections.ts";
 import { buttonType, FORM_ENCTYPE, FORM_METHOD, resetForm, submitForm } from "./form-submission.ts";
-import {
-  installConstraintValidation,
-  V_CUSTOM_ERROR,
-  type ConstraintValidation,
-  type ValidityState,
-} from "./validation.ts";
+import { installConstraintValidation, type ConstraintValidation, type ValidityState } from "./validation.ts";
 import { $customValidity, $impl, $labels, $validity } from "../../keys.ts";
 
 export class HTMLButtonElement extends HTMLElement {
@@ -25,11 +18,6 @@ export class HTMLButtonElement extends HTMLElement {
   declare [$customValidity]?: string;
   declare [$validity]?: ValidityState | null;
   declare [$labels]?: LabelsNodeList | null;
-
-  /** @internal Use Document.createElement. */
-  constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {
-    super(doc, localName, ns, prefix);
-  }
 
   /** https://html.spec.whatwg.org/#dom-button-type */
   get type(): string {
@@ -40,14 +28,7 @@ export class HTMLButtonElement extends HTMLElement {
     this.setAttribute("type", String(value));
   }
 
-  get form(): Element | null {
-    const owner = formOwner(this[$impl]);
-    return owner === null ? null : (owner.node as Element);
-  }
-
-  get labels(): LabelsNodeList {
-    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
-  }
+  declare readonly labels: LabelsNodeList;
 
   /** https://html.spec.whatwg.org/#dom-fs-formaction */
   get formAction(): string {
@@ -71,14 +52,6 @@ export class HTMLButtonElement extends HTMLElement {
   _barredFromValidation(): boolean {
     const impl = this[$impl];
     return buttonType(impl) !== "submit" || isActuallyDisabled(impl) || hasDatalistAncestor(impl);
-  }
-
-  _validityFlags(): number {
-    return this[$customValidity] ? V_CUSTOM_ERROR : 0;
-  }
-
-  _validationMessage(_flags: number): string {
-    return this[$customValidity] ?? "";
   }
 
   // --- activation behavior: https://html.spec.whatwg.org/#the-button-element:activation-behaviour
@@ -108,6 +81,7 @@ export class HTMLButtonElement extends HTMLElement {
 
 export interface HTMLButtonElement extends ConstraintValidation {}
 installConstraintValidation(HTMLButtonElement);
+installDefaults(HTMLButtonElement, labelsMember);
 
 str(HTMLButtonElement, "formTarget=formtarget name value");
 bool(HTMLButtonElement, "disabled formNoValidate=formnovalidate");

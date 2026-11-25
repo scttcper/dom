@@ -236,31 +236,9 @@ function runHtml(node: NodeImpl, serializable: boolean, roots: readonly unknown[
   optSerializable = serializable;
   optRoots = roots;
   try {
-    if (outer) {
-      switch (node.type) {
-        case ELEMENT_NODE:
-          htmlElement(node);
-          break;
-        case DOCUMENT_NODE:
-        case DOCUMENT_FRAGMENT_NODE:
-          htmlChildren(node);
-          break;
-        default: {
-          // A fictional parent with `node` as its only child.
-          const p = node.parent;
-          if (node.type === TEXT_NODE || node.type === CDATA_SECTION_NODE) {
-            htmlOut =
-              p !== null && p.type === ELEMENT_NODE && p.ns === HTML_NS && isRawTextTag(p.tag)
-                ? node.data
-                : escapeText(node.data);
-          } else if (node.type === COMMENT_NODE) htmlOut = "<!--" + node.data + "-->";
-          else if (node.type === PROCESSING_INSTRUCTION_NODE) htmlOut = "<?" + node.name + " " + node.data + "?>";
-          else if (node.type === DOCUMENT_TYPE_NODE) htmlOut = "<!DOCTYPE " + node.name + ">";
-        }
-      }
-    } else {
-      htmlChildren(node);
-    }
+    // outerHTML: a fictional parent with the element `node` as its only child.
+    if (outer) htmlElement(node);
+    else htmlChildren(node);
     return htmlOut;
   } finally {
     htmlOut = prevOut;
@@ -287,7 +265,10 @@ export function serializeChildren(node: NodeImpl): string {
   return s;
 }
 
-/** outerHTML getter: the fragment serializing algorithm on a fictional parent of `node`. */
+/**
+ * outerHTML getter: the fragment serializing algorithm on a fictional parent of the element
+ * `node` (Element.outerHTML and prettyDOM pass elements only).
+ */
 export function serializeNode(node: NodeImpl): string {
   if (inHTMLDocument(node)) return runHtml(node, false, null, true);
   return serializeXML(node, true);
@@ -386,7 +367,8 @@ function isXmlName(s: string): boolean {
   return true;
 }
 
-function escapeXmlText(s: string): string {
+/** XML escaping of `&`, `<` and `>`, and in an attribute value (`attr`) also `"`, tab, LF and CR. */
+function escapeXml(s: string, attr: boolean): string {
   let out = "";
   let last = 0;
   for (let i = 0; i < s.length; i++) {
@@ -395,6 +377,13 @@ function escapeXmlText(s: string): string {
     if (c === 38) rep = "&amp;";
     else if (c === 60) rep = "&lt;";
     else if (c === 62) rep = "&gt;";
+    else if (!attr) continue;
+    else if (c === 34) rep = "&quot;";
+    // Not in DOM-Parsing (https://github.com/w3c/DOM-Parsing/issues/59), but what browsers and
+    // w3c-xmlserializer (jsdom) do so that attribute values round-trip through an XML parser.
+    else if (c === 9) rep = "&#x9;";
+    else if (c === 10) rep = "&#xA;";
+    else if (c === 13) rep = "&#xD;";
     else continue;
     out += s.slice(last, i) + rep;
     last = i + 1;
@@ -406,25 +395,7 @@ function escapeXmlText(s: string): string {
 function serializeAttrValue(value: string | null, rwf: boolean): string {
   if (value === null) return "";
   if (rwf && hasInvalidXmlChars(value)) invalid("attribute value contains invalid characters");
-  let out = "";
-  let last = 0;
-  for (let i = 0; i < value.length; i++) {
-    const c = value.charCodeAt(i);
-    let rep = "";
-    if (c === 38) rep = "&amp;";
-    else if (c === 34) rep = "&quot;";
-    else if (c === 60) rep = "&lt;";
-    else if (c === 62) rep = "&gt;";
-    // Not in DOM-Parsing (https://github.com/w3c/DOM-Parsing/issues/59), but what browsers and
-    // w3c-xmlserializer (jsdom) do so that attribute values round-trip through an XML parser.
-    else if (c === 9) rep = "&#x9;";
-    else if (c === 10) rep = "&#xA;";
-    else if (c === 13) rep = "&#xD;";
-    else continue;
-    out += value.slice(last, i) + rep;
-    last = i + 1;
-  }
-  return last === 0 ? value : out + value.slice(last);
+  return escapeXml(value, true);
 }
 
 /** Whether `prefix` is bound to any namespace in `map`. */
@@ -601,16 +572,13 @@ function xmlNode(node: NodeImpl, namespace: string | null, map: PrefixMap, index
   switch (node.type) {
     case ELEMENT_NODE:
       return serializeElementXML(node, namespace, map, index, rwf);
-    case DOCUMENT_NODE: {
+    case DOCUMENT_NODE:
       if (rwf) {
         let hasElement = false;
         for (let c = node.first; c !== null; c = c.next) if (c.type === ELEMENT_NODE) hasElement = true;
         if (!hasElement) invalid("document without a document element");
       }
-      let s = "";
-      for (let c = node.first; c !== null; c = c.next) s += xmlNode(c, namespace, map, index, rwf);
-      return s;
-    }
+    // falls through
     case DOCUMENT_FRAGMENT_NODE: {
       let s = "";
       for (let c = node.first; c !== null; c = c.next) s += xmlNode(c, namespace, map, index, rwf);
@@ -624,7 +592,7 @@ function xmlNode(node: NodeImpl, namespace: string | null, map: PrefixMap, index
     case TEXT_NODE: {
       const d = node.data;
       if (rwf && hasInvalidXmlChars(d)) invalid("invalid text");
-      return escapeXmlText(d);
+      return escapeXml(d, false);
     }
     case CDATA_SECTION_NODE:
       return "<![CDATA[" + node.data + "]]>";

@@ -81,10 +81,10 @@ interface Scope {
 }
 
 class XMLParser {
-  src: string;
-  pos: number;
-  doc: Document;
-  entities: Map<string, string>;
+  declare src: string;
+  declare pos: number;
+  declare doc: Document;
+  declare entities: Map<string, string>;
 
   constructor(src: string, doc: Document) {
     // https://www.w3.org/TR/xml/#sec-line-ends

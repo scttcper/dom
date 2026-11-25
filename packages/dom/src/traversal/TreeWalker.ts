@@ -10,6 +10,7 @@ import type { Node } from "../nodes/Node.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
 import { nextInTree, previousInTree } from "../nodes/traverse.ts";
 import { registerNodeIterator, type IteratorState } from "./live.ts";
+import { setToStringTag } from "../events/Event.ts";
 import {
   $active,
   $current,
@@ -58,10 +59,10 @@ function rootImpl(root: unknown, iface: string): NodeImpl {
 
 /** Shared state + https://dom.spec.whatwg.org/#concept-node-filter */
 abstract class Traverser {
-  [$root]: NodeImpl;
-  [$whatToShow]: number;
-  [$filter]: NodeFilterArg;
-  [$active]: boolean;
+  declare [$root]: NodeImpl;
+  declare [$whatToShow]: number;
+  declare [$filter]: NodeFilterArg;
+  declare [$active]: boolean;
 
   constructor(root: NodeImpl, whatToShow: number, filter: NodeFilterArg) {
     this[$root] = root;
@@ -108,10 +109,10 @@ abstract class Traverser {
 /** https://dom.spec.whatwg.org/#interface-nodeiterator */
 export class NodeIterator extends Traverser implements IteratorState {
   /** https://dom.spec.whatwg.org/#nodeiterator-reference */
-  [$reference]: NodeImpl;
+  declare [$reference]: NodeImpl;
   /** https://dom.spec.whatwg.org/#nodeiterator-pointer-before-reference */
-  [$pointerBeforeReference]: boolean;
-  [$inflight]: IteratorState | null;
+  declare [$pointerBeforeReference]: boolean;
+  declare [$inflight]: IteratorState | null;
 
   /** @internal Use document.createNodeIterator(). */
   constructor(root: Node, whatToShow = 0xffffffff, filter: NodeFilterArg = null) {
@@ -193,7 +194,7 @@ export class NodeIterator extends Traverser implements IteratorState {
 
 /** https://dom.spec.whatwg.org/#interface-treewalker */
 export class TreeWalker extends Traverser {
-  [$current]: NodeImpl;
+  declare [$current]: NodeImpl;
 
   /** @internal Use document.createTreeWalker(). */
   constructor(root: Node, whatToShow = 0xffffffff, filter: NodeFilterArg = null) {
@@ -360,5 +361,5 @@ export class TreeWalker extends Traverser {
   }
 }
 
-Object.defineProperty(NodeIterator.prototype, Symbol.toStringTag, { value: "NodeIterator", configurable: true });
-Object.defineProperty(TreeWalker.prototype, Symbol.toStringTag, { value: "TreeWalker", configurable: true });
+setToStringTag(NodeIterator);
+setToStringTag(TreeWalker);

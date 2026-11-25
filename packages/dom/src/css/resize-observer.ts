@@ -23,8 +23,8 @@ import type { Window } from "../window/Window.ts";
 
 /** https://drafts.csswg.org/resize-observer/#resizeobserversize */
 export class ResizeObserverSize {
-  readonly inlineSize: number;
-  readonly blockSize: number;
+  declare readonly inlineSize: number;
+  declare readonly blockSize: number;
   constructor(inlineSize: number, blockSize: number) {
     this.inlineSize = inlineSize;
     this.blockSize = blockSize;
@@ -36,11 +36,11 @@ export class ResizeObserverSize {
 
 /** https://drafts.csswg.org/resize-observer/#resize-observer-entry-interface */
 export class ResizeObserverEntry {
-  readonly target: Element;
-  readonly contentRect: DOMRectReadOnly;
-  readonly borderBoxSize: readonly ResizeObserverSize[];
-  readonly contentBoxSize: readonly ResizeObserverSize[];
-  readonly devicePixelContentBoxSize: readonly ResizeObserverSize[];
+  declare readonly target: Element;
+  declare readonly contentRect: DOMRectReadOnly;
+  declare readonly borderBoxSize: readonly ResizeObserverSize[];
+  declare readonly contentBoxSize: readonly ResizeObserverSize[];
+  declare readonly devicePixelContentBoxSize: readonly ResizeObserverSize[];
   constructor(
     target: Element,
     border: ResizeObserverSize,
@@ -64,7 +64,7 @@ export class ResizeObserverEntry {
 // A live target keeps its observers callable. The reverse indexes are enumerable for
 // delivery and disconnect, but neither the document nor the observer should root a target.
 class ObservedTargets extends Set<Observation> {
-  observer: WeakRef<ResizeObserver>;
+  declare observer: WeakRef<ResizeObserver>;
   constructor(observer: ResizeObserver) {
     super();
     this.observer = new WeakRef(observer);
@@ -73,11 +73,11 @@ class ObservedTargets extends Set<Observation> {
 
 /** https://drafts.csswg.org/resize-observer/#resizeobservation */
 class Observation extends WeakRef<Element> {
-  box: string;
+  declare box: string;
   lastInline = -1;
   lastBlock = -1;
-  targets: ObservedTargets;
-  documentObservers: Map<ObservedTargets, number>;
+  declare targets: ObservedTargets;
+  declare documentObservers: Map<ObservedTargets, number>;
   constructor(target: Element, box: string, targets: ObservedTargets, documentObservers: Map<ObservedTargets, number>) {
     super(target);
     this.box = box;

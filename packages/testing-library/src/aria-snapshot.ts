@@ -246,7 +246,7 @@ export function yamlValue(s: string): string {
 }
 
 /** `- role "name" [props]` without the leading dash. */
-export function nodeKey(node: SnapshotNode, maxText: number): string {
+export function nodeKey(node: Pick<SnapshotNode, "role" | "name" | "props">, maxText: number): string {
   let key = node.role;
   if (node.name !== "") key += " " + quote(truncate(node.name, maxText));
   for (let i = 0; i < node.props.length; i++) key += " " + node.props[i];

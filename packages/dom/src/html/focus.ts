@@ -37,11 +37,11 @@ import { nextInTree, treeRoot } from "../nodes/traverse.ts";
 import { contentAttr, parseInteger } from "./reflect.ts";
 import { fireFocusEvent } from "./events.ts";
 import { isActuallyDisabled } from "./forms/form-associated.ts";
-import { isEditingHost, isRenderingHidden } from "./shared.ts";
+import { isEditingHost, isRenderingHidden, isShadowIncludingInclusiveAncestor, parentOrHost } from "./shared.ts";
 import { inertByModal, setTopLayerFocusHooks } from "./top-layer.ts";
 import { frameContentWindow } from "../window/browsing-context.ts";
 import { setRenderingUpdateHook } from "../window/Window.ts";
-import { $focused, $frameElement, $host, $impl, $shadowRoot, $window } from "../keys.ts";
+import { $focused, $frameElement, $impl, $shadowRoot, $window } from "../keys.ts";
 
 // --- predicates ---------------------------------------------------------------------------
 
@@ -132,16 +132,6 @@ export function isInert(impl: NodeImpl): boolean {
     if ((n.flags & F_INERT_ATTR) !== 0 && n.type === ELEMENT_NODE && contentAttr(n, "inert") !== null) return true;
   }
   return inertByModal(impl);
-}
-
-function parentOrHost(n: NodeImpl): NodeImpl | null {
-  const p = n.parent;
-  if (p !== null) return p;
-  if ((n.flags & F_SHADOW_ROOT) !== 0) {
-    const host = (n.node as unknown as { [$host]: Element | null })[$host];
-    return host === null ? null : host[$impl];
-  }
-  return null;
 }
 
 /** Whether the element has its tabindex focus flag set (attribute or default). */
@@ -333,11 +323,6 @@ function runFocusUpdate(doc: Document, old: NodeImpl | null, next: NodeImpl | nu
   fireFocusEvent(nextNode, "focus", related, false, view);
   if (doc[$focused] !== next) return;
   fireFocusEvent(nextNode, "focusin", related, true, view);
-}
-
-function isShadowIncludingInclusiveAncestor(ancestor: NodeImpl, node: NodeImpl): boolean {
-  for (let n: NodeImpl | null = node; n !== null; n = parentOrHost(n)) if (n === ancestor) return true;
-  return false;
 }
 
 // Pointer-initiated focus (user-event marks it) does not match :focus-visible, except on

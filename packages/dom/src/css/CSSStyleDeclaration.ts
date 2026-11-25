@@ -25,16 +25,16 @@ export interface DeclarationOwnerRule {
 
 export class CSSStyleDeclaration {
   /** Inline style owner element, or null. */
-  [$owner]: Element | null;
+  declare [$owner]: Element | null;
   /** Rule owning these declarations (CSSStyleRule, CSSFontFaceRule, ...), or null. */
-  [$parentRule]: DeclarationOwnerRule | null;
-  [$block]: DeclBlock;
+  declare [$parentRule]: DeclarationOwnerRule | null;
+  declare [$block]: DeclBlock;
   /** Computed declarations are read-only. */
-  [$readonly]: boolean;
+  declare [$readonly]: boolean;
   /** Set while this declaration writes its owner's style attribute. */
-  [$updating]: boolean;
+  declare [$updating]: boolean;
   /** Number of own indexed properties currently defined. */
-  [$indexed]: number;
+  declare [$indexed]: number;
 
   constructor(
     owner: Element | null = null,

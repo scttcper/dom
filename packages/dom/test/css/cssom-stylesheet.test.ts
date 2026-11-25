@@ -275,6 +275,38 @@ describe("CSSGroupingRule — https://drafts.csswg.org/cssom/#the-cssgroupingrul
     expect(() => media.deleteRule(3)).toThrow(expect.objectContaining({ name: "IndexSizeError" }));
   });
 
+  test("insertRule/deleteRule argument and index errors carry Chrome's messages, on the sheet and on grouping rules (https://drafts.csswg.org/cssom/#insert-a-css-rule and https://drafts.csswg.org/cssom/#remove-a-css-rule step 2)", () => {
+    const message = (fn: () => void) => {
+      try {
+        fn();
+      } catch (e) {
+        return `${(e as Error).name}: ${(e as Error).message}`;
+      }
+      return "no error";
+    };
+    const s = sheet(".a {} @media screen { }");
+    const media = s.cssRules[1];
+    expect([
+      message(() => s.insertRule()),
+      message(() => s.insertRule(".b {}", 3)),
+      message(() => s.deleteRule()),
+      message(() => s.deleteRule(2)),
+      message(() => media.insertRule()),
+      message(() => media.insertRule(".b {}", 1)),
+      message(() => media.deleteRule()),
+      message(() => media.deleteRule(0)),
+    ]).toEqual([
+      "TypeError: Failed to execute 'insertRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.",
+      "IndexSizeError: Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (3) is larger than the maximum index (2).",
+      "TypeError: Failed to execute 'deleteRule' on 'CSSStyleSheet': 1 argument required, but only 0 present.",
+      "IndexSizeError: Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (2) is larger than the maximum index (1).",
+      "TypeError: Failed to execute 'insertRule' on 'CSSMediaRule': 1 argument required, but only 0 present.",
+      "IndexSizeError: Failed to execute 'insertRule' on 'CSSMediaRule': The index provided (1) is larger than the maximum index (0).",
+      "TypeError: Failed to execute 'deleteRule' on 'CSSMediaRule': 1 argument required, but only 0 present.",
+      "IndexSizeError: Failed to execute 'deleteRule' on 'CSSMediaRule': The index provided (0) is larger than the maximum index (0).",
+    ]);
+  });
+
   test("@import inside a grouping rule throws HierarchyRequestError", () => {
     const media = sheet("@media screen { }").cssRules[0];
     expect(() => media.insertRule("@import url(a.css);")).toThrow(

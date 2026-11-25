@@ -47,6 +47,18 @@ export function positiveWithFallback(C: { prototype: object }, idl: string, cont
   });
 }
 
+/**
+ * Copies the members of `members` (an object literal, so getters keep their "get x" names) onto
+ * `C.prototype` where `C` does not define its own, non-enumerable like class members.
+ */
+export function installDefaults(C: { prototype: object }, members: object): void {
+  const proto = C.prototype;
+  for (const key of Reflect.ownKeys(members)) {
+    if (!Object.hasOwn(proto, key))
+      Object.defineProperty(proto, key, { ...Object.getOwnPropertyDescriptor(members, key), enumerable: false });
+  }
+}
+
 /** WebIDL `unsigned long` conversion. */
 export function toUnsignedLong(value: unknown): number {
   const n = Number(value);

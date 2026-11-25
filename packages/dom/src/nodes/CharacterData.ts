@@ -23,11 +23,10 @@ import {
 } from "./mixins.ts";
 import type { Element } from "./Element.ts";
 import { $impl, $shadowRoot } from "../keys.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 
 function arity(method: string, required: number, given: number): never {
-  throw new TypeError(
-    `Failed to execute '${method}' on 'CharacterData': ${required} argument${required === 1 ? "" : "s"} required, but only ${given} present.`,
-  );
+  argumentsRequired(method, "CharacterData", required, given);
 }
 
 /**

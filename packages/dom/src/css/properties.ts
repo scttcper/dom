@@ -7,12 +7,12 @@
 import { PROPERTY_TABLE } from "./data/properties.ts";
 
 export class PropInfo {
-  name: string;
-  inherited: boolean;
+  declare name: string;
+  declare inherited: boolean;
   /** Initial value as computed-value text (browser serialization). */
-  initial: string;
+  declare initial: string;
   /** Longhands per spec data (also for shorthands we store as-is). */
-  specLonghands: string[] | null;
+  declare specLonghands: string[] | null;
 
   constructor(name: string, inherited: boolean, initial: string, specLonghands: string[] | null) {
     this.name = name;
@@ -29,21 +29,8 @@ export class PropInfo {
 const COMPUTED_INITIAL: Record<string, string> = {
   color: "rgb(0, 0, 0)",
   "background-color": "rgba(0, 0, 0, 0)",
-  "border-top-color": "currentcolor",
-  "border-right-color": "currentcolor",
-  "border-bottom-color": "currentcolor",
-  "border-left-color": "currentcolor",
   "outline-color": "currentcolor",
-  "border-block-start-color": "currentcolor",
-  "border-block-end-color": "currentcolor",
-  "border-inline-start-color": "currentcolor",
-  "border-inline-end-color": "currentcolor",
-  "text-decoration-color": "currentcolor",
-  "column-rule-color": "currentcolor",
   "caret-color": "currentcolor",
-  "text-emphasis-color": "currentcolor",
-  "-webkit-text-fill-color": "currentcolor",
-  "-webkit-text-stroke-color": "currentcolor",
   "margin-top": "0px",
   "margin-right": "0px",
   "margin-bottom": "0px",
@@ -52,12 +39,6 @@ const COMPUTED_INITIAL: Record<string, string> = {
   "padding-right": "0px",
   "padding-bottom": "0px",
   "padding-left": "0px",
-  "border-top-width": "medium",
-  "border-right-width": "medium",
-  "border-bottom-width": "medium",
-  "border-left-width": "medium",
-  "outline-width": "medium",
-  "column-rule-width": "medium",
   "border-top-left-radius": "0px",
   "border-top-right-radius": "0px",
   "border-bottom-right-radius": "0px",
@@ -65,49 +46,12 @@ const COMPUTED_INITIAL: Record<string, string> = {
   "font-size": "16px",
   "font-weight": "400",
   "font-family": '"Times New Roman"',
-  "font-style": "normal",
-  "font-variant": "normal",
-  "line-height": "normal",
-  "letter-spacing": "normal",
   "word-spacing": "0px",
   "text-indent": "0px",
   "outline-offset": "0px",
-  "min-width": "auto",
-  "min-height": "auto",
-  "max-width": "none",
-  "max-height": "none",
-  "flex-basis": "auto",
-  "flex-grow": "0",
-  "flex-shrink": "1",
-  order: "0",
-  "background-image": "none",
-  "background-position-x": "0%",
-  "background-position-y": "0%",
-  "background-position": "0% 0%",
-  "background-size": "auto",
-  "background-repeat": "repeat",
-  "background-origin": "padding-box",
-  "background-clip": "border-box",
-  "background-attachment": "scroll",
   "border-image": "none",
-  "border-spacing": "0px 0px",
-  "transition-duration": "0s",
-  "transition-delay": "0s",
   "animation-duration": "0s",
   "animation-delay": "0s",
-  "text-align": "start",
-  opacity: "1",
-  "z-index": "auto",
-  "row-gap": "normal",
-  "column-gap": "normal",
-  "user-select": "auto",
-  "-webkit-user-select": "auto",
-  content: "normal",
-  quotes: "auto",
-  "list-style-type": "disc",
-  "vertical-align": "baseline",
-  "white-space": "normal",
-  "text-transform": "none",
 };
 
 /**
@@ -118,73 +62,30 @@ const COMPUTED_INITIAL: Record<string, string> = {
  * (https://drafts.csswg.org/css-cascade-5/#legacy-name-alias). jsdom ≤30 kept them separate;
  * jsdom 31 and browsers alias them. `-webkit-line-clamp` is not one: css-overflow-4 defines it as
  * a legacy shorthand of its own.
+ *
+ * Every other `-webkit-` row of the table whose unprefixed name is a property is one (the
+ * `-webkit-mask-box-image*` family aliases `mask-border*`); the rest (`-webkit-box-*`,
+ * `-webkit-text-fill-color`, `-webkit-text-stroke*`) have no standard counterpart. Built on the
+ * first `-`-prefixed lookup (properties.test.ts pins the full list).
  */
-const LEGACY_ALIASES = new Map<string, string>([
-  ["-webkit-align-content", "align-content"],
-  ["-webkit-align-items", "align-items"],
-  ["-webkit-align-self", "align-self"],
-  ["-webkit-animation", "animation"],
-  ["-webkit-animation-delay", "animation-delay"],
-  ["-webkit-animation-direction", "animation-direction"],
-  ["-webkit-animation-duration", "animation-duration"],
-  ["-webkit-animation-fill-mode", "animation-fill-mode"],
-  ["-webkit-animation-iteration-count", "animation-iteration-count"],
-  ["-webkit-animation-name", "animation-name"],
-  ["-webkit-animation-play-state", "animation-play-state"],
-  ["-webkit-animation-timing-function", "animation-timing-function"],
-  ["-webkit-appearance", "appearance"],
-  ["-webkit-backface-visibility", "backface-visibility"],
-  ["-webkit-background-clip", "background-clip"],
-  ["-webkit-background-origin", "background-origin"],
-  ["-webkit-background-size", "background-size"],
-  ["-webkit-border-bottom-left-radius", "border-bottom-left-radius"],
-  ["-webkit-border-bottom-right-radius", "border-bottom-right-radius"],
-  ["-webkit-border-radius", "border-radius"],
-  ["-webkit-border-top-left-radius", "border-top-left-radius"],
-  ["-webkit-border-top-right-radius", "border-top-right-radius"],
-  ["-webkit-box-shadow", "box-shadow"],
-  ["-webkit-box-sizing", "box-sizing"],
-  ["-webkit-filter", "filter"],
-  ["-webkit-flex", "flex"],
-  ["-webkit-flex-basis", "flex-basis"],
-  ["-webkit-flex-direction", "flex-direction"],
-  ["-webkit-flex-flow", "flex-flow"],
-  ["-webkit-flex-grow", "flex-grow"],
-  ["-webkit-flex-shrink", "flex-shrink"],
-  ["-webkit-flex-wrap", "flex-wrap"],
-  ["-webkit-justify-content", "justify-content"],
-  ["-webkit-mask", "mask"],
-  ["-webkit-mask-box-image", "mask-border"],
-  ["-webkit-mask-box-image-outset", "mask-border-outset"],
-  ["-webkit-mask-box-image-repeat", "mask-border-repeat"],
-  ["-webkit-mask-box-image-slice", "mask-border-slice"],
-  ["-webkit-mask-box-image-source", "mask-border-source"],
-  ["-webkit-mask-box-image-width", "mask-border-width"],
-  ["-webkit-mask-clip", "mask-clip"],
-  ["-webkit-mask-composite", "mask-composite"],
-  ["-webkit-mask-image", "mask-image"],
-  ["-webkit-mask-origin", "mask-origin"],
-  ["-webkit-mask-position", "mask-position"],
-  ["-webkit-mask-repeat", "mask-repeat"],
-  ["-webkit-mask-size", "mask-size"],
-  ["-webkit-order", "order"],
-  ["-webkit-perspective", "perspective"],
-  ["-webkit-perspective-origin", "perspective-origin"],
-  ["-webkit-text-size-adjust", "text-size-adjust"],
-  ["-webkit-transform", "transform"],
-  ["-webkit-transform-origin", "transform-origin"],
-  ["-webkit-transform-style", "transform-style"],
-  ["-webkit-transition", "transition"],
-  ["-webkit-transition-delay", "transition-delay"],
-  ["-webkit-transition-duration", "transition-duration"],
-  ["-webkit-transition-property", "transition-property"],
-  ["-webkit-transition-timing-function", "transition-timing-function"],
-  ["-webkit-user-select", "user-select"],
-]);
+let legacyAliases: Map<string, string> | null = null;
+
+function buildLegacyAliases(): Map<string, string> {
+  const map = new Map<string, string>();
+  // The table is sorted, so its `-webkit-` rows come first.
+  for (let i = 0; i < PROPERTY_TABLE.length; i += 4) {
+    const name = PROPERTY_TABLE[i];
+    if (name.charCodeAt(0) !== 0x2d) break;
+    if (name === "-webkit-line-clamp") continue;
+    const target = name.startsWith("-webkit-mask-box-image") ? "mask-border" + name.slice(22) : name.slice(8);
+    if (tableOffset(target) !== -1) map.set(name, target);
+  }
+  return map;
+}
 
 /** The property a lowercase name stands for: the aliased property for a legacy name alias, else the name. */
 export function canonicalPropertyName(lower: string): string {
-  return lower.charCodeAt(0) === 0x2d ? (LEGACY_ALIASES.get(lower) ?? lower) : lower;
+  return lower.charCodeAt(0) === 0x2d ? ((legacyAliases ??= buildLegacyAliases()).get(lower) ?? lower) : lower;
 }
 
 // Metadata is built per property on first use, and the name list without it: every test file
@@ -200,7 +101,7 @@ function tableOffset(name: string): number {
   let hi = PROPERTY_TABLE.length / 4 - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >>> 1;
-    const candidate = PROPERTY_TABLE[mid * 4] as string;
+    const candidate = PROPERTY_TABLE[mid * 4];
     if (candidate === name) return mid * 4;
     if (candidate < name) lo = mid + 1;
     else hi = mid - 1;
@@ -214,11 +115,11 @@ export function propertyInfo(name: string): PropInfo | undefined {
   if (p !== undefined) return p;
   const i = tableOffset(name);
   if (i === -1) return undefined;
-  const lh = PROPERTY_TABLE[i + 3] as string;
+  const lh = PROPERTY_TABLE[i + 3];
   p = new PropInfo(
     name,
-    PROPERTY_TABLE[i + 1] === 1,
-    COMPUTED_INITIAL[name] ?? (PROPERTY_TABLE[i + 2] as string),
+    PROPERTY_TABLE[i + 1] === "1",
+    COMPUTED_INITIAL[name] ?? PROPERTY_TABLE[i + 2],
     lh === "" ? null : lh.split(" "),
   );
   // Legacy -webkit- aliases (https://compat.spec.whatwg.org/#css-simple-aliases) carry no data
@@ -252,7 +153,7 @@ export function isInherited(name: string): boolean {
 export function allPropertyNames(): readonly string[] {
   if (allNames === null) {
     allNames = new Array(PROPERTY_TABLE.length / 4);
-    for (let i = 0; i < allNames.length; i++) allNames[i] = PROPERTY_TABLE[i * 4] as string;
+    for (let i = 0; i < allNames.length; i++) allNames[i] = PROPERTY_TABLE[i * 4];
   }
   return allNames;
 }
@@ -267,7 +168,7 @@ export function computedPropertyNames(): readonly string[] {
   if (computedNames !== null) return computedNames;
   computedNames = [];
   for (let i = 0; i < PROPERTY_TABLE.length; i += 4) {
-    const name = PROPERTY_TABLE[i] as string;
+    const name = PROPERTY_TABLE[i];
     if (name.charCodeAt(0) === 0x2d || PROPERTY_TABLE[i + 3] !== "") continue;
     computedNames.push(name);
   }

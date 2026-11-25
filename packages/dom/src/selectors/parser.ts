@@ -43,17 +43,17 @@ export const TK_LBRACE = 23;
 export const TK_RBRACE = 24;
 
 export class Token {
-  type: number;
+  declare type: number;
   /** Ident/function/at/hash name, string value, delim char, dimension unit. */
-  value: string;
+  declare value: string;
   /** Numeric value for number/percentage/dimension. */
-  num: number;
+  declare num: number;
   /** Number is an integer (type flag "integer"). */
-  isInt: boolean;
+  declare isInt: boolean;
   /** Number representation started with "+" or "-". Hash: type flag "id". */
-  flag: boolean;
+  declare flag: boolean;
   /** Start offset in the source. */
-  start: number;
+  declare start: number;
 
   constructor(type: number, value: string, start: number) {
     this.type = type;
@@ -110,9 +110,9 @@ function isNonPrintable(c: number): boolean {
  * lazily: CR/FF/CRLF are treated as newlines and U+0000 becomes U+FFFD when consumed.
  */
 export class Tokenizer {
-  src: string;
-  pos: number;
-  len: number;
+  declare src: string;
+  declare pos: number;
+  declare len: number;
 
   constructor(src: string) {
     this.src = src;
@@ -624,26 +624,26 @@ export const PE_FUNCTION = 4; // other functional pseudo-elements (::highlight()
  * monomorphic.
  */
 export class Simple {
-  kind: number;
+  declare kind: number;
   /** Type/attribute local name (case preserved), id, class name, or lowercased pseudo name. */
-  name: string;
-  nsKind: number;
-  nsPrefix: string;
+  declare name: string;
+  declare nsKind: number;
+  declare nsPrefix: string;
   /** Attribute matcher (OP_*). */
-  op: number;
+  declare op: number;
   /** Attribute value. */
-  value: string;
+  declare value: string;
   /** Attribute case flag (CASE_*). */
-  caseFlag: number;
+  declare caseFlag: number;
   /** Pseudo-class id (P_*) or pseudo-element id (PE_*). */
-  pseudo: number;
+  declare pseudo: number;
   /** An+B. */
-  a: number;
-  b: number;
+  declare a: number;
+  declare b: number;
   /** Selector argument (:is/:where/:not/:has/:nth-*(of S)/:host()/::slotted()); null when absent. */
-  list: SelectorList | null;
+  declare list: SelectorList | null;
   /** Identifier/string arguments (:lang, :dir, :state, ::part, ::highlight). */
-  args: string[];
+  declare args: string[];
 
   constructor(kind: number, name: string) {
     this.kind = kind;
@@ -664,9 +664,9 @@ export class Simple {
 /** https://drafts.csswg.org/selectors-4/#compound */
 export class Compound {
   /** Type selector first (if any), then subclass selectors, then pseudo-elements and the pseudo-classes following them, in source order. */
-  simples: Simple[];
+  declare simples: Simple[];
   /** Index of the first pseudo-element in `simples`, or -1. */
-  pseudoElementIndex: number;
+  declare pseudoElementIndex: number;
 
   constructor() {
     this.simples = [];
@@ -676,18 +676,18 @@ export class Compound {
 
 /** https://drafts.csswg.org/selectors-4/#complex (and relative selectors for :has). */
 export class Complex {
-  compounds: Compound[];
+  declare compounds: Compound[];
   /** combinators[i] joins compounds[i] and compounds[i + 1]. */
-  combinators: number[];
+  declare combinators: number[];
   /** Leading combinator of a relative selector (C_NONE when absent). */
-  leading: number;
+  declare leading: number;
   /** Source text (trimmed) of this complex selector. */
-  text: string;
+  declare text: string;
   /**
    * An item of a forgiving selector list (:is/:where) that failed to parse. It matches nothing
    * but keeps its source text for serialization (https://drafts.csswg.org/selectors-4/#forgiving-selector).
    */
-  invalid: boolean;
+  declare invalid: boolean;
 
   constructor() {
     this.compounds = [];
@@ -699,7 +699,7 @@ export class Complex {
 }
 
 export class SelectorList {
-  items: Complex[];
+  declare items: Complex[];
   constructor() {
     this.items = [];
   }
@@ -733,166 +733,96 @@ function allowedAfterPseudoElement(pe: number, p: number): boolean {
   );
 }
 
+/** Non-functional pseudo-class name (lowercased) → id. */
+const PSEUDO_CLASSES = new Map<string, number>([
+  ["first-child", P_FIRST_CHILD],
+  ["last-child", P_LAST_CHILD],
+  ["only-child", P_ONLY_CHILD],
+  ["first-of-type", P_FIRST_OF_TYPE],
+  ["last-of-type", P_LAST_OF_TYPE],
+  ["only-of-type", P_ONLY_OF_TYPE],
+  ["empty", P_EMPTY],
+  ["root", P_ROOT],
+  ["scope", P_SCOPE],
+  ["host", P_HOST],
+  ["link", P_LINK],
+  ["any-link", P_ANY_LINK],
+  ["visited", P_VISITED],
+  ["target", P_TARGET],
+  ["target-within", P_TARGET_WITHIN],
+  ["defined", P_DEFINED],
+  ["hover", P_HOVER],
+  ["active", P_ACTIVE],
+  ["focus", P_FOCUS],
+  ["focus-within", P_FOCUS_WITHIN],
+  ["focus-visible", P_FOCUS_VISIBLE],
+  ["checked", P_CHECKED],
+  ["indeterminate", P_INDETERMINATE],
+  ["default", P_DEFAULT],
+  ["disabled", P_DISABLED],
+  ["enabled", P_ENABLED],
+  ["required", P_REQUIRED],
+  ["optional", P_OPTIONAL],
+  ["read-only", P_READ_ONLY],
+  ["read-write", P_READ_WRITE],
+  ["placeholder-shown", P_PLACEHOLDER_SHOWN],
+  ["valid", P_VALID],
+  ["invalid", P_INVALID],
+  ["in-range", P_IN_RANGE],
+  ["out-of-range", P_OUT_OF_RANGE],
+  ["user-valid", P_USER_VALID],
+  ["user-invalid", P_USER_INVALID],
+  ["autofill", P_AUTOFILL],
+  ["-webkit-autofill", P_AUTOFILL],
+  ["open", P_OPEN],
+  ["popover-open", P_POPOVER_OPEN],
+  ["modal", P_MODAL],
+  ["fullscreen", P_FULLSCREEN],
+  ["picture-in-picture", P_PICTURE_IN_PICTURE],
+  ["playing", P_PLAYING],
+  ["paused", P_PAUSED],
+  ["muted", P_MUTED],
+  ["seeking", P_SEEKING],
+  ["buffering", P_BUFFERING],
+  ["stalled", P_STALLED],
+  ["volume-locked", P_VOLUME_LOCKED],
+  ["current", P_CURRENT],
+  ["past", P_PAST],
+  ["future", P_FUTURE],
+  ["has-slotted", P_HAS_SLOTTED],
+  ["target-current", P_TARGET_CURRENT],
+  ["heading", P_HEADING],
+]);
+
 /** Non-functional pseudo-class name (lowercased) → id, or P_UNKNOWN. */
 export function pseudoClassId(name: string): number {
-  switch (name) {
-    case "first-child":
-      return P_FIRST_CHILD;
-    case "last-child":
-      return P_LAST_CHILD;
-    case "only-child":
-      return P_ONLY_CHILD;
-    case "first-of-type":
-      return P_FIRST_OF_TYPE;
-    case "last-of-type":
-      return P_LAST_OF_TYPE;
-    case "only-of-type":
-      return P_ONLY_OF_TYPE;
-    case "empty":
-      return P_EMPTY;
-    case "root":
-      return P_ROOT;
-    case "scope":
-      return P_SCOPE;
-    case "host":
-      return P_HOST;
-    case "link":
-      return P_LINK;
-    case "any-link":
-      return P_ANY_LINK;
-    case "visited":
-      return P_VISITED;
-    case "target":
-      return P_TARGET;
-    case "target-within":
-      return P_TARGET_WITHIN;
-    case "defined":
-      return P_DEFINED;
-    case "hover":
-      return P_HOVER;
-    case "active":
-      return P_ACTIVE;
-    case "focus":
-      return P_FOCUS;
-    case "focus-within":
-      return P_FOCUS_WITHIN;
-    case "focus-visible":
-      return P_FOCUS_VISIBLE;
-    case "checked":
-      return P_CHECKED;
-    case "indeterminate":
-      return P_INDETERMINATE;
-    case "default":
-      return P_DEFAULT;
-    case "disabled":
-      return P_DISABLED;
-    case "enabled":
-      return P_ENABLED;
-    case "required":
-      return P_REQUIRED;
-    case "optional":
-      return P_OPTIONAL;
-    case "read-only":
-      return P_READ_ONLY;
-    case "read-write":
-      return P_READ_WRITE;
-    case "placeholder-shown":
-      return P_PLACEHOLDER_SHOWN;
-    case "valid":
-      return P_VALID;
-    case "invalid":
-      return P_INVALID;
-    case "in-range":
-      return P_IN_RANGE;
-    case "out-of-range":
-      return P_OUT_OF_RANGE;
-    case "user-valid":
-      return P_USER_VALID;
-    case "user-invalid":
-      return P_USER_INVALID;
-    case "autofill":
-      return P_AUTOFILL;
-    case "-webkit-autofill":
-      return P_AUTOFILL;
-    case "open":
-      return P_OPEN;
-    case "popover-open":
-      return P_POPOVER_OPEN;
-    case "modal":
-      return P_MODAL;
-    case "fullscreen":
-      return P_FULLSCREEN;
-    case "picture-in-picture":
-      return P_PICTURE_IN_PICTURE;
-    case "playing":
-      return P_PLAYING;
-    case "paused":
-      return P_PAUSED;
-    case "muted":
-      return P_MUTED;
-    case "seeking":
-      return P_SEEKING;
-    case "buffering":
-      return P_BUFFERING;
-    case "stalled":
-      return P_STALLED;
-    case "volume-locked":
-      return P_VOLUME_LOCKED;
-    case "current":
-      return P_CURRENT;
-    case "past":
-      return P_PAST;
-    case "future":
-      return P_FUTURE;
-    case "has-slotted":
-      return P_HAS_SLOTTED;
-    case "target-current":
-      return P_TARGET_CURRENT;
-    case "heading":
-      return P_HEADING;
-  }
-  return P_UNKNOWN;
+  return PSEUDO_CLASSES.get(name) ?? P_UNKNOWN;
 }
+
+/** Functional pseudo-class name (lowercased) → id. */
+const FUNCTIONAL_PSEUDO_CLASSES = new Map<string, number>([
+  ["is", P_IS],
+  ["matches", P_IS],
+  ["-webkit-any", P_IS],
+  ["where", P_WHERE],
+  ["not", P_NOT],
+  ["has", P_HAS],
+  ["nth-child", P_NTH_CHILD],
+  ["nth-last-child", P_NTH_LAST_CHILD],
+  ["nth-of-type", P_NTH_OF_TYPE],
+  ["nth-last-of-type", P_NTH_LAST_OF_TYPE],
+  ["host", P_HOST_FN],
+  ["host-context", P_HOST_CONTEXT],
+  ["lang", P_LANG],
+  ["dir", P_DIR],
+  ["state", P_STATE],
+  ["current", P_CURRENT],
+  ["heading", P_HEADING],
+]);
 
 /** Functional pseudo-class name (lowercased) → id, or P_UNKNOWN. */
 export function functionalPseudoClassId(name: string): number {
-  switch (name) {
-    case "is":
-      return P_IS;
-    case "matches":
-      return P_IS;
-    case "-webkit-any":
-      return P_IS;
-    case "where":
-      return P_WHERE;
-    case "not":
-      return P_NOT;
-    case "has":
-      return P_HAS;
-    case "nth-child":
-      return P_NTH_CHILD;
-    case "nth-last-child":
-      return P_NTH_LAST_CHILD;
-    case "nth-of-type":
-      return P_NTH_OF_TYPE;
-    case "nth-last-of-type":
-      return P_NTH_LAST_OF_TYPE;
-    case "host":
-      return P_HOST_FN;
-    case "host-context":
-      return P_HOST_CONTEXT;
-    case "lang":
-      return P_LANG;
-    case "dir":
-      return P_DIR;
-    case "state":
-      return P_STATE;
-    case "current":
-      return P_CURRENT;
-    case "heading":
-      return P_HEADING;
-  }
-  return P_UNKNOWN;
+  return FUNCTIONAL_PSEUDO_CLASSES.get(name) ?? P_UNKNOWN;
 }
 
 /** Tree-structural pseudo-classes (not allowed after ::part()). */
@@ -906,54 +836,30 @@ function isStructural(p: number): boolean {
   );
 }
 
+// oxfmt-ignore
+const PSEUDO_ELEMENTS = new Set([
+  "before", "after", "first-line", "first-letter", "marker", "placeholder", "selection", "backdrop",
+  "file-selector-button", "target-text", "spelling-error", "grammar-error", "cue", "cue-region", "details-content",
+  "checkmark", "picker-icon", "scroll-marker", "scroll-marker-group", "column", "view-transition",
+]);
+
 /** Argument-less pseudo-element name (lowercased) → known? */
 function isKnownPseudoElement(name: string): boolean {
-  switch (name) {
-    case "before":
-    case "after":
-    case "first-line":
-    case "first-letter":
-    case "marker":
-    case "placeholder":
-    case "selection":
-    case "backdrop":
-    case "file-selector-button":
-    case "target-text":
-    case "spelling-error":
-    case "grammar-error":
-    case "cue":
-    case "cue-region":
-    case "details-content":
-    case "checkmark":
-    case "picker-icon":
-    case "scroll-marker":
-    case "scroll-marker-group":
-    case "column":
-    case "view-transition":
-      return true;
-  }
   // Vendor pseudo-elements engines expose (::-webkit-scrollbar, ::-moz-selection, ...).
-  return name.startsWith("-webkit-") || name.startsWith("-moz-");
+  return PSEUDO_ELEMENTS.has(name) || name.startsWith("-webkit-") || name.startsWith("-moz-");
 }
 
+// oxfmt-ignore
+const FUNCTIONAL_PSEUDO_ELEMENTS = new Map([
+  ["slotted", PE_SLOTTED], ["part", PE_PART], ["highlight", PE_FUNCTION], ["picker", PE_FUNCTION],
+  ["scroll-button", PE_FUNCTION], ["cue", PE_FUNCTION], ["cue-region", PE_FUNCTION],
+  ["view-transition-group", PE_FUNCTION], ["view-transition-image-pair", PE_FUNCTION],
+  ["view-transition-old", PE_FUNCTION], ["view-transition-new", PE_FUNCTION],
+]);
+
+/** Functional pseudo-element name (lowercased) → PE_* id, or 0 when unknown. */
 function isKnownFunctionalPseudoElement(name: string): number {
-  switch (name) {
-    case "slotted":
-      return PE_SLOTTED;
-    case "part":
-      return PE_PART;
-    case "highlight":
-    case "picker":
-    case "scroll-button":
-    case "cue":
-    case "cue-region":
-    case "view-transition-group":
-    case "view-transition-image-pair":
-    case "view-transition-old":
-    case "view-transition-new":
-      return PE_FUNCTION;
-  }
-  return 0;
+  return FUNCTIONAL_PSEUDO_ELEMENTS.get(name) ?? 0;
 }
 
 function isLegacyPseudoElement(name: string): boolean {
@@ -965,11 +871,11 @@ function isLegacyPseudoElement(name: string): boolean {
  * https://drafts.csswg.org/selectors-4/#parse-selector
  */
 export class SelectorParser {
-  src: string;
-  toks: Token[];
-  i: number;
+  declare src: string;
+  declare toks: Token[];
+  declare i: number;
   /** Set when parsing failed; a human-readable reason (for debugging; DOM messages use the selector text). */
-  error: string;
+  declare error: string;
 
   constructor(src: string) {
     this.src = src;

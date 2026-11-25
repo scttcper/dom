@@ -46,8 +46,8 @@ const VIEW_BOX = new RegExp(`^${WS}*(${NUM})${SEP}(${NUM})${SEP}(${NUM})${SEP}($
  * whitespace and/or a comma. A missing or invalid value, or a negative width or height, is the
  * zero rect.
  */
-function parseViewBox(el: Element, attr: string): [number, number, number, number] {
-  const m = VIEW_BOX.exec(contentAttr(el[$impl], attr) ?? "");
+function parseViewBox(el: Element): [number, number, number, number] {
+  const m = VIEW_BOX.exec(contentAttr(el[$impl], "viewBox") ?? "");
   if (m !== null) {
     const width = Number(m[3]);
     const height = Number(m[4]);
@@ -56,10 +56,60 @@ function parseViewBox(el: Element, attr: string): [number, number, number, numbe
   return [0, 0, 0, 0];
 }
 
-function writeViewBox(el: Element, attr: string, index: number, value: number): void {
-  const r = parseViewBox(el, attr);
+/** The element whose viewBox attribute a `baseVal` or `animVal` rect reflects. */
+const viewBoxElement = new WeakMap<object, Element>();
+
+function viewBoxOf(rect: object): [number, number, number, number] {
+  return parseViewBox(viewBoxElement.get(rect)!);
+}
+
+function writeViewBox(rect: object, index: number, value: number): void {
+  const el = viewBoxElement.get(rect)!;
+  const r = parseViewBox(el);
   r[index] = Number(value);
-  setAttribute(el[$impl], attr, `${r[0]} ${r[1]} ${r[2]} ${r[3]}`);
+  setAttribute(el[$impl], "viewBox", `${r[0]} ${r[1]} ${r[2]} ${r[3]}`);
+}
+
+/**
+ * `viewBox.animVal`: the read-only view of the attribute (no animation, so equal to baseVal),
+ * a DOMRectReadOnly whose members read the attribute. `baseVal` shares its getters and toJSON.
+ */
+class ReflectedRectReadOnly extends DOMRectReadOnly {
+  constructor(el: Element) {
+    super();
+    viewBoxElement.set(this, el);
+  }
+  override get x(): number {
+    return viewBoxOf(this)[0];
+  }
+  override get y(): number {
+    return viewBoxOf(this)[1];
+  }
+  override get width(): number {
+    return viewBoxOf(this)[2];
+  }
+  override get height(): number {
+    return viewBoxOf(this)[3];
+  }
+  override get top(): number {
+    const r = viewBoxOf(this);
+    return Math.min(r[1], r[1] + r[3]);
+  }
+  override get right(): number {
+    const r = viewBoxOf(this);
+    return Math.max(r[0], r[0] + r[2]);
+  }
+  override get bottom(): number {
+    const r = viewBoxOf(this);
+    return Math.max(r[1], r[1] + r[3]);
+  }
+  override get left(): number {
+    const r = viewBoxOf(this);
+    return Math.min(r[0], r[0] + r[2]);
+  }
+  override toJSON(): Record<string, number> {
+    return new DOMRectReadOnly(this.x, this.y, this.width, this.height).toJSON();
+  }
 }
 
 /**
@@ -68,98 +118,33 @@ function writeViewBox(el: Element, attr: string, index: number, value: number): 
  * legacy SVGRect), with `constructor` pointing at DOMRect; only its prototype object is internal.
  */
 class ReflectedRect extends DOMRect {
-  #el: Element;
-  #attr: string;
-  constructor(el: Element, attr: string) {
+  constructor(el: Element) {
     super();
-    this.#el = el;
-    this.#attr = attr;
-  }
-  override get x(): number {
-    return parseViewBox(this.#el, this.#attr)[0];
-  }
-  override set x(v: number) {
-    writeViewBox(this.#el, this.#attr, 0, v);
-  }
-  override get y(): number {
-    return parseViewBox(this.#el, this.#attr)[1];
-  }
-  override set y(v: number) {
-    writeViewBox(this.#el, this.#attr, 1, v);
-  }
-  override get width(): number {
-    return parseViewBox(this.#el, this.#attr)[2];
-  }
-  override set width(v: number) {
-    writeViewBox(this.#el, this.#attr, 2, v);
-  }
-  override get height(): number {
-    return parseViewBox(this.#el, this.#attr)[3];
-  }
-  override set height(v: number) {
-    writeViewBox(this.#el, this.#attr, 3, v);
-  }
-  override get top(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.min(r[1], r[1] + r[3]);
-  }
-  override get right(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.max(r[0], r[0] + r[2]);
-  }
-  override get bottom(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.max(r[1], r[1] + r[3]);
-  }
-  override get left(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.min(r[0], r[0] + r[2]);
-  }
-  override toJSON(): Record<string, number> {
-    return new DOMRectReadOnly(this.x, this.y, this.width, this.height).toJSON();
+    viewBoxElement.set(this, el);
   }
 }
 
-/** `viewBox.animVal`: the read-only view of the same attribute (no animation, so equal to baseVal). */
-class ReflectedRectReadOnly extends DOMRectReadOnly {
-  #el: Element;
-  #attr: string;
-  constructor(el: Element, attr: string) {
-    super();
-    this.#el = el;
-    this.#attr = attr;
-  }
-  override get x(): number {
-    return parseViewBox(this.#el, this.#attr)[0];
-  }
-  override get y(): number {
-    return parseViewBox(this.#el, this.#attr)[1];
-  }
-  override get width(): number {
-    return parseViewBox(this.#el, this.#attr)[2];
-  }
-  override get height(): number {
-    return parseViewBox(this.#el, this.#attr)[3];
-  }
-  override get top(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.min(r[1], r[1] + r[3]);
-  }
-  override get right(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.max(r[0], r[0] + r[2]);
-  }
-  override get bottom(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.max(r[1], r[1] + r[3]);
-  }
-  override get left(): number {
-    const r = parseViewBox(this.#el, this.#attr);
-    return Math.min(r[0], r[0] + r[2]);
-  }
-  override toJSON(): Record<string, number> {
-    return new DOMRectReadOnly(this.x, this.y, this.width, this.height).toJSON();
-  }
+const viewBoxSetters = {
+  set x(v: number) {
+    writeViewBox(this, 0, v);
+  },
+  set y(v: number) {
+    writeViewBox(this, 1, v);
+  },
+  set width(v: number) {
+    writeViewBox(this, 2, v);
+  },
+  set height(v: number) {
+    writeViewBox(this, 3, v);
+  },
+};
+
+for (const key of Reflect.ownKeys(ReflectedRectReadOnly.prototype)) {
+  if (key === "constructor") continue;
+  const d = Object.getOwnPropertyDescriptor(ReflectedRectReadOnly.prototype, key)!;
+  const set = Object.getOwnPropertyDescriptor(viewBoxSetters, key)?.set;
+  if (set !== undefined) d.set = set;
+  Object.defineProperty(ReflectedRect.prototype, key, d);
 }
 
 // Attributes are enumerable as on DOMRect (WebIDL), and `constructor` is the public interface.
@@ -174,23 +159,21 @@ Object.defineProperty(ReflectedRectReadOnly.prototype, "constructor", {
 /** https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedRect */
 export class SVGAnimatedRect {
   #el: Element;
-  #attr: string;
   #base: DOMRect | null = null;
   #anim: DOMRectReadOnly | null = null;
 
-  constructor(el: Element, attr: string) {
+  constructor(el: Element) {
     this.#el = el;
-    this.#attr = attr;
   }
 
   /** [SameObject] */
   get baseVal(): DOMRect {
-    return (this.#base ??= new ReflectedRect(this.#el, this.#attr));
+    return (this.#base ??= new ReflectedRect(this.#el));
   }
 
   /** [SameObject] */
   get animVal(): DOMRectReadOnly {
-    return (this.#anim ??= new ReflectedRectReadOnly(this.#el, this.#attr));
+    return (this.#anim ??= new ReflectedRectReadOnly(this.#el));
   }
 }
 
@@ -326,37 +309,27 @@ export class SVGAnimatedPreserveAspectRatio {
 
 // --- SVGFitToViewBox ---------------------------------------------------------------------------
 
-const VIEW_BOX_KEY = Symbol("viewBox");
-const PRESERVE_ASPECT_RATIO_KEY = Symbol("preserveAspectRatio");
-
-type Cache = Record<symbol, unknown>;
+const FIT_TO_VIEW_BOX = [
+  ["viewBox", Symbol("viewBox"), SVGAnimatedRect],
+  ["preserveAspectRatio", Symbol("preserveAspectRatio"), SVGAnimatedPreserveAspectRatio],
+] as const;
 
 /** Install the SVGFitToViewBox mixin's [SameObject] `viewBox` and `preserveAspectRatio`. */
 export function installFitToViewBox(C: { prototype: object }): void {
-  Object.defineProperty(C.prototype, "viewBox", {
-    get(this: Element): SVGAnimatedRect {
-      let v = (this as unknown as Cache)[VIEW_BOX_KEY] as SVGAnimatedRect | undefined;
-      if (v === undefined) {
-        v = new SVGAnimatedRect(this, "viewBox");
-        Object.defineProperty(this, VIEW_BOX_KEY, { value: v });
-      }
-      return v;
-    },
-    configurable: true,
-    enumerable: true,
-  });
-  Object.defineProperty(C.prototype, "preserveAspectRatio", {
-    get(this: Element): SVGAnimatedPreserveAspectRatio {
-      let v = (this as unknown as Cache)[PRESERVE_ASPECT_RATIO_KEY] as SVGAnimatedPreserveAspectRatio | undefined;
-      if (v === undefined) {
-        v = new SVGAnimatedPreserveAspectRatio(this);
-        Object.defineProperty(this, PRESERVE_ASPECT_RATIO_KEY, { value: v });
-      }
-      return v;
-    },
-    configurable: true,
-    enumerable: true,
-  });
+  for (const [name, key, Animated] of FIT_TO_VIEW_BOX) {
+    Object.defineProperty(C.prototype, name, {
+      get(this: Element): object {
+        let v = (this as unknown as Record<symbol, object | undefined>)[key];
+        if (v === undefined) {
+          v = new Animated(this);
+          Object.defineProperty(this, key, { value: v });
+        }
+        return v;
+      },
+      configurable: true,
+      enumerable: true,
+    });
+  }
 }
 
 exposeMembers(SVGNumber, SVGAnimatedRect, SVGPreserveAspectRatio, SVGAnimatedPreserveAspectRatio);

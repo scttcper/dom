@@ -11,10 +11,10 @@ import type { Document } from "../../nodes/Document.ts";
 import type { Element } from "../../nodes/Element.ts";
 import { TEXT_NODE, CDATA_SECTION_NODE, F_CHILDREN_HOOK } from "../../nodes/constants.ts";
 import { contentAttr, bool, nonNegativeLong, str } from "../reflect.ts";
-import { normalizeNewlines, positiveWithFallback, readNonNegativeLong, toUnsignedLong } from "./common.ts";
-import { formOwner, hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
-import { LabelsNodeList } from "./collections.ts";
-import { rangeText, setSelection } from "./HTMLInputElement.ts";
+import { installDefaults, normalizeNewlines, positiveWithFallback, readNonNegativeLong } from "./common.ts";
+import { hasDatalistAncestor, isActuallyDisabled } from "./form-associated.ts";
+import { labelsMember, type LabelsNodeList } from "./collections.ts";
+import { setSelection, textSelection } from "./selection.ts";
 import {
   installConstraintValidation,
   MSG_FILL_OUT,
@@ -47,7 +47,7 @@ function normalized(control: ControlState, raw: string): string {
 
 export class HTMLTextAreaElement extends HTMLElement {
   /** Value, checkedness, selection and UI state (./control-state.ts). */
-  [$control]: ControlState;
+  declare [$control]: ControlState;
   /** The custom validity error message; absent while it is the empty string. */
   declare [$customValidity]?: string;
   declare [$validity]?: ValidityState | null;
@@ -110,14 +110,7 @@ export class HTMLTextAreaElement extends HTMLElement {
     return this._apiValue().length;
   }
 
-  get form(): Element | null {
-    const owner = formOwner(this[$impl]);
-    return owner === null ? null : (owner.node as Element);
-  }
-
-  get labels(): LabelsNodeList {
-    return (this[$labels] ??= new LabelsNodeList(this[$impl]));
-  }
+  declare readonly labels: LabelsNodeList;
 
   declare autocomplete: string;
   declare cols: number;
@@ -138,63 +131,26 @@ export class HTMLTextAreaElement extends HTMLElement {
     return this._apiValue().length;
   }
 
-  get selectionStart(): number {
-    return Math.min(this[$control].selStart, this._selectionLength());
+  /** The selection APIs always apply to a textarea. */
+  _selectable(): boolean {
+    return true;
   }
 
-  set selectionStart(value: number) {
-    const start = toUnsignedLong(value);
-    setSelection(this, start, Math.max(start, this.selectionEnd), this[$control].selDir);
-  }
-
-  get selectionEnd(): number {
-    return Math.min(this[$control].selEnd, this._selectionLength());
-  }
-
-  set selectionEnd(value: number) {
-    setSelection(this, this.selectionStart, toUnsignedLong(value), this[$control].selDir);
-  }
-
-  get selectionDirection(): string {
-    return this[$control].selDir;
-  }
-
-  set selectionDirection(value: string) {
-    setSelection(this, this.selectionStart, this.selectionEnd, String(value));
-  }
-
-  setSelectionRange(start: number, end: number, direction?: string): void {
-    setSelection(
-      this,
-      toUnsignedLong(start),
-      toUnsignedLong(end),
-      direction === undefined ? "none" : String(direction),
-    );
-  }
+  // selectionStart, selectionEnd, selectionDirection, setSelectionRange() and setRangeText():
+  // the textSelection members shared with input (./selection.ts).
+  declare selectionStart: number;
+  declare selectionEnd: number;
+  declare selectionDirection: string;
+  declare setSelectionRange: (start: number, end: number, direction?: string) => void;
+  declare setRangeText: (replacement: string, start?: number, end?: number, selectionMode?: string) => void;
 
   select(): void {
     setSelection(this, 0, this._selectionLength(), "none");
   }
 
-  setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'setRangeText' on 'HTMLTextAreaElement': 1 argument required, but only 0 present.",
-      );
-    const result = rangeText(
-      this._apiValue(),
-      this[$control].selStart,
-      this[$control].selEnd,
-      String(replacement),
-      start,
-      end,
-      selectionMode,
-      arguments.length,
-    );
-    this[$impl].doc[$version]++;
-    this[$control].value = normalizeNewlines(result.value);
-    this[$control].dirtyValue = true;
-    setSelection(this, result.start, result.end, "none");
+  /** The value setRangeText() stores (https://html.spec.whatwg.org/#dom-textarea/input-setrangetext). */
+  _rangeTextValue(value: string): string {
+    return normalizeNewlines(value);
   }
 
   // --- constraint validation -----------------------------------------------------------------
@@ -263,6 +219,8 @@ export class HTMLTextAreaElement extends HTMLElement {
 
 export interface HTMLTextAreaElement extends ConstraintValidation {}
 installConstraintValidation(HTMLTextAreaElement);
+installDefaults(HTMLTextAreaElement, labelsMember);
+installDefaults(HTMLTextAreaElement, textSelection);
 
 str(HTMLTextAreaElement, "dirName=dirname name placeholder wrap");
 bool(HTMLTextAreaElement, "disabled readOnly=readonly required");

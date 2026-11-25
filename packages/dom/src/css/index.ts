@@ -1,6 +1,6 @@
 // Public CSSOM exports and the css area's registrations with other areas:
 // - src/html `styleSheetHooks` (<style>/<link> sheets),
-// - src/window `windowHooks.getComputedStyle` / `windowHooks.evaluateMediaQuery`,
+// - src/window `windowHooks.getComputedStyle` / `windowHooks.setComputedColorMode`,
 // - `styleSheets` / `adoptedStyleSheets` on Document and ShadowRoot
 //   (https://drafts.csswg.org/cssom/#extensions-to-the-document-or-shadow-root-interface).
 
@@ -18,7 +18,6 @@ import {
   setAdoptedStyleSheets,
 } from "./stylesheets.ts";
 import { getComputedStyle } from "./computed.ts";
-import { matchMediaText } from "./media.ts";
 import { installElementView, installHTMLElementView } from "./view.ts";
 import "./resize-observer.ts";
 import { HTMLElement as HTMLElementClass } from "../html/HTMLElement.ts";
@@ -60,7 +59,6 @@ styleSheetHooks.createSheet = createOwnerSheet;
 styleSheetHooks.removeSheet = removeOwnerSheet;
 styleSheetHooks.createLinkSheet = createLinkSheet;
 windowHooks.getComputedStyle = (element, pseudo) => getComputedStyle(element as Element, pseudo);
-windowHooks.evaluateMediaQuery = (query, env) => matchMediaText(query, env);
 windowHooks.setComputedColorMode = setComputedColorMode;
 
 installElementView(ElementClass);

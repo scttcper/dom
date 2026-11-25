@@ -8,8 +8,8 @@
 //     Document returns its Window (except for "load"), Window returns null.
 // Listener storage is in listeners.ts, the dispatch algorithm in dispatch.ts.
 
-import { exposeMembers } from "../webidl-runtime.ts";
-import { EF_DISPATCH, EF_INITIALIZED, Event, NONE, setTrusted } from "./Event.ts";
+import { argumentsRequired, exposeMembers } from "../webidl-runtime.ts";
+import { EF_DISPATCH, EF_INITIALIZED, Event, NONE, setToStringTag, setTrusted } from "./Event.ts";
 import type { AddEventListenerOptions, EventListenerOptions, EventListenerOrEventListenerObject } from "../webidl.ts";
 import { addEventListener, removeEventListener, type ListenerSlots } from "./listeners.ts";
 import { dispatch } from "./dispatch.ts";
@@ -34,11 +34,7 @@ export class EventTarget {
     callback: EventListenerOrEventListenerObject | null,
     options?: boolean | AddEventListenerOptions,
   ): void {
-    if (arguments.length < 2) {
-      throw new TypeError(
-        `Failed to execute 'addEventListener' on 'EventTarget': 2 arguments required, but only ${arguments.length} present.`,
-      );
-    }
+    if (arguments.length < 2) argumentsRequired("addEventListener", "EventTarget", 2, arguments.length);
     addEventListener(this, typeof type === "string" ? type : toDOMString(type), callback, options);
   }
 
@@ -48,11 +44,7 @@ export class EventTarget {
     callback: EventListenerOrEventListenerObject | null,
     options?: boolean | EventListenerOptions,
   ): void {
-    if (arguments.length < 2) {
-      throw new TypeError(
-        `Failed to execute 'removeEventListener' on 'EventTarget': 2 arguments required, but only ${arguments.length} present.`,
-      );
-    }
+    if (arguments.length < 2) argumentsRequired("removeEventListener", "EventTarget", 2, arguments.length);
     removeEventListener(this, typeof type === "string" ? type : toDOMString(type), callback, options);
   }
 
@@ -87,7 +79,7 @@ export class EventTarget {
   }
 }
 
-Object.defineProperty(EventTarget.prototype, Symbol.toStringTag, { value: "EventTarget", configurable: true });
+setToStringTag(EventTarget);
 
 // WebIDL: attributes and operations are enumerable prototype members.
 exposeMembers(EventTarget);

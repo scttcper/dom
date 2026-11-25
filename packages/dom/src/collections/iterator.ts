@@ -78,3 +78,31 @@ export const collectionForEach = {
     for (let k = 0; k < len; k++) if (k in o) callback.call(thisArg, o[k], k, o);
   },
 }.forEach;
+
+/** A WebIDL operation's property: writable, enumerable, configurable (https://webidl.spec.whatwg.org/#es-operations). */
+function operation(value: unknown): PropertyDescriptor {
+  return { value, writable: true, enumerable: true, configurable: true };
+}
+
+/**
+ * A collection interface's @@iterator (`values`, https://webidl.spec.whatwg.org/#es-iterator)
+ * and @@toStringTag (its class name). With `iterable`, also the forEach/entries/keys/values
+ * members of an indexed iterable (https://webidl.spec.whatwg.org/#es-iterable).
+ */
+export function defineCollectionIterator(
+  ctor: { prototype: object; name: string },
+  values: unknown,
+  iterable: boolean,
+): void {
+  const descriptors: PropertyDescriptorMap = iterable
+    ? {
+        forEach: operation(collectionForEach),
+        entries: operation(Array.prototype.entries),
+        keys: operation(Array.prototype.keys),
+        values: operation(values),
+      }
+    : {};
+  descriptors[Symbol.iterator] = { value: values, writable: true, configurable: true };
+  descriptors[Symbol.toStringTag] = { value: ctor.name, configurable: true };
+  Object.defineProperties(ctor.prototype, descriptors);
+}

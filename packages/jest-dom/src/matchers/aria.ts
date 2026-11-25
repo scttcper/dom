@@ -8,7 +8,7 @@
 
 import { getImplicitAriaRolesJestDom } from "@ctrl/dom/aria";
 import { computeAccessibleDescription, computeAccessibleName } from "../aria.ts";
-import { ELEMENT_ROLES } from "../element-roles.generated.ts";
+import { ELEMENT_ROLE_RUNS } from "../element-roles.generated.ts";
 import {
   checkHtmlElement,
   deprecate,
@@ -25,7 +25,7 @@ import { $impl } from "@ctrl/dom/internal";
 // Upstream builds ~112 CSS selectors from aria-query's elementRoles and calls
 // `element.matches(selector)` on each until one matches. @ctrl/dom elements use @ctrl/dom/aria's
 // `getImplicitAriaRolesJestDom` (the same rules over NodeImpl). Foreign elements (jsdom, in
-// oracle runs) use ELEMENT_ROLES: that same list precompiled from aria-query@5.3.2
+// oracle runs) use elementRoles(): that same list precompiled from aria-query@5.3.2
 // (scripts/gen-element-roles.ts) and evaluated with attribute reads.
 
 const HTML_NS = "http://www.w3.org/1999/xhtml";
@@ -39,10 +39,36 @@ function valueEquals(element: DOMNode, attribute: string, actual: string, expect
   return false;
 }
 
+/** [localName, [[attribute, "=value" | "+" (present) | "-" (absent)], ...], requiresTypeText, roles] */
+type ElementRoleEntry = [string, Array<[string, string]>, boolean, string[]];
+
+let elementRoleList: ElementRoleEntry[] | null = null;
+
+/** ELEMENT_ROLE_RUNS expanded, on first use. */
+function elementRoles(): ElementRoleEntry[] {
+  if (elementRoleList !== null) return elementRoleList;
+  elementRoleList = [];
+  for (const run of ELEMENT_ROLE_RUNS) {
+    const [role, ...entries] = run.split(" ");
+    for (const entry of entries) {
+      const typeText = entry.endsWith("{text}");
+      const [name, ...attrs] = (typeText ? entry.slice(0, -6) : entry).split("[");
+      const parsed = attrs.map((a): [string, string] => {
+        const eq = a.indexOf("=");
+        if (a[0] === "!") return [a.slice(1, -1), "-"];
+        return eq === -1 ? [a.slice(0, -1), "+"] : [a.slice(0, eq), a.slice(eq, -1)];
+      });
+      elementRoleList.push([name, parsed, typeText, [role]]);
+    }
+  }
+  return elementRoleList;
+}
+
 function getImplicitAriaRoles(element: DOMNode): string[] {
   const localName: string = element.localName;
-  for (let i = 0; i < ELEMENT_ROLES.length; i++) {
-    const [name, attrs, typeText, roles] = ELEMENT_ROLES[i];
+  const list = elementRoles();
+  for (let i = 0; i < list.length; i++) {
+    const [name, attrs, typeText, roles] = list[i];
     if (name !== localName) continue;
     if (typeText && element.type !== "text") continue;
     let ok = true;

@@ -18,13 +18,14 @@ import type { ClientRequest } from "node:http";
 import { Event } from "../events/Event.ts";
 import { EventTarget } from "../events/EventTarget.ts";
 import { fireAnEvent } from "../events/fire.ts";
-import { getEventHandler, setEventHandler } from "../events/handlers.ts";
+import { defineEventHandlers } from "../events/handlers.ts";
 import { hasAnyListener } from "../events/listeners.ts";
 import { Document } from "../nodes/Document.ts";
 import { parseDocument, parseXML, PARSERERROR_NS } from "../parser/index.ts";
 import { serializeChildren, serializeXML } from "../serializer/index.ts";
 import { currentWindowOrNull } from "./current.ts";
 import { eventInterface } from "./interfaces.ts";
+import { argumentsRequired } from "../webidl-runtime.ts";
 import type { Window } from "./Window.ts";
 import { $closed, $contentType, $impl, $isHTML, $url, $xhr } from "../keys.ts";
 
@@ -45,42 +46,46 @@ interface Body {
   length: number;
 }
 
+/**
+ * Fields are `declare`d: the constructor assigns each one (a class field would define it as
+ * `undefined` first).
+ */
 class XhrState {
-  window: Window | null;
-  state: number;
-  send: boolean;
-  sync: boolean;
-  method: string;
-  url: URL | null;
+  declare window: Window | null;
+  declare state: number;
+  declare send: boolean;
+  declare sync: boolean;
+  declare method: string;
+  declare url: URL | null;
   /** Author request headers by lowercase name: [name as first set, combined value]. */
-  headers: Map<string, [string, string]>;
-  timeout: number;
-  withCredentials: boolean;
-  upload: XMLHttpRequestUpload;
-  uploadComplete: boolean;
-  uploadListener: boolean;
+  declare headers: Map<string, [string, string]>;
+  declare timeout: number;
+  declare withCredentials: boolean;
+  declare upload: XMLHttpRequestUpload;
+  declare uploadComplete: boolean;
+  declare uploadListener: boolean;
   /** Request body bytes (upload progress). */
-  uploadTotal: number;
-  responseType: string;
-  overrideMime: string | null;
+  declare uploadTotal: number;
+  declare responseType: string;
+  declare overrideMime: string | null;
   /** The response is a network error (status 0, no headers, no body). */
-  error: boolean;
-  status: number;
-  statusText: string;
-  responseURL: string;
+  declare error: boolean;
+  declare status: number;
+  declare statusText: string;
+  declare responseURL: string;
   /** Raw response header list: [lowercase name, value] per field line. */
-  responseHeaders: Array<[string, string]>;
-  chunks: Buffer[];
-  received: number;
-  bytesCache: Uint8Array | null;
-  textCache: string | null;
+  declare responseHeaders: Array<[string, string]>;
+  declare chunks: Buffer[];
+  declare received: number;
+  declare bytesCache: Uint8Array | null;
+  declare textCache: string | null;
   /** responseType-specific response object; `undefined` until computed (null is a valid result). */
-  object: unknown;
-  generation: number;
-  request: ClientRequest | null;
-  timer: Task | null;
-  startedAt: number;
-  closeTask: Task | null;
+  declare object: unknown;
+  declare generation: number;
+  declare request: ClientRequest | null;
+  declare timer: Task | null;
+  declare startedAt: number;
+  declare closeTask: Task | null;
 
   constructor(window: Window | null, upload: XMLHttpRequestUpload) {
     this.window = window;
@@ -136,23 +141,8 @@ export class XMLHttpRequestUpload extends XMLHttpRequestEventTarget {
   }
 }
 
-function defineHandlers(proto: object, types: readonly string[]): void {
-  for (const type of types) {
-    Object.defineProperty(proto, `on${type}`, {
-      get(this: EventTarget) {
-        return getEventHandler(this, type);
-      },
-      set(this: EventTarget, value: unknown) {
-        setEventHandler(this, type, value);
-      },
-      enumerable: true,
-      configurable: true,
-    });
-  }
-}
-
 // https://xhr.spec.whatwg.org/#handler-xhr-onloadstart and siblings
-defineHandlers(XMLHttpRequestEventTarget.prototype, [
+defineEventHandlers(XMLHttpRequestEventTarget.prototype, [
   "loadstart",
   "progress",
   "abort",
@@ -184,8 +174,8 @@ const state = (xhr: XMLHttpRequest): XhrState => {
   return s;
 };
 
-const invalidState = (operation: string, message: string) =>
-  new DOMException(`Failed to ${operation} 'XMLHttpRequest': ${message}`, "InvalidStateError");
+const xhrError = (operation: string, message: string, name = "InvalidStateError") =>
+  new DOMException(`Failed to ${operation} 'XMLHttpRequest': ${message}`, name);
 
 /** https://xhr.spec.whatwg.org/#interface-xmlhttprequest */
 export class XMLHttpRequest extends XMLHttpRequestEventTarget {
@@ -217,33 +207,21 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   /** https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open */
   open(method: string, url: string, async?: boolean, username?: string | null, password?: string | null): void {
     const s = state(this);
-    if (arguments.length < 2) {
-      throw new TypeError(
-        `Failed to execute 'open' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`,
-      );
-    }
+    if (arguments.length < 2) argumentsRequired("open", "XMLHttpRequest", 2, arguments.length);
     // Step 2: the document must be fully active.
     if (s.window !== null && s.window[$closed])
-      throw invalidState("execute 'open' on", "The document is not fully active.");
+      throw xhrError("execute 'open' on", "The document is not fully active.");
     // Steps 3-5: method.
     method = String(method);
     if (!TOKEN.test(method))
-      throw new DOMException(
-        `Failed to execute 'open' on 'XMLHttpRequest': '${method}' is not a valid HTTP method.`,
-        "SyntaxError",
-      );
+      throw xhrError("execute 'open' on", `'${method}' is not a valid HTTP method.`, "SyntaxError");
     const upper = method.toUpperCase();
-    if (upper === "CONNECT" || upper === "TRACE" || upper === "TRACK") {
-      throw new DOMException(
-        `Failed to execute 'open' on 'XMLHttpRequest': '${method}' HTTP method is unsupported.`,
-        "SecurityError",
-      );
-    }
+    if (upper === "CONNECT" || upper === "TRACE" || upper === "TRACK")
+      throw xhrError("execute 'open' on", `'${method}' HTTP method is unsupported.`, "SecurityError");
     if (NORMALIZED_METHODS.has(upper)) method = upper;
     // Steps 6-8: URL, against the document's base URL.
     const parsed = URL.parse(String(url), s.window?.document.baseURI ?? undefined);
-    if (parsed === null)
-      throw new DOMException("Failed to execute 'open' on 'XMLHttpRequest': Invalid URL", "SyntaxError");
+    if (parsed === null) throw xhrError("execute 'open' on", "Invalid URL", "SyntaxError");
     // Steps 9-10.
     const asyncFlag = arguments.length < 3 ? true : !!async;
     if (parsed.host !== "") {
@@ -252,8 +230,9 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
     // Step 11: no synchronous requests with a timeout or responseType from a window.
     if (!asyncFlag && (s.timeout !== 0 || s.responseType !== "")) {
-      throw new DOMException(
-        "Failed to execute 'open' on 'XMLHttpRequest': Synchronous requests from a document must not set a timeout or responseType.",
+      throw xhrError(
+        "execute 'open' on",
+        "Synchronous requests from a document must not set a timeout or responseType.",
         "InvalidAccessError",
       );
     }
@@ -277,24 +256,22 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   /** https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader */
   setRequestHeader(name: string, value: string): void {
     const s = state(this);
-    if (arguments.length < 2) {
-      throw new TypeError(
-        `Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`,
-      );
-    }
+    if (arguments.length < 2) argumentsRequired("setRequestHeader", "XMLHttpRequest", 2, arguments.length);
     if (s.state !== OPENED || s.send)
-      throw invalidState("execute 'setRequestHeader' on", "The object's state must be OPENED.");
+      throw xhrError("execute 'setRequestHeader' on", "The object's state must be OPENED.");
     name = String(name);
     // Step 3: normalize (strip leading and trailing HTTP whitespace).
     value = String(value).replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, "");
     if (!TOKEN.test(name))
-      throw new DOMException(
-        `Failed to execute 'setRequestHeader' on 'XMLHttpRequest': '${name}' is not a valid HTTP header field name.`,
+      throw xhrError(
+        "execute 'setRequestHeader' on",
+        `'${name}' is not a valid HTTP header field name.`,
         "SyntaxError",
       );
     if (/[\0\r\n]/.test(value))
-      throw new DOMException(
-        `Failed to execute 'setRequestHeader' on 'XMLHttpRequest': '${value}' is not a valid HTTP header field value.`,
+      throw xhrError(
+        "execute 'setRequestHeader' on",
+        `'${value}' is not a valid HTTP header field value.`,
         "SyntaxError",
       );
     // Step 5: forbidden request headers are ignored.
@@ -312,8 +289,9 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   set timeout(value: number) {
     const s = state(this);
     if (s.sync && s.state !== UNSENT) {
-      throw new DOMException(
-        "Failed to set the 'timeout' property on 'XMLHttpRequest': Timeouts cannot be set for synchronous requests made from a document.",
+      throw xhrError(
+        "set the 'timeout' property on",
+        "Timeouts cannot be set for synchronous requests made from a document.",
         "InvalidAccessError",
       );
     }
@@ -329,7 +307,7 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   set withCredentials(value: boolean) {
     const s = state(this);
     if ((s.state !== UNSENT && s.state !== OPENED) || s.send) {
-      throw invalidState(
+      throw xhrError(
         "set the 'withCredentials' property on",
         "The value may only be set if the object's state is UNSENT or OPENED.",
       );
@@ -346,12 +324,13 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   send(body?: unknown): void {
     const s = state(this);
     // Steps 1-2.
-    if (s.state !== OPENED || s.send) throw invalidState("execute 'send' on", "The object's state must be OPENED.");
+    if (s.state !== OPENED || s.send) throw xhrError("execute 'send' on", "The object's state must be OPENED.");
     if (s.window !== null && s.window[$closed])
-      throw invalidState("execute 'send' on", "The document is not fully active.");
+      throw xhrError("execute 'send' on", "The document is not fully active.");
     if (s.sync) {
-      throw new DOMException(
-        "Failed to execute 'send' on 'XMLHttpRequest': Synchronous XMLHttpRequest is not supported by @ctrl/dom (docs/deviations.md).",
+      throw xhrError(
+        "execute 'send' on",
+        "Synchronous XMLHttpRequest is not supported by @ctrl/dom (docs/deviations.md).",
         "NotSupportedError",
       );
     }
@@ -448,7 +427,7 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   overrideMimeType(mime: string): void {
     const s = state(this);
     if (s.state === LOADING || s.state === DONE)
-      throw invalidState(
+      throw xhrError(
         "execute 'overrideMimeType' on",
         "MimeType cannot be overridden when the state is LOADING or DONE.",
       );
@@ -465,13 +444,14 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
     // Not a member of the XMLHttpRequestResponseType enum: ignored (WebIDL).
     if (!RESPONSE_TYPES.has(value)) return;
     if (s.state === LOADING || s.state === DONE)
-      throw invalidState(
+      throw xhrError(
         "set the 'responseType' property on",
         "The response type cannot be set if the object's state is LOADING or DONE.",
       );
     if (s.sync && s.state !== UNSENT) {
-      throw new DOMException(
-        "Failed to set the 'responseType' property on 'XMLHttpRequest': The response type cannot be changed for synchronous requests made from a document.",
+      throw xhrError(
+        "set the 'responseType' property on",
+        "The response type cannot be changed for synchronous requests made from a document.",
         "InvalidAccessError",
       );
     }
@@ -501,7 +481,7 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   get responseText(): string {
     const s = state(this);
     if (s.responseType !== "" && s.responseType !== "text") {
-      throw invalidState(
+      throw xhrError(
         "read the 'responseText' property from",
         `The value is only accessible if the object's 'responseType' is '' or 'text' (was '${s.responseType}').`,
       );
@@ -513,7 +493,7 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
   get responseXML(): Document | null {
     const s = state(this);
     if (s.responseType !== "" && s.responseType !== "document") {
-      throw invalidState(
+      throw xhrError(
         "read the 'responseXML' property from",
         `The value is only accessible if the object's 'responseType' is '' or 'document' (was '${s.responseType}').`,
       );
@@ -525,7 +505,7 @@ export class XMLHttpRequest extends XMLHttpRequestEventTarget {
 }
 
 // https://xhr.spec.whatwg.org/#handler-xhr-onreadystatechange
-defineHandlers(XMLHttpRequest.prototype, ["readystatechange"]);
+defineEventHandlers(XMLHttpRequest.prototype, ["readystatechange"]);
 for (const [name, value] of [
   ["UNSENT", UNSENT],
   ["OPENED", OPENED],

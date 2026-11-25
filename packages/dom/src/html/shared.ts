@@ -2,9 +2,31 @@
 
 import { DOCUMENT_NODE, ELEMENT_NODE, F_CONTENTEDITABLE_ATTR, HTML_NS } from "../nodes/constants.ts";
 import type { NodeImpl } from "../nodes/NodeImpl.ts";
+import type { Element } from "../nodes/Element.ts";
+import { isShadowRootImpl } from "../nodes/slots.ts";
 import { contentAttr } from "./reflect.ts";
 import { asciiLowercase } from "../nodes/attributes.ts";
 import { isDisplayNoneInclusive } from "../css/internal.ts";
+import { $host, $impl } from "../keys.ts";
+
+// --- shadow-including tree ----------------------------------------------------------------
+
+/** The parent, or the host of a shadow root: the shadow-including parent. */
+export function parentOrHost(n: NodeImpl): NodeImpl | null {
+  const p = n.parent;
+  if (p !== null) return p;
+  if (isShadowRootImpl(n)) {
+    const host = (n.node as unknown as { [$host]: Element | null })[$host];
+    return host === null ? null : host[$impl];
+  }
+  return null;
+}
+
+/** https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor */
+export function isShadowIncludingInclusiveAncestor(ancestor: NodeImpl, node: NodeImpl): boolean {
+  for (let n: NodeImpl | null = node; n !== null; n = parentOrHost(n)) if (n === ancestor) return true;
+  return false;
+}
 
 // --- rendering ----------------------------------------------------------------------------
 

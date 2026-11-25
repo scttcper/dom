@@ -11,11 +11,11 @@ import {FOCUSABLE_SELECTOR} from './selector.ts'
 
 /** `Number(el.getAttribute('tabindex'))`, off the wrapper on @ctrl/dom. */
 function tabIndexAttr(el: Element): number {
-  const impl = implAttr === undefined ? null : implOf(el)
+  const impl = implOf(el)
   if (impl === null) return Number(el.getAttribute('tabindex'))
   return (impl.flags & F_TABINDEX_ATTR) === 0
     ? 0
-    : Number(implAttr!(impl, 'tabindex'))
+    : Number(implAttr(impl, 'tabindex'))
 }
 
 /** Upstream's sort comparator, over the tabindex values. */

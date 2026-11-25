@@ -32,7 +32,7 @@ const assignedSlotOf = new WeakMap<NodeImpl, NodeImpl>();
 // A manual assignment survives detachment so that moving the node back restores it.
 // Either endpoint can outlive the other, even when they belong to different documents.
 class ManualAssignment extends WeakRef<NodeImpl> {
-  slot: WeakRef<NodeImpl>;
+  declare slot: WeakRef<NodeImpl>;
   constructor(node: NodeImpl, slot: WeakRef<NodeImpl>) {
     super(node);
     this.slot = slot;

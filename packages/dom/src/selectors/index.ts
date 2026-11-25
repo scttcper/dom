@@ -325,11 +325,11 @@ const NO_OUT: NodeImpl[] = [];
 // document's derived cache under weak root keys. Removing a subtree drops the cache.
 
 class ResultEntry {
-  version: number;
+  declare version: number;
   /** All matches (querySelectorAll), or null if only `first` is known. */
-  all: NodeImpl[] | null;
+  declare all: NodeImpl[] | null;
   /** First match (querySelector); undefined = unknown. */
-  first: NodeImpl | null | undefined;
+  declare first: NodeImpl | null | undefined;
 
   constructor(version: number) {
     this.version = version;
@@ -348,8 +348,8 @@ class ResultEntry {
 // version and kept in the document's derived caches, which a removal drops.
 
 class TypeList {
-  version: number;
-  elements: NodeImpl[];
+  declare version: number;
+  declare elements: NodeImpl[];
   constructor(version: number, elements: NodeImpl[]) {
     this.version = version;
     this.elements = elements;

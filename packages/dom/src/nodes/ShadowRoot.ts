@@ -10,6 +10,7 @@ import type { Element } from "./Element.ts";
 import type { NodeImpl } from "./NodeImpl.ts";
 import { DocumentFragment } from "./DocumentFragment.ts";
 import { treeRoot } from "./traverse.ts";
+import { setToStringTag } from "../events/Event.ts";
 import { parseFragment, setHTMLUnsafe } from "../parser/index.ts";
 import { getHTML, serializeChildren, type GetHTMLOptions } from "../serializer/index.ts";
 import {
@@ -41,15 +42,15 @@ export function setShadowHostCustomStateCheck(fn: (host: Element) => boolean): v
 
 export class ShadowRoot extends DocumentFragment {
   /** https://dom.spec.whatwg.org/#shadowroot-mode */
-  [$mode]: ShadowRootMode;
-  [$delegatesFocus]: boolean;
-  [$slotAssignment]: SlotAssignmentMode;
-  [$clonable]: boolean;
-  [$serializable]: boolean;
+  declare [$mode]: ShadowRootMode;
+  declare [$delegatesFocus]: boolean;
+  declare [$slotAssignment]: SlotAssignmentMode;
+  declare [$clonable]: boolean;
+  declare [$serializable]: boolean;
   /** https://dom.spec.whatwg.org/#shadowroot-declarative */
-  [$declarative]: boolean;
+  declare [$declarative]: boolean;
   /** https://dom.spec.whatwg.org/#shadowroot-available-to-element-internals */
-  [$availableToElementInternals]: boolean;
+  declare [$availableToElementInternals]: boolean;
 
   /** @internal Use Element.attachShadow. */
   constructor(
@@ -148,4 +149,4 @@ export class ShadowRoot extends DocumentFragment {
   }
 }
 
-Object.defineProperty(ShadowRoot.prototype, Symbol.toStringTag, { value: "ShadowRoot", configurable: true });
+setToStringTag(ShadowRoot);

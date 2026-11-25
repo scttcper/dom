@@ -25,6 +25,7 @@ import { isInclusiveAncestor, nextElementInTree, treeRoot } from "../../nodes/tr
 import { connectingRoot } from "../../nodes/tree.ts";
 import {
   fireEvent,
+  installDefaults,
   readNonNegativeLong,
   reflectActionURL,
   stripNewlines,
@@ -104,9 +105,7 @@ import {
 } from "./form-associated.ts";
 import { LabelsNodeList } from "./collections.ts";
 import { FileList, createFileList } from "../../window/FileList.ts";
-import { queueElementTask } from "../events.ts";
 import { popoverTargetAttributeActivation } from "../invokers.ts";
-import type { EventTarget } from "../../events/EventTarget.ts";
 import {
   $control,
   $customValidity,
@@ -120,6 +119,7 @@ import {
   $version,
 } from "../../keys.ts";
 import { ControlState } from "./control-state.ts";
+import { setSelection, textSelection } from "./selection.ts";
 
 /** Accept a FileList or any array-like of File (user-event and tests build lists by hand). */
 function toFileList(value: unknown): FileList {
@@ -407,7 +407,7 @@ function roundForStep(x: number, step: number, base: number): number {
 
 export class HTMLInputElement extends HTMLElement {
   /** Value, checkedness, selection and UI state (./control-state.ts). */
-  [$control]: ControlState;
+  declare [$control]: ControlState;
   /** The custom validity error message; absent while it is the empty string. */
   declare [$customValidity]?: string;
   declare [$validity]?: ValidityState | null;
@@ -686,58 +686,18 @@ export class HTMLInputElement extends HTMLElement {
     return this.value.length;
   }
 
-  _assertSelectable(member: string): void {
-    if (!supportsSelectionType(inputType(this[$impl]))) {
-      throw new DOMException(
-        `Failed to ${member.endsWith(")") ? "execute" : "set"} '${member.replace("()", "")}' on 'HTMLInputElement': The input element's type ('${this.type}') does not support selection.`,
-        "InvalidStateError",
-      );
-    }
+  /** The selection APIs apply (https://html.spec.whatwg.org/#do-not-apply). */
+  _selectable(): boolean {
+    return supportsSelectionType(inputType(this[$impl]));
   }
 
-  /** https://html.spec.whatwg.org/#dom-textarea/input-selectionstart */
-  get selectionStart(): number | null {
-    if (!supportsSelectionType(inputType(this[$impl]))) return null;
-    return Math.min(this[$control].selStart, this._selectionLength());
-  }
-
-  set selectionStart(value: number | null) {
-    this._assertSelectable("selectionStart");
-    const start = toUnsignedLong(value);
-    const end = Math.max(start, this.selectionEnd!);
-    setSelection(this, start, end, this[$control].selDir);
-  }
-
-  get selectionEnd(): number | null {
-    if (!supportsSelectionType(inputType(this[$impl]))) return null;
-    return Math.min(this[$control].selEnd, this._selectionLength());
-  }
-
-  set selectionEnd(value: number | null) {
-    this._assertSelectable("selectionEnd");
-    setSelection(this, this.selectionStart!, toUnsignedLong(value), this[$control].selDir);
-  }
-
-  get selectionDirection(): string | null {
-    if (!supportsSelectionType(inputType(this[$impl]))) return null;
-    return this[$control].selDir;
-  }
-
-  set selectionDirection(value: string | null) {
-    this._assertSelectable("selectionDirection");
-    setSelection(this, this.selectionStart!, this.selectionEnd!, String(value));
-  }
-
-  /** https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange */
-  setSelectionRange(start: number, end: number, direction?: string): void {
-    this._assertSelectable("setSelectionRange()");
-    setSelection(
-      this,
-      toUnsignedLong(start),
-      toUnsignedLong(end),
-      direction === undefined ? "none" : String(direction),
-    );
-  }
+  // selectionStart, selectionEnd, selectionDirection, setSelectionRange() and setRangeText():
+  // textSelection (./selection.ts), shared with textarea.
+  declare selectionStart: number | null;
+  declare selectionEnd: number | null;
+  declare selectionDirection: string | null;
+  declare setSelectionRange: (start: number, end: number, direction?: string) => void;
+  declare setRangeText: (replacement: string, start?: number, end?: number, selectionMode?: string) => void;
 
   /** https://html.spec.whatwg.org/#dom-textarea/input-select */
   select(): void {
@@ -747,29 +707,9 @@ export class HTMLInputElement extends HTMLElement {
     setSelection(this, 0, this._selectionLength(), "none");
   }
 
-  /** https://html.spec.whatwg.org/#dom-textarea/input-setrangetext */
-  setRangeText(replacement: string, start?: number, end?: number, selectionMode?: string): void {
-    if (arguments.length === 0)
-      throw new TypeError(
-        "Failed to execute 'setRangeText' on 'HTMLInputElement': 1 argument required, but only 0 present.",
-      );
-    this._assertSelectable("setRangeText()");
-    const result = rangeText(
-      this.value,
-      this[$control].selStart,
-      this[$control].selEnd,
-      String(replacement),
-      start,
-      end,
-      selectionMode,
-      arguments.length,
-    );
-    const type = inputType(this[$impl]);
-    this[$impl].doc[$version]++;
-    this[$control].value = sanitizeValue(type, result.value, this[$impl]);
-    this[$control].dirtyValue = true;
-    this[$control].uiValue = null;
-    setSelection(this, result.start, result.end, "none");
+  /** The value setRangeText() stores (https://html.spec.whatwg.org/#dom-textarea/input-setrangetext). */
+  _rangeTextValue(value: string): string {
+    return sanitizeValue(inputType(this[$impl]), value, this[$impl]);
   }
 
   // --- reflected attributes (installed below with src/html/reflect.ts) ------------------------
@@ -837,12 +777,6 @@ export class HTMLInputElement extends HTMLElement {
     if (id === null) return null;
     const target = elementByIdInTree(impl, id);
     return target !== null && target.tag === T.datalist ? (target.node as Element) : null;
-  }
-
-  /** https://html.spec.whatwg.org/#dom-fae-form */
-  get form(): Element | null {
-    const owner = formOwner(this[$impl]);
-    return owner === null ? null : (owner.node as Element);
   }
 
   /** https://html.spec.whatwg.org/#dom-lfe-labels */
@@ -1235,6 +1169,7 @@ export class HTMLInputElement extends HTMLElement {
 
 export interface HTMLInputElement extends ConstraintValidation {}
 installConstraintValidation(HTMLInputElement);
+installDefaults(HTMLInputElement, textSelection);
 
 str(
   HTMLInputElement,
@@ -1278,98 +1213,6 @@ function compilePattern(pattern: string): RegExp | null {
   if (patternCache.size > 256) patternCache.clear();
   patternCache.set(pattern, re);
   return re;
-}
-
-// --- selection helpers (shared with textarea) ---------------------------------------------------
-
-interface SelectionHost {
-  [$control]: ControlState;
-  _selectionLength(): number;
-}
-
-/**
- * https://html.spec.whatwg.org/#set-the-selection-range — when the selection changed, queue a
- * task to fire a bubbling `select` event at the element.
- */
-export function setSelection(el: SelectionHost, start: number, end: number, direction: string): void {
-  const len = el._selectionLength();
-  if (end > len) end = len;
-  if (start > end) start = end;
-  const dir = direction === "forward" || direction === "backward" ? direction : "none";
-  const changed =
-    start !== Math.min(el[$control].selStart, len) ||
-    end !== Math.min(el[$control].selEnd, len) ||
-    dir !== el[$control].selDir;
-  el[$control].selStart = start;
-  el[$control].selEnd = end;
-  el[$control].selDir = dir;
-  if (changed) {
-    const target = el as unknown as EventTarget;
-    queueElementTask(target, () => fireEvent(target, "select", true, false));
-  }
-}
-
-/** The setRangeText() algorithm: https://html.spec.whatwg.org/#dom-textarea/input-setrangetext */
-export function rangeText(
-  value: string,
-  selStart: number,
-  selEnd: number,
-  replacement: string,
-  startArg: number | undefined,
-  endArg: number | undefined,
-  modeArg: string | undefined,
-  argc: number,
-): { value: string; start: number; end: number } {
-  const len = value.length;
-  selStart = Math.min(selStart, len);
-  selEnd = Math.min(selEnd, len);
-  let start: number;
-  let end: number;
-  if (argc < 2) {
-    start = selStart;
-    end = selEnd;
-  } else {
-    start = toUnsignedLong(startArg);
-    end = toUnsignedLong(endArg);
-  }
-  if (start > end) {
-    throw new DOMException(
-      `Failed to execute 'setRangeText': The provided start value (${start}) is larger than the provided end value (${end}).`,
-      "IndexSizeError",
-    );
-  }
-  if (start > len) start = len;
-  if (end > len) end = len;
-  const mode = modeArg === undefined ? "preserve" : String(modeArg);
-  if (mode !== "select" && mode !== "start" && mode !== "end" && mode !== "preserve") {
-    throw new TypeError(
-      `Failed to execute 'setRangeText': The provided value '${mode}' is not a valid enum value of type SelectionMode.`,
-    );
-  }
-  const newValue = value.slice(0, start) + replacement + value.slice(end);
-  const newEnd = start + replacement.length;
-  let ns = selStart;
-  let ne = selEnd;
-  switch (mode) {
-    case "select":
-      ns = start;
-      ne = newEnd;
-      break;
-    case "start":
-      ns = ne = start;
-      break;
-    case "end":
-      ns = ne = newEnd;
-      break;
-    default: {
-      const delta = replacement.length - (end - start);
-      if (ns > end) ns += delta;
-      else if (ns > start) ns = start;
-      if (ne > end) ne += delta;
-      else if (ne > start) ne = newEnd;
-    }
-  }
-  return { value: newValue, start: ns, end: ne };
 }
 
 // --- radio button groups -----------------------------------------------------------------------

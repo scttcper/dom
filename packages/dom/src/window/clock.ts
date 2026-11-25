@@ -45,26 +45,29 @@ const getActiveResourcesInfo = process.getActiveResourcesInfo.bind(process);
 /** On the setTimeout/setInterval installClock puts on a global: its clock. Copies of the functions' own properties keep it. */
 const $clock = Symbol("ctrl-dom.clock");
 
-/** One pending timer. */
+/**
+ * One pending timer. Fields are `declare`d: the constructor assigns each one (a class field would
+ * define it as `undefined` first).
+ */
 class TimerRecord {
-  id: number;
-  due: number;
-  seq: number;
-  delay: number;
-  repeat: boolean;
-  callback: Callback;
-  args: unknown[];
-  ref: boolean;
+  declare id: number;
+  declare due: number;
+  declare seq: number;
+  declare delay: number;
+  declare repeat: boolean;
+  declare callback: Callback;
+  declare args: unknown[];
+  declare ref: boolean;
   /** Index in the heap, -1 when not scheduled (fired one-shot, cleared, real-time track). */
-  index: number;
-  clock: VirtualClock;
-  handle: VirtualTimeout;
+  declare index: number;
+  declare clock: VirtualClock;
+  declare handle: VirtualTimeout;
   /** Real host timer while on the real-time track (unref'd while skipping), else null. */
-  real: ReturnType<typeof setTimeout> | null;
+  declare real: ReturnType<typeof setTimeout> | null;
   /** realNow() at which `real` fires. */
-  realDue: number;
+  declare realDue: number;
   /** The async context in which this timer was scheduled. */
-  context: AsyncResource;
+  declare context: AsyncResource;
 
   constructor(
     clock: VirtualClock,
@@ -187,38 +190,39 @@ export interface VirtualClockOptions {
 
 /**
  * Timers on a min-heap, a monotonic `now()` (real time + skipped time), and the idle driver that
- * skips. One clock per window/test file; dispose() drops every pending timer.
+ * skips. One clock per window/test file; dispose() drops every pending timer. The `declare`d
+ * fields are assigned by the constructor.
  */
 export class VirtualClock {
   private fired: FiredTimers | null = null;
   /** ms added to real time by skipping. */
-  skipped: number;
+  declare skipped: number;
   /** Date.now() - performance.now() when the clock was created (epoch of now() = 0). */
-  epochOffset: number;
-  skip: boolean;
-  heap: TimerRecord[];
+  declare epochOffset: number;
+  declare skip: boolean;
+  declare heap: TimerRecord[];
   private indexed: Map<number, TimerRecord> | null = null;
-  nextId: number;
-  seq: number;
-  refCount: number;
-  hostTimer: ReturnType<typeof setTimeout> | null;
-  hostDue: number;
+  declare nextId: number;
+  declare seq: number;
+  declare refCount: number;
+  declare hostTimer: ReturnType<typeof setTimeout> | null;
+  declare hostDue: number;
   /** Whether hostTimer is ref'd (a new host timer starts ref'd), so updateHostRef calls Node only on a change. */
-  hostRefd: boolean;
-  continuation: boolean;
-  driverScheduled: boolean;
+  declare hostRefd: boolean;
+  declare continuation: boolean;
+  declare driverScheduled: boolean;
   /** The driver's next turn is a queued immediate (not the 1 ms timer it waits on during I/O). */
-  driverImmediate: boolean;
-  idleTurns: number;
-  disposed: boolean;
+  declare driverImmediate: boolean;
+  declare idleTurns: number;
+  declare disposed: boolean;
   /**
    * The I/O resource types active when the clock was created (stdio, the runner's IPC channel)
    * and, at the same index in ioBaseline, how many of each: what busy() compares against.
    */
-  ioTypes: string[];
-  ioBaseline: number[];
+  declare ioTypes: string[];
+  declare ioBaseline: number[];
   /** busy()'s per-probe counts by ioTypes index, reused. */
-  ioCounts: number[];
+  declare ioCounts: number[];
 
   constructor(options: VirtualClockOptions = {}) {
     this.skipped = 0;

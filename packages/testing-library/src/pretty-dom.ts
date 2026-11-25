@@ -140,43 +140,19 @@ const ANSI_STYLES: Record<string, readonly [number, number]> = {
   inverse: [7, 27],
   hidden: [8, 28],
   strikethrough: [9, 29],
-  black: [30, 39],
-  red: [31, 39],
-  green: [32, 39],
-  yellow: [33, 39],
-  blue: [34, 39],
-  magenta: [35, 39],
-  cyan: [36, 39],
-  white: [37, 39],
-  blackBright: [90, 39],
-  redBright: [91, 39],
-  greenBright: [92, 39],
-  yellowBright: [93, 39],
-  blueBright: [94, 39],
-  magentaBright: [95, 39],
-  cyanBright: [96, 39],
-  whiteBright: [97, 39],
   gray: [90, 39],
   grey: [90, 39],
-  bgBlack: [40, 49],
-  bgRed: [41, 49],
-  bgGreen: [42, 49],
-  bgYellow: [43, 49],
-  bgBlue: [44, 49],
-  bgMagenta: [45, 49],
-  bgCyan: [46, 49],
-  bgWhite: [47, 49],
-  bgBlackBright: [100, 49],
-  bgRedBright: [101, 49],
-  bgGreenBright: [102, 49],
-  bgYellowBright: [103, 49],
-  bgBlueBright: [104, 49],
-  bgMagentaBright: [105, 49],
-  bgCyanBright: [106, 49],
-  bgWhiteBright: [107, 49],
   bgGray: [100, 49],
   bgGrey: [100, 49],
 };
+// black..white: 30-37 (bright 90-97), close 39; their bg* forms: 40-47 (bright 100-107), close 49.
+for (const [i, name] of ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"].entries()) {
+  const bg = `bg${name[0].toUpperCase()}${name.slice(1)}`;
+  ANSI_STYLES[name] = [30 + i, 39];
+  ANSI_STYLES[`${name}Bright`] = [90 + i, 39];
+  ANSI_STYLES[bg] = [40 + i, 49];
+  ANSI_STYLES[`${bg}Bright`] = [100 + i, 49];
+}
 
 const DEFAULT_THEME: Record<keyof Colors, string> = {
   comment: "gray",
@@ -293,22 +269,42 @@ function printProps(impl: NodeImpl, config: PrintConfig, indentation: string): s
     props.set(attrs[i].name, attrs[i].value);
   }
   keys.sort();
-  const colors = config.colors;
   let out = "";
   for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    out +=
-      config.spacingInner +
-      indentation +
-      colors.prop.open +
-      key +
-      colors.prop.close +
-      "=" +
-      colors.value.open +
-      printString(props.get(key)!, config) +
-      colors.value.close;
+    out += printProp(keys[i], printString(props.get(keys[i])!, config), config, indentation);
   }
   return out;
+}
+
+// pretty-format's markup.ts pieces, shared by the three printers below.
+
+/** One ` key=value` of pretty-format's printProps, `printed` being the printed value. */
+function printProp(key: string, printed: string, config: PrintConfig, indentation: string): string {
+  const colors = config.colors;
+  return (
+    config.spacingInner +
+    indentation +
+    colors.prop.open +
+    key +
+    colors.prop.close +
+    "=" +
+    colors.value.open +
+    printed +
+    colors.value.close
+  );
+}
+
+function printText(text: string, config: PrintConfig): string {
+  return config.colors.content.open + escapeHTML(text) + config.colors.content.close;
+}
+
+function printComment(comment: string, config: PrintConfig): string {
+  return config.colors.comment.open + "<!--" + escapeHTML(comment) + "-->" + config.colors.comment.close;
+}
+
+function printElementAsLeaf(type: string, config: PrintConfig): string {
+  const tagColor = config.colors.tag;
+  return tagColor.open + "<" + type + tagColor.close + " …" + tagColor.open + " />" + tagColor.close;
 }
 
 function isNoiseAttribute(impl: NodeImpl, name: string): boolean {
@@ -361,18 +357,11 @@ function printNode(impl: NodeImpl, config: PrintConfig, indentation: string, dep
       config.compact && impl.data.length > COMPACT_MAX_TEXT
         ? impl.data.slice(0, COMPACT_MAX_TEXT - 1) + "…"
         : impl.data;
-    return config.colors.content.open + escapeHTML(data) + config.colors.content.close;
+    return printText(data, config);
   }
-  if (impl.type === COMMENT_NODE) {
-    const commentColor = config.colors.comment;
-    return commentColor.open + "<!--" + escapeHTML(impl.data) + "-->" + commentColor.close;
-  }
+  if (impl.type === COMMENT_NODE) return printComment(impl.data, config);
   const type = impl.type === DOCUMENT_FRAGMENT_NODE ? "DocumentFragment" : tagNameLower(impl);
-  const tagColor = config.colors.tag;
-
-  if (++depth > config.maxDepth) {
-    return tagColor.open + "<" + type + tagColor.close + " …" + tagColor.open + " />" + tagColor.close;
-  }
+  if (++depth > config.maxDepth) return printElementAsLeaf(type, config);
 
   const childIndentation = indentation + config.indent;
   const printedProps = impl.type === DOCUMENT_FRAGMENT_NODE ? "" : printProps(impl, config, childIndentation);
@@ -392,33 +381,18 @@ function printForeignNode(
   depth: number,
 ): string {
   if (!foreignHandles(node)) throw DELEGATE;
-  if (node.nodeType === TEXT_NODE)
-    return config.colors.content.open + escapeHTML(node.data) + config.colors.content.close;
-  if (node.nodeType === COMMENT_NODE) {
-    return config.colors.comment.open + "<!--" + escapeHTML(node.data) + "-->" + config.colors.comment.close;
-  }
+  if (node.nodeType === TEXT_NODE) return printText(node.data, config);
+  if (node.nodeType === COMMENT_NODE) return printComment(node.data, config);
   const isFragment = node.nodeType === DOCUMENT_FRAGMENT_NODE;
   const type = isFragment ? "DocumentFragment" : node.tagName.toLowerCase();
-  const tagColor = config.colors.tag;
-  if (++depth > config.maxDepth) {
-    return tagColor.open + "<" + type + tagColor.close + " …" + tagColor.open + " />" + tagColor.close;
-  }
+  if (++depth > config.maxDepth) return printElementAsLeaf(type, config);
   const childIndentation = indentation + config.indent;
   let printedProps = "";
   if (!isFragment) {
     const attrs = Array.from(node.attributes as ArrayLike<{ name: string; value: string }>);
     attrs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     for (const { name, value } of attrs) {
-      printedProps +=
-        config.spacingInner +
-        childIndentation +
-        config.colors.prop.open +
-        name +
-        config.colors.prop.close +
-        "=" +
-        config.colors.value.open +
-        printString(value, config) +
-        config.colors.value.close;
+      printedProps += printProp(name, printString(value, config), config, childIndentation);
     }
   }
   let printedChildren = "";
@@ -648,7 +622,6 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
     printer: any,
   ): string => {
     const indentationNext = indentation + config.indent;
-    const colors = config.colors;
     return keys
       .map((key) => {
         const value = props[key];
@@ -659,22 +632,10 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
           }
           printed = "{" + printed + "}";
         }
-        return (
-          config.spacingInner +
-          indentation +
-          colors.prop.open +
-          key +
-          colors.prop.close +
-          "=" +
-          colors.value.open +
-          printed +
-          colors.value.close
-        );
+        return printProp(key, printed, config, indentation);
       })
       .join("");
   };
-  const printText = (text: string, config: any) =>
-    config.colors.content.open + escapeHTML(text) + config.colors.content.close;
   const printChildrenPF = (
     children: any[],
     config: any,
@@ -708,16 +669,10 @@ function createDOMElementFilter(filterNode: (node: any) => boolean): any {
     test: (val: any) => (val?.constructor?.name || isCustomElement(val)) && testNode(val),
     serialize: (node: any, config: any, indentation: string, depth: number, refs: any, printer: any) => {
       if (node.nodeType === TEXT_NODE) return printText(node.data, config);
-      if (node.nodeType === COMMENT_NODE) {
-        const commentColor = config.colors.comment;
-        return commentColor.open + "<!--" + escapeHTML(node.data) + "-->" + commentColor.close;
-      }
+      if (node.nodeType === COMMENT_NODE) return printComment(node.data, config);
       const isFragment = node.nodeType === DOCUMENT_FRAGMENT_NODE;
       const type = isFragment ? `DocumentFragment` : node.tagName.toLowerCase();
-      if (++depth > config.maxDepth) {
-        const tagColor = config.colors.tag;
-        return tagColor.open + "<" + type + tagColor.close + " …" + tagColor.open + " />" + tagColor.close;
-      }
+      if (++depth > config.maxDepth) return printElementAsLeaf(type, config);
       return printElement(
         type,
         printPropsPF(

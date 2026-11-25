@@ -32,12 +32,12 @@ import { UPPER_TAG_NAMES } from "./tags.ts";
 import type { Document } from "./Document.ts";
 import type { Element } from "./Element.ts";
 import { NodeImpl } from "./NodeImpl.ts";
-import { isInclusiveAncestor, nextInTree, relativeTreePosition, treeRoot } from "./traverse.ts";
+import { isInclusiveAncestor, nextInTree, nextSkippingChildren, relativeTreePosition, treeRoot } from "./traverse.ts";
 import { preInsert, preRemove, replace, replaceAll } from "./tree.ts";
 import { cloneNode, isEqualNode } from "./clone.ts";
 import { NodeList } from "../collections/NodeList.ts";
 import type { GetRootNodeOptions } from "../webidl.ts";
-import type { Event } from "../events/Event.ts";
+import { exposeConstants, type Event } from "../events/Event.ts";
 import { remove } from "./tree.ts";
 import { replaceData } from "./character-data.ts";
 import { liveRangeCount, rangesNormalizeMerge } from "../traversal/live.ts";
@@ -87,7 +87,7 @@ export abstract class Node extends EventTarget {
   declare readonly DOCUMENT_POSITION_CONTAINED_BY: number;
   declare readonly DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: number;
 
-  [$impl]: NodeImpl;
+  declare [$impl]: NodeImpl;
   /** The live childNodes list, added on first access (see Element's lazily added fields). */
   declare [$childNodes]?: NodeList | null;
 
@@ -286,7 +286,7 @@ export abstract class Node extends EventTarget {
       // Step 1-2: drop empty exclusive Text nodes.
       let length = n.data.length;
       if (length === 0) {
-        const after = nextSkippingSelf(n, root);
+        const after = nextSkippingChildren(n, root);
         remove(n, false);
         n = after;
         continue;
@@ -439,24 +439,7 @@ export abstract class Node extends EventTarget {
 }
 
 // https://webidl.spec.whatwg.org/#es-constants — constants live on the interface object AND its prototype.
-for (const key of Object.getOwnPropertyNames(Node)) {
-  if (/^[A-Z_]+$/.test(key)) {
-    Object.defineProperty(Node.prototype, key, {
-      value: (Node as unknown as Record<string, number>)[key],
-      enumerable: true,
-    });
-  }
-}
-
-/** Next node in tree order within root after `n` and its subtree. */
-function nextSkippingSelf(n: NodeImpl, root: NodeImpl): NodeImpl | null {
-  let cur: NodeImpl | null = n;
-  while (cur !== null && cur !== root) {
-    if (cur.next !== null) return cur.next;
-    cur = cur.parent;
-  }
-  return null;
-}
+exposeConstants(Node);
 
 /** Element used by lookupPrefix for non-element nodes (https://dom.spec.whatwg.org/#dom-node-lookupprefix steps 2-6). */
 function namespaceContextElement(n: NodeImpl): NodeImpl | null {

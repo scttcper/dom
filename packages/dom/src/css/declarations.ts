@@ -24,35 +24,35 @@ import {
 
 export class DeclBlock {
   /** Property names (lowercase, or custom property names as written). */
-  names: string[];
+  declare names: string[];
   /** Specified values, already normalized. */
-  values: string[];
+  declare values: string[];
   /** Created on the first !important declaration. Missing indices have normal priority. */
-  important: boolean[] | null;
+  declare important: boolean[] | null;
   /** Set by put()/removeOne() when they change the block (setProperty's "updated" flag). */
-  dirty: boolean;
+  declare dirty: boolean;
   /**
    * How many leading names are unchanged since the CSSStyleDeclaration last synced its indexed
    * properties (it sets this after syncing): appends keep the prefix, so only new indices are
    * written, and most style writes update a value in place and sync nothing.
    */
-  namesSynced: number;
+  declare namesSynced: number;
   /**
    * The last serialization and how many leading declarations it covers, or -1 once a declaration
    * was changed in place, moved or removed since. Declarations appended after it are serialized
    * onto its end (see serialize()), and a value changed in place is spliced into it (put()).
    */
-  serialized: string;
-  serializedCount: number;
+  declare serialized: string;
+  declare serializedCount: number;
   /**
    * Shorthand families (shorthandFamily bits) of the declarations `serialized` covers, or -1 when
    * not computed yet (only an append with shorthand longhands needs them).
    */
-  serializedFamilies: number;
+  declare serializedFamilies: number;
   /** Whether `serialized` has every declaration on its own, in order (no shorthand grouped). */
-  serializedPlain: boolean;
+  declare serializedPlain: boolean;
   /** Monotonic bitmask of shorthand families ever added since `clear()`. */
-  families: number;
+  declare families: number;
 
   constructor() {
     this.names = [];

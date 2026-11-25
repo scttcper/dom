@@ -40,13 +40,14 @@ export {
   isAsciiWhitespace,
 } from "./nodes/attributes.ts";
 export { matches, closest, querySelector, querySelectorAll, indexedDescendantById } from "./selectors/index.ts";
+export { serializeIdentifier } from "./selectors/serialize.ts";
 export { serializeChildren, serializeNode } from "./serializer/index.ts";
 export { parseFragment } from "./parser/index.ts";
 
 // --- window area ---
 export { windowHooks, type WindowHooks, type MediaFeatureEnvironment } from "./window/hooks.ts";
 export { createFileList } from "./window/FileList.ts";
-export { evaluateMediaQueryList, mediaEnvironment } from "./window/media.ts";
+export { mediaEnvironment } from "./window/media.ts";
 export { windowInterfaces } from "./window/Window.ts";
 export { captureInterfaceBaseline, guardInterfaceDefinitions, restoreInterfaces } from "./window/isolation.ts";
 export {

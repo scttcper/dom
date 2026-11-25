@@ -50,15 +50,15 @@ const METHOD: EnumSpec = { keywords: ["get", "post", "dialog"], missing: "get", 
 const AUTOCOMPLETE: EnumSpec = { keywords: ["on", "off"], missing: "on", invalid: "on" };
 
 export class HTMLFormElement extends HTMLElement {
-  [$elements]: HTMLFormControlsCollection | null;
+  declare [$elements]: HTMLFormControlsCollection | null;
   /** https://html.spec.whatwg.org/#firing-submission-events */
-  [$firingSubmissionEvents]: boolean;
+  declare [$firingSubmissionEvents]: boolean;
   /** https://html.spec.whatwg.org/#locked-for-reset */
-  [$lockedForReset]: boolean;
+  declare [$lockedForReset]: boolean;
   /** https://html.spec.whatwg.org/#constructing-entry-list */
-  [$constructingEntryList]: boolean;
+  declare [$constructingEntryList]: boolean;
   /** https://html.spec.whatwg.org/#past-names-map */
-  [$pastNames]: Map<string, PastName> | null;
+  declare [$pastNames]: Map<string, PastName> | null;
 
   /** @internal Use Document.createElement. */
   constructor(doc: Document, localName: string, ns: string | null, prefix: string | null) {

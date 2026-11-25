@@ -3,14 +3,13 @@
 // with `act()` as a side effect of being imported.
 //
 // Upstream imports `getConfig` from `@testing-library/dom`; we import it from
-// `@ctrl/dom/testing-library` (our drop-in, a hard dependency), falling back to a built-in default
-// config (identity wrappers) only if that module does not provide getConfig/configure.
+// `@ctrl/dom/testing-library` (our drop-in, a subpath of the same package).
 //
 // The import is static on purpose: a top-level `await import()` here made the package an
 // async ES module, which `require()` (Node's require(esm), Jest) cannot load and which cannot
 // be bundled to CommonJS (scripts/build.ts).
 
-import * as ctrlDomTestingLibrary from '@ctrl/dom/testing-library'
+import {getConfig as importedGetConfig} from '@ctrl/dom/testing-library'
 import type {Element} from '../dom-types.ts'
 
 export interface DTLConfig {
@@ -19,22 +18,18 @@ export interface DTLConfig {
   getElementError: (message: string | null, container: Element) => Error
 }
 
-export interface DTLModule {
+interface DTLModule {
   getConfig(): DTLConfig
   configure(
     config: Partial<DTLConfig> | ((existing: DTLConfig) => Partial<DTLConfig>),
   ): void
 }
 
-const defaultConfig: DTLConfig = {
-  asyncWrapper: async cb => cb(),
-  eventWrapper: cb => cb(),
-  getElementError(message) {
-    const error = new Error(message ?? '')
-    error.name = 'TestingLibraryElementError'
-    return error
-  },
-}
+/**
+ * @ctrl/dom/testing-library's getConfig, read once: the CommonJS build reads an imported binding
+ * through rolldown's interop getter on every access.
+ */
+const ownGetConfig = importedGetConfig as unknown as () => DTLConfig
 
 function load(
   mod: Partial<DTLModule> & {default?: Partial<DTLModule>},
@@ -45,12 +40,6 @@ function load(
     ? {getConfig, configure}
     : null
 }
-
-const dtl: DTLModule | null = load(
-  ctrlDomTestingLibrary as unknown as Partial<DTLModule>,
-)
-/** The Testing Library DOM module user-event reads its config from, or null (built-in defaults). */
-export const dtlModule: DTLModule | null = dtl
 
 /**
  * Mixed setups: stock `@testing-library/react` configures stock `@testing-library/dom`, not
@@ -84,7 +73,7 @@ function isDefaultWrapper(fn: unknown): boolean {
 }
 
 function ownConfigured(): boolean {
-  return dtl === null || !isDefaultWrapper(dtl.getConfig().asyncWrapper)
+  return !isDefaultWrapper(ownGetConfig().asyncWrapper)
 }
 
 function reactActEnvironment(): boolean {
@@ -128,8 +117,7 @@ function loadFallback(): Promise<void> {
         const other = load(
           m as Partial<DTLModule> & {default?: Partial<DTLModule>},
         )
-        if (other !== null && other.getConfig !== dtl?.getConfig)
-          fallback = other
+        if (other !== null && other.getConfig !== ownGetConfig) fallback = other
       },
       () => {},
     )
@@ -148,8 +136,6 @@ export function resolveConfigSource(): Promise<void> | undefined {
   fallbackLoad ??= loadFallback()
   return fallbackLoad
 }
-
-const ownGetConfig: () => DTLConfig = dtl ? dtl.getConfig : () => defaultConfig
 
 export function getConfig(): DTLConfig {
   if (fallback !== null && !ownConfigured()) return fallback.getConfig()
