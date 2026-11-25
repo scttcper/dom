@@ -96,14 +96,9 @@ function walkForId(root: NodeImpl, id: string): NodeImpl | null {
  */
 export function formOwner(el: NodeImpl): NodeImpl | null {
   if ((el.flags & F_PARSER_FORM) !== 0 && el.tag !== T.form) {
-    const ref = parserLinks.get(el)!;
-    const form = ref.deref();
-    if (
-      form !== undefined &&
-      parserLinks.get(form) === ref &&
-      (el.tag === T.img || attr(el, "form") === null) &&
-      treeRoot(el) === treeRoot(form)
-    )
+    // F_PARSER_FORM and the parserLinks entry are set and cleared together.
+    const form = parserLinks.get(el)!.form;
+    if (form !== null && (el.tag === T.img || attr(el, "form") === null) && treeRoot(el) === treeRoot(form))
       return form;
     clearParserAssociation(el);
   }
@@ -126,15 +121,20 @@ export function formOwner(el: NodeImpl): NodeImpl | null {
 
 // --- parser association ------------------------------------------------------------------
 // https://html.spec.whatwg.org/#association-of-controls-and-forms ("parser inserted" with the
-// form element pointer). The form and its controls share a weak reference. Disconnecting the form
-// invalidates that reference for every control, including ones outside its former subtree.
-const parserLinks = new WeakMap<NodeImpl, WeakRef<NodeImpl>>();
+// form element pointer). The form and its controls share a mutable link cell instead of a
+// WeakRef: WeakRefs add `form` to V8's KeptObjects until the next macrotask, pinning closed
+// windows across synchronous GC. Disconnecting the form clears `link.form`, releasing it for
+// every control immediately, and an unreachable document's ephemeron entries collect together.
+interface ParserFormLink {
+  form: NodeImpl | null;
+}
+const parserLinks = new WeakMap<NodeImpl, ParserFormLink>();
 
 export function parserAssociateForm(el: NodeImpl, form: NodeImpl): void {
   if (form.tag !== T.form) return;
-  let ref = parserLinks.get(form);
-  if (ref === undefined) parserLinks.set(form, (ref = new WeakRef(form)));
-  parserLinks.set(el, ref);
+  let link = parserLinks.get(form);
+  if (link === undefined) parserLinks.set(form, (link = { form }));
+  parserLinks.set(el, link);
   el.doc[$formControlsVersion]++;
   el.flags |= F_PARSER_FORM | F_CONNECT_HOOK;
   form.flags |= F_PARSER_FORM | F_CONNECT_HOOK;
@@ -144,7 +144,11 @@ export function parserAssociateForm(el: NodeImpl, form: NodeImpl): void {
 export function clearParserAssociation(el: NodeImpl): void {
   if ((el.flags & F_PARSER_FORM) !== 0) {
     el.flags &= ~F_PARSER_FORM;
-    parserLinks.delete(el);
+    const link = parserLinks.get(el);
+    if (link !== undefined) {
+      if (link.form === el) link.form = null;
+      parserLinks.delete(el);
+    }
   }
 }
 

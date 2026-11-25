@@ -57,6 +57,63 @@ function eqCI(v: string | null, lower: string): boolean {
 // -----------------------------------------------------------------------------------------
 // Testing Library / aria-query@5.3.0 implicit roles.
 
+// Tags whose Testing Library implicit role never depends on attributes ("" for no role), the
+// only list of them: read in O(1) without allocating a per-node NodeCache. Conditional tags
+// (`input`, `select`, `th`, `form`, `img`, `a`, `area`, `section`) stay `undefined` and are the
+// cases of implicitRoleImpl's switch.
+const STATIC_IMPLICIT_ROLE: (string | undefined)[] = new Array<string | undefined>(Object.keys(T).length + 1).fill("");
+STATIC_IMPLICIT_ROLE[T.input] = undefined;
+STATIC_IMPLICIT_ROLE[T.select] = undefined;
+STATIC_IMPLICIT_ROLE[T.th] = undefined;
+STATIC_IMPLICIT_ROLE[T.form] = undefined;
+STATIC_IMPLICIT_ROLE[T.img] = undefined;
+STATIC_IMPLICIT_ROLE[T.a] = undefined;
+STATIC_IMPLICIT_ROLE[T.area] = undefined;
+STATIC_IMPLICIT_ROLE[T.section] = undefined;
+STATIC_IMPLICIT_ROLE[T.aside] = "complementary";
+STATIC_IMPLICIT_ROLE[T.article] = "article";
+STATIC_IMPLICIT_ROLE[T.header] = "banner";
+STATIC_IMPLICIT_ROLE[T.blockquote] = "blockquote";
+STATIC_IMPLICIT_ROLE[T.button] = "button";
+STATIC_IMPLICIT_ROLE[T.caption] = "caption";
+STATIC_IMPLICIT_ROLE[T.td] = "cell";
+STATIC_IMPLICIT_ROLE[T.code] = "code";
+STATIC_IMPLICIT_ROLE[T.footer] = "contentinfo";
+STATIC_IMPLICIT_ROLE[T.dd] = "definition";
+STATIC_IMPLICIT_ROLE[T.del] = "deletion";
+STATIC_IMPLICIT_ROLE[T.dialog] = "dialog";
+STATIC_IMPLICIT_ROLE[T.html] = "document";
+STATIC_IMPLICIT_ROLE[T.em] = "emphasis";
+STATIC_IMPLICIT_ROLE[T.figure] = "figure";
+for (const t of [T.b, T.bdo, T.body, T.data, T.div, T.hgroup, T.i, T.pre, T.q, T.samp, T.small, T.span, T.u])
+  STATIC_IMPLICIT_ROLE[t] = "generic";
+for (const t of [T.details, T.fieldset, T.optgroup, T.address]) STATIC_IMPLICIT_ROLE[t] = "group";
+for (const t of [T.h1, T.h2, T.h3, T.h4, T.h5, T.h6]) STATIC_IMPLICIT_ROLE[t] = "heading";
+STATIC_IMPLICIT_ROLE[T.ins] = "insertion";
+for (const t of [T.menu, T.ol, T.ul]) STATIC_IMPLICIT_ROLE[t] = "list";
+STATIC_IMPLICIT_ROLE[T.datalist] = "listbox";
+STATIC_IMPLICIT_ROLE[T.li] = "listitem";
+STATIC_IMPLICIT_ROLE[T.main] = "main";
+STATIC_IMPLICIT_ROLE[T.mark] = "mark";
+STATIC_IMPLICIT_ROLE[T.math] = "math";
+STATIC_IMPLICIT_ROLE[T.meter] = "meter";
+STATIC_IMPLICIT_ROLE[T.nav] = "navigation";
+STATIC_IMPLICIT_ROLE[T.option] = "option";
+STATIC_IMPLICIT_ROLE[T.p] = "paragraph";
+STATIC_IMPLICIT_ROLE[T.progress] = "progressbar";
+STATIC_IMPLICIT_ROLE[T.tr] = "row";
+for (const t of [T.tbody, T.tfoot, T.thead]) STATIC_IMPLICIT_ROLE[t] = "rowgroup";
+STATIC_IMPLICIT_ROLE[T.hr] = "separator";
+STATIC_IMPLICIT_ROLE[T.output] = "status";
+STATIC_IMPLICIT_ROLE[T.strong] = "strong";
+STATIC_IMPLICIT_ROLE[T.sub] = "subscript";
+STATIC_IMPLICIT_ROLE[T.sup] = "superscript";
+STATIC_IMPLICIT_ROLE[T.table] = "table";
+STATIC_IMPLICIT_ROLE[T.dfn] = "term";
+STATIC_IMPLICIT_ROLE[T.dt] = "term";
+STATIC_IMPLICIT_ROLE[T.textarea] = "textbox";
+STATIC_IMPLICIT_ROLE[T.time] = "time";
+
 /**
  * The single implicit role Testing Library 10.4 computes for an element, or "" for none
  * (`getImplicitAriaRoles(el)[0] ?? ""`). Every aria-query@5.3.0 element entry maps to
@@ -64,6 +121,8 @@ function eqCI(v: string | null, lower: string): boolean {
  */
 export function implicitRole(impl: NodeImpl): string {
   if (impl.type !== ELEMENT_NODE) return "";
+  const fixed = STATIC_IMPLICIT_ROLE[anyTag(impl)];
+  if (fixed !== undefined) return fixed;
   const version = impl.doc[$version];
   const cache = nodeCache(impl);
   if (cache.roleVersion !== version) {
@@ -86,8 +145,6 @@ function implicitRoleImpl(impl: NodeImpl, jd: boolean): string {
   if (impl.type !== ELEMENT_NODE) return "";
   const tag = anyTag(impl);
   switch (tag) {
-    case 0:
-      return "";
     case T.input:
       return inputRole(impl, jd);
     case T.select:
@@ -99,8 +156,6 @@ function implicitRoleImpl(impl: NodeImpl, jd: boolean): string {
       if (eqCI(scope, "row") || eqCI(scope, "rowgroup")) return "rowheader";
       return "columnheader";
     }
-    case T.aside:
-      return "complementary";
     case T.form:
       if (jd) {
         return ariaAttr(impl, "aria-label") !== null ||
@@ -125,113 +180,9 @@ function implicitRoleImpl(impl: NodeImpl, jd: boolean): string {
           ? "region"
           : "generic";
       return isSet(impl, "aria-label") || isSet(impl, "aria-labelledby") ? "region" : "generic";
-    case T.article:
-      return "article";
-    case T.header:
-      return "banner";
-    case T.blockquote:
-      return "blockquote";
-    case T.button:
-      return "button";
-    case T.caption:
-      return "caption";
-    case T.td:
-      return "cell";
-    case T.code:
-      return "code";
-    case T.footer:
-      return "contentinfo";
-    case T.dd:
-      return "definition";
-    case T.del:
-      return "deletion";
-    case T.dialog:
-      return "dialog";
-    case T.html:
-      return "document";
-    case T.em:
-      return "emphasis";
-    case T.figure:
-      return "figure";
-    case T.b:
-    case T.bdo:
-    case T.body:
-    case T.data:
-    case T.div:
-    case T.hgroup:
-    case T.i:
-    case T.pre:
-    case T.q:
-    case T.samp:
-    case T.small:
-    case T.span:
-    case T.u:
-      return "generic";
-    case T.details:
-    case T.fieldset:
-    case T.optgroup:
-    case T.address:
-      return "group";
-    case T.h1:
-    case T.h2:
-    case T.h3:
-    case T.h4:
-    case T.h5:
-    case T.h6:
-      return "heading";
-    case T.ins:
-      return "insertion";
-    case T.menu:
-    case T.ol:
-    case T.ul:
-      return "list";
-    case T.datalist:
-      return "listbox";
-    case T.li:
-      return "listitem";
-    case T.main:
-      return "main";
-    case T.mark:
-      return "mark";
-    case T.math:
-      return "math";
-    case T.meter:
-      return "meter";
-    case T.nav:
-      return "navigation";
-    case T.option:
-      return "option";
-    case T.p:
-      return "paragraph";
-    case T.progress:
-      return "progressbar";
-    case T.tr:
-      return "row";
-    case T.tbody:
-    case T.tfoot:
-    case T.thead:
-      return "rowgroup";
-    case T.hr:
-      return "separator";
-    case T.output:
-      return "status";
-    case T.strong:
-      return "strong";
-    case T.sub:
-      return "subscript";
-    case T.sup:
-      return "superscript";
-    case T.table:
-      return "table";
-    case T.dfn:
-    case T.dt:
-      return "term";
-    case T.textarea:
-      return "textbox";
-    case T.time:
-      return "time";
     default:
-      return "";
+      // Tags whose role never depends on attributes.
+      return STATIC_IMPLICIT_ROLE[tag]!;
   }
 }
 

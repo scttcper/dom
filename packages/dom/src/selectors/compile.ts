@@ -773,24 +773,50 @@ export function resetMemos(info: CompileInfo): void {
 
 /** Volatile tests evaluated while recording, with their elements and results. */
 export class StateDeps {
-  tests: Test[];
-  els: NodeImpl[];
-  results: boolean[];
-  constructor() {
-    this.tests = [];
-    this.els = [];
-    this.results = [];
+  t0: Test;
+  el0: NodeImpl;
+  r0: boolean;
+  tests: Test[] | null;
+  els: NodeImpl[] | null;
+  results: boolean[] | null;
+  constructor(t: Test, el: NodeImpl, r: boolean) {
+    this.t0 = t;
+    this.el0 = el;
+    this.r0 = r;
+    this.tests = null;
+    this.els = null;
+    this.results = null;
   }
 }
 
 let depOn = false;
 let depCur: StateDeps | null = null;
 
+function sameDepTest(a: Test, b: Test): boolean {
+  return a === b || (a.op === O_PREDICATE && b.op === O_PREDICATE && a.fn === b.fn);
+}
+
 function logDep(t: Test, el: NodeImpl, r: boolean): void {
-  const d = (depCur ??= new StateDeps());
-  d.tests.push(t);
-  d.els.push(el);
-  d.results.push(r);
+  const d = depCur;
+  if (d === null) {
+    depCur = new StateDeps(t, el, r);
+    return;
+  }
+  if (d.el0 === el && sameDepTest(t, d.t0)) return;
+  let tests = d.tests;
+  if (tests === null) {
+    d.tests = [t];
+    d.els = [el];
+    d.results = [r];
+    return;
+  }
+  const els = d.els!;
+  for (let i = 0; i < tests.length; i++) {
+    if (els[i] === el && sameDepTest(t, tests[i])) return;
+  }
+  tests.push(t);
+  els.push(el);
+  d.results!.push(r);
 }
 
 /** Start recording volatile tests; returns the enclosing recording to pass to `endStateDeps`. */
@@ -809,7 +835,15 @@ export function endStateDeps(prev: StateDeps | boolean | null): StateDeps | null
     depCur = null;
   } else {
     depCur = prev as StateDeps | null;
-    if (d !== null) for (let i = 0; i < d.tests.length; i++) logDep(d.tests[i], d.els[i], d.results[i]);
+    if (d !== null) {
+      logDep(d.t0, d.el0, d.r0);
+      if (d.tests !== null) {
+        const tests = d.tests;
+        const els = d.els!;
+        const results = d.results!;
+        for (let i = 0; i < tests.length; i++) logDep(tests[i], els[i], results[i]);
+      }
+    }
   }
   return d;
 }
@@ -818,12 +852,16 @@ export function endStateDeps(prev: StateDeps | boolean | null): StateDeps | null
 export function stateDepsHold(d: StateDeps): boolean {
   const savedOn = depOn;
   depOn = false;
-  let ok = true;
-  const tests = d.tests;
-  for (let i = 0; i < tests.length; i++) {
-    if (matchTest(tests[i], d.els[i]) !== d.results[i]) {
-      ok = false;
-      break;
+  let ok = matchTest(d.t0, d.el0) === d.r0;
+  if (ok && d.tests !== null) {
+    const tests = d.tests;
+    const els = d.els!;
+    const results = d.results!;
+    for (let i = 0; i < tests.length; i++) {
+      if (matchTest(tests[i], els[i]) !== results[i]) {
+        ok = false;
+        break;
+      }
     }
   }
   depOn = savedOn;
@@ -951,8 +989,13 @@ function testFn(t: Test): Matcher {
     case O_TYPE: {
       const lower = t.lower;
       const name = t.name;
-      if (!t.nsCheck) return (el) => ((el.flags & F_HTML) !== 0 ? el.name === lower : el.name === name);
+      const tag = t.a;
+      if (!t.nsCheck) {
+        if (tag !== 0) return (el) => ((el.flags & F_HTML) !== 0 ? el.tag === tag : el.name === name);
+        return (el) => ((el.flags & F_HTML) !== 0 ? el.name === lower : el.name === name);
+      }
       const ns = t.ns;
+      if (tag !== 0) return (el) => ((el.flags & F_HTML) !== 0 ? el.tag === tag : el.name === name) && el.ns === ns;
       return (el) => ((el.flags & F_HTML) !== 0 ? el.name === lower : el.name === name) && el.ns === ns;
     }
     case O_CLASS: {
@@ -979,7 +1022,10 @@ function testFn(t: Test): Matcher {
           const attrs = el.attrs;
           if (attrs === null) return false;
           const n = (el.flags & F_HTML) !== 0 ? lower : name;
-          for (let i = 0; i < attrs.length; i++) if (attrs[i].localName === n && attrs[i].ns === null) return true;
+          for (let i = 0; i < attrs.length; i++) {
+            const a = attrs[i];
+            if (a.localName === n && (a.rare === null || a.rare.ns === null)) return true;
+          }
           return false;
         };
       }
@@ -990,7 +1036,7 @@ function testFn(t: Test): Matcher {
         const n = (el.flags & F_HTML) !== 0 ? lower : name;
         for (let i = 0; i < attrs.length; i++) {
           const a = attrs[i];
-          if (a.localName === n && a.ns === null) return a.value === value;
+          if (a.localName === n && (a.rare === null || a.rare.ns === null)) return a.value === value;
         }
         return false;
       };

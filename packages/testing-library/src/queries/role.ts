@@ -26,7 +26,7 @@ import {
   isInaccessibleImpl,
 } from "../role-helpers.ts";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
-import { checkContainerType, implOf } from "../helpers.ts";
+import { checkContainerType, implOf, NO_OPTIONS } from "../helpers.ts";
 import { matches, type Matcher } from "../matches.ts";
 import { getConfig } from "../config.ts";
 import { envDebugFormat } from "../agent-debug.ts";
@@ -72,8 +72,8 @@ function queryAllByRole(
     current,
     level,
     expanded,
-    value: { now: valueNow, min: valueMin, max: valueMax, text: valueText } = {},
-  }: ByRoleOptions = {},
+    value: { now: valueNow, min: valueMin, max: valueMax, text: valueText } = NO_OPTIONS,
+  }: ByRoleOptions = NO_OPTIONS,
 ): any[] {
   checkContainerType(container);
 

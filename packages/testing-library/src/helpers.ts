@@ -7,6 +7,12 @@ import { $impl } from "@ctrl/dom/internal";
 declare const jest: any;
 
 /**
+ * Default for an omitted options argument (`{ exact = true, ... }: Options = NO_OPTIONS`):
+ * upstream's `= {}` allocates an object on every call that leaves options out.
+ */
+export const NO_OPTIONS: {} = Object.freeze({});
+
+/**
  * Upstream only detects Jest's fake timers (legacy: `setTimeout._isMockFunction`, modern:
  * `setTimeout.clock`). Divergence (intentional): when there is no `jest` global we also detect
  * @sinonjs/fake-timers clocks, which is what Vitest's `vi.useFakeTimers()` installs (the

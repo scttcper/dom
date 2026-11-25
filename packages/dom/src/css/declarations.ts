@@ -51,6 +51,8 @@ export class DeclBlock {
   serializedFamilies: number;
   /** Whether `serialized` has every declaration on its own, in order (no shorthand grouped). */
   serializedPlain: boolean;
+  /** Monotonic bitmask of shorthand families ever added since `clear()`. */
+  families: number;
 
   constructor() {
     this.names = [];
@@ -62,6 +64,7 @@ export class DeclBlock {
     this.serializedCount = 0;
     this.serializedFamilies = 0;
     this.serializedPlain = true;
+    this.families = 0;
   }
 
   get length(): number {
@@ -91,6 +94,7 @@ export class DeclBlock {
     this.serializedCount = 0;
     this.serializedFamilies = 0;
     this.serializedPlain = true;
+    this.families = 0;
   }
 
   /** Low-level set: update in place, or append. */
@@ -100,6 +104,7 @@ export class DeclBlock {
       this.names.push(name);
       this.values.push(value);
       if (important) this.markImportant(this.names.length - 1);
+      this.families |= shorthandFamily(name);
       this.dirty = true;
     } else if (this.values[i] !== value || this.isImportant(i) !== important) {
       // A declaration outside every shorthand family is serialized on its own whatever its value,
@@ -153,6 +158,7 @@ export class DeclBlock {
     this.names.push(name);
     this.values.push(value);
     if (important) this.markImportant(this.names.length - 1);
+    this.families |= shorthandFamily(name);
   }
 
   /** Removes `name`; returns true if it was present. */
@@ -183,13 +189,38 @@ export class DeclBlock {
       return true;
     }
     if (isExpandedShorthand(property)) {
-      const vals = longhandValues(property, value);
-      if (vals === null) return false;
+      const entry = longhandValues(property, value);
+      if (entry === null) return false;
       const longhands = longhandsOf(property)!;
-      if (vals === KEEP_SHORTHAND) {
+      if (entry === KEEP_SHORTHAND_ENTRY) {
         // Pending-substitution (var()) or unexpandable value: store the shorthand itself.
         for (const l of longhands) this.removeOne(l);
         this.putOrParsed(property, value.trim(), important, parsing);
+        this.families |= shorthandFamily(longhands[0]);
+        return true;
+      }
+      const fam = entry.family;
+      const vals = entry.vals;
+      if ((this.families & fam) === 0) {
+        // Fast path: no declaration of this shorthand's family exists yet, so skip all
+        // indexOf scans and extend the cached serialization directly when up to date.
+        const names = this.names;
+        const values = this.values;
+        const from = names.length;
+        for (let i = 0; i < longhands.length; i++) {
+          names.push(longhands[i]);
+          values.push(vals[i]);
+          if (important) this.markImportant(from + i);
+        }
+        this.families |= fam;
+        this.dirty = true;
+        if (!parsing && this.serializedCount === from && entry.serialized !== "") {
+          const piece = important ? entry.serializedImportant : entry.serialized;
+          this.serialized = this.serialized === "" ? piece : this.serialized + " " + piece;
+          this.serializedCount = names.length;
+          this.serializedPlain = false;
+          if (this.serializedFamilies !== -1) this.serializedFamilies |= fam;
+        }
         return true;
       }
       this.removeOne(property);
@@ -326,16 +357,22 @@ export class DeclBlock {
    */
   serializeAll(from = 0): string {
     const names = this.names;
+    const values = this.values;
     const n = names.length;
     lastSerializationGrouped = false;
     if (n === from) return "";
     // A single declaration cannot combine into any of the expanded shorthands.
-    if (n === from + 1) return serializeDeclaration(names[from], this.values[from], this.isImportant(from));
+    if (n === from + 1) return serializeDeclaration(names[from], values[from], this.isImportant(from));
     let out = "";
-    let done: Set<string> | null = null;
+    const count = n - from;
+    const useMask = count <= 32;
+    let doneMask = 0;
+    let doneSet: Set<number> | null = null;
+    let grouped = false;
     for (let i = from; i < n; i++) {
+      const rel = i - from;
+      if (useMask ? (doneMask & (1 << rel)) !== 0 : doneSet !== null && doneSet.has(i)) continue;
       const name = names[i];
-      if (done !== null && done.has(name)) continue;
       const important = this.isImportant(i);
       const shorthands = shorthandsContaining(name);
       let emitted = false;
@@ -343,67 +380,112 @@ export class DeclBlock {
         for (let s = 0; s < shorthands.length && !emitted; s++) {
           const sh = shorthands[s];
           const longhands = longhandsOf(sh)!;
+          const len = longhands.length;
           // Usually some longhand is missing: check before collecting values (fewer declarations
           // than longhands rules it out without a lookup).
-          let ok = longhands.length <= n - from;
-          for (let k = 0; k < longhands.length && ok; k++) {
-            const j = this.indexOf(longhands[k], from);
-            ok = j !== -1 && this.isImportant(j) === important && (done === null || !done.has(longhands[k]));
+          if (len > count) continue;
+          let ok = true;
+          for (let k = 0; k < len; k++) {
+            const lh = longhands[k];
+            const hint = i + k;
+            const j = hint < n && names[hint] === lh ? hint : this.indexOf(lh, from);
+            if (
+              j === -1 ||
+              this.isImportant(j) !== important ||
+              (useMask ? (doneMask & (1 << (j - from))) !== 0 : doneSet !== null && doneSet.has(j))
+            ) {
+              ok = false;
+              break;
+            }
+            scratchIdxs[k] = j;
+            scratchVals[k] = values[j];
           }
           if (!ok) continue;
-          const vals: string[] = new Array(longhands.length);
-          for (let k = 0; k < longhands.length; k++) vals[k] = this.values[this.indexOf(longhands[k], from)];
-          const v = serializeShorthand(sh, vals, false);
+          scratchVals.length = len;
+          const v = serializeShorthand(sh, scratchVals, false);
+          scratchVals.length = 0;
           if (v === "") continue;
-          if (done === null) done = new Set();
-          for (const l of longhands) done.add(l);
+          grouped = true;
+          if (useMask) {
+            for (let k = 0; k < len; k++) doneMask |= 1 << (scratchIdxs[k] - from);
+          } else {
+            if (doneSet === null) doneSet = new Set();
+            for (let k = 0; k < len; k++) doneSet.add(scratchIdxs[k]);
+          }
           out += (out === "" ? "" : " ") + serializeDeclaration(sh, v, important);
           emitted = true;
         }
       }
       if (emitted) continue;
-      out += (out === "" ? "" : " ") + serializeDeclaration(name, this.values[i], important);
+      out += (out === "" ? "" : " ") + serializeDeclaration(name, values[i], important);
     }
-    lastSerializationGrouped = done !== null;
+    lastSerializationGrouped = grouped;
     return out;
   }
 }
 
 /** Whether the last serializeAll() grouped declarations into a shorthand (read right after it). */
 let lastSerializationGrouped = false;
+/** Scratch buffers for serializeAll (never retained past serializeShorthand). */
+const scratchVals: string[] = [];
+const scratchIdxs: number[] = [];
 
 /** https://drafts.csswg.org/cssom/#serialize-a-css-declaration */
 function serializeDeclaration(property: string, value: string, important: boolean): string {
   return property + ": " + value + (important ? " !important;" : ";");
 }
 
-/** longhandValues' answer for var() and multi-layer values: keep the shorthand as one declaration. */
-const KEEP_SHORTHAND = MULTI_LAYER;
+interface ShorthandCacheEntry {
+  vals: string[];
+  family: number;
+  serialized: string;
+  serializedImportant: string;
+}
 
-const shorthandValues = new Map<string, Map<string, string[] | null>>();
+/** longhandValues' answer for var() and multi-layer values: keep the shorthand as one declaration. */
+const KEEP_SHORTHAND_ENTRY: ShorthandCacheEntry = {
+  vals: MULTI_LAYER,
+  family: 0,
+  serialized: "",
+  serializedImportant: "",
+};
+
+const shorthandValues = new Map<string, Map<string, ShorthandCacheEntry | null>>();
 
 /**
- * The longhand values (longhandsOf order) an expanded shorthand declaration sets, KEEP_SHORTHAND,
- * or null if the value is invalid. The result is shared: callers must not modify it. Memoized
- * per property and value like normalizeLonghand: React writes the same few values on every mount
- * (Base UI's visually hidden inputs set `border: 0`, `padding: 0` and `margin: -1px`), and each
- * used to be tokenized twice.
+ * The longhand values (longhandsOf order) an expanded shorthand declaration sets,
+ * KEEP_SHORTHAND_ENTRY, or null if the value is invalid. The result is shared: callers must not
+ * modify it. Memoized per property and value like normalizeLonghand: React writes the same few
+ * values on every mount (Base UI's visually hidden inputs set `border: 0`, `padding: 0` and
+ * `margin: -1px`), and each used to be tokenized and re-serialized every time.
  */
-function longhandValues(property: string, value: string): string[] | null {
+function longhandValues(property: string, value: string): ShorthandCacheEntry | null {
   let byValue = shorthandValues.get(property);
   if (byValue === undefined) shorthandValues.set(property, (byValue = new Map()));
   else {
     const hit = byValue.get(value);
     if (hit !== undefined) return hit;
   }
-  let result: string[] | null = null;
+  let vals: string[] | null = null;
   const trimmed = value.trim();
   const comps = trimmed === "" ? null : splitComponents(trimmed);
-  if (comps === null) result = null;
+  if (comps === null) vals = null;
   else if (comps.length === 1 && comps[0].type === TK_IDENT && isCSSWideKeyword(comps[0].lower))
-    result = new Array(longhandsOf(property)!.length).fill(comps[0].lower);
-  else if (containsVar(trimmed)) result = KEEP_SHORTHAND;
-  else result = expandShorthand(property, trimmed);
+    vals = new Array(longhandsOf(property)!.length).fill(comps[0].lower);
+  else if (containsVar(trimmed)) vals = MULTI_LAYER;
+  else vals = expandShorthand(property, trimmed);
+  let result: ShorthandCacheEntry | null;
+  if (vals === null) result = null;
+  else if (vals === MULTI_LAYER) result = KEEP_SHORTHAND_ENTRY;
+  else {
+    const shText = serializeShorthand(property, vals, false);
+    result = {
+      vals,
+      family: shorthandFamily(longhandsOf(property)![0]),
+      serialized: shText === "" ? "" : serializeDeclaration(property, shText, false),
+      serializedImportant: shText === "" ? "" : serializeDeclaration(property, shText, true),
+    };
+  }
   if (byValue.size === 256) byValue.clear();
   byValue.set(value, result);
   return result;

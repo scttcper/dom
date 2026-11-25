@@ -7,6 +7,7 @@ import {
   jestFakeTimersAreEnabled,
   advanceFakeTimersByTime,
   checkContainerType,
+  NO_OPTIONS,
 } from "./helpers.ts";
 import { getConfig, runWithExpensiveErrorDiagnosticsDisabled } from "./config.ts";
 import { envDebugFormat } from "./agent-debug.ts";
@@ -29,38 +30,43 @@ function copyStackTrace(target: Error, source: Error | undefined): void {
   target.stack = source!.stack!.replace(source!.message, target.message);
 }
 
+const DEFAULT_MUTATION_OBSERVER_OPTIONS: Record<string, unknown> = {
+  subtree: true,
+  childList: true,
+  attributes: true,
+  characterData: true,
+};
+
+function defaultOnTimeout(error: any, container: any) {
+  // Ours: under CTRL_DOM_DEBUG a query error already carries the snapshot; upstream prints
+  // the DOM a second time here.
+  if (error.name === "TestingLibraryElementError" && envDebugFormat() !== null) return error;
+  Object.defineProperty(error, "message", {
+    value: getConfig().getElementError(error.message, container).message,
+  });
+  return error;
+}
+
 function waitForImpl<T>(
   callback: () => T | Promise<T>,
+  defaultStackTraceError: Error,
+  span: SpanContext | null,
   {
     container = getDocument(),
     timeout = getConfig().asyncUtilTimeout,
     showOriginalStackTrace = getConfig().showOriginalStackTrace,
-    stackTraceError,
+    stackTraceError = defaultStackTraceError,
     interval = 50,
-    onTimeout = (error) => {
-      // Ours: under CTRL_DOM_DEBUG a query error already carries the snapshot; upstream prints
-      // the DOM a second time here.
-      if (error.name === "TestingLibraryElementError" && envDebugFormat() !== null) return error;
-      Object.defineProperty(error, "message", {
-        value: getConfig().getElementError(error.message, container).message,
-      });
-      return error;
-    },
-    mutationObserverOptions = {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      characterData: true,
-    },
+    // Upstream's default is a closure per call; `defaultOnTimeout` runs on timeout instead.
+    onTimeout,
+    mutationObserverOptions = DEFAULT_MUTATION_OBSERVER_OPTIONS,
   }: WaitForOptions,
-  span: SpanContext | null = null,
 ): Promise<T> {
   if (typeof callback !== "function") {
     throw new TypeError("Received `callback` arg must be a function");
   }
 
-  // eslint-disable-next-line no-async-promise-executor
-  return new Promise<T>(async (resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     let lastError: any;
     let intervalId: ReturnType<typeof setInterval> | undefined;
     let observer: any;
@@ -73,42 +79,42 @@ function waitForImpl<T>(
     if (usingJestFakeTimers) {
       const { unstable_advanceTimersWrapper: advanceTimersWrapper } = getConfig();
       checkCallback();
-      // this is a dangerous rule to disable because it could lead to an
-      // infinite loop. However, eslint isn't smart enough to know that we're
-      // setting finished inside `onDone` which will be called when we're done
-      // waiting or when we've timed out.
-      while (!finished) {
-        if (!jestFakeTimersAreEnabled()) {
-          const error = new Error(
-            `Changed from using fake timers to real timers while using waitFor. This is not allowed and will result in very strange behavior. Please ensure you're awaiting all async things your test is doing before changing to real timers. For more info, please go to https://github.com/testing-library/dom-testing-library/issues/830`,
-          );
-          if (!showOriginalStackTrace) copyStackTrace(error, stackTraceError);
-          reject(error);
-          return;
-        }
+      if (!finished) {
+        void (async () => {
+          while (!finished) {
+            if (!jestFakeTimersAreEnabled()) {
+              const error = new Error(
+                `Changed from using fake timers to real timers while using waitFor. This is not allowed and will result in very strange behavior. Please ensure you're awaiting all async things your test is doing before changing to real timers. For more info, please go to https://github.com/testing-library/dom-testing-library/issues/830`,
+              );
+              if (!showOriginalStackTrace) copyStackTrace(error, stackTraceError);
+              reject(error);
+              return;
+            }
 
-        // In this rare case, we *need* to wait for in-flight promises
-        // to resolve before continuing. We don't need to take advantage
-        // of parallelization so we're fine.
-        // https://stackoverflow.com/a/59243586/971592
-        await advanceTimersWrapper(async () => {
-          // we *could* (maybe should?) use `advanceTimersToNextTimer` but it's
-          // possible that could make this loop go on forever if someone is using
-          // third party code that's setting up recursive timers so rapidly that
-          // the user's timer's don't get a chance to resolve. So we'll advance
-          // by an interval instead. (We have a test for this case).
-          advanceFakeTimersByTime(interval);
-        });
+            // In this rare case, we *need* to wait for in-flight promises
+            // to resolve before continuing. We don't need to take advantage
+            // of parallelization so we're fine.
+            // https://stackoverflow.com/a/59243586/971592
+            await advanceTimersWrapper(async () => {
+              // we *could* (maybe should?) use `advanceTimersToNextTimer` but it's
+              // possible that could make this loop go on forever if someone is using
+              // third party code that's setting up recursive timers so rapidly that
+              // the user's timer's don't get a chance to resolve. So we'll advance
+              // by an interval instead. (We have a test for this case).
+              advanceFakeTimersByTime(interval);
+            });
 
-        // Could have timed-out
-        if (finished) {
-          break;
-        }
-        // It's really important that checkCallback is run *before* we flush
-        // in-flight promises. To be honest, I'm not sure why, and I can't quite
-        // think of a way to reproduce the problem in a test, but I spent
-        // an entire day banging my head against a wall on this.
-        checkCallback();
+            // Could have timed-out
+            if (finished) {
+              break;
+            }
+            // It's really important that checkCallback is run *before* we flush
+            // in-flight promises. To be honest, I'm not sure why, and I can't quite
+            // think of a way to reproduce the problem in a test, but I spent
+            // an entire day banging my head against a wall on this.
+            checkCallback();
+          }
+        })();
       }
     } else {
       try {
@@ -202,7 +208,7 @@ function waitForImpl<T>(
           copyStackTrace(error, stackTraceError);
         }
       }
-      onDone(onTimeout(error), null);
+      onDone(onTimeout !== undefined ? onTimeout(error) : defaultOnTimeout(error, container), null);
     }
   });
 }
@@ -225,7 +231,7 @@ export function waitForInSpan<T>(
   // create the error here so its stack trace is as close to the
   // calling code as possible
   const stackTraceError = new Error("STACK_TRACE_MESSAGE");
-  return getConfig().asyncWrapper(() => waitForImpl(callback, { stackTraceError, ...options }, span));
+  return getConfig().asyncWrapper(() => waitForImpl(callback, stackTraceError, span, options ?? NO_OPTIONS));
 }
 
 /**

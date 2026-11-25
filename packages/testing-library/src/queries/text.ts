@@ -4,10 +4,10 @@
 // With the default `selector` ('*') and `ignore` ('script, style') the query is a single
 // NodeImpl walk with no selector matching; other values go through the selector engine.
 
-import { ELEMENT_NODE, nextInTree, type NodeImpl } from "@ctrl/dom/internal";
+import { ELEMENT_NODE, F_HTML, nextInTree, T, type NodeImpl } from "@ctrl/dom/internal";
 import { wrapAllByQueryWithSuggestion, buildQueries, type GetErrorFunction } from "../query-helpers.ts";
-import { checkContainerType, implOf } from "../helpers.ts";
-import { makeNormalizer, textMatcher, type Matcher } from "../matches.ts";
+import { checkContainerType, implOf, NO_OPTIONS } from "../helpers.ts";
+import { makeNormalizer, resolveNormalizer, textMatcher, type Matcher } from "../matches.ts";
 import { getNodeTextImpl } from "../get-node-text.ts";
 import { getConfig } from "../config.ts";
 import { matchesSelector } from "../selectors.ts";
@@ -31,8 +31,16 @@ function isScriptStyleIgnore(ignore: unknown): boolean {
 
 function isScriptOrStyle(n: NodeImpl): boolean {
   // Type selectors match the local name; HTML names are already lowercase.
+  if ((n.flags & F_HTML) !== 0) return n.tag === T.script || n.tag === T.style;
   const name = n.name;
   return name === "script" || name === "style";
+}
+
+/** `n.matches(selector) && !(ignore && n.matches(ignore))`, without the selector engine for the defaults. */
+function isCandidate(n: NodeImpl, selector: string, ignore: boolean | string): boolean {
+  if (selector !== "*" && !matchesSelector(n, selector)) return false;
+  if (!ignore) return true;
+  return isScriptStyleIgnore(ignore) ? !isScriptOrStyle(n) : !matchesSelector(n, ignore as string);
 }
 
 function queryAllByText(
@@ -45,28 +53,18 @@ function queryAllByText(
     trim,
     ignore = getConfig().defaultIgnore,
     normalizer,
-  }: SelectorMatcherOptions = {},
+  }: SelectorMatcherOptions = NO_OPTIONS,
 ): any[] {
   checkContainerType(container);
-  const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
-  const match = textMatcher(exact, text, matchNormalizer);
+  const match = textMatcher(exact, text, resolveNormalizer(trim, collapseWhitespace, normalizer));
   const root = implOf(container);
-  const anySelector = selector === "*";
-  const fastIgnore = isScriptStyleIgnore(ignore);
   const out: any[] = [];
-
-  const visit = (n: NodeImpl) => {
-    if (!anySelector && !matchesSelector(n, selector)) return;
-    if (ignore) {
-      if (fastIgnore ? isScriptOrStyle(n) : matchesSelector(n, ignore as string)) return;
-    }
-    if (match(getNodeTextImpl(n), n.node)) out.push(n.node);
-  };
-
   // `container.matches(selector)`: the container itself is a candidate when it is an element.
-  if (root.type === ELEMENT_NODE) visit(root);
+  if (root.type === ELEMENT_NODE && isCandidate(root, selector, ignore) && match(getNodeTextImpl(root), root.node))
+    out.push(root.node);
   for (let n = root.first; n !== null; n = nextInTree(n, root)) {
-    if (n.type === ELEMENT_NODE) visit(n);
+    if (n.type === ELEMENT_NODE && isCandidate(n, selector, ignore) && match(getNodeTextImpl(n), n.node))
+      out.push(n.node);
   }
   return out;
 }

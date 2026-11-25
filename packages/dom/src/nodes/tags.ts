@@ -37,5 +37,8 @@ export function tagName(id: number): string {
   return NAMES[id] ?? "";
 }
 
+/** Precomputed ASCII-uppercased HTML tag names indexed by `NodeImpl.tag`. */
+export const UPPER_TAG_NAMES: readonly string[] = NAMES.map((n) => n.toUpperCase());
+
 /** `T.button === tagId("button")`, for readable switches: `case T.button:`. */
 export const T = Object.fromEntries(NAMES.map((n, i) => [n, i])) as { readonly [K in Exclude<TagName, "">]: number };

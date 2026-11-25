@@ -88,7 +88,11 @@ function cloneOne(node: NodeImpl, doc: Document, deep: boolean): NodeImpl {
         const copied: AttrRecord[] = new Array(attrs.length);
         for (let i = 0; i < attrs.length; i++) {
           const a = attrs[i];
-          copied[i] = new AttrRecord(a.localName, a.value, a.ns, a.prefix);
+          const r = a.rare;
+          copied[i] =
+            r === null
+              ? new AttrRecord(a.localName, a.value, null, null)
+              : new AttrRecord(a.localName, a.value, r.ns, r.prefix);
         }
         el.attrs = copied;
         el.id = node.id;

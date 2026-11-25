@@ -18,10 +18,10 @@ import {
   type SpanContext,
 } from "@ctrl/dom/internal";
 import { getSuggestedQuery, type Variant } from "./suggestions.ts";
-import { makeNormalizer, textMatcher, type Matcher, type MatcherOptions } from "./matches.ts";
+import { resolveNormalizer, textMatcher, type Matcher, type MatcherOptions } from "./matches.ts";
 import { waitForInSpan } from "./wait-for.ts";
 import { getConfig } from "./config.ts";
-import { implOf } from "./helpers.ts";
+import { implOf, NO_OPTIONS } from "./helpers.ts";
 import { agentElementSummary, envDebugFormat } from "./agent-debug.ts";
 
 export type GetErrorFunction<Arguments extends any[] = [string]> = (c: any, ...args: Arguments) => string;
@@ -42,9 +42,9 @@ export function queryAllByAttribute(
   attribute: string,
   container: any,
   text: Matcher,
-  { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = {},
+  { exact = true, collapseWhitespace, trim, normalizer }: MatcherOptions = NO_OPTIONS,
 ): any[] {
-  const matchNormalizer = makeNormalizer({ collapseWhitespace, trim, normalizer });
+  const matchNormalizer = resolveNormalizer(trim, collapseWhitespace, normalizer);
   const match = textMatcher(exact, text, matchNormalizer);
   const root = implOf(container);
   const lower = asciiLowercase(attribute);
@@ -69,6 +69,15 @@ export function queryByAttribute(attribute: string, container: any, text: Matche
     throw getMultipleElementsFoundError(`Found multiple elements by [${attribute}=${text}]`, container);
   }
   return els[0] || null;
+}
+
+/**
+ * `const [{ suggest = getConfig().throwSuggestions } = {}] = args.slice(-1)`, read only when a
+ * query matched and without the slice.
+ */
+function shouldSuggest(args: any[]): boolean {
+  const suggest = args.at(-1)?.suggest;
+  return suggest !== undefined ? suggest : getConfig().throwSuggestions;
 }
 
 // this accepts a query function and returns a function which throws an error
@@ -161,8 +170,7 @@ export const wrapSingleQueryWithSuggestion =
   (query: AnyQuery, queryAllByName: string, variant: Variant): AnyQuery =>
   (container: any, ...args: any[]) => {
     const element = query(container, ...args);
-    const [{ suggest = getConfig().throwSuggestions } = {}] = args.slice(-1);
-    if (element && suggest) {
+    if (element && shouldSuggest(args)) {
       const suggestion = getSuggestedQuery(element, variant);
       if (suggestion && !queryAllByName.endsWith(suggestion.queryName)) {
         throw getSuggestionError(suggestion.toString(), container);
@@ -175,9 +183,7 @@ export const wrapAllByQueryWithSuggestion =
   (query: AnyQuery, queryAllByName: string, variant: Variant): AnyQuery =>
   (container: any, ...args: any[]) => {
     const els = query(container, ...args);
-
-    const [{ suggest = getConfig().throwSuggestions } = {}] = args.slice(-1);
-    if (els.length && suggest) {
+    if (els.length && shouldSuggest(args)) {
       // get a unique list of all suggestion messages.  We are only going to make a suggestion if
       // all the suggestions are the same
       const uniqueSuggestionMessages = [

@@ -175,6 +175,26 @@ export function textMatcher(
   };
 }
 
+/** `makeNormalizer` taking the options positionally, so callers need no options object. */
+export function resolveNormalizer(
+  trim: boolean | undefined,
+  collapseWhitespace: boolean | undefined,
+  normalizer: NormalizerFn | undefined,
+): NormalizerFn {
+  if (!normalizer) {
+    if (trim === undefined && collapseWhitespace === undefined) return defaultNormalizer;
+    return getDefaultNormalizer({ trim, collapseWhitespace });
+  }
+  if (typeof trim !== "undefined" || typeof collapseWhitespace !== "undefined") {
+    throw new Error(
+      "trim and collapseWhitespace are not supported with a normalizer. " +
+        "If you want to use the default trim and collapseWhitespace logic in your normalizer, " +
+        'use "getDefaultNormalizer({trim, collapseWhitespace})" and compose that into your normalizer',
+    );
+  }
+  return normalizer;
+}
+
 /**
  * Constructs a normalizer to pass to functions in matches.ts
  * @param trim The user-specified value for `trim`, without any defaulting having been applied
@@ -182,22 +202,7 @@ export function textMatcher(
  * @param normalizer The user-specified normalizer
  */
 export function makeNormalizer({ trim, collapseWhitespace, normalizer }: NormalizerOptions): NormalizerFn {
-  if (!normalizer) {
-    // No custom normalizer specified. Just use default.
-    if (trim === undefined && collapseWhitespace === undefined) return defaultNormalizer;
-    return getDefaultNormalizer({ trim, collapseWhitespace });
-  }
-
-  if (typeof trim !== "undefined" || typeof collapseWhitespace !== "undefined") {
-    // They've also specified a value for trim or collapseWhitespace
-    throw new Error(
-      "trim and collapseWhitespace are not supported with a normalizer. " +
-        "If you want to use the default trim and collapseWhitespace logic in your normalizer, " +
-        'use "getDefaultNormalizer({trim, collapseWhitespace})" and compose that into your normalizer',
-    );
-  }
-
-  return normalizer;
+  return resolveNormalizer(trim, collapseWhitespace, normalizer);
 }
 
 const regExpExec = RegExp.prototype.exec;

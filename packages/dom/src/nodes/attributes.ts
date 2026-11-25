@@ -305,7 +305,7 @@ export function removeAttributeRecord(el: NodeImpl, a: AttrRecord): void {
     if (flag !== 0 && !still) el.flags &= ~flag;
   }
   // A materialized Attr node keeps its value but loses its element.
-  if (a.attr !== null) a.attr._detach();
+  if (a.rare !== null && a.rare.attr !== null) a.rare.attr._detach();
   handleAttributeChanges(el, a, a.value, null);
 }
 
@@ -477,6 +477,34 @@ export function appendAttributeDetached(
       noteInlineStyle(el.doc, 1);
     }
   }
+}
+
+/**
+ * Parser bulk fast path: populate `count` null-namespace attributes on a freshly created
+ * detached element in one exact-length array allocation (avoids O(count^2) copies in `addRecord`).
+ */
+export function setAttributesDetached(el: NodeImpl, names: string[], values: string[], count: number): void {
+  const list: AttrRecord[] = new Array(count);
+  let flags = el.flags;
+  let formAttr = false;
+  for (let i = 0; i < count; i++) {
+    const localName = names[i];
+    const value = values[i];
+    list[i] = new AttrRecord(localName, value, null, null);
+    const flag = prefixFlag(localName);
+    if (flag !== 0) {
+      flags |= flag;
+      if (flag === F_FORM_ATTR) formAttr = true;
+    }
+    if (localName === "id") el.id = value;
+    else if (localName === "style" && value !== "" && (flags & F_HAS_STYLE_ATTR) === 0) {
+      flags |= F_HAS_STYLE_ATTR;
+      noteInlineStyle(el.doc, 1);
+    }
+  }
+  el.flags = flags;
+  if (formAttr) el.doc[$formAttrSeen] = true;
+  el.attrs = list;
 }
 
 const EMPTY: string[] = [];
